@@ -606,7 +606,28 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
 
       <div class="section-header">
         <span class="section-title">Depoimentos do Ticker</span>
-        <button class="btn btn-ghost btn-sm" onclick="showFormNovo()">+ Adicionar</button>
+        <div style="display:flex;gap:0.5rem">
+          <button class="btn btn-ghost btn-sm" onclick="showRawEditor()">{ } Editor Raw</button>
+          <button class="btn btn-ghost btn-sm" onclick="showFormNovo()">+ Adicionar</button>
+        </div>
+      </div>
+
+      <!-- EDITOR RAW -->
+      <div class="add-form" id="raw-editor" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.65rem">
+          <label style="font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted)">Editor Raw — JSON</label>
+          <div style="display:flex;gap:0.5rem">
+            <button class="btn btn-primary btn-sm" onclick="aplicarRaw()">Aplicar</button>
+            <button class="btn btn-ghost btn-sm" onclick="fecharRaw()">Cancelar</button>
+          </div>
+        </div>
+        <textarea id="raw-textarea" style="min-height:240px;font-family:monospace;font-size:0.78rem;line-height:1.6;border-color:rgba(200,146,42,0.3)" placeholder='[
+  { "nome": "Ana Paula", "cidade": "SP", "texto": "Mudou minha vida completamente." },
+  { "nome": "Marcos", "cidade": "RJ", "texto": "Fé e ciência juntas de verdade." }
+]'></textarea>
+        <p style="font-size:0.68rem;color:var(--text-muted);margin-top:0.5rem">
+          Cole um array JSON com os campos <code style="color:var(--color-gold-amber)">nome</code>, <code style="color:var(--color-gold-amber)">cidade</code> e <code style="color:var(--color-gold-amber)">texto</code>. Ao aplicar, substitui a lista atual.
+        </p>
       </div>
 
       <div class="add-form" id="form-novo" style="display:none">
@@ -967,7 +988,43 @@ function removerDep(i) {
   renderDeps();
 }
 
-function showFormNovo() { document.getElementById('form-novo').style.display = 'block'; document.getElementById('new-nome').focus(); }
+function showRawEditor() {
+  fecharFormNovo();
+  const ta = document.getElementById('raw-textarea');
+  ta.value = JSON.stringify(deps, null, 2);
+  document.getElementById('raw-editor').style.display = 'block';
+  ta.focus();
+}
+
+function fecharRaw() {
+  document.getElementById('raw-editor').style.display = 'none';
+}
+
+function aplicarRaw() {
+  const raw = document.getElementById('raw-textarea').value.trim();
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) throw new Error('Deve ser um array');
+    const validos = parsed.filter(d => d.nome && d.texto);
+    if (!validos.length) throw new Error('Nenhum item válido encontrado');
+    deps = validos.map(d => ({ nome: d.nome.trim(), cidade: (d.cidade||'').trim(), texto: d.texto.trim() }));
+    fecharRaw();
+    renderDeps();
+    toast(`✓ ${deps.length} depoimentos importados`);
+  } catch(e) {
+    toast(`✗ JSON inválido: ${e.message}`, 'error');
+  }
+}
+
+function fecharFormNovo() {
+  document.getElementById('form-novo').style.display = 'none';
+}
+
+function showFormNovo() {
+  fecharRaw();
+  document.getElementById('form-novo').style.display = 'block';
+  document.getElementById('new-nome').focus();
+}
 function cancelarNovo() {
   document.getElementById('form-novo').style.display = 'none';
   ['new-nome','new-cidade','new-texto'].forEach(id => document.getElementById(id).value = '');
