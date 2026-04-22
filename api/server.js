@@ -6,6 +6,7 @@ require('dotenv').config();
 const { initDb } = require('./db');
 const precosRoutes = require('./routes/precos');
 const depoimentosRoutes = require('./routes/depoimentos');
+const seedRoutes = require('./routes/seed');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -37,6 +38,7 @@ app.use((req, res, next) => {
 // ── ROTAS ──
 app.use('/api', precosRoutes);
 app.use('/api', depoimentosRoutes);
+app.use('/api', seedRoutes);
 
 app.get('/health', (req, res) => {
   res.json({
