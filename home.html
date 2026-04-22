@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vida Mágica — Bem-vindos</title>
+  <link rel="icon" href="/images/favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800;900&family=Allura&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-gold-amber: #C8922A;
+      --color-gold-light: #E8C97A;
+      --color-gold-deep: #A17523;
+      --color-pearl-white: #F5F0E8;
+      --color-brown-dark: #1A1205;
+      --color-blue-butterfly: #1E8FD5;
+      --bg-dark: #0D0800;
+      --text-light: #F5F0E8;
+      --font-display: 'Montserrat', sans-serif;
+      --font-body: 'Open Sans', sans-serif;
+      --font-script: 'Allura', cursive;
+      --glow-gold: 0 0 20px rgba(200,146,42,0.45), 0 0 40px rgba(200,146,42,0.2);
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-dark);
+      color: var(--text-light);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ===== NAVBAR ===== */
+    .navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 1.25rem;
+      background: rgba(13,8,0,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(200,146,42,0.12);
+      height: 52px;
+    }
+
+    .navbar-logo {
+      height: 32px;
+      width: auto;
+    }
+
+    .btn-login {
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-gold-amber);
+      background: none;
+      border: 1px solid rgba(200,146,42,0.4);
+      border-radius: var(--radius-full);
+      padding: 0.4rem 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      letter-spacing: 0.05em;
+    }
+
+    .btn-login:hover {
+      background: rgba(200,146,42,0.1);
+      border-color: var(--color-gold-amber);
+    }
+
+    /* ===== TICKER — logo abaixo do navbar ===== */
+    .ticker-wrap {
+      position: fixed;
+      top: 52px; left: 0; right: 0;
+      z-index: 99;
+      overflow: hidden;
+      padding: 0.5rem 0;
+      background: rgba(20,14,2,0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(200,146,42,0.12);
+    }
+
+    .ticker-track {
+      display: flex;
+      gap: 3.5rem;
+      animation: ticker 35s linear infinite;
+      white-space: nowrap;
+    }
+
+    @keyframes ticker {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    .ticker-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.73rem;
+      color: rgba(245,240,232,0.58);
+      flex-shrink: 0;
+      font-family: var(--font-body);
+    }
+
+    .ticker-item .q { color: var(--color-gold-amber); }
+    .ticker-item strong { color: var(--color-gold-light); font-weight: 600; }
+
+    /* ===== HERO ===== */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 8rem 1.5rem 5rem;
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('/images/background-theme.jpg');
+      background-size: cover;
+      background-position: center;
+      z-index: 0;
+    }
+
+    .hero-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(13,8,0,0.48);
+    }
+
+    .particles {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      animation: float linear infinite;
+      opacity: 0;
+    }
+
+    @keyframes float {
+      0%   { transform: translateY(105vh) scale(0); opacity: 0; }
+      10%  { opacity: 0.8; }
+      90%  { opacity: 0.4; }
+      100% { transform: translateY(-5vh) scale(1.3); opacity: 0; }
+    }
+
+    /* ===== LOGO VERTICAL ===== */
+    .hero-logo {
+      position: relative;
+      z-index: 2;
+      margin-bottom: 2rem;
+    }
+
+    .hero-logo img {
+      width: 170px;
+      height: auto;
+      mix-blend-mode: lighten;
+      filter: drop-shadow(0 0 18px rgba(200,146,42,0.55));
+    }
+
+    /* ===== CONTEÚDO HERO ===== */
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 520px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .hero-eyebrow {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--color-gold-amber);
+      margin-bottom: 1rem;
+    }
+
+    .hero-headline {
+      font-family: var(--font-display);
+      font-size: clamp(1.75rem, 5.5vw, 2.7rem);
+      font-weight: 900;
+      line-height: 1.18;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      color: var(--text-light);
+      text-shadow: 0 2px 24px rgba(0,0,0,0.55);
+      margin-bottom: 1rem;
+    }
+
+    .hero-headline .gold { color: var(--color-gold-light); }
+
+    .hero-sub {
+      font-size: 0.98rem;
+      font-weight: 400;
+      line-height: 1.7;
+      color: rgba(245,240,232,0.8);
+      margin-bottom: 2.5rem;
+    }
+
+    .divider {
+      width: 44px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--color-gold-amber), transparent);
+      margin: 0 auto 1.75rem;
+    }
+
+    .entry-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-gold-amber);
+      margin-bottom: 1rem;
+    }
+
+    /* ===== BOTÕES ===== */
+    .btn-entry {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 460px;
+      margin: 0 auto 0.7rem;
+      padding: 1rem 1.2rem;
+      border-radius: var(--radius-lg);
+      border: 1.5px solid rgba(232,201,122,0.22);
+      background: rgba(13,8,0,0.55);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color: var(--text-light);
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      font-weight: 500;
+      line-height: 1.45;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.28s ease;
+      text-decoration: none;
+    }
+
+    .btn-entry:hover {
+      background: rgba(200,146,42,0.13);
+      border-color: var(--color-gold-amber);
+      box-shadow: var(--glow-gold);
+      transform: translateY(-2px);
+    }
+
+    .btn-entry-primary { border-color: rgba(200,146,42,0.42); }
+
+    .btn-tag {
+      font-size: 0.63rem;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--color-gold-amber);
+      display: block;
+      margin-bottom: 0.18rem;
+    }
+
+    .btn-icon {
+      flex-shrink: 0;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: var(--color-gold-amber);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 1rem;
+      transition: background 0.2s;
+    }
+
+    .btn-entry:hover .btn-icon { background: var(--color-gold-deep); }
+
+    .btn-icon svg {
+      width: 13px; height: 13px;
+      stroke: #fff; fill: none;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* ===== QUEM SOMOS ===== */
+    .quem-somos {
+      position: relative;
+      padding: 5rem 1.5rem;
+      text-align: center;
+      background-image: url('/images/background-theme.jpg');
+      background-size: cover;
+      background-position: center top;
+      overflow: hidden;
+    }
+
+    /* overlay escuro para legibilidade */
+    .quem-somos::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(13,8,0,0.72);
+      z-index: 0;
+    }
+
+    /* todos os filhos diretos acima do overlay */
+    .quem-somos > * {
+      position: relative;
+      z-index: 2;
+    }
+
+    /* partículas dentro da seção */
+    .qs-particles {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    /* Foto do casal — circular */
+    .casal-photo {
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: top center;
+      border: 2px solid var(--color-gold-amber);
+      box-shadow: var(--glow-gold);
+      margin: 0 auto 2rem;
+      display: block;
+    }
+
+    /* Placeholder elegante enquanto foto não chega */
+    .casal-placeholder {
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      border: 2px solid rgba(200,146,42,0.5);
+      box-shadow: var(--glow-gold);
+      margin: 0 auto 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle, rgba(200,146,42,0.12), rgba(13,8,0,0.8));
+      font-family: var(--font-script);
+      font-size: 1.5rem;
+      color: var(--color-gold-light);
+      letter-spacing: 0.05em;
+    }
+
+    .section-eyebrow {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--color-gold-amber);
+      margin-bottom: 1rem;
+    }
+
+    .quem-somos-headline {
+      font-family: var(--font-script);
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      color: var(--color-gold-light);
+      text-shadow: var(--glow-gold);
+      margin-bottom: 1.5rem;
+      line-height: 1.35;
+    }
+
+    .quem-somos-body {
+      font-size: 0.93rem;
+      line-height: 1.82;
+      color: rgba(245,240,232,0.72);
+      max-width: 450px;
+      margin: 0 auto;
+    }
+
+    .quem-somos-body em {
+      color: var(--color-gold-light);
+      font-style: normal;
+      font-weight: 600;
+    }
+
+    /* ===== CTA RODAPÉ ===== */
+    .cta-footer {
+      padding: 3.5rem 1.5rem;
+      text-align: center;
+      background: #080500;
+    }
+
+    .cta-footer p {
+      font-size: 0.72rem;
+      color: rgba(245,240,232,0.28);
+      margin-top: 1.5rem;
+      letter-spacing: 0.06em;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <img src="/images/logo-horizontal.png" alt="Vida Mágica" class="navbar-logo">
+    <a href="/auth" class="btn-login">Entrar</a>
+  </nav>
+
+  <!-- TICKER — imediatamente abaixo do navbar -->
+  <div class="ticker-wrap">
+    <div class="ticker-track">
+      <span class="ticker-item"><span class="q">"</span>Mudou completamente a forma como eu via minha vida.<span class="q">"</span> — <strong>Ana Paula, SP</strong></span>
+      <span class="ticker-item"><span class="q">"</span>Nunca imaginei que fé e ciência poderiam andar juntas assim.<span class="q">"</span> — <strong>Marcos, RJ</strong></span>
+      <span class="ticker-item"><span class="q">"</span>O Teste me abriu os olhos para padrões que eu nem percebia.<span class="q">"</span> — <strong>Carla, MG</strong></span>
+      <span class="ticker-item"><span class="q">"</span>Em 3 meses minha realidade financeira mudou radicalmente.<span class="q">"</span> — <strong>Roberto, PR</strong></span>
+      <span class="ticker-item"><span class="q">"</span>Suellen fala de um jeito que ninguém mais fala. É real, é profundo.<span class="q">"</span> — <strong>Fernanda, BA</strong></span>
+      <span class="ticker-item"><span class="q">"</span>Mudou completamente a forma como eu via minha vida.<span class="q">"</span> — <strong>Ana Paula, SP</strong></span>
+      <span class="ticker-item"><span class="q">"</span>Nunca imaginei que fé e ciência poderiam andar juntas assim.<span class="q">"</span> — <strong>Marcos, RJ</strong></span>
+      <span class="ticker-item"><span class="q">"</span>O Teste me abriu os olhos para padrões que eu nem percebia.<span class="q">"</span> — <strong>Carla, MG</strong></span>
+      <span class="ticker-item"><span class="q">"</span>Em 3 meses minha realidade financeira mudou radicalmente.<span class="q">"</span> — <strong>Roberto, PR</strong></span>
+      <span class="ticker-item"><span class="q">"</span>Suellen fala de um jeito que ninguém mais fala. É real, é profundo.<span class="q">"</span> — <strong>Fernanda, BA</strong></span>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="particles" id="particles"></div>
+
+    <!-- Logo vertical -->
+    <div class="hero-logo">
+      <img src="/images/logo-vertical.png" alt="Vida Mágica">
+    </div>
+
+    <!-- Headline + CTAs -->
+    <div class="hero-content">
+      <p class="hero-eyebrow">Renato & Suellen Seragi</p>
+
+      <h1 class="hero-headline">
+        Sejam bem-vindos a uma<br>
+        <span class="gold">jornada</span> de uma vida<br>
+        que vale a pena.
+      </h1>
+
+      <p class="hero-sub">
+        Você não chegou aqui por acidente.<br>E a gente sabe disso.
+      </p>
+
+      <div class="divider"></div>
+
+      <p class="entry-label">Como podemos te ajudar agora?</p>
+
+      <a href="/teste?trilha=transformacao" class="btn-entry btn-entry-primary">
+        <span>
+          <span class="btn-tag">Trilha completa</span>
+          Quero transformar minha mente e minha vida
+        </span>
+        <span class="btn-icon">
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
+      </a>
+
+      <a href="/teste?trilha=urgencia" class="btn-entry">
+        <span>
+          <span class="btn-tag">Urgência financeira</span>
+          Quero transformar minha mente, porém estou com urgência financeira
+        </span>
+        <span class="btn-icon">
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
+      </a>
+    </div>
+  </section>
+
+  <!-- QUEM SOMOS -->
+  <section class="quem-somos">
+
+    <div class="qs-particles" id="qs-particles"></div>
+
+    <img class="casal-photo" src="/images/creators.jpeg" alt="Renato e Suellen Seragi">
+
+    <p class="section-eyebrow">Quem somos</p>
+
+    <h2 class="quem-somos-headline">
+      Casados há 21 anos.<br>
+      Aprendemos na dor<br>
+      o que ensinamos com alegria.
+    </h2>
+
+    <p class="quem-somos-body">
+      Somos Renato e Suellen Seragi — pais de quatro filhos, e há mais de duas décadas caminhando juntos com um único propósito: <em>conectar pessoas com Deus de um jeito real, profundo e transformador.</em>
+      <br><br>
+      Tudo isso é feito com um coração honesto, com a intenção genuína de servir, ajudar e transformar — porque é assim que a gente vive, e é assim que acreditamos que a verdadeira prosperidade começa.
+      <br><br>
+      <em>E pode acreditar: o melhor ainda está por vir. Pra você e pra nós.</em>
+    </p>
+  </section>
+
+  <!-- CTA RODAPÉ -->
+  <div class="cta-footer">
+    <a href="/teste" class="btn-entry" style="max-width:400px; margin: 0 auto;">
+      <span>
+        <span class="btn-tag">Primeiro passo</span>
+        Começar com o Teste de Prosperidade
+      </span>
+      <span class="btn-icon">
+        <svg viewBox="0 0 24 24" stroke="#fff" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </span>
+    </a>
+    <p>Renato & Suellen Seragi · Vida Mágica · 2025</p>
+  </div>
+
+  <script>
+    // Partículas hero
+    const container = document.getElementById('particles');
+    for (let i = 0; i < 24; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = Math.random() * 4 + 2;
+      p.style.cssText = `
+        width:${size}px; height:${size}px;
+        left:${Math.random()*100}%;
+        animation-duration:${Math.random()*14+8}s;
+        animation-delay:${Math.random()*12}s;
+        background:${Math.random()>0.5?'rgba(248,220,150,0.75)':'rgba(255,255,255,0.6)'};
+      `;
+      container.appendChild(p);
+    }
+
+    // Partículas quem somos
+    const qsContainer = document.getElementById('qs-particles');
+    for (let i = 0; i < 18; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = Math.random() * 3 + 1.5;
+      p.style.cssText = `
+        width:${size}px; height:${size}px;
+        left:${Math.random()*100}%;
+        animation-duration:${Math.random()*12+10}s;
+        animation-delay:${Math.random()*14}s;
+        background:${Math.random()>0.5?'rgba(248,220,150,0.65)':'rgba(255,255,255,0.5)'};
+      `;
+      qsContainer.appendChild(p);
+    }
+  </script>
+
+</body>
+</html>
