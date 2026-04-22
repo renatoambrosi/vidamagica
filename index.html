@@ -92,7 +92,7 @@
     .ticker-track {
       display: flex;
       gap: 3.5rem;
-      animation: ticker 35s linear infinite;
+      animation: ticker 22s linear infinite;
       white-space: nowrap;
     }
 
@@ -691,18 +691,7 @@
 
   <!-- TICKER — imediatamente abaixo do navbar -->
   <div class="ticker-wrap">
-    <div class="ticker-track">
-      <span class="ticker-item"><span class="q">"</span>Mudou completamente a forma como eu via minha vida.<span class="q">"</span> — <strong>Ana Paula, SP</strong></span>
-      <span class="ticker-item"><span class="q">"</span>Nunca imaginei que fé e ciência poderiam andar juntas assim.<span class="q">"</span> — <strong>Marcos, RJ</strong></span>
-      <span class="ticker-item"><span class="q">"</span>O Teste me abriu os olhos para padrões que eu nem percebia.<span class="q">"</span> — <strong>Carla, MG</strong></span>
-      <span class="ticker-item"><span class="q">"</span>Em 3 meses minha realidade financeira mudou radicalmente.<span class="q">"</span> — <strong>Roberto, PR</strong></span>
-      <span class="ticker-item"><span class="q">"</span>Suellen fala de um jeito que ninguém mais fala. É real, é profundo.<span class="q">"</span> — <strong>Fernanda, BA</strong></span>
-      <span class="ticker-item"><span class="q">"</span>Mudou completamente a forma como eu via minha vida.<span class="q">"</span> — <strong>Ana Paula, SP</strong></span>
-      <span class="ticker-item"><span class="q">"</span>Nunca imaginei que fé e ciência poderiam andar juntas assim.<span class="q">"</span> — <strong>Marcos, RJ</strong></span>
-      <span class="ticker-item"><span class="q">"</span>O Teste me abriu os olhos para padrões que eu nem percebia.<span class="q">"</span> — <strong>Carla, MG</strong></span>
-      <span class="ticker-item"><span class="q">"</span>Em 3 meses minha realidade financeira mudou radicalmente.<span class="q">"</span> — <strong>Roberto, PR</strong></span>
-      <span class="ticker-item"><span class="q">"</span>Suellen fala de um jeito que ninguém mais fala. É real, é profundo.<span class="q">"</span> — <strong>Fernanda, BA</strong></span>
-    </div>
+    <div class="ticker-track"></div>
   </div>
 
   <!-- HERO -->
@@ -1014,6 +1003,24 @@
       track.style.animationDuration = '8s';
     }
 
+
+    // ===== TICKER — carrega do depoimentos.json =====
+    async function carregarTicker() {
+      try {
+        const res = await fetch('/depoimentos.json');
+        const deps = await res.json();
+        const track = document.querySelector('.ticker-track');
+        if (!track) return;
+        const items = [...deps, ...deps];
+        track.innerHTML = items.map(d =>
+          `<span class="ticker-item"><span class="q">"</span>${d.texto}<span class="q">"</span> — <strong>${d.nome}, ${d.cidade}</strong></span>`
+        ).join('');
+      } catch(e) {
+        console.warn('Depoimentos nao carregados:', e);
+      }
+    }
+    carregarTicker();
+
     // ===== UTMs =====
     function getUtms() {
       const params = new URLSearchParams(window.location.search);
@@ -1065,16 +1072,29 @@
 
         function formatPreco(p) {
           if (!p) return '';
-          if (p.exibir_parcelas_valor) return `${p.parcelas_qtd}x R$ ${p.exibir_parcelas_valor} <small style="opacity:0.7">ou R$ ${p.exibir_avista} à vista</small>`;
-          return `R$ ${p.exibir_avista}`;
+          let html = '';
+          // Se tem promo ativa — mostra DE por
+          if (p.exibir_de) {
+            if (p.desconto_pct) html += `<small style="color:var(--color-gold-amber);font-size:0.65rem;font-weight:700">${p.desconto_pct}% OFF</small> `;
+            html += `<span style="text-decoration:line-through;opacity:0.5;font-size:0.8rem">R$ ${p.exibir_de}</span> `;
+          }
+          // Parcelas ou à vista
+          if (p.exibir_parcelas_valor) {
+            html += `<strong>${p.exibir_parcelas_qtd}x R$ ${p.exibir_parcelas_valor}</strong>`;
+            html += `<br><small style="opacity:0.6">ou R$ ${p.exibir_avista} à vista</small>`;
+          } else {
+            html += `<strong>R$ ${p.exibir_avista}</strong>`;
+          }
+          return html;
         }
 
-        if (d.teste_prosperidade) document.getElementById('preco-teste').innerHTML = formatPreco(d.teste_prosperidade);
-        if (d.guia_pratico)       document.getElementById('preco-guia').innerHTML  = formatPreco(d.guia_pratico);
-        if (d.ouro_reprogramacao) document.getElementById('preco-ouro').innerHTML  = formatPreco(d.ouro_reprogramacao);
-        if (d.lda_biblica)        document.getElementById('preco-lda').innerHTML   = formatPreco(d.lda_biblica);
-        if (d.atal_maneira_livro) document.getElementById('preco-livro').innerHTML = formatPreco(d.atal_maneira_livro);
-        if (d.atal_maneira_curso) document.getElementById('preco-curso').innerHTML = formatPreco(d.atal_maneira_curso);
+        if (d.teste_prosperidade) document.getElementById('preco-teste').innerHTML  = formatPreco(d.teste_prosperidade);
+        if (d.guia_pratico)       document.getElementById('preco-guia').innerHTML   = formatPreco(d.guia_pratico);
+        if (d.ouro_reprogramacao) document.getElementById('preco-ouro').innerHTML   = formatPreco(d.ouro_reprogramacao);
+        if (d.lda_biblica)        document.getElementById('preco-lda').innerHTML    = formatPreco(d.lda_biblica);
+        if (d.atal_maneira_livro) document.getElementById('preco-livro').innerHTML  = formatPreco(d.atal_maneira_livro);
+        if (d.atal_maneira_curso) document.getElementById('preco-curso').innerHTML  = formatPreco(d.atal_maneira_curso);
+
       } catch (e) {
         console.warn('Preços indisponíveis:', e);
       }
