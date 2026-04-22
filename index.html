@@ -400,7 +400,44 @@
 
     .btn-checkout:hover { background: var(--color-gold-deep); }
 
-    /* ===== CLUBE BANNER ===== */
+    .narrativa-texto {
+      font-size: 0.82rem;
+      color: rgba(245,240,232,0.65);
+      line-height: 1.65;
+      margin-bottom: 1rem;
+      font-style: italic;
+    }
+
+    .clube-narrativa { margin-bottom: 0.5rem; }
+
+    .clube-lista {
+      list-style: none;
+      padding: 0;
+      margin: 0.75rem 0;
+    }
+
+    .clube-lista li {
+      font-size: 0.78rem;
+      color: rgba(245,240,232,0.7);
+      padding: 0.3rem 0 0.3rem 1.2rem;
+      position: relative;
+      line-height: 1.5;
+    }
+
+    .clube-lista li::before {
+      content: '✦';
+      position: absolute;
+      left: 0;
+      color: var(--color-gold-amber);
+      font-size: 0.6rem;
+      top: 0.45rem;
+    }
+
+    .drop-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(200,146,42,0.3), transparent);
+      margin: 1.25rem 0;
+    }
     .clube-banner {
       display: flex;
       gap: 1rem;
@@ -709,7 +746,8 @@
         </button>
 
         <div class="dropdown-panel" id="drop-trilha">
-          <p class="drop-intro">Assista e entenda como essa jornada pode transformar sua vida:</p>
+
+          <!-- VÍDEO -->
           <div class="video-wrap">
             <iframe
               src="https://www.youtube.com/embed/dQw4w9WgXcQ"
@@ -719,10 +757,34 @@
               allowfullscreen>
             </iframe>
           </div>
+
+          <!-- CLUBE -->
+          <div class="clube-narrativa">
+            <span class="fase-label" style="margin-top:0">O que é o Clube Vida Mágica</span>
+            <p class="narrativa-texto">
+              O Clube Vida Mágica é o lugar onde a sua transformação acontece de verdade — não sozinha, mas acompanhada. É uma assinatura mensal que funciona como suporte vivo para cada fase da sua jornada.
+            </p>
+            <ul class="clube-lista">
+              <li>1 vídeo exclusivo por semana + bastidores + técnicas não publicadas</li>
+              <li>1 encontro ao vivo por mês — live ou videochamada com troca direta</li>
+              <li>Grupo de WhatsApp de Interação — comunidade ativa em crescimento conjunto</li>
+              <li>Grupo de WhatsApp de Conteúdo — direcionamentos e insights quase diários</li>
+              <li><strong>A Mágica do Fluir</strong> como bônus de entrada</li>
+              <li>Pessoas em destaque integradas à Fase 3 da jornada</li>
+            </ul>
+            <p class="narrativa-texto" style="margin-top:0.75rem">
+              <em>O Clube ainda não está aberto para o público. Mas tudo começa pelo mesmo lugar — entender onde você está agora.</em>
+            </p>
+          </div>
+
+          <!-- CTA TESTE -->
+          <div class="drop-divider"></div>
+          <p class="drop-intro">O primeiro passo é descobrir o que está travando a sua prosperidade:</p>
           <a href="https://teste.suellenseragi.com.br" class="btn-cta-drop" id="link-teste">
-            ✨ Quero fazer o Teste de Prosperidade
+            ✨ Fazer o Teste de Prosperidade
           </a>
           <p class="drop-note">R$ 19 · Resultado imediato · Seu ponto de partida</p>
+
         </div>
       </div>
 
@@ -740,14 +802,19 @@
 
         <div class="dropdown-panel" id="drop-produtos">
 
+          <p class="narrativa-texto" style="margin-bottom:1.25rem">
+            A jornada Vida Mágica é estruturada em fases. Cada fase tem um propósito claro — e cada produto existe para levar você ao próximo nível. Nada aqui é por acaso.
+          </p>
+
           <!-- DIAGNÓSTICO -->
-          <div class="fase-label">Diagnóstico Universal</div>
+          <div class="fase-label">Onde tudo começa — Diagnóstico</div>
+          <p class="narrativa-texto">Antes de qualquer passo, você precisa saber o que está te travando. O Teste de Prosperidade revela em 15 perguntas qual padrão mental bloqueia sua prosperidade — e define qual caminho é o seu.</p>
           <div class="produtos-grid">
             <div class="produto-card">
               <img src="/products/teste-prosperidade.png" alt="Teste de Prosperidade">
               <div class="produto-info">
                 <strong>Teste de Prosperidade</strong>
-                <p>15 perguntas que revelam o padrão mental que trava sua prosperidade. Ponto de partida obrigatório.</p>
+                <p>15 perguntas. 6 perfis possíveis. Resultado imediato. O ponto de partida obrigatório para qualquer trilha.</p>
                 <div class="produto-preco" id="preco-teste">R$ 19</div>
                 <div class="produto-links">
                   <a href="https://teste.suellenseragi.com.br" class="btn-lp" id="lp-teste">Ver mais</a>
@@ -759,13 +826,14 @@
 
           <!-- FASE 1 -->
           <div class="fase-label">Fase 1 — Despertando a Prosperidade Bíblica</div>
+          <p class="narrativa-texto">Aqui você sai do controle das energias que te bloqueiam — medo, autossuficiência, validação, desordem. Sem vencer isso, nenhuma técnica de prosperidade funciona de verdade.</p>
           <div class="produtos-grid">
 
             <div class="produto-card">
               <img src="/products/serie-despertando-prosperidade-biblica.png" alt="Série Despertando">
               <div class="produto-info">
                 <strong>Série Despertando</strong>
-                <p>E-book direcionado pelo seu perfil de energia. Trabalha a trava mental específica que te bloqueia.</p>
+                <p>Um e-book por perfil de energia. Direcionado pelo seu resultado no Teste — trabalha exatamente a trava que é a sua.</p>
                 <div class="produto-preco">R$ 39</div>
                 <div class="produto-links">
                   <a href="https://teste.suellenseragi.com.br" class="btn-lp">Ver mais</a>
@@ -778,7 +846,7 @@
               <img src="/products/guia-pratico.png" alt="Guia Prático">
               <div class="produto-info">
                 <strong>Guia Prático da RM</strong>
-                <p>E-book de suporte ao curso Ouro da Reprogramação Mental. Ferramentas práticas para o dia a dia.</p>
+                <p>Ferramentas práticas de reprogramação mental para aplicar no dia a dia. Material de suporte ao curso Ouro da RM.</p>
                 <div class="produto-preco" id="preco-guia">Carregando...</div>
                 <div class="produto-links">
                   <a href="https://guiapratico.suellenseragi.com.br/" class="btn-lp" id="lp-guia" target="_blank">Ver mais</a>
@@ -791,7 +859,7 @@
               <img src="/products/ouro-reprogramacao.png" alt="Ouro da RM">
               <div class="produto-info">
                 <strong>O Ouro da Reprogramação Mental</strong>
-                <p>A ferramenta definitiva da Fase 1. Curso completo para sair do controle das energias negativas.</p>
+                <p>A ferramenta definitiva da Fase 1. O curso completo que transforma o padrão mental na raiz — não na superfície.</p>
                 <div class="produto-preco" id="preco-ouro">Carregando...</div>
                 <div class="produto-links">
                   <a href="https://www.suellenseragi.com.br/ourorm" class="btn-lp" id="lp-ouro" target="_blank">Ver mais</a>
@@ -804,13 +872,14 @@
 
           <!-- FASE 2 -->
           <div class="fase-label">Fase 2 — Vivendo uma Vida Mágica</div>
+          <p class="narrativa-texto">Você saiu das travas. Agora é hora de aprender a atrair — com fé, com propósito e com as leis espirituais que poucos entendem de verdade. A entrada nessa fase exige ter refazido o Teste com resultado de Prosperidade.</p>
           <div class="produtos-grid">
 
             <div class="produto-card destaque">
               <img src="/products/lda-biblica.png" alt="Lei da Atração Bíblica">
               <div class="produto-info">
                 <strong>Lei da Atração Bíblica</strong>
-                <p>14 aulas + extras + músicas. As leis espirituais da prosperidade em profundidade.</p>
+                <p>14 aulas + extras + músicas. As leis espirituais da prosperidade ensinadas com profundidade e base bíblica real.</p>
                 <div class="produto-preco" id="preco-lda">Carregando...</div>
                 <div class="produto-links">
                   <a href="http://lda.suellenseragi.com.br" class="btn-lp" id="lp-lda" target="_blank">Ver mais</a>
@@ -823,7 +892,7 @@
               <img src="/products/atal-maneira-livro.png" alt="A Tal Maneira Livro">
               <div class="produto-info">
                 <strong>A Tal Maneira — Livro</strong>
-                <p>Máximo aproveitamento após a reprogramação espiritual. As leis de riqueza em maior profundidade.</p>
+                <p>O momento certo para este livro é depois da reprogramação espiritual. Aqui as leis de riqueza têm profundidade máxima.</p>
                 <div class="produto-preco" id="preco-livro">Carregando...</div>
                 <div class="produto-links">
                   <a href="https://talmaneira.suellenseragi.com.br/" class="btn-lp" id="lp-livro" target="_blank">Ver mais</a>
@@ -836,13 +905,14 @@
 
           <!-- FASE 3 -->
           <div class="fase-label">Fase 3 — Multiplicação</div>
+          <p class="narrativa-texto">Você foi transformado. Agora você aprende a multiplicar — a operar as leis de riqueza no nível mais alto e transformar seus talentos em visibilidade e impacto real.</p>
           <div class="produtos-grid">
 
             <div class="produto-card">
               <img src="/products/atal-maneira-curso.png" alt="A Tal Maneira Curso">
               <div class="produto-info">
                 <strong>A Tal Maneira — Curso</strong>
-                <p>Para quem já vive a atração bíblica. Aprenda a operar as leis de riqueza no mais alto nível.</p>
+                <p>Para quem já vive a atração bíblica e está pronto para o próximo nível. Aqui você aprende a operar, não apenas a acreditar.</p>
                 <div class="produto-preco" id="preco-curso">Carregando...</div>
                 <div class="produto-links">
                   <a href="https://talmaneira.suellenseragi.com.br/" class="btn-lp" id="lp-curso" target="_blank">Ver mais</a>
@@ -853,12 +923,13 @@
 
           </div>
 
-          <!-- CLUBE — contexto geral -->
+          <!-- CLUBE -->
+          <div class="drop-divider"></div>
           <div class="clube-banner">
             <img src="/products/clube-vida-magica.png" alt="Clube Vida Mágica">
             <div>
               <strong>Clube Vida Mágica</strong>
-              <p>Todos esses produtos fazem parte de uma jornada única. O Clube é o lugar onde tudo se conecta — conteúdo exclusivo, comunidade e acompanhamento em cada fase.</p>
+              <p>Todos esses produtos fazem parte de uma jornada única. O Clube é o lugar onde tudo se conecta — conteúdo exclusivo, comunidade ativa e acompanhamento em cada fase da sua transformação.</p>
               <a href="/app/dashboard" class="btn-clube">Conhecer o Clube</a>
             </div>
           </div>
@@ -939,8 +1010,8 @@
       track.innerHTML = doubled.map(d =>
         `<span class="ticker-item"><span class="q">"</span>${d}<span class="q">"</span></span>`
       ).join('');
-      // Velocidade: 20s (mais rápido)
-      track.style.animationDuration = '20s';
+      // Velocidade: 8s (rápido)
+      track.style.animationDuration = '8s';
     }
 
     // ===== UTMs =====
