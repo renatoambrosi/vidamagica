@@ -1007,7 +1007,7 @@
     // ===== TICKER — carrega do depoimentos.json =====
     async function carregarTicker() {
       try {
-        const res = await fetch('https://vidamagica-api-production.up.railway.app/api/depoimentos');
+        const res = await fetch('https://vidamagica-production.up.railway.app/api/depoimentos');
         const deps = await res.json();
         const track = document.querySelector('.ticker-track');
         if (!track) return;
@@ -1063,7 +1063,7 @@
     // ===== PREÇOS VIA API =====
     async function carregarPrecos() {
       try {
-        const res = await fetch('https://vidamagica-api-production.up.railway.app/api/precos', {
+        const res = await fetch('https://vidamagica-production.up.railway.app/api/precos', {
           method: 'GET',
           headers: { 'Accept': 'application/json' },
           mode: 'cors'
