@@ -305,14 +305,12 @@
     .quem-somos {
       position: relative;
       padding: 5rem 1.5rem;
-      text-align: center;
       background-image: url('/images/background-theme.jpg');
       background-size: cover;
       background-position: center top;
       overflow: hidden;
     }
 
-    /* overlay escuro para legibilidade */
     .quem-somos::before {
       content: '';
       position: absolute;
@@ -321,13 +319,11 @@
       z-index: 0;
     }
 
-    /* todos os filhos diretos acima do overlay */
     .quem-somos > * {
       position: relative;
       z-index: 2;
     }
 
-    /* partículas dentro da seção */
     .qs-particles {
       position: absolute;
       inset: 0;
@@ -336,33 +332,30 @@
       pointer-events: none;
     }
 
-    /* Foto do casal — circular */
+    .quem-somos-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 3.5rem;
+    }
+
+    /* Foto retangular moderna */
     .casal-photo {
-      width: 160px; height: 160px;
-      border-radius: 50%;
+      width: 340px;
+      min-width: 340px;
+      height: 420px;
+      border-radius: 16px;
       object-fit: cover;
-      object-position: top center;
-      border: 2px solid var(--color-gold-amber);
-      box-shadow: var(--glow-gold);
-      margin: 0 auto 2rem;
+      object-position: center 15%;
+      border: 1.5px solid rgba(200,146,42,0.4);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5), var(--glow-gold);
       display: block;
     }
 
-    /* Placeholder elegante enquanto foto não chega */
-    .casal-placeholder {
-      width: 160px; height: 160px;
-      border-radius: 50%;
-      border: 2px solid rgba(200,146,42,0.5);
-      box-shadow: var(--glow-gold);
-      margin: 0 auto 2rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(circle, rgba(200,146,42,0.12), rgba(13,8,0,0.8));
-      font-family: var(--font-script);
-      font-size: 1.5rem;
-      color: var(--color-gold-light);
-      letter-spacing: 0.05em;
+    .quem-somos-text {
+      text-align: left;
+      flex: 1;
     }
 
     .section-eyebrow {
@@ -372,29 +365,50 @@
       text-transform: uppercase;
       color: var(--color-gold-amber);
       margin-bottom: 1rem;
+      display: block;
     }
 
     .quem-somos-headline {
-      font-family: var(--font-script);
-      font-size: clamp(1.8rem, 5vw, 2.6rem);
-      color: var(--color-gold-light);
-      text-shadow: var(--glow-gold);
+      font-family: var(--font-display);
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 900;
+      color: var(--text-light);
       margin-bottom: 1.5rem;
-      line-height: 1.35;
+      line-height: 1.3;
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+    }
+
+    .quem-somos-headline span {
+      color: var(--color-gold-light);
     }
 
     .quem-somos-body {
       font-size: 0.93rem;
       line-height: 1.82;
       color: rgba(245,240,232,0.72);
-      max-width: 450px;
-      margin: 0 auto;
     }
 
     .quem-somos-body em {
       color: var(--color-gold-light);
       font-style: normal;
       font-weight: 600;
+    }
+
+    /* Mobile: empilha */
+    @media (max-width: 640px) {
+      .quem-somos-inner {
+        flex-direction: column;
+        gap: 2rem;
+      }
+      .casal-photo {
+        width: 100%;
+        min-width: unset;
+        height: 280px;
+      }
+      .quem-somos-text {
+        text-align: center;
+      }
     }
 
     /* ===== CTA RODAPÉ ===== */
@@ -491,23 +505,27 @@
 
     <div class="qs-particles" id="qs-particles"></div>
 
-    <img class="casal-photo" src="/images/creators.jpeg" alt="Renato e Suellen Seragi">
+    <div class="quem-somos-inner">
 
-    <p class="section-eyebrow">Quem somos</p>
+      <img class="casal-photo" src="/images/creators.jpeg" alt="Renato e Suellen Seragi">
 
-    <h2 class="quem-somos-headline">
-      Casados há 21 anos.<br>
-      Aprendemos na dor<br>
-      o que ensinamos com alegria.
-    </h2>
+      <div class="quem-somos-text">
+        <span class="section-eyebrow">Quem somos</span>
+        <h2 class="quem-somos-headline">
+          Casados há 21 anos.<br>
+          Aprendemos na dor<br>
+          <span>o que ensinamos com alegria.</span>
+        </h2>
+        <p class="quem-somos-body">
+          Somos Renato e Suellen Seragi — pais de quatro filhos, e há mais de duas décadas caminhando juntos com um único propósito: <em>conectar pessoas com Deus de um jeito real, profundo e transformador.</em>
+          <br><br>
+          Tudo isso é feito com um coração honesto, com a intenção genuína de servir, ajudar e transformar — porque é assim que a gente vive, e é assim que acreditamos que a verdadeira prosperidade começa.
+          <br><br>
+          <em>E pode acreditar: o melhor ainda está por vir. Pra você e pra nós.</em>
+        </p>
+      </div>
 
-    <p class="quem-somos-body">
-      Somos Renato e Suellen Seragi — pais de quatro filhos, e há mais de duas décadas caminhando juntos com um único propósito: <em>conectar pessoas com Deus de um jeito real, profundo e transformador.</em>
-      <br><br>
-      Tudo isso é feito com um coração honesto, com a intenção genuína de servir, ajudar e transformar — porque é assim que a gente vive, e é assim que acreditamos que a verdadeira prosperidade começa.
-      <br><br>
-      <em>E pode acreditar: o melhor ainda está por vir. Pra você e pra nós.</em>
-    </p>
+    </div>
   </section>
 
   <!-- CTA RODAPÉ -->
