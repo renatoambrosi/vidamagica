@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Logos - Vida Mágica</title>
+  <link rel="stylesheet" href="../colors_and_type.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: var(--bg-secondary);
+      padding: 24px;
+      font-family: var(--font-body);
+    }
+    .logo-container {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .logo-item {
+      background: white;
+      padding: 20px;
+      border-radius: var(--radius-base);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo-item img {
+      max-width: 200px;
+      height: auto;
+    }
+    .logo-item.small img {
+      max-width: 80px;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo-container">
+    <div class="logo-item">
+      <img src="../assets/logo-horizontal.png" alt="Logo Horizontal">
+    </div>
+    <div class="logo-item">
+      <img src="../assets/logo-vertical.png" alt="Logo Vertical">
+    </div>
+    <div class="logo-item small">
+      <img src="../assets/favicon.png" alt="Favicon">
+    </div>
+  </div>
+</body>
+</html>

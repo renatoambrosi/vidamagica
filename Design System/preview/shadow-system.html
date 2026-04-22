@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shadow System - Vida Mágica</title>
+  <link rel="stylesheet" href="../colors_and_type.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: var(--bg-secondary);
+      padding: 20px;
+      font-family: var(--font-body);
+    }
+    .shadows-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 20px;
+      max-width: 700px;
+    }
+    .shadow-card {
+      background: white;
+      padding: 24px;
+      border-radius: var(--radius-base);
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100px;
+    }
+    .label {
+      font-size: 11px;
+      font-weight: var(--weight-semibold);
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="shadows-grid">
+    <div class="shadow-card" style="box-shadow: var(--shadow-sm);">
+      <div class="label">shadow-sm</div>
+    </div>
+    <div class="shadow-card" style="box-shadow: var(--shadow-base);">
+      <div class="label">shadow-base</div>
+    </div>
+    <div class="shadow-card" style="box-shadow: var(--shadow-md);">
+      <div class="label">shadow-md</div>
+    </div>
+    <div class="shadow-card" style="box-shadow: var(--shadow-lg);">
+      <div class="label">shadow-lg</div>
+    </div>
+    <div class="shadow-card" style="box-shadow: var(--shadow-xl);">
+      <div class="label">shadow-xl</div>
+    </div>
+    <div class="shadow-card" style="box-shadow: var(--glow-gold);">
+      <div class="label">glow-gold</div>
+    </div>
+  </div>
+</body>
+</html>
