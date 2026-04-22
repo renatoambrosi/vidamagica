@@ -917,12 +917,31 @@ function coletarPrecos() {
   return res;
 }
 
+const ORDEM_PRODUTOS = [
+  'clube_vida_magica',
+  'teste_prosperidade',
+  'vencendo_medo',
+  'magica_fluir',
+  'guia_pratico',
+  'atal_maneira_livro',
+  'ouro_reprogramacao',
+  'lda_biblica',
+  'atal_maneira_curso'
+];
+
 async function carregarPrecos() {
   try {
     const r = await fetch(`${API}/api/admin/precos`, { credentials: 'include' });
     if (!r.ok) throw new Error();
     dadosPrecos = await r.json();
-    document.getElementById('precos-container').innerHTML = Object.entries(dadosPrecos).map(([k,p]) => buildPreco(k,p)).join('');
+    const ordenado = ORDEM_PRODUTOS
+      .filter(k => dadosPrecos[k])
+      .map(k => [k, dadosPrecos[k]]);
+    // adiciona qualquer chave nova que não esteja na ordem definida
+    Object.entries(dadosPrecos).forEach(([k, v]) => {
+      if (!ORDEM_PRODUTOS.includes(k)) ordenado.push([k, v]);
+    });
+    document.getElementById('precos-container').innerHTML = ordenado.map(([k,p]) => buildPreco(k,p)).join('');
   } catch {
     document.getElementById('precos-container').innerHTML = '<div class="loading">Erro ao carregar. Verifique a autenticação.</div>';
   }
