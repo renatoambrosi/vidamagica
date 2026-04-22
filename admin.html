@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vida Mágica — CRM</title>
+<link rel="icon" href="/images/favicon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800;900&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --color-gold-amber: #C8922A;
+  --color-gold-light: #E8C97A;
+  --color-gold-deep: #A17523;
+  --color-gold-dark: #7A5818;
+  --color-pearl-white: #F5F0E8;
+  --color-brown-dark: #1A1205;
+  --color-brown-medium: #3D2E1A;
+  --bg-dark: #0D0800;
+  --bg-card: rgba(26,18,5,0.8);
+  --bg-input: rgba(36,24,8,0.9);
+  --border: rgba(200,146,42,0.15);
+  --border-hover: rgba(200,146,42,0.35);
+  --text-light: #F5F0E8;
+  --text-muted: rgba(245,240,232,0.45);
+  --font-display: 'Montserrat', sans-serif;
+  --font-body: 'Open Sans', sans-serif;
+  --glow-gold: 0 0 20px rgba(200,146,42,0.45), 0 0 40px rgba(200,146,42,0.2);
+  --radius-lg: 14px;
+  --radius-md: 10px;
+  --radius-sm: 6px;
+  --radius-full: 9999px;
+  --sidebar-w: 230px;
+  --topbar-h: 56px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-dark);
+  color: var(--text-light);
+  min-height: 100vh;
+  display: flex;
+  overflow-x: hidden;
+}
+
+/* ===== BACKGROUND PARTICLES ===== */
+.bg-particles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  animation: float linear infinite;
+  opacity: 0;
+}
+
+@keyframes float {
+  0%   { transform: translateY(105vh) scale(0); opacity: 0; }
+  10%  { opacity: 0.6; }
+  90%  { opacity: 0.3; }
+  100% { transform: translateY(-5vh) scale(1.2); opacity: 0; }
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: var(--sidebar-w);
+  min-height: 100vh;
+  background: rgba(13,8,0,0.95);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 200;
+  backdrop-filter: blur(20px);
+}
+
+.sidebar-logo {
+  padding: 1.25rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-logo img {
+  height: 32px;
+  width: auto;
+  mix-blend-mode: screen;
+}
+
+.sidebar-section-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 1.25rem 1.25rem 0.4rem;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1.25rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-left: 2px solid transparent;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.nav-item:hover { color: var(--text-light); background: rgba(200,146,42,0.05); }
+
+.nav-item.active {
+  color: var(--color-gold-light);
+  border-left-color: var(--color-gold-amber);
+  background: rgba(200,146,42,0.08);
+}
+
+.nav-item.disabled { opacity: 0.35; cursor: default; pointer-events: none; }
+
+.nav-icon { font-size: 0.95rem; width: 18px; text-align: center; flex-shrink: 0; }
+
+.nav-tag {
+  margin-left: auto;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background: rgba(200,146,42,0.1);
+  color: var(--color-gold-amber);
+  border: 1px solid rgba(200,146,42,0.2);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+/* ===== MAIN ===== */
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* ===== TOPBAR ===== */
+.topbar {
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.75rem;
+  background: rgba(13,8,0,0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.topbar-left h1 {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--color-gold-light);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.topbar-left p {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* ===== CONTENT ===== */
+.content { padding: 1.75rem; flex: 1; max-width: 900px; }
+
+/* ===== TABS ===== */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ===== TOAST ===== */
+#toast {
+  position: fixed;
+  top: 1.25rem; right: 1.25rem;
+  padding: 0.65rem 1.1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 600;
+  z-index: 999;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: all 0.25s;
+  pointer-events: none;
+}
+#toast.show { opacity: 1; transform: translateY(0); }
+#toast.success { background: rgba(90,158,111,0.15); border: 1px solid rgba(90,158,111,0.4); color: #7FD49A; }
+#toast.error   { background: rgba(200,80,77,0.15);  border: 1px solid rgba(200,80,77,0.4);  color: #F09090; }
+
+/* ===== SECTION HEADER ===== */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-gold-amber);
+}
+
+/* ===== CARD ===== */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 0.85rem;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  transition: border-color 0.2s;
+}
+
+.card:hover { border-color: var(--border-hover); }
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-img {
+  width: 52px; height: 52px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid rgba(200,146,42,0.2);
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-gold-light);
+  margin-bottom: 3px;
+  letter-spacing: 0.02em;
+}
+
+.card-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(200,146,42,0.08);
+  color: var(--color-gold-amber);
+  border: 1px solid rgba(200,146,42,0.18);
+}
+
+.card-body { padding: 1.1rem 1.25rem; }
+
+/* ===== FIELDS ===== */
+.fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
+.fields-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+
+.field { display: flex; flex-direction: column; gap: 4px; }
+
+label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+input[type="text"], textarea, select {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.75rem;
+  color: var(--text-light);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type="text"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: rgba(200,146,42,0.5);
+  box-shadow: 0 0 0 3px rgba(200,146,42,0.06);
+}
+
+textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
+
+/* ===== TOGGLE ===== */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0 0.4rem;
+}
+
+.tl-titulo { font-size: 0.8rem; font-weight: 500; color: var(--text-light); }
+.tl-sub { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; }
+
+.toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0;
+  background: rgba(36,24,8,0.9);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  cursor: pointer;
+  transition: all 0.22s;
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 14px; height: 14px;
+  left: 3px; top: 3px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: all 0.22s;
+}
+.toggle input:checked + .toggle-slider { background: rgba(200,146,42,0.15); border-color: rgba(200,146,42,0.5); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(18px); background: var(--color-gold-amber); }
+
+.secao {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.secao-titulo {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.65rem;
+}
+
+.promo-fields { display: none; }
+.promo-fields.visible { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-bottom: 0.4rem; }
+
+.desconto-tag {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  margin-top: 0.4rem;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.7rem;
+}
+.desconto-tag.visible { display: flex; }
+.desconto-tag.promo  { background: rgba(200,146,42,0.06); border: 1px solid rgba(200,146,42,0.15); color: var(--text-muted); }
+.desconto-tag.promo strong  { color: var(--color-gold-light); }
+.desconto-tag.alunos { background: rgba(139,167,95,0.06);  border: 1px solid rgba(139,167,95,0.15);  color: var(--text-muted); }
+.desconto-tag.alunos strong { color: #8BA75F; }
+
+/* ===== BUTTONS ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.18s;
+  letter-spacing: 0.03em;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-gold-dark), var(--color-gold-amber));
+  color: var(--bg-dark);
+}
+.btn-primary:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: var(--glow-gold); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border-hover);
+  color: var(--color-gold-amber);
+}
+.btn-ghost:hover { background: rgba(200,146,42,0.08); }
+.btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-danger {
+  background: rgba(200,80,77,0.1);
+  border: 1px solid rgba(200,80,77,0.25);
+  color: #F09090;
+}
+.btn-danger:hover { background: rgba(200,80,77,0.18); }
+
+.btn-sm { padding: 0.28rem 0.7rem; font-size: 0.7rem; }
+
+/* ===== SAVE BAR ===== */
+.save-bar {
+  position: sticky;
+  bottom: 0;
+  background: rgba(13,8,0,0.96);
+  border-top: 1px solid var(--border);
+  padding: 0.85rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin: 0 -1.75rem -1.75rem;
+  backdrop-filter: blur(12px);
+}
+
+.save-status { font-size: 0.7rem; color: var(--text-muted); }
+
+/* ===== DEPOIMENTOS ===== */
+.dep-grid { display: flex; flex-direction: column; gap: 0.65rem; margin-bottom: 1.25rem; }
+
+.dep-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  backdrop-filter: blur(12px);
+  transition: border-color 0.2s;
+}
+.dep-card:hover { border-color: var(--border-hover); }
+
+.dep-order {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--color-gold-amber);
+  min-width: 18px;
+  margin-top: 3px;
+  opacity: 0.7;
+}
+
+.dep-fields { flex: 1; display: flex; flex-direction: column; gap: 0.45rem; }
+.dep-row { display: grid; grid-template-columns: 1fr 120px; gap: 0.45rem; }
+.dep-actions { display: flex; flex-direction: column; gap: 0.35rem; padding-top: 2px; }
+
+.add-form {
+  background: var(--bg-card);
+  border: 1px dashed rgba(200,146,42,0.3);
+  border-radius: var(--radius-md);
+  padding: 1.1rem;
+  margin-bottom: 1rem;
+  backdrop-filter: blur(12px);
+}
+
+/* ===== LOADING ===== */
+.loading { text-align: center; padding: 2.5rem; color: var(--text-muted); font-size: 0.82rem; }
+
+/* ===== DIVIDER ===== */
+.gold-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(200,146,42,0.3), transparent);
+  margin: 1.25rem 0;
+}
+
+/* ===== HAMBURGER (mobile only) ===== */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  padding: 4px;
+  background: none;
+  border: none;
+}
+
+.hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--color-gold-amber);
+  border-radius: 2px;
+  transition: all 0.25s;
+}
+
+/* Overlay escuro por trás do menu mobile */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  z-index: 150;
+  backdrop-filter: blur(2px);
+}
+
+.sidebar-overlay.open { display: block; }
+
+/* ===== MOBILE ===== */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+    z-index: 200;
+  }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .hamburger { display: flex; }
+  .fields-grid, .fields-grid.three, .promo-fields.visible { grid-template-columns: 1fr; }
+  .dep-row { grid-template-columns: 1fr; }
+  .content { padding: 1rem; }
+  .save-bar { margin: 0 -1rem -1rem; padding: 0.75rem 1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- PARTÍCULAS -->
+<div class="bg-particles" id="particles"></div>
+
+<!-- OVERLAY MOBILE -->
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<div id="toast"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <img src="/images/Logo Vida Magica Horizontal.png" alt="Vida Mágica">
+  </div>
+
+  <div class="sidebar-section-label">Conteúdo</div>
+  <div class="nav-item active" id="nav-precos" onclick="goTab('precos', this)">
+    <span class="nav-icon">💰</span> Preços
+  </div>
+  <div class="nav-item" id="nav-depoimentos" onclick="goTab('depoimentos', this)">
+    <span class="nav-icon">💬</span> Depoimentos
+  </div>
+
+  <div class="sidebar-section-label" style="margin-top:0.5rem">Em breve</div>
+  <div class="nav-item disabled"><span class="nav-icon">👥</span> Membros <span class="nav-tag">—</span></div>
+  <div class="nav-item disabled"><span class="nav-icon">🎯</span> Leads <span class="nav-tag">—</span></div>
+  <div class="nav-item disabled"><span class="nav-icon">📅</span> Sessões <span class="nav-tag">—</span></div>
+  <div class="nav-item disabled"><span class="nav-icon">📊</span> Métricas <span class="nav-tag">—</span></div>
+
+  <div class="sidebar-footer">
+    Vida Mágica CRM · v1.0<br>
+    <a href="/" style="color:var(--color-gold-amber);font-size:0.68rem;text-decoration:none">← Ver site</a>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:1rem">
+      <button class="hamburger" onclick="openSidebar()" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="topbar-left">
+        <h1 id="topbar-title">Gestão de Preços</h1>
+        <p id="topbar-sub">Preços públicos, promoções e descontos de alunos</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ===== ABA PREÇOS ===== -->
+    <div class="tab-panel active" id="tab-precos">
+      <div id="precos-container"><div class="loading">Carregando preços...</div></div>
+      <div class="save-bar">
+        <span class="save-status" id="precos-status"></span>
+        <button class="btn btn-primary" onclick="salvarPrecos()" id="btn-save-precos">Salvar Preços</button>
+      </div>
+    </div>
+
+    <!-- ===== ABA DEPOIMENTOS ===== -->
+    <div class="tab-panel" id="tab-depoimentos">
+
+      <div class="section-header">
+        <span class="section-title">Depoimentos do Ticker</span>
+        <button class="btn btn-ghost btn-sm" onclick="showFormNovo()">+ Adicionar</button>
+      </div>
+
+      <div class="add-form" id="form-novo" style="display:none">
+        <div class="dep-row" style="margin-bottom:0.5rem">
+          <div class="field"><label>Nome</label><input type="text" id="new-nome" placeholder="Ex: Ana Paula"></div>
+          <div class="field"><label>Cidade</label><input type="text" id="new-cidade" placeholder="Ex: SP"></div>
+        </div>
+        <div class="field" style="margin-bottom:0.65rem">
+          <label>Depoimento</label>
+          <textarea id="new-texto" placeholder="Escreva o depoimento aqui..."></textarea>
+        </div>
+        <div style="display:flex;gap:0.5rem">
+          <button class="btn btn-primary btn-sm" onclick="adicionarDep()">Adicionar</button>
+          <button class="btn btn-ghost btn-sm" onclick="cancelarNovo()">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="dep-grid" id="dep-grid">
+        <div class="loading">Carregando depoimentos...</div>
+      </div>
+
+      <div class="save-bar">
+        <span class="save-status" id="dep-status"></span>
+        <button class="btn btn-primary" onclick="salvarDeps()" id="btn-save-dep">Salvar Depoimentos</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ===== PARTÍCULAS =====
+const pContainer = document.getElementById('particles');
+for (let i = 0; i < 20; i++) {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  const size = Math.random() * 3 + 1.5;
+  p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;animation-duration:${Math.random()*16+10}s;animation-delay:${Math.random()*14}s;background:${Math.random()>.5?'rgba(248,220,150,0.6)':'rgba(255,255,255,0.45)'};`;
+  pContainer.appendChild(p);
+}
+
+// ===== MENU MOBILE =====
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+
+// ===== NAVEGAÇÃO =====
+const tabMeta = {
+  precos:      { title: 'Gestão de Preços',   sub: 'Preços públicos, promoções e descontos de alunos' },
+  depoimentos: { title: 'Depoimentos',         sub: 'Frases exibidas no ticker do site' },
+};
+
+function goTab(id, el) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item:not(.disabled)').forEach(n => n.classList.remove('active'));
+  document.getElementById(`tab-${id}`).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('topbar-title').textContent = tabMeta[id].title;
+  document.getElementById('topbar-sub').textContent = tabMeta[id].sub;
+  closeSidebar();
+}
+
+// ===== TOAST =====
+function toast(msg, tipo = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show ${tipo}`;
+  setTimeout(() => t.className = '', 3000);
+}
+
+// ===== API =====
+const API = ''; // URL da Vida Mágica API no Railway
+
+// ===== PREÇOS =====
+let dadosPrecos = {};
+
+const IMGS = {
+  teste_prosperidade: '/products/teste-prosperidade.png',
+  guia_pratico:       '/products/guia-pratico.png',
+  atal_maneira_livro: '/products/atal-maneira-livro.png',
+  ouro_reprogramacao: '/products/ouro-reprogramacao.png',
+  lda_biblica:        '/products/lda-biblica.png',
+  atal_maneira_curso: '/products/atal-maneira-curso.png',
+  vencendo_medo:      '/products/vencendo-medo.png',
+  clube_vida_magica:  '/products/clube-vida-magica.png',
+  magica_fluir:       '/products/magica-fluir.png',
+};
+
+function calcDesc(de, por) {
+  const a = parseFloat(String(de).replace(',', '.'));
+  const b = parseFloat(String(por).replace(',', '.'));
+  if (!a || !b || b >= a) return null;
+  return Math.round(((a - b) / a) * 100);
+}
+
+function getVal(card, field) {
+  return card.querySelector(`[data-field="${field}"]`)?.value || '';
+}
+
+function buildPreco(key, p) {
+  const img = IMGS[key] || '';
+  const badge = p.tipo === 'promo' ? 'Padrão + Promo'
+    : p.tipo === 'comunidade' ? 'Assinatura — Ouro e Mágico'
+    : 'Padrão · Promo · Aluno';
+
+  let corpo = '';
+
+  if (p.tipo === 'comunidade') {
+    corpo = buildComunidade(key, p);
+  } else {
+    corpo = buildPadrao(key, p) + buildPromo(key, p) + buildAlunos(key, p);
+  }
+
+  return `
+    <div class="card" data-key="${key}">
+      <div class="card-header">
+        <img class="card-img" src="${img}" alt="${p.nome}" onerror="this.style.display='none'">
+        <div>
+          <div class="card-title">${p.nome}</div>
+          <div class="card-badge">${badge}</div>
+        </div>
+      </div>
+      <div class="card-body">${corpo}</div>
+    </div>`;
+}
+
+function buildPadrao(key, p) {
+  if (p.tipo === 'promo') return `
+    <div class="fields-grid">
+      <div class="field"><label>Preço Padrão (R$)</label><input type="text" data-field="preco_padrao" value="${p.preco_padrao}" oninput="recalc('${key}')"></div>
+    </div>`;
+  return `
+    <div class="fields-grid three">
+      <div class="field"><label>Preço Padrão (R$)</label><input type="text" data-field="preco_padrao" value="${p.preco_padrao}" oninput="recalc('${key}')"></div>
+      <div class="field"><label>Nº Parcelas</label><input type="text" data-field="parcelas_qtd" value="${p.parcelas_qtd}"></div>
+      <div class="field"><label>Parcela Padrão (R$)</label><input type="text" data-field="parcelas_valor_padrao" value="${p.parcelas_valor_padrao}"></div>
+    </div>`;
+}
+
+function buildPromo(key, p) {
+  const ativo = p.mostrar_promo || false;
+  const pct = calcDesc(p.preco_padrao, p.preco_promo);
+  const fields = p.tipo === 'curso' ? `
+    <div class="field"><label>Promo à vista (R$)</label><input type="text" data-field="preco_promo" value="${p.preco_promo||''}" oninput="recalc('${key}')"></div>
+    <div class="field"><label>Parcela Promo (R$)</label><input type="text" data-field="parcelas_valor_promo" value="${p.parcelas_valor_promo||''}"></div>
+    ${p.parcelas_qtd_promo!=null?`<div class="field"><label>Nº Parcelas Promo</label><input type="text" data-field="parcelas_qtd_promo" value="${p.parcelas_qtd_promo}"></div>`:''}
+  ` : `
+    <div class="field"><label>Preço Promo (R$)</label><input type="text" data-field="preco_promo" value="${p.preco_promo||''}" oninput="recalc('${key}')"></div>
+  `;
+  return `
+    <div class="secao">
+      <div class="toggle-row">
+        <div>
+          <div class="tl-titulo">Exibir Preço Promo</div>
+          <div class="tl-sub" id="sub-${key}">De R$ ${p.preco_padrao} por R$ ${p.preco_promo}</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" data-field="mostrar_promo" ${ativo?'checked':''} onchange="togglePromo('${key}',this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="promo-fields ${ativo?'visible':''}" id="promo-${key}">${fields}</div>
+      <div class="desconto-tag promo ${ativo&&pct?'visible':''}" id="desc-promo-${key}">
+        Desconto exibido: <strong id="pct-promo-${key}">${pct?pct+'% off':'—'}</strong>
+      </div>
+    </div>`;
+}
+
+function buildAlunos(key, p) {
+  if (p.tipo !== 'curso') return '';
+  const pct = calcDesc(p.preco_padrao, p.preco_alunos);
+  const temParcela = p.parcelas_valor_alunos != null;
+  const temQtd = p.parcelas_qtd_alunos != null;
+  return `
+    <div class="secao">
+      <div class="secao-titulo">Preço Alunos — exibido via funil</div>
+      <div class="fields-grid ${temParcela?'three':''}">
+        <div class="field"><label>Alunos à vista (R$)</label><input type="text" data-field="preco_alunos" value="${p.preco_alunos||''}" oninput="recalc('${key}')"></div>
+        ${temParcela?`<div class="field"><label>Parcela Alunos (R$)</label><input type="text" data-field="parcelas_valor_alunos" value="${p.parcelas_valor_alunos||''}"></div>`:''}
+        ${temQtd?`<div class="field"><label>Nº Parcelas Alunos</label><input type="text" data-field="parcelas_qtd_alunos" value="${p.parcelas_qtd_alunos}"></div>`:''}
+      </div>
+      <div class="desconto-tag alunos ${pct?'visible':''}" id="desc-alunos-${key}">
+        Desconto ao aluno: <strong id="pct-alunos-${key}">${pct?pct+'% off':'—'}</strong>
+      </div>
+    </div>`;
+}
+
+function buildComunidade(key, p) {
+  const pO = calcDesc(p.preco_ouro, p.preco_ouro_promo);
+  const pM = calcDesc(p.preco_magico, p.preco_magico_promo);
+  return `
+    <div class="secao" style="margin-top:0;padding-top:0;border:none">
+      <div class="secao-titulo">Plano Ouro</div>
+      <div class="fields-grid">
+        <div class="field"><label>Preço Ouro (R$)</label><input type="text" data-field="preco_ouro" value="${p.preco_ouro}" oninput="recalc('${key}')"></div>
+        <div class="field"><label>Promo Ouro (R$)</label><input type="text" data-field="preco_ouro_promo" value="${p.preco_ouro_promo}" oninput="recalc('${key}')"></div>
+      </div>
+      <div class="toggle-row">
+        <div><div class="tl-titulo">Exibir Promo Ouro</div></div>
+        <label class="toggle"><input type="checkbox" data-field="mostrar_promo_ouro" ${p.mostrar_promo_ouro?'checked':''} onchange="recalc('${key}')"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="desconto-tag promo ${p.mostrar_promo_ouro&&pO?'visible':''}" id="desc-ouro-${key}">
+        Desconto: <strong id="pct-ouro-${key}">${pO?pO+'% off':'—'}</strong>
+      </div>
+    </div>
+    <div class="secao">
+      <div class="secao-titulo">Plano Mágico</div>
+      <div class="fields-grid">
+        <div class="field"><label>Preço Mágico (R$)</label><input type="text" data-field="preco_magico" value="${p.preco_magico}" oninput="recalc('${key}')"></div>
+        <div class="field"><label>Promo Mágico (R$)</label><input type="text" data-field="preco_magico_promo" value="${p.preco_magico_promo}" oninput="recalc('${key}')"></div>
+      </div>
+      <div class="toggle-row">
+        <div><div class="tl-titulo">Exibir Promo Mágico</div></div>
+        <label class="toggle"><input type="checkbox" data-field="mostrar_promo_magico" ${p.mostrar_promo_magico?'checked':''} onchange="recalc('${key}')"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="desconto-tag alunos ${p.mostrar_promo_magico&&pM?'visible':''}" id="desc-magico-${key}">
+        Desconto: <strong id="pct-magico-${key}">${pM?pM+'% off':'—'}</strong>
+      </div>
+    </div>`;
+}
+
+function togglePromo(key, ativo) {
+  document.getElementById(`promo-${key}`)?.classList.toggle('visible', ativo);
+  if (!ativo) document.getElementById(`desc-promo-${key}`)?.classList.remove('visible');
+  else recalc(key);
+}
+
+function recalc(key) {
+  const card = document.querySelector(`.card[data-key="${key}"]`);
+  const p = dadosPrecos[key];
+  if (!card || !p) return;
+
+  if (p.tipo === 'comunidade') {
+    ['ouro','magico'].forEach(pl => {
+      const de  = getVal(card, `preco_${pl}`);
+      const por = getVal(card, `preco_${pl}_promo`);
+      const chk = card.querySelector(`[data-field="mostrar_promo_${pl}"]`);
+      const el  = document.getElementById(`desc-${pl}-${key}`);
+      const ep  = document.getElementById(`pct-${pl}-${key}`);
+      if (el && ep) {
+        const pct = chk?.checked ? calcDesc(de, por) : null;
+        if (pct) { ep.textContent = pct+'% off'; el.classList.add('visible'); }
+        else el.classList.remove('visible');
+      }
+    });
+    return;
+  }
+
+  const pad = getVal(card,'preco_padrao');
+  const pro = getVal(card,'preco_promo');
+  const alu = getVal(card,'preco_alunos');
+  const chk = card.querySelector('[data-field="mostrar_promo"]');
+  const sub = document.getElementById(`sub-${key}`);
+  if (sub) sub.textContent = `De R$ ${pad} por R$ ${pro}`;
+
+  const elP = document.getElementById(`desc-promo-${key}`);
+  const epP = document.getElementById(`pct-promo-${key}`);
+  if (elP && epP && chk?.checked) {
+    const pct = calcDesc(pad, pro);
+    epP.textContent = pct ? pct+'% off' : '—';
+    elP.classList.toggle('visible', !!pct);
+  }
+
+  const elA = document.getElementById(`desc-alunos-${key}`);
+  const epA = document.getElementById(`pct-alunos-${key}`);
+  if (elA && epA && alu) {
+    const pct = calcDesc(pad, alu);
+    epA.textContent = pct ? pct+'% off' : '—';
+    elA.classList.toggle('visible', !!pct);
+  }
+}
+
+function coletarPrecos() {
+  const res = JSON.parse(JSON.stringify(dadosPrecos));
+  document.querySelectorAll('.card[data-key]').forEach(card => {
+    const key = card.dataset.key;
+    card.querySelectorAll('[data-field]').forEach(inp => {
+      res[key][inp.dataset.field] = inp.type === 'checkbox' ? inp.checked : inp.value.trim();
+    });
+  });
+  return res;
+}
+
+async function carregarPrecos() {
+  try {
+    const r = await fetch(`${API}/api/admin/precos`, { credentials: 'include' });
+    if (!r.ok) throw new Error();
+    dadosPrecos = await r.json();
+    document.getElementById('precos-container').innerHTML = Object.entries(dadosPrecos).map(([k,p]) => buildPreco(k,p)).join('');
+  } catch {
+    document.getElementById('precos-container').innerHTML = '<div class="loading">Erro ao carregar. Verifique a autenticação.</div>';
+  }
+}
+
+async function salvarPrecos() {
+  const btn = document.getElementById('btn-save-precos');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    const payload = coletarPrecos();
+    const r = await fetch(`${API}/api/admin/precos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error();
+    dadosPrecos = payload;
+    toast('✓ Preços salvos com sucesso');
+    document.getElementById('precos-status').textContent = `Salvo às ${new Date().toLocaleTimeString('pt-BR')}`;
+  } catch { toast('✗ Erro ao salvar preços', 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Salvar Preços'; }
+}
+
+// ===== DEPOIMENTOS =====
+let deps = [];
+
+function renderDeps() {
+  const grid = document.getElementById('dep-grid');
+  if (!deps.length) { grid.innerHTML = '<div class="loading">Nenhum depoimento cadastrado.</div>'; return; }
+  grid.innerHTML = '';
+  deps.forEach((d, i) => {
+    const card = document.createElement('div');
+    card.className = 'dep-card';
+    card.innerHTML = `
+      <div class="dep-order">#${i+1}</div>
+      <div class="dep-fields">
+        <div class="dep-row">
+          <div class="field"><label>Nome</label><input type="text" value="${d.nome||''}" oninput="deps[${i}].nome=this.value"></div>
+          <div class="field"><label>Cidade</label><input type="text" value="${d.cidade||''}" oninput="deps[${i}].cidade=this.value"></div>
+        </div>
+        <div class="field"><label>Depoimento</label><textarea oninput="deps[${i}].texto=this.value">${d.texto||''}</textarea></div>
+      </div>
+      <div class="dep-actions">
+        <button class="btn btn-ghost btn-sm" onclick="moverDep(${i},-1)" ${i===0?'disabled':''}>↑</button>
+        <button class="btn btn-ghost btn-sm" onclick="moverDep(${i},1)" ${i===deps.length-1?'disabled':''}>↓</button>
+        <button class="btn btn-danger btn-sm" onclick="removerDep(${i})">✕</button>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function moverDep(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= deps.length) return;
+  [deps[i], deps[j]] = [deps[j], deps[i]];
+  renderDeps();
+}
+
+function removerDep(i) {
+  if (!confirm('Remover este depoimento?')) return;
+  deps.splice(i, 1);
+  renderDeps();
+}
+
+function showFormNovo() { document.getElementById('form-novo').style.display = 'block'; document.getElementById('new-nome').focus(); }
+function cancelarNovo() {
+  document.getElementById('form-novo').style.display = 'none';
+  ['new-nome','new-cidade','new-texto'].forEach(id => document.getElementById(id).value = '');
+}
+
+function adicionarDep() {
+  const nome   = document.getElementById('new-nome').value.trim();
+  const cidade = document.getElementById('new-cidade').value.trim();
+  const texto  = document.getElementById('new-texto').value.trim();
+  if (!nome || !texto) { toast('Preencha nome e depoimento', 'error'); return; }
+  deps.push({ nome, cidade, texto });
+  cancelarNovo();
+  renderDeps();
+}
+
+async function carregarDeps() {
+  try {
+    const r = await fetch(`${API}/api/admin/depoimentos`, { credentials: 'include' });
+    deps = await r.json();
+  } catch { deps = []; }
+  renderDeps();
+}
+
+async function salvarDeps() {
+  const btn = document.getElementById('btn-save-dep');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    const r = await fetch(`${API}/api/admin/depoimentos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(deps)
+    });
+    if (!r.ok) throw new Error();
+    toast('✓ Depoimentos salvos com sucesso');
+    document.getElementById('dep-status').textContent = `Salvo às ${new Date().toLocaleTimeString('pt-BR')}`;
+  } catch { toast('✗ Erro ao salvar', 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Salvar Depoimentos'; }
+}
+
+// ===== INIT =====
+carregarPrecos();
+carregarDeps();
+</script>
+</body>
+</html>
