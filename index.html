@@ -400,7 +400,53 @@
 
     .btn-checkout:hover { background: var(--color-gold-deep); }
 
-    /* ===== ICON ROTATION ===== */
+    /* ===== CLUBE BANNER ===== */
+    .clube-banner {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: linear-gradient(135deg, rgba(200,146,42,0.12), rgba(13,8,0,0.8));
+      border: 1px solid rgba(200,146,42,0.35);
+      border-radius: var(--radius-md);
+    }
+
+    .clube-banner img {
+      width: 72px;
+      height: 72px;
+      object-fit: cover;
+      border-radius: 8px;
+      flex-shrink: 0;
+    }
+
+    .clube-banner strong {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--color-gold-light);
+      margin-bottom: 0.3rem;
+    }
+
+    .clube-banner p {
+      font-size: 0.72rem;
+      color: rgba(245,240,232,0.6);
+      line-height: 1.5;
+      margin-bottom: 0.5rem;
+    }
+
+    .btn-clube {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.3rem 0.8rem;
+      border-radius: var(--radius-full);
+      background: var(--color-gold-amber);
+      color: var(--bg-dark);
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    .btn-clube:hover { background: var(--color-gold-deep); }
     .btn-icon.rotated svg {
       transform: rotate(90deg);
       transition: transform 0.2s;
@@ -698,7 +744,7 @@
           <div class="fase-label">Diagnóstico Universal</div>
           <div class="produtos-grid">
             <div class="produto-card">
-              <img src="/images/products/teste-prosperidade.png" alt="Teste de Prosperidade">
+              <img src="/products/teste-prosperidade.png" alt="Teste de Prosperidade">
               <div class="produto-info">
                 <strong>Teste de Prosperidade</strong>
                 <p>15 perguntas que revelam o padrão mental que trava sua prosperidade. Ponto de partida obrigatório.</p>
@@ -716,7 +762,7 @@
           <div class="produtos-grid">
 
             <div class="produto-card">
-              <img src="/images/products/serie-despertando-prosperidade-biblica.png" alt="Série Despertando">
+              <img src="/products/serie-despertando-prosperidade-biblica.png" alt="Série Despertando">
               <div class="produto-info">
                 <strong>Série Despertando</strong>
                 <p>E-book direcionado pelo seu perfil de energia. Trabalha a trava mental específica que te bloqueia.</p>
@@ -729,7 +775,7 @@
             </div>
 
             <div class="produto-card">
-              <img src="/images/products/guia-pratico.png" alt="Guia Prático">
+              <img src="/products/guia-pratico.png" alt="Guia Prático">
               <div class="produto-info">
                 <strong>Guia Prático da RM</strong>
                 <p>E-book de suporte ao curso Ouro da Reprogramação Mental. Ferramentas práticas para o dia a dia.</p>
@@ -742,7 +788,7 @@
             </div>
 
             <div class="produto-card destaque">
-              <img src="/images/products/ouro-reprogramacao.png" alt="Ouro da RM">
+              <img src="/products/ouro-reprogramacao.png" alt="Ouro da RM">
               <div class="produto-info">
                 <strong>O Ouro da Reprogramação Mental</strong>
                 <p>A ferramenta definitiva da Fase 1. Curso completo para sair do controle das energias negativas.</p>
@@ -761,7 +807,7 @@
           <div class="produtos-grid">
 
             <div class="produto-card destaque">
-              <img src="/images/products/lda-biblica.png" alt="Lei da Atração Bíblica">
+              <img src="/products/lda-biblica.png" alt="Lei da Atração Bíblica">
               <div class="produto-info">
                 <strong>Lei da Atração Bíblica</strong>
                 <p>14 aulas + extras + músicas. As leis espirituais da prosperidade em profundidade.</p>
@@ -774,7 +820,7 @@
             </div>
 
             <div class="produto-card">
-              <img src="/images/products/atal-maneira-livro.png" alt="A Tal Maneira Livro">
+              <img src="/products/atal-maneira-livro.png" alt="A Tal Maneira Livro">
               <div class="produto-info">
                 <strong>A Tal Maneira — Livro</strong>
                 <p>Máximo aproveitamento após a reprogramação espiritual. As leis de riqueza em maior profundidade.</p>
@@ -793,7 +839,7 @@
           <div class="produtos-grid">
 
             <div class="produto-card">
-              <img src="/images/products/atal-maneira-curso.png" alt="A Tal Maneira Curso">
+              <img src="/products/atal-maneira-curso.png" alt="A Tal Maneira Curso">
               <div class="produto-info">
                 <strong>A Tal Maneira — Curso</strong>
                 <p>Para quem já vive a atração bíblica. Aprenda a operar as leis de riqueza no mais alto nível.</p>
@@ -805,19 +851,18 @@
               </div>
             </div>
 
-            <div class="produto-card">
-              <img src="/images/products/clube-vida-magica.png" alt="Clube Vida Mágica">
-              <div class="produto-info">
-                <strong>Clube Vida Mágica</strong>
-                <p>Assinatura mensal. Vídeos exclusivos, encontros ao vivo, grupos de WhatsApp e muito mais.</p>
-                <div class="produto-preco">Em breve</div>
-                <div class="produto-links">
-                  <a href="#" class="btn-lp">Saiba mais</a>
-                </div>
-              </div>
-            </div>
-
           </div>
+
+          <!-- CLUBE — contexto geral -->
+          <div class="clube-banner">
+            <img src="/products/clube-vida-magica.png" alt="Clube Vida Mágica">
+            <div>
+              <strong>Clube Vida Mágica</strong>
+              <p>Todos esses produtos fazem parte de uma jornada única. O Clube é o lugar onde tudo se conecta — conteúdo exclusivo, comunidade e acompanhamento em cada fase.</p>
+              <a href="/app/dashboard" class="btn-clube">Conhecer o Clube</a>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -940,7 +985,11 @@
     // ===== PREÇOS VIA API =====
     async function carregarPrecos() {
       try {
-        const res = await fetch('https://quizback-production-b442.up.railway.app/api/precos');
+        const res = await fetch('https://quizback-production-b442.up.railway.app/api/precos', {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          mode: 'cors'
+        });
         const d = await res.json();
 
         function formatPreco(p) {
