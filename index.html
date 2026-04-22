@@ -1007,7 +1007,7 @@
     // ===== TICKER — carrega do depoimentos.json =====
     async function carregarTicker() {
       try {
-        const res = await fetch('/depoimentos.json');
+        const res = await fetch('https://vidamagica-api-production.up.railway.app/api/depoimentos');
         const deps = await res.json();
         const track = document.querySelector('.ticker-track');
         if (!track) return;
@@ -1063,7 +1063,7 @@
     // ===== PREÇOS VIA API =====
     async function carregarPrecos() {
       try {
-        const res = await fetch('https://quizback-production-b442.up.railway.app/api/precos', {
+        const res = await fetch('https://vidamagica-api-production.up.railway.app/api/precos', {
           method: 'GET',
           headers: { 'Accept': 'application/json' },
           mode: 'cors'
@@ -1073,17 +1073,25 @@
         function formatPreco(p) {
           if (!p) return '';
           let html = '';
-          // Se tem promo ativa — mostra DE por
+
           if (p.exibir_de) {
-            if (p.desconto_pct) html += `<small style="color:var(--color-gold-amber);font-size:0.65rem;font-weight:700">${p.desconto_pct}% OFF</small> `;
+            // PROMO LIGADA
+            if (p.desconto_pct) html += `<small style="color:var(--color-gold-amber);font-size:0.65rem;font-weight:700;display:block">${p.desconto_pct}% OFF</small>`;
             html += `<span style="text-decoration:line-through;opacity:0.5;font-size:0.8rem">R$ ${p.exibir_de}</span> `;
-          }
-          // Parcelas ou à vista
-          if (p.exibir_parcelas_valor) {
-            html += `<strong>${p.exibir_parcelas_qtd}x R$ ${p.exibir_parcelas_valor}</strong>`;
-            html += `<br><small style="opacity:0.6">ou R$ ${p.exibir_avista} à vista</small>`;
+            if (p.exibir_parcelas_valor) {
+              html += `<strong>${p.exibir_parcelas_qtd}x R$ ${p.exibir_parcelas_valor}</strong>`;
+              html += `<br><small style="opacity:0.6">ou R$ ${p.exibir_avista} à vista</small>`;
+            } else {
+              html += `<strong>R$ ${p.exibir_avista}</strong>`;
+            }
           } else {
-            html += `<strong>R$ ${p.exibir_avista}</strong>`;
+            // PROMO DESLIGADA — preço cheio
+            if (p.exibir_parcelas_valor) {
+              html += `<strong>${p.exibir_parcelas_qtd}x R$ ${p.exibir_parcelas_valor}</strong>`;
+              html += `<br><small style="opacity:0.6">ou R$ ${p.exibir_avista} à vista</small>`;
+            } else {
+              html += `<strong>R$ ${p.exibir_avista}</strong>`;
+            }
           }
           return html;
         }
