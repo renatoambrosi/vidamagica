@@ -353,6 +353,15 @@
       margin: 0 auto 0.7rem;
     }
 
+    @media (min-width: 768px) {
+      .dropdown-wrap { max-width: 640px; }
+      .content { max-width: 680px !important; }
+    }
+    @media (min-width: 1024px) {
+      .dropdown-wrap { max-width: 760px; }
+      .content { max-width: 800px !important; }
+    }
+
     .btn-entry {
       display: flex;
       align-items: center;
@@ -967,6 +976,8 @@
       .container { padding: 8rem 3rem 5rem; }
       .logo { width: 220px; }
       .butterflies { width: 180px; bottom: 40px; right: 40px; }
+      .btn-entry { padding: 1.1rem 1.5rem; font-size: 0.92rem; }
+      .dropdown-panel { padding: 1.75rem 1.5rem; }
     }
   </style>
 </head>
