@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vida Mágica — CRM</title>
-<link rel="icon" href="/images/favicon.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800;900&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -15,8 +14,6 @@
   --color-gold-deep: #A17523;
   --color-gold-dark: #7A5818;
   --color-pearl-white: #F5F0E8;
-  --color-brown-dark: #1A1205;
-  --color-brown-medium: #3D2E1A;
   --bg-dark: #0D0800;
   --bg-card: rgba(26,18,5,0.8);
   --bg-input: rgba(36,24,8,0.9);
@@ -46,22 +43,8 @@ body {
   overflow-x: hidden;
 }
 
-/* ===== BACKGROUND PARTICLES ===== */
-.bg-particles {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
-}
-
-.particle {
-  position: absolute;
-  border-radius: 50%;
-  animation: float linear infinite;
-  opacity: 0;
-}
-
+.bg-particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.particle { position: absolute; border-radius: 50%; animation: float linear infinite; opacity: 0; }
 @keyframes float {
   0%   { transform: translateY(105vh) scale(0); opacity: 0; }
   10%  { opacity: 0.6; }
@@ -69,7 +52,7 @@ body {
   100% { transform: translateY(-5vh) scale(1.2); opacity: 0; }
 }
 
-/* ===== SIDEBAR ===== */
+/* SIDEBAR */
 .sidebar {
   width: var(--sidebar-w);
   min-height: 100vh;
@@ -82,453 +65,189 @@ body {
   z-index: 200;
   backdrop-filter: blur(20px);
 }
-
-.sidebar-logo {
-  padding: 1.25rem 1.25rem 1rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.sidebar-logo img {
-  height: 32px;
-  width: auto;
-  mix-blend-mode: screen;
-}
-
-.sidebar-section-label {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  padding: 1.25rem 1.25rem 0.4rem;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 1.25rem;
-  cursor: pointer;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-weight: 500;
-  border-left: 2px solid transparent;
-  transition: all 0.15s;
-  user-select: none;
-}
-
+.sidebar-logo { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--border); }
+.sidebar-logo img { height: 32px; width: auto; mix-blend-mode: screen; }
+.sidebar-section-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); padding: 1.25rem 1.25rem 0.4rem; }
+.nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1.25rem; cursor: pointer; color: var(--text-muted); font-size: 0.82rem; font-weight: 500; border-left: 2px solid transparent; transition: all 0.15s; user-select: none; }
 .nav-item:hover { color: var(--text-light); background: rgba(200,146,42,0.05); }
-
-.nav-item.active {
-  color: var(--color-gold-light);
-  border-left-color: var(--color-gold-amber);
-  background: rgba(200,146,42,0.08);
-}
-
+.nav-item.active { color: var(--color-gold-light); border-left-color: var(--color-gold-amber); background: rgba(200,146,42,0.08); }
 .nav-item.disabled { opacity: 0.35; cursor: default; pointer-events: none; }
-
 .nav-icon { font-size: 0.95rem; width: 18px; text-align: center; flex-shrink: 0; }
+.nav-tag { margin-left: auto; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.05em; padding: 2px 7px; border-radius: var(--radius-full); background: rgba(200,146,42,0.1); color: var(--color-gold-amber); border: 1px solid rgba(200,146,42,0.2); }
+.sidebar-footer { margin-top: auto; padding: 1rem 1.25rem; border-top: 1px solid var(--border); font-size: 0.68rem; color: var(--text-muted); }
 
-.nav-tag {
-  margin-left: auto;
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  padding: 2px 7px;
-  border-radius: var(--radius-full);
-  background: rgba(200,146,42,0.1);
-  color: var(--color-gold-amber);
-  border: 1px solid rgba(200,146,42,0.2);
-}
+/* MAIN */
+.main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; position: relative; z-index: 1; }
 
-.sidebar-footer {
-  margin-top: auto;
-  padding: 1rem 1.25rem;
-  border-top: 1px solid var(--border);
-  font-size: 0.68rem;
-  color: var(--text-muted);
-}
+/* TOPBAR */
+.topbar { height: var(--topbar-h); display: flex; align-items: center; justify-content: space-between; padding: 0 1.75rem; background: rgba(13,8,0,0.85); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+.topbar-left h1 { font-family: var(--font-display); font-size: 0.88rem; font-weight: 800; color: var(--color-gold-light); letter-spacing: 0.06em; text-transform: uppercase; }
+.topbar-left p { font-size: 0.68rem; color: var(--text-muted); margin-top: 1px; }
 
-/* ===== MAIN ===== */
-.main {
-  margin-left: var(--sidebar-w);
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  position: relative;
-  z-index: 1;
-}
-
-/* ===== TOPBAR ===== */
-.topbar {
-  height: var(--topbar-h);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 1.75rem;
-  background: rgba(13,8,0,0.85);
-  backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.topbar-left h1 {
-  font-family: var(--font-display);
-  font-size: 0.88rem;
-  font-weight: 800;
-  color: var(--color-gold-light);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.topbar-left p {
-  font-size: 0.68rem;
-  color: var(--text-muted);
-  margin-top: 1px;
-}
-
-/* ===== CONTENT ===== */
+/* CONTENT */
 .content { padding: 1.75rem; flex: 1; max-width: 900px; }
 
-/* ===== TABS ===== */
+/* TABS */
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 
-/* ===== TOAST ===== */
-#toast {
-  position: fixed;
-  top: 1.25rem; right: 1.25rem;
-  padding: 0.65rem 1.1rem;
-  border-radius: var(--radius-md);
-  font-size: 0.8rem;
-  font-weight: 600;
-  z-index: 999;
-  opacity: 0;
-  transform: translateY(-8px);
-  transition: all 0.25s;
-  pointer-events: none;
-}
+/* TOAST */
+#toast { position: fixed; top: 1.25rem; right: 1.25rem; padding: 0.65rem 1.1rem; border-radius: var(--radius-md); font-size: 0.8rem; font-weight: 600; z-index: 999; opacity: 0; transform: translateY(-8px); transition: all 0.25s; pointer-events: none; }
 #toast.show { opacity: 1; transform: translateY(0); }
 #toast.success { background: rgba(90,158,111,0.15); border: 1px solid rgba(90,158,111,0.4); color: #7FD49A; }
 #toast.error   { background: rgba(200,80,77,0.15);  border: 1px solid rgba(200,80,77,0.4);  color: #F09090; }
 
-/* ===== SECTION HEADER ===== */
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.25rem;
-}
+/* SECTION HEADER */
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+.section-title { font-family: var(--font-display); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; color: var(--color-gold-amber); }
 
-.section-title {
-  font-family: var(--font-display);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--color-gold-amber);
-}
-
-/* ===== CARD ===== */
-.card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  margin-bottom: 0.85rem;
-  overflow: hidden;
-  backdrop-filter: blur(12px);
-  transition: border-color 0.2s;
-}
-
+/* CARD */
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 0.85rem; overflow: hidden; backdrop-filter: blur(12px); transition: border-color 0.2s; }
 .card:hover { border-color: var(--border-hover); }
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.9rem 1.25rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.card-img {
-  width: 52px; height: 52px;
-  border-radius: var(--radius-sm);
-  object-fit: cover;
-  flex-shrink: 0;
-  border: 1px solid rgba(200,146,42,0.2);
-}
-
-.card-title {
-  font-family: var(--font-display);
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--color-gold-light);
-  margin-bottom: 3px;
-  letter-spacing: 0.02em;
-}
-
-.card-badge {
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  background: rgba(200,146,42,0.08);
-  color: var(--color-gold-amber);
-  border: 1px solid rgba(200,146,42,0.18);
-}
-
+.card-header { display: flex; align-items: center; gap: 1rem; padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--border); }
+.card-img { width: 52px; height: 52px; border-radius: var(--radius-sm); object-fit: cover; flex-shrink: 0; border: 1px solid rgba(200,146,42,0.2); }
+.card-title { font-family: var(--font-display); font-size: 0.82rem; font-weight: 700; color: var(--color-gold-light); margin-bottom: 3px; letter-spacing: 0.02em; }
+.card-badge { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 8px; border-radius: var(--radius-full); background: rgba(200,146,42,0.08); color: var(--color-gold-amber); border: 1px solid rgba(200,146,42,0.18); }
 .card-body { padding: 1.1rem 1.25rem; }
 
-/* ===== FIELDS ===== */
+/* FIELDS */
 .fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
 .fields-grid.three { grid-template-columns: 1fr 1fr 1fr; }
-
 .field { display: flex; flex-direction: column; gap: 4px; }
-
-label {
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-input[type="text"], textarea, select {
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 0.45rem 0.75rem;
-  color: var(--text-light);
-  font-family: var(--font-body);
-  font-size: 0.85rem;
-  width: 100%;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-input[type="text"]:focus,
-textarea:focus {
-  outline: none;
-  border-color: rgba(200,146,42,0.5);
-  box-shadow: 0 0 0 3px rgba(200,146,42,0.06);
-}
-
+label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
+input[type="text"], textarea, select { background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.45rem 0.75rem; color: var(--text-light); font-family: var(--font-body); font-size: 0.85rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; }
+input[type="text"]:focus, textarea:focus { outline: none; border-color: rgba(200,146,42,0.5); box-shadow: 0 0 0 3px rgba(200,146,42,0.06); }
 textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
 
-/* ===== TOGGLE ===== */
-.toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.65rem 0 0.4rem;
-}
-
+/* TOGGLE */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0 0.4rem; }
 .tl-titulo { font-size: 0.8rem; font-weight: 500; color: var(--text-light); }
 .tl-sub { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; }
-
 .toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
 .toggle input { opacity: 0; width: 0; height: 0; }
-.toggle-slider {
-  position: absolute; inset: 0;
-  background: rgba(36,24,8,0.9);
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  cursor: pointer;
-  transition: all 0.22s;
-}
-.toggle-slider::before {
-  content: '';
-  position: absolute;
-  width: 14px; height: 14px;
-  left: 3px; top: 3px;
-  background: var(--text-muted);
-  border-radius: 50%;
-  transition: all 0.22s;
-}
+.toggle-slider { position: absolute; inset: 0; background: rgba(36,24,8,0.9); border: 1px solid var(--border); border-radius: 22px; cursor: pointer; transition: all 0.22s; }
+.toggle-slider::before { content: ''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: var(--text-muted); border-radius: 50%; transition: all 0.22s; }
 .toggle input:checked + .toggle-slider { background: rgba(200,146,42,0.15); border-color: rgba(200,146,42,0.5); }
 .toggle input:checked + .toggle-slider::before { transform: translateX(18px); background: var(--color-gold-amber); }
 
-.secao {
-  margin-top: 0.9rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--border);
-}
-
-.secao-titulo {
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 0.65rem;
-}
-
+.secao { margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid var(--border); }
+.secao-titulo { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.65rem; }
 .promo-fields { display: none; }
 .promo-fields.visible { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-bottom: 0.4rem; }
-
-.desconto-tag {
-  display: none;
-  align-items: center;
-  gap: 6px;
-  margin-top: 0.4rem;
-  padding: 5px 10px;
-  border-radius: var(--radius-sm);
-  font-size: 0.7rem;
-}
+.desconto-tag { display: none; align-items: center; gap: 6px; margin-top: 0.4rem; padding: 5px 10px; border-radius: var(--radius-sm); font-size: 0.7rem; }
 .desconto-tag.visible { display: flex; }
 .desconto-tag.promo  { background: rgba(200,146,42,0.06); border: 1px solid rgba(200,146,42,0.15); color: var(--text-muted); }
 .desconto-tag.promo strong  { color: var(--color-gold-light); }
 .desconto-tag.alunos { background: rgba(139,167,95,0.06);  border: 1px solid rgba(139,167,95,0.15);  color: var(--text-muted); }
 .desconto-tag.alunos strong { color: #8BA75F; }
 
-/* ===== BUTTONS ===== */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1.25rem;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-body);
-  font-size: 0.78rem;
-  font-weight: 700;
-  cursor: pointer;
-  border: none;
-  transition: all 0.18s;
-  letter-spacing: 0.03em;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, var(--color-gold-dark), var(--color-gold-amber));
-  color: var(--bg-dark);
-}
+/* BUTTONS */
+.btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1.25rem; border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.78rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.18s; letter-spacing: 0.03em; }
+.btn-primary { background: linear-gradient(135deg, var(--color-gold-dark), var(--color-gold-amber)); color: var(--bg-dark); }
 .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: var(--glow-gold); }
 .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
-
-.btn-ghost {
-  background: transparent;
-  border: 1px solid var(--border-hover);
-  color: var(--color-gold-amber);
-}
+.btn-ghost { background: transparent; border: 1px solid var(--border-hover); color: var(--color-gold-amber); }
 .btn-ghost:hover { background: rgba(200,146,42,0.08); }
 .btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.btn-danger {
-  background: rgba(200,80,77,0.1);
-  border: 1px solid rgba(200,80,77,0.25);
-  color: #F09090;
-}
+.btn-danger { background: rgba(200,80,77,0.1); border: 1px solid rgba(200,80,77,0.25); color: #F09090; }
 .btn-danger:hover { background: rgba(200,80,77,0.18); }
-
 .btn-sm { padding: 0.28rem 0.7rem; font-size: 0.7rem; }
 
-/* ===== SAVE BAR ===== */
-.save-bar {
-  position: sticky;
-  bottom: 0;
-  background: rgba(13,8,0,0.96);
-  border-top: 1px solid var(--border);
-  padding: 0.85rem 1.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 1rem;
-  margin: 0 -1.75rem -1.75rem;
-  backdrop-filter: blur(12px);
-}
-
+/* SAVE BAR */
+.save-bar { position: sticky; bottom: 0; background: rgba(13,8,0,0.96); border-top: 1px solid var(--border); padding: 0.85rem 1.75rem; display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin: 0 -1.75rem -1.75rem; backdrop-filter: blur(12px); }
 .save-status { font-size: 0.7rem; color: var(--text-muted); }
 
-/* ===== DEPOIMENTOS ===== */
+/* DEPOIMENTOS */
 .dep-grid { display: flex; flex-direction: column; gap: 0.65rem; margin-bottom: 1.25rem; }
-
-.dep-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 0.9rem 1.1rem;
-  display: flex;
-  gap: 0.9rem;
-  align-items: flex-start;
-  backdrop-filter: blur(12px);
-  transition: border-color 0.2s;
-}
+.dep-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.9rem 1.1rem; display: flex; gap: 0.9rem; align-items: flex-start; backdrop-filter: blur(12px); transition: border-color 0.2s; }
 .dep-card:hover { border-color: var(--border-hover); }
-
-.dep-order {
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: var(--color-gold-amber);
-  min-width: 18px;
-  margin-top: 3px;
-  opacity: 0.7;
-}
-
+.dep-order { font-size: 0.65rem; font-weight: 700; color: var(--color-gold-amber); min-width: 18px; margin-top: 3px; opacity: 0.7; }
 .dep-fields { flex: 1; display: flex; flex-direction: column; gap: 0.45rem; }
 .dep-row { display: grid; grid-template-columns: 1fr 120px; gap: 0.45rem; }
 .dep-actions { display: flex; flex-direction: column; gap: 0.35rem; padding-top: 2px; }
 
-.add-form {
-  background: var(--bg-card);
-  border: 1px dashed rgba(200,146,42,0.3);
-  border-radius: var(--radius-md);
-  padding: 1.1rem;
-  margin-bottom: 1rem;
-  backdrop-filter: blur(12px);
+/* TAGS — chips input */
+.tags-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.55rem;
+  min-height: 34px;
+  cursor: text;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-
-/* ===== LOADING ===== */
-.loading { text-align: center; padding: 2.5rem; color: var(--text-muted); font-size: 0.82rem; }
-
-/* ===== DIVIDER ===== */
-.gold-divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(200,146,42,0.3), transparent);
-  margin: 1.25rem 0;
+.tags-wrap:focus-within { border-color: rgba(200,146,42,0.5); box-shadow: 0 0 0 3px rgba(200,146,42,0.06); }
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(200,146,42,0.12);
+  border: 1px solid rgba(200,146,42,0.3);
+  border-radius: var(--radius-full);
+  padding: 2px 8px 2px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-gold-light);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
 }
-
-/* ===== HAMBURGER (mobile only) ===== */
-.hamburger {
-  display: none;
-  flex-direction: column;
-  gap: 5px;
-  cursor: pointer;
-  padding: 4px;
+.tag-chip button {
   background: none;
   border: none;
+  cursor: pointer;
+  color: rgba(200,146,42,0.6);
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.15s;
+  display: flex;
+  align-items: center;
 }
-
-.hamburger span {
-  display: block;
-  width: 22px;
-  height: 2px;
-  background: var(--color-gold-amber);
-  border-radius: 2px;
-  transition: all 0.25s;
+.tag-chip button:hover { color: #F09090; }
+.tag-input {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text-light);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  min-width: 80px;
+  flex: 1;
+  padding: 2px 0;
 }
+.tag-hint { font-size: 0.6rem; color: var(--text-muted); margin-top: 3px; }
 
-/* Overlay escuro por trás do menu mobile */
-.sidebar-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.65);
-  z-index: 150;
-  backdrop-filter: blur(2px);
+.add-form { background: var(--bg-card); border: 1px dashed rgba(200,146,42,0.3); border-radius: var(--radius-md); padding: 1.1rem; margin-bottom: 1rem; backdrop-filter: blur(12px); }
+
+/* LOADING */
+.loading { text-align: center; padding: 2.5rem; color: var(--text-muted); font-size: 0.82rem; }
+
+/* GOLD DIVIDER */
+.gold-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(200,146,42,0.3), transparent); margin: 1.25rem 0; }
+
+/* SHUFFLE CONFIG BOX */
+.shuffle-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.1rem;
+  margin-bottom: 1.25rem;
+  backdrop-filter: blur(12px);
 }
+.shuffle-box .toggle-row { padding: 0; }
 
+/* HAMBURGER */
+.hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; background: none; border: none; }
+.hamburger span { display: block; width: 22px; height: 2px; background: var(--color-gold-amber); border-radius: 2px; transition: all 0.25s; }
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 150; backdrop-filter: blur(2px); }
 .sidebar-overlay.open { display: block; }
 
-/* ===== MOBILE ===== */
 @media (max-width: 768px) {
-  .sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
-    z-index: 200;
-  }
+  .sidebar { transform: translateX(-100%); transition: transform 0.28s cubic-bezier(0.4,0,0.2,1); z-index: 200; }
   .sidebar.open { transform: translateX(0); }
   .main { margin-left: 0; }
   .hamburger { display: flex; }
@@ -541,18 +260,14 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
 </head>
 <body>
 
-<!-- PARTÍCULAS -->
 <div class="bg-particles" id="particles"></div>
-
-<!-- OVERLAY MOBILE -->
 <div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
-
 <div id="toast"></div>
 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
-    <img src="/images/Logo Vida Magica Horizontal.png" alt="Vida Mágica">
+    <img src="/assets/logo-horizontal.png" alt="Vida Mágica">
   </div>
 
   <div class="sidebar-section-label">Conteúdo</div>
@@ -570,14 +285,13 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
   <div class="nav-item disabled"><span class="nav-icon">📊</span> Métricas <span class="nav-tag">—</span></div>
 
   <div class="sidebar-footer">
-    Vida Mágica CRM · v1.0<br>
+    Vida Mágica CRM · v1.1<br>
     <a href="/" style="color:var(--color-gold-amber);font-size:0.68rem;text-decoration:none">← Ver site</a>
   </div>
 </aside>
 
 <!-- MAIN -->
 <div class="main">
-
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:1rem">
       <button class="hamburger" onclick="openSidebar()" aria-label="Menu">
@@ -592,7 +306,7 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
 
   <div class="content">
 
-    <!-- ===== ABA PREÇOS ===== -->
+    <!-- ABA PREÇOS -->
     <div class="tab-panel active" id="tab-precos">
       <div id="precos-container"><div class="loading">Carregando preços...</div></div>
       <div class="save-bar">
@@ -601,8 +315,22 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
       </div>
     </div>
 
-    <!-- ===== ABA DEPOIMENTOS ===== -->
+    <!-- ABA DEPOIMENTOS -->
     <div class="tab-panel" id="tab-depoimentos">
+
+      <!-- CONFIG: SHUFFLE -->
+      <div class="shuffle-box">
+        <div class="toggle-row">
+          <div>
+            <div class="tl-titulo">Embaralhar no site</div>
+            <div class="tl-sub">Quando ativo, o site exibe os depoimentos em ordem aleatória a cada visita</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="toggle-shuffle" onchange="marcarAlterado()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
 
       <div class="section-header">
         <span class="section-title">Depoimentos do Ticker</span>
@@ -622,22 +350,29 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
           </div>
         </div>
         <textarea id="raw-textarea" style="min-height:240px;font-family:monospace;font-size:0.78rem;line-height:1.6;border-color:rgba(200,146,42,0.3)" placeholder='[
-  { "nome": "Ana Paula", "cidade": "SP", "texto": "Mudou minha vida completamente." },
-  { "nome": "Marcos", "cidade": "RJ", "texto": "Fé e ciência juntas de verdade." }
+  { "nome": "Ana Paula", "cidade": "SP", "texto": "Mudou minha vida.", "tags": ["reprogramação", "resultados"] }
 ]'></textarea>
         <p style="font-size:0.68rem;color:var(--text-muted);margin-top:0.5rem">
-          Cole um array JSON com os campos <code style="color:var(--color-gold-amber)">nome</code>, <code style="color:var(--color-gold-amber)">cidade</code> e <code style="color:var(--color-gold-amber)">texto</code>. Ao aplicar, substitui a lista atual.
+          Campos: <code style="color:var(--color-gold-amber)">nome</code>, <code style="color:var(--color-gold-amber)">cidade</code>, <code style="color:var(--color-gold-amber)">texto</code>, <code style="color:var(--color-gold-amber)">tags</code> (array). Ao aplicar, substitui a lista atual.
         </p>
       </div>
 
+      <!-- FORM NOVO -->
       <div class="add-form" id="form-novo" style="display:none">
         <div class="dep-row" style="margin-bottom:0.5rem">
           <div class="field"><label>Nome</label><input type="text" id="new-nome" placeholder="Ex: Ana Paula"></div>
           <div class="field"><label>Cidade</label><input type="text" id="new-cidade" placeholder="Ex: SP"></div>
         </div>
-        <div class="field" style="margin-bottom:0.65rem">
+        <div class="field" style="margin-bottom:0.5rem">
           <label>Depoimento</label>
           <textarea id="new-texto" placeholder="Escreva o depoimento aqui..."></textarea>
+        </div>
+        <div class="field" style="margin-bottom:0.65rem">
+          <label>Tags</label>
+          <div class="tags-wrap" id="new-tags-wrap" onclick="document.getElementById('new-tag-input').focus()">
+            <input class="tag-input" id="new-tag-input" placeholder="Digite e pressione Enter ou vírgula..." onkeydown="handleTagKeydown(event,'new-tags-wrap')" oninput="handleTagInput(event,'new-tags-wrap')">
+          </div>
+          <span class="tag-hint">Pressione Enter ou vírgula para confirmar cada tag</span>
         </div>
         <div style="display:flex;gap:0.5rem">
           <button class="btn btn-primary btn-sm" onclick="adicionarDep()">Adicionar</button>
@@ -660,32 +395,26 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
 
 <script>
 // ===== PARTÍCULAS =====
-const pContainer = document.getElementById('particles');
-for (let i = 0; i < 20; i++) {
-  const p = document.createElement('div');
-  p.className = 'particle';
-  const size = Math.random() * 3 + 1.5;
-  p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;animation-duration:${Math.random()*16+10}s;animation-delay:${Math.random()*14}s;background:${Math.random()>.5?'rgba(248,220,150,0.6)':'rgba(255,255,255,0.45)'};`;
-  pContainer.appendChild(p);
-}
+(function() {
+  const c = document.getElementById('particles');
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = Math.random() * 3 + 1.5;
+    p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;animation-duration:${Math.random()*16+10}s;animation-delay:${Math.random()*14}s;background:${Math.random()>.5?'rgba(248,220,150,0.6)':'rgba(255,255,255,0.45)'};`;
+    c.appendChild(p);
+  }
+})();
 
 // ===== MENU MOBILE =====
-function openSidebar() {
-  document.getElementById('sidebar').classList.add('open');
-  document.getElementById('overlay').classList.add('open');
-}
-
-function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('overlay').classList.remove('open');
-}
+function openSidebar()  { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('open'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
 
 // ===== NAVEGAÇÃO =====
 const tabMeta = {
   precos:      { title: 'Gestão de Preços',   sub: 'Preços públicos, promoções e descontos de alunos' },
   depoimentos: { title: 'Depoimentos',         sub: 'Frases exibidas no ticker do site' },
 };
-
 function goTab(id, el) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item:not(.disabled)').forEach(n => n.classList.remove('active'));
@@ -707,19 +436,18 @@ function toast(msg, tipo = 'success') {
 // ===== API =====
 const API = 'https://vidamagica-production.up.railway.app';
 
-// ===== PREÇOS =====
+// ===== PREÇOS (inalterado) =====
 let dadosPrecos = {};
-
 const IMGS = {
-  teste_prosperidade: '/products/teste-prosperidade.png',
-  guia_pratico:       '/products/guia-pratico.png',
-  atal_maneira_livro: '/products/atal-maneira-livro.png',
-  ouro_reprogramacao: '/products/ouro-reprogramacao.png',
-  lda_biblica:        '/products/lda-biblica.png',
-  atal_maneira_curso: '/products/atal-maneira-curso.png',
-  vencendo_medo:      '/products/vencendo-medo.png',
-  clube_vida_magica:  '/products/clube-vida-magica.png',
-  magica_fluir:       '/products/magica-fluir.png',
+  teste_prosperidade: '/assets/products/teste-prosperidade.png',
+  guia_pratico:       '/assets/products/guia-pratico.png',
+  atal_maneira_livro: '/assets/products/atal-maneira-livro.png',
+  ouro_reprogramacao: '/assets/products/ouro-reprogramacao.png',
+  lda_biblica:        '/assets/products/lda-biblica.png',
+  atal_maneira_curso: '/assets/products/atal-maneira-curso.png',
+  vencendo_medo:      '/assets/products/vencendo-medo.png',
+  clube_vida_magica:  '/assets/products/clube-vida-magica.png',
+  magica_fluir:       '/assets/products/magica-fluir.png',
 };
 
 function calcDesc(de, por) {
@@ -728,262 +456,186 @@ function calcDesc(de, por) {
   if (!a || !b || b >= a) return null;
   return Math.round(((a - b) / a) * 100);
 }
-
-function getVal(card, field) {
-  return card.querySelector(`[data-field="${field}"]`)?.value || '';
-}
+function getVal(card, field) { return card.querySelector(`[data-field="${field}"]`)?.value || ''; }
 
 function buildPreco(key, p) {
   const img = IMGS[key] || '';
-  const badge = p.tipo === 'promo' ? 'Padrão + Promo'
-    : p.tipo === 'comunidade' ? 'Assinatura — Ouro e Mágico'
-    : 'Padrão · Promo · Aluno';
-
-  let corpo = '';
-
-  if (p.tipo === 'comunidade') {
-    corpo = buildComunidade(key, p);
-  } else {
-    corpo = buildPadrao(key, p) + buildPromo(key, p) + buildAlunos(key, p);
-  }
-
-  return `
-    <div class="card" data-key="${key}">
-      <div class="card-header">
-        <img class="card-img" src="${img}" alt="${p.nome}" onerror="this.style.display='none'">
-        <div>
-          <div class="card-title">${p.nome}</div>
-          <div class="card-badge">${badge}</div>
-        </div>
-      </div>
-      <div class="card-body">${corpo}</div>
-    </div>`;
+  const badge = p.tipo === 'promo' ? 'Padrão + Promo' : p.tipo === 'comunidade' ? 'Assinatura — Ouro e Mágico' : 'Padrão · Promo · Aluno';
+  let corpo = p.tipo === 'comunidade' ? buildComunidade(key, p) : buildPadrao(key, p) + buildPromo(key, p) + buildAlunos(key, p);
+  return `<div class="card" data-key="${key}"><div class="card-header"><img class="card-img" src="${img}" alt="${p.nome}" onerror="this.style.display='none'"><div><div class="card-title">${p.nome}</div><div class="card-badge">${badge}</div></div></div><div class="card-body">${corpo}</div></div>`;
 }
-
 function buildPadrao(key, p) {
-  if (p.tipo === 'promo') return `
-    <div class="fields-grid">
-      <div class="field"><label>Preço Padrão (R$)</label><input type="text" data-field="preco_padrao" value="${p.preco_padrao}" oninput="recalc('${key}')"></div>
-    </div>`;
-  return `
-    <div class="fields-grid three">
-      <div class="field"><label>Preço Padrão (R$)</label><input type="text" data-field="preco_padrao" value="${p.preco_padrao}" oninput="recalc('${key}')"></div>
-      <div class="field"><label>Nº Parcelas</label><input type="text" data-field="parcelas_qtd" value="${p.parcelas_qtd}"></div>
-      <div class="field"><label>Parcela Padrão (R$)</label><input type="text" data-field="parcelas_valor_padrao" value="${p.parcelas_valor_padrao}"></div>
-    </div>`;
+  if (p.tipo === 'promo') return `<div class="fields-grid"><div class="field"><label>Preço Padrão (R$)</label><input type="text" data-field="preco_padrao" value="${p.preco_padrao}" oninput="recalc('${key}')"></div></div>`;
+  return `<div class="fields-grid three"><div class="field"><label>Preço Padrão (R$)</label><input type="text" data-field="preco_padrao" value="${p.preco_padrao}" oninput="recalc('${key}')"></div><div class="field"><label>Nº Parcelas</label><input type="text" data-field="parcelas_qtd" value="${p.parcelas_qtd}"></div><div class="field"><label>Parcela Padrão (R$)</label><input type="text" data-field="parcelas_valor_padrao" value="${p.parcelas_valor_padrao}"></div></div>`;
 }
-
 function buildPromo(key, p) {
   const ativo = p.mostrar_promo || false;
   const pct = calcDesc(p.preco_padrao, p.preco_promo);
-  const fields = p.tipo === 'curso' ? `
-    <div class="field"><label>Promo à vista (R$)</label><input type="text" data-field="preco_promo" value="${p.preco_promo||''}" oninput="recalc('${key}')"></div>
-    <div class="field"><label>Parcela Promo (R$)</label><input type="text" data-field="parcelas_valor_promo" value="${p.parcelas_valor_promo||''}"></div>
-    ${p.parcelas_qtd_promo!=null?`<div class="field"><label>Nº Parcelas Promo</label><input type="text" data-field="parcelas_qtd_promo" value="${p.parcelas_qtd_promo}"></div>`:''}
-  ` : `
-    <div class="field"><label>Preço Promo (R$)</label><input type="text" data-field="preco_promo" value="${p.preco_promo||''}" oninput="recalc('${key}')"></div>
-  `;
-  return `
-    <div class="secao">
-      <div class="toggle-row">
-        <div>
-          <div class="tl-titulo">Exibir Preço Promo</div>
-          <div class="tl-sub" id="sub-${key}">De R$ ${p.preco_padrao} por R$ ${p.preco_promo}</div>
-        </div>
-        <label class="toggle">
-          <input type="checkbox" data-field="mostrar_promo" ${ativo?'checked':''} onchange="togglePromo('${key}',this.checked)">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-      <div class="promo-fields ${ativo?'visible':''}" id="promo-${key}">${fields}</div>
-      <div class="desconto-tag promo ${ativo&&pct?'visible':''}" id="desc-promo-${key}">
-        Desconto exibido: <strong id="pct-promo-${key}">${pct?pct+'% off':'—'}</strong>
-      </div>
-    </div>`;
+  const fields = p.tipo === 'curso' ? `<div class="field"><label>Promo à vista (R$)</label><input type="text" data-field="preco_promo" value="${p.preco_promo||''}" oninput="recalc('${key}')"></div><div class="field"><label>Parcela Promo (R$)</label><input type="text" data-field="parcelas_valor_promo" value="${p.parcelas_valor_promo||''}"></div>${p.parcelas_qtd_promo!=null?`<div class="field"><label>Nº Parcelas Promo</label><input type="text" data-field="parcelas_qtd_promo" value="${p.parcelas_qtd_promo}"></div>`:''}` : `<div class="field"><label>Preço Promo (R$)</label><input type="text" data-field="preco_promo" value="${p.preco_promo||''}" oninput="recalc('${key}')"></div>`;
+  return `<div class="secao"><div class="toggle-row"><div><div class="tl-titulo">Exibir Preço Promo</div><div class="tl-sub" id="sub-${key}">De R$ ${p.preco_padrao} por R$ ${p.preco_promo}</div></div><label class="toggle"><input type="checkbox" data-field="mostrar_promo" ${ativo?'checked':''} onchange="togglePromo('${key}',this.checked)"><span class="toggle-slider"></span></label></div><div class="promo-fields ${ativo?'visible':''}" id="promo-${key}">${fields}</div><div class="desconto-tag promo ${ativo&&pct?'visible':''}" id="desc-promo-${key}">Desconto exibido: <strong id="pct-promo-${key}">${pct?pct+'% off':'—'}</strong></div></div>`;
 }
-
 function buildAlunos(key, p) {
   if (p.tipo !== 'curso') return '';
   const pct = calcDesc(p.preco_padrao, p.preco_alunos);
   const temParcela = p.parcelas_valor_alunos != null;
   const temQtd = p.parcelas_qtd_alunos != null;
-  return `
-    <div class="secao">
-      <div class="secao-titulo">Preço Alunos — exibido via funil</div>
-      <div class="fields-grid ${temParcela?'three':''}">
-        <div class="field"><label>Alunos à vista (R$)</label><input type="text" data-field="preco_alunos" value="${p.preco_alunos||''}" oninput="recalc('${key}')"></div>
-        ${temParcela?`<div class="field"><label>Parcela Alunos (R$)</label><input type="text" data-field="parcelas_valor_alunos" value="${p.parcelas_valor_alunos||''}"></div>`:''}
-        ${temQtd?`<div class="field"><label>Nº Parcelas Alunos</label><input type="text" data-field="parcelas_qtd_alunos" value="${p.parcelas_qtd_alunos}"></div>`:''}
-      </div>
-      <div class="desconto-tag alunos ${pct?'visible':''}" id="desc-alunos-${key}">
-        Desconto ao aluno: <strong id="pct-alunos-${key}">${pct?pct+'% off':'—'}</strong>
-      </div>
-    </div>`;
+  return `<div class="secao"><div class="secao-titulo">Preço Alunos — exibido via funil</div><div class="fields-grid ${temParcela?'three':''}"><div class="field"><label>Alunos à vista (R$)</label><input type="text" data-field="preco_alunos" value="${p.preco_alunos||''}" oninput="recalc('${key}')"></div>${temParcela?`<div class="field"><label>Parcela Alunos (R$)</label><input type="text" data-field="parcelas_valor_alunos" value="${p.parcelas_valor_alunos||''}"></div>`:''} ${temQtd?`<div class="field"><label>Nº Parcelas Alunos</label><input type="text" data-field="parcelas_qtd_alunos" value="${p.parcelas_qtd_alunos}"></div>`:''}</div><div class="desconto-tag alunos ${pct?'visible':''}" id="desc-alunos-${key}">Desconto ao aluno: <strong id="pct-alunos-${key}">${pct?pct+'% off':'—'}</strong></div></div>`;
 }
-
 function buildComunidade(key, p) {
   const pO = calcDesc(p.preco_ouro, p.preco_ouro_promo);
   const pM = calcDesc(p.preco_magico, p.preco_magico_promo);
-  return `
-    <div class="secao" style="margin-top:0;padding-top:0;border:none">
-      <div class="secao-titulo">Plano Ouro</div>
-      <div class="fields-grid">
-        <div class="field"><label>Preço Ouro (R$)</label><input type="text" data-field="preco_ouro" value="${p.preco_ouro}" oninput="recalc('${key}')"></div>
-        <div class="field"><label>Promo Ouro (R$)</label><input type="text" data-field="preco_ouro_promo" value="${p.preco_ouro_promo}" oninput="recalc('${key}')"></div>
-      </div>
-      <div class="toggle-row">
-        <div><div class="tl-titulo">Exibir Promo Ouro</div></div>
-        <label class="toggle"><input type="checkbox" data-field="mostrar_promo_ouro" ${p.mostrar_promo_ouro?'checked':''} onchange="recalc('${key}')"><span class="toggle-slider"></span></label>
-      </div>
-      <div class="desconto-tag promo ${p.mostrar_promo_ouro&&pO?'visible':''}" id="desc-ouro-${key}">
-        Desconto: <strong id="pct-ouro-${key}">${pO?pO+'% off':'—'}</strong>
-      </div>
-    </div>
-    <div class="secao">
-      <div class="secao-titulo">Plano Mágico</div>
-      <div class="fields-grid">
-        <div class="field"><label>Preço Mágico (R$)</label><input type="text" data-field="preco_magico" value="${p.preco_magico}" oninput="recalc('${key}')"></div>
-        <div class="field"><label>Promo Mágico (R$)</label><input type="text" data-field="preco_magico_promo" value="${p.preco_magico_promo}" oninput="recalc('${key}')"></div>
-      </div>
-      <div class="toggle-row">
-        <div><div class="tl-titulo">Exibir Promo Mágico</div></div>
-        <label class="toggle"><input type="checkbox" data-field="mostrar_promo_magico" ${p.mostrar_promo_magico?'checked':''} onchange="recalc('${key}')"><span class="toggle-slider"></span></label>
-      </div>
-      <div class="desconto-tag alunos ${p.mostrar_promo_magico&&pM?'visible':''}" id="desc-magico-${key}">
-        Desconto: <strong id="pct-magico-${key}">${pM?pM+'% off':'—'}</strong>
-      </div>
-    </div>`;
+  return `<div class="secao" style="margin-top:0;padding-top:0;border:none"><div class="secao-titulo">Plano Ouro</div><div class="fields-grid"><div class="field"><label>Preço Ouro (R$)</label><input type="text" data-field="preco_ouro" value="${p.preco_ouro}" oninput="recalc('${key}')"></div><div class="field"><label>Promo Ouro (R$)</label><input type="text" data-field="preco_ouro_promo" value="${p.preco_ouro_promo}" oninput="recalc('${key}')"></div></div><div class="toggle-row"><div><div class="tl-titulo">Exibir Promo Ouro</div></div><label class="toggle"><input type="checkbox" data-field="mostrar_promo_ouro" ${p.mostrar_promo_ouro?'checked':''} onchange="recalc('${key}')"><span class="toggle-slider"></span></label></div><div class="desconto-tag promo ${p.mostrar_promo_ouro&&pO?'visible':''}" id="desc-ouro-${key}">Desconto: <strong id="pct-ouro-${key}">${pO?pO+'% off':'—'}</strong></div></div><div class="secao"><div class="secao-titulo">Plano Mágico</div><div class="fields-grid"><div class="field"><label>Preço Mágico (R$)</label><input type="text" data-field="preco_magico" value="${p.preco_magico}" oninput="recalc('${key}')"></div><div class="field"><label>Promo Mágico (R$)</label><input type="text" data-field="preco_magico_promo" value="${p.preco_magico_promo}" oninput="recalc('${key}')"></div></div><div class="toggle-row"><div><div class="tl-titulo">Exibir Promo Mágico</div></div><label class="toggle"><input type="checkbox" data-field="mostrar_promo_magico" ${p.mostrar_promo_magico?'checked':''} onchange="recalc('${key}')"><span class="toggle-slider"></span></label></div><div class="desconto-tag alunos ${p.mostrar_promo_magico&&pM?'visible':''}" id="desc-magico-${key}">Desconto: <strong id="pct-magico-${key}">${pM?pM+'% off':'—'}</strong></div></div>`;
 }
-
 function togglePromo(key, ativo) {
   document.getElementById(`promo-${key}`)?.classList.toggle('visible', ativo);
   if (!ativo) document.getElementById(`desc-promo-${key}`)?.classList.remove('visible');
   else recalc(key);
 }
-
 function recalc(key) {
   const card = document.querySelector(`.card[data-key="${key}"]`);
   const p = dadosPrecos[key];
   if (!card || !p) return;
-
   if (p.tipo === 'comunidade') {
     ['ouro','magico'].forEach(pl => {
-      const de  = getVal(card, `preco_${pl}`);
-      const por = getVal(card, `preco_${pl}_promo`);
+      const de = getVal(card,`preco_${pl}`), por = getVal(card,`preco_${pl}_promo`);
       const chk = card.querySelector(`[data-field="mostrar_promo_${pl}"]`);
-      const el  = document.getElementById(`desc-${pl}-${key}`);
-      const ep  = document.getElementById(`pct-${pl}-${key}`);
-      if (el && ep) {
-        const pct = chk?.checked ? calcDesc(de, por) : null;
-        if (pct) { ep.textContent = pct+'% off'; el.classList.add('visible'); }
-        else el.classList.remove('visible');
-      }
+      const el = document.getElementById(`desc-${pl}-${key}`), ep = document.getElementById(`pct-${pl}-${key}`);
+      if (el && ep) { const pct = chk?.checked ? calcDesc(de,por) : null; if (pct) { ep.textContent=pct+'% off'; el.classList.add('visible'); } else el.classList.remove('visible'); }
     });
     return;
   }
-
-  const pad = getVal(card,'preco_padrao');
-  const pro = getVal(card,'preco_promo');
-  const alu = getVal(card,'preco_alunos');
+  const pad = getVal(card,'preco_padrao'), pro = getVal(card,'preco_promo'), alu = getVal(card,'preco_alunos');
   const chk = card.querySelector('[data-field="mostrar_promo"]');
   const sub = document.getElementById(`sub-${key}`);
   if (sub) sub.textContent = `De R$ ${pad} por R$ ${pro}`;
-
-  const elP = document.getElementById(`desc-promo-${key}`);
-  const epP = document.getElementById(`pct-promo-${key}`);
-  if (elP && epP && chk?.checked) {
-    const pct = calcDesc(pad, pro);
-    epP.textContent = pct ? pct+'% off' : '—';
-    elP.classList.toggle('visible', !!pct);
-  }
-
-  const elA = document.getElementById(`desc-alunos-${key}`);
-  const epA = document.getElementById(`pct-alunos-${key}`);
-  if (elA && epA && alu) {
-    const pct = calcDesc(pad, alu);
-    epA.textContent = pct ? pct+'% off' : '—';
-    elA.classList.toggle('visible', !!pct);
-  }
+  const elP = document.getElementById(`desc-promo-${key}`), epP = document.getElementById(`pct-promo-${key}`);
+  if (elP && epP && chk?.checked) { const pct=calcDesc(pad,pro); epP.textContent=pct?pct+'% off':'—'; elP.classList.toggle('visible',!!pct); }
+  const elA = document.getElementById(`desc-alunos-${key}`), epA = document.getElementById(`pct-alunos-${key}`);
+  if (elA && epA && alu) { const pct=calcDesc(pad,alu); epA.textContent=pct?pct+'% off':'—'; elA.classList.toggle('visible',!!pct); }
 }
-
 function coletarPrecos() {
   const res = JSON.parse(JSON.stringify(dadosPrecos));
   document.querySelectorAll('.card[data-key]').forEach(card => {
     const key = card.dataset.key;
-    card.querySelectorAll('[data-field]').forEach(inp => {
-      res[key][inp.dataset.field] = inp.type === 'checkbox' ? inp.checked : inp.value.trim();
-    });
+    card.querySelectorAll('[data-field]').forEach(inp => { res[key][inp.dataset.field] = inp.type==='checkbox'?inp.checked:inp.value.trim(); });
   });
   return res;
 }
-
-const ORDEM_PRODUTOS = [
-  'clube_vida_magica',
-  'teste_prosperidade',
-  'vencendo_medo',
-  'magica_fluir',
-  'guia_pratico',
-  'atal_maneira_livro',
-  'ouro_reprogramacao',
-  'lda_biblica',
-  'atal_maneira_curso'
-];
-
+const ORDEM_PRODUTOS = ['clube_vida_magica','teste_prosperidade','vencendo_medo','magica_fluir','guia_pratico','atal_maneira_livro','ouro_reprogramacao','lda_biblica','atal_maneira_curso'];
 async function carregarPrecos() {
   try {
     const r = await fetch(`${API}/api/admin/precos`, { credentials: 'include' });
     if (!r.ok) throw new Error();
     dadosPrecos = await r.json();
-    const ordenado = ORDEM_PRODUTOS
-      .filter(k => dadosPrecos[k])
-      .map(k => [k, dadosPrecos[k]]);
-    // adiciona qualquer chave nova que não esteja na ordem definida
-    Object.entries(dadosPrecos).forEach(([k, v]) => {
-      if (!ORDEM_PRODUTOS.includes(k)) ordenado.push([k, v]);
-    });
+    const ordenado = ORDEM_PRODUTOS.filter(k => dadosPrecos[k]).map(k => [k, dadosPrecos[k]]);
+    Object.entries(dadosPrecos).forEach(([k,v]) => { if (!ORDEM_PRODUTOS.includes(k)) ordenado.push([k,v]); });
     document.getElementById('precos-container').innerHTML = ordenado.map(([k,p]) => buildPreco(k,p)).join('');
   } catch {
     document.getElementById('precos-container').innerHTML = '<div class="loading">Erro ao carregar. Verifique a autenticação.</div>';
   }
 }
-
 async function salvarPrecos() {
   const btn = document.getElementById('btn-save-precos');
   btn.disabled = true; btn.textContent = 'Salvando...';
   try {
     const payload = coletarPrecos();
-    const r = await fetch(`${API}/api/admin/precos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(payload)
-    });
+    const r = await fetch(`${API}/api/admin/precos`, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body:JSON.stringify(payload) });
     if (!r.ok) throw new Error();
     dadosPrecos = payload;
     toast('✓ Preços salvos com sucesso');
     document.getElementById('precos-status').textContent = `Salvo às ${new Date().toLocaleTimeString('pt-BR')}`;
   } catch { toast('✗ Erro ao salvar preços', 'error'); }
-  finally { btn.disabled = false; btn.textContent = 'Salvar Preços'; }
+  finally { btn.disabled=false; btn.textContent='Salvar Preços'; }
 }
 
 // ===== DEPOIMENTOS =====
 let deps = [];
+let depAlterado = false;
 
+function marcarAlterado() { depAlterado = true; }
+
+// --- TAGS: helpers ---
+function getTagsFromWrap(wrapId) {
+  const chips = document.querySelectorAll(`#${wrapId} .tag-chip`);
+  return Array.from(chips).map(c => c.dataset.tag);
+}
+
+function addTagToWrap(wrapId, tag) {
+  tag = tag.trim().toLowerCase().replace(/,/g, '');
+  if (!tag) return;
+  const wrap = document.getElementById(wrapId);
+  const input = wrap.querySelector('.tag-input');
+  // evita duplicata
+  const existentes = getTagsFromWrap(wrapId);
+  if (existentes.includes(tag)) { if (input) input.value = ''; return; }
+  const chip = document.createElement('span');
+  chip.className = 'tag-chip';
+  chip.dataset.tag = tag;
+  chip.innerHTML = `${tag}<button type="button" onclick="removeTag(this)" title="Remover">✕</button>`;
+  wrap.insertBefore(chip, input);
+  if (input) input.value = '';
+}
+
+function removeTag(btn) {
+  btn.closest('.tag-chip').remove();
+  marcarAlterado();
+}
+
+function handleTagKeydown(e, wrapId) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    addTagToWrap(wrapId, e.target.value);
+    marcarAlterado();
+  } else if (e.key === 'Backspace' && e.target.value === '') {
+    const wrap = document.getElementById(wrapId);
+    const chips = wrap.querySelectorAll('.tag-chip');
+    if (chips.length > 0) chips[chips.length - 1].remove();
+    marcarAlterado();
+  }
+}
+
+function handleTagInput(e, wrapId) {
+  // suporte a vírgula digitada inline
+  if (e.target.value.includes(',')) {
+    const parts = e.target.value.split(',');
+    parts.slice(0, -1).forEach(p => addTagToWrap(wrapId, p));
+    e.target.value = parts[parts.length - 1];
+    marcarAlterado();
+  }
+}
+
+function buildTagsWrap(wrapId, tags = []) {
+  const chipsHtml = tags.map(t =>
+    `<span class="tag-chip" data-tag="${t}">${t}<button type="button" onclick="removeTag(this);marcarAlterado()" title="Remover">✕</button></span>`
+  ).join('');
+  return `<div class="tags-wrap" id="${wrapId}" onclick="document.querySelector('#${wrapId} .tag-input').focus()">
+    ${chipsHtml}
+    <input class="tag-input" placeholder="${tags.length ? '' : 'Tags...'}" onkeydown="handleTagKeydown(event,'${wrapId}')" oninput="handleTagInput(event,'${wrapId}')">
+  </div>`;
+}
+
+// --- RENDER ---
 function renderDeps() {
   const grid = document.getElementById('dep-grid');
   if (!deps.length) { grid.innerHTML = '<div class="loading">Nenhum depoimento cadastrado.</div>'; return; }
   grid.innerHTML = '';
   deps.forEach((d, i) => {
+    const wrapId = `tags-wrap-${i}`;
     const card = document.createElement('div');
     card.className = 'dep-card';
     card.innerHTML = `
       <div class="dep-order">#${i+1}</div>
       <div class="dep-fields">
         <div class="dep-row">
-          <div class="field"><label>Nome</label><input type="text" value="${d.nome||''}" oninput="deps[${i}].nome=this.value"></div>
-          <div class="field"><label>Cidade</label><input type="text" value="${d.cidade||''}" oninput="deps[${i}].cidade=this.value"></div>
+          <div class="field"><label>Nome</label><input type="text" value="${escHtml(d.nome||'')}" oninput="deps[${i}].nome=this.value;marcarAlterado()"></div>
+          <div class="field"><label>Cidade</label><input type="text" value="${escHtml(d.cidade||'')}" oninput="deps[${i}].cidade=this.value;marcarAlterado()"></div>
         </div>
-        <div class="field"><label>Depoimento</label><textarea oninput="deps[${i}].texto=this.value">${d.texto||''}</textarea></div>
+        <div class="field"><label>Depoimento</label><textarea oninput="deps[${i}].texto=this.value;marcarAlterado()">${escHtml(d.texto||'')}</textarea></div>
+        <div class="field">
+          <label>Tags</label>
+          ${buildTagsWrap(wrapId, d.tags || [])}
+          <span class="tag-hint">Enter ou vírgula para confirmar</span>
+        </div>
       </div>
       <div class="dep-actions">
         <button class="btn btn-ghost btn-sm" onclick="moverDep(${i},-1)" ${i===0?'disabled':''}>↑</button>
@@ -994,17 +646,33 @@ function renderDeps() {
   });
 }
 
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function coletarDepsDoDOM() {
+  // Atualiza as tags de cada card antes de salvar
+  const cards = document.querySelectorAll('#dep-grid .dep-card');
+  cards.forEach((card, i) => {
+    const wrapId = `tags-wrap-${i}`;
+    if (deps[i]) deps[i].tags = getTagsFromWrap(wrapId);
+  });
+  return deps;
+}
+
 function moverDep(i, dir) {
   const j = i + dir;
   if (j < 0 || j >= deps.length) return;
   [deps[i], deps[j]] = [deps[j], deps[i]];
   renderDeps();
+  marcarAlterado();
 }
 
 function removerDep(i) {
   if (!confirm('Remover este depoimento?')) return;
   deps.splice(i, 1);
   renderDeps();
+  marcarAlterado();
 }
 
 function showRawEditor() {
@@ -1014,11 +682,7 @@ function showRawEditor() {
   document.getElementById('raw-editor').style.display = 'block';
   ta.focus();
 }
-
-function fecharRaw() {
-  document.getElementById('raw-editor').style.display = 'none';
-}
-
+function fecharRaw() { document.getElementById('raw-editor').style.display = 'none'; }
 function aplicarRaw() {
   const raw = document.getElementById('raw-textarea').value.trim();
   try {
@@ -1026,19 +690,20 @@ function aplicarRaw() {
     if (!Array.isArray(parsed)) throw new Error('Deve ser um array');
     const validos = parsed.filter(d => d.nome && d.texto);
     if (!validos.length) throw new Error('Nenhum item válido encontrado');
-    deps = validos.map(d => ({ nome: d.nome.trim(), cidade: (d.cidade||'').trim(), texto: d.texto.trim() }));
+    deps = validos.map(d => ({
+      nome: d.nome.trim(),
+      cidade: (d.cidade||'').trim(),
+      texto: d.texto.trim(),
+      tags: Array.isArray(d.tags) ? d.tags.map(t => String(t).trim().toLowerCase()).filter(Boolean) : []
+    }));
     fecharRaw();
     renderDeps();
+    marcarAlterado();
     toast(`✓ ${deps.length} depoimentos importados`);
-  } catch(e) {
-    toast(`✗ JSON inválido: ${e.message}`, 'error');
-  }
+  } catch(e) { toast(`✗ JSON inválido: ${e.message}`, 'error'); }
 }
 
-function fecharFormNovo() {
-  document.getElementById('form-novo').style.display = 'none';
-}
-
+function fecharFormNovo() { document.getElementById('form-novo').style.display = 'none'; }
 function showFormNovo() {
   fecharRaw();
   document.getElementById('form-novo').style.display = 'block';
@@ -1047,23 +712,43 @@ function showFormNovo() {
 function cancelarNovo() {
   document.getElementById('form-novo').style.display = 'none';
   ['new-nome','new-cidade','new-texto'].forEach(id => document.getElementById(id).value = '');
+  // limpar tags
+  const wrap = document.getElementById('new-tags-wrap');
+  wrap.querySelectorAll('.tag-chip').forEach(c => c.remove());
+  wrap.querySelector('.tag-input').value = '';
 }
 
 function adicionarDep() {
   const nome   = document.getElementById('new-nome').value.trim();
   const cidade = document.getElementById('new-cidade').value.trim();
   const texto  = document.getElementById('new-texto').value.trim();
+  // força confirmar tag pendente no input
+  const tagInput = document.querySelector('#new-tags-wrap .tag-input');
+  if (tagInput?.value.trim()) addTagToWrap('new-tags-wrap', tagInput.value);
+  const tags = getTagsFromWrap('new-tags-wrap');
   if (!nome || !texto) { toast('Preencha nome e depoimento', 'error'); return; }
-  deps.push({ nome, cidade, texto });
+  deps.push({ nome, cidade, texto, tags });
   cancelarNovo();
   renderDeps();
+  marcarAlterado();
 }
 
 async function carregarDeps() {
   try {
     const r = await fetch(`${API}/api/admin/depoimentos`, { credentials: 'include' });
-    deps = await r.json();
+    const data = await r.json();
+    deps = data.map(d => ({ ...d, tags: Array.isArray(d.tags) ? d.tags : [] }));
   } catch { deps = []; }
+
+  // Carregar configuração de shuffle
+  try {
+    const r = await fetch(`${API}/api/admin/config`, { credentials: 'include' });
+    if (r.ok) {
+      const cfg = await r.json();
+      document.getElementById('toggle-shuffle').checked = cfg.shuffle_depoimentos || false;
+    }
+  } catch { /* ignora se endpoint não existir */ }
+
   renderDeps();
 }
 
@@ -1071,17 +756,34 @@ async function salvarDeps() {
   const btn = document.getElementById('btn-save-dep');
   btn.disabled = true; btn.textContent = 'Salvando...';
   try {
+    // Coleta tags do DOM antes de salvar
+    const lista = coletarDepsDoDOM();
+    const shuffle = document.getElementById('toggle-shuffle').checked;
+
+    // Salva depoimentos
     const r = await fetch(`${API}/api/admin/depoimentos`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify(deps)
+      body: JSON.stringify(lista)
     });
     if (!r.ok) throw new Error();
+
+    // Salva config de shuffle (tenta, não bloqueia se endpoint não existir)
+    try {
+      await fetch(`${API}/api/admin/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ shuffle_depoimentos: shuffle })
+      });
+    } catch { /* ignora */ }
+
     toast('✓ Depoimentos salvos com sucesso');
     document.getElementById('dep-status').textContent = `Salvo às ${new Date().toLocaleTimeString('pt-BR')}`;
+    depAlterado = false;
   } catch { toast('✗ Erro ao salvar', 'error'); }
-  finally { btn.disabled = false; btn.textContent = 'Salvar Depoimentos'; }
+  finally { btn.disabled=false; btn.textContent='Salvar Depoimentos'; }
 }
 
 // ===== INIT =====
