@@ -1285,35 +1285,84 @@
   </div>
 
   <script>
-    // ===== TICKER =====
-    (function() {
-      const DEPOIMENTOS_TICKER = [
-        '"Mudou completamente a forma como eu via minha vida." — <strong>Ana Paula, SP</strong>',
-        '"Nunca imaginei que fé e ciência poderiam andar juntas assim." — <strong>Marcos, RJ</strong>',
-        '"O Teste me abriu os olhos para padrões que eu nem percebia." — <strong>Carla, MG</strong>',
-        '"Em 3 meses minha realidade financeira mudou radicalmente." — <strong>Roberto, PR</strong>',
-        '"Suellen fala de um jeito que ninguém mais fala. É real, é profundo." — <strong>Fernanda, BA</strong>',
-        '"A Sessão de Diagnóstico foi um divisor de águas na minha vida." — <strong>Juliana, SP</strong>',
-        '"Finalmente entendi por que eu sabotava meu próprio sucesso." — <strong>André, MG</strong>',
-        '"O curso Ouro da RM me deu ferramentas que uso até hoje." — <strong>Patrícia, RS</strong>',
-      ];
+    // ===== UTILITÁRIOS =====
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
 
-      function shuffle(arr) {
-        const a = [...arr];
-        for (let i = a.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [a[i], a[j]] = [a[j], a[i]];
+    const API_BASE = 'https://vidamagica-production.up.railway.app';
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // ===== TICKER + CARROSSEL — busca da API =====
+    (async function() {
+      let depoimentos = [];
+      let shuffleAtivo = false;
+
+      try {
+        const [resDep, resCfg] = await Promise.allSettled([
+          fetch(`${API_BASE}/api/depoimentos`, { headers: { 'Accept': 'application/json' }, mode: 'cors' }),
+          fetch(`${API_BASE}/api/config`,      { headers: { 'Accept': 'application/json' }, mode: 'cors' })
+        ]);
+        if (resDep.status === 'fulfilled' && resDep.value.ok) depoimentos = await resDep.value.json();
+        if (resCfg.status === 'fulfilled' && resCfg.value.ok) {
+          const cfg = await resCfg.value.json();
+          shuffleAtivo = cfg.shuffle_depoimentos || false;
         }
-        return a;
+      } catch(e) {
+        console.warn('Erro ao carregar depoimentos:', e);
       }
 
-      const track = document.getElementById('ticker-track');
-      if (track) {
-        const shuffled = shuffle(DEPOIMENTOS_TICKER);
-        const doubled = [...shuffled, ...shuffled];
-        track.innerHTML = doubled.map(d =>
-          `<span class="ticker-item"><span class="q">"</span>${d}<span class="q">"</span></span>`
-        ).join('');
+      if (shuffleAtivo) depoimentos = shuffle(depoimentos);
+
+      // Fallback caso API falhe ou retorne vazio
+      if (!Array.isArray(depoimentos) || depoimentos.length === 0) {
+        depoimentos = [
+          { nome: 'Ana Paula', cidade: 'SP', texto: 'Mudou completamente a forma como eu via minha vida.' },
+          { nome: 'Marcos', cidade: 'RJ', texto: 'Nunca imaginei que fé e ciência poderiam andar juntas assim.' },
+          { nome: 'Carla', cidade: 'MG', texto: 'O Teste me abriu os olhos para padrões que eu nem percebia.' },
+          { nome: 'Roberto', cidade: 'PR', texto: 'Em 3 meses minha realidade financeira mudou radicalmente.' },
+          { nome: 'Fernanda', cidade: 'BA', texto: 'Suellen fala de um jeito que ninguém mais fala. É real, é profundo.' },
+          { nome: 'Juliana', cidade: 'SP', texto: 'A Sessão de Diagnóstico foi um divisor de águas na minha vida.' },
+          { nome: 'André', cidade: 'MG', texto: 'Finalmente entendi por que eu sabotava meu próprio sucesso.' },
+          { nome: 'Patrícia', cidade: 'RS', texto: 'O curso Ouro da RM me deu ferramentas que uso até hoje.' },
+        ];
+      }
+
+      // --- TICKER (ordem definida no admin) ---
+      const tickerTrack = document.getElementById('ticker-track');
+      if (tickerTrack) {
+        const doubled = [...depoimentos, ...depoimentos];
+        tickerTrack.innerHTML = doubled.map(d => {
+          const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
+          return `<span class="ticker-item"><span class="q">"</span>"${d.texto}" — <strong>${autor}</strong><span class="q">"</span></span>`;
+        }).join('');
+      }
+
+      // --- CARROSSEL (ordem definida no admin) ---
+      const carrosselTrack = document.getElementById('depoimentos-track');
+      if (carrosselTrack) {
+        const doubled = [...depoimentos, ...depoimentos];
+        carrosselTrack.innerHTML = doubled.map(d => {
+          const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
+          return `
+            <div class="depoimento-card">
+              <p class="depoimento-texto">${d.texto}</p>
+              <div class="depoimento-autor">${autor}</div>
+            </div>`;
+        }).join('');
       }
     })();
 
@@ -1354,7 +1403,7 @@
     // ===== PREÇOS VIA API =====
     (async function() {
       try {
-        const res = await fetch('https://vidamagica-production.up.railway.app/api/precos', {
+        const res = await fetch(`${API_BASE}/api/precos`, {
           method: 'GET',
           headers: { 'Accept': 'application/json' },
           mode: 'cors'
@@ -1401,30 +1450,7 @@
       }
     })();
 
-    // ===== CARROSSEL DE DEPOIMENTOS =====
-    (function() {
-      const DEPOIMENTOS = [
-        { texto: "Finalmente consegui identificar o que estava me travando há anos. O Teste de Prosperidade foi um divisor de águas.", autor: "Ana Paula, SP" },
-        { texto: "Nunca imaginei que fé e reprogramação mental pudessem andar juntas assim. A transformação foi real.", autor: "Marcos, RJ" },
-        { texto: "Em 3 meses minha realidade financeira mudou radicalmente. Não foi sorte, foi trabalho interno.", autor: "Roberto, PR" },
-        { texto: "Suellen fala de um jeito que ninguém mais fala. É profundo, é real, é transformador.", autor: "Fernanda, BA" },
-        { texto: "O curso Ouro da RM me deu ferramentas que uso até hoje. Valeu cada centavo e cada minuto.", autor: "Patrícia, RS" },
-        { texto: "Eu era cética quanto a essas coisas, mas os resultados me fizeram repensar tudo. Funciona.", autor: "Juliana, MG" },
-        { texto: "A Sessão de Diagnóstico me mostrou padrões que eu repetia há décadas sem perceber.", autor: "André, SP" },
-        { texto: "Comecei pelo Teste, depois fui para o Ouro da RM, agora estou na LDA. Cada fase tem seu tempo.", autor: "Carla, BA" },
-      ];
 
-      const track = document.getElementById('depoimentos-track');
-      if (track) {
-        const doubled = [...DEPOIMENTOS, ...DEPOIMENTOS];
-        track.innerHTML = doubled.map(d => `
-          <div class="depoimento-card">
-            <p class="depoimento-texto">${d.texto}</p>
-            <div class="depoimento-autor">${d.autor}</div>
-          </div>
-        `).join('');
-      }
-    })();
 
     // ===== DROPDOWNS =====
     function toggleDrop(id) {
