@@ -4,14 +4,14 @@ const helmet = require('helmet');
 require('dotenv').config();
 
 const { initDb } = require('./db');
-const precosRoutes = require('./routes/precos');
+const precosRoutes     = require('./routes/precos');
 const depoimentosRoutes = require('./routes/depoimentos');
-const seedRoutes = require('./routes/seed');
+const seedRoutes       = require('./routes/seed');
+const configRoutes     = require('./routes/config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ── SEGURANÇA ──
 app.use(helmet({ contentSecurityPolicy: false }));
 
 app.use(cors({
@@ -29,36 +29,29 @@ app.use(cors({
 
 app.use(express.json({ limit: '1mb' }));
 
-// ── LOG ──
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
   next();
 });
 
-// ── ROTAS ──
 app.use('/api', precosRoutes);
 app.use('/api', depoimentosRoutes);
 app.use('/api', seedRoutes);
+app.use('/api', configRoutes);
 
 app.get('/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    service: 'Vida Mágica API',
-    timestamp: new Date().toISOString()
-  });
+  res.json({ status: 'OK', service: 'Vida Mágica API', timestamp: new Date().toISOString() });
 });
 
 app.get('*', (req, res) => {
   res.status(404).json({ error: 'Rota não encontrada' });
 });
 
-// ── ERROS ──
 app.use((err, req, res, next) => {
   console.error('❌ Erro:', err.message);
   res.status(500).json({ error: 'Erro interno' });
 });
 
-// ── INIT ──
 app.listen(PORT, async () => {
   console.log(`
 🚀 Vida Mágica API
@@ -66,9 +59,10 @@ app.listen(PORT, async () => {
 🏥 Health: /health
 💰 Preços: /api/precos
 💬 Depoimentos: /api/depoimentos
+⚙️  Config: /api/config
   `);
   await initDb();
 });
 
 process.on('SIGTERM', () => process.exit(0));
-process.on('SIGINT', () => process.exit(0));
+process.on('SIGINT',  () => process.exit(0));
