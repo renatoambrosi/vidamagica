@@ -7,7 +7,7 @@ const { autenticar } = require('./precos');
 router.get('/depoimentos', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT nome, cidade, texto FROM depoimentos WHERE ativo = TRUE ORDER BY ordem ASC, id ASC'
+      'SELECT nome, cidade, texto, tags FROM depoimentos WHERE ativo = TRUE ORDER BY ordem ASC, id ASC'
     );
     res.json(result.rows);
   } catch (err) {
@@ -20,7 +20,7 @@ router.get('/depoimentos', async (req, res) => {
 router.get('/admin/depoimentos', autenticar, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, nome, cidade, texto, ordem, ativo FROM depoimentos ORDER BY ordem ASC, id ASC'
+      'SELECT id, nome, cidade, texto, tags, ordem, ativo FROM depoimentos ORDER BY ordem ASC, id ASC'
     );
     res.json(result.rows);
   } catch (err) {
@@ -38,10 +38,12 @@ router.post('/admin/depoimentos', autenticar, async (req, res) => {
     await client.query('BEGIN');
     await client.query('DELETE FROM depoimentos');
     for (let i = 0; i < lista.length; i++) {
-      const { nome, cidade, texto, ativo = true } = lista[i];
+      const { nome, cidade, texto, tags = [], ativo = true } = lista[i];
+      // Garante que tags é array de strings
+      const tagsArr = Array.isArray(tags) ? tags.map(t => String(t).trim()).filter(Boolean) : [];
       await client.query(
-        'INSERT INTO depoimentos (nome, cidade, texto, ordem, ativo) VALUES ($1, $2, $3, $4, $5)',
-        [nome, cidade || '', texto, i, ativo]
+        'INSERT INTO depoimentos (nome, cidade, texto, tags, ordem, ativo) VALUES ($1, $2, $3, $4, $5, $6)',
+        [nome, cidade || '', texto, tagsArr, i, ativo]
       );
     }
     await client.query('COMMIT');
