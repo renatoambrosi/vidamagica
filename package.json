@@ -1,7 +1,7 @@
 {
   "name": "vidamagica-api",
-  "version": "1.0.0",
-  "description": "Backend do Vida Mágica — preços, depoimentos e CRM",
+  "version": "2.0.0",
+  "description": "Backend completo do Vida Mágica — auth, comunidade, gateway, área do aluno",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -12,7 +12,12 @@
     "cors": "^2.8.5",
     "helmet": "^7.0.0",
     "pg": "^8.11.0",
-    "dotenv": "^16.3.1"
+    "axios": "^1.6.0",
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.3.1",
+    "jsonwebtoken": "^9.0.2",
+    "bcrypt": "^5.1.1",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
