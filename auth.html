@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entrar — Vida Mágica</title>
+  <link rel="icon" href="/favicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800;900&family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-gold-amber:  #C8922A;
+      --color-gold-light:  #E8C97A;
+      --color-gold-deep:   #A17523;
+      --color-pearl-white: #F5F0E8;
+      --color-cream:       #FBF8F3;
+      --color-beige-light: #EDE7DC;
+      --color-beige:       #D9CFC0;
+      --color-brown-dark:  #1A1205;
+      --color-brown-medium:#3D2E1A;
+      --font-display: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-body:    'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --radius-sm:   4px; --radius-base: 8px; --radius-md: 12px;
+      --radius-lg:   16px; --radius-full: 9999px;
+      --glow-gold: 0 0 20px rgba(200,146,42,0.4), 0 0 40px rgba(200,146,42,0.2);
+    }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:var(--font-body); background:var(--color-brown-dark); color:var(--color-pearl-white); min-height:100vh; overflow-x:hidden; }
+    .bg { position:fixed; inset:0; z-index:0; }
+    .bg::before { content:''; position:absolute; inset:0; background-image:url('assets/background-theme.jpg'); background-size:cover; background-position:center; }
+    .bg::after  { content:''; position:absolute; inset:0; background:rgba(13,8,0,0.72); }
+    .particles  { position:fixed; inset:0; z-index:1; overflow:hidden; pointer-events:none; }
+    .particle   { position:absolute; border-radius:50%; animation:float linear infinite; opacity:0; }
+    @keyframes float { 0%{transform:translateY(105vh) scale(0);opacity:0} 10%{opacity:0.8} 90%{opacity:0.4} 100%{transform:translateY(-5vh) scale(1.3);opacity:0} }
+    .navbar { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:0.6rem 1.25rem; background:rgba(13,8,0,0.92); backdrop-filter:blur(12px); border-bottom:1px solid rgba(200,146,42,0.12); height:52px; }
+    .navbar-logo { height:32px; width:auto; }
+    .navbar-voltar { font-family:var(--font-body); font-size:0.8rem; font-weight:600; color:var(--color-gold-amber); background:none; border:1px solid rgba(200,146,42,0.4); border-radius:var(--radius-full); padding:0.4rem 1.1rem; cursor:pointer; transition:all 0.2s; text-decoration:none; letter-spacing:0.05em; }
+    .navbar-voltar:hover { background:rgba(200,146,42,0.1); border-color:var(--color-gold-amber); }
+    .page { position:relative; z-index:10; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:80px 1.5rem 3rem; }
+    .card { width:100%; max-width:420px; background:rgba(13,8,0,0.78); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1.5px solid rgba(200,146,42,0.28); border-radius:var(--radius-lg); padding:2.25rem 2rem; box-shadow:0 24px 60px rgba(0,0,0,0.5),var(--glow-gold); }
+    .card-logo { text-align:center; margin-bottom:1.75rem; }
+    .card-logo img { height:64px; width:auto; filter:drop-shadow(0 0 14px rgba(200,146,42,0.5)); }
+    .card-titulo { font-family:var(--font-display); font-size:1.2rem; font-weight:900; text-transform:uppercase; letter-spacing:-0.01em; color:var(--color-pearl-white); text-align:center; margin-bottom:0.3rem; }
+    .card-titulo .gold { color:var(--color-gold-light); }
+    .card-subtitulo { font-size:0.8rem; color:rgba(245,240,232,0.5); text-align:center; margin-bottom:1.75rem; line-height:1.5; }
+    .divider { width:44px; height:2px; background:linear-gradient(90deg,transparent,var(--color-gold-amber),transparent); margin:0 auto 1.75rem; }
+    .abas { display:flex; margin-bottom:1.5rem; border-bottom:1.5px solid rgba(200,146,42,0.2); }
+    .aba { flex:1; padding:0.6rem 0; background:none; border:none; cursor:pointer; font-family:var(--font-body); font-size:0.78rem; font-weight:600; color:rgba(245,240,232,0.35); border-bottom:2px solid transparent; margin-bottom:-1.5px; transition:all 0.2s; letter-spacing:0.04em; }
+    .aba.ativa { color:var(--color-gold-amber); border-bottom-color:var(--color-gold-amber); }
+    .campo { margin-bottom:1rem; }
+    .campo label { display:block; font-size:0.68rem; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:var(--color-gold-amber); margin-bottom:0.45rem; }
+    .campo input { width:100%; height:46px; padding:0 1rem; background:rgba(255,255,255,0.05); border:1.5px solid rgba(200,146,42,0.22); border-radius:var(--radius-base); font-family:var(--font-body); font-size:0.9rem; color:var(--color-pearl-white); outline:none; transition:all 0.2s; }
+    .campo input::placeholder { color:rgba(245,240,232,0.22); }
+    .campo input:focus { border-color:var(--color-gold-amber); background:rgba(200,146,42,0.07); box-shadow:0 0 0 3px rgba(200,146,42,0.12); }
+    .btn-cta { display:flex; align-items:center; justify-content:space-between; width:100%; padding:0.85rem 1.2rem; border-radius:var(--radius-md); border:none; background:var(--color-gold-amber); color:var(--color-brown-dark); font-family:var(--font-display); font-size:0.85rem; font-weight:800; letter-spacing:0.03em; cursor:pointer; transition:background 0.2s,transform 0.15s; margin-top:0.5rem; }
+    .btn-cta:hover { background:var(--color-gold-deep); transform:translateY(-1px); }
+    .btn-cta:active { transform:translateY(0); }
+    .btn-cta:disabled { opacity:0.45; cursor:not-allowed; transform:none; }
+    .btn-icon-arrow { flex-shrink:0; width:28px; height:28px; border-radius:50%; background:rgba(26,18,5,0.2); display:flex; align-items:center; justify-content:center; }
+    .btn-icon-arrow svg { width:13px; height:13px; stroke:var(--color-brown-dark); fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+    .spinner { width:16px; height:16px; border:2px solid rgba(26,18,5,0.3); border-top-color:var(--color-brown-dark); border-radius:50%; animation:spin 0.7s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .link-sec { font-size:0.78rem; color:rgba(245,240,232,0.4); text-align:center; margin-top:1rem; }
+    .link-sec button { background:none; border:none; color:var(--color-gold-amber); font-family:var(--font-body); font-size:0.78rem; font-weight:600; cursor:pointer; text-decoration:underline; padding:0; }
+    .msg { border-radius:var(--radius-base); padding:0.65rem 0.9rem; font-size:0.8rem; line-height:1.5; margin-bottom:1rem; display:none; }
+    .msg.show { display:block; }
+    .msg-erro { background:rgba(185,64,64,0.15); border:1px solid rgba(185,64,64,0.35); color:#f4a5a5; }
+    .msg-ok   { background:rgba(46,125,50,0.15); border:1px solid rgba(46,125,50,0.35); color:#a5d6a7; }
+    .otp-tel { font-size:0.8rem; color:rgba(245,240,232,0.5); text-align:center; margin-bottom:1.25rem; }
+    .otp-tel strong { color:var(--color-gold-light); }
+    .otp-boxes { display:flex; gap:8px; justify-content:center; margin-bottom:1.25rem; }
+    .otp-box { width:44px; height:52px; background:rgba(255,255,255,0.05); border:1.5px solid rgba(200,146,42,0.22); border-radius:var(--radius-base); text-align:center; font-family:var(--font-display); font-size:1.4rem; font-weight:800; color:var(--color-gold-light); outline:none; transition:all 0.2s; }
+    .otp-box:focus { border-color:var(--color-gold-amber); background:rgba(200,146,42,0.08); box-shadow:0 0 0 3px rgba(200,146,42,0.14); }
+    .perfil-icone { text-align:center; font-size:2.2rem; margin-bottom:0.5rem; }
+    .card-footer { margin-top:1.75rem; text-align:center; font-size:0.68rem; color:rgba(245,240,232,0.2); letter-spacing:0.04em; }
+    .fade-in { animation:fadeIn 250ms ease forwards; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    @media(max-width:480px) { .card{padding:1.75rem 1.25rem;} .otp-box{width:38px;height:48px;font-size:1.2rem;} }
+  </style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="particles" id="particles"></div>
+<nav class="navbar">
+  <img src="assets/logo-horizontal.png" alt="Vida Mágica" class="navbar-logo">
+  <a href="/" class="navbar-voltar">← Início</a>
+</nav>
+<div class="page">
+  <div class="card">
+    <div class="card-logo"><img src="assets/logo-vertical.png" alt="Vida Mágica"/></div>
+
+    <!-- LOGIN -->
+    <div id="tela-login">
+      <h1 class="card-titulo">Bem-vinda de <span class="gold">volta</span></h1>
+      <p class="card-subtitulo">Entre com seu WhatsApp ou com sua senha</p>
+      <div class="divider"></div>
+      <div class="abas">
+        <button class="aba ativa" onclick="trocarAba('whatsapp',this)">📱 WhatsApp</button>
+        <button class="aba"       onclick="trocarAba('senha',this)">🔑 Senha</button>
+      </div>
+      <div id="aba-whatsapp">
+        <div class="msg msg-erro" id="erro-wpp"></div>
+        <div class="campo"><label>Seu WhatsApp</label><input id="telefone" type="tel" placeholder="(11) 99999-9999" maxlength="15" autocomplete="tel"/></div>
+        <button class="btn-cta" id="btn-enviar-otp" onclick="enviarOTP()">
+          <span>Receber código</span>
+          <span class="btn-icon-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></span>
+        </button>
+      </div>
+      <div id="aba-senha" style="display:none">
+        <div class="msg msg-erro" id="erro-senha"></div>
+        <div class="campo"><label>Seu WhatsApp</label><input id="tel-senha" type="tel" placeholder="(11) 99999-9999" maxlength="15"/></div>
+        <div class="campo"><label>Senha</label><input id="senha" type="password" placeholder="Sua senha" autocomplete="current-password"/></div>
+        <button class="btn-cta" id="btn-login-senha" onclick="loginSenha()">
+          <span>Entrar</span>
+          <span class="btn-icon-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></span>
+        </button>
+      </div>
+      <div class="card-footer">Vida Mágica · Renato &amp; Suellen Seragi</div>
+    </div>
+
+    <!-- OTP -->
+    <div id="tela-otp" style="display:none">
+      <h1 class="card-titulo">Código <span class="gold">enviado</span></h1>
+      <p class="card-subtitulo">Verifique seu WhatsApp e digite os 6 dígitos</p>
+      <div class="divider"></div>
+      <div class="msg msg-erro" id="erro-otp"></div>
+      <p class="otp-tel">Enviado para <strong id="otp-tel-exibir"></strong></p>
+      <div class="otp-boxes">
+        <input class="otp-box" maxlength="1" type="tel" id="otp0"/>
+        <input class="otp-box" maxlength="1" type="tel" id="otp1"/>
+        <input class="otp-box" maxlength="1" type="tel" id="otp2"/>
+        <input class="otp-box" maxlength="1" type="tel" id="otp3"/>
+        <input class="otp-box" maxlength="1" type="tel" id="otp4"/>
+        <input class="otp-box" maxlength="1" type="tel" id="otp5"/>
+      </div>
+      <button class="btn-cta" id="btn-verificar-otp" onclick="verificarOTP()">
+        <span>Verificar código</span>
+        <span class="btn-icon-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></span>
+      </button>
+      <div class="link-sec">Não recebeu? <button onclick="reenviarOTP()">Reenviar</button> · <button onclick="voltarLogin()">Voltar</button></div>
+    </div>
+
+    <!-- PERFIL -->
+    <div id="tela-perfil" style="display:none">
+      <div class="perfil-icone">🌱</div>
+      <h1 class="card-titulo">Quase <span class="gold">lá!</span></h1>
+      <p class="card-subtitulo">Complete seu perfil para começar a jornada</p>
+      <div class="divider"></div>
+      <div class="msg msg-erro" id="erro-perfil"></div>
+      <div class="campo"><label>Seu nome completo</label><input id="perfil-nome" type="text" placeholder="Como você se chama?" autocomplete="name"/></div>
+      <div class="campo"><label>E-mail <span style="font-weight:400;text-transform:none;letter-spacing:0;color:rgba(245,240,232,0.3)">(opcional)</span></label><input id="perfil-email" type="email" placeholder="seu@email.com" autocomplete="email"/></div>
+      <div class="campo"><label>Senha <span style="font-weight:400;text-transform:none;letter-spacing:0;color:rgba(245,240,232,0.3)">(opcional)</span></label><input id="perfil-senha" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/></div>
+      <button class="btn-cta" id="btn-salvar-perfil" onclick="salvarPerfil()">
+        <span>Começar minha jornada</span>
+        <span class="btn-icon-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></span>
+      </button>
+      <div class="link-sec"><button onclick="pularPerfil()">Pular por agora</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let telefoneAtual='', accessToken='';
+
+  (function(){
+    const c=document.getElementById('particles');
+    for(let i=0;i<20;i++){
+      const p=document.createElement('div'); p.className='particle';
+      const s=Math.random()*4+2;
+      p.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;animation-duration:${Math.random()*14+8}s;animation-delay:${Math.random()*12}s;background:${Math.random()>.5?'rgba(248,220,150,0.75)':'rgba(255,255,255,0.6)'}`;
+      c.appendChild(p);
+    }
+  })();
+
+  function limparTel(v){return v.replace(/\D/g,'');}
+  function mostrarErro(id,msg){const e=document.getElementById(id);e.textContent=msg;e.className='msg msg-erro show';}
+  function mostrarOk(id,msg){const e=document.getElementById(id);e.textContent=msg;e.className='msg msg-ok show';}
+  function limparMsg(id){document.getElementById(id).classList.remove('show');}
+  function arrowHtml(){return `<span class="btn-icon-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></span>`;}
+  function setBtnLoading(id,label){const b=document.getElementById(id);b.disabled=true;b.innerHTML=`<span>${label}</span><span class="btn-icon-arrow"><div class="spinner"></div></span>`;}
+  function resetBtn(id,label){const b=document.getElementById(id);b.disabled=false;b.innerHTML=`<span>${label}</span>${arrowHtml()}`;}
+  function mostrarTela(t){['tela-login','tela-otp','tela-perfil'].forEach(x=>{document.getElementById(x).style.display='none';});const e=document.getElementById(t);e.style.display='block';e.classList.add('fade-in');setTimeout(()=>e.classList.remove('fade-in'),300);}
+  function salvarTokens(a,r){localStorage.setItem('vm_access',a);localStorage.setItem('vm_refresh',r);}
+  function irParaApp(){window.location.href='/app';}
+
+  function mascaraTel(el){let v=el.value.replace(/\D/g,'').substring(0,11);if(v.length>6)v=`(${v.substring(0,2)}) ${v.substring(2,7)}-${v.substring(7)}`;else if(v.length>2)v=`(${v.substring(0,2)}) ${v.substring(2)}`;else if(v.length>0)v=`(${v}`;el.value=v;}
+  document.getElementById('telefone').addEventListener('input',function(){mascaraTel(this);});
+  document.getElementById('tel-senha').addEventListener('input',function(){mascaraTel(this);});
+  document.getElementById('telefone').addEventListener('keydown',e=>{if(e.key==='Enter')enviarOTP();});
+  document.getElementById('senha').addEventListener('keydown',e=>{if(e.key==='Enter')loginSenha();});
+
+  for(let i=0;i<6;i++){
+    const box=document.getElementById(`otp${i}`);
+    box.addEventListener('input',function(){if(this.value.length===1&&i<5)document.getElementById(`otp${i+1}`).focus();});
+    box.addEventListener('keydown',function(e){if(e.key==='Backspace'&&!this.value&&i>0)document.getElementById(`otp${i-1}`).focus();if(e.key==='Enter')verificarOTP();});
+    box.addEventListener('paste',function(e){const p=(e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'');if(p.length>=6){for(let j=0;j<6;j++)document.getElementById(`otp${j}`).value=p[j]||'';e.preventDefault();setTimeout(verificarOTP,100);}});
+  }
+
+  function trocarAba(aba,el){document.querySelectorAll('.aba').forEach(b=>b.classList.remove('ativa'));el.classList.add('ativa');document.getElementById('aba-whatsapp').style.display=aba==='whatsapp'?'block':'none';document.getElementById('aba-senha').style.display=aba==='senha'?'block':'none';}
+
+  async function enviarOTP(){
+    limparMsg('erro-wpp');
+    const tel=limparTel(document.getElementById('telefone').value);
+    if(tel.length<10){mostrarErro('erro-wpp','Digite um número de WhatsApp válido');return;}
+    setBtnLoading('btn-enviar-otp','Receber código');
+    try{
+      const r=await fetch('/api/auth/solicitar-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefone:tel})});
+      const d=await r.json();
+      if(r.ok){telefoneAtual=tel;document.getElementById('otp-tel-exibir').textContent=document.getElementById('telefone').value;mostrarTela('tela-otp');setTimeout(()=>document.getElementById('otp0').focus(),200);}
+      else{mostrarErro('erro-wpp',d.error||'Erro ao enviar código. Tente novamente.');resetBtn('btn-enviar-otp','Receber código');}
+    }catch{mostrarErro('erro-wpp','Erro de conexão.');resetBtn('btn-enviar-otp','Receber código');}
+  }
+
+  async function verificarOTP(){
+    limparMsg('erro-otp');
+    const codigo=[0,1,2,3,4,5].map(i=>document.getElementById(`otp${i}`).value).join('');
+    if(codigo.length<6){mostrarErro('erro-otp','Digite o código completo de 6 dígitos');return;}
+    setBtnLoading('btn-verificar-otp','Verificar código');
+    try{
+      const r=await fetch('/api/auth/verificar-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefone:telefoneAtual,codigo})});
+      const d=await r.json();
+      if(r.ok){salvarTokens(d.access_token,d.refresh_token);accessToken=d.access_token;if(d.novo_usuario){mostrarTela('tela-perfil');setTimeout(()=>document.getElementById('perfil-nome').focus(),200);}else{irParaApp();}}
+      else{mostrarErro('erro-otp',d.error||'Código inválido ou expirado');resetBtn('btn-verificar-otp','Verificar código');}
+    }catch{mostrarErro('erro-otp','Erro de conexão.');resetBtn('btn-verificar-otp','Verificar código');}
+  }
+
+  async function reenviarOTP(){
+    limparMsg('erro-otp');
+    try{await fetch('/api/auth/solicitar-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefone:telefoneAtual})});mostrarOk('erro-otp','✅ Novo código enviado!');}
+    catch{mostrarErro('erro-otp','Erro ao reenviar.');}
+  }
+
+  function voltarLogin(){mostrarTela('tela-login');for(let i=0;i<6;i++)document.getElementById(`otp${i}`).value='';resetBtn('btn-enviar-otp','Receber código');}
+
+  async function loginSenha(){
+    limparMsg('erro-senha');
+    const tel=limparTel(document.getElementById('tel-senha').value),senha=document.getElementById('senha').value;
+    if(tel.length<10){mostrarErro('erro-senha','Digite seu WhatsApp');return;}
+    if(!senha){mostrarErro('erro-senha','Digite sua senha');return;}
+    setBtnLoading('btn-login-senha','Entrar');
+    try{
+      const r=await fetch('/api/auth/login-senha',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefone:tel,senha})});
+      const d=await r.json();
+      if(r.ok){salvarTokens(d.access_token,d.refresh_token);irParaApp();}
+      else{mostrarErro('erro-senha',d.error||'Telefone ou senha incorretos');resetBtn('btn-login-senha','Entrar');}
+    }catch{mostrarErro('erro-senha','Erro de conexão.');resetBtn('btn-login-senha','Entrar');}
+  }
+
+  async function salvarPerfil(){
+    limparMsg('erro-perfil');
+    const nome=document.getElementById('perfil-nome').value.trim(),email=document.getElementById('perfil-email').value.trim(),senha=document.getElementById('perfil-senha').value;
+    if(!nome){mostrarErro('erro-perfil','Por favor, informe seu nome');return;}
+    if(senha&&senha.length<6){mostrarErro('erro-perfil','A senha deve ter pelo menos 6 caracteres');return;}
+    setBtnLoading('btn-salvar-perfil','Começar minha jornada');
+    try{
+      const r=await fetch('/api/auth/perfil',{method:'PUT',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({nome,email:email||undefined,senha:senha||undefined})});
+      const d=await r.json();
+      if(r.ok){irParaApp();}
+      else{mostrarErro('erro-perfil',d.error||'Erro ao salvar perfil');resetBtn('btn-salvar-perfil','Começar minha jornada');}
+    }catch{mostrarErro('erro-perfil','Erro de conexão.');resetBtn('btn-salvar-perfil','Começar minha jornada');}
+  }
+
+  function pularPerfil(){irParaApp();}
+
+  (async function(){
+    const t=localStorage.getItem('vm_access');
+    if(!t)return;
+    try{const r=await fetch('/api/auth/me',{headers:{'Authorization':`Bearer ${t}`}});if(r.ok)irParaApp();}catch{}
+  })();
+</script>
+</body>
+</html>
