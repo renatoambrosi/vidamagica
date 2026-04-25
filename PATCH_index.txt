@@ -1,0 +1,127 @@
+=======================================================
+PATCH index.html — 2 alterações cirúrgicas
+=======================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MUDANÇA 1 — Navbar: trocar 1 botão por 2 botões
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LOCALIZAR (dentro do CSS, na regra .btn-login):
+----
+    .btn-login {
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-gold-amber);
+      background: none;
+      border: 1px solid rgba(200,146,42,0.4);
+      border-radius: var(--radius-full);
+      padding: 0.4rem 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      letter-spacing: 0.05em;
+    }
+    .btn-login:hover { background: rgba(200,146,42,0.1); border-color: var(--color-gold-amber); }
+----
+
+SUBSTITUIR POR:
+----
+    .navbar-actions { display: flex; align-items: center; gap: 0.5rem; }
+    .btn-login {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--color-gold-amber);
+      background: none;
+      border: 1px solid rgba(200,146,42,0.4);
+      border-radius: var(--radius-full);
+      padding: 0.38rem 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      letter-spacing: 0.05em;
+    }
+    .btn-login:hover { background: rgba(200,146,42,0.1); border-color: var(--color-gold-amber); }
+    .btn-cadastro-nav {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--color-brown-dark);
+      background: var(--color-gold-amber);
+      border: none;
+      border-radius: var(--radius-full);
+      padding: 0.42rem 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      letter-spacing: 0.04em;
+    }
+    .btn-cadastro-nav:hover { background: var(--color-gold-deep); }
+----
+
+LOCALIZAR (no HTML, a navbar):
+----
+  <nav class="navbar">
+    <img src="assets/logo-horizontal.png" alt="Vida Mágica" class="navbar-logo">
+    <a href="/auth" class="btn-login">Entrar</a>
+  </nav>
+----
+
+SUBSTITUIR POR:
+----
+  <nav class="navbar">
+    <img src="assets/logo-horizontal.png" alt="Vida Mágica" class="navbar-logo">
+    <div class="navbar-actions">
+      <a href="/auth" class="btn-login">Entrar</a>
+      <a href="/cadastro" class="btn-cadastro-nav">Criar conta</a>
+    </div>
+  </nav>
+----
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MUDANÇA 2 — Hero: adicionar botão "Já tenho conta"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LOCALIZAR (no CSS, após a regra .entry-label):
+----
+    /* ===== DROPDOWNS ===== */
+----
+
+INSERIR ANTES DISSO:
+----
+    .btn-entrar-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: rgba(245,240,232,0.5);
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      letter-spacing: 0.03em;
+      margin-top: 0.25rem;
+      padding: 0.5rem 0;
+      transition: color 0.2s;
+    }
+    .btn-entrar-hero:hover { color: var(--color-gold-light); }
+----
+
+LOCALIZAR (no HTML, após os dois dropdown-wrap, antes da seção de depoimentos ou da tag </main>):
+----
+      <!-- BOTÃO 2: EXPLORAR PRODUTOS -->
+      <div class="dropdown-wrap">
+----
+
+INSERIR ANTES DO BOTÃO 2 (entre os dois dropdown-wrap), adicionar DEPOIS do fechamento do segundo dropdown-wrap:
+
+Ou seja, logo após o </div> que fecha o segundo dropdown-wrap, antes do </div> que fecha .content, adicionar:
+----
+      <div style="text-align:center;margin-top:0.75rem">
+        <a href="/auth" class="btn-entrar-hero">Já tenho conta → Entrar</a>
+      </div>
+----
