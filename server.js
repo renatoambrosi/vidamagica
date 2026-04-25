@@ -10,6 +10,7 @@ const depoimentosRoutes = require('./routes/depoimentos');
 const seedRoutes        = require('./routes/seed');
 const configRoutes      = require('./routes/config');
 const authRoutes        = require('./routes/auth');
+const { router: gatewayRouter, iniciarGateway } = require('./routes/gateway');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -56,6 +57,7 @@ app.use('/api', seedRoutes);
 
 // ── API AUTH ──
 app.use('/api/auth', authRoutes);
+app.use('/', gatewayRouter);
 
 // ── HEALTH ──
 app.get('/health', (req, res) => {
@@ -88,6 +90,7 @@ app.listen(PORT, async () => {
 🖥️  /admin
   `);
   await initDb();
+  iniciarGateway();
 });
 
 process.on('SIGTERM', () => process.exit(0));
