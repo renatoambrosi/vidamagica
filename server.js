@@ -40,7 +40,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── ARQUIVOS ESTÁTICOS (admin, index, assets) ──
+// ── ARQUIVOS ESTÁTICOS ──
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── ADMIN (Basic Auth via routes/precos.js) ──
@@ -48,6 +48,10 @@ const { autenticar: basicAuth } = require('./routes/precos');
 app.get('/admin', basicAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
+
+// ── PÁGINAS DE AUTH ──
+app.get('/auth',     (req, res) => res.sendFile(path.join(__dirname, 'auth.html')));
+app.get('/cadastro', (req, res) => res.sendFile(path.join(__dirname, 'cadastro.html')));
 
 // ── API PÚBLICA ──
 app.use('/api', precosRoutes);
@@ -64,7 +68,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', service: 'Vida Mágica API', timestamp: new Date().toISOString() });
 });
 
-// ── SPA FALLBACK (serve index.html para rotas do frontend) ──
+// ── SPA FALLBACK ──
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'Rota não encontrada' });
@@ -88,6 +92,8 @@ app.listen(PORT, async () => {
 ⚙️  /api/config
 🔐 /api/auth/*
 🖥️  /admin
+🔑 /auth
+📝 /cadastro
   `);
   await initDb();
   iniciarGateway();
