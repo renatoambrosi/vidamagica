@@ -114,10 +114,16 @@ body {
 .fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
 .fields-grid.three { grid-template-columns: 1fr 1fr 1fr; }
 .field { display: flex; flex-direction: column; gap: 4px; }
-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
-input[type="text"], textarea, select { background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.45rem 0.75rem; color: var(--text-light); font-family: var(--font-body); font-size: 0.85rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; }
-input[type="text"]:focus, textarea:focus { outline: none; border-color: rgba(200,146,42,0.5); box-shadow: 0 0 0 3px rgba(200,146,42,0.06); }
-textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
+label, .field-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 4px; }
+input[type="text"], input[type="email"], textarea, select, .field-input {
+  background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 0.45rem 0.75rem; color: var(--text-light); font-family: var(--font-body); font-size: 0.85rem; width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input[type="text"]:focus, input[type="email"]:focus, textarea:focus, .field-input:focus {
+  outline: none; border-color: rgba(200,146,42,0.5); box-shadow: 0 0 0 3px rgba(200,146,42,0.06);
+}
+textarea, .field-input[as="textarea"] { resize: vertical; min-height: 68px; line-height: 1.5; }
 
 /* TOGGLE */
 .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0 0.4rem; }
@@ -166,78 +172,21 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
 .dep-row { display: grid; grid-template-columns: 1fr 120px; gap: 0.45rem; }
 .dep-actions { display: flex; flex-direction: column; gap: 0.35rem; padding-top: 2px; }
 
-/* TAGS — chips input */
-.tags-wrap {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  align-items: center;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 0.3rem 0.55rem;
-  min-height: 34px;
-  cursor: text;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
+/* TAGS */
+.tags-wrap { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.3rem 0.55rem; min-height: 34px; cursor: text; transition: border-color 0.2s, box-shadow 0.2s; }
 .tags-wrap:focus-within { border-color: rgba(200,146,42,0.5); box-shadow: 0 0 0 3px rgba(200,146,42,0.06); }
-.tag-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  background: rgba(200,146,42,0.12);
-  border: 1px solid rgba(200,146,42,0.3);
-  border-radius: var(--radius-full);
-  padding: 2px 8px 2px 10px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--color-gold-light);
-  letter-spacing: 0.03em;
-  white-space: nowrap;
-}
-.tag-chip button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: rgba(200,146,42,0.6);
-  font-size: 0.75rem;
-  line-height: 1;
-  padding: 0;
-  transition: color 0.15s;
-  display: flex;
-  align-items: center;
-}
+.tag-chip { display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(200,146,42,0.12); border: 1px solid rgba(200,146,42,0.3); border-radius: var(--radius-full); padding: 2px 8px 2px 10px; font-size: 0.7rem; font-weight: 600; color: var(--color-gold-light); letter-spacing: 0.03em; white-space: nowrap; }
+.tag-chip button { background: none; border: none; cursor: pointer; color: rgba(200,146,42,0.6); font-size: 0.75rem; line-height: 1; padding: 0; transition: color 0.15s; display: flex; align-items: center; }
 .tag-chip button:hover { color: #F09090; }
-.tag-input {
-  background: none;
-  border: none;
-  outline: none;
-  color: var(--text-light);
-  font-family: var(--font-body);
-  font-size: 0.82rem;
-  min-width: 80px;
-  flex: 1;
-  padding: 2px 0;
-}
+.tag-input { background: none; border: none; outline: none; color: var(--text-light); font-family: var(--font-body); font-size: 0.82rem; min-width: 80px; flex: 1; padding: 2px 0; }
 .tag-hint { font-size: 0.6rem; color: var(--text-muted); margin-top: 3px; }
 
 .add-form { background: var(--bg-card); border: 1px dashed rgba(200,146,42,0.3); border-radius: var(--radius-md); padding: 1.1rem; margin-bottom: 1rem; backdrop-filter: blur(12px); }
 
-/* LOADING */
 .loading { text-align: center; padding: 2.5rem; color: var(--text-muted); font-size: 0.82rem; }
-
-/* GOLD DIVIDER */
 .gold-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(200,146,42,0.3), transparent); margin: 1.25rem 0; }
 
-/* SHUFFLE CONFIG BOX */
-.shuffle-box {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 0.85rem 1.1rem;
-  margin-bottom: 1.25rem;
-  backdrop-filter: blur(12px);
-}
+.shuffle-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.85rem 1.1rem; margin-bottom: 1.25rem; backdrop-filter: blur(12px); }
 .shuffle-box .toggle-row { padding: 0; }
 
 /* HAMBURGER */
@@ -245,6 +194,61 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
 .hamburger span { display: block; width: 22px; height: 2px; background: var(--color-gold-amber); border-radius: 2px; transition: all 0.25s; }
 .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 150; backdrop-filter: blur(2px); }
 .sidebar-overlay.open { display: block; }
+
+/* ===== ABA WHATSAPP ===== */
+.wz-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  backdrop-filter: blur(12px);
+}
+.wz-section-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 1rem; margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.wz-section-title { font-size: 0.82rem; font-weight: 700; color: var(--color-gold-light); margin-bottom: 0.2rem; }
+.wz-section-sub { font-size: 0.68rem; color: var(--text-muted); line-height: 1.5; }
+.wz-grupos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 0.75rem; }
+.wz-grupo-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.85rem 1rem; }
+.wz-grupo-nome { font-size: 0.82rem; font-weight: 700; color: var(--text-light); margin-bottom: 0.25rem; }
+.wz-grupo-id { font-size: 0.6rem; color: var(--text-muted); font-family: monospace; margin-bottom: 0.5rem; word-break: break-all; }
+.wz-grupo-badge { display: inline-block; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 8px; border-radius: var(--radius-full); }
+.badge-ouro   { background: rgba(200,146,42,0.15); border: 1px solid rgba(200,146,42,0.3); color: var(--color-gold-amber); }
+.badge-geral  { background: rgba(100,180,100,0.1); border: 1px solid rgba(100,180,100,0.25); color: #8BC87A; }
+.badge-avisos { background: rgba(100,140,200,0.1); border: 1px solid rgba(100,140,200,0.25); color: #8AB4E8; }
+
+.tpl-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.9rem 1rem; margin-bottom: 0.65rem; }
+.tpl-chave { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-gold-amber); margin-bottom: 0.3rem; }
+.tpl-titulo { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+.tpl-textarea { width: 100%; min-height: 80px; resize: vertical; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; font-family: var(--font-body); font-size: 0.82rem; color: var(--text-light); outline: none; transition: border-color 0.2s; line-height: 1.55; }
+.tpl-textarea:focus { border-color: rgba(200,146,42,0.5); }
+
+.wz-stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 0.75rem; margin-bottom: 1rem; }
+.wz-stat { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem; text-align: center; }
+.wz-stat-n { font-family: var(--font-display); font-size: 1.5rem; font-weight: 900; color: var(--color-gold-light); }
+.wz-stat-l { font-size: 0.62rem; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+.sched-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.7rem 0.9rem; background: rgba(255,255,255,0.025); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 0.45rem; font-size: 0.78rem; flex-wrap: wrap; }
+.sched-nome { font-weight: 600; color: var(--text-light); flex: 1; min-width: 120px; }
+.sched-tel { color: var(--text-muted); font-size: 0.7rem; }
+.sched-data { color: var(--color-gold-amber); font-size: 0.7rem; }
+.sched-status { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 8px; border-radius: var(--radius-full); white-space: nowrap; }
+.status-cancelado { background: rgba(200,80,80,0.1); border: 1px solid rgba(200,80,80,0.25); color: #F09090; }
+.status-expirado  { background: rgba(200,146,42,0.1); border: 1px solid rgba(200,146,42,0.25); color: var(--color-gold-amber); }
+.status-atrasado  { background: rgba(220,160,60,0.1); border: 1px solid rgba(220,160,60,0.25); color: #E8C060; }
+.sched-btn { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-muted); font-size: 0.65rem; padding: 3px 8px; cursor: pointer; transition: all 0.15s; white-space: nowrap; font-family: var(--font-body); }
+.sched-btn:hover { border-color: rgba(200,80,80,0.4); color: #F09090; }
+.sched-btn.btn-ok:hover { border-color: rgba(100,180,100,0.4); color: #8BC87A; }
+
+.exc-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.9rem; background: rgba(255,255,255,0.025); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 0.4rem; font-size: 0.78rem; }
+.exc-nome { font-weight: 600; color: var(--text-light); min-width: 100px; }
+.exc-tel  { color: var(--text-muted); font-size: 0.7rem; flex: 1; }
+.exc-motivo { color: var(--text-muted); font-size: 0.68rem; font-style: italic; flex: 2; }
+.exc-del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.75rem; padding: 2px 6px; transition: color 0.15s; margin-left: auto; }
+.exc-del:hover { color: #F09090; }
 
 @media (max-width: 768px) {
   .sidebar { transform: translateX(-100%); transition: transform 0.28s cubic-bezier(0.4,0,0.2,1); z-index: 200; }
@@ -255,6 +259,8 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
   .dep-row { grid-template-columns: 1fr; }
   .content { padding: 1rem; }
   .save-bar { margin: 0 -1rem -1rem; padding: 0.75rem 1rem; }
+  .wz-stats-row { grid-template-columns: repeat(2,1fr); }
+  .sched-tel, .sched-data { display: none; }
 }
 </style>
 </head>
@@ -278,14 +284,17 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
     <span class="nav-icon">💬</span> Depoimentos
   </div>
 
+  <div class="sidebar-section-label" style="margin-top:0.5rem">Comunidade</div>
+  <div class="nav-item" id="nav-whatsapp" onclick="goTab('whatsapp', this)">
+    <span class="nav-icon">📲</span> WhatsApp
+  </div>
+
   <div class="sidebar-section-label" style="margin-top:0.5rem">Em breve</div>
   <div class="nav-item disabled"><span class="nav-icon">👥</span> Membros <span class="nav-tag">—</span></div>
-  <div class="nav-item disabled"><span class="nav-icon">🎯</span> Leads <span class="nav-tag">—</span></div>
-  <div class="nav-item disabled"><span class="nav-icon">📅</span> Sessões <span class="nav-tag">—</span></div>
   <div class="nav-item disabled"><span class="nav-icon">📊</span> Métricas <span class="nav-tag">—</span></div>
 
   <div class="sidebar-footer">
-    Vida Mágica CRM · v1.1<br>
+    Vida Mágica CRM · v1.2<br>
     <a href="/" style="color:var(--color-gold-amber);font-size:0.68rem;text-decoration:none">← Ver site</a>
   </div>
 </aside>
@@ -317,8 +326,6 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
 
     <!-- ABA DEPOIMENTOS -->
     <div class="tab-panel" id="tab-depoimentos">
-
-      <!-- CONFIG: SHUFFLE -->
       <div class="shuffle-box">
         <div class="toggle-row">
           <div>
@@ -340,7 +347,6 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
         </div>
       </div>
 
-      <!-- EDITOR RAW -->
       <div class="add-form" id="raw-editor" style="display:none">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.65rem">
           <label style="font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted)">Editor Raw — JSON</label>
@@ -349,15 +355,10 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
             <button class="btn btn-ghost btn-sm" onclick="fecharRaw()">Cancelar</button>
           </div>
         </div>
-        <textarea id="raw-textarea" style="min-height:240px;font-family:monospace;font-size:0.78rem;line-height:1.6;border-color:rgba(200,146,42,0.3)" placeholder='[
-  { "nome": "Ana Paula", "cidade": "SP", "texto": "Mudou minha vida.", "tags": ["reprogramação", "resultados"] }
-]'></textarea>
-        <p style="font-size:0.68rem;color:var(--text-muted);margin-top:0.5rem">
-          Campos: <code style="color:var(--color-gold-amber)">nome</code>, <code style="color:var(--color-gold-amber)">cidade</code>, <code style="color:var(--color-gold-amber)">texto</code>, <code style="color:var(--color-gold-amber)">tags</code> (array). Ao aplicar, substitui a lista atual.
-        </p>
+        <textarea id="raw-textarea" style="min-height:240px;font-family:monospace;font-size:0.78rem;line-height:1.6;border-color:rgba(200,146,42,0.3)" placeholder='[{"nome":"Ana Paula","cidade":"SP","texto":"Mudou minha vida.","tags":["reprogramação"]}]'></textarea>
+        <p style="font-size:0.68rem;color:var(--text-muted);margin-top:0.5rem">Campos: <code style="color:var(--color-gold-amber)">nome</code>, <code style="color:var(--color-gold-amber)">cidade</code>, <code style="color:var(--color-gold-amber)">texto</code>, <code style="color:var(--color-gold-amber)">tags</code> (array).</p>
       </div>
 
-      <!-- FORM NOVO -->
       <div class="add-form" id="form-novo" style="display:none">
         <div class="dep-row" style="margin-bottom:0.5rem">
           <div class="field"><label>Nome</label><input type="text" id="new-nome" placeholder="Ex: Ana Paula"></div>
@@ -390,8 +391,140 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
       </div>
     </div>
 
-  </div>
-</div>
+    <!-- ABA WHATSAPP -->
+    <div class="tab-panel" id="tab-whatsapp">
+
+      <!-- GRUPOS -->
+      <div class="wz-section">
+        <div class="wz-section-header">
+          <div>
+            <div class="wz-section-title">📋 Grupos Ativos</div>
+            <div class="wz-section-sub">Grupos gerenciados pela plataforma via Evolution API</div>
+          </div>
+        </div>
+        <div class="wz-grupos-grid">
+          <div class="wz-grupo-card">
+            <div class="wz-grupo-nome">Grupo Ouro</div>
+            <div class="wz-grupo-id">120363407525402346@g.us</div>
+            <div class="wz-grupo-badge badge-ouro">Premium</div>
+          </div>
+          <div class="wz-grupo-card">
+            <div class="wz-grupo-nome">Grupo Geral</div>
+            <div class="wz-grupo-id">120363424750548764@g.us</div>
+            <div class="wz-grupo-badge badge-geral">Geral</div>
+          </div>
+          <div class="wz-grupo-card">
+            <div class="wz-grupo-nome">Avisos</div>
+            <div class="wz-grupo-id">120363424105041817@g.us</div>
+            <div class="wz-grupo-badge badge-avisos">Avisos</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEMPLATES -->
+      <div class="wz-section">
+        <div class="wz-section-header">
+          <div>
+            <div class="wz-section-title">✉️ Templates de Mensagem</div>
+            <div class="wz-section-sub">Mensagens enviadas automaticamente. Use {nome} para personalizar.</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="salvarTemplates()">Salvar templates</button>
+        </div>
+        <div id="templates-container"><div class="loading">Carregando templates...</div></div>
+      </div>
+
+      <!-- SCHEDULER -->
+      <div class="wz-section">
+        <div class="wz-section-header">
+          <div>
+            <div class="wz-section-title">⏰ Scheduler de Remoção</div>
+            <div class="wz-section-sub">Membros com assinatura expirada pendentes de remoção dos grupos</div>
+          </div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" onclick="carregarScheduler()">↺ Atualizar</button>
+            <button class="btn btn-danger btn-sm" onclick="executarSchedulerAgora()">▶ Executar agora</button>
+          </div>
+        </div>
+
+        <div class="wz-stats-row">
+          <div class="wz-stat"><div class="wz-stat-n" id="stat-ativos">—</div><div class="wz-stat-l">Ativos</div></div>
+          <div class="wz-stat"><div class="wz-stat-n" id="stat-cancelados">—</div><div class="wz-stat-l">Cancelados</div></div>
+          <div class="wz-stat"><div class="wz-stat-n" id="stat-pendentes">—</div><div class="wz-stat-l">Remoção pendente</div></div>
+          <div class="wz-stat"><div class="wz-stat-n" id="stat-excecoes">—</div><div class="wz-stat-l">Exceções</div></div>
+        </div>
+
+        <div id="scheduler-lista"><div class="loading">Carregando...</div></div>
+      </div>
+
+      <!-- EXCEÇÕES -->
+      <div class="wz-section">
+        <div class="wz-section-header">
+          <div>
+            <div class="wz-section-title">🔒 Exceções — nunca remover</div>
+            <div class="wz-section-sub">Telefones que nunca serão removidos dos grupos independente do status</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="abrirFormExcecao()">+ Adicionar</button>
+        </div>
+
+        <div class="add-form" id="form-excecao" style="display:none">
+          <div class="fields-grid">
+            <div>
+              <label class="field-label">Telefone (com DDI, sem espaços)</label>
+              <input type="text" id="exc-tel" class="field-input" placeholder="5511999999999">
+            </div>
+            <div>
+              <label class="field-label">Nome</label>
+              <input type="text" id="exc-nome" class="field-input" placeholder="Nome da pessoa">
+            </div>
+          </div>
+          <div style="margin-top:0.65rem">
+            <label class="field-label">Motivo</label>
+            <input type="text" id="exc-motivo" class="field-input" placeholder="Por que esta pessoa nunca deve ser removida?">
+          </div>
+          <div style="display:flex;gap:0.5rem;margin-top:0.75rem">
+            <button class="btn btn-primary btn-sm" onclick="salvarExcecao()">Salvar</button>
+            <button class="btn btn-ghost btn-sm" onclick="fecharFormExcecao()">Cancelar</button>
+          </div>
+        </div>
+
+        <div id="excecoes-lista"><div class="loading">Carregando...</div></div>
+      </div>
+
+      <!-- ENVIO MANUAL -->
+      <div class="wz-section">
+        <div class="wz-section-header">
+          <div>
+            <div class="wz-section-title">📤 Envio Manual</div>
+            <div class="wz-section-sub">Envia uma mensagem avulsa para um número via gateway interno</div>
+          </div>
+        </div>
+        <div class="fields-grid">
+          <div>
+            <label class="field-label">Telefone destino</label>
+            <input type="text" id="manual-tel" class="field-input" placeholder="5511999999999">
+          </div>
+          <div>
+            <label class="field-label">Nome (para {nome} no template)</label>
+            <input type="text" id="manual-nome" class="field-input" placeholder="Nome da pessoa">
+          </div>
+        </div>
+        <div style="margin-top:0.65rem">
+          <label class="field-label">Mensagem</label>
+          <textarea id="manual-msg" class="field-input" style="min-height:90px;resize:vertical" placeholder="Olá {nome}, escreva sua mensagem aqui..."></textarea>
+        </div>
+        <div style="display:flex;align-items:center;gap:1rem;margin-top:0.75rem;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="enviarManual()" id="btn-manual">Enviar via gateway</button>
+          <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;color:var(--text-muted);cursor:pointer">
+            <input type="checkbox" id="manual-imediato" style="accent-color:var(--color-gold-amber)">
+            Imediato (pula fila, envia agora)
+          </label>
+        </div>
+      </div>
+
+    </div><!-- /tab-whatsapp -->
+
+  </div><!-- /content -->
+</div><!-- /main -->
 
 <script>
 // ===== PARTÍCULAS =====
@@ -414,7 +547,11 @@ function closeSidebar() { document.getElementById('sidebar').classList.remove('o
 const tabMeta = {
   precos:      { title: 'Gestão de Preços',   sub: 'Preços públicos, promoções e descontos de alunos' },
   depoimentos: { title: 'Depoimentos',         sub: 'Frases exibidas no ticker do site' },
+  whatsapp:    { title: 'WhatsApp',            sub: 'Mensagens automáticas, scheduler e grupos' },
 };
+
+let wzCarregado = false;
+
 function goTab(id, el) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item:not(.disabled)').forEach(n => n.classList.remove('active'));
@@ -423,6 +560,14 @@ function goTab(id, el) {
   document.getElementById('topbar-title').textContent = tabMeta[id].title;
   document.getElementById('topbar-sub').textContent = tabMeta[id].sub;
   closeSidebar();
+
+  // Carrega dados da aba WhatsApp na primeira vez
+  if (id === 'whatsapp' && !wzCarregado) {
+    wzCarregado = true;
+    carregarTemplates();
+    carregarScheduler();
+    carregarExcecoes();
+  }
 }
 
 // ===== TOAST =====
@@ -430,13 +575,23 @@ function toast(msg, tipo = 'success') {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = `show ${tipo}`;
-  setTimeout(() => t.className = '', 3000);
+  setTimeout(() => t.className = '', 3200);
 }
 
 // ===== API =====
 const API = 'https://vidamagica-production.up.railway.app';
+// Credenciais Basic Auth — o navegador pedirá se não estiver em cache,
+// mas como a página /admin já exige Basic Auth, as credenciais ficam salvas.
+// Montamos manualmente para chamadas fetch:
+const ADMIN_USER = 'admin';
+const ADMIN_PASS = 'admin';
+function authHeader() {
+  return 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`);
+}
 
-// ===== PREÇOS (inalterado) =====
+// ============================================================
+// PREÇOS
+// ============================================================
 let dadosPrecos = {};
 const IMGS = {
   teste_prosperidade: '/assets/products/teste-prosperidade.png',
@@ -479,7 +634,7 @@ function buildAlunos(key, p) {
   const pct = calcDesc(p.preco_padrao, p.preco_alunos);
   const temParcela = p.parcelas_valor_alunos != null;
   const temQtd = p.parcelas_qtd_alunos != null;
-  return `<div class="secao"><div class="secao-titulo">Preço Alunos — exibido via funil</div><div class="fields-grid ${temParcela?'three':''}"><div class="field"><label>Alunos à vista (R$)</label><input type="text" data-field="preco_alunos" value="${p.preco_alunos||''}" oninput="recalc('${key}')"></div>${temParcela?`<div class="field"><label>Parcela Alunos (R$)</label><input type="text" data-field="parcelas_valor_alunos" value="${p.parcelas_valor_alunos||''}"></div>`:''} ${temQtd?`<div class="field"><label>Nº Parcelas Alunos</label><input type="text" data-field="parcelas_qtd_alunos" value="${p.parcelas_qtd_alunos}"></div>`:''}</div><div class="desconto-tag alunos ${pct?'visible':''}" id="desc-alunos-${key}">Desconto ao aluno: <strong id="pct-alunos-${key}">${pct?pct+'% off':'—'}</strong></div></div>`;
+  return `<div class="secao"><div class="secao-titulo">Preço Alunos</div><div class="fields-grid ${temParcela?'three':''}"><div class="field"><label>Alunos à vista (R$)</label><input type="text" data-field="preco_alunos" value="${p.preco_alunos||''}" oninput="recalc('${key}')"></div>${temParcela?`<div class="field"><label>Parcela Alunos (R$)</label><input type="text" data-field="parcelas_valor_alunos" value="${p.parcelas_valor_alunos||''}"></div>`:''} ${temQtd?`<div class="field"><label>Nº Parcelas Alunos</label><input type="text" data-field="parcelas_qtd_alunos" value="${p.parcelas_qtd_alunos}"></div>`:''}</div><div class="desconto-tag alunos ${pct?'visible':''}" id="desc-alunos-${key}">Desconto ao aluno: <strong id="pct-alunos-${key}">${pct?pct+'% off':'—'}</strong></div></div>`;
 }
 function buildComunidade(key, p) {
   const pO = calcDesc(p.preco_ouro, p.preco_ouro_promo);
@@ -548,73 +703,43 @@ async function salvarPrecos() {
   finally { btn.disabled=false; btn.textContent='Salvar Preços'; }
 }
 
-// ===== DEPOIMENTOS =====
+// ============================================================
+// DEPOIMENTOS
+// ============================================================
 let deps = [];
 let depAlterado = false;
 
 function marcarAlterado() { depAlterado = true; }
 
-// --- TAGS: helpers ---
 function getTagsFromWrap(wrapId) {
-  const chips = document.querySelectorAll(`#${wrapId} .tag-chip`);
-  return Array.from(chips).map(c => c.dataset.tag);
+  return Array.from(document.querySelectorAll(`#${wrapId} .tag-chip`)).map(c => c.dataset.tag);
 }
-
 function addTagToWrap(wrapId, tag) {
   tag = tag.trim().toLowerCase().replace(/,/g, '');
   if (!tag) return;
   const wrap = document.getElementById(wrapId);
   const input = wrap.querySelector('.tag-input');
-  // evita duplicata
-  const existentes = getTagsFromWrap(wrapId);
-  if (existentes.includes(tag)) { if (input) input.value = ''; return; }
+  if (getTagsFromWrap(wrapId).includes(tag)) { if (input) input.value = ''; return; }
   const chip = document.createElement('span');
-  chip.className = 'tag-chip';
-  chip.dataset.tag = tag;
+  chip.className = 'tag-chip'; chip.dataset.tag = tag;
   chip.innerHTML = `${tag}<button type="button" onclick="removeTag(this)" title="Remover">✕</button>`;
   wrap.insertBefore(chip, input);
   if (input) input.value = '';
 }
-
-function removeTag(btn) {
-  btn.closest('.tag-chip').remove();
-  marcarAlterado();
-}
-
+function removeTag(btn) { btn.closest('.tag-chip').remove(); marcarAlterado(); }
 function handleTagKeydown(e, wrapId) {
-  if (e.key === 'Enter' || e.key === ',') {
-    e.preventDefault();
-    addTagToWrap(wrapId, e.target.value);
-    marcarAlterado();
-  } else if (e.key === 'Backspace' && e.target.value === '') {
-    const wrap = document.getElementById(wrapId);
-    const chips = wrap.querySelectorAll('.tag-chip');
-    if (chips.length > 0) chips[chips.length - 1].remove();
-    marcarAlterado();
-  }
+  if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTagToWrap(wrapId, e.target.value); marcarAlterado(); }
+  else if (e.key === 'Backspace' && e.target.value === '') { const chips = document.getElementById(wrapId).querySelectorAll('.tag-chip'); if (chips.length > 0) chips[chips.length-1].remove(); marcarAlterado(); }
 }
-
 function handleTagInput(e, wrapId) {
-  // suporte a vírgula digitada inline
-  if (e.target.value.includes(',')) {
-    const parts = e.target.value.split(',');
-    parts.slice(0, -1).forEach(p => addTagToWrap(wrapId, p));
-    e.target.value = parts[parts.length - 1];
-    marcarAlterado();
-  }
+  if (e.target.value.includes(',')) { const parts = e.target.value.split(','); parts.slice(0,-1).forEach(p => addTagToWrap(wrapId, p)); e.target.value = parts[parts.length-1]; marcarAlterado(); }
 }
-
 function buildTagsWrap(wrapId, tags = []) {
-  const chipsHtml = tags.map(t =>
-    `<span class="tag-chip" data-tag="${t}">${t}<button type="button" onclick="removeTag(this);marcarAlterado()" title="Remover">✕</button></span>`
-  ).join('');
-  return `<div class="tags-wrap" id="${wrapId}" onclick="document.querySelector('#${wrapId} .tag-input').focus()">
-    ${chipsHtml}
-    <input class="tag-input" placeholder="${tags.length ? '' : 'Tags...'}" onkeydown="handleTagKeydown(event,'${wrapId}')" oninput="handleTagInput(event,'${wrapId}')">
-  </div>`;
+  const chipsHtml = tags.map(t => `<span class="tag-chip" data-tag="${t}">${t}<button type="button" onclick="removeTag(this);marcarAlterado()" title="Remover">✕</button></span>`).join('');
+  return `<div class="tags-wrap" id="${wrapId}" onclick="document.querySelector('#${wrapId} .tag-input').focus()">${chipsHtml}<input class="tag-input" placeholder="${tags.length?'':'Tags...'}" onkeydown="handleTagKeydown(event,'${wrapId}')" oninput="handleTagInput(event,'${wrapId}')"></div>`;
 }
+function escHtml(str) { return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-// --- RENDER ---
 function renderDeps() {
   const grid = document.getElementById('dep-grid');
   if (!deps.length) { grid.innerHTML = '<div class="loading">Nenhum depoimento cadastrado.</div>'; return; }
@@ -631,11 +756,7 @@ function renderDeps() {
           <div class="field"><label>Cidade</label><input type="text" value="${escHtml(d.cidade||'')}" oninput="deps[${i}].cidade=this.value;marcarAlterado()"></div>
         </div>
         <div class="field"><label>Depoimento</label><textarea oninput="deps[${i}].texto=this.value;marcarAlterado()">${escHtml(d.texto||'')}</textarea></div>
-        <div class="field">
-          <label>Tags</label>
-          ${buildTagsWrap(wrapId, d.tags || [])}
-          <span class="tag-hint">Enter ou vírgula para confirmar</span>
-        </div>
+        <div class="field"><label>Tags</label>${buildTagsWrap(wrapId, d.tags||[])}<span class="tag-hint">Enter ou vírgula para confirmar</span></div>
       </div>
       <div class="dep-actions">
         <button class="btn btn-ghost btn-sm" onclick="moverDep(${i},-1)" ${i===0?'disabled':''}>↑</button>
@@ -645,145 +766,262 @@ function renderDeps() {
     grid.appendChild(card);
   });
 }
-
-function escHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
 function coletarDepsDoDOM() {
-  // Atualiza as tags de cada card antes de salvar
-  const cards = document.querySelectorAll('#dep-grid .dep-card');
-  cards.forEach((card, i) => {
-    const wrapId = `tags-wrap-${i}`;
-    if (deps[i]) deps[i].tags = getTagsFromWrap(wrapId);
+  document.querySelectorAll('#dep-grid .dep-card').forEach((card, i) => {
+    if (deps[i]) deps[i].tags = getTagsFromWrap(`tags-wrap-${i}`);
   });
   return deps;
 }
-
-function moverDep(i, dir) {
-  const j = i + dir;
-  if (j < 0 || j >= deps.length) return;
-  [deps[i], deps[j]] = [deps[j], deps[i]];
-  renderDeps();
-  marcarAlterado();
-}
-
-function removerDep(i) {
-  if (!confirm('Remover este depoimento?')) return;
-  deps.splice(i, 1);
-  renderDeps();
-  marcarAlterado();
-}
-
-function showRawEditor() {
-  fecharFormNovo();
-  const ta = document.getElementById('raw-textarea');
-  ta.value = JSON.stringify(deps, null, 2);
-  document.getElementById('raw-editor').style.display = 'block';
-  ta.focus();
-}
-function fecharRaw() { document.getElementById('raw-editor').style.display = 'none'; }
+function moverDep(i, dir) { const j=i+dir; if(j<0||j>=deps.length) return; [deps[i],deps[j]]=[deps[j],deps[i]]; renderDeps(); marcarAlterado(); }
+function removerDep(i) { if(!confirm('Remover este depoimento?')) return; deps.splice(i,1); renderDeps(); marcarAlterado(); }
+function showRawEditor() { fecharFormNovo(); const ta=document.getElementById('raw-textarea'); ta.value=JSON.stringify(deps,null,2); document.getElementById('raw-editor').style.display='block'; ta.focus(); }
+function fecharRaw() { document.getElementById('raw-editor').style.display='none'; }
 function aplicarRaw() {
   const raw = document.getElementById('raw-textarea').value.trim();
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) throw new Error('Deve ser um array');
-    const validos = parsed.filter(d => d.nome && d.texto);
-    if (!validos.length) throw new Error('Nenhum item válido encontrado');
-    deps = validos.map(d => ({
-      nome: d.nome.trim(),
-      cidade: (d.cidade||'').trim(),
-      texto: d.texto.trim(),
-      tags: Array.isArray(d.tags) ? d.tags.map(t => String(t).trim().toLowerCase()).filter(Boolean) : []
-    }));
-    fecharRaw();
-    renderDeps();
-    marcarAlterado();
+    deps = parsed.filter(d=>d.nome&&d.texto).map(d=>({ nome:d.nome.trim(), cidade:(d.cidade||'').trim(), texto:d.texto.trim(), tags:Array.isArray(d.tags)?d.tags.map(t=>String(t).trim().toLowerCase()).filter(Boolean):[] }));
+    fecharRaw(); renderDeps(); marcarAlterado();
     toast(`✓ ${deps.length} depoimentos importados`);
   } catch(e) { toast(`✗ JSON inválido: ${e.message}`, 'error'); }
 }
-
-function fecharFormNovo() { document.getElementById('form-novo').style.display = 'none'; }
-function showFormNovo() {
-  fecharRaw();
-  document.getElementById('form-novo').style.display = 'block';
-  document.getElementById('new-nome').focus();
-}
+function fecharFormNovo() { document.getElementById('form-novo').style.display='none'; }
+function showFormNovo() { fecharRaw(); document.getElementById('form-novo').style.display='block'; document.getElementById('new-nome').focus(); }
 function cancelarNovo() {
-  document.getElementById('form-novo').style.display = 'none';
-  ['new-nome','new-cidade','new-texto'].forEach(id => document.getElementById(id).value = '');
-  // limpar tags
-  const wrap = document.getElementById('new-tags-wrap');
-  wrap.querySelectorAll('.tag-chip').forEach(c => c.remove());
-  wrap.querySelector('.tag-input').value = '';
+  document.getElementById('form-novo').style.display='none';
+  ['new-nome','new-cidade','new-texto'].forEach(id => document.getElementById(id).value='');
+  const wrap=document.getElementById('new-tags-wrap');
+  wrap.querySelectorAll('.tag-chip').forEach(c=>c.remove());
+  wrap.querySelector('.tag-input').value='';
 }
-
 function adicionarDep() {
-  const nome   = document.getElementById('new-nome').value.trim();
-  const cidade = document.getElementById('new-cidade').value.trim();
-  const texto  = document.getElementById('new-texto').value.trim();
-  // força confirmar tag pendente no input
-  const tagInput = document.querySelector('#new-tags-wrap .tag-input');
-  if (tagInput?.value.trim()) addTagToWrap('new-tags-wrap', tagInput.value);
-  const tags = getTagsFromWrap('new-tags-wrap');
-  if (!nome || !texto) { toast('Preencha nome e depoimento', 'error'); return; }
-  deps.push({ nome, cidade, texto, tags });
-  cancelarNovo();
-  renderDeps();
-  marcarAlterado();
+  const nome=document.getElementById('new-nome').value.trim(), cidade=document.getElementById('new-cidade').value.trim(), texto=document.getElementById('new-texto').value.trim();
+  const tagInput=document.querySelector('#new-tags-wrap .tag-input');
+  if(tagInput?.value.trim()) addTagToWrap('new-tags-wrap', tagInput.value);
+  const tags=getTagsFromWrap('new-tags-wrap');
+  if(!nome||!texto) { toast('Preencha nome e depoimento', 'error'); return; }
+  deps.push({nome,cidade,texto,tags}); cancelarNovo(); renderDeps(); marcarAlterado();
 }
-
 async function carregarDeps() {
   try {
-    const r = await fetch(`${API}/api/admin/depoimentos`, { credentials: 'include' });
+    const r = await fetch(`${API}/api/admin/depoimentos`, { credentials:'include' });
     const data = await r.json();
-    deps = data.map(d => ({ ...d, tags: Array.isArray(d.tags) ? d.tags : [] }));
-  } catch { deps = []; }
-
-  // Carregar configuração de shuffle
+    deps = data.map(d=>({...d, tags:Array.isArray(d.tags)?d.tags:[]}));
+  } catch { deps=[]; }
   try {
-    const r = await fetch(`${API}/api/admin/config`, { credentials: 'include' });
-    if (r.ok) {
-      const cfg = await r.json();
-      document.getElementById('toggle-shuffle').checked = cfg.shuffle_depoimentos || false;
-    }
-  } catch { /* ignora se endpoint não existir */ }
-
+    const r = await fetch(`${API}/api/admin/config`, { credentials:'include' });
+    if(r.ok) { const cfg=await r.json(); document.getElementById('toggle-shuffle').checked=cfg.shuffle_depoimentos||false; }
+  } catch {}
   renderDeps();
 }
-
 async function salvarDeps() {
   const btn = document.getElementById('btn-save-dep');
-  btn.disabled = true; btn.textContent = 'Salvando...';
+  btn.disabled=true; btn.textContent='Salvando...';
   try {
-    // Coleta tags do DOM antes de salvar
-    const lista = coletarDepsDoDOM();
-    const shuffle = document.getElementById('toggle-shuffle').checked;
-
-    // Salva depoimentos
-    const r = await fetch(`${API}/api/admin/depoimentos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(lista)
-    });
-    if (!r.ok) throw new Error();
-
-    // Salva config de shuffle (tenta, não bloqueia se endpoint não existir)
-    try {
-      await fetch(`${API}/api/admin/config`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ shuffle_depoimentos: shuffle })
-      });
-    } catch { /* ignora */ }
-
+    const lista=coletarDepsDoDOM(), shuffle=document.getElementById('toggle-shuffle').checked;
+    const r = await fetch(`${API}/api/admin/depoimentos`, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body:JSON.stringify(lista) });
+    if(!r.ok) throw new Error();
+    try { await fetch(`${API}/api/admin/config`, { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body:JSON.stringify({shuffle_depoimentos:shuffle}) }); } catch {}
     toast('✓ Depoimentos salvos com sucesso');
-    document.getElementById('dep-status').textContent = `Salvo às ${new Date().toLocaleTimeString('pt-BR')}`;
-    depAlterado = false;
+    document.getElementById('dep-status').textContent=`Salvo às ${new Date().toLocaleTimeString('pt-BR')}`;
+    depAlterado=false;
   } catch { toast('✗ Erro ao salvar', 'error'); }
   finally { btn.disabled=false; btn.textContent='Salvar Depoimentos'; }
+}
+
+// ============================================================
+// WHATSAPP — TEMPLATES
+// ============================================================
+let templatesData = [];
+
+async function carregarTemplates() {
+  try {
+    const r = await fetch(`${API}/api/admin/mensagens`, { headers:{ 'Authorization': authHeader() } });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    templatesData = await r.json();
+    renderTemplates();
+  } catch(e) {
+    document.getElementById('templates-container').innerHTML = `<p style="color:#F09090;font-size:0.78rem;padding:0.5rem 0">Erro ao carregar templates: ${e.message}</p>`;
+  }
+}
+
+function renderTemplates() {
+  const c = document.getElementById('templates-container');
+  if(!templatesData.length) { c.innerHTML='<p style="color:var(--text-muted);font-size:0.78rem">Nenhum template cadastrado.</p>'; return; }
+  c.innerHTML = templatesData.map(t => `
+    <div class="tpl-card">
+      <div class="tpl-chave">${t.chave}</div>
+      <div class="tpl-titulo">${t.titulo||''}</div>
+      <textarea class="tpl-textarea" data-chave="${t.chave}">${escHtml(t.texto||'')}</textarea>
+    </div>`).join('');
+}
+
+async function salvarTemplates() {
+  const inputs = document.querySelectorAll('.tpl-textarea');
+  let ok=0, err=0;
+  for(const inp of inputs) {
+    try {
+      const r = await fetch(`${API}/api/admin/mensagens/${inp.dataset.chave}`, {
+        method:'PUT',
+        headers:{ 'Content-Type':'application/json', 'Authorization': authHeader() },
+        body: JSON.stringify({ texto: inp.value })
+      });
+      if(r.ok) ok++; else err++;
+    } catch { err++; }
+  }
+  toast(err ? `${ok} salvos, ${err} com erro` : `✓ ${ok} template(s) salvos`, err ? 'error' : 'success');
+}
+
+// ============================================================
+// WHATSAPP — SCHEDULER
+// ============================================================
+async function carregarScheduler() {
+  try {
+    const [rStats, rPend] = await Promise.all([
+      fetch(`${API}/api/admin/membros/stats`, { headers:{'Authorization':authHeader()} }),
+      fetch(`${API}/api/admin/membros/remocao-pendente`, { headers:{'Authorization':authHeader()} }),
+    ]);
+    if(rStats.ok) {
+      const s = await rStats.json();
+      document.getElementById('stat-ativos').textContent     = s.ativos     ?? '—';
+      document.getElementById('stat-cancelados').textContent = s.cancelados  ?? '—';
+      document.getElementById('stat-pendentes').textContent  = s.pendentes   ?? '—';
+      document.getElementById('stat-excecoes').textContent   = s.excecoes    ?? '—';
+    }
+    if(rPend.ok) { const lista = await rPend.json(); renderScheduler(lista); }
+  } catch(e) {
+    document.getElementById('scheduler-lista').innerHTML = `<p style="color:#F09090;font-size:0.78rem">Erro: ${e.message}</p>`;
+  }
+}
+
+function renderScheduler(lista) {
+  const c = document.getElementById('scheduler-lista');
+  if(!lista.length) { c.innerHTML='<p style="color:var(--text-muted);font-size:0.78rem;padding:0.5rem 0">Nenhum membro pendente de remoção. ✓</p>'; return; }
+  c.innerHTML = lista.map(m => {
+    const data = m.remocao_agendada
+      ? new Date(m.remocao_agendada).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'})
+      : '—';
+    const sc = {cancelado:'status-cancelado',expirado:'status-expirado',atrasado:'status-atrasado'}[m.status] || 'status-cancelado';
+    return `<div class="sched-row">
+      <div class="sched-nome">${m.nome||'—'}</div>
+      <div class="sched-tel">${m.telefone_formatado||m.telefone||'—'}</div>
+      <div class="sched-data">🗓 ${data}</div>
+      <span class="sched-status ${sc}">${m.status}</span>
+      <button class="sched-btn btn-ok" onclick="cancelarRemocaoMembro(${m.id})">Cancelar remoção</button>
+      <button class="sched-btn" style="border-color:rgba(200,80,80,0.4);color:#F09090" onclick="removerAgora(${m.id},'${escHtml(m.nome||'')}')">Remover já</button>
+    </div>`;
+  }).join('');
+}
+
+async function cancelarRemocaoMembro(id) {
+  if(!confirm('Cancelar a remoção deste membro?')) return;
+  try {
+    const r = await fetch(`${API}/api/admin/membros/${id}/cancelar-remocao`, { method:'POST', headers:{'Authorization':authHeader()} });
+    if(r.ok) { toast('✓ Remoção cancelada'); carregarScheduler(); }
+    else toast('Erro ao cancelar', 'error');
+  } catch { toast('Erro de conexão', 'error'); }
+}
+
+async function removerAgora(id, nome) {
+  if(!confirm(`Remover "${nome}" dos grupos AGORA? Esta ação não pode ser desfeita.`)) return;
+  try {
+    const r = await fetch(`${API}/api/admin/membros/${id}/remover-grupos`, { method:'POST', headers:{'Authorization':authHeader()} });
+    const d = await r.json();
+    if(r.ok) { toast(`✓ ${nome} removido dos grupos`); carregarScheduler(); }
+    else toast(d.error||'Erro ao remover', 'error');
+  } catch { toast('Erro de conexão', 'error'); }
+}
+
+async function executarSchedulerAgora() {
+  if(!confirm('Executar o scheduler agora? Todos os membros com remoção vencida serão removidos dos grupos.')) return;
+  try {
+    const r = await fetch(`${API}/api/admin/scheduler/executar`, { method:'POST', headers:{'Authorization':authHeader()} });
+    const d = await r.json();
+    if(r.ok) { toast(`✓ Scheduler executado: ${d.removidos||0} removido(s)`); carregarScheduler(); }
+    else toast(d.error||'Erro', 'error');
+  } catch { toast('Erro de conexão', 'error'); }
+}
+
+// ============================================================
+// WHATSAPP — EXCEÇÕES
+// ============================================================
+async function carregarExcecoes() {
+  try {
+    const r = await fetch(`${API}/api/admin/excecoes`, { headers:{'Authorization':authHeader()} });
+    const lista = await r.json();
+    renderExcecoes(lista);
+  } catch(e) {
+    document.getElementById('excecoes-lista').innerHTML = `<p style="color:#F09090;font-size:0.78rem">Erro: ${e.message}</p>`;
+  }
+}
+
+function renderExcecoes(lista) {
+  const c = document.getElementById('excecoes-lista');
+  if(!lista.length) { c.innerHTML='<p style="color:var(--text-muted);font-size:0.78rem;padding:0.5rem 0">Nenhuma exceção cadastrada.</p>'; return; }
+  c.innerHTML = lista.map(e => `
+    <div class="exc-row">
+      <div class="exc-nome">${e.nome||'—'}</div>
+      <div class="exc-tel">${e.telefone}</div>
+      <div class="exc-motivo">${e.motivo||''}</div>
+      <button class="exc-del" onclick="deletarExcecao(${e.id},'${escHtml(e.nome||e.telefone)}')">✕</button>
+    </div>`).join('');
+}
+
+function abrirFormExcecao()  { document.getElementById('form-excecao').style.display='block'; }
+function fecharFormExcecao() { document.getElementById('form-excecao').style.display='none'; }
+
+async function salvarExcecao() {
+  const tel    = document.getElementById('exc-tel').value.trim();
+  const nome   = document.getElementById('exc-nome').value.trim();
+  const motivo = document.getElementById('exc-motivo').value.trim();
+  if(!tel) { toast('Informe o telefone', 'error'); return; }
+  try {
+    const r = await fetch(`${API}/api/admin/excecoes`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':authHeader() },
+      body: JSON.stringify({telefone:tel, nome, motivo})
+    });
+    if(r.ok) { toast('✓ Exceção adicionada'); fecharFormExcecao(); document.getElementById('exc-tel').value=''; document.getElementById('exc-nome').value=''; document.getElementById('exc-motivo').value=''; carregarExcecoes(); }
+    else { const d=await r.json(); toast(d.error||'Erro ao salvar','error'); }
+  } catch { toast('Erro de conexão','error'); }
+}
+
+async function deletarExcecao(id, nome) {
+  if(!confirm(`Remover "${nome}" das exceções?`)) return;
+  try {
+    const r = await fetch(`${API}/api/admin/excecoes/${id}`, { method:'DELETE', headers:{'Authorization':authHeader()} });
+    if(r.ok) { toast('✓ Exceção removida'); carregarExcecoes(); }
+    else toast('Erro ao remover','error');
+  } catch { toast('Erro de conexão','error'); }
+}
+
+// ============================================================
+// WHATSAPP — ENVIO MANUAL
+// ============================================================
+async function enviarManual() {
+  const tel      = document.getElementById('manual-tel').value.trim();
+  const nome     = document.getElementById('manual-nome').value.trim();
+  const mensagem = document.getElementById('manual-msg').value.trim();
+  const imediato = document.getElementById('manual-imediato').checked;
+  if(!tel||!mensagem) { toast('Preencha telefone e mensagem','error'); return; }
+  const btn = document.getElementById('btn-manual');
+  btn.disabled=true; btn.textContent='Enviando...';
+  try {
+    const r = await fetch(`${API}/api/admin/mensagens/enviar-manual`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':authHeader() },
+      body: JSON.stringify({telefone:tel, nome, mensagem, imediato})
+    });
+    const d = await r.json();
+    if(r.ok) {
+      toast(imediato ? '✓ Mensagem enviada' : '✓ Mensagem enfileirada');
+      document.getElementById('manual-tel').value='';
+      document.getElementById('manual-nome').value='';
+      document.getElementById('manual-msg').value='';
+    } else toast(d.error||'Erro ao enviar','error');
+  } catch { toast('Erro de conexão','error'); }
+  finally { btn.disabled=false; btn.textContent='Enviar via gateway'; }
 }
 
 // ===== INIT =====
