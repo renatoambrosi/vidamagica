@@ -165,21 +165,56 @@
 
     .navbar-logo { height: 32px; width: auto; }
 
+    .navbar-actions { display: flex; align-items: center; gap: 0.5rem; }
     .btn-login {
       font-family: var(--font-body);
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 600;
       color: var(--color-gold-amber);
       background: none;
       border: 1px solid rgba(200,146,42,0.4);
       border-radius: var(--radius-full);
-      padding: 0.4rem 1.1rem;
+      padding: 0.38rem 1rem;
       cursor: pointer;
       transition: all 0.2s;
       text-decoration: none;
       letter-spacing: 0.05em;
     }
     .btn-login:hover { background: rgba(200,146,42,0.1); border-color: var(--color-gold-amber); }
+    .btn-cadastro-nav {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--color-brown-dark);
+      background: var(--color-gold-amber);
+      border: none;
+      border-radius: var(--radius-full);
+      padding: 0.42rem 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      letter-spacing: 0.04em;
+    }
+    .btn-cadastro-nav:hover { background: var(--color-gold-deep); }
+    .btn-entrar-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: rgba(245,240,232,0.5);
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      letter-spacing: 0.03em;
+      margin-top: 0.25rem;
+      padding: 0.5rem 0;
+      transition: color 0.2s;
+    }
+    .btn-entrar-hero:hover { color: var(--color-gold-light); }
 
     /* ===== TICKER ===== */
     .ticker-wrap {
@@ -965,6 +1000,45 @@
       outline-offset: 3px;
     }
 
+    /* ===== NAVBAR ACTIONS (2 botões) ===== */
+    .navbar-actions { display: flex; align-items: center; gap: 0.5rem; }
+    .btn-cadastro-nav {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--color-brown-dark);
+      background: var(--color-gold-amber);
+      border: none;
+      border-radius: var(--radius-full);
+      padding: 0.42rem 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      letter-spacing: 0.04em;
+    }
+    .btn-cadastro-nav:hover { background: var(--color-gold-deep); }
+
+    /* ===== BOTÃO ENTRAR NO HERO ===== */
+    .btn-entrar-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: rgba(245,240,232,0.5);
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      letter-spacing: 0.03em;
+      margin-top: 0.25rem;
+      padding: 0.5rem 0;
+      transition: color 0.2s;
+    }
+    .btn-entrar-hero:hover { color: var(--color-gold-light); }
+
     /* ===== RESPONSIVO ===== */
     @media (min-width: 640px) {
       .logo { width: 200px; }
@@ -989,6 +1063,7 @@
       .social-icons a i { font-size: 18px; }
       .validacao-destaque { font-size: 0.98rem; padding: 1.25rem; }
       .depoimento-card { flex: 0 0 280px; }
+      .btn-cadastro-nav { display: none; }
     }
 
     @media (min-width: 1024px) {
@@ -1005,7 +1080,10 @@
   <!-- NAVBAR -->
   <nav class="navbar">
     <img src="assets/logo-horizontal.png" alt="Vida Mágica" class="navbar-logo">
-    <a href="/auth" class="btn-login">Entrar</a>
+    <div class="navbar-actions">
+      <a href="/auth" class="btn-login">Entrar</a>
+      <a href="/cadastro" class="btn-cadastro-nav">Criar conta</a>
+    </div>
   </nav>
 
   <!-- TICKER -->
@@ -1162,7 +1240,7 @@
           </div>
 
           <div class="fase-label">Fase 2 — Vivendo uma Vida Mágica</div>
-          <p class="narrativa-texto">Você saiu das travas. Agora é hora de aprender a atrair — com fé, com propósito e com as leis espirituais que poucos entendem de verdade. A entrada nessa fase exige ter refazido o Teste com resultado de Prosperidade.</p>
+          <p class="narrativa-texto">Você saiu das travas. Agora é hora de aprender a atrair — com fé, com propósito e com as leis espirituais que poucos entendem de verdade.</p>
           <div class="produtos-grid">
             <div class="produto-card destaque">
               <img src="assets/products/lda-biblica.png" alt="Lei da Atração Bíblica">
@@ -1218,6 +1296,15 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- LINK QUEM JÁ TEM CONTA -->
+      <div style="text-align:center;margin-top:0.75rem">
+        <a href="/auth" class="btn-entrar-hero">Já tenho conta → Entrar</a>
+      </div>
+
+      <div style="text-align:center;margin-top:0.75rem">
+        <a href="/auth" class="btn-entrar-hero">Já tenho conta → Entrar</a>
       </div>
     </div>
   </main>
@@ -1315,16 +1402,6 @@
   </div>
 
   <script>
-    // ===== UTILITÁRIOS =====
-    function shuffle(arr) {
-      const a = [...arr];
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-      return a;
-    }
-
     const API_BASE = 'https://vidamagica-production.up.railway.app';
 
     function shuffle(arr) {
@@ -1336,7 +1413,7 @@
       return a;
     }
 
-    // ===== TICKER + CARROSSEL — busca da API =====
+    // ===== TICKER + CARROSSEL =====
     (async function() {
       let depoimentos = [];
       let shuffleAtivo = false;
@@ -1357,7 +1434,6 @@
 
       if (shuffleAtivo) depoimentos = shuffle(depoimentos);
 
-      // Fallback caso API falhe ou retorne vazio
       if (!Array.isArray(depoimentos) || depoimentos.length === 0) {
         depoimentos = [
           { nome: 'Ana Paula', cidade: 'SP', texto: 'Mudou completamente a forma como eu via minha vida.' },
@@ -1371,7 +1447,6 @@
         ];
       }
 
-      // --- TICKER (ordem definida no admin) ---
       const tickerTrack = document.getElementById('ticker-track');
       if (tickerTrack) {
         const doubled = [...depoimentos, ...depoimentos];
@@ -1381,17 +1456,12 @@
         }).join('');
       }
 
-      // --- CARROSSEL (ordem definida no admin) ---
       const carrosselTrack = document.getElementById('depoimentos-track');
       if (carrosselTrack) {
         const doubled = [...depoimentos, ...depoimentos];
         carrosselTrack.innerHTML = doubled.map(d => {
           const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
-          return `
-            <div class="depoimento-card">
-              <p class="depoimento-texto">${d.texto}</p>
-              <div class="depoimento-autor">${autor}</div>
-            </div>`;
+          return `<div class="depoimento-card"><p class="depoimento-texto">${d.texto}</p><div class="depoimento-autor">${autor}</div></div>`;
         }).join('');
       }
     })();
@@ -1418,26 +1488,20 @@
         } catch { return baseUrl; }
       }
 
-      window.__addUtms = addUtms;
-
-      document.getElementById('link-teste').href    = addUtms('https://teste.suellenseragi.com.br', 'home-trilha-completa');
-      document.getElementById('lp-teste').href      = addUtms('https://teste.suellenseragi.com.br', 'home-produtos');
+      document.getElementById('link-teste').href     = addUtms('https://teste.suellenseragi.com.br', 'home-trilha-completa');
+      document.getElementById('lp-teste').href       = addUtms('https://teste.suellenseragi.com.br', 'home-produtos');
       document.getElementById('checkout-teste').href = addUtms('https://teste.suellenseragi.com.br', 'checkout-teste');
-      document.getElementById('lp-guia').href       = addUtms('https://guiapratico.suellenseragi.com.br/', 'lp-guia');
-      document.getElementById('lp-ouro').href       = addUtms('https://www.suellenseragi.com.br/ourorm', 'lp-ouro');
-      document.getElementById('lp-lda').href        = addUtms('http://lda.suellenseragi.com.br', 'lp-lda');
-      document.getElementById('lp-livro').href      = addUtms('https://talmaneira.suellenseragi.com.br/', 'lp-livro');
-      document.getElementById('lp-curso').href      = addUtms('https://talmaneira.suellenseragi.com.br/', 'lp-curso');
+      document.getElementById('lp-guia').href        = addUtms('https://guiapratico.suellenseragi.com.br/', 'lp-guia');
+      document.getElementById('lp-ouro').href        = addUtms('https://www.suellenseragi.com.br/ourorm', 'lp-ouro');
+      document.getElementById('lp-lda').href         = addUtms('http://lda.suellenseragi.com.br', 'lp-lda');
+      document.getElementById('lp-livro').href       = addUtms('https://talmaneira.suellenseragi.com.br/', 'lp-livro');
+      document.getElementById('lp-curso').href       = addUtms('https://talmaneira.suellenseragi.com.br/', 'lp-curso');
     })();
 
-    // ===== PREÇOS VIA API =====
+    // ===== PREÇOS =====
     (async function() {
       try {
-        const res = await fetch(`${API_BASE}/api/precos`, {
-          method: 'GET',
-          headers: { 'Accept': 'application/json' },
-          mode: 'cors'
-        });
+        const res = await fetch(`${API_BASE}/api/precos`, { headers: { 'Accept': 'application/json' }, mode: 'cors' });
         const d = await res.json();
 
         function formatPreco(p) {
@@ -1480,15 +1544,12 @@
       }
     })();
 
-
-
     // ===== DROPDOWNS =====
     function toggleDrop(id) {
       const panel = document.getElementById(id);
       const wrap  = panel.closest('.dropdown-wrap');
       const isOpen = panel.classList.contains('open');
 
-      // Fecha todos
       document.querySelectorAll('.dropdown-panel').forEach(p => p.classList.remove('open'));
       document.querySelectorAll('.dropdown-wrap').forEach(w => w.classList.remove('open'));
       document.querySelectorAll('.btn-icon').forEach(i => i.classList.remove('rotated'));
@@ -1501,7 +1562,7 @@
       }
     }
 
-    // ===== PARTÍCULAS ===== 
+    // ===== PARTÍCULAS =====
     (function() {
       function criarParticulas(containerId, count) {
         const c = document.getElementById(containerId);
