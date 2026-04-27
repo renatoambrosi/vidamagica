@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 
   <!-- CSS do app -->
-  <link rel="stylesheet" href="/public/app/app.css">
+  <link rel="stylesheet" href="/app/app.css">
 
   <!-- Three.js (carregado uma vez, cacheado pelo navegador) -->
   <script type="importmap">
@@ -63,10 +63,9 @@
     </button>
   </header>
 
-  <!-- ========== CONTEÚDO PRINCIPAL (rola junto com a árvore atrás) ========== -->
+  <!-- ========== CONTEÚDO PRINCIPAL ========== -->
   <main id="dashboard" class="dashboard">
 
-    <!-- Saudação -->
     <section class="saudacao">
       <p class="saudacao-eyebrow">Bem-vinda de volta</p>
       <h1 class="saudacao-titulo" id="saudacao-nome">Sua jornada</h1>
@@ -74,10 +73,8 @@
       <p class="saudacao-sub">A vida começa quando a mente desperta.</p>
     </section>
 
-    <!-- Espaço pra árvore respirar (a árvore canvas ocupa essa área visualmente) -->
     <div class="arvore-spacer"></div>
 
-    <!-- Tesouro da Su (no pé da árvore) -->
     <section class="tesouro" id="tesouro">
       <div class="tesouro-bau" id="tesouro-bau">
         <div class="tesouro-glow"></div>
@@ -87,7 +84,6 @@
       <p class="tesouro-sub">Aparece todos os dias às 6h</p>
     </section>
 
-    <!-- Trilha da Fase Atual -->
     <section class="trilha">
       <div class="trilha-header">
         <span class="trilha-eyebrow">Fase 1 · Despertando</span>
@@ -153,14 +149,13 @@
       </ol>
     </section>
 
-    <!-- Rodapé sutil -->
     <footer class="rodape-app">
       <p>Vida Mágica · Renato &amp; Suellen Seragi</p>
     </footer>
 
   </main>
 
-  <!-- ========== MODAL: Minha Conta (esqueleto) ========== -->
+  <!-- MODAIS -->
   <div id="modal-conta" class="modal" aria-hidden="true">
     <div class="modal-overlay" data-close-modal></div>
     <div class="modal-painel">
@@ -182,7 +177,6 @@
     </div>
   </div>
 
-  <!-- ========== MODAL: Meus Produtos (esqueleto) ========== -->
   <div id="modal-produtos" class="modal" aria-hidden="true">
     <div class="modal-overlay" data-close-modal></div>
     <div class="modal-painel">
@@ -197,7 +191,6 @@
     </div>
   </div>
 
-  <!-- ========== MODAL: Baú de Sementes (esqueleto) ========== -->
   <div id="modal-bau" class="modal" aria-hidden="true">
     <div class="modal-overlay" data-close-modal></div>
     <div class="modal-painel">
@@ -216,7 +209,6 @@
     </div>
   </div>
 
-  <!-- Banner de instalação PWA (esqueleto, escondido) -->
   <div id="pwa-banner" class="pwa-banner" hidden>
     <span>Instalar Vida Mágica?</span>
     <button id="pwa-instalar">Instalar</button>
@@ -224,8 +216,8 @@
   </div>
 
   <!-- Scripts do app -->
-  <script type="module" src="/public/app/scene.js"></script>
-  <script type="module" src="/public/app/app.js"></script>
+  <script type="module" src="/app/scene.js"></script>
+  <script type="module" src="/app/app.js"></script>
 
 </body>
 </html>
