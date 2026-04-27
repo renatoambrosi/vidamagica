@@ -1,346 +1,223 @@
-/* ============================================================
-   VIDA MÁGICA — Cena Three.js
-   Árvore com shader de vento + sistema de folhas caindo
-   ============================================================ */
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#E8DCC0">
+  <title>Vida Mágica</title>
+  <link rel="icon" href="/favicon.png">
 
-import * as THREE from 'three';
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 
-// ───────────────────────────────────────────────────────────
-// CONFIG
-// ───────────────────────────────────────────────────────────
+  <!-- CSS do app -->
+  <link rel="stylesheet" href="/app/app.css">
 
-const ARVORE_URL = '/public/app/assets/arvore.webp';
-const ARVORE_FALLBACK_URL = '/public/app/assets/arvore.png';
-
-// Parâmetros do vento (ajustáveis)
-const VENTO = {
-  intensidade: 0.012,    // amplitude do balanço (0.005 sutil — 0.025 forte)
-  velocidade: 1.2,       // quão rápido oscila
-  frequencia: 2.5,       // quantas ondas atravessam a árvore
-};
-
-// ───────────────────────────────────────────────────────────
-// SETUP
-// ───────────────────────────────────────────────────────────
-
-const canvas = document.getElementById('canvas-arvore');
-if (!canvas) {
-  console.error('[Vida Mágica] canvas-arvore não encontrado');
-}
-
-const renderer = new THREE.WebGLRenderer({
-  canvas,
-  alpha: true,
-  antialias: true,
-  powerPreference: 'high-performance',
-});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setClearColor(0x000000, 0); // transparente
-
-const scene = new THREE.Scene();
-
-// Câmera ortográfica (2D-like)
-let camera;
-function criarCamera() {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  const aspect = w / h;
-  // unidades do mundo: 2 unidades de altura visível
-  const altura = 2;
-  camera = new THREE.OrthographicCamera(
-    -altura * aspect / 2,
-     altura * aspect / 2,
-     altura / 2,
-    -altura / 2,
-    -10, 10
-  );
-  camera.position.z = 1;
-}
-criarCamera();
-
-// ───────────────────────────────────────────────────────────
-// SHADER DA ÁRVORE — vento aplicado verticalmente (mais nas folhas, menos no tronco)
-// ───────────────────────────────────────────────────────────
-
-const arvoreVertexShader = /* glsl */ `
-  uniform float uTime;
-  uniform float uIntensidade;
-  uniform float uVelocidade;
-  uniform float uFrequencia;
-
-  varying vec2 vUv;
-
-  void main() {
-    vUv = uv;
-
-    vec3 pos = position;
-
-    // "Peso do vento": 0 na base (tronco/raízes), 1 no topo (copa)
-    // uv.y vai de 0 (base) a 1 (topo)
-    // suaviza com curva — o tronco quase não se mexe, a copa balança bem
-    float peso = smoothstep(0.25, 0.95, uv.y);
-    peso = pow(peso, 1.4);
-
-    // Onda de vento: combinação de duas senóides com frequências diferentes
-    // pra dar sensação orgânica (não periódico óbvio)
-    float onda1 = sin(uTime * uVelocidade + uv.x * uFrequencia + uv.y * 1.5);
-    float onda2 = sin(uTime * uVelocidade * 0.7 + uv.x * uFrequencia * 0.5) * 0.4;
-    float vento = (onda1 + onda2) * peso * uIntensidade;
-
-    // Aplica deslocamento horizontal (vento empurra pro lado)
-    pos.x += vento;
-
-    // Pequeno deslocamento vertical (folhas sobem/descem com o vento)
-    pos.y += vento * 0.3;
-
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-  }
-`;
-
-const arvoreFragmentShader = /* glsl */ `
-  uniform sampler2D uTextura;
-  varying vec2 vUv;
-
-  void main() {
-    vec4 cor = texture2D(uTextura, vUv);
-    // descarta pixels totalmente transparentes (otimização)
-    if (cor.a < 0.01) discard;
-    gl_FragColor = cor;
-  }
-`;
-
-// ───────────────────────────────────────────────────────────
-// CARREGAR ÁRVORE
-// ───────────────────────────────────────────────────────────
-
-const loader = new THREE.TextureLoader();
-let arvoreMesh = null;
-let arvoreUniforms = null;
-
-function carregarArvore() {
-  // tenta WebP primeiro, fallback PNG
-  loader.load(
-    ARVORE_URL,
-    onTexturaCarregada,
-    undefined,
-    () => {
-      console.warn('[Vida Mágica] WebP falhou, usando PNG');
-      loader.load(ARVORE_URL.replace('.webp', '.png'), onTexturaCarregada);
+  <!-- Three.js (carregado uma vez, cacheado pelo navegador) -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
     }
-  );
-}
-
-function onTexturaCarregada(textura) {
-  textura.minFilter = THREE.LinearFilter;
-  textura.magFilter = THREE.LinearFilter;
-  textura.colorSpace = THREE.SRGBColorSpace;
-
-  arvoreUniforms = {
-    uTextura:      { value: textura },
-    uTime:         { value: 0 },
-    uIntensidade:  { value: VENTO.intensidade },
-    uVelocidade:   { value: VENTO.velocidade },
-    uFrequencia:   { value: VENTO.frequencia },
-  };
-
-  const material = new THREE.ShaderMaterial({
-    uniforms: arvoreUniforms,
-    vertexShader: arvoreVertexShader,
-    fragmentShader: arvoreFragmentShader,
-    transparent: true,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-  });
-
-  // Geometria da árvore — plano subdividido (necessário pra deformar com shader)
-  // 32x32 vertices = movimento bem suave sem custar nada
-  const aspectArvore = textura.image.width / textura.image.height; // ~1.54
-  const alturaArvore = 1.4;
-  const larguraArvore = alturaArvore * aspectArvore;
-
-  const geometria = new THREE.PlaneGeometry(larguraArvore, alturaArvore, 32, 32);
-
-  arvoreMesh = new THREE.Mesh(geometria, material);
-  arvoreMesh.position.y = -0.05; // ligeiramente acima do centro pra "plantar" no chão
-  scene.add(arvoreMesh);
-
-  posicionarArvore();
-  console.log('[Vida Mágica] Árvore carregada e renderizando');
-}
-
-// Posiciona a árvore baseado no tamanho da tela
-function posicionarArvore() {
-  if (!arvoreMesh) return;
-
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  const aspect = w / h;
-
-  // Em mobile (vertical), árvore ocupa mais % da largura
-  // Em desktop, menos (deixa mais respiração)
-  const escalaBase = w < 640 ? 0.95 : (w < 1024 ? 0.75 : 0.6);
-  arvoreMesh.scale.setScalar(escalaBase);
-
-  // Centraliza horizontalmente
-  arvoreMesh.position.x = 0;
-
-  // Posição vertical: a árvore tem que aparecer "abraçando" a área de cima do dashboard
-  // Em mobile a tela é menor → arvore sobe um pouco; em desktop, fica mais centrada
-  arvoreMesh.position.y = w < 640 ? 0.05 : 0.0;
-}
-
-carregarArvore();
-
-// ───────────────────────────────────────────────────────────
-// FOLHAS CAINDO (sistema simples de partículas)
-// ───────────────────────────────────────────────────────────
-// Cada folha é um pequeno plano com a textura da árvore (samplea uma região da copa)
-// Solta a cada N segundos, cai com gravidade leve, balança no vento.
-
-const FOLHA_COUNT = 6; // máximo simultâneo
-const folhas = [];
-
-function criarFolhas() {
-  for (let i = 0; i < FOLHA_COUNT; i++) {
-    const geo = new THREE.PlaneGeometry(0.04, 0.04);
-    const mat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(0.85, 0.7, 0.4), // tom dourado médio
-      transparent: true,
-      opacity: 0,
-      depthWrite: false,
-    });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.visible = false;
-    scene.add(mesh);
-    folhas.push({
-      mesh,
-      ativo: false,
-      x: 0, y: 0,
-      vx: 0, vy: 0,
-      rot: 0, vrot: 0,
-      vida: 0,
-      vidaMax: 0,
-      proximoSpawn: Math.random() * 8 + 2,
-    });
   }
-}
-criarFolhas();
+  </script>
+</head>
+<body>
 
-function spawnFolha(folha) {
-  folha.ativo = true;
-  folha.x = (Math.random() - 0.5) * 1.0;     // posição X dentro da copa
-  folha.y = 0.4 + Math.random() * 0.3;        // topo da copa
-  folha.vx = (Math.random() - 0.5) * 0.05;
-  folha.vy = -0.04 - Math.random() * 0.03;
-  folha.rot = Math.random() * Math.PI * 2;
-  folha.vrot = (Math.random() - 0.5) * 1.5;
-  folha.vida = 0;
-  folha.vidaMax = 8 + Math.random() * 4;     // 8-12s de queda
-  folha.mesh.visible = true;
-  folha.mesh.scale.setScalar(0.7 + Math.random() * 0.5);
-  // Cor com leve variação dourada
-  const tom = 0.55 + Math.random() * 0.25;
-  folha.mesh.material.color.setRGB(tom + 0.3, tom + 0.15, tom * 0.7);
-}
+  <!-- ========== CENA (fundo: céu + colinas + grama + árvore Three.js) ========== -->
+  <div id="cena" class="cena">
+    <div id="ceu" class="ceu"></div>
+    <div id="nuvens" class="nuvens"></div>
+    <div id="colinas" class="colinas"></div>
+    <div id="grama" class="grama"></div>
+    <canvas id="canvas-arvore" class="canvas-arvore"></canvas>
+    <div id="particulas" class="particulas"></div>
+  </div>
 
-function atualizarFolhas(dt, tempo) {
-  folhas.forEach(folha => {
-    if (!folha.ativo) {
-      folha.proximoSpawn -= dt;
-      if (folha.proximoSpawn <= 0) {
-        spawnFolha(folha);
-        folha.proximoSpawn = 4 + Math.random() * 8;
-      }
-      return;
-    }
+  <!-- ========== TOPO DE NAVEGAÇÃO ========== -->
+  <header id="topo" class="topo">
+    <button class="topo-btn" id="btn-arvore" aria-label="Dashboard">
+      <span class="topo-icon">🌳</span>
+    </button>
+    <button class="topo-btn" id="btn-produtos" aria-label="Meus Produtos">
+      <span class="topo-icon">📦</span>
+    </button>
 
-    folha.vida += dt;
-    if (folha.vida >= folha.vidaMax || folha.y < -0.7) {
-      folha.ativo = false;
-      folha.mesh.visible = false;
-      return;
-    }
+    <div class="topo-fase" id="topo-fase">
+      <button class="topo-fase-arrow" aria-label="Fase anterior" disabled>‹</button>
+      <div class="topo-fase-info">
+        <span class="topo-fase-emoji">🌱</span>
+        <span class="topo-fase-label">Fase 1</span>
+      </div>
+      <button class="topo-fase-arrow" aria-label="Próxima fase" disabled>›</button>
+    </div>
 
-    // Vento horizontal oscilante
-    const ventoX = Math.sin(tempo * 0.8 + folha.y * 3) * 0.03;
+    <button class="topo-btn topo-btn-bau" id="btn-bau" aria-label="Baú de Sementes">
+      <span class="topo-icon">🎁</span>
+      <span class="topo-bau-count" id="topo-sementes">0</span>
+    </button>
+    <button class="topo-btn" id="btn-conta" aria-label="Minha Conta">
+      <span class="topo-icon">👤</span>
+    </button>
+  </header>
 
-    folha.x += (folha.vx + ventoX) * dt;
-    folha.y += folha.vy * dt;
-    folha.rot += folha.vrot * dt;
+  <!-- ========== CONTEÚDO PRINCIPAL ========== -->
+  <main id="dashboard" class="dashboard">
 
-    // Fade in/out
-    const fadeIn = Math.min(folha.vida / 0.5, 1);
-    const fadeOut = Math.min((folha.vidaMax - folha.vida) / 1.5, 1);
-    const opacidade = Math.min(fadeIn, fadeOut) * 0.85;
+    <section class="saudacao">
+      <p class="saudacao-eyebrow">Bem-vinda de volta</p>
+      <h1 class="saudacao-titulo" id="saudacao-nome">Sua jornada</h1>
+      <div class="saudacao-divisor"></div>
+      <p class="saudacao-sub">A vida começa quando a mente desperta.</p>
+    </section>
 
-    folha.mesh.position.set(folha.x, folha.y, 0.1);
-    folha.mesh.rotation.z = folha.rot;
-    folha.mesh.material.opacity = opacidade;
-  });
-}
+    <div class="arvore-spacer"></div>
 
-// ───────────────────────────────────────────────────────────
-// LOOP DE ANIMAÇÃO
-// ───────────────────────────────────────────────────────────
+    <section class="tesouro" id="tesouro">
+      <div class="tesouro-bau" id="tesouro-bau">
+        <div class="tesouro-glow"></div>
+        <div class="tesouro-icon">🎁</div>
+      </div>
+      <p class="tesouro-label">Tesouro da Su</p>
+      <p class="tesouro-sub">Aparece todos os dias às 6h</p>
+    </section>
 
-const clock = new THREE.Clock();
-let pausado = false;
+    <section class="trilha">
+      <div class="trilha-header">
+        <span class="trilha-eyebrow">Fase 1 · Despertando</span>
+        <h2 class="trilha-titulo">Sua trilha</h2>
+        <p class="trilha-sub">Avance uma atividade por vez. Cada passo desperta o próximo.</p>
+      </div>
 
-function loop() {
-  if (pausado) return;
+      <ol class="trilha-lista">
 
-  const dt = Math.min(clock.getDelta(), 0.1); // clampa pra evitar saltos
-  const tempo = clock.getElapsedTime();
+        <li class="trilha-item trilha-item-ativo" data-step="1">
+          <div class="trilha-num">1</div>
+          <div class="trilha-card">
+            <div class="trilha-card-eyebrow">Diagnóstico</div>
+            <h3 class="trilha-card-titulo">Teste de Prosperidade</h3>
+            <p class="trilha-card-desc">Descubra em 15 perguntas o padrão mental que bloqueia sua prosperidade.</p>
+            <div class="trilha-card-meta">
+              <span class="trilha-meta-tag">15 perguntas</span>
+              <span class="trilha-meta-tag">~7 min</span>
+            </div>
+            <button class="trilha-card-btn">Começar →</button>
+          </div>
+        </li>
 
-  if (arvoreUniforms) {
-    arvoreUniforms.uTime.value = tempo;
-  }
+        <li class="trilha-item trilha-item-bloqueado" data-step="2">
+          <div class="trilha-num">2</div>
+          <div class="trilha-card">
+            <div class="trilha-card-eyebrow">Sessão</div>
+            <h3 class="trilha-card-titulo">Diagnóstico do Teste</h3>
+            <p class="trilha-card-desc">Sessão guiada para entender em profundidade o seu resultado.</p>
+            <div class="trilha-card-meta">
+              <span class="trilha-meta-tag">~25 min</span>
+            </div>
+            <button class="trilha-card-btn" disabled>🔒 Conclua a etapa anterior</button>
+          </div>
+        </li>
 
-  atualizarFolhas(dt, tempo);
+        <li class="trilha-item trilha-item-bloqueado" data-step="3">
+          <div class="trilha-num">3</div>
+          <div class="trilha-card">
+            <div class="trilha-card-eyebrow">E-book</div>
+            <h3 class="trilha-card-titulo">Despertando a Prosperidade Bíblica</h3>
+            <p class="trilha-card-desc">Leitura para entender as travas espirituais que impedem a abundância.</p>
+            <div class="trilha-card-meta">
+              <span class="trilha-meta-tag">~2 horas</span>
+            </div>
+            <button class="trilha-card-btn" disabled>🔒 Etapa bloqueada</button>
+          </div>
+        </li>
 
-  renderer.render(scene, camera);
-  requestAnimationFrame(loop);
-}
+        <li class="trilha-item trilha-item-bloqueado" data-step="4">
+          <div class="trilha-num">4</div>
+          <div class="trilha-card">
+            <div class="trilha-card-eyebrow">Curso</div>
+            <h3 class="trilha-card-titulo">O Ouro da Reprogramação Mental</h3>
+            <p class="trilha-card-desc">A ferramenta definitiva da Fase 1 — o curso completo de reprogramação.</p>
+            <div class="trilha-card-meta">
+              <span class="trilha-meta-tag">12 módulos</span>
+            </div>
+            <button class="trilha-card-btn" disabled>🔒 Etapa bloqueada</button>
+          </div>
+        </li>
 
-// ───────────────────────────────────────────────────────────
-// RESIZE
-// ───────────────────────────────────────────────────────────
+      </ol>
+    </section>
 
-function resize() {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  renderer.setSize(w, h, false);
-  criarCamera();
-  posicionarArvore();
-}
+    <footer class="rodape-app">
+      <p>Vida Mágica · Renato &amp; Suellen Seragi</p>
+    </footer>
 
-window.addEventListener('resize', resize);
-resize();
+  </main>
 
-// ───────────────────────────────────────────────────────────
-// PAUSA QUANDO ABA ESCONDIDA (economia de bateria)
-// ───────────────────────────────────────────────────────────
+  <!-- MODAIS -->
+  <div id="modal-conta" class="modal" aria-hidden="true">
+    <div class="modal-overlay" data-close-modal></div>
+    <div class="modal-painel">
+      <header class="modal-header">
+        <button class="modal-back" data-close-modal aria-label="Voltar">‹</button>
+        <h2 class="modal-titulo">Minha Conta</h2>
+        <button class="modal-close" data-close-modal aria-label="Fechar">✕</button>
+      </header>
+      <div class="modal-corpo">
+        <ul class="modal-menu">
+          <li class="modal-menu-item"><span class="modal-menu-icon">📋</span><span>Meu Perfil</span><span class="modal-menu-arrow">›</span></li>
+          <li class="modal-menu-item"><span class="modal-menu-icon">🔐</span><span>Segurança</span><span class="modal-menu-arrow">›</span></li>
+          <li class="modal-menu-item"><span class="modal-menu-icon">💳</span><span>Plano e Assinatura</span><span class="modal-menu-arrow">›</span></li>
+          <li class="modal-menu-item"><span class="modal-menu-icon">🔔</span><span>Notificações</span><span class="modal-menu-arrow">›</span></li>
+          <li class="modal-menu-item"><span class="modal-menu-icon">⚙️</span><span>Configurações</span><span class="modal-menu-arrow">›</span></li>
+          <li class="modal-menu-item modal-menu-item-danger" id="menu-logout"><span class="modal-menu-icon">🚪</span><span>Sair</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
 
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    pausado = true;
-  } else if (pausado) {
-    pausado = false;
-    clock.getDelta(); // reseta delta pra não saltar
-    loop();
-  }
-});
+  <div id="modal-produtos" class="modal" aria-hidden="true">
+    <div class="modal-overlay" data-close-modal></div>
+    <div class="modal-painel">
+      <header class="modal-header">
+        <button class="modal-back" data-close-modal aria-label="Voltar">‹</button>
+        <h2 class="modal-titulo">Meus Produtos</h2>
+        <button class="modal-close" data-close-modal aria-label="Fechar">✕</button>
+      </header>
+      <div class="modal-corpo">
+        <p class="modal-vazio">Você ainda não tem produtos ativos.<br><span>Comece pelo Teste de Prosperidade.</span></p>
+      </div>
+    </div>
+  </div>
 
-// Inicia
-loop();
+  <div id="modal-bau" class="modal" aria-hidden="true">
+    <div class="modal-overlay" data-close-modal></div>
+    <div class="modal-painel">
+      <header class="modal-header">
+        <button class="modal-back" data-close-modal aria-label="Voltar">‹</button>
+        <h2 class="modal-titulo">Baú de Sementes</h2>
+        <button class="modal-close" data-close-modal aria-label="Fechar">✕</button>
+      </header>
+      <div class="modal-corpo">
+        <div class="bau-vazio">
+          <div class="bau-vazio-icon">🌱</div>
+          <p class="bau-vazio-titulo">Você ainda não tem sementes</p>
+          <p class="bau-vazio-sub">Sementes são coletadas no Tesouro da Su, todos os dias, com o Clube Vida Mágica.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-// ───────────────────────────────────────────────────────────
-// API EXPORTADA — pra o app.js mexer no vento se quiser
-// ───────────────────────────────────────────────────────────
+  <div id="pwa-banner" class="pwa-banner" hidden>
+    <span>Instalar Vida Mágica?</span>
+    <button id="pwa-instalar">Instalar</button>
+    <button id="pwa-depois">Depois</button>
+  </div>
 
-window.VidaMagicaCena = {
-  setVentoIntensidade: (v) => { if (arvoreUniforms) arvoreUniforms.uIntensidade.value = v; },
-  setVentoVelocidade:  (v) => { if (arvoreUniforms) arvoreUniforms.uVelocidade.value = v; },
-  pausar:  () => { pausado = true; },
-  retomar: () => { if (pausado) { pausado = false; clock.getDelta(); loop(); } },
-};
+  <!-- Scripts do app -->
+  <script type="module" src="/app/scene.js"></script>
+  <script type="module" src="/app/app.js"></script>
+
+</body>
+</html>
