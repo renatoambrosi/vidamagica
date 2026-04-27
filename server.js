@@ -51,6 +51,7 @@ const { autenticar: basicAuth } = require('./routes/precos');
 app.get('/admin',    basicAuth, (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
 app.get('/auth',               (req, res) => res.sendFile(path.join(__dirname, 'auth.html')));
 app.get('/cadastro',           (req, res) => res.sendFile(path.join(__dirname, 'cadastro.html')));
+app.get('/app',                (req, res) => res.sendFile(path.join(__dirname, 'app.html')));
 
 // ── API PÚBLICA ──
 app.use('/api', precosRoutes);
