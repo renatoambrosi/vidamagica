@@ -102,6 +102,7 @@ app.listen(PORT, async () => {
 🖥️   GET  /admin         (Basic Auth)
 🔑  GET  /auth
 📝  GET  /cadastro
+🌳  GET  /app            ← ADICIONA ESSA LINHA
 📡  *    /monitor/*     (Basic Auth)
   `);
   await initDb();
