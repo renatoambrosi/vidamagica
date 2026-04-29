@@ -2,7 +2,7 @@
 window.VmSession=(function(){const K='vm_s',P='vm_lembrar',U='vm_u';function salvar(d,l){const p=l!==undefined?l:getLembrar();localStorage.setItem(P,p?'1':'0');const s=p?localStorage:sessionStorage,o=p?sessionStorage:localStorage;o.removeItem(K);s.setItem(K,JSON.stringify(d));if(d.usuario?.nome)localStorage.setItem(U,JSON.stringify({nome:d.usuario.nome,email:d.usuario.email||null,telefone_formatado:d.usuario.telefone_formatado||null,foto_url:d.usuario.foto_url||null}));}function carregar(){try{const r=localStorage.getItem(K)||sessionStorage.getItem(K);return r?JSON.parse(r):null;}catch{return null;}}function destruir(){localStorage.removeItem(K);sessionStorage.removeItem(K);}function getAccess(){return carregar()?.access_token||null;}function getRefresh(){return carregar()?.refresh_token||null;}function getLembrar(){return localStorage.getItem(P)!=='0';}function getUsuarioLembrado(){try{return JSON.parse(localStorage.getItem(U)||'null');}catch{return null;}}function limparUsuarioLembrado(){localStorage.removeItem(U);}return{salvar,carregar,destruir,getAccess,getRefresh,getLembrar,getUsuarioLembrado,limparUsuarioLembrado};})();
 
 /* ============================================================
-   VIDA MÁGICA — App principal  v2
+   VIDA MÁGICA — App principal  v3
    ============================================================ */
 
 const API = '';
@@ -58,35 +58,28 @@ function criarParticulas() {
   }
 }
 
-// ── SPRITES (estrelinhas decorativas, igual à home) ─────────
+// ── SPRITES ─────────────────────────────────────────────────
 function criarSprites() {
-  // Posições e tamanhos variados, animação assincrona
   const SPRITES = [
-    { top: '15%', left: '8%',  size: 18, dur: 4.2, delay: 0 },
-    { top: '22%', right: '6%', size: 14, dur: 5.8, delay: 1.4 },
-    { top: '38%', left: '5%',  size: 12, dur: 6.1, delay: 2.2 },
-    { top: '55%', right: '4%', size: 16, dur: 4.8, delay: 0.8 },
-    { top: '70%', left: '7%',  size: 10, dur: 7.2, delay: 3.1 },
-    { top: '82%', right: '9%', size: 20, dur: 5.3, delay: 1.9 },
-    { top: '12%', left: '50%', size: 11, dur: 6.6, delay: 2.7 },
-    { top: '90%', left: '35%', size: 13, dur: 4.5, delay: 0.5 },
+    { top:'15%', left:'8%',   size:18, dur:4.2, delay:0   },
+    { top:'22%', right:'6%',  size:14, dur:5.8, delay:1.4 },
+    { top:'38%', left:'5%',   size:12, dur:6.1, delay:2.2 },
+    { top:'55%', right:'4%',  size:16, dur:4.8, delay:0.8 },
+    { top:'70%', left:'7%',   size:10, dur:7.2, delay:3.1 },
+    { top:'82%', right:'9%',  size:20, dur:5.3, delay:1.9 },
+    { top:'12%', left:'50%',  size:11, dur:6.6, delay:2.7 },
+    { top:'90%', left:'35%',  size:13, dur:4.5, delay:0.5 },
   ];
-
   SPRITES.forEach(s => {
     const el = document.createElement('div');
     el.className = 'sprite';
     Object.assign(el.style, {
-      top:    s.top || 'auto',
-      left:   s.left || 'auto',
-      right:  s.right || 'auto',
-      width:  s.size + 'px',
-      height: s.size + 'px',
-      animationDuration: s.dur + 's',
-      animationDelay: s.delay + 's',
+      top: s.top || 'auto', left: s.left || 'auto', right: s.right || 'auto',
+      width: s.size+'px', height: s.size+'px',
+      animationDuration: s.dur+'s', animationDelay: s.delay+'s',
     });
-    // Estrela SVG dourada
     el.innerHTML = `<svg viewBox="0 0 24 24" width="${s.size}" height="${s.size}" fill="none">
-      <path d="M12 2 L13.5 9 L20 9 L14.5 13.5 L16.5 20 L12 16 L7.5 20 L9.5 13.5 L4 9 L10.5 9 Z"
+      <path d="M12 2L13.5 9L20 9L14.5 13.5L16.5 20L12 16L7.5 20L9.5 13.5L4 9L10.5 9Z"
         fill="rgba(232,201,122,0.7)" stroke="rgba(200,146,42,0.4)" stroke-width="0.5"/>
     </svg>`;
     document.body.appendChild(el);
@@ -124,7 +117,7 @@ document.getElementById('tesouro-bau')?.addEventListener('click', () => abrirMod
 document.querySelectorAll('[data-close-modal]').forEach(btn => {
   btn.addEventListener('click', e => fecharModal(e.target.closest('.modal')));
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharTodosModais(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { fecharTodosModais(); fecharIOSModal(); } });
 
 document.getElementById('menu-logout')?.addEventListener('click', async () => {
   const refresh = VmSession.getRefresh();
@@ -133,72 +126,148 @@ document.getElementById('menu-logout')?.addEventListener('click', async () => {
   window.location.replace('/auth?intencional');
 });
 
+// Botão instalar dentro da conta
+document.getElementById('menu-instalar-app')?.addEventListener('click', () => {
+  fecharModal('modal-conta');
+  abrirInstalar();
+});
+
+// ── PWA — Android/Chrome ────────────────────────────────────
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Mostra banner nativo Android
+  const b = document.getElementById('pwa-banner');
+  if (b) b.hidden = false;
+  // Mostra botão "Instalar App" na tela de Conta
+  const mi = document.getElementById('menu-instalar-app');
+  if (mi) mi.style.display = '';
+});
+
+document.getElementById('pwa-instalar')?.addEventListener('click', () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+  }
+  document.getElementById('pwa-banner').hidden = true;
+});
+
+document.getElementById('pwa-depois')?.addEventListener('click', () => {
+  document.getElementById('pwa-banner').hidden = true;
+});
+
+// ── PWA — iOS Safari: modal visual ─────────────────────────
+const IOS_KEY = 'vm_ios_install_dismissed';
+
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+function isStandalone() {
+  return window.navigator.standalone === true ||
+         window.matchMedia('(display-mode: standalone)').matches;
+}
+
+function abrirIOSModal() {
+  const modal = document.getElementById('ios-install-modal');
+  if (!modal) return;
+  modal.classList.add('aberto');
+  document.body.style.overflow = 'hidden';
+
+  // Anima o destaque alternando entre os passos
+  let step = 1;
+  window._iosInterval = setInterval(() => {
+    document.getElementById('ios-passo-1')?.classList.toggle('destaque', step === 1);
+    document.getElementById('ios-passo-2')?.classList.toggle('destaque', step === 2);
+    step = step === 1 ? 2 : 1;
+  }, 2200);
+}
+
+function fecharIOSModal() {
+  const modal = document.getElementById('ios-install-modal');
+  if (!modal) return;
+  modal.classList.remove('aberto');
+  document.body.style.overflow = '';
+  clearInterval(window._iosInterval);
+  localStorage.setItem(IOS_KEY, '1');
+}
+
+document.getElementById('ios-fechar')?.addEventListener('click', fecharIOSModal);
+document.getElementById('ios-overlay')?.addEventListener('click', fecharIOSModal);
+
+function abrirInstalar() {
+  if (deferredPrompt) {
+    // Android com prompt disponível
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+  } else if (isIOS() && !isStandalone()) {
+    abrirIOSModal();
+  }
+}
+
+function verificarIOSInstall() {
+  if (!isIOS() || isStandalone()) return;
+  // Mostra botão na conta sempre
+  const mi = document.getElementById('menu-instalar-app');
+  if (mi) mi.style.display = '';
+  // Mostra modal automaticamente na primeira vez (após 3s)
+  if (!localStorage.getItem(IOS_KEY)) {
+    setTimeout(abrirIOSModal, 3000);
+  }
+}
+
 // ── FEED ────────────────────────────────────────────────────
 async function carregarFeed() {
   try {
     const r = await fetch(`${API}/api/feed`);
     if (!r.ok) throw new Error('status ' + r.status);
     const itens = await r.json();
-    const destaques = itens.filter(i => i.destaque);
-    const lista     = itens.filter(i => !i.destaque);
-    renderCarrossel(destaques);
-    renderLista(lista);
+    renderCarrossel(itens.filter(i => i.destaque));
+    renderLista(itens.filter(i => !i.destaque));
   } catch (err) {
-    console.warn('[Feed] erro ao carregar:', err.message);
+    console.warn('[Feed] erro:', err.message);
     const wrap = document.getElementById('feed-carrossel-wrap');
     if (wrap) wrap.style.display = 'none';
   }
 }
 
-/* ── Thumbnail ── */
 function thumbDeUrl(url) {
   if (!url) return null;
-  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (ytMatch) return `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg`;
+  const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (yt) return `https://img.youtube.com/vi/${yt[1]}/mqdefault.jpg`;
   return null;
 }
 
-/* ── Embed URL — YouTube privacy-enhanced + origin para evitar erro 153 ── */
 function embedDeUrl(url) {
   if (!url) return '';
   const origin = encodeURIComponent(window.location.origin);
-  // YouTube — usa youtube-nocookie.com (privacy-enhanced) + enablejsapi + origin
-  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (ytMatch) {
-    return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&rel=0&enablejsapi=1&origin=${origin}`;
-  }
-  // Vimeo
-  const vmMatch = url.match(/vimeo\.com\/(\d+)/);
-  if (vmMatch) return `https://player.vimeo.com/video/${vmMatch[1]}?autoplay=1`;
+  const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (yt) return `https://www.youtube-nocookie.com/embed/${yt[1]}?autoplay=1&rel=0&enablejsapi=1&origin=${origin}`;
+  const vm = url.match(/vimeo\.com\/(\d+)/);
+  if (vm) return `https://player.vimeo.com/video/${vm[1]}?autoplay=1`;
   return url;
 }
 
-function iconeDoTipo(tipo) {
-  return { video: '🎬', texto: '📝', imagem: '🖼️', link: '🔗' }[tipo] || '✦';
-}
+function iconeDoTipo(t) { return { video:'🎬', texto:'📝', imagem:'🖼️', link:'🔗' }[t]||'✦'; }
 
-/* ── Carrossel ── */
 function renderCarrossel(itens) {
-  const wrap      = document.getElementById('feed-carrossel-wrap');
-  const carrossel = document.getElementById('feed-carrossel');
-  const dots      = document.getElementById('feed-dots');
+  const wrap = document.getElementById('feed-carrossel-wrap');
+  const car  = document.getElementById('feed-carrossel');
+  const dots = document.getElementById('feed-dots');
   if (!itens.length) { if (wrap) wrap.style.display = 'none'; return; }
   if (wrap) wrap.style.display = '';
-
-  carrossel.innerHTML = itens.map((item) => {
-    const thumb  = item.imagem_url || thumbDeUrl(item.url);
-    const ehVideo = item.tipo === 'video';
-    return `
-    <div class="feed-card-destaque" tabindex="0"
-         data-id="${item.id}" data-tipo="${item.tipo}" data-url="${item.url||''}"
-         data-titulo="${encodeURIComponent(item.titulo)}"
-         data-subtitulo="${encodeURIComponent(item.subtitulo||'')}"
-         data-corpo="${encodeURIComponent(item.corpo||'')}">
+  car.innerHTML = itens.map(item => {
+    const thumb = item.imagem_url || thumbDeUrl(item.url);
+    const isVid = item.tipo === 'video';
+    return `<div class="feed-card-destaque" tabindex="0"
+      data-tipo="${item.tipo}" data-url="${item.url||''}"
+      data-titulo="${encodeURIComponent(item.titulo)}"
+      data-subtitulo="${encodeURIComponent(item.subtitulo||'')}"
+      data-corpo="${encodeURIComponent(item.corpo||'')}">
       <div class="feed-thumb">
-        ${thumb
-          ? `<img src="${thumb}" alt="${item.titulo}" loading="lazy">`
-          : `<div class="feed-thumb-placeholder">${iconeDoTipo(item.tipo)}</div>`}
-        ${ehVideo ? `<div class="feed-play-overlay"><div class="feed-play-btn"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>` : ''}
+        ${thumb ? `<img src="${thumb}" alt="${item.titulo}" loading="lazy">` : `<div class="feed-thumb-placeholder">${iconeDoTipo(item.tipo)}</div>`}
+        ${isVid ? `<div class="feed-play-overlay"><div class="feed-play-btn"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>` : ''}
       </div>
       <div class="feed-card-body">
         ${item.subtitulo ? `<div class="feed-card-eyebrow">${item.subtitulo}</div>` : ''}
@@ -208,49 +277,37 @@ function renderCarrossel(itens) {
     </div>`;
   }).join('');
 
-  // Dots
-  dots.innerHTML = itens.map((_, i) =>
-    `<div class="feed-dot${i===0?' ativo':''}" data-idx="${i}"></div>`).join('');
-
-  carrossel.addEventListener('scroll', () => {
-    const idx = Math.round(carrossel.scrollLeft / carrossel.offsetWidth);
-    dots.querySelectorAll('.feed-dot').forEach((d, i) => d.classList.toggle('ativo', i===idx));
+  dots.innerHTML = itens.map((_,i) => `<div class="feed-dot${i===0?' ativo':''}" data-idx="${i}"></div>`).join('');
+  car.addEventListener('scroll', () => {
+    const idx = Math.round(car.scrollLeft / car.offsetWidth);
+    dots.querySelectorAll('.feed-dot').forEach((d,i) => d.classList.toggle('ativo', i===idx));
   }, { passive: true });
-
-  // Clique nos dots
-  dots.querySelectorAll('.feed-dot').forEach(dot => {
-    dot.addEventListener('click', () => {
-      const idx = parseInt(dot.dataset.idx);
-      const card = carrossel.children[idx];
-      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+  dots.querySelectorAll('.feed-dot').forEach(d => {
+    d.addEventListener('click', () => {
+      const card = car.children[parseInt(d.dataset.idx)];
+      if (card) card.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'start' });
     });
   });
-
-  carrossel.querySelectorAll('.feed-card-destaque').forEach(card => {
-    card.addEventListener('click', () => ativarItem(card));
-    card.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') ativarItem(card); });
+  car.querySelectorAll('.feed-card-destaque').forEach(c => {
+    c.addEventListener('click', () => ativarItem(c));
+    c.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') ativarItem(c); });
   });
 }
 
-/* ── Lista ── */
 function renderLista(itens) {
   const lista = document.getElementById('feed-lista');
-  if (!lista) return;
-  if (!itens.length) { lista.innerHTML = ''; return; }
+  if (!lista || !itens.length) { if (lista) lista.innerHTML = ''; return; }
   lista.innerHTML = itens.map(item => {
-    const thumb   = item.imagem_url || thumbDeUrl(item.url);
-    const ehVideo = item.tipo === 'video';
-    return `
-    <div class="feed-card-lista" tabindex="0"
-         data-id="${item.id}" data-tipo="${item.tipo}" data-url="${item.url||''}"
-         data-titulo="${encodeURIComponent(item.titulo)}"
-         data-subtitulo="${encodeURIComponent(item.subtitulo||'')}"
-         data-corpo="${encodeURIComponent(item.corpo||'')}">
+    const thumb = item.imagem_url || thumbDeUrl(item.url);
+    const isVid = item.tipo === 'video';
+    return `<div class="feed-card-lista" tabindex="0"
+      data-tipo="${item.tipo}" data-url="${item.url||''}"
+      data-titulo="${encodeURIComponent(item.titulo)}"
+      data-subtitulo="${encodeURIComponent(item.subtitulo||'')}"
+      data-corpo="${encodeURIComponent(item.corpo||'')}">
       <div class="feed-lista-thumb">
-        ${thumb
-          ? `<img src="${thumb}" alt="${item.titulo}" loading="lazy">`
-          : `<div class="feed-lista-thumb-placeholder">${iconeDoTipo(item.tipo)}</div>`}
-        ${ehVideo ? `<div class="feed-lista-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>` : ''}
+        ${thumb ? `<img src="${thumb}" alt="${item.titulo}" loading="lazy">` : `<div class="feed-lista-thumb-placeholder">${iconeDoTipo(item.tipo)}</div>`}
+        ${isVid ? `<div class="feed-lista-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>` : ''}
       </div>
       <div class="feed-lista-info">
         ${item.subtitulo ? `<div class="feed-lista-eyebrow">${item.subtitulo}</div>` : ''}
@@ -260,55 +317,33 @@ function renderLista(itens) {
       </div>
     </div>`;
   }).join('');
-
-  lista.querySelectorAll('.feed-card-lista').forEach(card => {
-    card.addEventListener('click', () => ativarItem(card));
-    card.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') ativarItem(card); });
+  lista.querySelectorAll('.feed-card-lista').forEach(c => {
+    c.addEventListener('click', () => ativarItem(c));
+    c.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') ativarItem(c); });
   });
 }
 
-/* ── Ativar item ── */
 function ativarItem(card) {
   const tipo      = card.dataset.tipo;
   const url       = card.dataset.url;
   const titulo    = decodeURIComponent(card.dataset.titulo);
   const subtitulo = decodeURIComponent(card.dataset.subtitulo);
   const corpo     = decodeURIComponent(card.dataset.corpo);
-
-  if (tipo === 'video' && url) {
-    abrirPlayer({ titulo, subtitulo, corpo, url });
-  } else if (tipo === 'link' && url) {
-    window.open(url, '_blank', 'noopener');
-  } else if (tipo === 'imagem' && url) {
-    window.open(url, '_blank', 'noopener');
-  } else {
-    abrirPlayer({ titulo, subtitulo, corpo, url: null });
-  }
+  if (tipo === 'video' && url) abrirPlayer({ titulo, subtitulo, corpo, url });
+  else if ((tipo === 'link' || tipo === 'imagem') && url) window.open(url, '_blank', 'noopener');
+  else abrirPlayer({ titulo, subtitulo, corpo, url: null });
 }
 
-/* ── Player ── */
 function abrirPlayer({ titulo, subtitulo, corpo, url }) {
-  const iframe   = document.getElementById('player-iframe');
-  const tituloEl = document.getElementById('player-titulo');
-  const subEl    = document.getElementById('player-subtitulo');
-  const corpoEl  = document.getElementById('player-corpo');
-  const wrap     = document.querySelector('.player-wrap');
-
-  if (tituloEl)  tituloEl.textContent  = titulo    || '';
-  if (subEl)     subEl.textContent     = subtitulo || '';
-  if (corpoEl)   corpoEl.textContent   = corpo     || '';
-
-  if (url && iframe) {
-    iframe.src = embedDeUrl(url);
-    if (wrap) wrap.style.display = '';
-  } else {
-    if (iframe) iframe.src = '';
-    if (wrap)   wrap.style.display = 'none';
-  }
-
+  const iframe = document.getElementById('player-iframe');
+  document.getElementById('player-titulo').textContent  = titulo    || '';
+  document.getElementById('player-subtitulo').textContent = subtitulo || '';
+  document.getElementById('player-corpo').textContent   = corpo     || '';
+  const wrap = document.querySelector('.player-wrap');
+  if (url && iframe) { iframe.src = embedDeUrl(url); if (wrap) wrap.style.display = ''; }
+  else { if (iframe) iframe.src = ''; if (wrap) wrap.style.display = 'none'; }
   abrirModal('modal-player');
 }
-
 function pararPlayer() {
   const iframe = document.getElementById('player-iframe');
   if (iframe) iframe.src = '';
@@ -317,17 +352,16 @@ function pararPlayer() {
 // ── AVISOS ──────────────────────────────────────────────────
 const AVISOS_KEY = 'vm_avisos_lidos';
 const AVISOS = [
-  { id: 'av_tesouro_01', tag: 'Tesouro da Su', titulo: 'Seu presente de hoje chegou! 🎁', desc: 'O Tesouro da Su está disponível. Abra agora e colete sua semente do dia.', data: 'Hoje' },
-  { id: 'av_teste_01',   tag: 'Ação necessária', titulo: 'Seu Teste de Prosperidade aguarda', desc: 'Você ainda não concluiu o Teste de Prosperidade. Ele é o primeiro passo da sua trilha.', data: 'Esta semana' },
-  { id: 'av_video_01',   tag: 'Novidade', titulo: 'Novo vídeo disponível no app', desc: 'A Suellen publicou uma aula exclusiva para membros do Clube Vida Mágica.', data: '2 dias atrás' },
+  { id:'av_tesouro_01', tag:'Tesouro da Su',   titulo:'Seu presente de hoje chegou! 🎁',    desc:'O Tesouro da Su está disponível. Abra agora e colete sua semente do dia.', data:'Hoje' },
+  { id:'av_teste_01',   tag:'Ação necessária', titulo:'Seu Teste de Prosperidade aguarda',   desc:'Você ainda não concluiu o Teste de Prosperidade. Ele é o primeiro passo da sua trilha.', data:'Esta semana' },
+  { id:'av_video_01',   tag:'Novidade',        titulo:'Novo vídeo disponível no app',        desc:'A Suellen publicou uma aula exclusiva para membros do Clube Vida Mágica.', data:'2 dias atrás' },
 ];
 function getLidos() { try { return JSON.parse(localStorage.getItem(AVISOS_KEY)||'[]'); } catch { return []; } }
 function marcarLido(id) { const l=getLidos(); if(!l.includes(id)){l.push(id);localStorage.setItem(AVISOS_KEY,JSON.stringify(l));} }
 function atualizarBadge() {
   const lidos = getLidos();
   const badge = document.getElementById('avisos-badge');
-  if (!badge) return;
-  AVISOS.some(a => !lidos.includes(a.id)) ? badge.classList.add('visivel') : badge.classList.remove('visivel');
+  if (badge) AVISOS.some(a => !lidos.includes(a.id)) ? badge.classList.add('visivel') : badge.classList.remove('visivel');
 }
 function renderAvisos() {
   const lista = document.getElementById('avisos-lista');
@@ -348,46 +382,6 @@ function renderAvisos() {
   });
 }
 
-// ── PWA ─────────────────────────────────────────────────────
-let deferredPrompt = null;
-
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  const b = document.getElementById('pwa-banner');
-  if (b) b.hidden = false;
-});
-
-document.getElementById('pwa-instalar')?.addEventListener('click', async () => {
-  if (!deferredPrompt) {
-    // Fallback: abre instruções nativas no iOS (Safari não suporta beforeinstallprompt)
-    alert('Para instalar: toque no botão Compartilhar (□↑) e depois em "Adicionar à Tela de Início".');
-    return;
-  }
-  deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  console.log('[PWA] outcome:', outcome);
-  deferredPrompt = null;
-  document.getElementById('pwa-banner').hidden = true;
-});
-
-document.getElementById('pwa-depois')?.addEventListener('click', () => {
-  document.getElementById('pwa-banner').hidden = true;
-});
-
-// Detecta iOS (que não dispara beforeinstallprompt) e mostra o banner de forma diferente
-function verificarIOSInstall() {
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  const isStandalone = window.navigator.standalone === true;
-  if (isIOS && !isStandalone) {
-    const b = document.getElementById('pwa-banner');
-    if (b) {
-      b.querySelector('span').textContent = 'Instalar no iPhone?';
-      b.hidden = false;
-    }
-  }
-}
-
 // ── INIT ────────────────────────────────────────────────────
 (async function init() {
   criarParticulas();
@@ -397,5 +391,5 @@ function verificarIOSInstall() {
   verificarIOSInstall();
   const usuario = await checarAuth();
   hidratarUI(usuario);
-  console.log('[Vida Mágica] App v2 inicializado');
+  console.log('[Vida Mágica] App v3 iniciado');
 })();
