@@ -875,7 +875,11 @@ function carregarUsuarioLembrado(){
     const iniciais=(dados.nome||'?').split(' ').slice(0,2).map(p=>p[0]).join('').toUpperCase();
     document.getElementById('avatar-iniciais').textContent=iniciais;
     document.getElementById('usuario-nome-lembrado').textContent=`Olá, ${dados.nome.split(' ')[0]}! 👋`;
-    document.getElementById('usuario-detalhe-lembrado').textContent=dados.email||dados.telefone_formatado||'';
+    const detalhe = dados.email||dados.telefone_formatado||'';
+    document.getElementById('usuario-detalhe-lembrado').textContent=detalhe;
+    // Preenche o campo identificador mesmo escondido, para o fazerLogin usar
+    const inputId = document.getElementById('input-identificador');
+    if(inputId && !inputId.value) inputId.value = localStorage.getItem('vm_identificador_salvo') || detalhe;
     if(dados.foto_url){
       const img=document.createElement('img');img.src=dados.foto_url;img.alt=dados.nome;
       const c=document.getElementById('avatar-circle');c.innerHTML='';c.appendChild(img);
@@ -926,9 +930,16 @@ function carregarIdentificadorSalvo(){
 // ── LOGIN COM SENHA ────────────────────────────────────────────────────────────
 async function fazerLogin(){
   limparMsg('erro-login');
-  let dados=null;
-  try{dados=JSON.parse(localStorage.getItem('vm_usuario_lembrado')||'null');}catch(_){}
-  const identificador = dados?.telefone_formatado || dados?.email || document.getElementById('input-identificador')?.value.trim();
+
+  // Pega identificador: campo visível > campo escondido > localStorage salvo > dado lembrado
+  let identificador = document.getElementById('input-identificador')?.value.trim();
+  if(!identificador) identificador = localStorage.getItem('vm_identificador_salvo') || '';
+  if(!identificador){
+    let dados=null;
+    try{dados=JSON.parse(localStorage.getItem('vm_usuario_lembrado')||'null');}catch(_){}
+    identificador = dados?.email || dados?.telefone_formatado || '';
+  }
+
   const senha=document.getElementById('input-senha-login').value;
 
   if(!identificador){mostrarErro('erro-login','Informe seu WhatsApp ou e-mail.');return;}
