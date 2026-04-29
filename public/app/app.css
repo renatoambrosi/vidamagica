@@ -1,53 +1,36 @@
 /* ============================================================
    VIDA MÁGICA — /app
-   Paleta clara natural · UI sobre fundo simples (cena removida)
    ============================================================ */
 
 :root {
-  /* ═══ PALETA — TONS CLAROS DA NATUREZA ═══ */
-
-  /* Ouro (mantém da identidade — é a alma da marca) */
   --ouro: #C8922A;
   --ouro-claro: #E8C97A;
   --ouro-brilho: #F4D998;
   --ouro-fundo: #A17523;
   --ouro-pelicula: rgba(200,146,42,0.12);
 
-  /* Céu */
   --ceu-topo: #B8D4E8;
   --ceu-meio: #D9E8F0;
   --ceu-baixo: #E8DCC0;
 
-  /* Terra & vegetação */
-  --colina-fundo: #8FA876;
-  --colina-frente: #7C9A65;
-  --grama: #95B377;
-  --grama-detalhe: #B5C997;
-  --terra: #8B6B47;
-
-  /* Texto sobre fundo claro */
   --texto: #3D2E1A;
   --texto-suave: #6B5436;
   --texto-mute: rgba(61,46,26,0.55);
   --texto-fraco: rgba(61,46,26,0.35);
 
-  /* Vidro champagne (cards, modais) */
   --vidro: rgba(255,250,240,0.75);
   --vidro-forte: rgba(255,250,240,0.92);
   --vidro-borda: rgba(200,146,42,0.22);
   --vidro-borda-hi: rgba(200,146,42,0.5);
 
-  /* Sombras douradas */
   --sombra-suave: 0 2px 12px rgba(161,117,35,0.08);
   --sombra-media: 0 4px 24px rgba(161,117,35,0.14);
   --sombra-forte: 0 12px 48px rgba(161,117,35,0.22);
   --glow-ouro: 0 0 24px rgba(200,146,42,0.35), 0 0 48px rgba(200,146,42,0.18);
 
-  /* Tipografia */
   --font-display: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body: 'Lora', Georgia, serif;
 
-  /* Layout */
   --topo-h: 64px;
   --radius-sm: 8px;
   --radius-md: 14px;
@@ -65,16 +48,27 @@ html, body { height: 100%; overflow-x: hidden; }
 body {
   font-family: var(--font-body);
   color: var(--texto);
-  background: linear-gradient(180deg, var(--ceu-topo) 0%, var(--ceu-meio) 45%, var(--ceu-baixo) 100%);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior-y: none;
+  background-color: var(--ceu-baixo);
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(255,250,240,0.72) 0%,
+      rgba(248,243,232,0.60) 40%,
+      rgba(240,232,215,0.55) 100%
+    ),
+    url('/assets/background-theme.jpg');
+  background-size: cover;
+  background-position: center top;
+  background-attachment: fixed;
 }
 button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
 ul, ol { list-style: none; }
 
-/* Partículas douradas sutis (mantidas — sem a cena pesada) */
+/* Partículas douradas sutis */
 .particulas {
   position: fixed;
   inset: 0;
@@ -97,8 +91,7 @@ ul, ol { list-style: none; }
 }
 
 /* ════════════════════════════════════════════════════════════
-   TOPO DE NAVEGAÇÃO
-   Cor escura, idêntica ao navbar do index.html
+   TOPO DE NAVEGAÇÃO — dark, igual ao navbar do index.html
    ════════════════════════════════════════════════════════════ */
 
 .topo {
@@ -113,7 +106,6 @@ ul, ol { list-style: none; }
   gap: 0.5rem;
   padding-left: 0.75rem;
   padding-right: 0.75rem;
-  /* ── Cor do header: dark igual ao index.html ── */
   background: rgba(13,8,0,0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -121,7 +113,6 @@ ul, ol { list-style: none; }
   box-shadow: 0 1px 12px rgba(0,0,0,0.18);
 }
 
-/* Ícones SVG no topo */
 .topo-btn {
   position: relative;
   width: 44px;
@@ -135,7 +126,6 @@ ul, ol { list-style: none; }
 .topo-btn:hover { background: rgba(200,146,42,0.12); }
 .topo-btn:active { transform: scale(0.92); }
 
-/* SVG dos ícones — branco suave, fica elegante sobre fundo escuro */
 .topo-svg {
   width: 22px;
   height: 22px;
@@ -145,7 +135,6 @@ ul, ol { list-style: none; }
 }
 .topo-btn:hover .topo-svg { stroke: var(--ouro-claro); }
 
-/* Badge de sementes */
 .topo-btn-bau .topo-bau-count {
   position: absolute;
   top: 2px; right: 2px;
@@ -164,7 +153,6 @@ ul, ol { list-style: none; }
   box-shadow: 0 0 0 2px rgba(13,8,0,0.92);
 }
 
-/* Indicador de fase no centro */
 .topo-fase {
   flex: 1;
   display: flex;
@@ -195,7 +183,6 @@ ul, ol { list-style: none; }
 .topo-fase-emoji {
   font-size: 0.75rem;
   color: var(--ouro-claro);
-  letter-spacing: 0;
 }
 .topo-fase-label {
   font-family: var(--font-display);
@@ -207,7 +194,7 @@ ul, ol { list-style: none; }
 }
 
 /* ════════════════════════════════════════════════════════════
-   DASHBOARD (rola sobre o fundo)
+   DASHBOARD
    ════════════════════════════════════════════════════════════ */
 
 .dashboard {
@@ -218,7 +205,6 @@ ul, ol { list-style: none; }
   min-height: 100vh;
 }
 
-/* Saudação */
 .saudacao {
   text-align: center;
   padding: 1rem 1.5rem 1.25rem;
@@ -255,7 +241,6 @@ ul, ol { list-style: none; }
   text-shadow: 0 1px 2px rgba(255,255,255,0.5);
 }
 
-/* Espaço onde a árvore aparecia — mantido para não quebrar o layout */
 .arvore-spacer {
   height: 60vh;
   min-height: 380px;
@@ -296,7 +281,7 @@ ul, ol { list-style: none; }
 }
 @keyframes tesouro-pulsa {
   0%, 100% { transform: scale(0.9); opacity: 0.7; }
-  50%      { transform: scale(1.1); opacity: 1; }
+  50%       { transform: scale(1.1); opacity: 1; }
 }
 .tesouro-icon {
   position: relative;
@@ -366,12 +351,9 @@ ul, ol { list-style: none; }
   position: relative;
 }
 .trilha-lista::before {
-  /* linha conectora */
   content: '';
   position: absolute;
-  top: 24px;
-  bottom: 24px;
-  left: 22px;
+  top: 24px; bottom: 24px; left: 22px;
   width: 2px;
   background: linear-gradient(180deg,
     var(--ouro) 0%,
@@ -392,11 +374,8 @@ ul, ol { list-style: none; }
 
 .trilha-num {
   flex-shrink: 0;
-  width: 46px;
-  height: 46px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 46px; height: 46px;
+  display: flex; align-items: center; justify-content: center;
   font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 900;
@@ -426,12 +405,8 @@ ul, ol { list-style: none; }
   border-color: var(--vidro-borda-hi);
   box-shadow: var(--sombra-media), var(--glow-ouro);
 }
-.trilha-item-ativo .trilha-card:hover {
-  transform: translateY(-2px);
-}
-.trilha-item-bloqueado .trilha-card {
-  opacity: 0.78;
-}
+.trilha-item-ativo .trilha-card:hover { transform: translateY(-2px); }
+.trilha-item-bloqueado .trilha-card { opacity: 0.78; }
 
 .trilha-card-eyebrow {
   font-family: var(--font-display);
@@ -600,6 +575,7 @@ ul, ol { list-style: none; }
   flex: 1;
 }
 
+/* ── Menu Minha Conta ── */
 .modal-menu {
   display: flex;
   flex-direction: column;
@@ -625,7 +601,28 @@ ul, ol { list-style: none; }
   border-color: var(--vidro-borda-hi);
 }
 .modal-menu-item:active { transform: scale(0.99); }
-.modal-menu-icon { font-size: 1.2rem; flex-shrink: 0; }
+
+/* Ícone SVG linha fina dourado */
+.modal-menu-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-menu-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--ouro);
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.15s;
+}
+.modal-menu-item:hover .modal-menu-icon svg { stroke: var(--ouro-fundo); }
+
 .modal-menu-arrow {
   margin-left: auto;
   font-size: 1.1rem;
@@ -634,6 +631,8 @@ ul, ol { list-style: none; }
 }
 .modal-menu-item-danger { color: #B04848; }
 .modal-menu-item-danger:hover { background: rgba(176,72,72,0.06); border-color: rgba(176,72,72,0.25); }
+.modal-menu-item-danger .modal-menu-icon svg { stroke: #B04848; }
+.modal-menu-item-danger:hover .modal-menu-icon svg { stroke: #8B3535; }
 
 .modal-vazio, .bau-vazio {
   text-align: center;
@@ -705,7 +704,6 @@ ul, ol { list-style: none; }
   .trilha { max-width: 640px; }
 }
 
-/* Reduzir movimento (acessibilidade) */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
