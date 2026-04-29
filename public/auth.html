@@ -202,6 +202,49 @@
 
     @media(max-width:480px){ .card{padding:2rem 1.5rem;} }
 
+    /* TOGGLE LEMBRAR */
+    .toggle-lembrar {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-top:1rem; padding:0.7rem 0.9rem;
+      background:rgba(255,255,255,0.03);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+    }
+    .toggle-lembrar-label {
+      font-family:var(--font-h); font-size:0.65rem; font-weight:700;
+      letter-spacing:0.1em; text-transform:uppercase;
+      color:var(--muted);
+    }
+    .toggle-lembrar-sub {
+      font-family:var(--font-b); font-size:0.65rem;
+      color:var(--faint); margin-top:1px; letter-spacing:0;
+      text-transform:none; font-weight:400;
+    }
+    .toggle-sw { position:relative; width:38px; height:22px; flex-shrink:0; }
+    .toggle-sw input { opacity:0; width:0; height:0; }
+    .toggle-slider {
+      position:absolute; inset:0;
+      background:rgba(255,255,255,0.08);
+      border:1px solid var(--border);
+      border-radius:22px; cursor:pointer;
+      transition:all 0.22s;
+    }
+    .toggle-slider::before {
+      content:''; position:absolute;
+      width:14px; height:14px; left:3px; top:3px;
+      background:var(--muted); border-radius:50%;
+      transition:all 0.22s;
+    }
+    .toggle-sw input:checked + .toggle-slider {
+      background:rgba(200,146,42,0.18);
+      border-color:rgba(200,146,42,0.55);
+    }
+    .toggle-sw input:checked + .toggle-slider::before {
+      transform:translateX(16px);
+      background:var(--gold);
+    }
+
+
     /* AUTO-LOGIN OVERLAY */
     .autologin-overlay {
       position:fixed; inset:0; z-index:9999;
@@ -286,6 +329,16 @@
         </div>
       </div>
 
+      <div class="toggle-lembrar">
+        <div>
+          <div class="toggle-lembrar-label">Lembrar neste dispositivo</div>
+          <div class="toggle-lembrar-sub">Fica logada mesmo ao fechar o app</div>
+        </div>
+        <label class="toggle-sw">
+          <input type="checkbox" id="toggle-lembrar" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
       <button class="btn-cta" id="btn-login" onclick="fazerLogin()">
         <span>Entrar</span>
         <span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
@@ -740,15 +793,16 @@ initOTP('ol', otpLoginVerificar);
 // ── HELPERS ────────────────────────────────────────────────────────────────────
 function limparTelComDDI(v, instancia){
   const digits = v.replace(/\D/g,'');
+  if(!digits) return '';
   const ddi = paisState[instancia]?.pais?.ddi || '55';
+  // Evita duplo DDI se usuária colar número com código do país
+  if(digits.startsWith(ddi) && digits.length > ddi.length + 5) return digits;
   return ddi + digits;
 }
 function exibirTelComDDI(v, instancia){
   const ddi = paisState[instancia]?.pais?.ddi || '55';
-  const digits = v.replace(/\D/g,'');
-  return `+${ddi} ${v}`;
+  return `+${ddi} ${v.trim()}`;
 }
-// Compat com código antigo
 function limparTel(v){return limparTelComDDI(v,'cad');}
 function exibirTel(v){return exibirTelComDDI(v,'cad');}
 function getOTP(p){return[0,1,2,3,4,5].map(i=>document.getElementById(`${p}${i}`).value).join('');}
@@ -761,7 +815,25 @@ function limparMsg(id){const e=document.getElementById(id);if(e)e.className='msg
 function setLoading(id,label){const b=document.getElementById(id);b.disabled=true;b.innerHTML=`<span>${label}</span><span class="btn-arrow"><div class="spin"></div></span>`;}
 function resetBtn(id,label){const b=document.getElementById(id);b.disabled=false;b.innerHTML=`<span>${label}</span><span class="btn-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>`;}
 
-function salvarTokens(a,r){localStorage.setItem('vm_access',a);localStorage.setItem('vm_refresh',r);}
+function getStorage(){
+  const lembrar = document.getElementById('toggle-lembrar');
+  return (lembrar && lembrar.checked) ? localStorage : sessionStorage;
+}
+function salvarTokens(a,r){
+  // Sempre guarda access no sessionStorage (dura enquanto a aba está aberta)
+  sessionStorage.setItem('vm_access',a);
+  sessionStorage.setItem('vm_refresh',r);
+  // Se "lembrar" marcado, persiste no localStorage também
+  const lembrar = document.getElementById('toggle-lembrar');
+  if(!lembrar || lembrar.checked){
+    localStorage.setItem('vm_access',a);
+    localStorage.setItem('vm_refresh',r);
+  } else {
+    // Limpa localStorage para não manter sessão antiga
+    localStorage.removeItem('vm_access');
+    localStorage.removeItem('vm_refresh');
+  }
+}
 
 function irTela(id){
   document.querySelectorAll('.tela').forEach(t=>t.classList.remove('ativa'));
@@ -818,9 +890,10 @@ function trocarUsuario(){
   document.getElementById('bloco-titulo-novo').style.display='block';
   document.getElementById('bloco-titulo-lembrado').style.display='none';
   document.getElementById('campo-identificador').style.display='block';
-  const el = document.getElementById('input-identificador');
-  el.value = '';
-  el.focus();
+  document.getElementById('input-identificador').value='';
+  document.getElementById('input-senha-login').value='';
+  limparMsg('erro-login');
+  document.getElementById('input-identificador').focus();
 }
 
 function salvarUsuarioLembrado(usuario){
@@ -1036,7 +1109,7 @@ function mostrarAutoLogin(nome){
   if(tk){tokenRecuperacao=tk;irTela('t-nova-senha');return;}
 
   // Auto-login se sessão válida
-  const access=localStorage.getItem('vm_access');
+  const access=localStorage.getItem('vm_access')||sessionStorage.getItem('vm_access');
   if(access){
     try{
       const r=await fetch(`${API}/api/auth/me`,{headers:{Authorization:`Bearer ${access}`}});
@@ -1046,13 +1119,14 @@ function mostrarAutoLogin(nome){
         return;
       }
     }catch{}
-    const refresh=localStorage.getItem('vm_refresh');
+    const refresh=localStorage.getItem('vm_refresh')||sessionStorage.getItem('vm_refresh');
     if(refresh){
       try{
         const r2=await fetch(`${API}/api/auth/renovar`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refresh})});
         if(r2.ok){
           const d=await r2.json();
           localStorage.setItem('vm_access',d.access_token);
+          sessionStorage.setItem('vm_access',d.access_token);
           mostrarAutoLogin(d.usuario?.nome);
           return;
         }
