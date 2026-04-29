@@ -7,24 +7,26 @@
   <title>Vida Mágica</title>
   <link rel="icon" href="/favicon.png">
 
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- CSS do app -->
   <link rel="stylesheet" href="/app/app.css">
 </head>
 <body>
 
-  <!-- ========== TOPO DE NAVEGAÇÃO ========== -->
+  <!-- ========== TOPO ========== -->
   <header id="topo" class="topo">
+
+    <!-- Dashboard -->
     <button class="topo-btn" id="btn-arvore" aria-label="Dashboard">
       <svg class="topo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
         <polyline points="9 22 9 12 15 12 15 22"/>
       </svg>
     </button>
+
+    <!-- Meus Produtos -->
     <button class="topo-btn" id="btn-produtos" aria-label="Meus Produtos">
       <svg class="topo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
         <rect x="2" y="3" width="20" height="14" rx="2"/>
@@ -32,6 +34,7 @@
       </svg>
     </button>
 
+    <!-- Fase -->
     <div class="topo-fase" id="topo-fase">
       <button class="topo-fase-arrow" aria-label="Fase anterior" disabled>‹</button>
       <div class="topo-fase-info">
@@ -41,26 +44,38 @@
       <button class="topo-fase-arrow" aria-label="Próxima fase" disabled>›</button>
     </div>
 
-    <!-- Botão de Avisos (ícone semente) -->
-    <button class="topo-btn topo-btn-avisos" id="btn-avisos" aria-label="Avisos">
-      <!-- Ícone semente SVG -->
+    <!-- Baú de Sementes — ícone SEMENTE -->
+    <button class="topo-btn topo-btn-bau" id="btn-bau" aria-label="Baú de Sementes">
       <svg class="topo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 22V12"/>
         <path d="M12 12C12 12 7 11 5 7c-1.5-3 0-6 3-6 2 0 3.5 1.5 4 5 .5-3.5 2-5 4-5 3 0 4.5 3 3 6-2 4-7 5-7 5z"/>
       </svg>
-      <!-- Badge delicado -->
-      <span class="topo-avisos-badge" id="avisos-badge" aria-hidden="true"></span>
+      <span class="topo-bau-count" id="topo-sementes">0</span>
     </button>
 
+    <!-- Avisos — ícone BAÚ -->
+    <button class="topo-btn topo-btn-avisos" id="btn-avisos" aria-label="Avisos">
+      <svg class="topo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 12V22H4V12"/>
+        <path d="M22 7H2v5h20V7z"/>
+        <path d="M12 22V7"/>
+        <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+        <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+      </svg>
+      <span class="topo-avisos-badge" id="avisos-badge"></span>
+    </button>
+
+    <!-- Minha Conta -->
     <button class="topo-btn" id="btn-conta" aria-label="Minha Conta">
       <svg class="topo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
         <circle cx="12" cy="7" r="4"/>
       </svg>
     </button>
+
   </header>
 
-  <!-- ========== CONTEÚDO PRINCIPAL ========== -->
+  <!-- ========== DASHBOARD ========== -->
   <main id="dashboard" class="dashboard">
 
     <section class="saudacao">
@@ -72,6 +87,7 @@
 
     <div class="arvore-spacer"></div>
 
+    <!-- Tesouro da Su — abre modal-bau -->
     <section class="tesouro" id="tesouro">
       <div class="tesouro-bau" id="tesouro-bau">
         <div class="tesouro-glow"></div>
@@ -153,6 +169,25 @@
   </main>
 
   <!-- ========== MODAIS ========== -->
+
+  <!-- Baú de Sementes -->
+  <div id="modal-bau" class="modal" aria-hidden="true">
+    <div class="modal-overlay" data-close-modal></div>
+    <div class="modal-painel">
+      <header class="modal-header">
+        <button class="modal-back" data-close-modal aria-label="Voltar">‹</button>
+        <h2 class="modal-titulo">Baú de Sementes</h2>
+        <button class="modal-close" data-close-modal aria-label="Fechar">✕</button>
+      </header>
+      <div class="modal-corpo">
+        <div class="bau-vazio">
+          <div class="bau-vazio-icon">🌱</div>
+          <p class="bau-vazio-titulo">Você ainda não tem sementes</p>
+          <p class="bau-vazio-sub">Sementes são coletadas no Tesouro da Su, todos os dias, com o Clube Vida Mágica.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Avisos & Novidades -->
   <div id="modal-avisos" class="modal" aria-hidden="true">
@@ -254,7 +289,6 @@
     <button id="pwa-depois">Depois</button>
   </div>
 
-  <!-- Script do app -->
   <script type="module" src="/app/app.js"></script>
 
 </body>
