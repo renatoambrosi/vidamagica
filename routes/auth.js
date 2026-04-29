@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 
 const {
+  pool,
   buscarUsuarioPorTelefone, buscarUsuarioPorId, criarOuAtualizarUsuario, atualizarUsuario,
   criarOTP, validarOTP, limparOTPsExpirados,
   upsertDispositivo, listarDispositivosUsuario, revogarDispositivo,
@@ -13,7 +14,7 @@ const {
 const { enviar: gatewayEnviar } = require('./gateway');
 const { gerarAccessToken, autenticar } = require('../middleware/autenticar');
 
-// ── HELPERS ──────────────────────────────────────────────────────────────────
+// ── HELPERS ───────────────────────────────────────────────────────────────────
 
 function formatarTelefone(tel) {
   const num = String(tel).replace(/\D/g, '');
@@ -110,6 +111,7 @@ function resUsuario(u) {
     id: u.id,
     nome: u.nome,
     email: u.email,
+    telefone_formatado: u.telefone_formatado,
     email_verificado: u.email_verificado,
     plano: u.plano,
     perfil_teste: u.perfil_teste,
@@ -117,6 +119,43 @@ function resUsuario(u) {
     sementes: u.sementes,
     estagio_arvore: u.estagio_arvore,
   };
+}
+
+// Busca usuário por identificador flexível: telefone, e-mail ou vm_id
+async function buscarUsuarioPorIdentificador(id) {
+  // 1. E-mail
+  if (id.includes('@')) {
+    const r = await pool.query(`SELECT * FROM usuarios WHERE LOWER(email) = LOWER($1)`, [id]);
+    if (r.rows[0]) return r.rows[0];
+  }
+
+  // 2. Telefone — tenta com e sem DDI
+  const digits = id.replace(/\D/g, '');
+  if (digits.length >= 8) {
+    // Tenta o número como veio (pode já ter DDI)
+    let r = await pool.query(`SELECT * FROM usuarios WHERE telefone_formatado = $1`, [digits]);
+    if (r.rows[0]) return r.rows[0];
+    // Tenta com DDI 55 na frente
+    if (!digits.startsWith('55')) {
+      r = await pool.query(`SELECT * FROM usuarios WHERE telefone_formatado = $1`, [`55${digits}`]);
+      if (r.rows[0]) return r.rows[0];
+    }
+    // Tenta sem DDI (remove 55 do início)
+    if (digits.startsWith('55') && digits.length > 11) {
+      r = await pool.query(`SELECT * FROM usuarios WHERE telefone_formatado = $1`, [digits.slice(2)]);
+      if (r.rows[0]) return r.rows[0];
+    }
+  }
+
+  // 3. VM-ID (coluna opcional — não quebra se não existir)
+  if (/^VM-\d+$/i.test(id)) {
+    try {
+      const r = await pool.query(`SELECT * FROM usuarios WHERE UPPER(vm_id) = UPPER($1)`, [id]);
+      if (r.rows[0]) return r.rows[0];
+    } catch (_) {}
+  }
+
+  return null;
 }
 
 // ── 1. SOLICITAR OTP (WhatsApp) ───────────────────────────────────────────────
@@ -136,10 +175,7 @@ router.post('/solicitar-otp', async (req, res) => {
     await enviarOTPWhatsApp(tel, codigo, usuario.nome);
     limparOTPsExpirados().catch(() => {});
 
-    res.json({
-      success: true,
-      message: 'Código enviado via WhatsApp',
-    });
+    res.json({ success: true, message: 'Código enviado via WhatsApp' });
   } catch (err) {
     console.error('❌ /solicitar-otp:', err.message);
     res.status(500).json({ error: 'Erro interno' });
@@ -170,8 +206,6 @@ router.post('/solicitar-otp-email', autenticar, async (req, res) => {
 });
 
 // ── 3. VERIFICAR OTP + LOGIN/CADASTRO ────────────────────────────────────────
-// RETORNA novo_usuario: true quando é o primeiro acesso (sem nome cadastrado)
-// O frontend cadastro.html usa esse campo para decidir se vai para o step 3
 router.post('/verificar-otp', async (req, res) => {
   try {
     const { telefone, codigo, device_fingerprint } = req.body;
@@ -195,12 +229,9 @@ router.post('/verificar-otp', async (req, res) => {
     const ip = getIP(req);
 
     const dispositivo = await upsertDispositivo({
-      usuario_id: usuario.id,
-      tipo,
-      device_id,
+      usuario_id: usuario.id, tipo, device_id,
       fingerprint: device_fingerprint || { ua: ua.substring(0, 200) },
-      nome_amigavel,
-      ip,
+      nome_amigavel, ip,
     });
 
     const access_token = gerarAccessToken(usuario);
@@ -209,16 +240,13 @@ router.post('/verificar-otp', async (req, res) => {
     await criarSessao({
       usuario_id: usuario.id,
       device_id: dispositivo.id,
-      refresh_token,
-      ip,
+      refresh_token, ip,
       user_agent: ua.substring(0, 500),
-      diasExpiracao: 30,
+      diasExpiracao: 365,
     });
 
-    // novo_usuario = true quando ainda não tem nome (nunca completou o cadastro)
     const novo_usuario = !usuario.nome;
-
-    console.log(`✅ Login: ${tel} | ${tipo} | ${nome_amigavel} | novo: ${novo_usuario}`);
+    console.log(`✅ OTP Login: ${tel} | ${tipo} | ${nome_amigavel} | novo: ${novo_usuario}`);
 
     res.json({
       success: true,
@@ -282,6 +310,7 @@ router.post('/renovar', async (req, res) => {
         id: sessao.uid,
         nome: sessao.nome,
         email: sessao.email,
+        telefone_formatado: sessao.telefone_formatado,
         plano: sessao.plano,
         perfil_teste: sessao.perfil_teste,
         percentual_prosperidade: sessao.percentual_prosperidade,
@@ -295,7 +324,7 @@ router.post('/renovar', async (req, res) => {
   }
 });
 
-// ── 6. COMPLETAR PERFIL ───────────────────────────────────────────────────────
+// ── 6. COMPLETAR/ATUALIZAR PERFIL ────────────────────────────────────────────
 router.put('/perfil', autenticar, async (req, res) => {
   try {
     const { nome, email, senha } = req.body;
@@ -309,7 +338,6 @@ router.put('/perfil', autenticar, async (req, res) => {
     }
 
     if (!Object.keys(campos).length) return res.status(400).json({ error: 'Nada para atualizar' });
-
     if (campos.email) campos.email_verificado = false;
 
     const usuario = await atualizarUsuario(req.usuario.sub, campos);
@@ -320,29 +348,44 @@ router.put('/perfil', autenticar, async (req, res) => {
   }
 });
 
-// ── 7. LOGIN COM SENHA (alternativo) ─────────────────────────────────────────
+// ── 7. LOGIN COM SENHA ────────────────────────────────────────────────────────
+// Aceita: identificador = WhatsApp (qualquer formato) OU e-mail OU vm_id
 router.post('/login-senha', async (req, res) => {
   try {
-    const { telefone, senha, device_fingerprint } = req.body;
-    if (!telefone || !senha) return res.status(400).json({ error: 'Telefone e senha obrigatórios' });
+    const { identificador, telefone, senha, device_fingerprint } = req.body;
 
-    const tel = formatarTelefone(telefone);
-    if (!checarRate(`senha:${tel}`, 5, 120000)) {
+    // Compatibilidade: aceita campo antigo "telefone" e novo "identificador"
+    const id = (identificador || telefone || '').trim();
+    if (!id || !senha) {
+      return res.status(400).json({ error: 'Informe seu WhatsApp ou e-mail e sua senha.' });
+    }
+
+    if (!checarRate(`senha:${id}`, 5, 120000)) {
       return res.status(429).json({ error: 'Muitas tentativas. Aguarde 2 minutos.' });
     }
 
-    const usuario = await buscarUsuarioPorTelefone(tel);
+    const usuario = await buscarUsuarioPorIdentificador(id);
+
     if (!usuario || !usuario.senha_hash) {
-      return res.status(401).json({ error: 'Telefone ou senha incorretos' });
+      return res.status(401).json({ error: 'Dados incorretos. Verifique seu WhatsApp/e-mail e a senha.' });
     }
 
     const ok = await bcrypt.compare(senha, usuario.senha_hash);
-    if (!ok) return res.status(401).json({ error: 'Telefone ou senha incorretos' });
+    if (!ok) {
+      return res.status(401).json({ error: 'Dados incorretos. Verifique seu WhatsApp/e-mail e a senha.' });
+    }
 
     const ua = req.headers['user-agent'] || '';
     const tipo = detectarTipo(ua);
     const device_id = device_fingerprint?.device_id || uuidv4();
     const ip = getIP(req);
+
+    // Limite 1 mobile + 1 desktop: revoga dispositivo anterior do mesmo tipo
+    const dispositivosAtivos = await listarDispositivosUsuario(usuario.id);
+    const mesmotipo = dispositivosAtivos.filter(d => d.ativo && d.tipo === tipo);
+    if (mesmotipo.length > 0 && mesmotipo[0].device_id !== device_id) {
+      await revogarDispositivo(mesmotipo[0].id);
+    }
 
     const dispositivo = await upsertDispositivo({
       usuario_id: usuario.id, tipo, device_id,
@@ -354,14 +397,21 @@ router.post('/login-senha', async (req, res) => {
     const refresh_token = uuidv4();
 
     await criarSessao({
-      usuario_id: usuario.id, device_id: dispositivo.id,
-      refresh_token, ip, user_agent: ua.substring(0, 500), diasExpiracao: 30,
+      usuario_id: usuario.id,
+      device_id: dispositivo.id,
+      refresh_token, ip,
+      user_agent: ua.substring(0, 500),
+      diasExpiracao: 365,
     });
 
+    console.log(`✅ Login senha: ${id} | ${tipo} | ${nomearDispositivo(ua)}`);
+
     res.json({
-      success: true, access_token, refresh_token, expires_in: 900,
+      success: true,
+      access_token,
+      refresh_token,
+      expires_in: 900,
       usuario: resUsuario(usuario),
-      novo_usuario: false,
     });
   } catch (err) {
     console.error('❌ /login-senha:', err.message);
@@ -369,7 +419,118 @@ router.post('/login-senha', async (req, res) => {
   }
 });
 
-// ── 8. LOGOUT ─────────────────────────────────────────────────────────────────
+// ── 8. ESQUECI SENHA — envia link pelo WhatsApp ───────────────────────────────
+router.post('/esqueci-senha', async (req, res) => {
+  try {
+    const { identificador } = req.body;
+    if (!identificador) return res.status(400).json({ error: 'Identificador obrigatório' });
+
+    if (!checarRate(`reset:${identificador}`, 3, 300000)) {
+      return res.status(429).json({ error: 'Muitas tentativas. Aguarde 5 minutos.' });
+    }
+
+    const usuario = await buscarUsuarioPorIdentificador(identificador.trim());
+
+    // Resposta sempre genérica por segurança
+    if (!usuario || !usuario.telefone_formatado) {
+      return res.json({ success: true });
+    }
+
+    const resetToken = uuidv4();
+    const expira = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+    try {
+      await pool.query(
+        `UPDATE usuarios SET reset_token=$1, reset_token_expira=$2, atualizado_em=NOW() WHERE id=$3`,
+        [resetToken, expira, usuario.id]
+      );
+    } catch (_) {
+      // Coluna reset_token pode não existir ainda — não quebra o servidor
+      console.warn('⚠️  Coluna reset_token não encontrada. Adicione ao banco.');
+      return res.json({ success: true });
+    }
+
+    const baseUrl = process.env.APP_URL || 'https://www.vidamagica.com.br';
+    const link = `${baseUrl}/auth?token=${resetToken}`;
+    const nome = usuario.nome ? usuario.nome.split(' ')[0] : 'Olá';
+    const mensagem = `${nome}! 🔐\n\nVocê solicitou a redefinição de senha do *Vida Mágica*.\n\nClique no link para criar uma nova senha:\n\n${link}\n\n_Válido por 30 minutos. Se não foi você, ignore._\n\n— Vida Mágica`;
+
+    await gatewayEnviar({
+      telefone: usuario.telefone_formatado,
+      mensagem, nome: usuario.nome || 'usuária',
+      origem: 'auth-reset', imediato: true,
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ /esqueci-senha:', err.message);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// ── 9. REDEFINIR SENHA (via token do link) ────────────────────────────────────
+router.post('/redefinir-senha', async (req, res) => {
+  try {
+    const { token, nova_senha } = req.body;
+    if (!token || !nova_senha) return res.status(400).json({ error: 'Token e nova senha obrigatórios' });
+    if (nova_senha.length < 8) return res.status(400).json({ error: 'Senha mínima: 8 caracteres' });
+
+    let usuario = null;
+    try {
+      const r = await pool.query(
+        `SELECT * FROM usuarios WHERE reset_token=$1 AND reset_token_expira > NOW()`,
+        [token]
+      );
+      usuario = r.rows[0] || null;
+    } catch (_) {
+      return res.status(500).json({ error: 'Erro interno — coluna reset_token não encontrada.' });
+    }
+
+    if (!usuario) return res.status(401).json({ error: 'Link inválido ou expirado. Solicite um novo.' });
+
+    const senha_hash = await bcrypt.hash(nova_senha, 12);
+    const updated = await atualizarUsuario(usuario.id, { senha_hash });
+
+    // Limpa o token de recuperação
+    await pool.query(
+      `UPDATE usuarios SET reset_token=NULL, reset_token_expira=NULL WHERE id=$1`,
+      [usuario.id]
+    );
+
+    // Revoga todas as sessões antigas por segurança
+    await revogarTodasSessoesUsuario(usuario.id);
+
+    // Cria nova sessão automaticamente
+    const ua = req.headers['user-agent'] || '';
+    const tipo = detectarTipo(ua);
+    const device_id = uuidv4();
+    const ip = getIP(req);
+
+    const dispositivo = await upsertDispositivo({
+      usuario_id: usuario.id, tipo, device_id,
+      fingerprint: { ua: ua.substring(0, 200) },
+      nome_amigavel: nomearDispositivo(ua), ip,
+    });
+
+    const access_token = gerarAccessToken(updated);
+    const refresh_token = uuidv4();
+
+    await criarSessao({
+      usuario_id: usuario.id,
+      device_id: dispositivo.id,
+      refresh_token, ip,
+      user_agent: ua.substring(0, 500),
+      diasExpiracao: 365,
+    });
+
+    res.json({ success: true, access_token, refresh_token, expires_in: 900, usuario: resUsuario(updated) });
+  } catch (err) {
+    console.error('❌ /redefinir-senha:', err.message);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// ── 10. LOGOUT ────────────────────────────────────────────────────────────────
 router.post('/logout', async (req, res) => {
   try {
     const { refresh_token } = req.body;
@@ -380,7 +541,7 @@ router.post('/logout', async (req, res) => {
   }
 });
 
-// ── 9. LOGOUT DE TODOS OS DISPOSITIVOS ───────────────────────────────────────
+// ── 11. LOGOUT DE TODOS OS DISPOSITIVOS ──────────────────────────────────────
 router.post('/logout-todos', autenticar, async (req, res) => {
   try {
     await revogarTodasSessoesUsuario(req.usuario.sub);
@@ -390,7 +551,7 @@ router.post('/logout-todos', autenticar, async (req, res) => {
   }
 });
 
-// ── 10. LISTAR DISPOSITIVOS ───────────────────────────────────────────────────
+// ── 12. LISTAR DISPOSITIVOS ───────────────────────────────────────────────────
 router.get('/dispositivos', autenticar, async (req, res) => {
   try {
     const lista = await listarDispositivosUsuario(req.usuario.sub);
@@ -406,7 +567,7 @@ router.get('/dispositivos', autenticar, async (req, res) => {
   }
 });
 
-// ── 11. REVOGAR DISPOSITIVO ───────────────────────────────────────────────────
+// ── 13. REVOGAR DISPOSITIVO ───────────────────────────────────────────────────
 router.delete('/dispositivos/:id', autenticar, async (req, res) => {
   try {
     const lista = await listarDispositivosUsuario(req.usuario.sub);
@@ -419,7 +580,7 @@ router.delete('/dispositivos/:id', autenticar, async (req, res) => {
   }
 });
 
-// ── 12. ME ────────────────────────────────────────────────────────────────────
+// ── 14. ME ────────────────────────────────────────────────────────────────────
 router.get('/me', autenticar, async (req, res) => {
   try {
     const usuario = await buscarUsuarioPorId(req.usuario.sub);
