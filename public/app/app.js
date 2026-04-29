@@ -2,10 +2,23 @@
 window.VmSession=(function(){const K='vm_s',P='vm_lembrar',U='vm_u';function salvar(d,l){const p=l!==undefined?l:getLembrar();localStorage.setItem(P,p?'1':'0');const s=p?localStorage:sessionStorage,o=p?sessionStorage:localStorage;o.removeItem(K);s.setItem(K,JSON.stringify(d));if(d.usuario?.nome)localStorage.setItem(U,JSON.stringify({nome:d.usuario.nome,email:d.usuario.email||null,telefone_formatado:d.usuario.telefone_formatado||null,foto_url:d.usuario.foto_url||null}));}function carregar(){try{const r=localStorage.getItem(K)||sessionStorage.getItem(K);return r?JSON.parse(r):null;}catch{return null;}}function destruir(){localStorage.removeItem(K);sessionStorage.removeItem(K);}function getAccess(){return carregar()?.access_token||null;}function getRefresh(){return carregar()?.refresh_token||null;}function getLembrar(){return localStorage.getItem(P)!=='0';}function getUsuarioLembrado(){try{return JSON.parse(localStorage.getItem(U)||'null');}catch{return null;}}function limparUsuarioLembrado(){localStorage.removeItem(U);}return{salvar,carregar,destruir,getAccess,getRefresh,getLembrar,getUsuarioLembrado,limparUsuarioLembrado};})();
 
 /* ============================================================
-   VIDA MÁGICA — App principal  v3
+   VIDA MÁGICA — App principal  v3.1
    ============================================================ */
 
 const API = '';
+
+// ── DETECÇÃO DE PLATAFORMA ───────────────────────────────────
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+function isChromeiOS() {
+  // Chrome no iPhone tem "CriOS" no userAgent; Safari nativo não tem
+  return isIOS() && /CriOS/.test(navigator.userAgent);
+}
+function isStandalone() {
+  return window.navigator.standalone === true ||
+         window.matchMedia('(display-mode: standalone)').matches;
+}
 
 // ── AUTH GUARD ──────────────────────────────────────────────
 async function checarAuth() {
@@ -61,20 +74,20 @@ function criarParticulas() {
 // ── SPRITES ─────────────────────────────────────────────────
 function criarSprites() {
   const SPRITES = [
-    { top:'15%', left:'8%',   size:18, dur:4.2, delay:0   },
-    { top:'22%', right:'6%',  size:14, dur:5.8, delay:1.4 },
-    { top:'38%', left:'5%',   size:12, dur:6.1, delay:2.2 },
-    { top:'55%', right:'4%',  size:16, dur:4.8, delay:0.8 },
-    { top:'70%', left:'7%',   size:10, dur:7.2, delay:3.1 },
-    { top:'82%', right:'9%',  size:20, dur:5.3, delay:1.9 },
-    { top:'12%', left:'50%',  size:11, dur:6.6, delay:2.7 },
-    { top:'90%', left:'35%',  size:13, dur:4.5, delay:0.5 },
+    { top:'15%', left:'8%',  size:18, dur:4.2, delay:0   },
+    { top:'22%', right:'6%', size:14, dur:5.8, delay:1.4 },
+    { top:'38%', left:'5%',  size:12, dur:6.1, delay:2.2 },
+    { top:'55%', right:'4%', size:16, dur:4.8, delay:0.8 },
+    { top:'70%', left:'7%',  size:10, dur:7.2, delay:3.1 },
+    { top:'82%', right:'9%', size:20, dur:5.3, delay:1.9 },
+    { top:'12%', left:'50%', size:11, dur:6.6, delay:2.7 },
+    { top:'90%', left:'35%', size:13, dur:4.5, delay:0.5 },
   ];
   SPRITES.forEach(s => {
     const el = document.createElement('div');
     el.className = 'sprite';
     Object.assign(el.style, {
-      top: s.top || 'auto', left: s.left || 'auto', right: s.right || 'auto',
+      top: s.top||'auto', left: s.left||'auto', right: s.right||'auto',
       width: s.size+'px', height: s.size+'px',
       animationDuration: s.dur+'s', animationDelay: s.delay+'s',
     });
@@ -104,13 +117,12 @@ function fecharTodosModais() {
   document.querySelectorAll('.modal').forEach(m => fecharModal(m));
 }
 
-document.getElementById('btn-arvore')?.addEventListener('click', () => { fecharTodosModais(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+document.getElementById('btn-arvore')?.addEventListener('click', () => { fecharTodosModais(); window.scrollTo({ top:0, behavior:'smooth' }); });
 document.getElementById('btn-produtos')?.addEventListener('click', () => abrirModal('modal-produtos'));
 document.getElementById('btn-bau')?.addEventListener('click',     () => abrirModal('modal-bau'));
 document.getElementById('btn-conta')?.addEventListener('click',   () => abrirModal('modal-conta'));
 document.getElementById('btn-avisos')?.addEventListener('click', () => {
-  renderAvisos();
-  abrirModal('modal-avisos');
+  renderAvisos(); abrirModal('modal-avisos');
   setTimeout(() => { AVISOS.forEach(a => marcarLido(a.id)); atualizarBadge(); }, 2000);
 });
 document.getElementById('tesouro-bau')?.addEventListener('click', () => abrirModal('modal-bau'));
@@ -118,64 +130,61 @@ document.querySelectorAll('[data-close-modal]').forEach(btn => {
   btn.addEventListener('click', e => fecharModal(e.target.closest('.modal')));
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { fecharTodosModais(); fecharIOSModal(); } });
-
 document.getElementById('menu-logout')?.addEventListener('click', async () => {
   const refresh = VmSession.getRefresh();
-  try { await fetch(`${API}/api/auth/logout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: refresh }) }); } catch {}
-  VmSession.destruir();
-  window.location.replace('/auth?intencional');
+  try { await fetch(`${API}/api/auth/logout`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ refresh_token: refresh }) }); } catch {}
+  VmSession.destruir(); window.location.replace('/auth?intencional');
 });
-
-// Botão instalar dentro da conta
 document.getElementById('menu-instalar-app')?.addEventListener('click', () => {
-  fecharModal('modal-conta');
-  abrirInstalar();
+  fecharModal('modal-conta'); abrirInstalar();
 });
 
-// ── PWA — Android/Chrome ────────────────────────────────────
+// ── PWA — Android/Chrome desktop ────────────────────────────
 let deferredPrompt = null;
-
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredPrompt = e;
-  // Mostra banner nativo Android
   const b = document.getElementById('pwa-banner');
   if (b) b.hidden = false;
-  // Mostra botão "Instalar App" na tela de Conta
   const mi = document.getElementById('menu-instalar-app');
   if (mi) mi.style.display = '';
 });
-
 document.getElementById('pwa-instalar')?.addEventListener('click', () => {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
-  }
+  if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => { deferredPrompt = null; }); }
   document.getElementById('pwa-banner').hidden = true;
 });
-
 document.getElementById('pwa-depois')?.addEventListener('click', () => {
   document.getElementById('pwa-banner').hidden = true;
 });
 
-// ── PWA — iOS Safari: modal visual ─────────────────────────
+// ── PWA — iOS: modal visual com seta correta ────────────────
 const IOS_KEY = 'vm_ios_install_dismissed';
-
-function isIOS() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-}
-function isStandalone() {
-  return window.navigator.standalone === true ||
-         window.matchMedia('(display-mode: standalone)').matches;
-}
 
 function abrirIOSModal() {
   const modal = document.getElementById('ios-install-modal');
   if (!modal) return;
+
+  // ── Ajusta seta e texto conforme o browser ──
+  const setaEl   = modal.querySelector('.ios-seta-bounce');
+  const setaDesc = modal.querySelector('.ios-seta-rodape span');
+  const shareDesc = modal.querySelector('#ios-passo-1 .ios-passo-desc');
+
+  if (isChromeiOS()) {
+    // Chrome no iPhone: botão compartilhar fica no TOPO
+    if (setaEl)   setaEl.textContent   = '↑';
+    if (setaDesc) setaDesc.textContent = 'O botão compartilhar fica lá em cima';
+    if (shareDesc) shareDesc.textContent = 'O botão fica na barra superior do Chrome';
+  } else {
+    // Safari: botão compartilhar fica EMBAIXO
+    if (setaEl)   setaEl.textContent   = '↓';
+    if (setaDesc) setaDesc.textContent = 'O botão compartilhar fica aqui embaixo';
+    if (shareDesc) shareDesc.textContent = 'O botão fica na barra inferior do Safari';
+  }
+
   modal.classList.add('aberto');
   document.body.style.overflow = 'hidden';
 
-  // Anima o destaque alternando entre os passos
+  // Destaque alternado entre os dois passos
   let step = 1;
   window._iosInterval = setInterval(() => {
     document.getElementById('ios-passo-1')?.classList.toggle('destaque', step === 1);
@@ -198,7 +207,6 @@ document.getElementById('ios-overlay')?.addEventListener('click', fecharIOSModal
 
 function abrirInstalar() {
   if (deferredPrompt) {
-    // Android com prompt disponível
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
   } else if (isIOS() && !isStandalone()) {
@@ -208,10 +216,10 @@ function abrirInstalar() {
 
 function verificarIOSInstall() {
   if (!isIOS() || isStandalone()) return;
-  // Mostra botão na conta sempre
+  // Sempre mostra o botão na conta
   const mi = document.getElementById('menu-instalar-app');
   if (mi) mi.style.display = '';
-  // Mostra modal automaticamente na primeira vez (após 3s)
+  // Na primeira visita abre o modal automaticamente após 3s
   if (!localStorage.getItem(IOS_KEY)) {
     setTimeout(abrirIOSModal, 3000);
   }
@@ -238,7 +246,6 @@ function thumbDeUrl(url) {
   if (yt) return `https://img.youtube.com/vi/${yt[1]}/mqdefault.jpg`;
   return null;
 }
-
 function embedDeUrl(url) {
   if (!url) return '';
   const origin = encodeURIComponent(window.location.origin);
@@ -248,7 +255,6 @@ function embedDeUrl(url) {
   if (vm) return `https://player.vimeo.com/video/${vm[1]}?autoplay=1`;
   return url;
 }
-
 function iconeDoTipo(t) { return { video:'🎬', texto:'📝', imagem:'🖼️', link:'🔗' }[t]||'✦'; }
 
 function renderCarrossel(itens) {
@@ -276,7 +282,6 @@ function renderCarrossel(itens) {
       </div>
     </div>`;
   }).join('');
-
   dots.innerHTML = itens.map((_,i) => `<div class="feed-dot${i===0?' ativo':''}" data-idx="${i}"></div>`).join('');
   car.addEventListener('scroll', () => {
     const idx = Math.round(car.scrollLeft / car.offsetWidth);
@@ -336,9 +341,9 @@ function ativarItem(card) {
 
 function abrirPlayer({ titulo, subtitulo, corpo, url }) {
   const iframe = document.getElementById('player-iframe');
-  document.getElementById('player-titulo').textContent  = titulo    || '';
+  document.getElementById('player-titulo').textContent    = titulo    || '';
   document.getElementById('player-subtitulo').textContent = subtitulo || '';
-  document.getElementById('player-corpo').textContent   = corpo     || '';
+  document.getElementById('player-corpo').textContent     = corpo     || '';
   const wrap = document.querySelector('.player-wrap');
   if (url && iframe) { iframe.src = embedDeUrl(url); if (wrap) wrap.style.display = ''; }
   else { if (iframe) iframe.src = ''; if (wrap) wrap.style.display = 'none'; }
@@ -352,16 +357,15 @@ function pararPlayer() {
 // ── AVISOS ──────────────────────────────────────────────────
 const AVISOS_KEY = 'vm_avisos_lidos';
 const AVISOS = [
-  { id:'av_tesouro_01', tag:'Tesouro da Su',   titulo:'Seu presente de hoje chegou! 🎁',    desc:'O Tesouro da Su está disponível. Abra agora e colete sua semente do dia.', data:'Hoje' },
-  { id:'av_teste_01',   tag:'Ação necessária', titulo:'Seu Teste de Prosperidade aguarda',   desc:'Você ainda não concluiu o Teste de Prosperidade. Ele é o primeiro passo da sua trilha.', data:'Esta semana' },
-  { id:'av_video_01',   tag:'Novidade',        titulo:'Novo vídeo disponível no app',        desc:'A Suellen publicou uma aula exclusiva para membros do Clube Vida Mágica.', data:'2 dias atrás' },
+  { id:'av_tesouro_01', tag:'Tesouro da Su',   titulo:'Seu presente de hoje chegou! 🎁',  desc:'O Tesouro da Su está disponível. Abra agora e colete sua semente do dia.', data:'Hoje' },
+  { id:'av_teste_01',   tag:'Ação necessária', titulo:'Seu Teste de Prosperidade aguarda', desc:'Você ainda não concluiu o Teste de Prosperidade. Ele é o primeiro passo da sua trilha.', data:'Esta semana' },
+  { id:'av_video_01',   tag:'Novidade',        titulo:'Novo vídeo disponível no app',      desc:'A Suellen publicou uma aula exclusiva para membros do Clube Vida Mágica.', data:'2 dias atrás' },
 ];
 function getLidos() { try { return JSON.parse(localStorage.getItem(AVISOS_KEY)||'[]'); } catch { return []; } }
 function marcarLido(id) { const l=getLidos(); if(!l.includes(id)){l.push(id);localStorage.setItem(AVISOS_KEY,JSON.stringify(l));} }
 function atualizarBadge() {
-  const lidos = getLidos();
   const badge = document.getElementById('avisos-badge');
-  if (badge) AVISOS.some(a => !lidos.includes(a.id)) ? badge.classList.add('visivel') : badge.classList.remove('visivel');
+  if (badge) AVISOS.some(a => !getLidos().includes(a.id)) ? badge.classList.add('visivel') : badge.classList.remove('visivel');
 }
 function renderAvisos() {
   const lista = document.getElementById('avisos-lista');
@@ -391,5 +395,5 @@ function renderAvisos() {
   verificarIOSInstall();
   const usuario = await checarAuth();
   hidratarUI(usuario);
-  console.log('[Vida Mágica] App v3 iniciado');
+  console.log('[Vida Mágica] App v3.1 iniciado');
 })();
