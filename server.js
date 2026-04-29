@@ -11,6 +11,7 @@ const seedRoutes        = require('./routes/seed');
 const configRoutes      = require('./routes/config');
 const authRoutes        = require('./routes/auth');
 const adminRoutes       = require('./routes/admin');
+const { router: feedRoutes }    = require('./routes/feed');
 const { router: gatewayRouter, iniciarGateway } = require('./routes/gateway');
 
 const app = express();
@@ -21,6 +22,7 @@ app.use(helmet({ contentSecurityPolicy: false }));
 
 app.use(cors({
   origin: [
+    'https://vidamagica-production.up.railway.app',
     'https://vidamagica.vercel.app',
     'https://www.vidamagica.com.br',
     'https://vidamagica.com.br',
@@ -58,13 +60,14 @@ app.use('/api', precosRoutes);
 app.use('/api', depoimentosRoutes);
 app.use('/api', configRoutes);
 app.use('/api', seedRoutes);
+app.use('/api', feedRoutes);           // GET /api/feed  (público, sem auth)
 
 // ── API AUTH ──
 app.use('/api/auth', authRoutes);
 
 // ── API ADMIN (Basic Auth) ──
-// Todos os endpoints em /api/admin/* exigem usuário e senha de admin
 app.use('/api/admin', basicAuth, adminRoutes);
+app.use('/api/admin', basicAuth, feedRoutes);  // /api/admin/feed  (CRUD completo)
 
 // ── GATEWAY (monitor + fila interna) ──
 app.use('/', gatewayRouter);
@@ -96,6 +99,7 @@ app.listen(PORT, async () => {
 💰  GET  /api/precos
 💬  GET  /api/depoimentos
 ⚙️   GET  /api/config
+📡  GET  /api/feed
 🔐  * /api/auth/*
 🛡️   * /api/admin/* (Basic Auth)
 🌐  GET  /
