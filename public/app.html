@@ -14,52 +14,48 @@
 
   <!-- CSS do app -->
   <link rel="stylesheet" href="/app/app.css">
-
-  <!-- Three.js (carregado uma vez, cacheado pelo navegador) -->
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
-    }
-  }
-  </script>
 </head>
 <body>
-
-  <!-- ========== CENA (fundo: céu + colinas + grama + árvore Three.js) ========== -->
-  <div id="cena" class="cena">
-    <div id="ceu" class="ceu"></div>
-    <div id="nuvens" class="nuvens"></div>
-    <div id="colinas" class="colinas"></div>
-    <div id="grama" class="grama"></div>
-    <canvas id="canvas-arvore" class="canvas-arvore"></canvas>
-    <div id="particulas" class="particulas"></div>
-  </div>
 
   <!-- ========== TOPO DE NAVEGAÇÃO ========== -->
   <header id="topo" class="topo">
     <button class="topo-btn" id="btn-arvore" aria-label="Dashboard">
-      <span class="topo-icon">🌳</span>
+      <svg class="topo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
     </button>
     <button class="topo-btn" id="btn-produtos" aria-label="Meus Produtos">
-      <span class="topo-icon">📦</span>
+      <svg class="topo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2"/>
+        <path d="M8 21h8M12 17v4"/>
+      </svg>
     </button>
 
     <div class="topo-fase" id="topo-fase">
       <button class="topo-fase-arrow" aria-label="Fase anterior" disabled>‹</button>
       <div class="topo-fase-info">
-        <span class="topo-fase-emoji">🌱</span>
+        <span class="topo-fase-emoji">✦</span>
         <span class="topo-fase-label">Fase 1</span>
       </div>
       <button class="topo-fase-arrow" aria-label="Próxima fase" disabled>›</button>
     </div>
 
     <button class="topo-btn topo-btn-bau" id="btn-bau" aria-label="Baú de Sementes">
-      <span class="topo-icon">🎁</span>
+      <svg class="topo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 12V22H4V12"/>
+        <path d="M22 7H2v5h20V7z"/>
+        <path d="M12 22V7"/>
+        <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+        <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+      </svg>
       <span class="topo-bau-count" id="topo-sementes">0</span>
     </button>
     <button class="topo-btn" id="btn-conta" aria-label="Minha Conta">
-      <span class="topo-icon">👤</span>
+      <svg class="topo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
     </button>
   </header>
 
@@ -215,8 +211,7 @@
     <button id="pwa-depois">Depois</button>
   </div>
 
-  <!-- Scripts do app -->
-  <script type="module" src="/app/scene.js"></script>
+  <!-- Script do app (scene.js removido) -->
   <script type="module" src="/app/app.js"></script>
 
 </body>
