@@ -41,16 +41,17 @@
       <button class="topo-fase-arrow" aria-label="Próxima fase" disabled>›</button>
     </div>
 
-    <button class="topo-btn topo-btn-bau" id="btn-bau" aria-label="Baú de Sementes">
+    <!-- Botão de Avisos (ícone semente) -->
+    <button class="topo-btn topo-btn-avisos" id="btn-avisos" aria-label="Avisos">
+      <!-- Ícone semente SVG -->
       <svg class="topo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20 12V22H4V12"/>
-        <path d="M22 7H2v5h20V7z"/>
-        <path d="M12 22V7"/>
-        <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
-        <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+        <path d="M12 22V12"/>
+        <path d="M12 12C12 12 7 11 5 7c-1.5-3 0-6 3-6 2 0 3.5 1.5 4 5 .5-3.5 2-5 4-5 3 0 4.5 3 3 6-2 4-7 5-7 5z"/>
       </svg>
-      <span class="topo-bau-count" id="topo-sementes">0</span>
+      <!-- Badge delicado -->
+      <span class="topo-avisos-badge" id="avisos-badge" aria-hidden="true"></span>
     </button>
+
     <button class="topo-btn" id="btn-conta" aria-label="Minha Conta">
       <svg class="topo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -153,6 +154,21 @@
 
   <!-- ========== MODAIS ========== -->
 
+  <!-- Avisos & Novidades -->
+  <div id="modal-avisos" class="modal" aria-hidden="true">
+    <div class="modal-overlay" data-close-modal></div>
+    <div class="modal-painel">
+      <header class="modal-header">
+        <button class="modal-back" data-close-modal aria-label="Voltar">‹</button>
+        <h2 class="modal-titulo">Avisos</h2>
+        <button class="modal-close" data-close-modal aria-label="Fechar">✕</button>
+      </header>
+      <div class="modal-corpo" id="avisos-lista">
+        <!-- Preenchido pelo app.js -->
+      </div>
+    </div>
+  </div>
+
   <!-- Minha Conta -->
   <div id="modal-conta" class="modal" aria-hidden="true">
     <div class="modal-overlay" data-close-modal></div>
@@ -228,25 +244,6 @@
       </header>
       <div class="modal-corpo">
         <p class="modal-vazio">Você ainda não tem produtos ativos.<br><span>Comece pelo Teste de Prosperidade.</span></p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Baú de Sementes -->
-  <div id="modal-bau" class="modal" aria-hidden="true">
-    <div class="modal-overlay" data-close-modal></div>
-    <div class="modal-painel">
-      <header class="modal-header">
-        <button class="modal-back" data-close-modal aria-label="Voltar">‹</button>
-        <h2 class="modal-titulo">Baú de Sementes</h2>
-        <button class="modal-close" data-close-modal aria-label="Fechar">✕</button>
-      </header>
-      <div class="modal-corpo">
-        <div class="bau-vazio">
-          <div class="bau-vazio-icon">🌱</div>
-          <p class="bau-vazio-titulo">Você ainda não tem sementes</p>
-          <p class="bau-vazio-sub">Sementes são coletadas no Tesouro da Su, todos os dias, com o Clube Vida Mágica.</p>
-        </div>
       </div>
     </div>
   </div>
