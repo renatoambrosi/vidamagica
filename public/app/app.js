@@ -1,3 +1,6 @@
+/* ── VmSession ── */
+window.VmSession=(function(){const K='vm_s',P='vm_lembrar',U='vm_u';function salvar(d,l){const p=l!==undefined?l:getLembrar();localStorage.setItem(P,p?'1':'0');const s=p?localStorage:sessionStorage,o=p?sessionStorage:localStorage;o.removeItem(K);s.setItem(K,JSON.stringify(d));if(d.usuario?.nome)localStorage.setItem(U,JSON.stringify({nome:d.usuario.nome,email:d.usuario.email||null,telefone_formatado:d.usuario.telefone_formatado||null,foto_url:d.usuario.foto_url||null}));}function carregar(){try{const r=localStorage.getItem(K)||sessionStorage.getItem(K);return r?JSON.parse(r):null;}catch{return null;}}function destruir(){localStorage.removeItem(K);sessionStorage.removeItem(K);}function getAccess(){return carregar()?.access_token||null;}function getRefresh(){return carregar()?.refresh_token||null;}function getLembrar(){return localStorage.getItem(P)!=='0';}function getUsuarioLembrado(){try{return JSON.parse(localStorage.getItem(U)||'null');}catch{return null;}}function limparUsuarioLembrado(){localStorage.removeItem(U);}return{salvar,carregar,destruir,getAccess,getRefresh,getLembrar,getUsuarioLembrado,limparUsuarioLembrado};})();
+
 /* ============================================================
    VIDA MÁGICA — App principal
    Navegação, modais, partículas, integração com /api/auth/me
@@ -10,59 +13,36 @@ const API = ''; // mesmo domínio (server.js serve tudo junto)
 // ───────────────────────────────────────────────────────────
 
 async function checarAuth() {
-  const token = localStorage.getItem('vm_access');
-  if (!token) {
-    window.location.href = '/auth';
-    return null;
-  }
+  const access = VmSession.getAccess();
+  if (!access) { window.location.replace('/auth?intencional'); return null; }
 
   try {
-    const r = await fetch(`${API}/api/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const r = await fetch(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${access}` } });
+    if (r.ok) return await r.json();
 
     if (r.status === 401) {
-      // Token expirado — tenta renovar
-      const novoToken = await tentarRenovarToken();
-      if (!novoToken) {
-        localStorage.removeItem('vm_access');
-        localStorage.removeItem('vm_refresh');
-        window.location.href = '/auth';
-        return null;
-      }
-      // refaz com token novo
-      const r2 = await fetch(`${API}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${novoToken}` },
-      });
-      if (!r2.ok) throw new Error('me falhou após renovar');
-      return await r2.json();
+      const refresh = VmSession.getRefresh();
+      if (!refresh) { VmSession.destruir(); window.location.replace('/auth?intencional'); return null; }
+      try {
+        const r2 = await fetch(`${API}/api/auth/renovar`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refresh }),
+        });
+        if (r2.ok) {
+          const d = await r2.json();
+          VmSession.salvar(d, VmSession.getLembrar());
+          const r3 = await fetch(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${d.access_token}` } });
+          if (r3.ok) return await r3.json();
+        }
+      } catch {}
+      VmSession.destruir();
+      window.location.replace('/auth?intencional');
+      return null;
     }
-
-    if (!r.ok) throw new Error('Erro ao buscar perfil');
-    return await r.json();
   } catch (err) {
     console.error('[Vida Mágica] erro auth:', err.message);
-    // Em desenvolvimento, deixa passar com mock
-    return null;
   }
-}
-
-async function tentarRenovarToken() {
-  const refresh = localStorage.getItem('vm_refresh');
-  if (!refresh) return null;
-  try {
-    const r = await fetch(`${API}/api/auth/renovar`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refresh }),
-    });
-    if (!r.ok) return null;
-    const d = await r.json();
-    localStorage.setItem('vm_access', d.access_token);
-    return d.access_token;
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 // ───────────────────────────────────────────────────────────
@@ -154,22 +134,16 @@ document.addEventListener('keydown', e => {
 
 // Logout
 document.getElementById('menu-logout')?.addEventListener('click', async () => {
-  const refresh = localStorage.getItem('vm_refresh') || sessionStorage.getItem('vm_refresh');
+  const refresh = VmSession.getRefresh();
   try {
     await fetch(`${API}/api/auth/logout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: refresh }),
     });
   } catch {}
-  // Limpa todos os tokens e dados de sessão
-  ['vm_access', 'vm_refresh', 'vm_usuario_lembrado', 'vm_identificador_salvo'].forEach(k => {
-    localStorage.removeItem(k);
-    sessionStorage.removeItem(k);
-  });
-  // Flag que impede auto-login ao chegar na tela de auth
-  sessionStorage.setItem('vm_logout_intencional', '1');
-  window.location.href = '/auth';
+  VmSession.destruir();
+  // ?intencional impede auto-login na tela de auth
+  window.location.replace('/auth?intencional');
 });
 
 // ───────────────────────────────────────────────────────────
