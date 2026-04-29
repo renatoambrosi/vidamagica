@@ -7,7 +7,7 @@
   <link rel="icon" href="/favicon.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400&family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
   <style>
     :root {
       --gold:       #C8922A;
@@ -21,7 +21,7 @@
       --glow:       0 0 32px rgba(200,146,42,0.22), 0 0 80px rgba(200,146,42,0.08);
       --radius:     12px;
       --font-h:     'Montserrat', sans-serif;
-      --font-b:     'Lora', Georgia, serif;
+      --font-b:     'Open Sans', sans-serif;
     }
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     body { font-family:var(--font-b); background:var(--dark); color:var(--pearl); min-height:100dvh; overflow-x:hidden; }
@@ -201,6 +201,30 @@
     .btn-esqueci:hover { color:var(--gold); }
 
     @media(max-width:480px){ .card{padding:2rem 1.5rem;} }
+
+    /* AUTO-LOGIN OVERLAY */
+    .autologin-overlay {
+      position:fixed; inset:0; z-index:9999;
+      background:rgba(13,8,0,0.92); backdrop-filter:blur(20px);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:1.25rem; opacity:0; pointer-events:none;
+      transition:opacity 0.35s;
+    }
+    .autologin-overlay.show { opacity:1; pointer-events:auto; }
+    .autologin-logo { height:52px; width:auto; filter:drop-shadow(0 0 14px rgba(200,146,42,0.5)); }
+    .autologin-spinner {
+      width:36px; height:36px;
+      border:3px solid rgba(200,146,42,0.2);
+      border-top-color:var(--gold);
+      border-radius:50%;
+      animation:giro 0.8s linear infinite;
+    }
+    .autologin-msg {
+      font-family:var(--font-h); font-size:0.72rem; font-weight:700;
+      letter-spacing:0.18em; text-transform:uppercase;
+      color:var(--muted);
+    }
+
   </style>
 </head>
 <body>
@@ -993,6 +1017,16 @@ async function cadastroReenviarOTP(){
   }catch{mostrarErro('erro-cad2','Erro ao reenviar.');}
 }
 
+// ── AUTO-LOGIN OVERLAY ────────────────────────────────────────────────────────
+function mostrarAutoLogin(nome){
+  const overlay = document.getElementById('autologin-overlay');
+  const msg = document.getElementById('autologin-msg');
+  const primeiroNome = nome ? nome.split(' ')[0] : null;
+  msg.textContent = primeiroNome ? `Olá, ${primeiroNome}! Entrando…` : 'Reconhecendo sua conta…';
+  overlay.classList.add('show');
+  setTimeout(()=>{ window.location.href='/app'; }, 1400);
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 (async function init(){
   const params=new URLSearchParams(location.search);
@@ -1004,12 +1038,24 @@ async function cadastroReenviarOTP(){
   // Auto-login se sessão válida
   const access=localStorage.getItem('vm_access');
   if(access){
-    try{const r=await fetch(`${API}/api/auth/me`,{headers:{Authorization:`Bearer ${access}`}});if(r.ok){window.location.href='/app';return;}}catch{}
+    try{
+      const r=await fetch(`${API}/api/auth/me`,{headers:{Authorization:`Bearer ${access}`}});
+      if(r.ok){
+        const u=await r.json();
+        mostrarAutoLogin(u.nome);
+        return;
+      }
+    }catch{}
     const refresh=localStorage.getItem('vm_refresh');
     if(refresh){
       try{
         const r2=await fetch(`${API}/api/auth/renovar`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refresh})});
-        if(r2.ok){const d=await r2.json();localStorage.setItem('vm_access',d.access_token);window.location.href='/app';return;}
+        if(r2.ok){
+          const d=await r2.json();
+          localStorage.setItem('vm_access',d.access_token);
+          mostrarAutoLogin(d.usuario?.nome);
+          return;
+        }
       }catch{}
     }
   }
@@ -1019,5 +1065,10 @@ async function cadastroReenviarOTP(){
   if(params.has('cadastro')) irTela('t-cadastro-1');
 })();
 </script>
+<div class="autologin-overlay" id="autologin-overlay">
+  <img src="assets/logo-vertical.png" alt="Vida Mágica" class="autologin-logo">
+  <div class="autologin-spinner"></div>
+  <div class="autologin-msg" id="autologin-msg">Reconhecendo sua conta…</div>
+</div>
 </body>
 </html>
