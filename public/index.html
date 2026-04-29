@@ -1073,6 +1073,50 @@
       .btn-entry { padding: 1.1rem 1.5rem; font-size: 0.92rem; }
       .dropdown-panel.open { padding: 1.75rem 1.5rem 2rem; }
     }
+  
+    /* ── AVATAR LOGADO ── */
+    .nav-avatar-wrap { position:relative; }
+    .nav-avatar-btn {
+      width:36px; height:36px; border-radius:50%;
+      border:2px solid rgba(200,146,42,0.5);
+      background:rgba(200,146,42,0.12);
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      overflow:hidden; padding:0;
+      transition:border-color 0.2s, box-shadow 0.2s;
+    }
+    .nav-avatar-btn:hover { border-color:var(--color-gold-amber); box-shadow:0 0 0 3px rgba(200,146,42,0.15); }
+    .nav-avatar-img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+    .nav-avatar-iniciais {
+      font-family:var(--font-display); font-size:0.72rem; font-weight:800;
+      color:var(--color-gold-light); letter-spacing:0.05em; text-transform:uppercase;
+      pointer-events:none;
+    }
+    .nav-drop {
+      position:absolute; top:calc(100% + 10px); right:0;
+      min-width:200px;
+      background:rgba(13,8,0,0.97); border:1px solid rgba(200,146,42,0.25);
+      border-radius:14px; box-shadow:0 16px 48px rgba(0,0,0,0.6);
+      backdrop-filter:blur(20px); overflow:hidden;
+      opacity:0; transform:translateY(-6px) scale(0.97);
+      pointer-events:none; transition:opacity 0.2s, transform 0.2s; z-index:300;
+    }
+    .nav-drop.aberto { opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
+    .nav-drop-header { padding:0.9rem 1.1rem 0.7rem; border-bottom:1px solid rgba(200,146,42,0.12); }
+    .nav-drop-nome { font-family:var(--font-display); font-size:0.78rem; font-weight:800; color:var(--color-gold-light); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .nav-drop-sub  { font-size:0.67rem; color:rgba(245,240,232,0.35); margin-top:2px; letter-spacing:0.03em; }
+    .nav-drop-item {
+      display:flex; align-items:center; gap:0.65rem;
+      padding:0.65rem 1.1rem; font-size:0.8rem; font-weight:500;
+      color:rgba(245,240,232,0.7); cursor:pointer;
+      border:none; background:none; width:100%; text-align:left;
+      transition:background 0.15s, color 0.15s; text-decoration:none;
+    }
+    .nav-drop-item:hover { background:rgba(200,146,42,0.08); color:var(--color-gold-light); }
+    .nav-drop-item.danger { color:rgba(240,100,100,0.75); }
+    .nav-drop-item.danger:hover { background:rgba(200,60,60,0.08); color:#f09090; }
+    .nav-drop-sep { height:1px; background:rgba(200,146,42,0.1); margin:0.2rem 0; }
+    .nav-drop-icon { font-size:0.9rem; width:16px; text-align:center; flex-shrink:0; }
+
   </style>
 </head>
 <body>
@@ -1080,10 +1124,7 @@
   <!-- NAVBAR -->
   <nav class="navbar">
     <img src="assets/logo-horizontal.png" alt="Vida Mágica" class="navbar-logo">
-    <div class="navbar-actions">
-      <a href="/auth.html" class="btn-login">Entrar</a>
-      <a href="/cadastro.html" class="btn-cadastro-nav">Criar conta</a>
-    </div>
+    <div class="navbar-actions" id="navbar-actions"></div>
   </nav>
 
   <!-- TICKER -->
@@ -1298,14 +1339,6 @@
         </div>
       </div>
 
-      <!-- LINK QUEM JÁ TEM CONTA -->
-      <div style="text-align:center;margin-top:0.75rem">
-        <a href="/auth" class="btn-entrar-hero">Já tenho conta → Entrar</a>
-      </div>
-
-      <div style="text-align:center;margin-top:0.75rem">
-        <a href="/auth" class="btn-entrar-hero">Já tenho conta → Entrar</a>
-      </div>
     </div>
   </main>
 
@@ -1585,6 +1618,92 @@
       criarParticulas('particles', 24);
       criarParticulas('qs-particles', 18);
     })();
+  </script>
+
+  <script>
+  // ── NAVBAR AUTH ───────────────────────────────────────────────────────────────
+  (async function navbarAuth(){
+    const API = '';
+    const actions = document.getElementById('navbar-actions');
+    if(!actions) return;
+
+    function renderBotoes(){
+      actions.innerHTML = `
+        <a href="/auth" class="btn-login">Entrar</a>
+        <a href="/auth?cadastro" class="btn-cadastro-nav">Criar conta</a>
+      `;
+    }
+
+    function renderAvatar(usuario){
+      const iniciais = (usuario.nome||'?').split(' ').slice(0,2).map(p=>p[0]).join('').toUpperCase();
+      const fotoHtml = usuario.foto_url
+        ? `<img src="${usuario.foto_url}" alt="${usuario.nome}" class="nav-avatar-img">`
+        : `<span class="nav-avatar-iniciais">${iniciais}</span>`;
+
+      actions.innerHTML = `
+        <div class="nav-avatar-wrap" id="nav-avatar-wrap">
+          <button class="nav-avatar-btn" onclick="toggleNavDrop()" aria-label="Menu do usuário">
+            ${fotoHtml}
+          </button>
+          <div class="nav-drop" id="nav-drop">
+            <div class="nav-drop-header">
+              <div class="nav-drop-nome">${usuario.nome||'Minha conta'}</div>
+              <div class="nav-drop-sub">${usuario.email||usuario.telefone_formatado||''}</div>
+            </div>
+            <a href="/app" class="nav-drop-item"><span class="nav-drop-icon">🌱</span> Minha área</a>
+            <div class="nav-drop-sep"></div>
+            <button class="nav-drop-item danger" onclick="navLogout()"><span class="nav-drop-icon">🚪</span> Sair</button>
+          </div>
+        </div>`;
+
+      document.addEventListener('click', function(e){
+        const wrap = document.getElementById('nav-avatar-wrap');
+        if(wrap && !wrap.contains(e.target)){
+          const drop = document.getElementById('nav-drop');
+          if(drop) drop.classList.remove('aberto');
+        }
+      });
+    }
+
+    window.toggleNavDrop = function(){
+      document.getElementById('nav-drop')?.classList.toggle('aberto');
+    };
+
+    window.navLogout = async function(){
+      const refresh = localStorage.getItem('vm_refresh');
+      try{ await fetch(`${API}/api/auth/logout`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refresh})}); }catch{}
+      localStorage.removeItem('vm_access');
+      localStorage.removeItem('vm_refresh');
+      renderBotoes();
+    };
+
+    const access = localStorage.getItem('vm_access');
+    if(!access){ renderBotoes(); return; }
+
+    try{
+      const r = await fetch(`${API}/api/auth/me`,{headers:{Authorization:`Bearer ${access}`}});
+      if(r.ok){ renderAvatar(await r.json()); return; }
+    }catch{}
+
+    // Tenta refresh
+    const refresh = localStorage.getItem('vm_refresh');
+    if(refresh){
+      try{
+        const r2 = await fetch(`${API}/api/auth/renovar`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refresh})});
+        if(r2.ok){
+          const d = await r2.json();
+          localStorage.setItem('vm_access', d.access_token);
+          renderAvatar(d.usuario || (await (await fetch(`${API}/api/auth/me`,{headers:{Authorization:`Bearer ${d.access_token}`}})).json()));
+          return;
+        }
+      }catch{}
+    }
+
+    // Sessão inválida
+    localStorage.removeItem('vm_access');
+    localStorage.removeItem('vm_refresh');
+    renderBotoes();
+  })();
   </script>
 
 </body>
