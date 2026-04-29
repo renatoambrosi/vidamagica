@@ -198,4 +198,73 @@ function atualizarFolhas(dt, tempo) {
       folha.proximoSpawn -= dt;
       if (folha.proximoSpawn <= 0) {
         spawnFolha(folha);
-        folha.proximoSpawn =
+        folha.proximoSpawn = 4 + Math.random() * 8;
+      }
+      return;
+    }
+    folha.vida += dt;
+    if (folha.vida >= folha.vidaMax || folha.y < -0.7) {
+      folha.ativo = false;
+      folha.mesh.visible = false;
+      return;
+    }
+    const ventoX = Math.sin(tempo * 0.8 + folha.y * 3) * 0.03;
+    folha.x += (folha.vx + ventoX) * dt;
+    folha.y += folha.vy * dt;
+    folha.rot += folha.vrot * dt;
+    const fadeIn = Math.min(folha.vida / 0.5, 1);
+    const fadeOut = Math.min((folha.vidaMax - folha.vida) / 1.5, 1);
+    const opacidade = Math.min(fadeIn, fadeOut) * 0.85;
+    folha.mesh.position.set(folha.x, folha.y, 0.1);
+    folha.mesh.rotation.z = folha.rot;
+    folha.mesh.material.opacity = opacidade;
+  });
+}
+
+// LOOP
+const clock = new THREE.Clock();
+let pausado = false;
+
+function loop() {
+  if (pausado) return;
+  const dt = Math.min(clock.getDelta(), 0.1);
+  const tempo = clock.getElapsedTime();
+  if (arvoreUniforms) {
+    arvoreUniforms.uTime.value = tempo;
+  }
+  atualizarFolhas(dt, tempo);
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+
+// RESIZE
+function resize() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  criarCamera();
+  posicionarArvore();
+}
+
+window.addEventListener('resize', resize);
+resize();
+
+// PAUSA
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    pausado = true;
+  } else if (pausado) {
+    pausado = false;
+    clock.getDelta();
+    loop();
+  }
+});
+
+loop();
+
+window.VidaMagicaCena = {
+  setVentoIntensidade: (v) => { if (arvoreUniforms) arvoreUniforms.uIntensidade.value = v; },
+  setVentoVelocidade:  (v) => { if (arvoreUniforms) arvoreUniforms.uVelocidade.value = v; },
+  pausar:  () => { pausado = true; },
+  retomar: () => { if (pausado) { pausado = false; clock.getDelta(); loop(); } },
+};
