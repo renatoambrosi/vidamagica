@@ -7,26 +7,19 @@ window.VmSession=(function(){const K='vm_s',P='vm_lembrar',U='vm_u';function sal
 
 const API = '';
 
-// ───────────────────────────────────────────────────────────
-// AUTH GUARD
-// ───────────────────────────────────────────────────────────
+// ── AUTH GUARD ──────────────────────────────────────────────
 
 async function checarAuth() {
   const access = VmSession.getAccess();
   if (!access) { window.location.replace('/auth?intencional'); return null; }
-
   try {
     const r = await fetch(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${access}` } });
     if (r.ok) return await r.json();
-
     if (r.status === 401) {
       const refresh = VmSession.getRefresh();
       if (!refresh) { VmSession.destruir(); window.location.replace('/auth?intencional'); return null; }
       try {
-        const r2 = await fetch(`${API}/api/auth/renovar`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refresh_token: refresh }),
-        });
+        const r2 = await fetch(`${API}/api/auth/renovar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: refresh }) });
         if (r2.ok) {
           const d = await r2.json();
           VmSession.salvar(d, VmSession.getLembrar());
@@ -34,33 +27,26 @@ async function checarAuth() {
           if (r3.ok) return await r3.json();
         }
       } catch {}
-      VmSession.destruir();
-      window.location.replace('/auth?intencional');
-      return null;
+      VmSession.destruir(); window.location.replace('/auth?intencional'); return null;
     }
-  } catch (err) {
-    console.error('[Vida Mágica] erro auth:', err.message);
-  }
+  } catch (err) { console.error('[Vida Mágica] erro auth:', err.message); }
   return null;
 }
 
-// ───────────────────────────────────────────────────────────
-// HIDRATAR UI
-// ───────────────────────────────────────────────────────────
+// ── HIDRATAR UI ─────────────────────────────────────────────
 
 function hidratarUI(usuario) {
   if (!usuario) return;
-
   const nomeEl = document.getElementById('saudacao-nome');
   if (nomeEl) {
     const primeiro = (usuario.nome || '').split(' ')[0] || '';
     nomeEl.textContent = primeiro ? `Olá, ${primeiro}` : 'Sua jornada';
   }
+  const sementesEl = document.getElementById('topo-sementes');
+  if (sementesEl) sementesEl.textContent = usuario.sementes || 0;
 }
 
-// ───────────────────────────────────────────────────────────
-// PARTÍCULAS DOURADAS
-// ───────────────────────────────────────────────────────────
+// ── PARTÍCULAS ──────────────────────────────────────────────
 
 function criarParticulas() {
   const c = document.getElementById('particulas');
@@ -75,9 +61,7 @@ function criarParticulas() {
   }
 }
 
-// ───────────────────────────────────────────────────────────
-// MODAIS
-// ───────────────────────────────────────────────────────────
+// ── MODAIS ──────────────────────────────────────────────────
 
 function abrirModal(id) {
   const modal = document.getElementById(id);
@@ -98,39 +82,43 @@ function fecharTodosModais() {
 }
 
 // Botões do topo
-document.getElementById('btn-conta')?.addEventListener('click', () => abrirModal('modal-conta'));
-document.getElementById('btn-produtos')?.addEventListener('click', () => abrirModal('modal-produtos'));
 document.getElementById('btn-arvore')?.addEventListener('click', () => {
   fecharTodosModais();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
+document.getElementById('btn-produtos')?.addEventListener('click', () => abrirModal('modal-produtos'));
 
-// Botões de fechar
+// Baú de sementes — abre modal-bau
+document.getElementById('btn-bau')?.addEventListener('click', () => abrirModal('modal-bau'));
+
+// Avisos — abre modal-avisos
+document.getElementById('btn-avisos')?.addEventListener('click', () => {
+  renderAvisos();
+  abrirModal('modal-avisos');
+  // Marca todos como lidos após 2s de visualização
+  setTimeout(() => {
+    AVISOS.forEach(a => marcarLido(a.id));
+    atualizarBadge();
+  }, 2000);
+});
+
+document.getElementById('btn-conta')?.addEventListener('click', () => abrirModal('modal-conta'));
+
+// Tesouro do dash — abre modal-bau também
+document.getElementById('tesouro-bau')?.addEventListener('click', () => abrirModal('modal-bau'));
+
+// Fechar modais
 document.querySelectorAll('[data-close-modal]').forEach(btn => {
   btn.addEventListener('click', e => fecharModal(e.target.closest('.modal')));
 });
-
-// ESC fecha
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') fecharTodosModais();
-});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharTodosModais(); });
 
 // Logout
 document.getElementById('menu-logout')?.addEventListener('click', async () => {
   const refresh = VmSession.getRefresh();
-  try {
-    await fetch(`${API}/api/auth/logout`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refresh }),
-    });
-  } catch {}
+  try { await fetch(`${API}/api/auth/logout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: refresh }) }); } catch {}
   VmSession.destruir();
   window.location.replace('/auth?intencional');
-});
-
-// Tesouro
-document.getElementById('tesouro-bau')?.addEventListener('click', () => {
-  abrirModal('modal-avisos');
 });
 
 // Trilha
@@ -141,15 +129,11 @@ document.querySelectorAll('.trilha-card-btn').forEach(btn => {
   });
 });
 
-// ───────────────────────────────────────────────────────────
-// AVISOS & NOVIDADES
-// Sistema local com localStorage.
-// No futuro pode vir de um endpoint /api/avisos.
-// ───────────────────────────────────────────────────────────
+// ── AVISOS & NOVIDADES ──────────────────────────────────────
+// Array estático por enquanto — substituir por /api/avisos quando pronto
 
 const AVISOS_KEY = 'vm_avisos_lidos';
 
-// Avisos estáticos (substituir por chamada à API quando pronto)
 const AVISOS = [
   {
     id: 'av_tesouro_01',
@@ -180,10 +164,7 @@ function getLidos() {
 
 function marcarLido(id) {
   const lidos = getLidos();
-  if (!lidos.includes(id)) {
-    lidos.push(id);
-    localStorage.setItem(AVISOS_KEY, JSON.stringify(lidos));
-  }
+  if (!lidos.includes(id)) { lidos.push(id); localStorage.setItem(AVISOS_KEY, JSON.stringify(lidos)); }
 }
 
 function atualizarBadge() {
@@ -191,43 +172,31 @@ function atualizarBadge() {
   const naoLidos = AVISOS.filter(a => !lidos.includes(a.id)).length;
   const badge = document.getElementById('avisos-badge');
   if (!badge) return;
-  if (naoLidos > 0) {
-    badge.classList.add('visivel');
-    badge.setAttribute('aria-label', `${naoLidos} aviso${naoLidos > 1 ? 's' : ''} não lido${naoLidos > 1 ? 's' : ''}`);
-  } else {
-    badge.classList.remove('visivel');
-  }
+  if (naoLidos > 0) badge.classList.add('visivel');
+  else badge.classList.remove('visivel');
 }
 
 function renderAvisos() {
   const lista = document.getElementById('avisos-lista');
   if (!lista) return;
-
   if (!AVISOS.length) {
-    lista.innerHTML = `
-      <div class="aviso-vazio">
-        <div class="aviso-vazio-icon">🌱</div>
-        <p>Nenhum aviso por enquanto.<br>Volte amanhã para novidades.</p>
-      </div>`;
+    lista.innerHTML = `<div class="aviso-vazio"><div class="aviso-vazio-icon">🌱</div><p>Nenhum aviso por enquanto.<br>Volte amanhã para novidades.</p></div>`;
     return;
   }
-
   const lidos = getLidos();
   lista.innerHTML = `<ul class="aviso-lista">${AVISOS.map(a => {
     const naoLido = !lidos.includes(a.id);
-    return `
-      <li class="aviso-item${naoLido ? ' nao-lido' : ''}" data-id="${a.id}">
-        <div class="aviso-dot"></div>
-        <div class="aviso-corpo">
-          <div class="aviso-tag">${a.tag}</div>
-          <div class="aviso-titulo">${a.titulo}</div>
-          <div class="aviso-desc">${a.desc}</div>
-          <div class="aviso-data">${a.data}</div>
-        </div>
-      </li>`;
+    return `<li class="aviso-item${naoLido ? ' nao-lido' : ''}" data-id="${a.id}">
+      <div class="aviso-dot"></div>
+      <div class="aviso-corpo">
+        <div class="aviso-tag">${a.tag}</div>
+        <div class="aviso-titulo">${a.titulo}</div>
+        <div class="aviso-desc">${a.desc}</div>
+        <div class="aviso-data">${a.data}</div>
+      </div>
+    </li>`;
   }).join('')}</ul>`;
 
-  // Marcar como lido ao clicar
   lista.querySelectorAll('.aviso-item').forEach(el => {
     el.addEventListener('click', () => {
       marcarLido(el.dataset.id);
@@ -237,52 +206,29 @@ function renderAvisos() {
   });
 }
 
-// Botão avisos — abre modal e renderiza lista
-document.getElementById('btn-avisos')?.addEventListener('click', () => {
-  renderAvisos();
-  abrirModal('modal-avisos');
-  // Marcar todos como lidos após 2s de visualização
-  setTimeout(() => {
-    AVISOS.forEach(a => marcarLido(a.id));
-    atualizarBadge();
-  }, 2000);
-});
-
-// ───────────────────────────────────────────────────────────
-// PWA
-// ───────────────────────────────────────────────────────────
+// ── PWA ─────────────────────────────────────────────────────
 
 let deferredPrompt = null;
-
 window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
+  e.preventDefault(); deferredPrompt = e;
   const banner = document.getElementById('pwa-banner');
   if (banner) banner.hidden = false;
 });
-
 document.getElementById('pwa-instalar')?.addEventListener('click', async () => {
   if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  await deferredPrompt.userChoice;
-  deferredPrompt = null;
-  document.getElementById('pwa-banner').hidden = true;
+  deferredPrompt.prompt(); await deferredPrompt.userChoice;
+  deferredPrompt = null; document.getElementById('pwa-banner').hidden = true;
 });
-
 document.getElementById('pwa-depois')?.addEventListener('click', () => {
   document.getElementById('pwa-banner').hidden = true;
 });
 
-// ───────────────────────────────────────────────────────────
-// INIT
-// ───────────────────────────────────────────────────────────
+// ── INIT ─────────────────────────────────────────────────────
 
 (async function init() {
   criarParticulas();
   atualizarBadge();
-
   const usuario = await checarAuth();
   hidratarUI(usuario);
-
   console.log('[Vida Mágica] App inicializado');
 })();
