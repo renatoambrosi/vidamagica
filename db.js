@@ -31,8 +31,11 @@ async function initDb() {
     await client.query(`CREATE TABLE IF NOT EXISTS historico_mensagens (id SERIAL PRIMARY KEY, fila_id INTEGER, telefone VARCHAR(30) NOT NULL, mensagem TEXT NOT NULL, nome VARCHAR(255), origem VARCHAR(50), sucesso BOOLEAN NOT NULL, erro TEXT, enviado_em TIMESTAMPTZ DEFAULT NOW())`);
     await client.query(`CREATE TABLE IF NOT EXISTS gateway_config (chave TEXT PRIMARY KEY, valor TEXT NOT NULL, atualizado_em TIMESTAMPTZ DEFAULT NOW())`);
     await client.query(`INSERT INTO gateway_config (chave, valor) VALUES ('cooldown_segundos','60'),('pausado','false') ON CONFLICT (chave) DO NOTHING`);
+    // ── FEED DO APP ──
+    const { initFeed } = require('./routes/feed');
+    await initFeed(client);
     await inserirMensagensPadrao(client);
-    console.log('✅ Banco Vida Mágica iniciado — 15 tabelas');
+    console.log('✅ Banco Vida Mágica iniciado — 16 tabelas');
   } catch (err) {
     console.error('❌ Erro ao iniciar banco:', err.message);
     throw err;
