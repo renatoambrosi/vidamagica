@@ -154,7 +154,7 @@ document.addEventListener('keydown', e => {
 
 // Logout
 document.getElementById('menu-logout')?.addEventListener('click', async () => {
-  const refresh = localStorage.getItem('vm_refresh');
+  const refresh = localStorage.getItem('vm_refresh') || sessionStorage.getItem('vm_refresh');
   try {
     await fetch(`${API}/api/auth/logout`, {
       method: 'POST',
@@ -162,8 +162,13 @@ document.getElementById('menu-logout')?.addEventListener('click', async () => {
       body: JSON.stringify({ refresh_token: refresh }),
     });
   } catch {}
-  localStorage.removeItem('vm_access');
-  localStorage.removeItem('vm_refresh');
+  // Limpa todos os tokens e dados de sessão
+  ['vm_access', 'vm_refresh', 'vm_usuario_lembrado', 'vm_identificador_salvo'].forEach(k => {
+    localStorage.removeItem(k);
+    sessionStorage.removeItem(k);
+  });
+  // Flag que impede auto-login ao chegar na tela de auth
+  sessionStorage.setItem('vm_logout_intencional', '1');
   window.location.href = '/auth';
 });
 
