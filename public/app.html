@@ -1,299 +1,267 @@
-/* ── VmSession ── */
-window.VmSession=(function(){const K='vm_s',P='vm_lembrar',U='vm_u';function salvar(d,l){const p=l!==undefined?l:getLembrar();localStorage.setItem(P,p?'1':'0');const s=p?localStorage:sessionStorage,o=p?sessionStorage:localStorage;o.removeItem(K);s.setItem(K,JSON.stringify(d));if(d.usuario?.nome)localStorage.setItem(U,JSON.stringify({nome:d.usuario.nome,email:d.usuario.email||null,telefone_formatado:d.usuario.telefone_formatado||null,foto_url:d.usuario.foto_url||null}));}function carregar(){try{const r=localStorage.getItem(K)||sessionStorage.getItem(K);return r?JSON.parse(r):null;}catch{return null;}}function destruir(){localStorage.removeItem(K);sessionStorage.removeItem(K);}function getAccess(){return carregar()?.access_token||null;}function getRefresh(){return carregar()?.refresh_token||null;}function getLembrar(){return localStorage.getItem(P)!=='0';}function getUsuarioLembrado(){try{return JSON.parse(localStorage.getItem(U)||'null');}catch{return null;}}function limparUsuarioLembrado(){localStorage.removeItem(U);}return{salvar,carregar,destruir,getAccess,getRefresh,getLembrar,getUsuarioLembrado,limparUsuarioLembrado};})();
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#E8DCC0">
+  <title>Vida Mágica</title>
+  <link rel="icon" href="/favicon.png">
 
-/* ============================================================
-   VIDA MÁGICA — App principal
-   ============================================================ */
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-const API = '';
+  <link rel="stylesheet" href="/app/app.css">
+</head>
+<body>
 
-// ── AUTH GUARD ──────────────────────────────────────────────
-async function checarAuth() {
-  const access = VmSession.getAccess();
-  if (!access) { window.location.replace('/auth?intencional'); return null; }
-  try {
-    const r = await fetch(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${access}` } });
-    if (r.ok) return await r.json();
-    if (r.status === 401) {
-      const refresh = VmSession.getRefresh();
-      if (!refresh) { VmSession.destruir(); window.location.replace('/auth?intencional'); return null; }
-      try {
-        const r2 = await fetch(`${API}/api/auth/renovar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: refresh }) });
-        if (r2.ok) {
-          const d = await r2.json();
-          VmSession.salvar(d, VmSession.getLembrar());
-          const r3 = await fetch(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${d.access_token}` } });
-          if (r3.ok) return await r3.json();
-        }
-      } catch {}
-      VmSession.destruir(); window.location.replace('/auth?intencional'); return null;
-    }
-  } catch (err) { console.error('[Vida Mágica] erro auth:', err.message); }
-  return null;
-}
+  <!-- ========== TOPO ========== -->
+  <header id="topo" class="topo">
 
-// ── HIDRATAR UI ─────────────────────────────────────────────
-function hidratarUI(usuario) {
-  if (!usuario) return;
-  const nomeEl = document.getElementById('saudacao-nome');
-  if (nomeEl) {
-    const primeiro = (usuario.nome || '').split(' ')[0] || '';
-    nomeEl.textContent = primeiro ? `Olá, ${primeiro}` : 'Sua jornada';
-  }
-  const sementesEl = document.getElementById('topo-sementes');
-  if (sementesEl) sementesEl.textContent = usuario.sementes || 0;
-}
+    <button class="topo-btn" id="btn-arvore" aria-label="Dashboard">
+      <svg class="topo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    </button>
 
-// ── PARTÍCULAS ──────────────────────────────────────────────
-function criarParticulas() {
-  const c = document.getElementById('particulas');
-  if (!c) return;
-  const count = window.innerWidth < 640 ? 14 : 22;
-  for (let i = 0; i < count; i++) {
-    const p = document.createElement('div');
-    p.className = 'particula';
-    const t = Math.random() * 4 + 2;
-    p.style.cssText = `width:${t}px;height:${t}px;left:${Math.random()*100}%;animation-duration:${Math.random()*16+12}s;animation-delay:${Math.random()*18}s;`;
-    c.appendChild(p);
-  }
-}
+    <button class="topo-btn" id="btn-produtos" aria-label="Meus Produtos">
+      <svg class="topo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2"/>
+        <path d="M8 21h8M12 17v4"/>
+      </svg>
+    </button>
 
-// ── SPRITES ─────────────────────────────────────────────────
-function criarSprites() {
-  const SPRITES = [
-    { top:'15%', left:'8%',  size:18, dur:4.2, delay:0   },
-    { top:'22%', right:'6%', size:14, dur:5.8, delay:1.4 },
-    { top:'38%', left:'5%',  size:12, dur:6.1, delay:2.2 },
-    { top:'55%', right:'4%', size:16, dur:4.8, delay:0.8 },
-    { top:'70%', left:'7%',  size:10, dur:7.2, delay:3.1 },
-    { top:'82%', right:'9%', size:20, dur:5.3, delay:1.9 },
-    { top:'12%', left:'50%', size:11, dur:6.6, delay:2.7 },
-    { top:'90%', left:'35%', size:13, dur:4.5, delay:0.5 },
-  ];
-  SPRITES.forEach(s => {
-    const el = document.createElement('div');
-    el.className = 'sprite';
-    Object.assign(el.style, {
-      top: s.top||'auto', left: s.left||'auto', right: s.right||'auto',
-      width: s.size+'px', height: s.size+'px',
-      animationDuration: s.dur+'s', animationDelay: s.delay+'s',
-    });
-    el.innerHTML = `<svg viewBox="0 0 24 24" width="${s.size}" height="${s.size}" fill="none">
-      <path d="M12 2L13.5 9L20 9L14.5 13.5L16.5 20L12 16L7.5 20L9.5 13.5L4 9L10.5 9Z"
-        fill="rgba(232,201,122,0.7)" stroke="rgba(200,146,42,0.4)" stroke-width="0.5"/>
-    </svg>`;
-    document.body.appendChild(el);
-  });
-}
-
-// ── MODAIS ──────────────────────────────────────────────────
-function abrirModal(id) {
-  const modal = document.getElementById(id);
-  if (!modal) return;
-  modal.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
-}
-function fecharModal(modal) {
-  if (typeof modal === 'string') modal = document.getElementById(modal);
-  if (!modal) return;
-  if (modal.id === 'modal-player') pararPlayer();
-  modal.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
-}
-function fecharTodosModais() {
-  document.querySelectorAll('.modal').forEach(m => fecharModal(m));
-}
-
-document.getElementById('btn-arvore')?.addEventListener('click', () => { fecharTodosModais(); window.scrollTo({ top:0, behavior:'smooth' }); });
-document.getElementById('btn-produtos')?.addEventListener('click', () => abrirModal('modal-produtos'));
-document.getElementById('btn-bau')?.addEventListener('click',     () => abrirModal('modal-bau'));
-document.getElementById('btn-conta')?.addEventListener('click',   () => abrirModal('modal-conta'));
-document.getElementById('btn-avisos')?.addEventListener('click', () => {
-  renderAvisos();
-  abrirModal('modal-avisos');
-  setTimeout(() => { AVISOS.forEach(a => marcarLido(a.id)); atualizarBadge(); }, 2000);
-});
-document.getElementById('tesouro-bau')?.addEventListener('click', () => abrirModal('modal-bau'));
-document.querySelectorAll('[data-close-modal]').forEach(btn => {
-  btn.addEventListener('click', e => fecharModal(e.target.closest('.modal')));
-});
-document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharTodosModais(); });
-
-document.getElementById('menu-logout')?.addEventListener('click', async () => {
-  const refresh = VmSession.getRefresh();
-  try { await fetch(`${API}/api/auth/logout`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ refresh_token: refresh }) }); } catch {}
-  VmSession.destruir();
-  window.location.replace('/auth?intencional');
-});
-
-// ── FEED ────────────────────────────────────────────────────
-async function carregarFeed() {
-  try {
-    const r = await fetch(`${API}/api/feed`);
-    if (!r.ok) throw new Error('status ' + r.status);
-    const itens = await r.json();
-    renderCarrossel(itens.filter(i => i.destaque));
-    renderLista(itens.filter(i => !i.destaque));
-  } catch (err) {
-    console.warn('[Feed] erro:', err.message);
-    const wrap = document.getElementById('feed-carrossel-wrap');
-    if (wrap) wrap.style.display = 'none';
-  }
-}
-
-function thumbDeUrl(url) {
-  if (!url) return null;
-  const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (yt) return `https://img.youtube.com/vi/${yt[1]}/mqdefault.jpg`;
-  return null;
-}
-function embedDeUrl(url) {
-  if (!url) return '';
-  const origin = encodeURIComponent(window.location.origin);
-  const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (yt) return `https://www.youtube-nocookie.com/embed/${yt[1]}?autoplay=1&rel=0&enablejsapi=1&origin=${origin}`;
-  const vm = url.match(/vimeo\.com\/(\d+)/);
-  if (vm) return `https://player.vimeo.com/video/${vm[1]}?autoplay=1`;
-  return url;
-}
-function iconeDoTipo(t) { return { video:'🎬', texto:'📝', imagem:'🖼️', link:'🔗' }[t]||'✦'; }
-
-function renderCarrossel(itens) {
-  const wrap = document.getElementById('feed-carrossel-wrap');
-  const car  = document.getElementById('feed-carrossel');
-  const dots = document.getElementById('feed-dots');
-  if (!itens.length) { if (wrap) wrap.style.display = 'none'; return; }
-  if (wrap) wrap.style.display = '';
-  car.innerHTML = itens.map(item => {
-    const thumb = item.imagem_url || thumbDeUrl(item.url);
-    const isVid = item.tipo === 'video';
-    return `<div class="feed-card-destaque" tabindex="0"
-      data-tipo="${item.tipo}" data-url="${item.url||''}"
-      data-titulo="${encodeURIComponent(item.titulo)}"
-      data-subtitulo="${encodeURIComponent(item.subtitulo||'')}"
-      data-corpo="${encodeURIComponent(item.corpo||'')}">
-      <div class="feed-thumb">
-        ${thumb ? `<img src="${thumb}" alt="${item.titulo}" loading="lazy">` : `<div class="feed-thumb-placeholder">${iconeDoTipo(item.tipo)}</div>`}
-        ${isVid ? `<div class="feed-play-overlay"><div class="feed-play-btn"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>` : ''}
+    <div class="topo-fase" id="topo-fase">
+      <button class="topo-fase-arrow" aria-label="Fase anterior" disabled>‹</button>
+      <div class="topo-fase-info">
+        <span class="topo-fase-emoji">✦</span>
+        <span class="topo-fase-label">Fase 1</span>
       </div>
-      <div class="feed-card-body">
-        ${item.subtitulo ? `<div class="feed-card-eyebrow">${item.subtitulo}</div>` : ''}
-        <div class="feed-card-titulo">${item.titulo}</div>
-        ${item.corpo ? `<div class="feed-card-corpo">${item.corpo}</div>` : ''}
+      <button class="topo-fase-arrow" aria-label="Próxima fase" disabled>›</button>
+    </div>
+
+    <button class="topo-btn topo-btn-bau" id="btn-bau" aria-label="Baú de Sementes">
+      <svg class="topo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22V12"/>
+        <path d="M12 12C12 12 7 11 5 7c-1.5-3 0-6 3-6 2 0 3.5 1.5 4 5 .5-3.5 2-5 4-5 3 0 4.5 3 3 6-2 4-7 5-7 5z"/>
+      </svg>
+      <span class="topo-bau-count" id="topo-sementes">0</span>
+    </button>
+
+    <button class="topo-btn topo-btn-avisos" id="btn-avisos" aria-label="Avisos">
+      <svg class="topo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 12V22H4V12"/>
+        <path d="M22 7H2v5h20V7z"/>
+        <path d="M12 22V7"/>
+        <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+        <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+      </svg>
+      <span class="topo-avisos-badge" id="avisos-badge"></span>
+    </button>
+
+    <button class="topo-btn" id="btn-conta" aria-label="Minha Conta">
+      <svg class="topo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </button>
+
+  </header>
+
+  <!-- ========== DASHBOARD ========== -->
+  <main id="dashboard" class="dashboard">
+
+    <section class="saudacao">
+      <p class="saudacao-eyebrow">Bem-vinda de volta</p>
+      <h1 class="saudacao-titulo" id="saudacao-nome">Sua jornada</h1>
+      <div class="saudacao-divisor"></div>
+      <p class="saudacao-sub">A vida começa quando a mente desperta.</p>
+    </section>
+
+    <!-- FEED -->
+    <section class="feed" id="feed" aria-label="Feed">
+      <div class="feed-carrossel-wrap" id="feed-carrossel-wrap">
+        <div class="feed-carrossel" id="feed-carrossel" role="list"></div>
+        <div class="feed-dots" id="feed-dots" aria-hidden="true"></div>
       </div>
-    </div>`;
-  }).join('');
-  dots.innerHTML = itens.map((_,i) => `<div class="feed-dot${i===0?' ativo':''}" data-idx="${i}"></div>`).join('');
-  car.addEventListener('scroll', () => {
-    const idx = Math.round(car.scrollLeft / car.offsetWidth);
-    dots.querySelectorAll('.feed-dot').forEach((d,i) => d.classList.toggle('ativo', i===idx));
-  }, { passive: true });
-  dots.querySelectorAll('.feed-dot').forEach(d => {
-    d.addEventListener('click', () => {
-      const card = car.children[parseInt(d.dataset.idx)];
-      if (card) card.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'start' });
-    });
-  });
-  car.querySelectorAll('.feed-card-destaque').forEach(c => {
-    c.addEventListener('click', () => ativarItem(c));
-    c.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') ativarItem(c); });
-  });
-}
+      <div class="feed-lista" id="feed-lista" role="list"></div>
+    </section>
 
-function renderLista(itens) {
-  const lista = document.getElementById('feed-lista');
-  if (!lista || !itens.length) { if (lista) lista.innerHTML = ''; return; }
-  lista.innerHTML = itens.map(item => {
-    const thumb = item.imagem_url || thumbDeUrl(item.url);
-    const isVid = item.tipo === 'video';
-    return `<div class="feed-card-lista" tabindex="0"
-      data-tipo="${item.tipo}" data-url="${item.url||''}"
-      data-titulo="${encodeURIComponent(item.titulo)}"
-      data-subtitulo="${encodeURIComponent(item.subtitulo||'')}"
-      data-corpo="${encodeURIComponent(item.corpo||'')}">
-      <div class="feed-lista-thumb">
-        ${thumb ? `<img src="${thumb}" alt="${item.titulo}" loading="lazy">` : `<div class="feed-lista-thumb-placeholder">${iconeDoTipo(item.tipo)}</div>`}
-        ${isVid ? `<div class="feed-lista-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>` : ''}
+    <div class="arvore-spacer"></div>
+
+    <section class="tesouro" id="tesouro">
+      <div class="tesouro-bau" id="tesouro-bau">
+        <div class="tesouro-glow"></div>
+        <div class="tesouro-icon">🎁</div>
       </div>
-      <div class="feed-lista-info">
-        ${item.subtitulo ? `<div class="feed-lista-eyebrow">${item.subtitulo}</div>` : ''}
-        <div class="feed-lista-titulo">${item.titulo}</div>
-        ${item.corpo ? `<div class="feed-lista-corpo">${item.corpo}</div>` : ''}
-        <span class="feed-tipo-tag feed-tipo-${item.tipo}">${iconeDoTipo(item.tipo)} ${item.tipo}</span>
+      <p class="tesouro-label">Tesouro da Su</p>
+      <p class="tesouro-sub">Aparece todos os dias às 6h</p>
+    </section>
+
+    <section class="trilha">
+      <div class="trilha-header">
+        <span class="trilha-eyebrow">Fase 1 · Despertando</span>
+        <h2 class="trilha-titulo">Sua trilha</h2>
+        <p class="trilha-sub">Avance uma atividade por vez. Cada passo desperta o próximo.</p>
       </div>
-    </div>`;
-  }).join('');
-  lista.querySelectorAll('.feed-card-lista').forEach(c => {
-    c.addEventListener('click', () => ativarItem(c));
-    c.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') ativarItem(c); });
-  });
-}
+      <ol class="trilha-lista">
+        <li class="trilha-item trilha-item-ativo" data-step="1">
+          <div class="trilha-num">1</div>
+          <div class="trilha-card">
+            <div class="trilha-card-eyebrow">Diagnóstico</div>
+            <h3 class="trilha-card-titulo">Teste de Prosperidade</h3>
+            <p class="trilha-card-desc">Descubra em 15 perguntas o padrão mental que bloqueia sua prosperidade.</p>
+            <div class="trilha-card-meta"><span class="trilha-meta-tag">15 perguntas</span><span class="trilha-meta-tag">~7 min</span></div>
+            <button class="trilha-card-btn">Começar →</button>
+          </div>
+        </li>
+        <li class="trilha-item trilha-item-bloqueado" data-step="2">
+          <div class="trilha-num">2</div>
+          <div class="trilha-card">
+            <div class="trilha-card-eyebrow">Sessão</div>
+            <h3 class="trilha-card-titulo">Diagnóstico do Teste</h3>
+            <p class="trilha-card-desc">Sessão guiada para entender em profundidade o seu resultado.</p>
+            <div class="trilha-card-meta"><span class="trilha-meta-tag">~25 min</span></div>
+            <button class="trilha-card-btn" disabled>🔒 Conclua a etapa anterior</button>
+          </div>
+        </li>
+        <li class="trilha-item trilha-item-bloqueado" data-step="3">
+          <div class="trilha-num">3</div>
+          <div class="trilha-card">
+            <div class="trilha-card-eyebrow">E-book</div>
+            <h3 class="trilha-card-titulo">Despertando a Prosperidade Bíblica</h3>
+            <p class="trilha-card-desc">Leitura para entender as travas espirituais que impedem a abundância.</p>
+            <div class="trilha-card-meta"><span class="trilha-meta-tag">~2 horas</span></div>
+            <button class="trilha-card-btn" disabled>🔒 Etapa bloqueada</button>
+          </div>
+        </li>
+        <li class="trilha-item trilha-item-bloqueado" data-step="4">
+          <div class="trilha-num">4</div>
+          <div class="trilha-card">
+            <div class="trilha-card-eyebrow">Curso</div>
+            <h3 class="trilha-card-titulo">O Ouro da Reprogramação Mental</h3>
+            <p class="trilha-card-desc">A ferramenta definitiva da Fase 1 — o curso completo de reprogramação.</p>
+            <div class="trilha-card-meta"><span class="trilha-meta-tag">12 módulos</span></div>
+            <button class="trilha-card-btn" disabled>🔒 Etapa bloqueada</button>
+          </div>
+        </li>
+      </ol>
+    </section>
 
-function ativarItem(card) {
-  const tipo      = card.dataset.tipo;
-  const url       = card.dataset.url;
-  const titulo    = decodeURIComponent(card.dataset.titulo);
-  const subtitulo = decodeURIComponent(card.dataset.subtitulo);
-  const corpo     = decodeURIComponent(card.dataset.corpo);
-  if (tipo === 'video' && url) abrirPlayer({ titulo, subtitulo, corpo, url });
-  else if ((tipo === 'link' || tipo === 'imagem') && url) window.open(url, '_blank', 'noopener');
-  else abrirPlayer({ titulo, subtitulo, corpo, url: null });
-}
+    <footer class="rodape-app">
+      <p>Vida Mágica · Renato &amp; Suellen Seragi</p>
+    </footer>
 
-function abrirPlayer({ titulo, subtitulo, corpo, url }) {
-  const iframe = document.getElementById('player-iframe');
-  document.getElementById('player-titulo').textContent    = titulo    || '';
-  document.getElementById('player-subtitulo').textContent = subtitulo || '';
-  document.getElementById('player-corpo').textContent     = corpo     || '';
-  const wrap = document.querySelector('.player-wrap');
-  if (url && iframe) { iframe.src = embedDeUrl(url); if (wrap) wrap.style.display = ''; }
-  else { if (iframe) iframe.src = ''; if (wrap) wrap.style.display = 'none'; }
-  abrirModal('modal-player');
-}
-function pararPlayer() {
-  const iframe = document.getElementById('player-iframe');
-  if (iframe) iframe.src = '';
-}
+  </main>
 
-// ── AVISOS ──────────────────────────────────────────────────
-const AVISOS_KEY = 'vm_avisos_lidos';
-const AVISOS = [
-  { id:'av_tesouro_01', tag:'Tesouro da Su',   titulo:'Seu presente de hoje chegou! 🎁',  desc:'O Tesouro da Su está disponível. Abra agora e colete sua semente do dia.', data:'Hoje' },
-  { id:'av_teste_01',   tag:'Ação necessária', titulo:'Seu Teste de Prosperidade aguarda', desc:'Você ainda não concluiu o Teste de Prosperidade. Ele é o primeiro passo da sua trilha.', data:'Esta semana' },
-  { id:'av_video_01',   tag:'Novidade',        titulo:'Novo vídeo disponível no app',      desc:'A Suellen publicou uma aula exclusiva para membros do Clube Vida Mágica.', data:'2 dias atrás' },
-];
-function getLidos() { try { return JSON.parse(localStorage.getItem(AVISOS_KEY)||'[]'); } catch { return []; } }
-function marcarLido(id) { const l=getLidos(); if(!l.includes(id)){l.push(id);localStorage.setItem(AVISOS_KEY,JSON.stringify(l));} }
-function atualizarBadge() {
-  const badge = document.getElementById('avisos-badge');
-  if (badge) AVISOS.some(a => !getLidos().includes(a.id)) ? badge.classList.add('visivel') : badge.classList.remove('visivel');
-}
-function renderAvisos() {
-  const lista = document.getElementById('avisos-lista');
-  if (!lista) return;
-  const lidos = getLidos();
-  lista.innerHTML = `<ul class="aviso-lista">${AVISOS.map(a=>`
-    <li class="aviso-item${!lidos.includes(a.id)?' nao-lido':''}" data-id="${a.id}">
-      <div class="aviso-dot"></div>
-      <div class="aviso-corpo">
-        <div class="aviso-tag">${a.tag}</div>
-        <div class="aviso-titulo">${a.titulo}</div>
-        <div class="aviso-desc">${a.desc}</div>
-        <div class="aviso-data">${a.data}</div>
+  <!-- ========== MODAL PLAYER ========== -->
+  <div id="modal-player" class="modal modal-player" aria-hidden="true">
+    <div class="modal-overlay" data-close-modal></div>
+    <div class="modal-painel modal-painel-player">
+      <header class="modal-header">
+        <button class="modal-back" data-close-modal aria-label="Fechar">‹</button>
+        <h2 class="modal-titulo" id="player-titulo">Vídeo</h2>
+        <button class="modal-close" data-close-modal aria-label="Fechar">✕</button>
+      </header>
+      <div class="player-wrap">
+        <div class="player-ratio">
+          <iframe id="player-iframe" src="" frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen title="Player de vídeo"></iframe>
+        </div>
       </div>
-    </li>`).join('')}</ul>`;
-  lista.querySelectorAll('.aviso-item').forEach(el => {
-    el.addEventListener('click', () => { marcarLido(el.dataset.id); el.classList.remove('nao-lido'); atualizarBadge(); });
-  });
-}
+      <div class="player-info" id="player-info">
+        <p class="player-subtitulo" id="player-subtitulo"></p>
+        <p class="player-corpo" id="player-corpo"></p>
+      </div>
+    </div>
+  </div>
 
-// ── INIT ────────────────────────────────────────────────────
-(async function init() {
-  criarParticulas();
-  criarSprites();
-  atualizarBadge();
-  carregarFeed();
-  const usuario = await checarAuth();
-  hidratarUI(usuario);
-  console.log('[Vida Mágica] App iniciado');
-})();
+  <!-- ========== MODAIS ========== -->
+
+  <div id="modal-bau" class="modal" aria-hidden="true">
+    <div class="modal-overlay" data-close-modal></div>
+    <div class="modal-painel">
+      <header class="modal-header">
+        <button class="modal-back" data-close-modal>‹</button>
+        <h2 class="modal-titulo">Baú de Sementes</h2>
+        <button class="modal-close" data-close-modal>✕</button>
+      </header>
+      <div class="modal-corpo">
+        <div class="bau-vazio">
+          <div class="bau-vazio-icon">🌱</div>
+          <p class="bau-vazio-titulo">Você ainda não tem sementes</p>
+          <p class="bau-vazio-sub">Sementes são coletadas no Tesouro da Su, todos os dias, com o Clube Vida Mágica.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-avisos" class="modal" aria-hidden="true">
+    <div class="modal-overlay" data-close-modal></div>
+    <div class="modal-painel">
+      <header class="modal-header">
+        <button class="modal-back" data-close-modal>‹</button>
+        <h2 class="modal-titulo">Avisos</h2>
+        <button class="modal-close" data-close-modal>✕</button>
+      </header>
+      <div class="modal-corpo" id="avisos-lista"></div>
+    </div>
+  </div>
+
+  <div id="modal-conta" class="modal" aria-hidden="true">
+    <div class="modal-overlay" data-close-modal></div>
+    <div class="modal-painel">
+      <header class="modal-header">
+        <button class="modal-back" data-close-modal>‹</button>
+        <h2 class="modal-titulo">Minha Conta</h2>
+        <button class="modal-close" data-close-modal>✕</button>
+      </header>
+      <div class="modal-corpo">
+        <ul class="modal-menu">
+          <li class="modal-menu-item">
+            <span class="modal-menu-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+            <span>Meu Perfil</span><span class="modal-menu-arrow">›</span>
+          </li>
+          <li class="modal-menu-item">
+            <span class="modal-menu-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+            <span>Segurança</span><span class="modal-menu-arrow">›</span>
+          </li>
+          <li class="modal-menu-item">
+            <span class="modal-menu-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>
+            <span>Plano e Assinatura</span><span class="modal-menu-arrow">›</span>
+          </li>
+          <li class="modal-menu-item">
+            <span class="modal-menu-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+            <span>Notificações</span><span class="modal-menu-arrow">›</span>
+          </li>
+          <li class="modal-menu-item modal-menu-item-danger" id="menu-logout">
+            <span class="modal-menu-icon"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
+            <span>Sair</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-produtos" class="modal" aria-hidden="true">
+    <div class="modal-overlay" data-close-modal></div>
+    <div class="modal-painel">
+      <header class="modal-header">
+        <button class="modal-back" data-close-modal>‹</button>
+        <h2 class="modal-titulo">Meus Produtos</h2>
+        <button class="modal-close" data-close-modal>✕</button>
+      </header>
+      <div class="modal-corpo">
+        <p class="modal-vazio">Você ainda não tem produtos ativos.<br><span>Comece pelo Teste de Prosperidade.</span></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="particulas" class="particulas"></div>
+
+  <script type="module" src="/app/app.js"></script>
+
+</body>
+</html>
