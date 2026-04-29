@@ -3,13 +3,12 @@ window.VmSession=(function(){const K='vm_s',P='vm_lembrar',U='vm_u';function sal
 
 /* ============================================================
    VIDA MÁGICA — App principal
-   Navegação, modais, partículas, integração com /api/auth/me
    ============================================================ */
 
-const API = ''; // mesmo domínio (server.js serve tudo junto)
+const API = '';
 
 // ───────────────────────────────────────────────────────────
-// AUTH GUARD — redireciona se não logado
+// AUTH GUARD
 // ───────────────────────────────────────────────────────────
 
 async function checarAuth() {
@@ -46,28 +45,21 @@ async function checarAuth() {
 }
 
 // ───────────────────────────────────────────────────────────
-// HIDRATAR UI COM DADOS DO USUÁRIO
+// HIDRATAR UI
 // ───────────────────────────────────────────────────────────
 
 function hidratarUI(usuario) {
   if (!usuario) return;
 
-  // Saudação
   const nomeEl = document.getElementById('saudacao-nome');
   if (nomeEl) {
-    const primeiroNome = (usuario.nome || '').split(' ')[0] || 'Sua jornada';
-    nomeEl.textContent = primeiroNome ? `Olá, ${primeiroNome}` : 'Sua jornada';
-  }
-
-  // Sementes
-  const sementesEl = document.getElementById('topo-sementes');
-  if (sementesEl) {
-    sementesEl.textContent = usuario.sementes || 0;
+    const primeiro = (usuario.nome || '').split(' ')[0] || '';
+    nomeEl.textContent = primeiro ? `Olá, ${primeiro}` : 'Sua jornada';
   }
 }
 
 // ───────────────────────────────────────────────────────────
-// PARTÍCULAS DOURADAS (luzinhas mágicas no ar)
+// PARTÍCULAS DOURADAS
 // ───────────────────────────────────────────────────────────
 
 function criarParticulas() {
@@ -77,14 +69,8 @@ function criarParticulas() {
   for (let i = 0; i < count; i++) {
     const p = document.createElement('div');
     p.className = 'particula';
-    const tamanho = Math.random() * 4 + 2;
-    p.style.cssText = `
-      width: ${tamanho}px;
-      height: ${tamanho}px;
-      left: ${Math.random() * 100}%;
-      animation-duration: ${Math.random() * 16 + 12}s;
-      animation-delay: ${Math.random() * 18}s;
-    `;
+    const t = Math.random() * 4 + 2;
+    p.style.cssText = `width:${t}px;height:${t}px;left:${Math.random()*100}%;animation-duration:${Math.random()*16+12}s;animation-delay:${Math.random()*18}s;`;
     c.appendChild(p);
   }
 }
@@ -111,23 +97,20 @@ function fecharTodosModais() {
   document.querySelectorAll('.modal').forEach(m => fecharModal(m));
 }
 
-// Listeners dos botões do topo
+// Botões do topo
 document.getElementById('btn-conta')?.addEventListener('click', () => abrirModal('modal-conta'));
 document.getElementById('btn-produtos')?.addEventListener('click', () => abrirModal('modal-produtos'));
-document.getElementById('btn-bau')?.addEventListener('click', () => abrirModal('modal-bau'));
 document.getElementById('btn-arvore')?.addEventListener('click', () => {
   fecharTodosModais();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
-// Botões de fechar dos modais
+// Botões de fechar
 document.querySelectorAll('[data-close-modal]').forEach(btn => {
-  btn.addEventListener('click', e => {
-    fecharModal(e.target.closest('.modal'));
-  });
+  btn.addEventListener('click', e => fecharModal(e.target.closest('.modal')));
 });
 
-// Fecha modal com ESC
+// ESC fecha
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') fecharTodosModais();
 });
@@ -142,33 +125,131 @@ document.getElementById('menu-logout')?.addEventListener('click', async () => {
     });
   } catch {}
   VmSession.destruir();
-  // ?intencional impede auto-login na tela de auth
   window.location.replace('/auth?intencional');
 });
 
-// ───────────────────────────────────────────────────────────
-// TESOURO DA SU (mock — abre modal por enquanto)
-// ───────────────────────────────────────────────────────────
-
+// Tesouro
 document.getElementById('tesouro-bau')?.addEventListener('click', () => {
-  abrirModal('modal-bau');
+  abrirModal('modal-avisos');
 });
 
-// ───────────────────────────────────────────────────────────
-// TRILHA — botões das atividades (mock)
-// ───────────────────────────────────────────────────────────
-
+// Trilha
 document.querySelectorAll('.trilha-card-btn').forEach(btn => {
   btn.addEventListener('click', e => {
-    const item = e.target.closest('.trilha-item');
-    const step = item?.dataset.step;
-    console.log(`[Vida Mágica] clique trilha step ${step}`);
-    // TODO: navegar para a atividade correspondente
+    const step = e.target.closest('.trilha-item')?.dataset.step;
+    console.log(`[Vida Mágica] trilha step ${step}`);
   });
 });
 
 // ───────────────────────────────────────────────────────────
-// PWA — esqueleto do banner de instalação
+// AVISOS & NOVIDADES
+// Sistema local com localStorage.
+// No futuro pode vir de um endpoint /api/avisos.
+// ───────────────────────────────────────────────────────────
+
+const AVISOS_KEY = 'vm_avisos_lidos';
+
+// Avisos estáticos (substituir por chamada à API quando pronto)
+const AVISOS = [
+  {
+    id: 'av_tesouro_01',
+    tag: 'Tesouro da Su',
+    titulo: 'Seu presente de hoje chegou! 🎁',
+    desc: 'O Tesouro da Su está disponível. Abra agora e colete sua semente do dia.',
+    data: 'Hoje',
+  },
+  {
+    id: 'av_teste_01',
+    tag: 'Ação necessária',
+    titulo: 'Seu Teste de Prosperidade aguarda',
+    desc: 'Você ainda não concluiu o Teste de Prosperidade. Ele é o primeiro passo da sua trilha.',
+    data: 'Esta semana',
+  },
+  {
+    id: 'av_video_01',
+    tag: 'Novidade',
+    titulo: 'Novo vídeo disponível no app',
+    desc: 'A Suellen publicou uma aula exclusiva para membros do Clube Vida Mágica.',
+    data: '2 dias atrás',
+  },
+];
+
+function getLidos() {
+  try { return JSON.parse(localStorage.getItem(AVISOS_KEY) || '[]'); } catch { return []; }
+}
+
+function marcarLido(id) {
+  const lidos = getLidos();
+  if (!lidos.includes(id)) {
+    lidos.push(id);
+    localStorage.setItem(AVISOS_KEY, JSON.stringify(lidos));
+  }
+}
+
+function atualizarBadge() {
+  const lidos = getLidos();
+  const naoLidos = AVISOS.filter(a => !lidos.includes(a.id)).length;
+  const badge = document.getElementById('avisos-badge');
+  if (!badge) return;
+  if (naoLidos > 0) {
+    badge.classList.add('visivel');
+    badge.setAttribute('aria-label', `${naoLidos} aviso${naoLidos > 1 ? 's' : ''} não lido${naoLidos > 1 ? 's' : ''}`);
+  } else {
+    badge.classList.remove('visivel');
+  }
+}
+
+function renderAvisos() {
+  const lista = document.getElementById('avisos-lista');
+  if (!lista) return;
+
+  if (!AVISOS.length) {
+    lista.innerHTML = `
+      <div class="aviso-vazio">
+        <div class="aviso-vazio-icon">🌱</div>
+        <p>Nenhum aviso por enquanto.<br>Volte amanhã para novidades.</p>
+      </div>`;
+    return;
+  }
+
+  const lidos = getLidos();
+  lista.innerHTML = `<ul class="aviso-lista">${AVISOS.map(a => {
+    const naoLido = !lidos.includes(a.id);
+    return `
+      <li class="aviso-item${naoLido ? ' nao-lido' : ''}" data-id="${a.id}">
+        <div class="aviso-dot"></div>
+        <div class="aviso-corpo">
+          <div class="aviso-tag">${a.tag}</div>
+          <div class="aviso-titulo">${a.titulo}</div>
+          <div class="aviso-desc">${a.desc}</div>
+          <div class="aviso-data">${a.data}</div>
+        </div>
+      </li>`;
+  }).join('')}</ul>`;
+
+  // Marcar como lido ao clicar
+  lista.querySelectorAll('.aviso-item').forEach(el => {
+    el.addEventListener('click', () => {
+      marcarLido(el.dataset.id);
+      el.classList.remove('nao-lido');
+      atualizarBadge();
+    });
+  });
+}
+
+// Botão avisos — abre modal e renderiza lista
+document.getElementById('btn-avisos')?.addEventListener('click', () => {
+  renderAvisos();
+  abrirModal('modal-avisos');
+  // Marcar todos como lidos após 2s de visualização
+  setTimeout(() => {
+    AVISOS.forEach(a => marcarLido(a.id));
+    atualizarBadge();
+  }, 2000);
+});
+
+// ───────────────────────────────────────────────────────────
+// PWA
 // ───────────────────────────────────────────────────────────
 
 let deferredPrompt = null;
@@ -198,6 +279,7 @@ document.getElementById('pwa-depois')?.addEventListener('click', () => {
 
 (async function init() {
   criarParticulas();
+  atualizarBadge();
 
   const usuario = await checarAuth();
   hidratarUI(usuario);
