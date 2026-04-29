@@ -135,23 +135,21 @@ ul, ol { list-style: none; }
 }
 .topo-btn:hover .topo-svg { stroke: var(--ouro-claro); }
 
-.topo-btn-bau .topo-bau-count {
+/* ── Badge de avisos — delicado ── */
+.topo-avisos-badge {
   position: absolute;
-  top: 2px; right: 2px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  font-family: var(--font-display);
-  font-size: 0.62rem;
-  font-weight: 800;
-  color: white;
-  background: var(--ouro);
-  border-radius: var(--radius-full);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 0 2px rgba(13,8,0,0.92);
+  top: 8px;
+  right: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ouro-claro);
+  border: 1.5px solid rgba(13,8,0,0.92);
+  /* escondido por padrão; app.js mostra quando há não lidos */
+  display: none;
+  box-shadow: 0 0 6px rgba(200,146,42,0.55);
 }
+.topo-avisos-badge.visivel { display: block; }
 
 .topo-fase {
   flex: 1;
@@ -180,10 +178,7 @@ ul, ol { list-style: none; }
   background: rgba(200,146,42,0.12);
   border-radius: var(--radius-full);
 }
-.topo-fase-emoji {
-  font-size: 0.75rem;
-  color: var(--ouro-claro);
-}
+.topo-fase-emoji { font-size: 0.75rem; color: var(--ouro-claro); }
 .topo-fase-label {
   font-family: var(--font-display);
   font-size: 0.68rem;
@@ -384,7 +379,6 @@ ul, ol { list-style: none; }
   border-radius: var(--radius-full);
   box-shadow: var(--sombra-media);
   border: 3px solid var(--vidro-forte);
-  position: relative;
 }
 .trilha-item-bloqueado .trilha-num {
   background: var(--texto-fraco);
@@ -470,7 +464,6 @@ ul, ol { list-style: none; }
   text-transform: none;
 }
 
-/* ═══ RODAPÉ ═══ */
 .rodape-app {
   text-align: center;
   margin-top: 3rem;
@@ -575,6 +568,90 @@ ul, ol { list-style: none; }
   flex: 1;
 }
 
+/* ── Avisos & Novidades ── */
+.aviso-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.aviso-item {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  padding: 1rem 1.1rem;
+  background: rgba(255,250,240,0.6);
+  border: 1px solid var(--vidro-borda);
+  border-radius: var(--radius-md);
+  transition: background 0.15s, border-color 0.15s;
+  cursor: default;
+}
+.aviso-item.nao-lido {
+  background: rgba(200,146,42,0.06);
+  border-color: rgba(200,146,42,0.3);
+}
+.aviso-item.nao-lido:hover {
+  background: rgba(200,146,42,0.1);
+}
+
+.aviso-dot {
+  flex-shrink: 0;
+  margin-top: 0.45rem;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ouro);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.aviso-item.nao-lido .aviso-dot { opacity: 1; }
+
+.aviso-corpo { flex: 1; min-width: 0; }
+
+.aviso-tag {
+  font-family: var(--font-display);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ouro-fundo);
+  margin-bottom: 0.25rem;
+}
+.aviso-titulo {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--texto);
+  line-height: 1.3;
+  margin-bottom: 0.3rem;
+}
+.aviso-desc {
+  font-size: 0.82rem;
+  color: var(--texto-suave);
+  line-height: 1.55;
+}
+.aviso-data {
+  font-size: 0.68rem;
+  color: var(--texto-fraco);
+  margin-top: 0.4rem;
+  font-style: italic;
+}
+
+.aviso-vazio {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--texto-mute);
+}
+.aviso-vazio-icon {
+  font-size: 2.2rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.55;
+}
+.aviso-vazio p {
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
 /* ── Menu Minha Conta ── */
 .modal-menu {
   display: flex;
@@ -602,18 +679,13 @@ ul, ol { list-style: none; }
 }
 .modal-menu-item:active { transform: scale(0.99); }
 
-/* Ícone SVG linha fina dourado */
 .modal-menu-icon {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
 }
 .modal-menu-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 20px; height: 20px;
   stroke: var(--ouro);
   fill: none;
   stroke-width: 1.6;
@@ -642,15 +714,6 @@ ul, ol { list-style: none; }
   line-height: 1.6;
 }
 .modal-vazio span { color: var(--texto-fraco); font-size: 0.82rem; }
-.bau-vazio-icon { font-size: 3rem; margin-bottom: 0.75rem; }
-.bau-vazio-titulo {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--texto);
-  margin-bottom: 0.5rem;
-}
-.bau-vazio-sub { font-size: 0.85rem; color: var(--texto-mute); max-width: 320px; margin: 0 auto; }
 
 /* ════════════════════════════════════════════════════════════
    BANNER PWA
@@ -692,7 +755,6 @@ ul, ol { list-style: none; }
   .topo { padding-left: 1.5rem; padding-right: 1.5rem; }
   .arvore-spacer { height: 65vh; min-height: 460px; }
   .saudacao-titulo { font-size: 2.1rem; }
-  .saudacao-sub { font-size: 1rem; }
   .trilha-titulo { font-size: 1.85rem; }
   .trilha-card { padding: 1.25rem 1.4rem; }
   .trilha-card-titulo { font-size: 1.15rem; }
