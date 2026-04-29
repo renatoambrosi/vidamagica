@@ -2,23 +2,10 @@
 window.VmSession=(function(){const K='vm_s',P='vm_lembrar',U='vm_u';function salvar(d,l){const p=l!==undefined?l:getLembrar();localStorage.setItem(P,p?'1':'0');const s=p?localStorage:sessionStorage,o=p?sessionStorage:localStorage;o.removeItem(K);s.setItem(K,JSON.stringify(d));if(d.usuario?.nome)localStorage.setItem(U,JSON.stringify({nome:d.usuario.nome,email:d.usuario.email||null,telefone_formatado:d.usuario.telefone_formatado||null,foto_url:d.usuario.foto_url||null}));}function carregar(){try{const r=localStorage.getItem(K)||sessionStorage.getItem(K);return r?JSON.parse(r):null;}catch{return null;}}function destruir(){localStorage.removeItem(K);sessionStorage.removeItem(K);}function getAccess(){return carregar()?.access_token||null;}function getRefresh(){return carregar()?.refresh_token||null;}function getLembrar(){return localStorage.getItem(P)!=='0';}function getUsuarioLembrado(){try{return JSON.parse(localStorage.getItem(U)||'null');}catch{return null;}}function limparUsuarioLembrado(){localStorage.removeItem(U);}return{salvar,carregar,destruir,getAccess,getRefresh,getLembrar,getUsuarioLembrado,limparUsuarioLembrado};})();
 
 /* ============================================================
-   VIDA MÁGICA — App principal  v3.1
+   VIDA MÁGICA — App principal
    ============================================================ */
 
 const API = '';
-
-// ── DETECÇÃO DE PLATAFORMA ───────────────────────────────────
-function isIOS() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-}
-function isChromeiOS() {
-  // Chrome no iPhone tem "CriOS" no userAgent; Safari nativo não tem
-  return isIOS() && /CriOS/.test(navigator.userAgent);
-}
-function isStandalone() {
-  return window.navigator.standalone === true ||
-         window.matchMedia('(display-mode: standalone)').matches;
-}
 
 // ── AUTH GUARD ──────────────────────────────────────────────
 async function checarAuth() {
@@ -122,108 +109,22 @@ document.getElementById('btn-produtos')?.addEventListener('click', () => abrirMo
 document.getElementById('btn-bau')?.addEventListener('click',     () => abrirModal('modal-bau'));
 document.getElementById('btn-conta')?.addEventListener('click',   () => abrirModal('modal-conta'));
 document.getElementById('btn-avisos')?.addEventListener('click', () => {
-  renderAvisos(); abrirModal('modal-avisos');
+  renderAvisos();
+  abrirModal('modal-avisos');
   setTimeout(() => { AVISOS.forEach(a => marcarLido(a.id)); atualizarBadge(); }, 2000);
 });
 document.getElementById('tesouro-bau')?.addEventListener('click', () => abrirModal('modal-bau'));
 document.querySelectorAll('[data-close-modal]').forEach(btn => {
   btn.addEventListener('click', e => fecharModal(e.target.closest('.modal')));
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { fecharTodosModais(); fecharIOSModal(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharTodosModais(); });
+
 document.getElementById('menu-logout')?.addEventListener('click', async () => {
   const refresh = VmSession.getRefresh();
   try { await fetch(`${API}/api/auth/logout`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ refresh_token: refresh }) }); } catch {}
-  VmSession.destruir(); window.location.replace('/auth?intencional');
+  VmSession.destruir();
+  window.location.replace('/auth?intencional');
 });
-document.getElementById('menu-instalar-app')?.addEventListener('click', () => {
-  fecharModal('modal-conta'); abrirInstalar();
-});
-
-// ── PWA — Android/Chrome desktop ────────────────────────────
-let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  const b = document.getElementById('pwa-banner');
-  if (b) b.hidden = false;
-  const mi = document.getElementById('menu-instalar-app');
-  if (mi) mi.style.display = '';
-});
-document.getElementById('pwa-instalar')?.addEventListener('click', () => {
-  if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => { deferredPrompt = null; }); }
-  document.getElementById('pwa-banner').hidden = true;
-});
-document.getElementById('pwa-depois')?.addEventListener('click', () => {
-  document.getElementById('pwa-banner').hidden = true;
-});
-
-// ── PWA — iOS: modal visual com seta correta ────────────────
-const IOS_KEY = 'vm_ios_install_dismissed';
-
-function abrirIOSModal() {
-  const modal = document.getElementById('ios-install-modal');
-  if (!modal) return;
-
-  // ── Ajusta seta e texto conforme o browser ──
-  const setaEl   = modal.querySelector('.ios-seta-bounce');
-  const setaDesc = modal.querySelector('.ios-seta-rodape span');
-  const shareDesc = modal.querySelector('#ios-passo-1 .ios-passo-desc');
-
-  if (isChromeiOS()) {
-    // Chrome no iPhone: botão compartilhar fica no TOPO
-    if (setaEl)   setaEl.textContent   = '↑';
-    if (setaDesc) setaDesc.textContent = 'O botão compartilhar fica lá em cima';
-    if (shareDesc) shareDesc.textContent = 'O botão fica na barra superior do Chrome';
-  } else {
-    // Safari: botão compartilhar fica EMBAIXO
-    if (setaEl)   setaEl.textContent   = '↓';
-    if (setaDesc) setaDesc.textContent = 'O botão compartilhar fica aqui embaixo';
-    if (shareDesc) shareDesc.textContent = 'O botão fica na barra inferior do Safari';
-  }
-
-  modal.classList.add('aberto');
-  document.body.style.overflow = 'hidden';
-
-  // Destaque alternado entre os dois passos
-  let step = 1;
-  window._iosInterval = setInterval(() => {
-    document.getElementById('ios-passo-1')?.classList.toggle('destaque', step === 1);
-    document.getElementById('ios-passo-2')?.classList.toggle('destaque', step === 2);
-    step = step === 1 ? 2 : 1;
-  }, 2200);
-}
-
-function fecharIOSModal() {
-  const modal = document.getElementById('ios-install-modal');
-  if (!modal) return;
-  modal.classList.remove('aberto');
-  document.body.style.overflow = '';
-  clearInterval(window._iosInterval);
-  localStorage.setItem(IOS_KEY, '1');
-}
-
-document.getElementById('ios-fechar')?.addEventListener('click', fecharIOSModal);
-document.getElementById('ios-overlay')?.addEventListener('click', fecharIOSModal);
-
-function abrirInstalar() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
-  } else if (isIOS() && !isStandalone()) {
-    abrirIOSModal();
-  }
-}
-
-function verificarIOSInstall() {
-  if (!isIOS() || isStandalone()) return;
-  // Sempre mostra o botão na conta
-  const mi = document.getElementById('menu-instalar-app');
-  if (mi) mi.style.display = '';
-  // Na primeira visita abre o modal automaticamente após 3s
-  if (!localStorage.getItem(IOS_KEY)) {
-    setTimeout(abrirIOSModal, 3000);
-  }
-}
 
 // ── FEED ────────────────────────────────────────────────────
 async function carregarFeed() {
@@ -392,8 +293,7 @@ function renderAvisos() {
   criarSprites();
   atualizarBadge();
   carregarFeed();
-  verificarIOSInstall();
   const usuario = await checarAuth();
   hidratarUI(usuario);
-  console.log('[Vida Mágica] App v3.1 iniciado');
+  console.log('[Vida Mágica] App iniciado');
 })();
