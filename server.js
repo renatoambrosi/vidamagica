@@ -48,10 +48,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 const { autenticar: basicAuth } = require('./routes/precos');
 
 // ── PÁGINAS ──
-app.get('/admin',    basicAuth, (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
-app.get('/auth',               (req, res) => res.sendFile(path.join(__dirname, 'auth.html')));
-app.get('/cadastro',           (req, res) => res.sendFile(path.join(__dirname, 'cadastro.html')));
-app.get('/app',                (req, res) => res.sendFile(path.join(__dirname, 'app.html')));
+app.get('/admin',    basicAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/auth',               (req, res) => res.sendFile(path.join(__dirname, 'public', 'auth.html')));
+app.get('/cadastro',           (req, res) => res.sendFile(path.join(__dirname, 'public', 'cadastro.html')));
+app.get('/app',                (req, res) => res.sendFile(path.join(__dirname, 'public', 'app.html')));
 
 // ── API PÚBLICA ──
 app.use('/api', precosRoutes);
@@ -79,7 +79,7 @@ app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'Rota não encontrada' });
   }
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ── ERROS ──
@@ -96,14 +96,14 @@ app.listen(PORT, async () => {
 💰  GET  /api/precos
 💬  GET  /api/depoimentos
 ⚙️   GET  /api/config
-🔐  *    /api/auth/*
-🛡️   *    /api/admin/*  (Basic Auth)
+🔐  * /api/auth/*
+🛡️   * /api/admin/* (Basic Auth)
 🌐  GET  /
 🖥️   GET  /admin         (Basic Auth)
 🔑  GET  /auth
 📝  GET  /cadastro
-🌳  GET  /app            ← ADICIONA ESSA LINHA
-📡  *    /monitor/*     (Basic Auth)
+🌳  GET  /app
+📡  * /monitor/* (Basic Auth)
   `);
   await initDb();
   iniciarGateway();
