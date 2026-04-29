@@ -7,7 +7,52 @@
   <link rel="icon" href="/favicon.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400&family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <script>
+  // ── VmSession — fonte única de verdade para sessão ────────────────────────
+  window.VmSession = (function(){
+    const KEY = 'vm_s', PREF = 'vm_lembrar', USR = 'vm_u';
+
+    function salvar(data, lembrar){
+      const persistir = lembrar !== undefined ? lembrar : getLembrar();
+      localStorage.setItem(PREF, persistir ? '1' : '0');
+      const store = persistir ? localStorage : sessionStorage;
+      const outro = persistir ? sessionStorage : localStorage;
+      outro.removeItem(KEY);
+      store.setItem(KEY, JSON.stringify(data));
+      if (data.usuario?.nome) {
+        localStorage.setItem(USR, JSON.stringify({
+          nome: data.usuario.nome,
+          email: data.usuario.email || null,
+          telefone_formatado: data.usuario.telefone_formatado || null,
+          foto_url: data.usuario.foto_url || null,
+        }));
+      }
+    }
+
+    function carregar(){
+      try { const r = localStorage.getItem(KEY) || sessionStorage.getItem(KEY); return r ? JSON.parse(r) : null; }
+      catch { return null; }
+    }
+
+    function destruir(){
+      localStorage.removeItem(KEY);
+      sessionStorage.removeItem(KEY);
+    }
+
+    function getAccess()  { return carregar()?.access_token  || null; }
+    function getRefresh() { return carregar()?.refresh_token || null; }
+    function getLembrar() { return localStorage.getItem(PREF) !== '0'; }
+    function getUsuarioLembrado(){
+      try { return JSON.parse(localStorage.getItem(USR) || 'null'); } catch { return null; }
+    }
+    function limparUsuarioLembrado(){ localStorage.removeItem(USR); }
+
+    return { salvar, carregar, destruir, getAccess, getRefresh, getLembrar, getUsuarioLembrado, limparUsuarioLembrado };
+  })();
+  </script>
+
   <style>
     :root {
       --gold:       #C8922A;
@@ -28,246 +73,144 @@
 
     .bg-layer { position:fixed; inset:0; z-index:0; background-image:url('assets/background-theme.jpg'); background-size:cover; background-position:center top; }
     .bg-layer::after { content:''; position:absolute; inset:0; background:linear-gradient(160deg,rgba(13,8,0,0.82) 0%,rgba(26,18,5,0.88) 100%); }
-
     .particles { position:fixed; inset:0; z-index:1; pointer-events:none; overflow:hidden; }
     .p { position:absolute; border-radius:50%; opacity:0; animation:rise linear infinite; }
-    @keyframes rise { 0%{transform:translateY(110vh) scale(0);opacity:0} 8%{opacity:0.7} 90%{opacity:0.3} 100%{transform:translateY(-8vh) scale(1.4);opacity:0} }
+    @keyframes rise { 0%{transform:translateY(110vh) scale(0);opacity:0} 8%{opacity:.7} 90%{opacity:.3} 100%{transform:translateY(-8vh) scale(1.4);opacity:0} }
 
-    nav { position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-items:center; justify-content:space-between; padding:0 1.5rem; height:56px; background:rgba(13,8,0,0.9); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); }
+    nav { position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-items:center; justify-content:space-between; padding:0 1.5rem; height:56px; background:rgba(13,8,0,.9); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); }
     .nav-logo { height:30px; width:auto; }
-    .nav-link { font-family:var(--font-h); font-size:0.72rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--gold); text-decoration:none; border:1px solid var(--border); border-radius:999px; padding:0.38rem 1.1rem; transition:all 0.2s; }
-    .nav-link:hover { background:rgba(200,146,42,0.1); border-color:var(--gold); }
+    .nav-link { font-family:var(--font-h); font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); text-decoration:none; border:1px solid var(--border); border-radius:999px; padding:.38rem 1.1rem; transition:all .2s; }
+    .nav-link:hover { background:rgba(200,146,42,.1); border-color:var(--gold); }
 
     .page { position:relative; z-index:10; min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:80px 1.25rem 3rem; }
-
-    .card { width:100%; max-width:420px; background:rgba(13,8,0,0.78); backdrop-filter:blur(24px); border:1.5px solid var(--border); border-radius:20px; padding:2.5rem 2.25rem; box-shadow:var(--glow),0 32px 80px rgba(0,0,0,0.55); }
-
+    .card { width:100%; max-width:420px; background:rgba(13,8,0,.78); backdrop-filter:blur(24px); border:1.5px solid var(--border); border-radius:20px; padding:2.5rem 2.25rem; box-shadow:var(--glow),0 32px 80px rgba(0,0,0,.55); }
     .card-logo { text-align:center; margin-bottom:1.75rem; }
-    .card-logo img { height:56px; width:auto; filter:drop-shadow(0 0 14px rgba(200,146,42,0.5)); }
+    .card-logo img { height:56px; width:auto; filter:drop-shadow(0 0 14px rgba(200,146,42,.5)); }
 
-    /* TELAS */
-    .tela { display:none; animation:fadeUp 0.28s ease; }
-    .tela.ativa { display:block; }
+    .tela { display:none; }
+    .tela.ativa { display:block; animation:fadeUp .28s ease; }
     @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
-    /* TEXTOS */
-    .titulo { font-family:var(--font-h); font-size:1.15rem; font-weight:900; text-transform:uppercase; letter-spacing:0.01em; color:var(--pearl); text-align:center; margin-bottom:0.3rem; }
+    .titulo { font-family:var(--font-h); font-size:1.15rem; font-weight:900; text-transform:uppercase; letter-spacing:.01em; color:var(--pearl); text-align:center; margin-bottom:.3rem; }
     .titulo em { font-style:normal; color:var(--gold-light); }
-    .subtitulo { font-size:0.8rem; color:var(--muted); text-align:center; line-height:1.6; margin-bottom:1.25rem; }
+    .subtitulo { font-size:.8rem; color:var(--muted); text-align:center; line-height:1.6; margin-bottom:1.25rem; }
     .divisor { width:40px; height:2px; background:linear-gradient(90deg,transparent,var(--gold),transparent); margin:0 auto 1.5rem; }
 
     /* AVATAR LEMBRADO */
-    .usuario-lembrado { display:flex; flex-direction:column; align-items:center; gap:0.55rem; margin-bottom:1.5rem; }
-    .avatar-circle { width:64px; height:64px; border-radius:50%; border:2px solid rgba(200,146,42,0.45); background:rgba(200,146,42,0.12); display:flex; align-items:center; justify-content:center; overflow:hidden; box-shadow:0 0 0 4px rgba(200,146,42,0.08); }
+    .bloco-lembrado { display:flex; flex-direction:column; align-items:center; gap:.55rem; margin-bottom:1.5rem; }
+    .avatar-circle { width:64px; height:64px; border-radius:50%; border:2px solid rgba(200,146,42,.45); background:rgba(200,146,42,.12); display:flex; align-items:center; justify-content:center; overflow:hidden; box-shadow:0 0 0 4px rgba(200,146,42,.08); flex-shrink:0; }
     .avatar-circle img { width:100%; height:100%; object-fit:cover; }
     .avatar-iniciais { font-family:var(--font-h); font-size:1.2rem; font-weight:800; color:var(--gold-light); }
     .usuario-nome { font-family:var(--font-h); font-size:1rem; font-weight:800; color:var(--pearl); }
-    .usuario-detalhe { font-size:0.72rem; color:var(--muted); letter-spacing:0.04em; }
-    .trocar-usuario { background:none; border:none; cursor:pointer; font-family:var(--font-b); font-size:0.7rem; color:var(--gold); text-decoration:underline; text-underline-offset:3px; padding:0; opacity:0.7; transition:opacity 0.2s; }
-    .trocar-usuario:hover { opacity:1; }
+    .usuario-detalhe { font-size:.72rem; color:var(--muted); }
+    .btn-trocar { background:none; border:none; cursor:pointer; font-family:var(--font-b); font-size:.7rem; color:var(--gold); text-decoration:underline; text-underline-offset:3px; padding:0; opacity:.7; transition:opacity .2s; }
+    .btn-trocar:hover { opacity:1; }
 
     /* CAMPOS */
     .campo { margin-bottom:1rem; }
-    .campo label { display:block; font-family:var(--font-h); font-size:0.6rem; font-weight:800; letter-spacing:0.18em; text-transform:uppercase; color:var(--gold); margin-bottom:0.45rem; }
-    .campo label .opc { font-weight:400; text-transform:none; letter-spacing:0; font-family:var(--font-b); font-size:0.68rem; color:var(--faint); }
-
+    .campo label { display:block; font-family:var(--font-h); font-size:.6rem; font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:var(--gold); margin-bottom:.45rem; }
+    .campo label .opc { font-weight:400; text-transform:none; letter-spacing:0; font-family:var(--font-b); font-size:.68rem; color:var(--faint); }
     .input-wrap { position:relative; }
-    .input-wrap input { width:100%; height:50px; padding:0 1.1rem; background:rgba(255,255,255,0.04); border:1.5px solid var(--border); border-radius:var(--radius); font-family:var(--font-b); font-size:0.95rem; color:var(--pearl); outline:none; transition:all 0.2s; -webkit-appearance:none; }
+    .input-wrap input { width:100%; height:50px; padding:0 1.1rem; background:rgba(255,255,255,.04); border:1.5px solid var(--border); border-radius:var(--radius); font-family:var(--font-b); font-size:.95rem; color:var(--pearl); outline:none; transition:all .2s; -webkit-appearance:none; }
     .input-wrap input::placeholder { color:var(--faint); }
-    .input-wrap input:focus { border-color:var(--gold); background:rgba(200,146,42,0.06); box-shadow:0 0 0 3px rgba(200,146,42,0.1); }
+    .input-wrap input:focus { border-color:var(--gold); background:rgba(200,146,42,.06); box-shadow:0 0 0 3px rgba(200,146,42,.1); }
     .input-wrap input.has-eye { padding-right:3rem; }
 
-    .tel-wrap { display:flex; }
-
-    /* SELETOR DE PAÍS */
-    .pais-tel-wrap { display:flex; gap:0; }
+    /* SELETOR PAÍS */
+    .pais-tel-wrap { display:flex; }
     .pais-select-wrap { position:relative; flex-shrink:0; }
-    .pais-btn {
-      height:50px; padding:0 0.75rem;
-      background:rgba(200,146,42,0.08); border:1.5px solid var(--border);
-      border-right:none; border-radius:var(--radius) 0 0 var(--radius);
-      display:flex; align-items:center; gap:0.4rem;
-      cursor:pointer; transition:background 0.2s, border-color 0.2s;
-      white-space:nowrap;
-    }
-    .pais-btn:hover { background:rgba(200,146,42,0.14); border-color:rgba(200,146,42,0.5); }
-    .pais-bandeira { font-size:1.1rem; line-height:1; }
-    .pais-ddi { font-family:var(--font-h); font-size:0.8rem; font-weight:700; color:var(--gold-light); min-width:34px; }
+    .pais-btn { height:50px; padding:0 .75rem; background:rgba(200,146,42,.08); border:1.5px solid var(--border); border-right:none; border-radius:var(--radius) 0 0 var(--radius); display:flex; align-items:center; gap:.4rem; cursor:pointer; transition:all .2s; white-space:nowrap; }
+    .pais-btn:hover { background:rgba(200,146,42,.14); border-color:rgba(200,146,42,.5); }
+    .pais-bandeira { font-size:1.1rem; }
+    .pais-ddi { font-family:var(--font-h); font-size:.8rem; font-weight:700; color:var(--gold-light); min-width:34px; }
     .pais-chevron { width:12px; height:12px; color:var(--muted); flex-shrink:0; }
-    .pais-tel-wrap .input-wrap input { border-radius:0 var(--radius) var(--radius) 0; border-left:none; }
-    .pais-tel-wrap .input-wrap input:focus { border-left:1.5px solid var(--gold); }
-
-    .pais-dropdown {
-      position:absolute; top:calc(100% + 4px); left:0;
-      width:260px; max-height:260px; overflow-y:auto;
-      background:rgba(13,8,0,0.97); border:1.5px solid var(--border);
-      border-radius:var(--radius); box-shadow:0 16px 40px rgba(0,0,0,0.6);
-      backdrop-filter:blur(20px); z-index:500;
-      display:none;
-    }
+    .pais-tel-wrap .input-wrap { flex:1; }
+    .pais-tel-wrap input { border-radius:0 var(--radius) var(--radius) 0; border-left:none; }
+    .pais-tel-wrap input:focus { border-left:1.5px solid var(--gold); }
+    .pais-dropdown { position:absolute; top:calc(100% + 4px); left:0; width:260px; max-height:260px; overflow-y:auto; background:rgba(13,8,0,.97); border:1.5px solid var(--border); border-radius:var(--radius); box-shadow:0 16px 40px rgba(0,0,0,.6); backdrop-filter:blur(20px); z-index:500; display:none; }
     .pais-dropdown.aberto { display:block; }
-    .pais-search {
-      width:100%; padding:0.6rem 0.85rem;
-      background:rgba(255,255,255,0.04); border:none;
-      border-bottom:1px solid var(--border);
-      font-family:var(--font-b); font-size:0.85rem; color:var(--pearl);
-      outline:none;
-    }
+    .pais-search { width:100%; padding:.6rem .85rem; background:rgba(255,255,255,.04); border:none; border-bottom:1px solid var(--border); font-family:var(--font-b); font-size:.85rem; color:var(--pearl); outline:none; }
     .pais-search::placeholder { color:var(--faint); }
-    .pais-lista { list-style:none; padding:0.3rem 0; }
-    .pais-item {
-      display:flex; align-items:center; gap:0.65rem;
-      padding:0.55rem 0.85rem; cursor:pointer;
-      font-size:0.82rem; color:rgba(245,240,232,0.8);
-      transition:background 0.12s;
-    }
-    .pais-item:hover { background:rgba(200,146,42,0.1); color:var(--pearl); }
-    .pais-item.selecionado { background:rgba(200,146,42,0.08); color:var(--gold-light); }
-    .pais-item-flag { font-size:1rem; flex-shrink:0; }
+    .pais-lista { list-style:none; padding:.3rem 0; }
+    .pais-item { display:flex; align-items:center; gap:.65rem; padding:.55rem .85rem; cursor:pointer; font-size:.82rem; color:rgba(245,240,232,.8); transition:background .12s; }
+    .pais-item:hover, .pais-item.sel { background:rgba(200,146,42,.1); color:var(--pearl); }
     .pais-item-nome { flex:1; }
-    .pais-item-ddi { font-family:var(--font-h); font-size:0.72rem; font-weight:700; color:var(--muted); }
-    .pais-sep { height:1px; background:var(--border); margin:0.3rem 0; }
+    .pais-item-ddi { font-family:var(--font-h); font-size:.72rem; font-weight:700; color:var(--muted); }
+    .pais-sep { height:1px; background:var(--border); margin:.3rem 0; }
 
-    .tel-prefix { height:50px; padding:0 1rem; background:rgba(200,146,42,0.08); border:1.5px solid var(--border); border-right:none; border-radius:var(--radius) 0 0 var(--radius); display:flex; align-items:center; font-family:var(--font-h); font-size:0.82rem; color:var(--gold-light); white-space:nowrap; flex-shrink:0; }
-    .tel-wrap .input-wrap { flex:1; }
-    .tel-wrap input { border-radius:0 var(--radius) var(--radius) 0; border-left:none; }
-    .tel-wrap input:focus { border-left:1.5px solid var(--gold); }
+    /* TOGGLE */
+    .toggle-row { display:flex; align-items:center; justify-content:space-between; margin-top:1rem; padding:.7rem .9rem; background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:var(--radius); }
+    .toggle-texts .t1 { font-family:var(--font-h); font-size:.65rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+    .toggle-texts .t2 { font-size:.65rem; color:var(--faint); margin-top:1px; }
+    .toggle-sw { position:relative; width:38px; height:22px; flex-shrink:0; }
+    .toggle-sw input { opacity:0; width:0; height:0; }
+    .toggle-slider { position:absolute; inset:0; background:rgba(255,255,255,.08); border:1px solid var(--border); border-radius:22px; cursor:pointer; transition:all .22s; }
+    .toggle-slider::before { content:''; position:absolute; width:14px; height:14px; left:3px; top:3px; background:var(--muted); border-radius:50%; transition:all .22s; }
+    .toggle-sw input:checked + .toggle-slider { background:rgba(200,146,42,.18); border-color:rgba(200,146,42,.55); }
+    .toggle-sw input:checked + .toggle-slider::before { transform:translateX(16px); background:var(--gold); }
 
-    .eye-btn { position:absolute; right:0.9rem; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:var(--muted); padding:0.25rem; transition:color 0.2s; }
+    .eye-btn { position:absolute; right:.9rem; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:var(--muted); padding:.25rem; transition:color .2s; }
     .eye-btn:hover { color:var(--gold); }
     .eye-btn svg { width:18px; height:18px; }
 
-    .senha-forca { margin-top:0.45rem; display:flex; gap:4px; align-items:center; }
-    .forca-bar { flex:1; height:3px; border-radius:99px; background:rgba(255,255,255,0.08); transition:background 0.3s; }
-    .forca-bar.on-fraca { background:#e05555; }
-    .forca-bar.on-media { background:#e0a855; }
-    .forca-bar.on-forte { background:#55c87a; }
-    .forca-texto { font-family:var(--font-h); font-size:0.6rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); min-width:40px; text-align:right; transition:color 0.3s; }
+    /* FORÇA SENHA */
+    .senha-forca { margin-top:.45rem; display:flex; gap:4px; align-items:center; }
+    .forca-bar { flex:1; height:3px; border-radius:99px; background:rgba(255,255,255,.08); transition:background .3s; }
+    .forca-bar.fraca { background:#e05555; } .forca-bar.media { background:#e0a855; } .forca-bar.forte { background:#55c87a; }
+    .forca-label { font-family:var(--font-h); font-size:.6rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); min-width:40px; text-align:right; transition:color .3s; }
 
     /* OTP */
-    .otp-info { font-size:0.8rem; color:var(--muted); text-align:center; margin-bottom:1.25rem; line-height:1.5; }
+    .otp-info { font-size:.8rem; color:var(--muted); text-align:center; margin-bottom:1.25rem; line-height:1.5; }
     .otp-info strong { color:var(--gold-light); }
     .otp-row { display:flex; gap:8px; justify-content:center; margin-bottom:1.5rem; }
-    .otp-box { width:44px; height:56px; background:rgba(255,255,255,0.04); border:1.5px solid var(--border); border-radius:var(--radius); text-align:center; font-family:var(--font-h); font-size:1.5rem; font-weight:800; color:var(--gold-light); outline:none; transition:all 0.2s; caret-color:var(--gold); }
-    .otp-box:focus { border-color:var(--gold); background:rgba(200,146,42,0.08); box-shadow:0 0 0 3px rgba(200,146,42,0.12); }
+    .otp-box { width:44px; height:56px; background:rgba(255,255,255,.04); border:1.5px solid var(--border); border-radius:var(--radius); text-align:center; font-family:var(--font-h); font-size:1.5rem; font-weight:800; color:var(--gold-light); outline:none; transition:all .2s; caret-color:var(--gold); }
+    .otp-box:focus { border-color:var(--gold); background:rgba(200,146,42,.08); box-shadow:0 0 0 3px rgba(200,146,42,.12); }
     @media(max-width:400px){ .otp-box{width:36px;height:48px;font-size:1.25rem;} }
 
     /* PROGRESS */
     .progress { display:flex; align-items:center; justify-content:center; margin-bottom:1.75rem; }
-    .step-dot { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--font-h); font-size:0.68rem; font-weight:800; border:1.5px solid var(--border); color:var(--muted); background:rgba(255,255,255,0.03); transition:all 0.35s; position:relative; z-index:1; }
-    .step-dot.active { border-color:var(--gold); color:var(--gold); background:rgba(200,146,42,0.1); box-shadow:0 0 0 3px rgba(200,146,42,0.1); }
+    .step-dot { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--font-h); font-size:.68rem; font-weight:800; border:1.5px solid var(--border); color:var(--muted); background:rgba(255,255,255,.03); transition:all .35s; position:relative; z-index:1; }
+    .step-dot.active { border-color:var(--gold); color:var(--gold); background:rgba(200,146,42,.1); box-shadow:0 0 0 3px rgba(200,146,42,.1); }
     .step-dot.done { border-color:var(--gold-deep); background:var(--gold-deep); color:var(--dark); }
-    .step-dot.done::after { content:'✓'; font-size:0.68rem; }
-    .step-dot.done span { display:none; }
-    .step-line { width:40px; height:1.5px; background:var(--border); transition:background 0.35s; }
+    .step-dot.done::after { content:'✓'; font-size:.68rem; } .step-dot.done span { display:none; }
+    .step-line { width:40px; height:1.5px; background:var(--border); transition:background .35s; }
     .step-line.done { background:var(--gold-deep); }
 
     /* BOTÕES */
-    .btn-cta { display:flex; align-items:center; justify-content:space-between; width:100%; height:52px; padding:0 1.25rem; border-radius:var(--radius); border:none; background:var(--gold); color:var(--dark); font-family:var(--font-h); font-size:0.88rem; font-weight:800; letter-spacing:0.03em; text-transform:uppercase; cursor:pointer; transition:background 0.2s,transform 0.15s,box-shadow 0.2s; margin-top:0.75rem; }
-    .btn-cta:hover { background:#b07c22; transform:translateY(-1px); box-shadow:0 6px 20px rgba(200,146,42,0.3); }
+    .btn-cta { display:flex; align-items:center; justify-content:space-between; width:100%; height:52px; padding:0 1.25rem; border-radius:var(--radius); border:none; background:var(--gold); color:var(--dark); font-family:var(--font-h); font-size:.88rem; font-weight:800; letter-spacing:.03em; text-transform:uppercase; cursor:pointer; transition:background .2s,transform .15s,box-shadow .2s; margin-top:.75rem; }
+    .btn-cta:hover { background:#b07c22; transform:translateY(-1px); box-shadow:0 6px 20px rgba(200,146,42,.3); }
     .btn-cta:active { transform:translateY(0); }
-    .btn-cta:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
-    .btn-arrow { width:30px; height:30px; border-radius:50%; background:rgba(26,18,5,0.22); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .btn-cta:disabled { opacity:.4; cursor:not-allowed; transform:none; box-shadow:none; }
+    .btn-arrow { width:30px; height:30px; border-radius:50%; background:rgba(26,18,5,.22); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
     .btn-arrow svg { width:13px; height:13px; stroke:var(--dark); fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
-    .spin { width:16px; height:16px; border:2px solid rgba(26,18,5,0.25); border-top-color:var(--dark); border-radius:50%; animation:giro 0.6s linear infinite; }
+    .spin { width:16px; height:16px; border:2px solid rgba(26,18,5,.25); border-top-color:var(--dark); border-radius:50%; animation:giro .6s linear infinite; }
     @keyframes giro { to{transform:rotate(360deg)} }
-
-    .btn-ghost { display:flex; align-items:center; justify-content:center; gap:0.5rem; width:100%; height:48px; padding:0 1.25rem; border-radius:var(--radius); border:1.5px solid var(--border); background:none; color:var(--pearl); font-family:var(--font-h); font-size:0.8rem; font-weight:700; letter-spacing:0.03em; text-transform:uppercase; cursor:pointer; transition:all 0.2s; margin-top:0.5rem; }
-    .btn-ghost:hover { border-color:var(--gold); color:var(--gold-light); background:rgba(200,146,42,0.06); }
-
-    .btn-sec { background:none; border:none; cursor:pointer; font-family:var(--font-b); font-size:0.78rem; color:var(--gold); text-decoration:underline; text-underline-offset:3px; padding:0; transition:color 0.2s; }
+    .btn-sec { background:none; border:none; cursor:pointer; font-family:var(--font-b); font-size:.78rem; color:var(--gold); text-decoration:underline; text-underline-offset:3px; padding:0; transition:color .2s; }
     .btn-sec:hover { color:var(--gold-light); }
 
-    /* MENSAGENS */
-    .msg { border-radius:8px; padding:0.65rem 0.9rem; font-size:0.8rem; line-height:1.5; margin-bottom:1rem; display:none; }
+    .msg { border-radius:8px; padding:.65rem .9rem; font-size:.8rem; line-height:1.5; margin-bottom:1rem; display:none; }
     .msg.show { display:block; }
-    .msg.erro { background:rgba(185,64,64,0.15); border:1px solid rgba(185,64,64,0.35); color:#f4a5a5; }
-    .msg.ok   { background:rgba(46,125,50,0.15); border:1px solid rgba(46,125,50,0.35); color:#a5d6a7; }
+    .msg.erro { background:rgba(185,64,64,.15); border:1px solid rgba(185,64,64,.35); color:#f4a5a5; }
+    .msg.ok   { background:rgba(46,125,50,.15);  border:1px solid rgba(46,125,50,.35);  color:#a5d6a7; }
 
-    .card-foot { margin-top:1.5rem; text-align:center; font-size:0.73rem; color:var(--faint); }
-    .card-foot button { background:none; border:none; cursor:pointer; font-family:var(--font-b); font-size:0.73rem; color:var(--gold); text-decoration:underline; text-underline-offset:3px; padding:0; }
-
-    .reenvio { text-align:center; margin-top:0.4rem; font-size:0.78rem; color:var(--muted); display:flex; align-items:center; justify-content:center; gap:0.5rem; }
-    .termos { font-size:0.66rem; color:var(--faint); text-align:center; margin-top:0.85rem; line-height:1.6; }
+    .card-foot { margin-top:1.5rem; text-align:center; font-size:.73rem; color:var(--faint); }
+    .card-foot button { background:none; border:none; cursor:pointer; font-family:var(--font-b); font-size:.73rem; color:var(--gold); text-decoration:underline; text-underline-offset:3px; padding:0; }
+    .reenvio { text-align:center; margin-top:.4rem; font-size:.78rem; color:var(--muted); display:flex; align-items:center; justify-content:center; gap:.5rem; }
+    .termos { font-size:.66rem; color:var(--faint); text-align:center; margin-top:.85rem; line-height:1.6; }
     .termos a { color:var(--gold); }
-    .perfil-icon { text-align:center; font-size:2.5rem; margin-bottom:0.5rem; line-height:1; }
-
-    .ou { display:flex; align-items:center; gap:0.75rem; margin:1rem 0 0.5rem; }
-    .ou::before,.ou::after { content:''; flex:1; height:1px; background:var(--border); }
-    .ou span { font-size:0.68rem; color:var(--faint); letter-spacing:0.08em; text-transform:uppercase; font-family:var(--font-h); white-space:nowrap; }
-
-    .esqueci-wrap { text-align:right; margin-top:0.3rem; }
-    .btn-esqueci { background:none; border:none; cursor:pointer; font-family:var(--font-b); font-size:0.72rem; color:var(--muted); text-decoration:underline; text-underline-offset:3px; padding:0; transition:color 0.2s; }
+    .perfil-icon { text-align:center; font-size:2.5rem; margin-bottom:.5rem; }
+    .esqueci-wrap { text-align:right; margin-top:.3rem; }
+    .btn-esqueci { background:none; border:none; cursor:pointer; font-family:var(--font-b); font-size:.72rem; color:var(--muted); text-decoration:underline; text-underline-offset:3px; padding:0; transition:color .2s; }
     .btn-esqueci:hover { color:var(--gold); }
 
+    /* OVERLAY AUTO-LOGIN */
+    .overlay { position:fixed; inset:0; z-index:9999; background:rgba(13,8,0,.95); backdrop-filter:blur(20px); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1.25rem; opacity:0; pointer-events:none; transition:opacity .3s; }
+    .overlay.show { opacity:1; pointer-events:auto; }
+    .overlay img { height:52px; filter:drop-shadow(0 0 14px rgba(200,146,42,.5)); }
+    .overlay-spin { width:36px; height:36px; border:3px solid rgba(200,146,42,.2); border-top-color:var(--gold); border-radius:50%; animation:giro .8s linear infinite; }
+    .overlay-msg { font-family:var(--font-h); font-size:.72rem; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+
     @media(max-width:480px){ .card{padding:2rem 1.5rem;} }
-
-    /* TOGGLE LEMBRAR */
-    .toggle-lembrar {
-      display:flex; align-items:center; justify-content:space-between;
-      margin-top:1rem; padding:0.7rem 0.9rem;
-      background:rgba(255,255,255,0.03);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-    }
-    .toggle-lembrar-label {
-      font-family:var(--font-h); font-size:0.65rem; font-weight:700;
-      letter-spacing:0.1em; text-transform:uppercase;
-      color:var(--muted);
-    }
-    .toggle-lembrar-sub {
-      font-family:var(--font-b); font-size:0.65rem;
-      color:var(--faint); margin-top:1px; letter-spacing:0;
-      text-transform:none; font-weight:400;
-    }
-    .toggle-sw { position:relative; width:38px; height:22px; flex-shrink:0; }
-    .toggle-sw input { opacity:0; width:0; height:0; }
-    .toggle-slider {
-      position:absolute; inset:0;
-      background:rgba(255,255,255,0.08);
-      border:1px solid var(--border);
-      border-radius:22px; cursor:pointer;
-      transition:all 0.22s;
-    }
-    .toggle-slider::before {
-      content:''; position:absolute;
-      width:14px; height:14px; left:3px; top:3px;
-      background:var(--muted); border-radius:50%;
-      transition:all 0.22s;
-    }
-    .toggle-sw input:checked + .toggle-slider {
-      background:rgba(200,146,42,0.18);
-      border-color:rgba(200,146,42,0.55);
-    }
-    .toggle-sw input:checked + .toggle-slider::before {
-      transform:translateX(16px);
-      background:var(--gold);
-    }
-
-
-    /* AUTO-LOGIN OVERLAY */
-    .autologin-overlay {
-      position:fixed; inset:0; z-index:9999;
-      background:rgba(13,8,0,0.92); backdrop-filter:blur(20px);
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      gap:1.25rem; opacity:0; pointer-events:none;
-      transition:opacity 0.35s;
-    }
-    .autologin-overlay.show { opacity:1; pointer-events:auto; }
-    .autologin-logo { height:52px; width:auto; filter:drop-shadow(0 0 14px rgba(200,146,42,0.5)); }
-    .autologin-spinner {
-      width:36px; height:36px;
-      border:3px solid rgba(200,146,42,0.2);
-      border-top-color:var(--gold);
-      border-radius:50%;
-      animation:giro 0.8s linear infinite;
-    }
-    .autologin-msg {
-      font-family:var(--font-h); font-size:0.72rem; font-weight:700;
-      letter-spacing:0.18em; text-transform:uppercase;
-      color:var(--muted);
-    }
-
   </style>
 </head>
 <body>
@@ -279,895 +222,481 @@
   <a href="/" class="nav-link">← Início</a>
 </nav>
 
-<div class="page">
-  <div class="card">
-    <div class="card-logo">
-      <img src="assets/logo-vertical.png" alt="Vida Mágica">
-    </div>
-
-    <!-- ══ TELA: LOGIN ══ -->
-    <div class="tela ativa" id="t-login">
-
-      <!-- Usuário lembrado -->
-      <div class="usuario-lembrado" id="bloco-lembrado" style="display:none">
-        <div class="avatar-circle" id="avatar-circle">
-          <span class="avatar-iniciais" id="avatar-iniciais"></span>
-        </div>
-        <div class="usuario-nome" id="usuario-nome-lembrado"></div>
-        <div class="usuario-detalhe" id="usuario-detalhe-lembrado"></div>
-        <button class="trocar-usuario" onclick="trocarUsuario()">Não sou eu →</button>
-      </div>
-
-      <div id="bloco-titulo-novo">
-        <p class="titulo">Bem-vinda <em>de volta</em></p>
-        <p class="subtitulo">Entre com seu WhatsApp ou e-mail.</p>
-        <div class="divisor"></div>
-      </div>
-      <div id="bloco-titulo-lembrado" style="display:none">
-        <p class="subtitulo" style="margin-bottom:1.25rem">Digite sua senha para continuar.</p>
-      </div>
-
-      <div class="msg erro" id="erro-login"></div>
-
-      <div class="campo" id="campo-identificador">
-        <label>WhatsApp ou e-mail</label>
-        <div class="input-wrap">
-          <input id="input-identificador" type="text" placeholder="(11) 99999-9999 ou seu@email.com" autocomplete="username" autocapitalize="none" oninput="autosaveIdentificador(this.value)">
-        </div>
-      </div>
-
-      <div class="campo">
-        <label>Senha</label>
-        <div class="input-wrap">
-          <input id="input-senha-login" type="password" placeholder="Sua senha" autocomplete="current-password" class="has-eye" onkeydown="if(event.key==='Enter')fazerLogin()">
-          <button class="eye-btn" onclick="toggleOlho('input-senha-login','eye-login')" type="button" aria-label="Ver senha">
-            <svg id="eye-login" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
-        </div>
-        <div class="esqueci-wrap">
-          <button class="btn-esqueci" onclick="irTela('t-esqueci')">Esqueci minha senha</button>
-        </div>
-      </div>
-
-      <div class="toggle-lembrar">
-        <div>
-          <div class="toggle-lembrar-label">Lembrar neste dispositivo</div>
-          <div class="toggle-lembrar-sub">Fica logada mesmo ao fechar o app</div>
-        </div>
-        <label class="toggle-sw">
-          <input type="checkbox" id="toggle-lembrar" checked>
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-      <button class="btn-cta" id="btn-login" onclick="fazerLogin()">
-        <span>Entrar</span>
-        <span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
-      </button>
-
-      <div class="card-foot">
-        Primeira vez aqui? <button onclick="irTela('t-cadastro-1')">Criar conta grátis</button>
-      </div>
-    </div>
-
-    <!-- ══ TELA: LOGIN VIA WHATSAPP — digitar número ══ -->
-    <div class="tela" id="t-otp-tel">
-      <p class="titulo">Entrar pelo <em>WhatsApp</em></p>
-      <div class="divisor"></div>
-      <div class="msg erro" id="erro-otp-tel"></div>
-      <div class="campo">
-        <label>Número do WhatsApp</label>
-        <div class="pais-tel-wrap">
-          <div class="pais-select-wrap">
-            <button type="button" class="pais-btn" id="pais-btn-otp" onclick="abrirPaises('otp')" aria-label="Selecionar país">
-              <span class="pais-bandeira" id="pais-flag-otp">🇧🇷</span>
-              <span class="pais-ddi" id="pais-ddi-otp">+55</span>
-              <svg class="pais-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div class="pais-dropdown" id="pais-dropdown-otp">
-              <input class="pais-search" type="text" placeholder="Buscar país…" oninput="filtrarPaises(this.value,'pais-lista-otp')" autocomplete="off">
-              <ul class="pais-lista" id="pais-lista-otp"></ul>
-            </div>
-          </div>
-          <div class="input-wrap" style="flex:1">
-            <input id="otp-tel-input" type="tel" inputmode="numeric" placeholder="(11) 99999-9999" maxlength="20" autocomplete="tel">
-          </div>
-        </div>
-      </div>
-      <button class="btn-cta" id="btn-otp-tel" onclick="otpLoginEnviar()">
-        <span>Receber código</span>
-        <span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
-      </button>
-      <div class="card-foot"><button onclick="irTela('t-login')">← Voltar</button></div>
-    </div>
-
-    <!-- ══ TELA: LOGIN VIA WHATSAPP — digitar código ══ -->
-    <div class="tela" id="t-otp-codigo">
-      <p class="titulo">Código de <em>acesso</em></p>
-      <div class="divisor"></div>
-      <p class="otp-info">Enviamos para<br><strong id="otp-tel-exibido"></strong></p>
-      <div class="msg erro" id="erro-otp-cod"></div>
-      <div class="msg ok"   id="ok-otp-cod"></div>
-      <div class="otp-row">
-        <input class="otp-box" id="ol0" maxlength="1" inputmode="numeric" type="text">
-        <input class="otp-box" id="ol1" maxlength="1" inputmode="numeric" type="text">
-        <input class="otp-box" id="ol2" maxlength="1" inputmode="numeric" type="text">
-        <input class="otp-box" id="ol3" maxlength="1" inputmode="numeric" type="text">
-        <input class="otp-box" id="ol4" maxlength="1" inputmode="numeric" type="text">
-        <input class="otp-box" id="ol5" maxlength="1" inputmode="numeric" type="text">
-      </div>
-      <button class="btn-cta" id="btn-otp-cod" onclick="otpLoginVerificar()">
-        <span>Entrar</span>
-        <span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
-      </button>
-      <div class="reenvio">
-        <span>Não chegou?</span>
-        <button class="btn-sec" id="btn-ol-reenviar" onclick="otpLoginReenviar()">Reenviar</button>
-        <span id="ol-timer"></span>
-      </div>
-      <div class="card-foot" style="margin-top:0.75rem"><button onclick="irTela('t-otp-tel')">← Trocar número</button></div>
-    </div>
-
-    <!-- ══ TELA: ESQUECI SENHA ══ -->
-    <div class="tela" id="t-esqueci">
-      <p class="titulo">Recuperar <em>acesso</em></p>
-      <p class="subtitulo">Informe seu WhatsApp ou e-mail.<br>Enviaremos um link de recuperação pelo WhatsApp.</p>
-      <div class="divisor"></div>
-      <div class="msg erro" id="erro-esqueci"></div>
-      <div class="msg ok"   id="ok-esqueci"></div>
-      <div class="campo">
-        <label>WhatsApp ou e-mail</label>
-        <div class="input-wrap">
-          <input id="input-esqueci" type="text" placeholder="(11) 99999-9999 ou seu@email.com" autocomplete="off">
-        </div>
-      </div>
-      <button class="btn-cta" id="btn-esqueci-enviar" onclick="solicitarRecuperacao()">
-        <span>Enviar link pelo WhatsApp</span>
-        <span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
-      </button>
-      <div class="card-foot"><button onclick="irTela('t-login')">← Voltar ao login</button></div>
-    </div>
-
-    <!-- ══ TELA: NOVA SENHA (via link ?token=...) ══ -->
-    <div class="tela" id="t-nova-senha">
-      <p class="titulo">Nova <em>senha</em></p>
-      <p class="subtitulo">Crie uma nova senha para sua conta.</p>
-      <div class="divisor"></div>
-      <div class="msg erro" id="erro-nova-senha"></div>
-      <div class="campo">
-        <label>Nova senha <span class="opc">(mínimo 8 caracteres)</span></label>
-        <div class="input-wrap">
-          <input id="input-nova-senha" type="password" placeholder="Nova senha" autocomplete="new-password" class="has-eye" oninput="avaliarSenha(this.value,'forca-wrap','forca-texto','fb')">
-          <button class="eye-btn" onclick="toggleOlho('input-nova-senha','eye-nova')" type="button"><svg id="eye-nova" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-        </div>
-        <div class="senha-forca" id="forca-wrap" style="display:none">
-          <div class="forca-bar" id="fb1"></div><div class="forca-bar" id="fb2"></div><div class="forca-bar" id="fb3"></div><div class="forca-bar" id="fb4"></div>
-          <span class="forca-texto" id="forca-texto"></span>
-        </div>
-      </div>
-      <div class="campo">
-        <label>Confirmar senha</label>
-        <div class="input-wrap">
-          <input id="input-confirmar-senha" type="password" placeholder="Repita a senha" autocomplete="new-password" class="has-eye" onkeydown="if(event.key==='Enter')redefinirSenha()">
-          <button class="eye-btn" onclick="toggleOlho('input-confirmar-senha','eye-conf')" type="button"><svg id="eye-conf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-        </div>
-      </div>
-      <button class="btn-cta" id="btn-nova-senha" onclick="redefinirSenha()">
-        <span>Salvar nova senha</span>
-        <span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
-      </button>
-    </div>
-
-    <!-- ══ CADASTRO: step 1 — dados ══ -->
-    <div class="tela" id="t-cadastro-1">
-      <div class="progress">
-        <div class="step-dot active" id="cdot-1"><span>1</span></div>
-        <div class="step-line" id="cline-1"></div>
-        <div class="step-dot" id="cdot-2"><span>2</span></div>
-        <div class="step-line" id="cline-2"></div>
-        <div class="step-dot" id="cdot-3"><span>3</span></div>
-      </div>
-      <p class="titulo">Criar <em>minha conta</em></p>
-      <p class="subtitulo">Preencha seus dados. Confirmaremos<br>pelo WhatsApp em seguida.</p>
-      <div class="divisor"></div>
-      <div class="msg erro" id="erro-cad1"></div>
-
-      <div class="campo">
-        <label>Nome completo</label>
-        <div class="input-wrap"><input id="c-nome" type="text" placeholder="Como você se chama?" autocomplete="name"></div>
-      </div>
-      <div class="campo">
-        <label>E-mail</label>
-        <div class="input-wrap"><input id="c-email" type="email" placeholder="seu@email.com" autocomplete="email"></div>
-      </div>
-      <div class="campo">
-        <label>WhatsApp</label>
-        <div class="pais-tel-wrap">
-          <div class="pais-select-wrap">
-            <button type="button" class="pais-btn" id="pais-btn-cad" onclick="abrirPaises('cad')" aria-label="Selecionar país">
-              <span class="pais-bandeira" id="pais-flag-cad">🇧🇷</span>
-              <span class="pais-ddi" id="pais-ddi-cad">+55</span>
-              <svg class="pais-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div class="pais-dropdown" id="pais-dropdown-cad">
-              <input class="pais-search" type="text" placeholder="Buscar país…" oninput="filtrarPaises(this.value,'pais-lista-cad')" autocomplete="off">
-              <ul class="pais-lista" id="pais-lista-cad"></ul>
-            </div>
-          </div>
-          <div class="input-wrap" style="flex:1">
-            <input id="c-tel" type="tel" inputmode="numeric" placeholder="(11) 99999-9999" maxlength="20" autocomplete="tel">
-          </div>
-        </div>
-      </div>
-      <div class="campo">
-        <label>Senha <span class="opc">(mínimo 8 caracteres)</span></label>
-        <div class="input-wrap">
-          <input id="c-senha" type="password" placeholder="Crie uma senha" autocomplete="new-password" class="has-eye" oninput="avaliarSenha(this.value,'forca-wrap-cad','forca-texto-cad','fcb')">
-          <button class="eye-btn" onclick="toggleOlho('c-senha','eye-cad')" type="button"><svg id="eye-cad" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-        </div>
-        <div class="senha-forca" id="forca-wrap-cad" style="display:none">
-          <div class="forca-bar" id="fcb1"></div><div class="forca-bar" id="fcb2"></div><div class="forca-bar" id="fcb3"></div><div class="forca-bar" id="fcb4"></div>
-          <span class="forca-texto" id="forca-texto-cad"></span>
-        </div>
-      </div>
-
-      <button class="btn-cta" id="btn-cad1" onclick="cadastroEnviarOTP()">
-        <span>Confirmar pelo WhatsApp</span>
-        <span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
-      </button>
-      <p class="termos">Ao continuar, você concorda com nossos <a href="/termos" target="_blank">Termos de Uso</a> e <a href="/privacidade" target="_blank">Política de Privacidade</a>.</p>
-      <div class="card-foot">Já tem conta? <button onclick="irTela('t-login')">Entrar</button></div>
-    </div>
-
-    <!-- ══ CADASTRO: step 2 — OTP ══ -->
-    <div class="tela" id="t-cadastro-2">
-      <div class="progress">
-        <div class="step-dot done"><span>1</span></div>
-        <div class="step-line done"></div>
-        <div class="step-dot active"><span>2</span></div>
-        <div class="step-line"></div>
-        <div class="step-dot"><span>3</span></div>
-      </div>
-      <p class="titulo">Confirme seu <em>WhatsApp</em></p>
-      <div class="divisor"></div>
-      <p class="otp-info">Código enviado para<br><strong id="c-tel-exibido"></strong></p>
-      <div class="msg erro" id="erro-cad2"></div>
-      <div class="msg ok"   id="ok-cad2"></div>
-      <div class="otp-row">
-        <input class="otp-box" id="co0" maxlength="1" inputmode="numeric" type="text">
-        <input class="otp-box" id="co1" maxlength="1" inputmode="numeric" type="text">
-        <input class="otp-box" id="co2" maxlength="1" inputmode="numeric" type="text">
-        <input class="otp-box" id="co3" maxlength="1" inputmode="numeric" type="text">
-        <input class="otp-box" id="co4" maxlength="1" inputmode="numeric" type="text">
-        <input class="otp-box" id="co5" maxlength="1" inputmode="numeric" type="text">
-      </div>
-      <button class="btn-cta" id="btn-cad2" onclick="cadastroVerificarOTP()">
-        <span>Confirmar código</span>
-        <span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
-      </button>
-      <div class="reenvio">
-        <span>Não chegou?</span>
-        <button class="btn-sec" id="btn-c-reenviar" onclick="cadastroReenviarOTP()">Reenviar</button>
-        <span id="c-timer"></span>
-      </div>
-      <div class="card-foot" style="margin-top:0.75rem"><button onclick="irTela('t-cadastro-1')">← Corrigir dados</button></div>
-    </div>
-
-    <!-- ══ CADASTRO: step 3 — sucesso ══ -->
-    <div class="tela" id="t-cadastro-3">
-      <div class="progress">
-        <div class="step-dot done"><span>1</span></div>
-        <div class="step-line done"></div>
-        <div class="step-dot done"><span>2</span></div>
-        <div class="step-line done"></div>
-        <div class="step-dot active"><span>3</span></div>
-      </div>
-      <div class="perfil-icon">🌱</div>
-      <p class="titulo">Conta <em>criada!</em></p>
-      <p class="subtitulo">Seja bem-vinda à Vida Mágica.<br>Entrando na sua área…</p>
-      <div style="display:flex;justify-content:center;padding:1.25rem 0;">
-        <div class="spin" style="width:24px;height:24px;border-color:rgba(200,146,42,0.3);border-top-color:var(--gold);"></div>
-      </div>
-      <div class="msg ok show" id="ok-cad3" style="text-align:center"></div>
-    </div>
-
-  </div>
+<div class="overlay" id="overlay">
+  <img src="assets/logo-vertical.png" alt="Vida Mágica">
+  <div class="overlay-spin"></div>
+  <div class="overlay-msg" id="overlay-msg">Reconhecendo sua conta…</div>
 </div>
+
+<div class="page"><div class="card">
+  <div class="card-logo"><img src="assets/logo-vertical.png" alt="Vida Mágica"></div>
+
+  <!-- LOGIN -->
+  <div class="tela ativa" id="t-login">
+    <div class="bloco-lembrado" id="bloco-lembrado" style="display:none">
+      <div class="avatar-circle" id="avatar-circle"><span class="avatar-iniciais" id="avatar-iniciais"></span></div>
+      <div class="usuario-nome" id="usuario-nome"></div>
+      <div class="usuario-detalhe" id="usuario-detalhe"></div>
+      <button class="btn-trocar" onclick="trocarUsuario()">Não sou eu →</button>
+    </div>
+    <div id="bloco-titulo-novo"><p class="titulo">Bem-vinda <em>de volta</em></p><p class="subtitulo">Entre com seu WhatsApp ou e-mail.</p><div class="divisor"></div></div>
+    <div id="bloco-titulo-lembrado" style="display:none"><p class="subtitulo" style="margin-bottom:1.25rem">Digite sua senha para continuar.</p></div>
+    <div class="msg erro" id="erro-login"></div>
+    <div class="campo" id="campo-id">
+      <label>WhatsApp ou e-mail</label>
+      <div class="input-wrap"><input id="input-id" type="text" placeholder="(11) 99999-9999 ou seu@email.com" autocomplete="username" autocapitalize="none"></div>
+    </div>
+    <div class="campo">
+      <label>Senha</label>
+      <div class="input-wrap">
+        <input id="input-senha" type="password" placeholder="Sua senha" autocomplete="current-password" class="has-eye">
+        <button class="eye-btn" onclick="toggleOlho('input-senha','eye-senha')" type="button"><svg id="eye-senha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+      <div class="esqueci-wrap"><button class="btn-esqueci" onclick="irTela('t-esqueci')">Esqueci minha senha</button></div>
+    </div>
+    <div class="toggle-row">
+      <div class="toggle-texts"><div class="t1">Lembrar neste dispositivo</div><div class="t2">Fica logada mesmo ao fechar o app</div></div>
+      <label class="toggle-sw"><input type="checkbox" id="toggle-lembrar" checked><span class="toggle-slider"></span></label>
+    </div>
+    <button class="btn-cta" id="btn-login" onclick="fazerLogin()"><span>Entrar</span><span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span></button>
+    <div class="card-foot">Primeira vez aqui? <button onclick="irTela('t-cad-1')">Criar conta grátis</button></div>
+  </div>
+
+  <!-- ESQUECI -->
+  <div class="tela" id="t-esqueci">
+    <p class="titulo">Recuperar <em>acesso</em></p>
+    <p class="subtitulo">Informe seu WhatsApp ou e-mail.<br>Enviaremos um link pelo WhatsApp.</p>
+    <div class="divisor"></div>
+    <div class="msg erro" id="erro-esqueci"></div>
+    <div class="msg ok" id="ok-esqueci"></div>
+    <div class="campo"><label>WhatsApp ou e-mail</label><div class="input-wrap"><input id="input-esqueci" type="text" placeholder="(11) 99999-9999 ou seu@email.com"></div></div>
+    <button class="btn-cta" id="btn-esqueci" onclick="solicitarRecuperacao()"><span>Enviar link pelo WhatsApp</span><span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span></button>
+    <div class="card-foot"><button onclick="irTela('t-login')">← Voltar ao login</button></div>
+  </div>
+
+  <!-- NOVA SENHA -->
+  <div class="tela" id="t-nova-senha">
+    <p class="titulo">Nova <em>senha</em></p><p class="subtitulo">Crie uma nova senha para sua conta.</p><div class="divisor"></div>
+    <div class="msg erro" id="erro-nova-senha"></div>
+    <div class="campo">
+      <label>Nova senha <span class="opc">(mínimo 8 caracteres)</span></label>
+      <div class="input-wrap">
+        <input id="input-nova-senha" type="password" placeholder="Nova senha" autocomplete="new-password" class="has-eye" oninput="avaliarSenha(this.value,'fw','fl','fb')">
+        <button class="eye-btn" onclick="toggleOlho('input-nova-senha','eye-nova')" type="button"><svg id="eye-nova" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+      <div class="senha-forca" id="fw" style="display:none"><div class="forca-bar" id="fb1"></div><div class="forca-bar" id="fb2"></div><div class="forca-bar" id="fb3"></div><div class="forca-bar" id="fb4"></div><span class="forca-label" id="fl"></span></div>
+    </div>
+    <div class="campo">
+      <label>Confirmar senha</label>
+      <div class="input-wrap">
+        <input id="input-conf-senha" type="password" placeholder="Repita a nova senha" autocomplete="new-password" class="has-eye">
+        <button class="eye-btn" onclick="toggleOlho('input-conf-senha','eye-conf')" type="button"><svg id="eye-conf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+    </div>
+    <button class="btn-cta" id="btn-nova-senha" onclick="redefinirSenha()"><span>Salvar nova senha</span><span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span></button>
+  </div>
+
+  <!-- CADASTRO 1 -->
+  <div class="tela" id="t-cad-1">
+    <div class="progress"><div class="step-dot active"><span>1</span></div><div class="step-line"></div><div class="step-dot"><span>2</span></div><div class="step-line"></div><div class="step-dot"><span>3</span></div></div>
+    <p class="titulo">Criar <em>minha conta</em></p><p class="subtitulo">Preencha seus dados. Confirmaremos pelo WhatsApp.</p><div class="divisor"></div>
+    <div class="msg erro" id="erro-cad1"></div>
+    <div class="campo"><label>Nome completo</label><div class="input-wrap"><input id="c-nome" type="text" placeholder="Como você se chama?" autocomplete="name"></div></div>
+    <div class="campo"><label>E-mail</label><div class="input-wrap"><input id="c-email" type="email" placeholder="seu@email.com" autocomplete="email"></div></div>
+    <div class="campo">
+      <label>WhatsApp</label>
+      <div class="pais-tel-wrap">
+        <div class="pais-select-wrap">
+          <button type="button" class="pais-btn" id="pais-btn-cad" onclick="togglePaises('cad')">
+            <span class="pais-bandeira" id="pais-flag-cad">🇧🇷</span>
+            <span class="pais-ddi" id="pais-ddi-cad">+55</span>
+            <svg class="pais-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="pais-dropdown" id="pais-dropdown-cad">
+            <input class="pais-search" type="text" placeholder="Buscar país…" oninput="filtrarPaises(this.value,'lista-cad','cad')" autocomplete="off">
+            <ul class="pais-lista" id="lista-cad"></ul>
+          </div>
+        </div>
+        <div class="input-wrap" style="flex:1"><input id="c-tel" type="tel" inputmode="numeric" placeholder="(11) 99999-9999" maxlength="20" autocomplete="tel"></div>
+      </div>
+    </div>
+    <div class="campo">
+      <label>Senha <span class="opc">(mínimo 8 caracteres)</span></label>
+      <div class="input-wrap">
+        <input id="c-senha" type="password" placeholder="Crie uma senha" autocomplete="new-password" class="has-eye" oninput="avaliarSenha(this.value,'fw-c','fl-c','fc')">
+        <button class="eye-btn" onclick="toggleOlho('c-senha','eye-cad')" type="button"><svg id="eye-cad" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+      <div class="senha-forca" id="fw-c" style="display:none"><div class="forca-bar" id="fc1"></div><div class="forca-bar" id="fc2"></div><div class="forca-bar" id="fc3"></div><div class="forca-bar" id="fc4"></div><span class="forca-label" id="fl-c"></span></div>
+    </div>
+    <button class="btn-cta" id="btn-cad1" onclick="cadastroStep1()"><span>Confirmar pelo WhatsApp</span><span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span></button>
+    <p class="termos">Ao continuar, você concorda com nossos <a href="/termos" target="_blank">Termos de Uso</a> e <a href="/privacidade" target="_blank">Política de Privacidade</a>.</p>
+    <div class="card-foot">Já tem conta? <button onclick="irTela('t-login')">Entrar</button></div>
+  </div>
+
+  <!-- CADASTRO 2 — OTP -->
+  <div class="tela" id="t-cad-2">
+    <div class="progress"><div class="step-dot done"><span>1</span></div><div class="step-line done"></div><div class="step-dot active"><span>2</span></div><div class="step-line"></div><div class="step-dot"><span>3</span></div></div>
+    <p class="titulo">Confirme seu <em>WhatsApp</em></p><div class="divisor"></div>
+    <p class="otp-info">Código enviado para<br><strong id="c-tel-exibido"></strong></p>
+    <div class="msg erro" id="erro-cad2"></div><div class="msg ok" id="ok-cad2"></div>
+    <div class="otp-row">
+      <input class="otp-box" id="co0" maxlength="1" inputmode="numeric" type="text">
+      <input class="otp-box" id="co1" maxlength="1" inputmode="numeric" type="text">
+      <input class="otp-box" id="co2" maxlength="1" inputmode="numeric" type="text">
+      <input class="otp-box" id="co3" maxlength="1" inputmode="numeric" type="text">
+      <input class="otp-box" id="co4" maxlength="1" inputmode="numeric" type="text">
+      <input class="otp-box" id="co5" maxlength="1" inputmode="numeric" type="text">
+    </div>
+    <button class="btn-cta" id="btn-cad2" onclick="cadastroStep2()"><span>Confirmar código</span><span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span></button>
+    <div class="reenvio"><span>Não chegou?</span><button class="btn-sec" id="btn-reenviar" onclick="cadastroReenviar()">Reenviar</button><span id="timer-reenviar"></span></div>
+    <div class="card-foot" style="margin-top:.75rem"><button onclick="irTela('t-cad-1')">← Corrigir dados</button></div>
+  </div>
+
+  <!-- CADASTRO 3 — sucesso -->
+  <div class="tela" id="t-cad-3">
+    <div class="progress"><div class="step-dot done"><span>1</span></div><div class="step-line done"></div><div class="step-dot done"><span>2</span></div><div class="step-line done"></div><div class="step-dot active"><span>3</span></div></div>
+    <div class="perfil-icon">🌱</div>
+    <p class="titulo">Conta <em>criada!</em></p>
+    <p class="subtitulo">Seja bem-vinda à Vida Mágica.<br>Entrando na sua área…</p>
+    <div style="display:flex;justify-content:center;padding:1.25rem 0;"><div class="spin" style="width:24px;height:24px;border-color:rgba(200,146,42,.3);border-top-color:var(--gold);"></div></div>
+  </div>
+
+</div></div><!-- /card /page -->
 
 <script>
 const API = '';
-let cTelFormatado = '', olTelFormatado = '';
-let cTimer = null, olTimer = null;
-let tokenRecuperacao = '';
+let cTelFormatado = '', timerReenviar = null, tokenReset = '';
 
-// ── PARTÍCULAS ─────────────────────────────────────────────────────────────────
-(function(){
-  const c = document.getElementById('particles');
-  for(let i=0;i<22;i++){
-    const p=document.createElement('div'); p.className='p';
-    const s=Math.random()*4+2;
-    p.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;animation-duration:${Math.random()*16+9}s;animation-delay:${Math.random()*14}s;background:${Math.random()>.5?'rgba(248,220,150,0.7)':'rgba(255,255,255,0.55)'};`;
-    c.appendChild(p);
-  }
-})();
-
-// ── PAÍSES ────────────────────────────────────────────────────────────────────
+// ── PAÍSES ──────────────────────────────────────────────────────────────────
 const PAISES = [
-  // Destaque (aparecem primeiro)
-  {ddi:'55', flag:'🇧🇷', nome:'Brasil',          mask:'(##) #####-####', max:11, dest:true},
-  {ddi:'351',flag:'🇵🇹', nome:'Portugal',         mask:'### ### ###',     max:9,  dest:true},
-  {ddi:'1',  flag:'🇺🇸', nome:'EUA / Canadá',     mask:'(###) ###-####',  max:10, dest:true},
-  {ddi:'54', flag:'🇦🇷', nome:'Argentina',         mask:'## ####-####',   max:10, dest:true},
-  {ddi:'56', flag:'🇨🇱', nome:'Chile',             mask:'# ####-####',    max:9,  dest:true},
-  {ddi:'598',flag:'🇺🇾', nome:'Uruguai',           mask:'#### ####',      max:8,  dest:true},
-  {ddi:'595',flag:'🇵🇾', nome:'Paraguai',          mask:'### ### ###',    max:9,  dest:true},
-  {ddi:'591',flag:'🇧🇴', nome:'Bolívia',           mask:'# ###-####',     max:8,  dest:true},
-  {ddi:'593',flag:'🇪🇨', nome:'Equador',           mask:'## ###-####',    max:9,  dest:true},
-  {ddi:'51', flag:'🇵🇪', nome:'Peru',              mask:'### ### ###',    max:9,  dest:true},
-  {ddi:'57', flag:'🇨🇴', nome:'Colômbia',          mask:'### ### ####',   max:10, dest:true},
-  {ddi:'58', flag:'🇻🇪', nome:'Venezuela',         mask:'###-###-####',   max:10, dest:true},
-  {ddi:'34', flag:'🇪🇸', nome:'Espanha',           mask:'### ### ###',    max:9,  dest:true},
-  {ddi:'39', flag:'🇮🇹', nome:'Itália',            mask:'### ### ####',   max:10, dest:true},
-  {ddi:'44', flag:'🇬🇧', nome:'Reino Unido',       mask:'#### ### ####',  max:10, dest:true},
-  {ddi:'49', flag:'🇩🇪', nome:'Alemanha',          mask:'### ### ####',   max:11, dest:true},
-  {ddi:'33', flag:'🇫🇷', nome:'França',            mask:'# ## ## ## ##',  max:9,  dest:true},
-  // Outros
-  {ddi:'52', flag:'🇲🇽', nome:'México',            mask:'## ####-####',   max:10},
-  {ddi:'53', flag:'🇨🇺', nome:'Cuba',              mask:'# ###-####',     max:8},
-  {ddi:'506',flag:'🇨🇷', nome:'Costa Rica',        mask:'####-####',      max:8},
-  {ddi:'507',flag:'🇵🇦', nome:'Panamá',            mask:'####-####',      max:8},
-  {ddi:'502',flag:'🇬🇹', nome:'Guatemala',         mask:'####-####',      max:8},
-  {ddi:'503',flag:'🇸🇻', nome:'El Salvador',       mask:'####-####',      max:8},
-  {ddi:'504',flag:'🇭🇳', nome:'Honduras',          mask:'####-####',      max:8},
-  {ddi:'505',flag:'🇳🇮', nome:'Nicarágua',         mask:'####-####',      max:8},
-  {ddi:'61', flag:'🇦🇺', nome:'Austrália',         mask:'### ### ###',    max:9},
-  {ddi:'64', flag:'🇳🇿', nome:'Nova Zelândia',     mask:'## ### ####',    max:9},
-  {ddi:'81', flag:'🇯🇵', nome:'Japão',             mask:'##-####-####',   max:10},
-  {ddi:'82', flag:'🇰🇷', nome:'Coreia do Sul',     mask:'##-####-####',   max:10},
-  {ddi:'86', flag:'🇨🇳', nome:'China',             mask:'### #### ####',  max:11},
-  {ddi:'91', flag:'🇮🇳', nome:'Índia',             mask:'##### #####',    max:10},
-  {ddi:'27', flag:'🇿🇦', nome:'África do Sul',     mask:'## ### ####',    max:9},
-  {ddi:'234',flag:'🇳🇬', nome:'Nigéria',           mask:'### ### ####',   max:10},
-  {ddi:'20', flag:'🇪🇬', nome:'Egito',             mask:'### ### ####',   max:10},
-  {ddi:'971',flag:'🇦🇪', nome:'Emirados Árabes',   mask:'## ### ####',    max:9},
-  {ddi:'972',flag:'🇮🇱', nome:'Israel',            mask:'##-###-####',    max:9},
-  {ddi:'7',  flag:'🇷🇺', nome:'Rússia',            mask:'### ###-##-##',  max:10},
-  {ddi:'380',flag:'🇺🇦', nome:'Ucrânia',           mask:'## ###-##-##',   max:9},
-  {ddi:'48', flag:'🇵🇱', nome:'Polônia',           mask:'### ### ###',    max:9},
-  {ddi:'31', flag:'🇳🇱', nome:'Holanda',           mask:'## ### ####',    max:9},
-  {ddi:'32', flag:'🇧🇪', nome:'Bélgica',           mask:'### ## ## ##',   max:9},
-  {ddi:'41', flag:'🇨🇭', nome:'Suíça',             mask:'## ### ## ##',   max:9},
-  {ddi:'43', flag:'🇦🇹', nome:'Áustria',           mask:'### ### ####',   max:10},
-  {ddi:'46', flag:'🇸🇪', nome:'Suécia',            mask:'##-### ## ##',   max:9},
-  {ddi:'47', flag:'🇳🇴', nome:'Noruega',           mask:'### ## ###',     max:8},
-  {ddi:'45', flag:'🇩🇰', nome:'Dinamarca',         mask:'## ## ## ##',    max:8},
-  {ddi:'358',flag:'🇫🇮', nome:'Finlândia',         mask:'## ### ####',    max:9},
+  {ddi:'55',  flag:'🇧🇷', nome:'Brasil',       mask:'(##) #####-####', max:11, top:true},
+  {ddi:'351', flag:'🇵🇹', nome:'Portugal',      mask:'### ### ###',     max:9,  top:true},
+  {ddi:'1',   flag:'🇺🇸', nome:'EUA / Canadá',  mask:'(###) ###-####',  max:10, top:true},
+  {ddi:'54',  flag:'🇦🇷', nome:'Argentina',      mask:'## ####-####',   max:10, top:true},
+  {ddi:'56',  flag:'🇨🇱', nome:'Chile',          mask:'# ####-####',    max:9,  top:true},
+  {ddi:'598', flag:'🇺🇾', nome:'Uruguai',        mask:'#### ####',      max:8,  top:true},
+  {ddi:'595', flag:'🇵🇾', nome:'Paraguai',       mask:'### ### ###',    max:9,  top:true},
+  {ddi:'591', flag:'🇧🇴', nome:'Bolívia',        mask:'# ###-####',     max:8,  top:true},
+  {ddi:'593', flag:'🇪🇨', nome:'Equador',        mask:'## ###-####',    max:9,  top:true},
+  {ddi:'51',  flag:'🇵🇪', nome:'Peru',           mask:'### ### ###',    max:9,  top:true},
+  {ddi:'57',  flag:'🇨🇴', nome:'Colômbia',       mask:'### ### ####',   max:10, top:true},
+  {ddi:'58',  flag:'🇻🇪', nome:'Venezuela',      mask:'###-###-####',   max:10, top:true},
+  {ddi:'34',  flag:'🇪🇸', nome:'Espanha',        mask:'### ### ###',    max:9,  top:true},
+  {ddi:'39',  flag:'🇮🇹', nome:'Itália',         mask:'### ### ####',   max:10, top:true},
+  {ddi:'44',  flag:'🇬🇧', nome:'Reino Unido',    mask:'#### ### ####',  max:10, top:true},
+  {ddi:'49',  flag:'🇩🇪', nome:'Alemanha',       mask:'### ### ####',   max:11, top:true},
+  {ddi:'33',  flag:'🇫🇷', nome:'França',         mask:'# ## ## ## ##',  max:9,  top:true},
+  {ddi:'52',  flag:'🇲🇽', nome:'México',         mask:'## ####-####',   max:10},
+  {ddi:'61',  flag:'🇦🇺', nome:'Austrália',      mask:'### ### ###',    max:9},
+  {ddi:'81',  flag:'🇯🇵', nome:'Japão',          mask:'##-####-####',   max:10},
+  {ddi:'91',  flag:'🇮🇳', nome:'Índia',          mask:'##### #####',    max:10},
+  {ddi:'27',  flag:'🇿🇦', nome:'África do Sul',  mask:'## ### ####',    max:9},
+  {ddi:'7',   flag:'🇷🇺', nome:'Rússia',         mask:'### ###-##-##',  max:10},
+  {ddi:'48',  flag:'🇵🇱', nome:'Polônia',        mask:'### ### ###',    max:9},
+  {ddi:'31',  flag:'🇳🇱', nome:'Holanda',        mask:'## ### ####',    max:9},
+  {ddi:'41',  flag:'🇨🇭', nome:'Suíça',          mask:'## ### ## ##',   max:9},
+  {ddi:'46',  flag:'🇸🇪', nome:'Suécia',         mask:'##-### ## ##',   max:9},
 ];
+const paisSel = { cad: PAISES[0] };
 
-// Estado por instância (cad = cadastro, otp = login OTP)
-const paisState = {
-  cad: { pais: PAISES[0] },
-  otp: { pais: PAISES[0] },
-};
-
-function aplicarMascara(inputEl, pais, raw){
-  // Aplica a máscara do país ao valor digitado
-  const digits = raw.replace(/\D/g,'').substring(0, pais.max);
-  let mask = pais.mask;
-  let result = '';
-  let di = 0;
-  for(let i=0; i<mask.length && di<digits.length; i++){
-    if(mask[i]==='#'){ result += digits[di++]; }
-    else { result += mask[i]; if(di<digits.length) {} }
-  }
-  // Completa separadores pendentes se necessário
-  // Mas não adiciona separador no fim sem dígito
-  inputEl.value = result;
+function mascaraTel(inp, pais) {
+  const d = inp.value.replace(/\D/g,'').substring(0, pais.max);
+  let m = pais.mask, r = '', di = 0;
+  for (let i = 0; i < m.length && di < d.length; i++) r += m[i]==='#' ? d[di++] : m[i];
+  inp.value = r;
 }
+document.getElementById('c-tel').addEventListener('input', function(){ mascaraTel(this, paisSel.cad); });
 
-function atualizarPlaceholder(inputEl, pais){
-  inputEl.placeholder = pais.mask.replace(/#/g,'0');
-  inputEl.maxLength = pais.mask.length;
-}
-
-function renderPaises(ulId, instancia){
-  const ul = document.getElementById(ulId);
-  const atual = paisState[instancia].pais;
-  const dest = PAISES.filter(p=>p.dest);
-  const outros = PAISES.filter(p=>!p.dest);
-
-  let html = '';
-  dest.forEach(p => {
-    html += `<li class="pais-item${p.ddi===atual.ddi?' selecionado':''}" onclick="selecionarPais('${instancia}','${p.ddi}')">
-      <span class="pais-item-flag">${p.flag}</span>
-      <span class="pais-item-nome">${p.nome}</span>
-      <span class="pais-item-ddi">+${p.ddi}</span>
-    </li>`;
-  });
-  html += '<li><div class="pais-sep"></div></li>';
-  outros.forEach(p => {
-    html += `<li class="pais-item${p.ddi===atual.ddi?' selecionado':''}" onclick="selecionarPais('${instancia}','${p.ddi}')">
-      <span class="pais-item-flag">${p.flag}</span>
-      <span class="pais-item-nome">${p.nome}</span>
-      <span class="pais-item-ddi">+${p.ddi}</span>
-    </li>`;
-  });
-  ul.innerHTML = html;
-}
-
-function filtrarPaises(q, ulId){
-  const ul = document.getElementById(ulId);
-  const instancia = ulId.includes('cad') ? 'cad' : 'otp';
-  const atual = paisState[instancia].pais;
-  const norm = q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  const filtrados = PAISES.filter(p =>
-    p.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(norm) ||
-    p.ddi.includes(norm) || ('+'+p.ddi).includes(norm)
-  );
-  ul.innerHTML = filtrados.map(p => `
-    <li class="pais-item${p.ddi===atual.ddi?' selecionado':''}" onclick="selecionarPais('${instancia}','${p.ddi}')">
-      <span class="pais-item-flag">${p.flag}</span>
-      <span class="pais-item-nome">${p.nome}</span>
-      <span class="pais-item-ddi">+${p.ddi}</span>
-    </li>`).join('');
-}
-
-function abrirPaises(instancia){
-  const drop = document.getElementById(`pais-dropdown-${instancia}`);
-  const isOpen = drop.classList.contains('aberto');
-  // Fecha todos
-  document.querySelectorAll('.pais-dropdown').forEach(d=>d.classList.remove('aberto'));
-  if(!isOpen){
-    renderPaises(`pais-lista-${instancia}`, instancia);
+function togglePaises(inst) {
+  const drop = document.getElementById(`pais-dropdown-${inst}`);
+  const open = drop.classList.contains('aberto');
+  document.querySelectorAll('.pais-dropdown').forEach(d => d.classList.remove('aberto'));
+  if (!open) {
+    renderListaPaises(`lista-${inst}`, inst);
     drop.classList.add('aberto');
-    const search = drop.querySelector('.pais-search');
-    if(search){ search.value=''; setTimeout(()=>search.focus(),80); }
+    const s = drop.querySelector('.pais-search');
+    if (s) { s.value=''; setTimeout(()=>s.focus(),60); }
   }
 }
-
-function selecionarPais(instancia, ddi){
-  const pais = PAISES.find(p=>p.ddi===ddi) || PAISES[0];
-  paisState[instancia].pais = pais;
-  document.getElementById(`pais-flag-${instancia}`).textContent = pais.flag;
-  document.getElementById(`pais-ddi-${instancia}`).textContent = `+${pais.ddi}`;
-  document.getElementById(`pais-dropdown-${instancia}`).classList.remove('aberto');
-  const inputId = instancia==='cad' ? 'c-tel' : 'otp-tel-input';
-  const input = document.getElementById(inputId);
-  input.value = '';
-  atualizarPlaceholder(input, pais);
-  input.focus();
+function renderListaPaises(ulId, inst) {
+  const ul = document.getElementById(ulId), cur = paisSel[inst];
+  const row = p => `<li class="pais-item${p.ddi===cur.ddi?' sel':''}" onclick="selecionarPais('${inst}','${p.ddi}')"><span>${p.flag}</span><span class="pais-item-nome">${p.nome}</span><span class="pais-item-ddi">+${p.ddi}</span></li>`;
+  ul.innerHTML = PAISES.filter(p=>p.top).map(row).join('') + '<li><div class="pais-sep"></div></li>' + PAISES.filter(p=>!p.top).map(row).join('');
 }
-
-// Fechar dropdown ao clicar fora
-document.addEventListener('click', function(e){
-  if(!e.target.closest('.pais-select-wrap')){
-    document.querySelectorAll('.pais-dropdown').forEach(d=>d.classList.remove('aberto'));
-  }
-});
-
-function initTelInput(inputId, instancia){
-  const input = document.getElementById(inputId);
-  if(!input) return;
-  atualizarPlaceholder(input, paisState[instancia].pais);
-  input.addEventListener('input', function(){
-    aplicarMascara(this, paisState[instancia].pais, this.value);
-  });
-  input.addEventListener('keydown', function(e){
-    // Permite backspace apagar separadores
-    if(e.key==='Backspace'){
-      const v = this.value;
-      // Remove último char que pode ser separador
-      const semSep = v.replace(/[^\d]/g,'');
-      if(semSep.length===0){ this.value=''; return; }
-    }
-  });
+function filtrarPaises(q, ulId, inst) {
+  const ul = document.getElementById(ulId), cur = paisSel[inst];
+  const n = t => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const lista = PAISES.filter(p => n(p.nome).includes(n(q)) || p.ddi.includes(q.replace(/\D/g,'')));
+  ul.innerHTML = lista.map(p => `<li class="pais-item${p.ddi===cur.ddi?' sel':''}" onclick="selecionarPais('${inst}','${p.ddi}')"><span>${p.flag}</span><span class="pais-item-nome">${p.nome}</span><span class="pais-item-ddi">+${p.ddi}</span></li>`).join('');
 }
-initTelInput('c-tel','cad');
-initTelInput('otp-tel-input','otp');
+function selecionarPais(inst, ddi) {
+  const p = PAISES.find(x=>x.ddi===ddi)||PAISES[0];
+  paisSel[inst] = p;
+  document.getElementById(`pais-flag-${inst}`).textContent = p.flag;
+  document.getElementById(`pais-ddi-${inst}`).textContent  = `+${p.ddi}`;
+  document.getElementById(`pais-dropdown-${inst}`).classList.remove('aberto');
+  if (inst==='cad') { const inp=document.getElementById('c-tel'); inp.value=''; inp.placeholder=p.mask.replace(/#/g,'0'); inp.focus(); }
+}
+document.addEventListener('click', e => { if(!e.target.closest('.pais-select-wrap')) document.querySelectorAll('.pais-dropdown').forEach(d=>d.classList.remove('aberto')); });
 
-// ── OTP BOXES ──────────────────────────────────────────────────────────────────
-function initOTP(prefix, cb){
-  for(let i=0;i<6;i++){
-    const box=document.getElementById(`${prefix}${i}`);
-    if(!box) continue;
-    box.addEventListener('input',function(){
-      const v=this.value.replace(/\D/g,'');
-      this.value=v.slice(-1);
+function telComDDI(rawValue, inst) {
+  const d = rawValue.replace(/\D/g,'');
+  if (!d) return '';
+  const ddi = paisSel[inst]?.ddi||'55';
+  return (d.startsWith(ddi) && d.length > ddi.length+5) ? d : ddi+d;
+}
+function telExibir(rawValue, inst) { return `+${paisSel[inst]?.ddi||'55'} ${rawValue.trim()}`; }
+
+// ── OTP ─────────────────────────────────────────────────────────────────────
+function initOTP(prefix, cb) {
+  for (let i=0;i<6;i++) {
+    const box = document.getElementById(`${prefix}${i}`);
+    if (!box) continue;
+    box.addEventListener('input', function(){
+      const v=this.value.replace(/\D/g,''); this.value=v.slice(-1);
       if(v&&i<5) document.getElementById(`${prefix}${i+1}`).focus();
       if(i===5&&v) cb();
     });
-    box.addEventListener('paste',function(e){
+    box.addEventListener('paste', function(e){
       e.preventDefault();
       const t=e.clipboardData.getData('text').replace(/\D/g,'').substring(0,6);
       for(let j=0;j<t.length;j++){const b=document.getElementById(`${prefix}${j}`);if(b)b.value=t[j];}
-      if(t.length===6) cb();
-      else document.getElementById(`${prefix}${Math.min(t.length,5)}`).focus();
+      if(t.length===6) cb(); else document.getElementById(`${prefix}${Math.min(t.length,5)}`).focus();
     });
-    box.addEventListener('keydown',function(e){
-      if(e.key==='Backspace'&&!this.value&&i>0) document.getElementById(`${prefix}${i-1}`).focus();
-    });
+    box.addEventListener('keydown', function(e){ if(e.key==='Backspace'&&!this.value&&i>0) document.getElementById(`${prefix}${i-1}`).focus(); });
   }
 }
-initOTP('co', cadastroVerificarOTP);
-initOTP('ol', otpLoginVerificar);
+initOTP('co', cadastroStep2);
 
-// ── HELPERS ────────────────────────────────────────────────────────────────────
-function limparTelComDDI(v, instancia){
-  const digits = v.replace(/\D/g,'');
-  if(!digits) return '';
-  const ddi = paisState[instancia]?.pais?.ddi || '55';
-  // Evita duplo DDI se usuária colar número com código do país
-  if(digits.startsWith(ddi) && digits.length > ddi.length + 5) return digits;
-  return ddi + digits;
-}
-function exibirTelComDDI(v, instancia){
-  const ddi = paisState[instancia]?.pais?.ddi || '55';
-  return `+${ddi} ${v.trim()}`;
-}
-function limparTel(v){return limparTelComDDI(v,'cad');}
-function exibirTel(v){return exibirTelComDDI(v,'cad');}
-function getOTP(p){return[0,1,2,3,4,5].map(i=>document.getElementById(`${p}${i}`).value).join('');}
-function limparOTP(p){for(let i=0;i<6;i++)document.getElementById(`${p}${i}`).value='';}
-
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function irTela(id){ document.querySelectorAll('.tela').forEach(t=>t.classList.remove('ativa')); document.getElementById(id).classList.add('ativa'); }
+function getOTP(p){ return[0,1,2,3,4,5].map(i=>document.getElementById(`${p}${i}`).value).join(''); }
+function limparOTP(p){ for(let i=0;i<6;i++)document.getElementById(`${p}${i}`).value=''; }
 function mostrarErro(id,msg){const e=document.getElementById(id);e.textContent=msg;e.className='msg erro show';}
 function mostrarOk(id,msg){const e=document.getElementById(id);e.textContent=msg;e.className='msg ok show';}
 function limparMsg(id){const e=document.getElementById(id);if(e)e.className='msg';}
+function setLoad(id,lbl){const b=document.getElementById(id);b.disabled=true;b.innerHTML=`<span>${lbl}</span><span class="btn-arrow"><div class="spin"></div></span>`;}
+function resetBtn(id,lbl){const b=document.getElementById(id);b.disabled=false;b.innerHTML=`<span>${lbl}</span><span class="btn-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>`;}
+function toggleOlho(inp,ico){const i=document.getElementById(inp),ic=document.getElementById(ico);if(i.type==='password'){i.type='text';ic.innerHTML=`<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`;}else{i.type='password';ic.innerHTML=`<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;}}
+function avaliarSenha(v,wId,lId,bPref){const w=document.getElementById(wId),l=document.getElementById(lId);if(!v){w.style.display='none';return;}w.style.display='flex';let s=0;if(v.length>=8)s++;if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;const c=['','fraca','media','forte','forte'],lb=['','Fraca','Média','Forte','Forte'],co=['','#e05555','#e0a855','#55c87a','#55c87a'];for(let i=1;i<=4;i++){document.getElementById(`${bPref}${i}`).className='forca-bar'+(i<=s?` ${c[s]}`:'');}l.textContent=lb[s];l.style.color=co[s];}
+function iniciarTimer(btnId,timerId,seg=60){const btn=document.getElementById(btnId),tmr=document.getElementById(timerId);btn.disabled=true;btn.style.opacity='.4';let t=seg;clearInterval(timerReenviar);timerReenviar=setInterval(()=>{tmr.textContent=`(${t}s)`;t--;if(t<0){clearInterval(timerReenviar);tmr.textContent='';btn.disabled=false;btn.style.opacity='1';}},1000);}
 
-function setLoading(id,label){const b=document.getElementById(id);b.disabled=true;b.innerHTML=`<span>${label}</span><span class="btn-arrow"><div class="spin"></div></span>`;}
-function resetBtn(id,label){const b=document.getElementById(id);b.disabled=false;b.innerHTML=`<span>${label}</span><span class="btn-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>`;}
+// ── PARTÍCULAS ───────────────────────────────────────────────────────────────
+(function(){const c=document.getElementById('particles');for(let i=0;i<20;i++){const p=document.createElement('div');p.className='p';const s=Math.random()*4+2;p.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;animation-duration:${Math.random()*16+9}s;animation-delay:${Math.random()*14}s;background:${Math.random()>.5?'rgba(248,220,150,.7)':'rgba(255,255,255,.55)'};`;c.appendChild(p);}})();
 
-function getStorage(){
-  const lembrar = document.getElementById('toggle-lembrar');
-  return (lembrar && lembrar.checked) ? localStorage : sessionStorage;
-}
-function salvarTokens(a,r){
-  // Sempre guarda access no sessionStorage (dura enquanto a aba está aberta)
-  sessionStorage.setItem('vm_access',a);
-  sessionStorage.setItem('vm_refresh',r);
-  // Se "lembrar" marcado, persiste no localStorage também
-  const lembrar = document.getElementById('toggle-lembrar');
-  if(!lembrar || lembrar.checked){
-    localStorage.setItem('vm_access',a);
-    localStorage.setItem('vm_refresh',r);
-  } else {
-    // Limpa localStorage para não manter sessão antiga
-    localStorage.removeItem('vm_access');
-    localStorage.removeItem('vm_refresh');
-  }
-}
-
-function irTela(id){
-  document.querySelectorAll('.tela').forEach(t=>t.classList.remove('ativa'));
-  document.getElementById(id).classList.add('ativa');
-}
-
-function iniciarTimer(btnId,timerId,seg=60){
-  const btn=document.getElementById(btnId),timer=document.getElementById(timerId);
-  btn.disabled=true;btn.style.opacity='0.35';
-  let t=seg;
-  const iv=setInterval(()=>{timer.textContent=`(${t}s)`;t--;if(t<0){clearInterval(iv);timer.textContent='';btn.disabled=false;btn.style.opacity='1';}},1000);
-  return iv;
-}
-
-function toggleOlho(inputId,iconId){
-  const inp=document.getElementById(inputId),icon=document.getElementById(iconId);
-  if(inp.type==='password'){inp.type='text';icon.innerHTML=`<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`;}
-  else{inp.type='password';icon.innerHTML=`<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;}
-}
-
-function avaliarSenha(v,wrapId,textoId,barPref){
-  const w=document.getElementById(wrapId),tx=document.getElementById(textoId);
-  if(!v){w.style.display='none';return;} w.style.display='flex';
-  let s=0;if(v.length>=8)s++;if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;
-  const cl=['','on-fraca','on-media','on-forte','on-forte'],lb=['','Fraca','Média','Forte','Forte'],co=['','#e05555','#e0a855','#55c87a','#55c87a'];
-  for(let i=1;i<=4;i++){const b=document.getElementById(`${barPref}${i}`);b.className='forca-bar'+(i<=s?` ${cl[s]}`:'');}
-  tx.textContent=lb[s];tx.style.color=co[s];
-}
-
-// ── USUÁRIO LEMBRADO ──────────────────────────────────────────────────────────
+// ── USUÁRIO LEMBRADO ─────────────────────────────────────────────────────────
 function carregarUsuarioLembrado(){
-  try{
-    const dados=JSON.parse(localStorage.getItem('vm_usuario_lembrado')||'null');
-    if(!dados?.nome) return;
-    document.getElementById('bloco-lembrado').style.display='flex';
-    document.getElementById('bloco-titulo-novo').style.display='none';
-    document.getElementById('bloco-titulo-lembrado').style.display='block';
-    document.getElementById('campo-identificador').style.display='none';
-    const iniciais=(dados.nome||'?').split(' ').slice(0,2).map(p=>p[0]).join('').toUpperCase();
-    document.getElementById('avatar-iniciais').textContent=iniciais;
-    document.getElementById('usuario-nome-lembrado').textContent=`Olá, ${dados.nome.split(' ')[0]}! 👋`;
-    const detalhe = dados.email||dados.telefone_formatado||'';
-    document.getElementById('usuario-detalhe-lembrado').textContent=detalhe;
-    // Preenche o campo identificador mesmo escondido, para o fazerLogin usar
-    const inputId = document.getElementById('input-identificador');
-    if(inputId && !inputId.value) inputId.value = localStorage.getItem('vm_identificador_salvo') || detalhe;
-    if(dados.foto_url){
-      const img=document.createElement('img');img.src=dados.foto_url;img.alt=dados.nome;
-      const c=document.getElementById('avatar-circle');c.innerHTML='';c.appendChild(img);
-    }
-  }catch(_){}
+  const u = VmSession.getUsuarioLembrado();
+  if (!u?.nome) return;
+  const iniciais = u.nome.split(' ').slice(0,2).map(p=>p[0]).join('').toUpperCase();
+  document.getElementById('avatar-iniciais').textContent = iniciais;
+  document.getElementById('usuario-nome').textContent    = `Olá, ${u.nome.split(' ')[0]}! 👋`;
+  document.getElementById('usuario-detalhe').textContent = u.email || u.telefone_formatado || '';
+  if (u.foto_url) {
+    const img=document.createElement('img'); img.src=u.foto_url; img.alt=u.nome;
+    const c=document.getElementById('avatar-circle'); c.innerHTML=''; c.appendChild(img);
+  }
+  // Preenche o campo oculto para garantir que fazerLogin encontre o identificador
+  const el = document.getElementById('input-id');
+  if (el && !el.value) el.value = u.email || u.telefone_formatado || '';
+
+  document.getElementById('bloco-lembrado').style.display      = 'flex';
+  document.getElementById('bloco-titulo-novo').style.display   = 'none';
+  document.getElementById('bloco-titulo-lembrado').style.display = 'block';
+  document.getElementById('campo-id').style.display            = 'none';
 }
 
 function trocarUsuario(){
-  localStorage.removeItem('vm_usuario_lembrado');
-  localStorage.removeItem('vm_identificador_salvo');
-  document.getElementById('bloco-lembrado').style.display='none';
-  document.getElementById('bloco-titulo-novo').style.display='block';
-  document.getElementById('bloco-titulo-lembrado').style.display='none';
-  document.getElementById('campo-identificador').style.display='block';
-  document.getElementById('input-identificador').value='';
-  document.getElementById('input-senha-login').value='';
+  VmSession.limparUsuarioLembrado();
+  document.getElementById('bloco-lembrado').style.display      = 'none';
+  document.getElementById('bloco-titulo-novo').style.display   = 'block';
+  document.getElementById('bloco-titulo-lembrado').style.display = 'none';
+  document.getElementById('campo-id').style.display            = 'block';
+  document.getElementById('input-id').value    = '';
+  document.getElementById('input-senha').value = '';
   limparMsg('erro-login');
-  document.getElementById('input-identificador').focus();
+  setTimeout(()=>document.getElementById('input-id').focus(), 50);
 }
 
-function salvarUsuarioLembrado(usuario){
-  if(!usuario) return;
-  localStorage.setItem('vm_usuario_lembrado',JSON.stringify({
-    nome: usuario.nome,
-    email: usuario.email,
-    telefone_formatado: usuario.telefone_formatado || null,
-    vm_id: usuario.vm_id||null,
-    foto_url: usuario.foto_url||null,
-  }));
-  // Salva o identificador preferencial para o campo
-  if(usuario.email) localStorage.setItem('vm_identificador_salvo', usuario.email);
-  else if(usuario.telefone_formatado) localStorage.setItem('vm_identificador_salvo', usuario.telefone_formatado);
+// ── OVERLAY ──────────────────────────────────────────────────────────────────
+function mostrarOverlay(nome){
+  const el=document.getElementById('overlay'), msg=document.getElementById('overlay-msg');
+  const n=nome?nome.split(' ')[0]:null;
+  msg.textContent = n ? `Olá, ${n}! Entrando…` : 'Entrando…';
+  el.classList.add('show');
+  setTimeout(()=>{ window.location.replace('/app'); }, 1400);
 }
 
-// ── AUTOSAVE DO IDENTIFICADOR ─────────────────────────────────────────────────
-function autosaveIdentificador(v){
-  if(v && v.trim()) localStorage.setItem('vm_identificador_salvo', v.trim());
-}
+// ── LOGIN ────────────────────────────────────────────────────────────────────
+document.getElementById('input-senha').addEventListener('keydown', e=>{ if(e.key==='Enter') fazerLogin(); });
 
-function carregarIdentificadorSalvo(){
-  const salvo = localStorage.getItem('vm_identificador_salvo');
-  if(salvo){
-    const el = document.getElementById('input-identificador');
-    if(el && !el.value) el.value = salvo;
-  }
-}
-
-// ── LOGIN COM SENHA ────────────────────────────────────────────────────────────
 async function fazerLogin(){
   limparMsg('erro-login');
+  const identificador = (document.getElementById('input-id').value||'').trim();
+  const senha   = document.getElementById('input-senha').value;
+  const lembrar = document.getElementById('toggle-lembrar').checked;
 
-  // Pega identificador: campo visível > campo escondido > localStorage salvo > dado lembrado
-  let identificador = document.getElementById('input-identificador')?.value.trim();
-  if(!identificador) identificador = localStorage.getItem('vm_identificador_salvo') || '';
-  if(!identificador){
-    let dados=null;
-    try{dados=JSON.parse(localStorage.getItem('vm_usuario_lembrado')||'null');}catch(_){}
-    identificador = dados?.email || dados?.telefone_formatado || '';
+  if (!identificador){
+    // Mostra campo se estava oculto
+    document.getElementById('campo-id').style.display='block';
+    mostrarErro('erro-login','Informe seu WhatsApp ou e-mail.');
+    document.getElementById('input-id').focus(); return;
   }
+  if (!senha){ mostrarErro('erro-login','Digite sua senha.'); document.getElementById('input-senha').focus(); return; }
 
-  const senha=document.getElementById('input-senha-login').value;
-
-  if(!identificador){mostrarErro('erro-login','Informe seu WhatsApp ou e-mail.');return;}
-  if(!senha){mostrarErro('erro-login','Digite sua senha.');document.getElementById('input-senha-login').focus();return;}
-
-  setLoading('btn-login','Entrando…');
-  try{
-    const r=await fetch(`${API}/api/auth/login-senha`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identificador,senha})});
-    const d=await r.json();
-    if(r.ok){salvarTokens(d.access_token,d.refresh_token);salvarUsuarioLembrado(d.usuario);window.location.href='/app';}
-    else if(r.status===409){mostrarErro('erro-login',d.error||'Limite de dispositivos atingido. Faça login pelo WhatsApp para continuar.');}
-    else{mostrarErro('erro-login',d.error||'ID/e-mail ou senha incorretos.');}
-  }catch{mostrarErro('erro-login','Falha de conexão.');}
-  finally{resetBtn('btn-login','Entrar');}
-}
-
-// ── LOGIN VIA OTP WHATSAPP ────────────────────────────────────────────────────
-async function otpLoginEnviar(){
-  limparMsg('erro-otp-tel');
-  const raw=document.getElementById('otp-tel-input').value;
-  const tel=limparTelComDDI(raw,'otp');
-  if(raw.replace(/\D/g,'').length<5){mostrarErro('erro-otp-tel','Digite o número completo.');return;}
-  olTelFormatado=tel;
-  setLoading('btn-otp-tel','Enviando…');
-  try{
-    const r=await fetch(`${API}/api/auth/solicitar-otp`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefone:tel})});
-    const d=await r.json();
-    if(r.ok){document.getElementById('otp-tel-exibido').textContent=exibirTelComDDI(raw,'otp');irTela('t-otp-codigo');if(olTimer)clearInterval(olTimer);olTimer=iniciarTimer('btn-ol-reenviar','ol-timer');setTimeout(()=>document.getElementById('ol0').focus(),300);}
-    else{mostrarErro('erro-otp-tel',d.error||'Erro ao enviar código.');}
-  }catch{mostrarErro('erro-otp-tel','Falha de conexão.');}
-  finally{resetBtn('btn-otp-tel','Receber código');}
-}
-
-async function otpLoginVerificar(){
-  limparMsg('erro-otp-cod');
-  const codigo=getOTP('ol');
-  if(codigo.length<6){mostrarErro('erro-otp-cod','Código incompleto.');return;}
-  setLoading('btn-otp-cod','Verificando…');
-  try{
-    const r=await fetch(`${API}/api/auth/verificar-otp`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefone:olTelFormatado,codigo})});
-    const d=await r.json();
-    if(r.ok){
-      salvarTokens(d.access_token,d.refresh_token);
-      salvarUsuarioLembrado(d.usuario);
-      if(d.novo_usuario){irTela('t-cadastro-1');document.getElementById('c-tel').value=document.getElementById('otp-tel-input').value;}
-      else window.location.href='/app';
-    }else{mostrarErro('erro-otp-cod',d.error||'Código inválido ou expirado.');limparOTP('ol');document.getElementById('ol0').focus();}
-  }catch{mostrarErro('erro-otp-cod','Falha de conexão.');}
-  finally{resetBtn('btn-otp-cod','Entrar');}
-}
-
-async function otpLoginReenviar(){
-  limparMsg('erro-otp-cod');
-  try{
-    await fetch(`${API}/api/auth/solicitar-otp`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefone:olTelFormatado})});
-    mostrarOk('ok-otp-cod','✅ Novo código enviado!');
-    if(olTimer)clearInterval(olTimer);olTimer=iniciarTimer('btn-ol-reenviar','ol-timer');
-  }catch{mostrarErro('erro-otp-cod','Erro ao reenviar.');}
+  setLoad('btn-login','Entrando…');
+  try {
+    const r = await fetch(`${API}/api/auth/login-senha`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identificador,senha})});
+    const d = await r.json();
+    if (r.ok){ VmSession.salvar(d, lembrar); mostrarOverlay(d.usuario?.nome); }
+    else mostrarErro('erro-login', d.error||'Dados incorretos.');
+  } catch { mostrarErro('erro-login','Falha de conexão. Tente novamente.'); }
+  finally { resetBtn('btn-login','Entrar'); }
 }
 
 // ── ESQUECI SENHA ─────────────────────────────────────────────────────────────
 async function solicitarRecuperacao(){
-  limparMsg('erro-esqueci');limparMsg('ok-esqueci');
-  const valor=document.getElementById('input-esqueci').value.trim();
+  limparMsg('erro-esqueci'); limparMsg('ok-esqueci');
+  const valor=(document.getElementById('input-esqueci').value||'').trim();
   if(!valor){mostrarErro('erro-esqueci','Informe seu WhatsApp ou e-mail.');return;}
-  setLoading('btn-esqueci-enviar','Enviando…');
+  setLoad('btn-esqueci','Enviando…');
   try{
     const r=await fetch(`${API}/api/auth/esqueci-senha`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identificador:valor})});
     const d=await r.json();
-    if(r.ok){mostrarOk('ok-esqueci','✅ Se encontrarmos sua conta, enviaremos o link no WhatsApp em instantes.');}
-    else{mostrarErro('erro-esqueci',d.error||'Erro. Tente novamente.');}
+    if(r.ok) mostrarOk('ok-esqueci','✅ Se encontrarmos sua conta, enviaremos o link no WhatsApp.');
+    else mostrarErro('erro-esqueci',d.error||'Erro ao processar.');
   }catch{mostrarErro('erro-esqueci','Falha de conexão.');}
-  finally{resetBtn('btn-esqueci-enviar','Enviar link pelo WhatsApp');}
+  finally{resetBtn('btn-esqueci','Enviar link pelo WhatsApp');}
 }
 
-// ── REDEFINIR SENHA (token na URL) ────────────────────────────────────────────
+// ── NOVA SENHA ────────────────────────────────────────────────────────────────
 async function redefinirSenha(){
   limparMsg('erro-nova-senha');
   const nova=document.getElementById('input-nova-senha').value;
-  const conf=document.getElementById('input-confirmar-senha').value;
+  const conf=document.getElementById('input-conf-senha').value;
   if(!nova||nova.length<8){mostrarErro('erro-nova-senha','A senha deve ter pelo menos 8 caracteres.');return;}
   if(nova!==conf){mostrarErro('erro-nova-senha','As senhas não coincidem.');return;}
-  setLoading('btn-nova-senha','Salvando…');
+  setLoad('btn-nova-senha','Salvando…');
   try{
-    const r=await fetch(`${API}/api/auth/redefinir-senha`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:tokenRecuperacao,nova_senha:nova})});
+    const r=await fetch(`${API}/api/auth/redefinir-senha`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:tokenReset,nova_senha:nova})});
     const d=await r.json();
-    if(r.ok){salvarTokens(d.access_token,d.refresh_token);salvarUsuarioLembrado(d.usuario);window.location.href='/app';}
-    else{mostrarErro('erro-nova-senha',d.error||'Link inválido ou expirado.');}
+    if(r.ok){VmSession.salvar(d,true);mostrarOverlay(d.usuario?.nome);}
+    else mostrarErro('erro-nova-senha',d.error||'Link inválido ou expirado.');
   }catch{mostrarErro('erro-nova-senha','Falha de conexão.');}
   finally{resetBtn('btn-nova-senha','Salvar nova senha');}
 }
 
 // ── CADASTRO ──────────────────────────────────────────────────────────────────
-async function cadastroEnviarOTP(){
+async function cadastroStep1(){
   limparMsg('erro-cad1');
-  const nome=document.getElementById('c-nome').value.trim();
-  const email=document.getElementById('c-email').value.trim();
-  const rawTel=document.getElementById('c-tel').value;
-  const senha=document.getElementById('c-senha').value;
-  const tel=limparTelComDDI(rawTel,'cad');
+  const nome  = (document.getElementById('c-nome').value||'').trim();
+  const email = (document.getElementById('c-email').value||'').trim();
+  const rawTel= document.getElementById('c-tel').value;
+  const senha = document.getElementById('c-senha').value;
+  const tel   = telComDDI(rawTel,'cad');
 
   if(!nome){mostrarErro('erro-cad1','Informe seu nome completo.');document.getElementById('c-nome').focus();return;}
   if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){mostrarErro('erro-cad1','Digite um e-mail válido.');document.getElementById('c-email').focus();return;}
-  if(rawTel.replace(/\D/g,'').length<5){mostrarErro('erro-cad1','Digite o número completo.');document.getElementById('c-tel').focus();return;}
+  if(!tel||rawTel.replace(/\D/g,'').length<5){mostrarErro('erro-cad1','Digite o número do WhatsApp completo.');document.getElementById('c-tel').focus();return;}
   if(!senha||senha.length<8){mostrarErro('erro-cad1','A senha deve ter pelo menos 8 caracteres.');document.getElementById('c-senha').focus();return;}
 
   cTelFormatado=tel;
-  setLoading('btn-cad1','Enviando código…');
+  setLoad('btn-cad1','Enviando código…');
   try{
     const r=await fetch(`${API}/api/auth/solicitar-otp`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefone:tel})});
     const d=await r.json();
-    if(r.ok){
-      document.getElementById('c-tel-exibido').textContent=exibirTelComDDI(rawTel,'cad');
-      irTela('t-cadastro-2');
-      if(cTimer)clearInterval(cTimer);cTimer=iniciarTimer('btn-c-reenviar','c-timer');
-      setTimeout(()=>document.getElementById('co0').focus(),300);
-    }else{mostrarErro('erro-cad1',d.error||'Erro ao enviar código.');}
+    if(r.ok){document.getElementById('c-tel-exibido').textContent=telExibir(rawTel,'cad');irTela('t-cad-2');iniciarTimer('btn-reenviar','timer-reenviar');setTimeout(()=>document.getElementById('co0').focus(),300);}
+    else mostrarErro('erro-cad1',d.error||'Erro ao enviar código.');
   }catch{mostrarErro('erro-cad1','Falha de conexão.');}
   finally{resetBtn('btn-cad1','Confirmar pelo WhatsApp');}
 }
 
-async function cadastroVerificarOTP(){
+async function cadastroStep2(){
   limparMsg('erro-cad2');
   const codigo=getOTP('co');
-  if(codigo.length<6){mostrarErro('erro-cad2','Código incompleto.');return;}
-  setLoading('btn-cad2','Verificando…');
+  if(codigo.length<6){mostrarErro('erro-cad2','Digite o código completo de 6 dígitos.');return;}
+  setLoad('btn-cad2','Verificando…');
   try{
     const r=await fetch(`${API}/api/auth/verificar-otp`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefone:cTelFormatado,codigo})});
     const d=await r.json();
-    if(r.ok){salvarTokens(d.access_token,d.refresh_token);await cadastroSalvarPerfil(d.access_token);}
+    if(r.ok){VmSession.salvar(d,true);await cadastroSalvarPerfil(d.access_token);}
     else{mostrarErro('erro-cad2',d.error||'Código inválido ou expirado.');limparOTP('co');document.getElementById('co0').focus();}
   }catch{mostrarErro('erro-cad2','Falha de conexão.');}
   finally{resetBtn('btn-cad2','Confirmar código');}
 }
 
-async function cadastroSalvarPerfil(token){
-  const nome=document.getElementById('c-nome').value.trim();
-  const email=document.getElementById('c-email').value.trim();
-  const senha=document.getElementById('c-senha').value;
+async function cadastroSalvarPerfil(accessToken){
+  const nome  = (document.getElementById('c-nome').value||'').trim();
+  const email = (document.getElementById('c-email').value||'').trim();
+  const senha = document.getElementById('c-senha').value;
   try{
-    const r=await fetch(`${API}/api/auth/perfil`,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({nome,email,senha})});
+    const r=await fetch(`${API}/api/auth/perfil`,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`},body:JSON.stringify({nome,email,senha})});
     const d=await r.json();
-    if(r.ok){
-      salvarUsuarioLembrado(d.usuario);
-      const vmId=d.usuario?.vm_id||'';
-      document.getElementById('ok-cad3').textContent=vmId?`Seu ID Vida Mágica: ${vmId} 🎉`:'✨ Seja bem-vinda!';
-      irTela('t-cadastro-3');
-      setTimeout(()=>{window.location.href='/app';},2200);
-    }else{mostrarErro('erro-cad2',d.error||'Erro ao criar conta.');}
+    if(r.ok){VmSession.salvar({access_token:accessToken,refresh_token:VmSession.getRefresh(),usuario:d.usuario},true);irTela('t-cad-3');setTimeout(()=>window.location.replace('/app'),2000);}
+    else mostrarErro('erro-cad2',d.error||'Erro ao criar conta.');
   }catch{mostrarErro('erro-cad2','Falha de conexão.');}
 }
 
-async function cadastroReenviarOTP(){
+async function cadastroReenviar(){
   limparMsg('erro-cad2');
   try{
     await fetch(`${API}/api/auth/solicitar-otp`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({telefone:cTelFormatado})});
     mostrarOk('ok-cad2','✅ Novo código enviado!');
-    if(cTimer)clearInterval(cTimer);cTimer=iniciarTimer('btn-c-reenviar','c-timer');
+    iniciarTimer('btn-reenviar','timer-reenviar');
   }catch{mostrarErro('erro-cad2','Erro ao reenviar.');}
 }
 
-// ── AUTO-LOGIN OVERLAY ────────────────────────────────────────────────────────
-function mostrarAutoLogin(nome){
-  const overlay = document.getElementById('autologin-overlay');
-  const msg = document.getElementById('autologin-msg');
-  const primeiroNome = nome ? nome.split(' ')[0] : null;
-  msg.textContent = primeiroNome ? `Olá, ${primeiroNome}! Entrando…` : 'Reconhecendo sua conta…';
-  overlay.classList.add('show');
-  setTimeout(()=>{ window.location.href='/app'; }, 1400);
-}
-
-// ── INIT ──────────────────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// INIT — Única lógica de entrada. Limpa e sem loops.
+// Regras:
+//   1. ?token=  → redefinição de senha
+//   2. ?intencional ou ?cadastro → usuário veio manualmente, não faz auto-login
+//   3. Tem sessão válida → vai para /app
+//   4. Token expirado → tenta refresh → vai para /app
+//   5. Sem sessão ou refresh inválido → mostra login normalmente
+// ═════════════════════════════════════════════════════════════════════════════
 (async function init(){
-  const params=new URLSearchParams(location.search);
+  const params = new URLSearchParams(location.search);
 
-  // Redefinição de senha via link
-  const tk=params.get('token');
-  if(tk){tokenRecuperacao=tk;irTela('t-nova-senha');return;}
+  // 1. Link de redefinição de senha
+  const tk = params.get('token');
+  if (tk){ tokenReset=tk; irTela('t-nova-senha'); return; }
 
-  // Auto-login se sessão válida
-  // Se veio de um logout intencional, não faz auto-login
-  if(sessionStorage.getItem('vm_logout_intencional')){
-    sessionStorage.removeItem('vm_logout_intencional');
+  // 2. Acesso intencional — não redireciona
+  if (params.has('intencional') || params.has('cadastro')){
     carregarUsuarioLembrado();
-    carregarIdentificadorSalvo();
-    if(params.has('cadastro')) irTela('t-cadastro-1');
+    if (params.has('cadastro')) irTela('t-cad-1');
     return;
   }
 
-  const access=localStorage.getItem('vm_access')||sessionStorage.getItem('vm_access');
-  if(access){
+  // 3 & 4. Verifica sessão
+  const access = VmSession.getAccess();
+  if (access){
     try{
-      const r=await fetch(`${API}/api/auth/me`,{headers:{Authorization:`Bearer ${access}`}});
-      if(r.ok){
-        const u=await r.json();
-        mostrarAutoLogin(u.nome);
-        return;
-      }
+      const r = await fetch(`${API}/api/auth/me`,{headers:{Authorization:`Bearer ${access}`}});
+      if (r.ok){ mostrarOverlay((await r.json()).nome); return; }
     }catch{}
-    const refresh=localStorage.getItem('vm_refresh')||sessionStorage.getItem('vm_refresh');
-    if(refresh){
+
+    // Tenta refresh
+    const refresh = VmSession.getRefresh();
+    if (refresh){
       try{
         const r2=await fetch(`${API}/api/auth/renovar`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refresh})});
         if(r2.ok){
           const d=await r2.json();
-          localStorage.setItem('vm_access',d.access_token);
-          sessionStorage.setItem('vm_access',d.access_token);
-          mostrarAutoLogin(d.usuario?.nome);
+          VmSession.salvar(d, VmSession.getLembrar());
+          mostrarOverlay(d.usuario?.nome);
           return;
         }
       }catch{}
     }
-    // Token inválido — limpa silenciosamente
-    ['vm_access','vm_refresh'].forEach(k=>{
-      localStorage.removeItem(k);
-      sessionStorage.removeItem(k);
-    });
+    // Sessão inválida — limpa e continua para login
+    VmSession.destruir();
   }
 
+  // 5. Sem sessão — mostra login
   carregarUsuarioLembrado();
-  carregarIdentificadorSalvo();
-  if(params.has('cadastro')) irTela('t-cadastro-1');
 })();
 </script>
-<div class="autologin-overlay" id="autologin-overlay">
-  <img src="assets/logo-vertical.png" alt="Vida Mágica" class="autologin-logo">
-  <div class="autologin-spinner"></div>
-  <div class="autologin-msg" id="autologin-msg">Reconhecendo sua conta…</div>
-</div>
 </body>
 </html>
