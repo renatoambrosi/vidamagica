@@ -16,8 +16,13 @@ const adminRoutes       = require('./routes/admin');
 const { router: feedRoutes }    = require('./routes/feed');
 const uploadRoutes      = require('./routes/upload');
 const { router: gatewayRouter, iniciarGateway } = require('./routes/gateway');
+
+// ✦ NOVO: importa os DOIS routers separados (aluna e atendimento)
+//   O chat.js v3 expõe routerAluna e routerAtendimento em vez de um único router.
 const {
-  router: chatRouter, initChat,
+  routerAluna,
+  routerAtendimento,
+  initChat,
   registrarWs, removerWs,
   emitirParaSuellen,
 } = require('./routes/chat');
@@ -31,8 +36,6 @@ const PORT   = process.env.PORT || 3000;
 // Sobrescrevemos para liberar microphone/camera no mesmo origin.
 app.use(helmet({
   contentSecurityPolicy: false,
-  // Permissions-Policy customizada — permite microfone e câmera em self.
-  // Sem isso, getUserMedia() falha mesmo com permissão concedida.
   permissionsPolicy: false,
 }));
 app.use((req, res, next) => {
@@ -83,7 +86,7 @@ function atendimentoAuth(req, res, next) {
     if (payload.role !== 'atendimento' && payload.role !== 'suellen') {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-    req.atendimento = true;
+    req.atendimento = payload;   // ← agora guarda o payload completo (não só `true`)
     next();
   } catch {
     res.status(401).json({ error: 'Token inválido ou expirado' });
@@ -126,10 +129,13 @@ app.use('/api', depoimentosRoutes);
 app.use('/api', configRoutes);
 app.use('/api', seedRoutes);
 app.use('/api', feedRoutes);
+
+// ✦ ALTERADO: agora usa routerAluna (só rotas da aluna)
+//   Antes era `chatRouter` que tinha tudo misturado.
 app.use('/api/chat', (req, res, next) => {
   if (req.path === '/vapid-public-key') return next();
   jwtAuth(req, res, next);
-}, chatRouter);
+}, routerAluna);
 
 // ── UPLOAD (JWT aluna ou atendimento) ──
 app.use('/api/upload', (req, res, next) => {
@@ -150,10 +156,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', basicAuth, adminRoutes);
 app.use('/api/admin', basicAuth, feedRoutes);
 
-// ── API ATENDIMENTO — protegida por JWT role:atendimento ──
-app.use('/api/atendimento/chat', atendimentoAuth, chatRouter);
-// Retrocompatibilidade: rotas /api/suellen/* continuam funcionando
-app.use('/api/suellen/chat', atendimentoAuth, chatRouter);
+// ✦ ALTERADO: agora usa routerAtendimento (só rotas do atendimento)
+//   Isso elimina o conflito que causava o erro
+//   "Cannot read properties of undefined (reading 'sub')"
+app.use('/api/atendimento/chat', atendimentoAuth, routerAtendimento);
+// Retrocompatibilidade: rotas /api/suellen/chat/* continuam funcionando
+app.use('/api/suellen/chat', atendimentoAuth, routerAtendimento);
 
 // ── GATEWAY ──
 app.use('/', gatewayRouter);
@@ -188,10 +196,8 @@ wss.on('connection', async (ws, req) => {
   let identidade = null;
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    // Aceita modo=atendimento (novo) ou modo=suellen (legado)
     if (modo === 'atendimento' || modo === 'suellen') {
       if (payload.role !== 'atendimento' && payload.role !== 'suellen') throw new Error('auth');
-      // Identidade interna unificada para o sistema de chat
       identidade = 'suellen';
     } else {
       identidade = `aluna:${payload.sub}`;
