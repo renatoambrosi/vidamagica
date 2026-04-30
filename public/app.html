@@ -164,86 +164,152 @@
       </div>
     </section>
 
-    <!-- CHAT -->
+    <!-- ════════════════════════════════════════════════
+         CHAT — tela de escolha + conversa
+         ════════════════════════════════════════════════ -->
     <section class="view" id="view-chat">
 
-      <div class="chat-plano-info" id="chat-plano-info"></div>
+      <!-- Tela 1: escolha de canal -->
+      <div id="chat-escolha-tela" class="chat-escolha">
+        <p class="chat-escolha-titulo">Com quem você quer conversar?</p>
 
-      <div class="chat-loading" id="chat-loading">
-        <div class="chat-loading-dots"><span></span><span></span><span></span></div>
-      </div>
-
-      <div class="chat-msgs" id="chat-msgs" style="display:none"></div>
-
-      <div class="chat-prior-banner" id="chat-prior-banner" style="display:none">
-        <div class="chat-prior-info">
-          <span class="chat-prior-icone">⭐</span>
-          <div>
-            <div class="chat-prior-titulo">Atendimento Prioritário ativo</div>
-            <div class="chat-prior-detalhe" id="chat-prior-detalhe"></div>
+        <button class="chat-canal-card principal" data-canal="suellen" type="button">
+          <div class="chat-canal-avatar">
+            <img src="/assets/avatar-suellen.jpg" alt="Suellen" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=&quot;color:#A17523;font-weight:700;font-size:1.2rem&quot;>S</span>'">
           </div>
-        </div>
+          <div class="chat-canal-info">
+            <p class="chat-canal-titulo">Falar com a Suellen</p>
+            <p class="chat-canal-desc">Acolhimento, dúvidas pessoais e jornada</p>
+            <p class="chat-canal-preview" id="canal-suellen-preview"></p>
+          </div>
+          <span class="chat-canal-badge" id="canal-suellen-badge" style="display:none">0</span>
+        </button>
+
+        <button class="chat-canal-card" data-canal="suporte" type="button">
+          <div class="chat-canal-avatar">
+            <img src="/assets/logo-equipe.png" alt="Equipe Vida Mágica" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=&quot;color:#5F5E5A;font-weight:700;font-size:1.2rem&quot;>?</span>'">
+          </div>
+          <div class="chat-canal-info">
+            <p class="chat-canal-titulo">Dúvidas e suporte</p>
+            <p class="chat-canal-desc">Pagamento, conta e dificuldades técnicas</p>
+            <p class="chat-canal-preview" id="canal-suporte-preview"></p>
+          </div>
+          <span class="chat-canal-badge" id="canal-suporte-badge" style="display:none">0</span>
+        </button>
       </div>
 
-      <div class="chat-upgrade" id="chat-upgrade" style="display:none">
-        <div class="chat-upgrade-texto">
-          <strong>Atendimento Prioritário</strong>
-          <span>30 interações · 24h · R$ 9,90</span>
-        </div>
-        <button class="chat-upgrade-btn" id="chat-upgrade-btn">⭐ Ativar</button>
-      </div>
+      <!-- Tela 2: conversa ativa -->
+      <div id="chat-conversa-tela" style="display:none;flex-direction:column;flex:1;min-height:0;">
 
-      <!-- Barra de input normal -->
-      <div class="chat-input-wrap" id="chat-input-wrap" style="display:none">
-        <div class="chat-input-row" id="chat-input-row-normal">
-          <button class="chat-anexo-btn" id="chat-anexo-btn" aria-label="Anexar">
+        <!-- Header com voltar + avatar do canal ativo -->
+        <div class="chat-canal-header">
+          <button class="chat-back-escolha" id="btn-back-escolha" type="button" aria-label="Voltar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+              <polyline points="15 18 9 12 15 6"/>
             </svg>
           </button>
-          <div class="chat-input-container">
-            <textarea class="chat-input" id="chat-input" placeholder="Escreva sua mensagem..." rows="1"></textarea>
+          <div class="chat-canal-header-avatar">
+            <img id="chat-canal-header-img" src="/assets/avatar-suellen.jpg" alt="" onerror="this.style.display='none'">
           </div>
-          <button class="chat-audio-btn" id="chat-audio-btn" aria-label="Gravar áudio">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-              <line x1="12" y1="19" x2="12" y2="23"/>
-              <line x1="8" y1="23" x2="16" y2="23"/>
-            </svg>
+          <div class="chat-canal-header-info">
+            <div class="chat-canal-header-nome" id="chat-canal-header-nome">Suellen</div>
+            <div class="chat-canal-header-status" id="chat-canal-header-status">Atendimento</div>
+          </div>
+        </div>
+
+        <!-- Abas Suellen | Suporte -->
+        <div class="chat-abas">
+          <button class="chat-aba ativa" data-aba="suellen" type="button">
+            <span class="aba-avatar">
+              <img src="/assets/avatar-suellen.jpg" onerror="this.style.display='none';this.parentElement.innerHTML='S'">
+            </span>
+            Suellen
+            <span class="aba-badge" id="aba-suellen-badge" style="display:none">0</span>
           </button>
-          <button class="chat-send-btn" id="chat-send-btn" aria-label="Enviar" style="display:none">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
-            </svg>
+          <button class="chat-aba" data-aba="suporte" type="button">
+            <span class="aba-avatar">
+              <img src="/assets/logo-equipe.png" onerror="this.style.display='none';this.parentElement.innerHTML='?'">
+            </span>
+            Suporte
+            <span class="aba-badge" id="aba-suporte-badge" style="display:none">0</span>
           </button>
         </div>
 
-        <!-- Barra de gravação (substitui o input durante gravação) -->
-        <div class="chat-input-row chat-rec-row" id="chat-rec-row" style="display:none">
-          <!-- Botão cancelar (esquerda) -->
-          <button class="chat-rec-cancel" id="chat-rec-cancel" aria-label="Cancelar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-
-          <!-- Visualizador de ondas + timer -->
-          <div class="chat-rec-visualizer">
-            <div class="chat-rec-dot"></div>
-            <canvas class="chat-rec-wave" id="chat-rec-wave" height="36"></canvas>
-            <span class="chat-rec-timer" id="chat-rec-timer">0:00</span>
+        <!-- Barra superior dinâmica (Free / VM / Prioritário) -->
+        <div class="plano-banner tier-free" id="plano-banner">
+          <div class="plano-banner-icone"></div>
+          <div class="plano-banner-texto">
+            <p class="plano-banner-titulo" id="plano-banner-titulo">PLANO FREE</p>
+            <p class="plano-banner-desc" id="plano-banner-desc">Tempo de resposta indeterminado</p>
           </div>
-
-          <!-- Botão enviar (direita) -->
-          <button class="chat-rec-send" id="chat-rec-send" aria-label="Enviar áudio">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
-            </svg>
-          </button>
+          <button class="plano-banner-acao" id="plano-banner-acao" type="button">Assinar Vida Mágica</button>
         </div>
 
-        <input type="file" id="chat-file-input" accept="image/*" style="display:none">
+        <!-- Loading -->
+        <div class="chat-loading" id="chat-loading">
+          <div class="chat-loading-dots"><span></span><span></span><span></span></div>
+        </div>
+
+        <!-- Mensagens -->
+        <div class="chat-msgs" id="chat-msgs" style="display:none"></div>
+
+        <!-- Reply bar -->
+        <div class="reply-bar" id="reply-bar" style="display:none">
+          <div class="reply-bar-pipe"></div>
+          <div class="reply-bar-corpo">
+            <div class="reply-bar-autor" id="reply-autor"></div>
+            <div class="reply-bar-texto" id="reply-texto"></div>
+          </div>
+          <button class="reply-bar-x" id="reply-fechar" type="button">✕</button>
+        </div>
+
+        <!-- Input bar -->
+        <div class="chat-input-wrap" id="chat-input-wrap" style="display:none">
+          <div class="chat-input-row" id="chat-input-row-normal">
+            <button class="chat-anexo-btn" id="chat-anexo-btn" aria-label="Anexar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
+            <div class="chat-input-container">
+              <textarea class="chat-input" id="chat-input" placeholder="Escreva sua mensagem..." rows="1"></textarea>
+            </div>
+            <button class="chat-audio-btn" id="chat-audio-btn" aria-label="Gravar áudio">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            </button>
+            <button class="chat-send-btn" id="chat-send-btn" aria-label="Enviar" style="display:none">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Barra de gravação -->
+          <div class="chat-input-row chat-rec-row" id="chat-rec-row" style="display:none">
+            <button class="chat-rec-cancel" id="chat-rec-cancel" aria-label="Cancelar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+            <div class="chat-rec-visualizer">
+              <div class="chat-rec-dot"></div>
+              <canvas class="chat-rec-wave" id="chat-rec-wave" height="36"></canvas>
+              <span class="chat-rec-timer" id="chat-rec-timer">0:00</span>
+            </div>
+            <button class="chat-rec-send" id="chat-rec-send" aria-label="Enviar áudio">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
+              </svg>
+            </button>
+          </div>
+
+          <input type="file" id="chat-file-input" accept="image/*" style="display:none">
+        </div>
       </div>
 
     </section>
@@ -328,6 +394,18 @@
     </button>
   </nav>
 
+  <!-- Context menu (long-press) -->
+  <div id="msg-ctx-menu" class="msg-ctx-menu">
+    <div class="msg-ctx-item" id="ctx-responder">
+      <svg viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+      Responder
+    </div>
+    <div class="msg-ctx-item" id="ctx-copiar">
+      <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copiar texto
+    </div>
+  </div>
+
   <!-- MODAIS -->
 
   <!-- Tesouro -->
@@ -389,7 +467,7 @@
     </div>
   </div>
 
-  <!-- Pré-aviso de microfone (aparece antes do prompt do browser) -->
+  <!-- Pré-aviso de microfone -->
   <div class="modal" id="modal-mic" aria-hidden="true">
     <div class="modal-overlay" data-close></div>
     <div class="modal-sheet">
@@ -403,6 +481,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
 
   <script type="module" src="/app/app.js"></script>
 </body>
