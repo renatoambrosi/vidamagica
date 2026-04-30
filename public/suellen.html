@@ -376,6 +376,42 @@ button { font-family:inherit; cursor:pointer; border:none; background:none; colo
 .btn-rec-send:hover { transform:scale(1.06); }
 .btn-rec-send svg { fill:white; width:15px; height:15px; }
 
+
+/* Mapeamento de variáveis para bolhas de áudio no tema dark do painel */
+.msg-wrap.aluna .msg-audio-bolha {
+  background: var(--surf2);
+  border: 1px solid var(--ouro-brd);
+  border-bottom-left-radius: 3px;
+  border-radius: 16px;
+}
+.msg-wrap.suellen .msg-audio-bolha {
+  background: linear-gradient(135deg, var(--ouro-f), var(--ouro));
+  border-bottom-right-radius: 3px;
+  border-radius: 16px;
+}
+.msg-wrap.aluna .msg-audio-play-btn { background: var(--ouro-film); }
+.msg-wrap.aluna .msg-audio-play-btn svg { fill: var(--ouro-cl); }
+.msg-wrap.suellen .msg-audio-play-btn { background: rgba(255,255,255,0.18); }
+.msg-wrap.suellen .msg-audio-play-btn svg { fill: white; }
+.msg-wrap.aluna .msg-audio-wave-bar { fill: rgba(200,146,42,0.35); }
+.msg-wrap.suellen .msg-audio-wave-bar { fill: rgba(255,255,255,0.32); }
+.msg-wrap.aluna .msg-audio-wave-bar.ativa { fill: var(--ouro); }
+.msg-wrap.suellen .msg-audio-wave-bar.ativa { fill: rgba(255,255,255,0.92); }
+.msg-wrap.aluna .msg-audio-dur { color: var(--txt2); }
+.msg-wrap.suellen .msg-audio-dur { color: rgba(255,255,255,0.75); }
+/* Nome acima das bolhas — painel dark */
+.msg-wrap.aluna .msg-bolha::before { color: var(--ouro-cl) !important; }
+.msg-bolha { padding: 0.55rem 0.85rem; border-radius: 16px; font-size: 0.9rem; line-height: 1.5; word-break: break-word; }
+.msg-wrap.aluna .msg-bolha { background: var(--surf2); color: var(--txt); border-bottom-left-radius: 3px; }
+.msg-wrap.suellen .msg-bolha { background: linear-gradient(135deg, var(--ouro-f), var(--ouro)); color: white; border-bottom-right-radius: 3px; }
+.msg-hora { font-size: 0.62rem; color: var(--txt3); padding: 0 0.25rem; margin-top: 2px; }
+.msg-audio-bolha { padding: 0.55rem 0.8rem; border-radius: 16px; display: flex; align-items: center; gap: 0.6rem; min-width: 175px; max-width: 250px; }
+.msg-audio-play-btn { flex-shrink:0; width:30px; height:30px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform 0.12s; }
+.msg-audio-play-btn:hover { transform: scale(1.06); }
+.msg-audio-play-btn svg { width:12px; height:12px; margin-left:2px; stroke:none; }
+.msg-audio-wave { flex:1; display:block; }
+.msg-audio-dur { flex-shrink:0; min-width:28px; text-align:right; font-family:var(--font-d); font-size:0.6rem; font-weight:700; }
+
 </style>
 </head>
 <body>
@@ -1192,7 +1228,7 @@ async function sIniciarGravacao() {
     sMediaRecorder.onstop = sFinalizarGravacao;
     sMediaRecorder.start(200);
   } catch {
-    alert('Não foi possível acessar o microfone.');
+    toast('Microfone indisponível. Verifique as permissões.', 'err');
   }
 }
 
@@ -1302,25 +1338,7 @@ function criarBolhaAudio(msg, alturas) {
   return wrap;
 }
 
-// Estilos para bolha de áudio no painel (inline para não precisar de CSS separado)
-const audioStyle = document.createElement('style');
-audioStyle.textContent = `
-  .msg-audio-bolha{display:flex;align-items:center;gap:0.7rem;padding:0.6rem 0.9rem;border-radius:16px;min-width:180px;max-width:240px}
-  .msg-wrap.aluna .msg-audio-bolha{background:var(--surf2);border:1px solid var(--ouro-brd);border-bottom-left-radius:3px}
-  .msg-wrap.suellen .msg-audio-bolha{background:linear-gradient(135deg,var(--ouro-f),var(--ouro));border-bottom-right-radius:3px}
-  .msg-audio-play-btn{flex-shrink:0;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(255,255,255,0.2);border:none;transition:transform 0.12s}
-  .msg-audio-play-btn:hover{transform:scale(1.08)}
-  .msg-audio-play-btn svg{fill:white;width:13px;height:13px;margin-left:2px}
-  .msg-wrap.aluna .msg-audio-play-btn svg{fill:var(--ouro-cl)}
-  .msg-audio-wave{flex:1}
-  .msg-audio-wave-bar{fill:rgba(255,255,255,0.4)}
-  .msg-wrap.aluna .msg-audio-wave-bar{fill:rgba(200,146,42,0.4)}
-  .msg-audio-wave-bar.ativa{fill:rgba(255,255,255,0.9)}
-  .msg-wrap.aluna .msg-audio-wave-bar.ativa{fill:var(--ouro)}
-  .msg-audio-dur{flex-shrink:0;font-family:var(--font-d);font-size:0.62rem;font-weight:700;color:rgba(255,255,255,0.8);min-width:28px;text-align:right}
-  .msg-wrap.aluna .msg-audio-dur{color:var(--txt2)}
-`;
-document.head.appendChild(audioStyle);
+// estilos de áudio definidos no CSS principal
 
 // Botão microfone da Suellen
 document.getElementById('btn-audio')?.addEventListener('click', sIniciarGravacao);
