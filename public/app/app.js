@@ -434,8 +434,9 @@ async function iniciarChat() {
 
 function conectarChatWs() {
   if (chatWs && chatWs.readyState <= 1) return;
-  const proto = location.protocol==='https:'?'wss':'ws';
   const token = VmSession.getAccess();
+  if (!token) return; // não conecta sem token
+  const proto = location.protocol==='https:'?'wss':'ws';
   chatWs = new WebSocket(`${proto}://${location.host}/ws/chat?token=${token}&modo=aluna`);
   chatWs.onmessage = (e) => {
     try {
@@ -449,7 +450,7 @@ function conectarChatWs() {
       }
     } catch {}
   };
-  chatWs.onclose = () => setTimeout(()=>{ if(document.getElementById('view-chat').classList.contains('active')) conectarChatWs(); }, 3000);
+  chatWs.onclose = () => setTimeout(conectarChatWs, 4000); // reconecta sempre, independe da aba
 }
 
 // Input
@@ -671,4 +672,7 @@ document.getElementById('chat-rec-send')?.addEventListener('click', ()=>pararGra
   hidratarUI(usuario);
   carregarFeed();
   carregarTesouro();
+
+  // Conecta WebSocket imediatamente — não espera abrir a aba de chat
+  conectarChatWs();
 })();
