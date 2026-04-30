@@ -186,7 +186,7 @@ function emitirParaSuellen(evento, dados) {
 // GET /api/chat/conversa — retorna (ou cria) a conversa da aluna logada
 router.get('/conversa', async (req, res) => {
   try {
-    let conv = await getOuCriarConversa(req.usuario.id);
+    let conv = await getOuCriarConversa(req.usuario.sub);
     conv = await verificarPrioritario(conv);
 
     // Busca últimas 50 mensagens
@@ -224,7 +224,7 @@ router.post('/mensagem', async (req, res) => {
   if (!conteudo && !url) return res.status(400).json({ error: 'conteudo ou url obrigatório' });
 
   try {
-    let conv = await getOuCriarConversa(req.usuario.id);
+    let conv = await getOuCriarConversa(req.usuario.sub);
     conv = await verificarPrioritario(conv);
 
     if (conv.bloqueada) return res.status(403).json({ error: 'Chat bloqueado' });
@@ -266,7 +266,7 @@ router.post('/mensagem', async (req, res) => {
     // Emite via WebSocket para a Suellen
     emitirParaSuellen('nova_mensagem', {
       conversa_id:  conv.id,
-      usuario_id:   req.usuario.id,
+      usuario_id:   req.usuario.sub,
       nome:         req.usuario.nome,
       foto_url:     req.usuario.foto_url,
       plano_chat:   conv.plano_chat,
@@ -302,7 +302,7 @@ router.post('/mensagem', async (req, res) => {
 router.post('/ativar-prioritario', async (req, res) => {
   const { origem = 'pagamento' } = req.body;
   try {
-    let conv = await getOuCriarConversa(req.usuario.id);
+    let conv = await getOuCriarConversa(req.usuario.sub);
     const expira = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await pool.query(`
@@ -317,7 +317,7 @@ router.post('/ativar-prioritario', async (req, res) => {
     await pool.query(`
       INSERT INTO chat_pacotes (usuario_id, conversa_id, status, ativado_em, expira_em, origem)
       VALUES ($1,$2,'ativo',NOW(),$3,$4)`,
-      [req.usuario.id, conv.id, expira, origem]);
+      [req.usuario.sub, conv.id, expira, origem]);
 
     res.json({ success: true, expira_em: expira, interacoes: 30 });
   } catch (err) {
@@ -328,7 +328,7 @@ router.post('/ativar-prioritario', async (req, res) => {
 // GET /api/chat/status — status atual do chat da aluna
 router.get('/status', async (req, res) => {
   try {
-    let conv = await getOuCriarConversa(req.usuario.id);
+    let conv = await getOuCriarConversa(req.usuario.sub);
     conv = await verificarPrioritario(conv);
     res.json({
       plano_chat:            conv.plano_chat,
