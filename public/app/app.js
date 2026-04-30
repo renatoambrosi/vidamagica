@@ -584,7 +584,7 @@ function pararGravacao(enviar=true) {
 
 function cancelarGravacao() { pararGravacao(false); }
 
-function finalizarGravacao() {
+async function finalizarGravacao() {
   // Limpa
   clearInterval(audioTimer);
   cancelAnimationFrame(animFrame);
@@ -595,27 +595,45 @@ function finalizarGravacao() {
   document.getElementById('chat-rec-row').style.display = 'none';
   document.getElementById('chat-input-row-normal').style.display = 'flex';
 
-  if (!mediaRecorder._enviar || audioSeg < 1) return; // cancelado ou muito curto
+  if (!mediaRecorder._enviar || audioSeg < 1) return;
 
-  const blob = new Blob(audioChunks, { type: audioMimeType });
-  const url  = URL.createObjectURL(blob);
-  const alturas = gerarWaveform(); // waveform visual aleatória para a bolha
+  const blob    = new Blob(audioChunks, { type: audioMimeType });
+  const alturas = gerarWaveform();
+  const duracao = audioSeg;
 
-  const msgAudio = {
-    id:        Date.now(),
-    remetente: 'aluna',
-    tipo:      'audio',
-    url,
-    duracao:   audioSeg,
-    criado_em: new Date().toISOString(),
-    _alturas:  alturas,
-  };
-
-  document.getElementById('chat-msgs').appendChild(criarBolhaAudio(msgAudio, alturas));
+  // Mostra bolha otimista com URL local enquanto faz upload
+  const urlLocal = URL.createObjectURL(blob);
+  const msgTemp  = { id: Date.now(), remetente:'aluna', tipo:'audio', url:urlLocal, duracao, criado_em:new Date().toISOString(), _alturas:alturas };
+  const bolhaEl  = criarBolhaAudio(msgTemp, alturas);
+  document.getElementById('chat-msgs').appendChild(bolhaEl);
   scrollChat();
 
-  // Aqui enviaria o blob via FormData quando tiver storage configurado
-  // Por enquanto é só local
+  try {
+    // Upload para Cloudinary via backend
+    const form = new FormData();
+    form.append('audio', blob, `audio-${Date.now()}.webm`);
+    const r = await fetch(`${API}/api/upload/audio`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${VmSession.getAccess()}` },
+      body: form,
+    });
+    if (!r.ok) throw new Error('upload falhou');
+    const { url, duracao: dur } = await r.json();
+
+    // Envia mensagem para o backend com URL real
+    const r2 = await fetch(`${API}/api/chat/mensagem`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', Authorization:`Bearer ${VmSession.getAccess()}` },
+      body: JSON.stringify({ tipo:'audio', url, duracao: dur || duracao }),
+    });
+    if (r2.ok) {
+      const d = await r2.json();
+      if (d.conversa) renderPlanoInfo({ ...chatConv, ...d.conversa });
+    }
+  } catch (err) {
+    console.error('[Audio upload]', err.message);
+    // Mantém a bolha local mesmo se falhar o upload
+  }
 }
 
 /* Botão microfone — abre pré-aviso se nunca pediu, ou inicia direto */
