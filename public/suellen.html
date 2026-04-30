@@ -316,11 +316,68 @@ button { font-family:inherit; cursor:pointer; border:none; background:none; colo
 .input-modal-acoes button { flex:1; padding:0.55rem; border-radius:var(--r-sm); font-family:var(--font-d); font-size:0.72rem; font-weight:700; cursor:pointer; }
 .btn-confirmar { background:var(--ouro); color:var(--bg); border:none; }
 .btn-cancelar  { background:transparent; color:var(--txt2); border:1px solid var(--ouro-brd); }
-  </style>
+  
+/* ── Tela de Login ── */
+#tela-login {
+  position: fixed; inset: 0; z-index: 500;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--bg);
+  padding: 2rem;
+}
+#tela-login.oculta { display: none; }
+
+.login-logo { font-family: var(--font-d); font-size: 1.1rem; font-weight: 900; color: var(--ouro-cl); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.5rem; }
+.login-sub  { font-size: 0.78rem; color: var(--txt2); margin-bottom: 2.5rem; }
+
+.login-box {
+  width: 100%; max-width: 320px;
+  background: var(--bg2); border: 1px solid var(--ouro-brd);
+  border-radius: 20px; padding: 2rem 1.75rem;
+}
+.login-titulo { font-family: var(--font-d); font-size: 1rem; font-weight: 800; color: var(--txt); margin-bottom: 0.3rem; }
+.login-desc   { font-size: 0.78rem; color: var(--txt2); margin-bottom: 1.5rem; line-height: 1.5; }
+
+.login-field  { margin-bottom: 1rem; }
+.login-label  { display: block; font-family: var(--font-d); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--txt2); margin-bottom: 0.4rem; }
+.login-input  { width: 100%; background: var(--surf2); border: 1px solid var(--ouro-brd); border-radius: 10px; padding: 0.7rem 1rem; font-size: 0.95rem; color: var(--txt); outline: none; transition: border-color 0.2s; font-family: var(--font-b); }
+.login-input:focus { border-color: var(--ouro-brd2); }
+
+.login-btn {
+  width: 100%; padding: 0.85rem;
+  background: linear-gradient(135deg, var(--ouro-f), var(--ouro));
+  color: white; border: none; border-radius: 10px;
+  font-family: var(--font-d); font-size: 0.85rem; font-weight: 800;
+  cursor: pointer; transition: opacity 0.15s, transform 0.12s;
+  margin-top: 0.25rem;
+}
+.login-btn:hover  { opacity: 0.88; }
+.login-btn:active { transform: scale(0.98); }
+.login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.login-erro { color: #F87171; font-size: 0.78rem; margin-top: 0.75rem; text-align: center; min-height: 1.2em; }
+
+</style>
 </head>
 <body>
 
 <div id="app">
+
+  <!-- ══════════ TELA DE LOGIN ══════════ -->
+  <div id="tela-login">
+    <div class="login-logo">✦ Vida Mágica</div>
+    <div class="login-sub">Painel de Atendimento</div>
+    <div class="login-box">
+      <div class="login-titulo">Bem-vinda, Suellen 👋</div>
+      <div class="login-desc">Digite sua senha para acessar o painel de atendimento.</div>
+      <div class="login-field">
+        <label class="login-label" for="login-senha">Senha</label>
+        <input class="login-input" type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="login-btn" id="login-btn">Entrar</button>
+      <div class="login-erro" id="login-erro"></div>
+    </div>
+  </div>
+
 
   <!-- ══════════ TELA 1: LISTA ══════════ -->
   <div class="tela ativa" id="tela-lista">
@@ -503,7 +560,7 @@ function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
 async function carregarLista() {
   try {
     const r = await fetch(`${API}/api/suellen/chat/conversas`, {
-      credentials: 'include'
+      headers: authHeader()
     });
     if (!r.ok) throw new Error();
     conversas = await r.json();
@@ -578,7 +635,7 @@ async function abrirConversa(id) {
   // Carrega mensagens
   document.getElementById('chat-msgs').innerHTML = `<div class="loading-dots"><span></span><span></span><span></span></div>`;
   try {
-    const r = await fetch(`${API}/api/suellen/chat/conversa/${id}`, { credentials:'include' });
+    const r = await fetch(`${API}/api/suellen/chat/conversa/${id}`, { headers: authHeader() });
     const dados = await r.json();
     convAtual = { ...convAtual, ...dados.conversa };
     mensagens = dados.mensagens || [];
@@ -738,8 +795,7 @@ async function enviar() {
 
   try {
     await fetch(`${API}/api/suellen/chat/mensagem`, {
-      method:'POST', credentials:'include',
-      headers:{'Content-Type':'application/json'},
+      method:'POST', headers: { ...authHeader(), 'Content-Type':'application/json' },
       body: JSON.stringify({ conversa_id: convAtual.id, conteudo: texto, tipo:'texto', reply_to_id: replyId }),
     });
   } catch { toast('Erro ao enviar','err'); }
@@ -771,9 +827,7 @@ document.getElementById('btn-atualizar').addEventListener('click', carregarLista
 function conectarWs() {
   if (ws && ws.readyState <= 1) return;
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  // Suellen autentica com Basic Auth em base64
-  const user = 'admin', pass = prompt('Senha de acesso:') || '';
-  const token = btoa(`${user}:${pass}`);
+  const token = getToken() || '';
   ws = new WebSocket(`${proto}://${location.host}/ws/chat?token=${token}&modo=suellen`);
   ws.onmessage = (e) => {
     try {
@@ -798,7 +852,7 @@ async function carregarPerfil(conv) {
   const scroll = document.getElementById('perfil-scroll');
   scroll.innerHTML = `<div class="loading-dots"><span></span><span></span><span></span></div>`;
   try {
-    const r = await fetch(`${API}/api/suellen/chat/conversa/${conv.id}`, { credentials:'include' });
+    const r = await fetch(`${API}/api/suellen/chat/conversa/${conv.id}`, { headers: authHeader() });
     const dados = await r.json();
     const c = dados.conversa;
     const pacotes = dados.pacotes || [];
@@ -942,8 +996,7 @@ async function acaoAdmin(acao) {
 async function executarAcao(acao, valor) {
   try {
     const r = await fetch(`${API}/api/suellen/chat/acao`, {
-      method:'POST', credentials:'include',
-      headers:{'Content-Type':'application/json'},
+      method:'POST', headers: { ...authHeader(), 'Content-Type':'application/json' },
       body: JSON.stringify({ conversa_id: convAtual.id, acao, valor }),
     });
     if (r.ok) {
@@ -987,16 +1040,80 @@ async function registrarPush() {
       applicationServerKey: key,
     });
     await fetch(`${API}/api/suellen/chat/push-subscribe`, {
-      method:'POST', credentials:'include',
-      headers:{'Content-Type':'application/json'},
+      method:'POST', headers: { ...authHeader(), 'Content-Type':'application/json' },
       body: JSON.stringify({ endpoint:sub.endpoint, keys:{ p256dh: btoa(String.fromCharCode(...new Uint8Array(sub.getKey('p256dh')))), auth: btoa(String.fromCharCode(...new Uint8Array(sub.getKey('auth')))) }, userAgent: navigator.userAgent }),
     });
   } catch {}
 }
 
 /* ════════ INIT ════════ */
-carregarLista();
-registrarPush();
+// ── AUTH ──────────────────────────────────────────
+const SUELLEN_TOKEN_KEY = 'vm_suellen_token';
+
+function getToken() { return localStorage.getItem(SUELLEN_TOKEN_KEY); }
+function setToken(t) { localStorage.setItem(SUELLEN_TOKEN_KEY, t); }
+function clearToken() { localStorage.removeItem(SUELLEN_TOKEN_KEY); }
+
+function authHeader() {
+  const t = getToken();
+  return t ? { 'Authorization': `Bearer ${t}` } : {};
+}
+
+async function verificarToken() {
+  const token = getToken();
+  if (!token) return false;
+  try {
+    const r = await fetch(`${API}/api/suellen/chat/stats`, { headers: authHeader() });
+    return r.ok;
+  } catch { return false; }
+}
+
+async function fazerLogin(senha) {
+  const r = await fetch(`${API}/api/suellen/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ senha }),
+  });
+  if (!r.ok) throw new Error('Senha incorreta');
+  const { token } = await r.json();
+  setToken(token);
+}
+
+// Login UI
+document.getElementById('login-btn')?.addEventListener('click', async () => {
+  const senha = document.getElementById('login-senha').value;
+  const btn   = document.getElementById('login-btn');
+  const erro  = document.getElementById('login-erro');
+  if (!senha) { erro.textContent = 'Digite a senha'; return; }
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  erro.textContent = '';
+  try {
+    await fazerLogin(senha);
+    document.getElementById('tela-login').classList.add('oculta');
+    carregarLista();
+    registrarPush();
+  } catch {
+    erro.textContent = 'Senha incorreta. Tente novamente.';
+    btn.disabled = false; btn.textContent = 'Entrar';
+  }
+});
+
+document.getElementById('login-senha')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('login-btn')?.click();
+});
+
+// Init — verifica se já tem token válido
+(async function init() {
+  const valido = await verificarToken();
+  if (valido) {
+    document.getElementById('tela-login').classList.add('oculta');
+    carregarLista();
+    registrarPush();
+  } else {
+    clearToken();
+    // Mostra tela de login (já visível por padrão)
+  }
+})();
 </script>
 </body>
 </html>
