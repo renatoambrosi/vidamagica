@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0D0800">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VM Atendimento">
+  <title>Vida Mágica — Atendimento</title>
+  <link rel="icon" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+/* ════════════════════════════════════════════════
+   VIDA MÁGICA — Painel Suellen
+   Tema: dark premium, ouro, estilo WhatsApp nativo
+   ════════════════════════════════════════════════ */
+:root {
+  --ouro:       #C8922A;
+  --ouro-cl:    #E8C97A;
+  --ouro-f:     #A17523;
+  --ouro-film:  rgba(200,146,42,0.12);
+  --ouro-brd:   rgba(200,146,42,0.18);
+  --ouro-brd2:  rgba(200,146,42,0.4);
+
+  --bg:    #0D0800;
+  --bg2:   #130C00;
+  --bg3:   #1A1100;
+  --surf:  rgba(255,255,255,0.04);
+  --surf2: rgba(255,255,255,0.07);
+
+  --txt:   #F5F0E8;
+  --txt2:  rgba(245,240,232,0.55);
+  --txt3:  rgba(245,240,232,0.28);
+
+  --verde: #25D366;
+  --red:   #EF4444;
+  --prior: #F4D060;
+
+  --font-d: 'Montserrat', sans-serif;
+  --font-b: 'Open Sans', sans-serif;
+
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --r-sm: 8px; --r-md: 14px; --r-lg: 20px; --r-full: 9999px;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--txt); font-family:var(--font-b); -webkit-font-smoothing:antialiased; }
+button { font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+
+/* ════════ LAYOUT RAIZ ════════ */
+#app { position:fixed; inset:0; display:flex; flex-direction:column; }
+
+/* ════════ TELA — abstração ════════ */
+.tela { position:absolute; inset:0; display:flex; flex-direction:column; background:var(--bg); transition:transform 0.3s cubic-bezier(0.4,0,0.2,1); will-change:transform; }
+.tela.fora-direita { transform:translateX(100%); }
+.tela.fora-esquerda { transform:translateX(-30%); opacity:0.5; }
+.tela.ativa { transform:translateX(0); opacity:1; }
+
+/* ════════ HEADER GENÉRICO ════════ */
+.header {
+  flex-shrink:0;
+  display:flex; align-items:center; gap:0.75rem;
+  padding: calc(var(--safe-top) + 0.65rem) 1rem 0.65rem;
+  background: rgba(13,8,0,0.96);
+  border-bottom:1px solid var(--ouro-brd);
+  backdrop-filter:blur(16px);
+  min-height: calc(var(--safe-top) + 56px);
+}
+.header-btn { width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:var(--r-full); transition:background 0.15s; flex-shrink:0; }
+.header-btn:hover { background:var(--ouro-film); }
+.header-btn svg { width:22px; height:22px; stroke:var(--txt2); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; transition:stroke 0.15s; }
+.header-btn:hover svg { stroke:var(--ouro-cl); }
+.header-titulo { font-family:var(--font-d); font-size:0.82rem; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; color:var(--ouro-cl); flex:1; }
+
+/* ════════ TELA 1: LISTA ════════ */
+#tela-lista .header-titulo { font-size:0.88rem; }
+
+.lista-stats { display:flex; gap:0.5rem; padding:0.6rem 1rem; background:var(--bg2); border-bottom:1px solid var(--ouro-brd); flex-shrink:0; }
+.stat-pill { font-family:var(--font-d); font-size:0.6rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:0.22rem 0.65rem; border-radius:var(--r-full); }
+.stat-pill.aguardando { background:rgba(239,68,68,0.12); color:#F87171; border:1px solid rgba(239,68,68,0.2); }
+.stat-pill.prior       { background:rgba(244,208,96,0.1);  color:var(--prior); border:1px solid rgba(244,208,96,0.2); }
+.stat-pill.total       { background:var(--surf);            color:var(--txt2);  border:1px solid var(--ouro-brd); }
+
+.conversas-scroll { flex:1; overflow-y:auto; }
+.conversas-scroll::-webkit-scrollbar { width:3px; }
+.conversas-scroll::-webkit-scrollbar-thumb { background:var(--ouro-brd); border-radius:2px; }
+
+.conv-item {
+  display:flex; align-items:center; gap:0.85rem;
+  padding:0.85rem 1rem;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+  cursor:pointer; transition:background 0.12s;
+  position:relative;
+}
+.conv-item:hover, .conv-item:active { background:var(--surf); }
+.conv-item.prior-item { background:rgba(244,208,96,0.04); }
+.conv-item.prior-item:hover { background:rgba(244,208,96,0.08); }
+
+.conv-avatar { position:relative; flex-shrink:0; }
+.conv-avatar-img { width:50px; height:50px; border-radius:50%; object-fit:cover; background:var(--bg3); border:1px solid var(--ouro-brd); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.conv-avatar-img svg { width:24px; height:24px; stroke:var(--txt3); }
+.conv-avatar-img img { width:100%; height:100%; object-fit:cover; }
+.conv-prior-badge { position:absolute; bottom:-2px; right:-2px; background:var(--prior); color:var(--bg); font-size:0.65rem; border-radius:50%; width:18px; height:18px; display:flex; align-items:center; justify-content:center; border:2px solid var(--bg); }
+
+.conv-corpo { flex:1; min-width:0; }
+.conv-nome { font-family:var(--font-d); font-size:0.88rem; font-weight:700; color:var(--txt); margin-bottom:0.2rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.conv-preview { font-size:0.78rem; color:var(--txt2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.conv-preview.nao-lida { color:var(--txt); font-weight:600; }
+
+.conv-meta { flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:0.3rem; }
+.conv-tempo { font-size:0.68rem; color:var(--txt3); }
+.conv-badge { min-width:20px; height:20px; padding:0 6px; background:var(--ouro); color:var(--bg); border-radius:var(--r-full); font-family:var(--font-d); font-size:0.65rem; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.conv-badge.prior-badge { background:var(--prior); }
+
+.lista-vazia { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.75rem; color:var(--txt3); padding:2rem; text-align:center; }
+.lista-vazia-icon { font-size:2.5rem; opacity:0.4; }
+.lista-vazia p { font-size:0.82rem; }
+
+/* ════════ TELA 2: CHAT ════════ */
+.chat-header-avatar { width:38px; height:38px; border-radius:50%; overflow:hidden; flex-shrink:0; background:var(--bg3); border:1px solid var(--ouro-brd); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.chat-header-avatar svg { width:18px; height:18px; stroke:var(--txt3); }
+.chat-header-avatar img { width:100%; height:100%; object-fit:cover; }
+.chat-header-info { flex:1; min-width:0; cursor:pointer; }
+.chat-header-nome { font-family:var(--font-d); font-size:0.88rem; font-weight:800; color:var(--txt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.chat-header-status { font-size:0.65rem; color:var(--txt3); margin-top:1px; }
+.chat-header-status.prior { color:var(--prior); font-weight:700; }
+
+/* Mensagens */
+.chat-msgs { flex:1; overflow-y:auto; padding:0.75rem 1rem; display:flex; flex-direction:column; gap:0.4rem; background:var(--bg); }
+.chat-msgs::-webkit-scrollbar { width:3px; }
+.chat-msgs::-webkit-scrollbar-thumb { background:var(--ouro-brd); border-radius:2px; }
+
+.msg-wrap { display:flex; flex-direction:column; max-width:78%; position:relative; }
+.msg-wrap.aluna   { align-self:flex-start; align-items:flex-start; }
+.msg-wrap.suellen { align-self:flex-end;   align-items:flex-end; }
+
+/* Bolha */
+.msg-bolha {
+  padding:0.55rem 0.85rem;
+  border-radius:16px;
+  font-size:0.9rem; line-height:1.5;
+  word-break:break-word;
+  position:relative;
+  cursor:pointer;
+  transition:opacity 0.15s;
+  user-select:text;
+}
+.msg-bolha:active { opacity:0.8; }
+.msg-wrap.aluna   .msg-bolha { background:var(--surf2); color:var(--txt); border-bottom-left-radius:3px; }
+.msg-wrap.suellen .msg-bolha { background:linear-gradient(135deg, var(--ouro-f), var(--ouro)); color:white; border-bottom-right-radius:3px; }
+
+/* Nome da aluna na bolha dela */
+.msg-wrap.aluna .msg-bolha::before {
+  content: attr(data-nome);
+  display:block; font-family:var(--font-d); font-size:0.58rem; font-weight:800;
+  letter-spacing:0.08em; text-transform:uppercase;
+  color:var(--ouro-cl); margin-bottom:0.2rem;
+}
+
+/* Preview de reply na bolha */
+.msg-reply-preview {
+  background:rgba(255,255,255,0.08); border-left:3px solid var(--ouro);
+  border-radius:6px; padding:0.35rem 0.6rem; margin-bottom:0.45rem;
+  font-size:0.75rem; color:var(--txt2); line-height:1.35;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.msg-reply-preview .reply-autor { font-weight:700; color:var(--ouro-cl); display:block; font-size:0.68rem; margin-bottom:1px; }
+
+.msg-hora { font-size:0.62rem; color:var(--txt3); padding:0 0.25rem; margin-top:2px; }
+.msg-wrap.suellen .msg-hora { color:rgba(255,255,255,0.5); }
+
+/* Imagem */
+.msg-img { max-width:220px; border-radius:12px; overflow:hidden; cursor:pointer; }
+.msg-img img { width:100%; display:block; }
+
+/* Áudio */
+.msg-audio audio { max-width:200px; height:36px; }
+
+/* Separador data */
+.msg-data-sep {
+  align-self:center; margin:0.6rem 0;
+  font-family:var(--font-d); font-size:0.6rem; font-weight:700;
+  letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--txt3); background:var(--surf); border:1px solid var(--ouro-brd);
+  padding:0.2rem 0.7rem; border-radius:var(--r-full);
+}
+
+/* Context menu ao segurar */
+.msg-ctx-menu {
+  position:fixed; z-index:200;
+  background:var(--bg2); border:1px solid var(--ouro-brd);
+  border-radius:var(--r-md); padding:0.35rem 0;
+  box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  min-width:140px;
+  animation: ctx-aparece 0.15s ease;
+}
+@keyframes ctx-aparece { from { opacity:0; transform:scale(0.92); } to { opacity:1; transform:scale(1); } }
+.msg-ctx-item { display:flex; align-items:center; gap:0.6rem; padding:0.6rem 1rem; font-size:0.82rem; color:var(--txt); cursor:pointer; transition:background 0.1s; }
+.msg-ctx-item:hover { background:var(--surf2); }
+.msg-ctx-item svg { width:16px; height:16px; stroke:var(--txt2); fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+
+/* Reply bar acima do input */
+.reply-bar {
+  display:none; align-items:center; gap:0.75rem;
+  padding:0.6rem 1rem;
+  background:var(--bg2); border-top:1px solid var(--ouro-brd);
+  flex-shrink:0;
+}
+.reply-bar.visivel { display:flex; }
+.reply-bar-conteudo { flex:1; min-width:0; }
+.reply-bar-autor { font-family:var(--font-d); font-size:0.65rem; font-weight:800; color:var(--ouro-cl); margin-bottom:2px; }
+.reply-bar-texto { font-size:0.78rem; color:var(--txt2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.reply-bar-fechar { flex-shrink:0; width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:var(--r-full); color:var(--txt3); font-size:1rem; transition:background 0.15s; }
+.reply-bar-fechar:hover { background:var(--surf2); color:var(--txt); }
+
+/* Input */
+.chat-input-wrap { flex-shrink:0; padding:0.6rem 0.75rem calc(0.6rem + var(--safe-bottom)); background:rgba(13,8,0,0.96); border-top:1px solid var(--ouro-brd); }
+.chat-input-row { display:flex; align-items:flex-end; gap:0.45rem; }
+.btn-icone { flex-shrink:0; width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:var(--r-full); color:var(--txt2); transition:color 0.15s, background 0.15s; }
+.btn-icone:hover { color:var(--ouro-cl); background:var(--ouro-film); }
+.btn-icone svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-width:1.8; }
+.chat-input-box { flex:1; }
+.chat-input {
+  width:100%; max-height:120px;
+  background:var(--surf2); border:1px solid var(--ouro-brd);
+  border-radius:22px; padding:0.55rem 1rem;
+  font-family:var(--font-b); font-size:0.9rem; color:var(--txt);
+  resize:none; outline:none; line-height:1.45;
+  transition:border-color 0.2s;
+}
+.chat-input:focus { border-color:var(--ouro-brd2); }
+.chat-input::placeholder { color:var(--txt3); }
+.btn-enviar { flex-shrink:0; width:40px; height:40px; background:linear-gradient(135deg,var(--ouro-f),var(--ouro)); border-radius:var(--r-full); display:flex; align-items:center; justify-content:center; transition:transform 0.15s, opacity 0.15s; }
+.btn-enviar:hover { transform:scale(1.06); }
+.btn-enviar:active { transform:scale(0.95); }
+.btn-enviar svg { width:16px; height:16px; fill:white; stroke:none; }
+
+/* ════════ TELA 3: PERFIL DA ALUNA ════════ */
+.perfil-scroll { flex:1; overflow-y:auto; }
+.perfil-scroll::-webkit-scrollbar { width:3px; }
+.perfil-scroll::-webkit-scrollbar-thumb { background:var(--ouro-brd); border-radius:2px; }
+
+.perfil-hero { display:flex; flex-direction:column; align-items:center; padding:2rem 1.5rem 1.5rem; text-align:center; background:var(--bg2); border-bottom:1px solid var(--ouro-brd); }
+.perfil-foto { width:80px; height:80px; border-radius:50%; background:var(--bg3); border:2px solid var(--ouro-brd2); overflow:hidden; display:flex; align-items:center; justify-content:center; margin-bottom:0.85rem; }
+.perfil-foto svg { width:38px; height:38px; stroke:var(--txt3); }
+.perfil-foto img { width:100%; height:100%; object-fit:cover; }
+.perfil-nome { font-family:var(--font-d); font-size:1.1rem; font-weight:900; color:var(--txt); margin-bottom:0.2rem; }
+.perfil-tel  { font-size:0.75rem; color:var(--txt2); margin-bottom:0.75rem; }
+.perfil-tags { display:flex; gap:0.4rem; flex-wrap:wrap; justify-content:center; }
+.tag-pill { font-family:var(--font-d); font-size:0.6rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:0.2rem 0.65rem; border-radius:var(--r-full); }
+.tag-plano   { background:rgba(200,146,42,0.12); color:var(--ouro-cl); border:1px solid var(--ouro-brd2); }
+.tag-prior   { background:rgba(244,208,96,0.1);  color:var(--prior);   border:1px solid rgba(244,208,96,0.3); }
+.tag-basic   { background:var(--surf);            color:var(--txt2);    border:1px solid var(--ouro-brd); }
+.tag-bloq    { background:rgba(239,68,68,0.1);   color:#F87171;        border:1px solid rgba(239,68,68,0.25); }
+
+.perfil-secao { padding:1rem 1.25rem 0.5rem; }
+.perfil-secao-titulo { font-family:var(--font-d); font-size:0.6rem; font-weight:800; letter-spacing:0.15em; text-transform:uppercase; color:var(--ouro-f); margin-bottom:0.65rem; }
+
+.perfil-stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-bottom:0.5rem; }
+.perfil-stat { background:var(--surf); border:1px solid var(--ouro-brd); border-radius:var(--r-md); padding:0.75rem; }
+.perfil-stat-num { font-family:var(--font-d); font-size:1.4rem; font-weight:900; color:var(--ouro-cl); line-height:1; margin-bottom:2px; }
+.perfil-stat-label { font-size:0.65rem; color:var(--txt2); }
+
+.produto-item { display:flex; align-items:center; gap:0.75rem; padding:0.75rem; background:var(--surf); border:1px solid var(--ouro-brd); border-radius:var(--r-md); margin-bottom:0.45rem; }
+.produto-icone { font-size:1.2rem; flex-shrink:0; }
+.produto-nome { font-size:0.82rem; font-weight:600; color:var(--txt); }
+.produto-link { margin-left:auto; font-family:var(--font-d); font-size:0.62rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--ouro); padding:0.25rem 0.65rem; border:1px solid var(--ouro-brd2); border-radius:var(--r-full); }
+
+/* Chat prioritário info */
+.prior-info-box { background:rgba(244,208,96,0.06); border:1px solid rgba(244,208,96,0.25); border-radius:var(--r-md); padding:0.9rem; margin-bottom:0.5rem; }
+.prior-info-titulo { font-family:var(--font-d); font-size:0.7rem; font-weight:800; color:var(--prior); margin-bottom:0.5rem; }
+.prior-info-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem; }
+.prior-info-label { font-size:0.72rem; color:var(--txt2); }
+.prior-info-val { font-family:var(--font-d); font-size:0.75rem; font-weight:700; color:var(--txt); }
+.prior-barra-wrap { margin-top:0.5rem; }
+.prior-barra-bg { height:4px; background:rgba(244,208,96,0.15); border-radius:2px; overflow:hidden; }
+.prior-barra-fill { height:100%; background:var(--prior); border-radius:2px; transition:width 0.5s ease; }
+
+/* Ações superadmin */
+.acoes-grid { display:flex; flex-direction:column; gap:0.45rem; }
+.acao-btn { display:flex; align-items:center; gap:0.75rem; padding:0.75rem 1rem; background:var(--surf); border:1px solid var(--ouro-brd); border-radius:var(--r-md); font-size:0.82rem; color:var(--txt); cursor:pointer; transition:background 0.15s, border-color 0.15s; width:100%; text-align:left; }
+.acao-btn:hover { background:var(--surf2); border-color:var(--ouro-brd2); }
+.acao-btn.danger { border-color:rgba(239,68,68,0.2); }
+.acao-btn.danger:hover { background:rgba(239,68,68,0.08); border-color:rgba(239,68,68,0.35); }
+.acao-btn.success { border-color:rgba(37,211,102,0.2); }
+.acao-btn.success:hover { background:rgba(37,211,102,0.06); border-color:rgba(37,211,102,0.35); }
+.acao-btn svg { width:16px; height:16px; stroke:var(--txt2); flex-shrink:0; }
+.acao-btn.danger svg { stroke:#F87171; }
+.acao-btn.success svg { stroke:#4ADE80; }
+
+/* Toast */
+#toast { position:fixed; bottom:calc(1rem + var(--safe-bottom)); left:50%; transform:translateX(-50%) translateY(20px); z-index:999; padding:0.65rem 1.1rem; border-radius:var(--r-md); font-size:0.8rem; font-weight:600; opacity:0; transition:all 0.25s; pointer-events:none; white-space:nowrap; }
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+#toast.ok  { background:rgba(37,211,102,0.15); border:1px solid rgba(37,211,102,0.3); color:#4ADE80; }
+#toast.err { background:rgba(239,68,68,0.15);  border:1px solid rgba(239,68,68,0.3);  color:#F87171; }
+
+/* Loading dots */
+.loading-dots { display:flex; gap:5px; align-items:center; justify-content:center; padding:3rem; }
+.loading-dots span { width:7px; height:7px; border-radius:50%; background:var(--ouro); animation:ld 1.2s ease-in-out infinite; }
+.loading-dots span:nth-child(2) { animation-delay:0.2s; }
+.loading-dots span:nth-child(3) { animation-delay:0.4s; }
+@keyframes ld { 0%,100%{transform:scale(0.7);opacity:0.4} 50%{transform:scale(1);opacity:1} }
+
+/* Input modal (para ajustar interações) */
+.input-modal { position:fixed; inset:0; z-index:300; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); }
+.input-modal.open { display:flex; }
+.input-modal-box { background:var(--bg2); border:1px solid var(--ouro-brd2); border-radius:var(--r-lg); padding:1.5rem; width:280px; }
+.input-modal-titulo { font-family:var(--font-d); font-size:0.85rem; font-weight:800; color:var(--ouro-cl); margin-bottom:1rem; }
+.input-modal-field { width:100%; background:var(--surf2); border:1px solid var(--ouro-brd); border-radius:var(--r-sm); padding:0.6rem 0.85rem; font-family:var(--font-b); font-size:0.95rem; color:var(--txt); outline:none; margin-bottom:1rem; }
+.input-modal-field:focus { border-color:var(--ouro-brd2); }
+.input-modal-acoes { display:flex; gap:0.5rem; }
+.input-modal-acoes button { flex:1; padding:0.55rem; border-radius:var(--r-sm); font-family:var(--font-d); font-size:0.72rem; font-weight:700; cursor:pointer; }
+.btn-confirmar { background:var(--ouro); color:var(--bg); border:none; }
+.btn-cancelar  { background:transparent; color:var(--txt2); border:1px solid var(--ouro-brd); }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ══════════ TELA 1: LISTA ══════════ -->
+  <div class="tela ativa" id="tela-lista">
+    <div class="header">
+      <span class="header-titulo">💬 Atendimento</span>
+      <button class="header-btn" id="btn-atualizar" title="Atualizar">
+        <svg viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
+    </div>
+    <div class="lista-stats" id="lista-stats">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+    </div>
+    <div class="conversas-scroll" id="conversas-scroll">
+      <div class="loading-dots" style="padding:3rem"><span></span><span></span><span></span></div>
+    </div>
+  </div>
+
+  <!-- ══════════ TELA 2: CHAT ══════════ -->
+  <div class="tela fora-direita" id="tela-chat">
+    <div class="header">
+      <button class="header-btn" id="btn-voltar">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="chat-header-avatar" id="chat-header-avatar" onclick="irPara('perfil')">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div class="chat-header-info" onclick="irPara('perfil')">
+        <div class="chat-header-nome" id="chat-header-nome">—</div>
+        <div class="chat-header-status" id="chat-header-status">Basic</div>
+      </div>
+      <button class="header-btn" onclick="irPara('perfil')" title="Perfil da aluna">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+      </button>
+    </div>
+
+    <div class="chat-msgs" id="chat-msgs">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+    </div>
+
+    <!-- Reply bar -->
+    <div class="reply-bar" id="reply-bar">
+      <div style="width:3px;background:var(--ouro);border-radius:2px;align-self:stretch;flex-shrink:0"></div>
+      <div class="reply-bar-conteudo">
+        <span class="reply-bar-autor" id="reply-autor"></span>
+        <span class="reply-bar-texto" id="reply-texto"></span>
+      </div>
+      <button class="reply-bar-fechar" id="reply-fechar">✕</button>
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input-wrap">
+      <div class="chat-input-row">
+        <button class="btn-icone" id="btn-anexo" title="Imagem">
+          <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <div class="chat-input-box">
+          <textarea class="chat-input" id="chat-input" placeholder="Mensagem..." rows="1"></textarea>
+        </div>
+        <button class="btn-icone" id="btn-audio" title="Áudio">
+          <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
+        <button class="btn-enviar" id="btn-enviar" style="display:none">
+          <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" fill="white"/></svg>
+        </button>
+      </div>
+    </div>
+    <input type="file" id="file-input" accept="image/*" style="display:none">
+  </div>
+
+  <!-- ══════════ TELA 3: PERFIL ══════════ -->
+  <div class="tela fora-direita" id="tela-perfil">
+    <div class="header">
+      <button class="header-btn" onclick="irPara('chat')">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="header-titulo">Perfil da Aluna</span>
+    </div>
+    <div class="perfil-scroll" id="perfil-scroll">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Context menu -->
+<div id="msg-ctx-menu" class="msg-ctx-menu" style="display:none">
+  <div class="msg-ctx-item" id="ctx-responder">
+    <svg viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+    Responder
+  </div>
+  <div class="msg-ctx-item" id="ctx-copiar">
+    <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    Copiar texto
+  </div>
+</div>
+
+<!-- Modal de input numérico -->
+<div class="input-modal" id="input-modal">
+  <div class="input-modal-box">
+    <div class="input-modal-titulo" id="input-modal-titulo">Ajustar interações</div>
+    <input type="number" class="input-modal-field" id="input-modal-valor" placeholder="30" min="0" max="999">
+    <div class="input-modal-acoes">
+      <button class="btn-confirmar" id="input-modal-ok">Confirmar</button>
+      <button class="btn-cancelar" onclick="fecharInputModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ════════════════════════════════════════════════
+   SUELLEN — Painel de Atendimento
+   ════════════════════════════════════════════════ */
+
+const API = '';
+
+// ── Navegação entre telas ──
+const TELAS = ['lista','chat','perfil'];
+let telaAtual = 'lista';
+let telaAnterior = 'lista';
+
+function irPara(nova) {
+  const atual = document.getElementById(`tela-${telaAtual}`);
+  const destino = document.getElementById(`tela-${nova}`);
+  const idx_atual = TELAS.indexOf(telaAtual);
+  const idx_nova  = TELAS.indexOf(nova);
+  const vai_direita = idx_nova > idx_atual;
+
+  atual.classList.remove('ativa');
+  atual.classList.add(vai_direita ? 'fora-esquerda' : 'fora-direita');
+  destino.classList.remove('fora-direita','fora-esquerda');
+  destino.classList.add('ativa');
+
+  telaAnterior = telaAtual;
+  telaAtual    = nova;
+
+  if (nova === 'perfil' && convAtual) carregarPerfil(convAtual);
+}
+
+// ── Estado global ──
+let conversas   = [];
+let convAtual   = null;   // objeto conversa
+let mensagens   = [];
+let ws          = null;
+let replyMsg    = null;   // mensagem sendo respondida
+let ctxMsgAtual = null;   // mensagem com context menu aberto
+
+// ── Toast ──
+function toast(msg, tipo='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `show ${tipo}`;
+  setTimeout(() => t.className = '', 3000);
+}
+
+// ── Tempo relativo ──
+function tempoRel(data) {
+  const diff = Date.now() - new Date(data).getTime();
+  const m = Math.floor(diff/60000), h = Math.floor(diff/3600000);
+  const d = Math.floor(diff/86400000), s = Math.floor(d/7);
+  const me = Math.floor(d/30), a = Math.floor(d/365);
+  if (m < 1) return 'agora';
+  if (m < 60) return `${m}min`;
+  if (h < 24) return `${h}h`;
+  if (d < 7) return `${d}d`;
+  if (s < 4) return `${s}sem`;
+  if (me < 12) return `${me}m`;
+  return `${a}a`;
+}
+
+// ── Hora formatada ──
+function hora(data) {
+  return new Date(data).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ── Escape HTML ──
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ════════ LISTA DE CONVERSAS ════════ */
+async function carregarLista() {
+  try {
+    const r = await fetch(`${API}/api/suellen/chat/conversas`, {
+      credentials: 'include'
+    });
+    if (!r.ok) throw new Error();
+    conversas = await r.json();
+    renderLista();
+    renderStats();
+  } catch {
+    document.getElementById('conversas-scroll').innerHTML = `<div class="lista-vazia"><div class="lista-vazia-icon">⚠️</div><p>Erro ao carregar. Verifique o acesso.</p></div>`;
+  }
+}
+
+function renderStats() {
+  const aguardando = conversas.filter(c => c.nao_lidas_suellen > 0).length;
+  const prior      = conversas.filter(c => c.plano_chat === 'prioritario').length;
+  document.getElementById('lista-stats').innerHTML = `
+    ${aguardando ? `<span class="stat-pill aguardando">⚡ ${aguardando} aguardando</span>` : ''}
+    ${prior      ? `<span class="stat-pill prior">⭐ ${prior} prioritário${prior>1?'s':''}</span>` : ''}
+    <span class="stat-pill total">${conversas.length} total</span>
+  `;
+}
+
+function renderLista() {
+  const scroll = document.getElementById('conversas-scroll');
+  if (!conversas.length) {
+    scroll.innerHTML = `<div class="lista-vazia"><div class="lista-vazia-icon">💬</div><p>Nenhuma conversa ainda.</p></div>`;
+    return;
+  }
+  scroll.innerHTML = conversas.map(c => {
+    const isPrior   = c.plano_chat === 'prioritario';
+    const naoLida   = c.nao_lidas_suellen > 0;
+    const fotoHtml  = c.foto_url
+      ? `<img src="${esc(c.foto_url)}" alt="${esc(c.nome)}">`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+    return `
+    <div class="conv-item${isPrior?' prior-item':''}" data-id="${c.id}" onclick="abrirConversa(${c.id})">
+      <div class="conv-avatar">
+        <div class="conv-avatar-img">${fotoHtml}</div>
+        ${isPrior ? '<div class="conv-prior-badge">⭐</div>' : ''}
+      </div>
+      <div class="conv-corpo">
+        <div class="conv-nome">${esc(c.nome||'—')}</div>
+        <div class="conv-preview${naoLida?' nao-lida':''}">${esc(c.ultima_preview||'Nenhuma mensagem')}</div>
+      </div>
+      <div class="conv-meta">
+        <span class="conv-tempo">${tempoRel(c.ultima_mensagem_em)}</span>
+        ${naoLida ? `<span class="conv-badge${isPrior?' prior-badge':''}">${c.nao_lidas_suellen}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ════════ ABRIR CONVERSA ════════ */
+async function abrirConversa(id) {
+  convAtual = conversas.find(c => c.id === id) || { id };
+  irPara('chat');
+
+  // Header
+  document.getElementById('chat-header-nome').textContent   = convAtual.nome || '—';
+  const statusEl = document.getElementById('chat-header-status');
+  if (convAtual.plano_chat === 'prioritario') {
+    statusEl.textContent = `⭐ Prioritário · ${convAtual.interacoes_restantes ?? '—'} interações`;
+    statusEl.className   = 'chat-header-status prior';
+  } else {
+    statusEl.textContent = 'Chat Basic';
+    statusEl.className   = 'chat-header-status';
+  }
+  // Foto
+  const av = document.getElementById('chat-header-avatar');
+  av.innerHTML = convAtual.foto_url
+    ? `<img src="${esc(convAtual.foto_url)}" alt="${esc(convAtual.nome)}">`
+    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+
+  // Carrega mensagens
+  document.getElementById('chat-msgs').innerHTML = `<div class="loading-dots"><span></span><span></span><span></span></div>`;
+  try {
+    const r = await fetch(`${API}/api/suellen/chat/conversa/${id}`, { credentials:'include' });
+    const dados = await r.json();
+    convAtual = { ...convAtual, ...dados.conversa };
+    mensagens = dados.mensagens || [];
+    renderMensagens();
+    conectarWs();
+  } catch {
+    document.getElementById('chat-msgs').innerHTML = `<p style="color:var(--txt3);text-align:center;padding:2rem;font-size:0.82rem">Erro ao carregar mensagens.</p>`;
+  }
+}
+
+/* ════════ MENSAGENS ════════ */
+function renderMensagens() {
+  const el = document.getElementById('chat-msgs');
+  el.innerHTML = '';
+  let ultimaData = null;
+  mensagens.forEach(msg => {
+    const dataMsg = new Date(msg.criado_em).toLocaleDateString('pt-BR');
+    if (dataMsg !== ultimaData) {
+      ultimaData = dataMsg;
+      const sep = document.createElement('div');
+      sep.className = 'msg-data-sep msg-wrap';
+      sep.textContent = dataMsg;
+      el.appendChild(sep);
+    }
+    el.appendChild(criarBolha(msg));
+  });
+  scrollChat();
+}
+
+function criarBolha(msg) {
+  const isAluna = msg.remetente === 'aluna';
+  const wrap = document.createElement('div');
+  wrap.className = `msg-wrap ${isAluna ? 'aluna' : 'suellen'}`;
+  wrap.dataset.id = msg.id;
+
+  let innerHtml = '';
+
+  // Reply preview
+  if (msg.reply_to_conteudo) {
+    const autor = msg.reply_to_remetente === 'aluna' ? (convAtual.nome || 'Aluna') : 'Você';
+    innerHtml += `<div class="msg-reply-preview"><span class="reply-autor">${esc(autor)}</span>${esc(msg.reply_to_conteudo).substring(0,80)}</div>`;
+  }
+
+  // Conteúdo
+  if (msg.tipo === 'imagem' && msg.url) {
+    innerHtml += `<div class="msg-img"><img src="${esc(msg.url)}" loading="lazy" onclick="window.open('${esc(msg.url)}','_blank')"></div>`;
+  } else if (msg.tipo === 'audio' && msg.url) {
+    innerHtml += `<audio controls src="${esc(msg.url)}" style="max-width:200px"></audio>`;
+  } else {
+    innerHtml += esc(msg.conteudo || '');
+  }
+
+  const bolha = document.createElement('div');
+  bolha.className = 'msg-bolha';
+  if (isAluna) bolha.dataset.nome = convAtual.nome || 'Aluna';
+  bolha.innerHTML = innerHtml;
+
+  // Context menu ao segurar / right-click
+  const abrirCtx = (e) => {
+    e.preventDefault();
+    ctxMsgAtual = msg;
+    mostrarCtxMenu(e.clientX || e.touches?.[0]?.clientX, e.clientY || e.touches?.[0]?.clientY);
+  };
+  bolha.addEventListener('contextmenu', abrirCtx);
+  let holdTimer;
+  bolha.addEventListener('touchstart',  () => { holdTimer = setTimeout(() => abrirCtx({ preventDefault:()=>{}, clientX:0, clientY:200 }), 500); }, { passive:true });
+  bolha.addEventListener('touchend',    () => clearTimeout(holdTimer));
+  bolha.addEventListener('touchmove',   () => clearTimeout(holdTimer));
+
+  const hora_el = document.createElement('span');
+  hora_el.className = 'msg-hora';
+  hora_el.textContent = hora(msg.criado_em);
+
+  wrap.appendChild(bolha);
+  wrap.appendChild(hora_el);
+  return wrap;
+}
+
+function scrollChat() {
+  const el = document.getElementById('chat-msgs');
+  if (el) setTimeout(() => { el.scrollTop = el.scrollHeight; }, 50);
+}
+
+/* ════════ CONTEXT MENU ════════ */
+function mostrarCtxMenu(x, y) {
+  const menu = document.getElementById('msg-ctx-menu');
+  menu.style.display = 'block';
+  // Posiciona
+  const maxX = window.innerWidth  - menu.offsetWidth  - 8;
+  const maxY = window.innerHeight - menu.offsetHeight - 8;
+  menu.style.left = Math.min(x, maxX) + 'px';
+  menu.style.top  = Math.min(y, maxY) + 'px';
+}
+function fecharCtxMenu() { document.getElementById('msg-ctx-menu').style.display = 'none'; }
+document.addEventListener('click', fecharCtxMenu);
+
+document.getElementById('ctx-responder').addEventListener('click', () => {
+  if (!ctxMsgAtual) return;
+  replyMsg = ctxMsgAtual;
+  const autor = ctxMsgAtual.remetente === 'aluna' ? (convAtual.nome||'Aluna') : 'Você';
+  document.getElementById('reply-autor').textContent = autor;
+  document.getElementById('reply-texto').textContent = ctxMsgAtual.conteudo || (ctxMsgAtual.tipo === 'imagem' ? '📷 Imagem' : '🎤 Áudio');
+  document.getElementById('reply-bar').classList.add('visivel');
+  document.getElementById('chat-input').focus();
+});
+
+document.getElementById('ctx-copiar').addEventListener('click', () => {
+  if (ctxMsgAtual?.conteudo) navigator.clipboard.writeText(ctxMsgAtual.conteudo).then(() => toast('Copiado'));
+});
+
+document.getElementById('reply-fechar').addEventListener('click', () => {
+  replyMsg = null;
+  document.getElementById('reply-bar').classList.remove('visivel');
+});
+
+/* ════════ INPUT E ENVIO ════════ */
+const chatInput = document.getElementById('chat-input');
+const btnEnviar = document.getElementById('btn-enviar');
+const btnAudio  = document.getElementById('btn-audio');
+
+chatInput.addEventListener('input', () => {
+  chatInput.style.height = 'auto';
+  chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+  const tem = chatInput.value.trim().length > 0;
+  btnEnviar.style.display = tem ? 'flex' : 'none';
+  btnAudio.style.display  = tem ? 'none' : 'flex';
+});
+
+chatInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); }
+});
+btnEnviar.addEventListener('click', enviar);
+
+async function enviar() {
+  const texto = chatInput.value.trim();
+  if (!texto || !convAtual) return;
+
+  // Otimista
+  const msgTemp = {
+    id: Date.now(), remetente:'suellen', tipo:'texto', conteudo:texto,
+    criado_em: new Date().toISOString(),
+    reply_to_conteudo: replyMsg?.conteudo || null,
+    reply_to_remetente: replyMsg?.remetente || null,
+  };
+  mensagens.push(msgTemp);
+  document.getElementById('chat-msgs').appendChild(criarBolha(msgTemp));
+  scrollChat();
+
+  chatInput.value = '';
+  chatInput.style.height = 'auto';
+  btnEnviar.style.display = 'none';
+  btnAudio.style.display  = 'flex';
+
+  const replyId = replyMsg?.id || null;
+  replyMsg = null;
+  document.getElementById('reply-bar').classList.remove('visivel');
+
+  try {
+    await fetch(`${API}/api/suellen/chat/mensagem`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ conversa_id: convAtual.id, conteudo: texto, tipo:'texto', reply_to_id: replyId }),
+    });
+  } catch { toast('Erro ao enviar','err'); }
+}
+
+// Anexo imagem
+document.getElementById('btn-anexo').addEventListener('click', () => document.getElementById('file-input').click());
+document.getElementById('file-input').addEventListener('change', async e => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  const msgTemp = { id:Date.now(), remetente:'suellen', tipo:'imagem', url, criado_em:new Date().toISOString() };
+  mensagens.push(msgTemp);
+  document.getElementById('chat-msgs').appendChild(criarBolha(msgTemp));
+  scrollChat();
+  e.target.value = '';
+  toast('Imagem enviada (upload real requer storage)');
+});
+
+// Botão voltar
+document.getElementById('btn-voltar').addEventListener('click', () => {
+  irPara('lista');
+  carregarLista(); // atualiza lista
+});
+
+document.getElementById('btn-atualizar').addEventListener('click', carregarLista);
+
+/* ════════ WEBSOCKET ════════ */
+function conectarWs() {
+  if (ws && ws.readyState <= 1) return;
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  // Suellen autentica com Basic Auth em base64
+  const user = 'admin', pass = prompt('Senha de acesso:') || '';
+  const token = btoa(`${user}:${pass}`);
+  ws = new WebSocket(`${proto}://${location.host}/ws/chat?token=${token}&modo=suellen`);
+  ws.onmessage = (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      if (data.evento === 'nova_mensagem') {
+        // Se a conversa aberta for a mesma, adiciona bolha
+        if (data.conversa_id === convAtual?.id && data.mensagem.remetente === 'aluna') {
+          mensagens.push(data.mensagem);
+          document.getElementById('chat-msgs').appendChild(criarBolha(data.mensagem));
+          scrollChat();
+        }
+        // Atualiza lista de qualquer forma
+        carregarLista();
+      }
+    } catch {}
+  };
+  ws.onclose = () => setTimeout(conectarWs, 4000);
+}
+
+/* ════════ PERFIL DA ALUNA ════════ */
+async function carregarPerfil(conv) {
+  const scroll = document.getElementById('perfil-scroll');
+  scroll.innerHTML = `<div class="loading-dots"><span></span><span></span><span></span></div>`;
+  try {
+    const r = await fetch(`${API}/api/suellen/chat/conversa/${conv.id}`, { credentials:'include' });
+    const dados = await r.json();
+    const c = dados.conversa;
+    const pacotes = dados.pacotes || [];
+    const pacoteAtivo = pacotes.find(p => p.status === 'ativo');
+
+    const isPrior = c.plano_chat === 'prioritario';
+    const pct = isPrior && pacoteAtivo ? Math.round(((30 - (c.interacoes_restantes||0)) / 30) * 100) : 0;
+
+    const fotoHtml = c.foto_url
+      ? `<img src="${esc(c.foto_url)}" alt="${esc(c.nome)}">`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+
+    const expiracaoFmt = pacoteAtivo?.expira_em
+      ? new Date(pacoteAtivo.expira_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+      : '—';
+
+    scroll.innerHTML = `
+      <!-- Hero -->
+      <div class="perfil-hero">
+        <div class="perfil-foto">${fotoHtml}</div>
+        <div class="perfil-nome">${esc(c.nome||'—')}</div>
+        <div class="perfil-tel">${esc(c.telefone_formatado||c.email||'—')}</div>
+        <div class="perfil-tags">
+          <span class="tag-pill tag-plano">${esc(c.plano||'gratuito')}</span>
+          <span class="tag-pill ${isPrior?'tag-prior':'tag-basic'}">${isPrior?'⭐ Prioritário':'Basic'}</span>
+          ${c.bloqueada ? '<span class="tag-pill tag-bloq">🚫 Bloqueada</span>' : ''}
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="perfil-secao">
+        <div class="perfil-secao-titulo">Resumo</div>
+        <div class="perfil-stat-grid">
+          <div class="perfil-stat">
+            <div class="perfil-stat-num">${c.sementes||0}</div>
+            <div class="perfil-stat-label">🌱 Sementes</div>
+          </div>
+          <div class="perfil-stat">
+            <div class="perfil-stat-num">${c.percentual_prosperidade||0}%</div>
+            <div class="perfil-stat-label">📊 Prosperidade</div>
+          </div>
+        </div>
+        ${c.perfil_teste ? `<div style="background:var(--surf);border:1px solid var(--ouro-brd);border-radius:var(--r-md);padding:0.65rem 0.85rem;font-size:0.78rem;color:var(--txt2)">Perfil: <strong style="color:var(--ouro-cl)">${esc(c.perfil_teste)}</strong></div>` : ''}
+      </div>
+
+      <!-- Chat prioritário -->
+      ${isPrior && pacoteAtivo ? `
+      <div class="perfil-secao">
+        <div class="perfil-secao-titulo">Atendimento Prioritário</div>
+        <div class="prior-info-box">
+          <div class="prior-info-titulo">⭐ Pacote ativo</div>
+          <div class="prior-info-row"><span class="prior-info-label">Interações restantes</span><span class="prior-info-val">${c.interacoes_restantes??'—'} / 30</span></div>
+          <div class="prior-info-row"><span class="prior-info-label">Expira em</span><span class="prior-info-val">${expiracaoFmt}</span></div>
+          <div class="prior-barra-wrap">
+            <div class="prior-barra-bg"><div class="prior-barra-fill" style="width:${pct}%"></div></div>
+          </div>
+        </div>
+      </div>` : ''}
+
+      <!-- Produtos -->
+      <div class="perfil-secao">
+        <div class="perfil-secao-titulo">Produtos Ativos</div>
+        <div id="produtos-lista">
+          <div class="loading-dots"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+
+      <!-- Histórico pacotes -->
+      ${pacotes.length ? `
+      <div class="perfil-secao">
+        <div class="perfil-secao-titulo">Histórico Prioritário</div>
+        ${pacotes.map(p => `
+          <div style="font-size:0.72rem;color:var(--txt2);padding:0.4rem 0;border-bottom:1px solid var(--ouro-brd);display:flex;justify-content:space-between">
+            <span>${new Date(p.ativado_em).toLocaleDateString('pt-BR')} · ${p.origem}</span>
+            <span style="color:${p.status==='ativo'?'var(--ouro-cl)':'var(--txt3)'}">${p.status}</span>
+          </div>`).join('')}
+      </div>` : ''}
+
+      <!-- Superadmin -->
+      <div class="perfil-secao" style="padding-bottom:2rem">
+        <div class="perfil-secao-titulo">Ações</div>
+        <div class="acoes-grid">
+          <button class="acao-btn success" onclick="acaoAdmin('cortesia')">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            Dar Cortesia (30 interações · 24h)
+          </button>
+          <button class="acao-btn" onclick="acaoAdmin('ajustar_interacoes')">
+            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Ajustar interações
+          </button>
+          <button class="acao-btn" onclick="acaoAdmin('estender_prioritario')">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Estender prazo (+24h)
+          </button>
+          <button class="acao-btn" onclick="acaoAdmin('rebaixar_basic')">
+            <svg viewBox="0 0 24 24"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>
+            Rebaixar para Basic
+          </button>
+          <button class="acao-btn danger" onclick="acaoAdmin(${c.bloqueada ? "'desbloquear'" : "'bloquear'"})">
+            <svg viewBox="0 0 24 24">${c.bloqueada ? '<path d="M18 11H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>' : '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>'}</svg>
+            ${c.bloqueada ? 'Desbloquear chat' : 'Bloquear chat'}
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Carrega produtos da Kiwify (via backend)
+    carregarProdutosAluna(c.usuario_id);
+
+  } catch(err) {
+    scroll.innerHTML = `<p style="color:var(--txt3);text-align:center;padding:2rem;font-size:0.82rem">Erro ao carregar perfil.</p>`;
+  }
+}
+
+async function carregarProdutosAluna(usuario_id) {
+  const el = document.getElementById('produtos-lista');
+  if (!el) return;
+  // Por enquanto mostra placeholder — integrar com Kiwify quando disponível
+  el.innerHTML = `
+    <div class="produto-item">
+      <span class="produto-icone">👥</span>
+      <span class="produto-nome">Clube Vida Mágica — Comunidade</span>
+    </div>
+    <div style="font-size:0.7rem;color:var(--txt3);padding:0.4rem 0.2rem;font-style:italic">Outros produtos via Kiwify em breve</div>
+  `;
+}
+
+/* ════════ AÇÕES SUPERADMIN ════════ */
+async function acaoAdmin(acao) {
+  if (!convAtual) return;
+  if (acao === 'ajustar_interacoes') {
+    abrirInputModal('Quantas interações?', async (val) => {
+      await executarAcao('ajustar_interacoes', parseInt(val));
+    });
+    return;
+  }
+  if (!confirm(`Confirma: ${acao.replace(/_/g,' ')}?`)) return;
+  await executarAcao(acao);
+}
+
+async function executarAcao(acao, valor) {
+  try {
+    const r = await fetch(`${API}/api/suellen/chat/acao`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ conversa_id: convAtual.id, acao, valor }),
+    });
+    if (r.ok) {
+      toast(`✓ ${acao.replace(/_/g,' ')}`);
+      // Recarrega perfil
+      await carregarPerfil(convAtual);
+    } else {
+      const d = await r.json();
+      toast(d.error || 'Erro','err');
+    }
+  } catch { toast('Erro de conexão','err'); }
+}
+
+/* ════════ INPUT MODAL ════════ */
+let inputModalCallback = null;
+function abrirInputModal(titulo, cb) {
+  document.getElementById('input-modal-titulo').textContent = titulo;
+  document.getElementById('input-modal-valor').value = '';
+  inputModalCallback = cb;
+  document.getElementById('input-modal').classList.add('open');
+  document.getElementById('input-modal-valor').focus();
+}
+function fecharInputModal() { document.getElementById('input-modal').classList.remove('open'); }
+document.getElementById('input-modal-ok').addEventListener('click', () => {
+  const val = document.getElementById('input-modal-valor').value;
+  if (!val) return;
+  fecharInputModal();
+  if (inputModalCallback) inputModalCallback(val);
+});
+
+/* ════════ WEB PUSH (Suellen) ════════ */
+async function registrarPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try {
+    const r = await fetch(`${API}/api/chat/vapid-public-key`);
+    const { key } = await r.json();
+    if (!key) return;
+    const reg = await navigator.serviceWorker.register('/sw-suellen.js');
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: key,
+    });
+    await fetch(`${API}/api/suellen/chat/push-subscribe`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ endpoint:sub.endpoint, keys:{ p256dh: btoa(String.fromCharCode(...new Uint8Array(sub.getKey('p256dh')))), auth: btoa(String.fromCharCode(...new Uint8Array(sub.getKey('auth')))) }, userAgent: navigator.userAgent }),
+    });
+  } catch {}
+}
+
+/* ════════ INIT ════════ */
+carregarLista();
+registrarPush();
+</script>
+</body>
+</html>
