@@ -1,26 +1,34 @@
 /* ============================================================
-   VIDA MÁGICA — routes/chat.js  (v2)
+   VIDA MÁGICA — routes/chat.js  (v3)
    Chat entre aluna e Atendimento (Suellen / Equipe Vida Mágica)
 
-   Mudanças principais (v2):
+   CORREÇÃO v3:
+   - Antes havia UM único `router` com rotas da aluna E do atendimento.
+     Se o server.js montava ele em dois `app.use()`, o Express tentava
+     casar o POST /mensagem do atendimento com a rota POST /mensagem
+     da aluna (que lia req.usuario.sub → undefined → erro 500).
+   - Agora há DOIS routers separados:
+       * routerAluna       → exportado para /api/chat
+       * routerAtendimento → exportado para /api/atendimento/chat
+     Cada router só tem as suas rotas. Sem conflito.
+
+   Comportamento mantido (v2):
    - Coluna `favoritada` em chat_conversas
    - Coluna `identidade` em chat_mensagens ('suellen' | 'equipe')
-   - Nova regra de leitura:
-       * Aluna abrir conversa → marca msgs da Suellen como lidas (igual antes)
-       * Atendimento abrir conversa → NÃO marca como lida
-       * Atendimento responder    → marca todo o bloco pendente como lido
+   - Aluna abrir conversa → marca msgs da Suellen como lidas
+   - Atendimento abrir conversa → NÃO marca como lida
+   - Atendimento responder → marca todo o bloco pendente como lido
    - Evento WS `mensagens_lidas` em tempo real
-   - Plano "free" diferenciado de "basic" via usuarios.plano
-       * usuarios.plano='gratuito' → free  (resposta indeterminada)
-       * usuarios.plano!='gratuito' AND chat_conversas.plano_chat='basic' → basic_vm (até 5 dias)
-       * chat_conversas.plano_chat='prioritario' → prioritario (até 24h)
+   - Cálculo de tier: free / basic_vm / prioritario
    - Endpoint POST /favoritar
    ============================================================ */
 
-const express  = require('express');
-const router   = express.Router();
-const webpush  = require('web-push');
+const express = require('express');
+const webpush = require('web-push');
 const { pool } = require('../db');
+
+const routerAluna       = express.Router();
+const routerAtendimento = express.Router();
 
 /* ── Web Push config ── */
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
@@ -52,7 +60,6 @@ async function initChat(client) {
       UNIQUE(usuario_id)
     )
   `);
-  // Migrations seguras
   await client.query(`ALTER TABLE chat_conversas ADD COLUMN IF NOT EXISTS favoritada BOOLEAN DEFAULT FALSE`);
 
   await client.query(`
@@ -100,7 +107,7 @@ async function initChat(client) {
     )
   `);
 
-  console.log('✅ Chat: tabelas OK (v2)');
+  console.log('✅ Chat: tabelas OK (v3 — routers separados)');
 }
 
 /* ── Helpers ── */
@@ -132,8 +139,6 @@ async function verificarPrioritario(conversa) {
   return conversa;
 }
 
-// Determina o "tier" do chat com base no plano da usuária + plano_chat
-// Retorna: 'free' | 'basic_vm' | 'prioritario'
 function calcularTier(plano_usuario, plano_chat) {
   if (plano_chat === 'prioritario') return 'prioritario';
   if (!plano_usuario || plano_usuario === 'gratuito') return 'free';
@@ -177,7 +182,6 @@ async function notificarSuellen(payload) {
   }
 }
 
-// WebSocket clients
 const wsClients = new Map();
 function registrarWs(chave, ws) { wsClients.set(chave, ws); }
 function removerWs(chave)       { wsClients.delete(chave); }
@@ -190,17 +194,26 @@ function emitirParaSuellen(evento, dados) {
   if (ws && ws.readyState === 1) ws.send(JSON.stringify({ evento, ...dados }));
 }
 
+/* Helper que extrai o ID do "operador" do atendimento de qualquer
+   formato de payload que o middleware atendimentoAuth possa colocar. */
+function getOperadorId(req) {
+  return (req.atendimento?.sub)
+      || (req.atendimento?.id)
+      || (req.suellen?.sub)
+      || (req.user?.sub)
+      || (req.user?.id)
+      || 'atendimento';
+}
+
 /* ════════════════════════════════════════════════════════════
-   ROTAS — ALUNA (autenticadas via JWT no server.js)
+   ROTAS — ALUNA  (montar em /api/chat com middleware da aluna)
    ════════════════════════════════════════════════════════════ */
 
-// GET /api/chat/conversa
-router.get('/conversa', async (req, res) => {
+routerAluna.get('/conversa', async (req, res) => {
   try {
     let conv = await getOuCriarConversa(req.usuario.sub);
     conv = await verificarPrioritario(conv);
 
-    // Plano da usuária para determinar tier
     const u = await pool.query(`SELECT plano FROM usuarios WHERE id=$1`, [req.usuario.sub]);
     const planoUsuario = u.rows[0]?.plano || 'gratuito';
     const tier = calcularTier(planoUsuario, conv.plano_chat);
@@ -215,14 +228,12 @@ router.get('/conversa', async (req, res) => {
       WHERE m.conversa_id=$1
       ORDER BY m.criado_em ASC LIMIT 50`, [conv.id]);
 
-    // Aluna abrir conversa MARCA mensagens da Suellen como lidas (esse comportamento se mantém)
     const lidas = await pool.query(`
       UPDATE chat_mensagens SET lida=TRUE
       WHERE conversa_id=$1 AND remetente='suellen' AND lida=FALSE
       RETURNING id`, [conv.id]);
     await pool.query(`UPDATE chat_conversas SET nao_lidas_aluna=0 WHERE id=$1`, [conv.id]);
 
-    // Emite para o atendimento que essas mensagens foram lidas (✓✓ ouro em tempo real)
     if (lidas.rows.length > 0) {
       emitirParaSuellen('mensagens_lidas', {
         conversa_id: conv.id,
@@ -236,13 +247,12 @@ router.get('/conversa', async (req, res) => {
       mensagens: msgs.rows,
     });
   } catch (err) {
-    console.error('[Chat] GET conversa:', err.message);
+    console.error('[ChatAluna] GET conversa:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/chat/mensagem — aluna envia
-router.post('/mensagem', async (req, res) => {
+routerAluna.post('/mensagem', async (req, res) => {
   const { conteudo, tipo = 'texto', url, reply_to_id } = req.body;
   if (!conteudo && !url) return res.status(400).json({ error: 'conteudo ou url obrigatório' });
 
@@ -252,7 +262,6 @@ router.post('/mensagem', async (req, res) => {
 
     if (conv.bloqueada) return res.status(403).json({ error: 'Chat bloqueado' });
 
-    // Desconta interação se prioritário
     if (conv.plano_chat === 'prioritario' && conv.interacoes_restantes !== null) {
       const novas = conv.interacoes_restantes - 1;
       await pool.query(`
@@ -311,13 +320,12 @@ router.post('/mensagem', async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('[Chat] POST mensagem:', err.message);
+    console.error('[ChatAluna] POST mensagem:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/chat/digitando — sinaliza que aluna está digitando
-router.post('/digitando', async (req, res) => {
+routerAluna.post('/digitando', async (req, res) => {
   emitirParaSuellen('digitando', {
     usuario_id: req.usuario.sub,
     nome: req.usuario.nome,
@@ -325,7 +333,7 @@ router.post('/digitando', async (req, res) => {
   res.json({ ok: true });
 });
 
-router.post('/ativar-prioritario', async (req, res) => {
+routerAluna.post('/ativar-prioritario', async (req, res) => {
   const { origem = 'pagamento' } = req.body;
   try {
     let conv = await getOuCriarConversa(req.usuario.sub);
@@ -348,7 +356,7 @@ router.post('/ativar-prioritario', async (req, res) => {
   }
 });
 
-router.get('/status', async (req, res) => {
+routerAluna.get('/status', async (req, res) => {
   try {
     let conv = await getOuCriarConversa(req.usuario.sub);
     conv = await verificarPrioritario(conv);
@@ -368,13 +376,15 @@ router.get('/status', async (req, res) => {
   }
 });
 
+routerAluna.get('/vapid-public-key', (req, res) => {
+  res.json({ key: process.env.VAPID_PUBLIC_KEY || null });
+});
+
 /* ════════════════════════════════════════════════════════════
-   ROTAS — ATENDIMENTO (Suellen / Equipe)
-   Protegidas por JWT role:atendimento no server.js
+   ROTAS — ATENDIMENTO  (montar em /api/atendimento/chat)
    ════════════════════════════════════════════════════════════ */
 
-// GET /api/atendimento/chat/conversas — lista todas, com tier
-router.get('/conversas', async (req, res) => {
+routerAtendimento.get('/conversas', async (req, res) => {
   try {
     const r = await pool.query(`
       SELECT
@@ -396,14 +406,12 @@ router.get('/conversas', async (req, res) => {
       tempo: tempoRelativo(row.ultima_mensagem_em),
     })));
   } catch (err) {
+    console.error('[ChatAtend] GET conversas:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET /api/atendimento/chat/conversa/:id
-// IMPORTANTE: NÃO marca mensagens como lidas (regra nova).
-// Lidas só são marcadas quando a Suellen ENVIA uma resposta.
-router.get('/conversa/:id', async (req, res) => {
+routerAtendimento.get('/conversa/:id', async (req, res) => {
   try {
     const conv = await pool.query(`
       SELECT c.*, u.nome, u.foto_url, u.telefone_formatado, u.email,
@@ -437,25 +445,23 @@ router.get('/conversa/:id', async (req, res) => {
       pacotes: pacotes.rows,
     });
   } catch (err) {
+    console.error('[ChatAtend] GET conversa/:id:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/atendimento/chat/mensagem — Atendimento responde
-// Aceita identidade: 'suellen' (default) | 'equipe'
-// Ao responder, MARCA todas as mensagens pendentes da aluna como lidas
-// e EMITE evento WS para a aluna ver os ✓✓ ouro
-router.post('/mensagem', async (req, res) => {
+routerAtendimento.post('/mensagem', async (req, res) => {
   const { conversa_id, conteudo, tipo = 'texto', url, reply_to_id, identidade } = req.body;
-  if (!conversa_id || (!conteudo && !url)) return res.status(400).json({ error: 'dados inválidos' });
-
+  if (!conversa_id || (!conteudo && !url)) {
+    return res.status(400).json({ error: 'dados inválidos' });
+  }
   const ident = (identidade === 'equipe') ? 'equipe' : 'suellen';
 
   try {
     const conv = await pool.query(`SELECT * FROM chat_conversas WHERE id=$1`, [conversa_id]);
     if (!conv.rows.length) return res.status(404).json({ error: 'Conversa não encontrada' });
 
-    // 1. Marca mensagens pendentes da aluna como lidas (regra nova)
+    // 1. Marca mensagens pendentes da aluna como lidas
     const lidas = await pool.query(`
       UPDATE chat_mensagens SET lida=TRUE
       WHERE conversa_id=$1 AND remetente='aluna' AND lida=FALSE
@@ -476,27 +482,25 @@ router.post('/mensagem', async (req, res) => {
       nao_lidas_aluna=nao_lidas_aluna+1, nao_lidas_suellen=0, atualizado_em=NOW() WHERE id=$2`,
       [preview, conversa_id]);
 
-    // 4. Emite eventos
-    // Para a aluna: nova mensagem chegando + (se houver) confirmação de leitura
+    // 4. Emite eventos WS
     emitirParaAluna(conv.rows[0].usuario_id, 'nova_mensagem', { mensagem: msg });
     if (lidas.rows.length > 0) {
       emitirParaAluna(conv.rows[0].usuario_id, 'mensagens_lidas', {
         conversa_id, ids: lidas.rows.map(x => x.id), por: 'suellen',
       });
     }
-    // Para a própria Suellen (se tiver outra aba aberta): atualizar UI
     emitirParaSuellen('mensagens_lidas', {
       conversa_id, ids: lidas.rows.map(x => x.id), por: 'suellen',
     });
 
     res.json({ mensagem: msg, marcadas_lidas: lidas.rows.length });
   } catch (err) {
+    console.error('[ChatAtend] POST mensagem:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/atendimento/chat/favoritar — favorita/desfavorita conversa
-router.post('/favoritar', async (req, res) => {
+routerAtendimento.post('/favoritar', async (req, res) => {
   const { conversa_id, favoritada } = req.body;
   if (!conversa_id) return res.status(400).json({ error: 'conversa_id obrigatório' });
   try {
@@ -504,12 +508,12 @@ router.post('/favoritar', async (req, res) => {
       [!!favoritada, conversa_id]);
     res.json({ success: true, favoritada: !!favoritada });
   } catch (err) {
+    console.error('[ChatAtend] POST favoritar:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/atendimento/chat/digitando — Suellen está digitando
-router.post('/digitando-resposta', async (req, res) => {
+routerAtendimento.post('/digitando-resposta', async (req, res) => {
   const { conversa_id } = req.body;
   if (!conversa_id) return res.status(400).json({ error: 'conversa_id obrigatório' });
   try {
@@ -523,8 +527,7 @@ router.post('/digitando-resposta', async (req, res) => {
   }
 });
 
-// ── SUPERADMIN ──
-router.post('/acao', async (req, res) => {
+routerAtendimento.post('/acao', async (req, res) => {
   const { conversa_id, acao, valor } = req.body;
   try {
     switch (acao) {
@@ -567,11 +570,12 @@ router.post('/acao', async (req, res) => {
     }
     res.json({ success: true, acao });
   } catch (err) {
+    console.error('[ChatAtend] POST acao:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-router.get('/stats', async (req, res) => {
+routerAtendimento.get('/stats', async (req, res) => {
   try {
     const r = await pool.query(`
       SELECT
@@ -595,7 +599,7 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-router.post('/push-subscribe', async (req, res) => {
+routerAtendimento.post('/push-subscribe', async (req, res) => {
   const { endpoint, keys, userAgent } = req.body;
   if (!endpoint || !keys) return res.status(400).json({ error: 'dados inválidos' });
   try {
@@ -610,8 +614,21 @@ router.post('/push-subscribe', async (req, res) => {
   }
 });
 
-router.get('/vapid-public-key', (req, res) => {
-  res.json({ key: process.env.VAPID_PUBLIC_KEY || null });
-});
+/* ════════════════════════════════════════════════════════════
+   EXPORTS
+   ════════════════════════════════════════════════════════════ */
 
-module.exports = { router, initChat, registrarWs, removerWs, emitirParaAluna, emitirParaSuellen };
+// Compat: `router` antigo continua exportado, apontando agora para
+// o router da aluna (mantém retrocompatibilidade caso server.js use)
+const router = routerAluna;
+
+module.exports = {
+  router,                // legado → routerAluna
+  routerAluna,
+  routerAtendimento,
+  initChat,
+  registrarWs,
+  removerWs,
+  emitirParaAluna,
+  emitirParaSuellen,
+};
