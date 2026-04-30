@@ -14,6 +14,7 @@ const configRoutes      = require('./routes/config');
 const authRoutes        = require('./routes/auth');
 const adminRoutes       = require('./routes/admin');
 const { router: feedRoutes }    = require('./routes/feed');
+const uploadRoutes      = require('./routes/upload');
 const { router: gatewayRouter, iniciarGateway } = require('./routes/gateway');
 const {
   router: chatRouter, initChat,
@@ -102,6 +103,18 @@ app.use('/api/chat', (req, res, next) => {
   if (req.path === '/vapid-public-key') return next();
   jwtAuth(req, res, next);
 }, chatRouter);
+
+// ── UPLOAD (JWT aluna ou suellen) ──
+app.use('/api/upload', (req, res, next) => {
+  const header = req.headers.authorization || '';
+  const token  = header.replace('Bearer ', '').trim();
+  if (!token) return res.status(401).json({ error: 'Token obrigatório' });
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.uploadUser = payload;
+    next();
+  } catch { res.status(401).json({ error: 'Token inválido' }); }
+}, uploadRoutes);
 
 // ── API AUTH ──
 app.use('/api/auth', authRoutes);
