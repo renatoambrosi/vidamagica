@@ -27,7 +27,19 @@ const server = http.createServer(app);
 const PORT   = process.env.PORT || 3000;
 
 // ── SEGURANÇA ──
-app.use(helmet({ contentSecurityPolicy: false }));
+// IMPORTANTE: Permissions-Policy padrão do helmet bloqueia microfone.
+// Sobrescrevemos para liberar microphone/camera no mesmo origin.
+app.use(helmet({
+  contentSecurityPolicy: false,
+  // Permissions-Policy customizada — permite microfone e câmera em self.
+  // Sem isso, getUserMedia() falha mesmo com permissão concedida.
+  permissionsPolicy: false,
+}));
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'microphone=(self), camera=(self), autoplay=(self)');
+  next();
+});
+
 app.use(cors({
   origin: [
     'https://vidamagica-production.up.railway.app',
@@ -60,15 +72,18 @@ const { autenticar: basicAuth } = require('./routes/precos');
 const jwt = require('jsonwebtoken');
 const { autenticar: jwtAuth, JWT_SECRET } = require('./middleware/autenticar');
 
-// Middleware JWT para Suellen — verifica role:suellen
-function suellenAuth(req, res, next) {
+// Middleware JWT para Atendimento — verifica role:atendimento
+// (mantém retrocompatibilidade com tokens antigos role:suellen)
+function atendimentoAuth(req, res, next) {
   const header = req.headers.authorization || '';
   const token  = header.replace('Bearer ', '').trim();
   if (!token) return res.status(401).json({ error: 'Token obrigatório' });
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    if (payload.role !== 'suellen') return res.status(403).json({ error: 'Acesso negado' });
-    req.suellen = true;
+    if (payload.role !== 'atendimento' && payload.role !== 'suellen') {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+    req.atendimento = true;
     next();
   } catch {
     res.status(401).json({ error: 'Token inválido ou expirado' });
@@ -76,20 +91,32 @@ function suellenAuth(req, res, next) {
 }
 
 // ── PÁGINAS ──
-app.get('/admin',    basicAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
-app.get('/suellen',             (req, res) => res.sendFile(path.join(__dirname, 'public', 'suellen.html')));
-app.get('/auth',                (req, res) => res.sendFile(path.join(__dirname, 'public', 'auth.html')));
-app.get('/cadastro',            (req, res) => res.sendFile(path.join(__dirname, 'public', 'cadastro.html')));
-app.get('/app',                 (req, res) => res.sendFile(path.join(__dirname, 'public', 'app.html')));
+app.get('/admin',        basicAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/atendimento',             (req, res) => res.sendFile(path.join(__dirname, 'public', 'atendimento.html')));
+// Retrocompatibilidade: /suellen redireciona para /atendimento
+app.get('/suellen',                 (req, res) => res.redirect(301, '/atendimento'));
+app.get('/auth',                    (req, res) => res.sendFile(path.join(__dirname, 'public', 'auth.html')));
+app.get('/cadastro',                (req, res) => res.sendFile(path.join(__dirname, 'public', 'cadastro.html')));
+app.get('/app',                     (req, res) => res.sendFile(path.join(__dirname, 'public', 'app.html')));
 
-// ── LOGIN SUELLEN ──
+// ── LOGIN ATENDIMENTO ──
+app.post('/api/atendimento/login', (req, res) => {
+  const { senha } = req.body;
+  const senhaCorreta = process.env.ADMIN_PASS || 'admin';
+  if (!senha || senha !== senhaCorreta) {
+    return res.status(401).json({ error: 'Senha incorreta' });
+  }
+  const token = jwt.sign({ role: 'atendimento' }, JWT_SECRET, { expiresIn: '30d' });
+  res.json({ token });
+});
+// Retrocompatibilidade temporária
 app.post('/api/suellen/login', (req, res) => {
   const { senha } = req.body;
   const senhaCorreta = process.env.ADMIN_PASS || 'admin';
   if (!senha || senha !== senhaCorreta) {
     return res.status(401).json({ error: 'Senha incorreta' });
   }
-  const token = jwt.sign({ role: 'suellen' }, JWT_SECRET, { expiresIn: '30d' });
+  const token = jwt.sign({ role: 'atendimento' }, JWT_SECRET, { expiresIn: '30d' });
   res.json({ token });
 });
 
@@ -104,7 +131,7 @@ app.use('/api/chat', (req, res, next) => {
   jwtAuth(req, res, next);
 }, chatRouter);
 
-// ── UPLOAD (JWT aluna ou suellen) ──
+// ── UPLOAD (JWT aluna ou atendimento) ──
 app.use('/api/upload', (req, res, next) => {
   const header = req.headers.authorization || '';
   const token  = header.replace('Bearer ', '').trim();
@@ -123,8 +150,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', basicAuth, adminRoutes);
 app.use('/api/admin', basicAuth, feedRoutes);
 
-// ── API SUELLEN — protegida por JWT role:suellen ──
-app.use('/api/suellen/chat', suellenAuth, chatRouter);
+// ── API ATENDIMENTO — protegida por JWT role:atendimento ──
+app.use('/api/atendimento/chat', atendimentoAuth, chatRouter);
+// Retrocompatibilidade: rotas /api/suellen/* continuam funcionando
+app.use('/api/suellen/chat', atendimentoAuth, chatRouter);
 
 // ── GATEWAY ──
 app.use('/', gatewayRouter);
@@ -159,8 +188,10 @@ wss.on('connection', async (ws, req) => {
   let identidade = null;
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    if (modo === 'suellen') {
-      if (payload.role !== 'suellen') throw new Error('auth');
+    // Aceita modo=atendimento (novo) ou modo=suellen (legado)
+    if (modo === 'atendimento' || modo === 'suellen') {
+      if (payload.role !== 'atendimento' && payload.role !== 'suellen') throw new Error('auth');
+      // Identidade interna unificada para o sistema de chat
       identidade = 'suellen';
     } else {
       identidade = `aluna:${payload.sub}`;
@@ -196,12 +227,12 @@ server.listen(PORT, async () => {
 🏥  GET  /health
 📡  GET  /api/feed
 🔐  *    /api/auth/*
-💬  *    /api/chat/*   (JWT aluna)
-🌸  *    /api/suellen/* (JWT suellen)
-🛡️   *    /api/admin/*  (Basic Auth)
+💬  *    /api/chat/*          (JWT aluna)
+✦   *    /api/atendimento/*   (JWT atendimento)
+🛡️   *    /api/admin/*         (Basic Auth)
 🌐  GET  /
 🖥️   GET  /admin
-🌸  GET  /suellen
+✦   GET  /atendimento
 🌳  GET  /app
 🔌  WS   /ws/chat
   `);
