@@ -1,25 +1,32 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const path = require('path');
+const express    = require('express');
+const cors       = require('cors');
+const helmet     = require('helmet');
+const path       = require('path');
+const http       = require('http');
+const { WebSocketServer } = require('ws');
 require('dotenv').config();
 
-const { initDb } = require('./db');
+const { initDb, buscarUsuarioPorId } = require('./db');
 const precosRoutes      = require('./routes/precos');
 const depoimentosRoutes = require('./routes/depoimentos');
 const seedRoutes        = require('./routes/seed');
 const configRoutes      = require('./routes/config');
 const authRoutes        = require('./routes/auth');
 const adminRoutes       = require('./routes/admin');
-const { router: feedRoutes }    = require('./routes/feed');
+const { router: feedRoutes, initFeed }       = require('./routes/feed');
 const { router: gatewayRouter, iniciarGateway } = require('./routes/gateway');
+const {
+  router: chatRouter, initChat,
+  registrarWs, removerWs,
+  emitirParaSuellen,
+} = require('./routes/chat');
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const app    = express();
+const server = http.createServer(app);
+const PORT   = process.env.PORT || 3000;
 
 // ── SEGURANÇA ──
 app.use(helmet({ contentSecurityPolicy: false }));
-
 app.use(cors({
   origin: [
     'https://vidamagica-production.up.railway.app',
@@ -33,8 +40,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // ── LOG ──
@@ -43,14 +49,29 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── ARQUIVOS ESTÁTICOS ──
+// ── ESTÁTICOS ──
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── BASIC AUTH (reutiliza o do precos.js) ──
+// ── BASIC AUTH ──
 const { autenticar: basicAuth } = require('./routes/precos');
+
+// ── JWT MIDDLEWARE para chat da aluna ──
+const jwt = require('jsonwebtoken');
+function jwtAuth(req, res, next) {
+  const header = req.headers.authorization || '';
+  const token  = header.replace('Bearer ', '').trim();
+  if (!token) return res.status(401).json({ error: 'Token obrigatório' });
+  try {
+    req.usuario = jwt.verify(token, process.env.JWT_SECRET);
+    next();
+  } catch {
+    res.status(401).json({ error: 'Token inválido' });
+  }
+}
 
 // ── PÁGINAS ──
 app.get('/admin',    basicAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/suellen',  basicAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'suellen.html')));
 app.get('/auth',               (req, res) => res.sendFile(path.join(__dirname, 'public', 'auth.html')));
 app.get('/cadastro',           (req, res) => res.sendFile(path.join(__dirname, 'public', 'cadastro.html')));
 app.get('/app',                (req, res) => res.sendFile(path.join(__dirname, 'public', 'app.html')));
@@ -60,16 +81,24 @@ app.use('/api', precosRoutes);
 app.use('/api', depoimentosRoutes);
 app.use('/api', configRoutes);
 app.use('/api', seedRoutes);
-app.use('/api', feedRoutes);           // GET /api/feed  (público, sem auth)
+app.use('/api', feedRoutes);
+app.use('/api/chat', (req, res, next) => {
+  // Rotas públicas do chat (vapid key)
+  if (req.path === '/vapid-public-key') return next();
+  jwtAuth(req, res, next);
+}, chatRouter);
 
 // ── API AUTH ──
 app.use('/api/auth', authRoutes);
 
-// ── API ADMIN (Basic Auth) ──
+// ── API ADMIN ──
 app.use('/api/admin', basicAuth, adminRoutes);
-app.use('/api/admin', basicAuth, feedRoutes);  // /api/admin/feed  (CRUD completo)
+app.use('/api/admin', basicAuth, feedRoutes);
 
-// ── GATEWAY (monitor + fila interna) ──
+// ── API SUELLEN (chat superadmin) ──
+app.use('/api/suellen/chat', basicAuth, chatRouter);
+
+// ── GATEWAY ──
 app.use('/', gatewayRouter);
 
 // ── HEALTH ──
@@ -79,9 +108,7 @@ app.get('/health', (req, res) => {
 
 // ── SPA FALLBACK ──
 app.get('*', (req, res) => {
-  if (req.path.startsWith('/api')) {
-    return res.status(404).json({ error: 'Rota não encontrada' });
-  }
+  if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Rota não encontrada' });
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
@@ -91,27 +118,82 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Erro interno' });
 });
 
+// ════════════════════════════════════════════════
+// WEBSOCKET — chat em tempo real
+// ════════════════════════════════════════════════
+const wss = new WebSocketServer({ server, path: '/ws/chat' });
+
+wss.on('connection', async (ws, req) => {
+  const url    = new URL(req.url, `http://localhost`);
+  const token  = url.searchParams.get('token');
+  const modo   = url.searchParams.get('modo'); // 'aluna' | 'suellen'
+
+  // Autentica
+  let identidade = null;
+  try {
+    if (modo === 'suellen') {
+      // Suellen autentica via Basic Auth encoded no token param
+      const decoded = Buffer.from(token, 'base64').toString();
+      const [u, p]  = decoded.split(':');
+      if (u !== process.env.ADMIN_USER || p !== process.env.ADMIN_PASS) throw new Error('auth');
+      identidade = 'suellen';
+    } else {
+      // Aluna autentica via JWT
+      const payload = require('jsonwebtoken').verify(token, process.env.JWT_SECRET);
+      identidade = `aluna:${payload.id}`;
+    }
+  } catch {
+    ws.close(1008, 'Não autorizado');
+    return;
+  }
+
+  registrarWs(identidade, ws);
+  console.log(`[WS Chat] conectado: ${identidade}`);
+
+  ws.on('close', () => {
+    removerWs(identidade);
+    console.log(`[WS Chat] desconectado: ${identidade}`);
+  });
+
+  ws.on('error', (err) => {
+    console.error(`[WS Chat] erro ${identidade}:`, err.message);
+  });
+
+  // Ping para manter conexão viva no Railway
+  ws.isAlive = true;
+  ws.on('pong', () => { ws.isAlive = true; });
+});
+
+// Heartbeat a cada 30s para evitar timeout
+const heartbeat = setInterval(() => {
+  wss.clients.forEach(ws => {
+    if (!ws.isAlive) { ws.terminate(); return; }
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 30000);
+
+wss.on('close', () => clearInterval(heartbeat));
+
 // ── START ──
-app.listen(PORT, async () => {
+server.listen(PORT, async () => {
   console.log(`
 🚀 Vida Mágica API — porta ${PORT}
 🏥  GET  /health
-💰  GET  /api/precos
-💬  GET  /api/depoimentos
-⚙️   GET  /api/config
 📡  GET  /api/feed
-🔐  * /api/auth/*
-🛡️   * /api/admin/* (Basic Auth)
+🔐  *    /api/auth/*
+💬  *    /api/chat/*   (JWT)
+🌸  *    /api/suellen/chat/* (Basic Auth)
+🛡️   *    /api/admin/*  (Basic Auth)
 🌐  GET  /
-🖥️   GET  /admin         (Basic Auth)
-🔑  GET  /auth
-📝  GET  /cadastro
+🖥️   GET  /admin
+🌸  GET  /suellen
 🌳  GET  /app
-📡  * /monitor/* (Basic Auth)
+🔌  WS   /ws/chat
   `);
   await initDb();
   iniciarGateway();
 });
 
-process.on('SIGTERM', () => process.exit(0));
-process.on('SIGINT',  () => process.exit(0));
+process.on('SIGTERM', () => { server.close(); process.exit(0); });
+process.on('SIGINT',  () => { server.close(); process.exit(0); });
