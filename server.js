@@ -130,7 +130,7 @@ wss.on('connection', async (ws, req) => {
       // Aluna autentica via JWT — usa o mesmo secret do middleware
       const { JWT_SECRET } = require('./middleware/autenticar');
       const payload = require('jsonwebtoken').verify(token, JWT_SECRET);
-      identidade = `aluna:${payload.id}`;
+      identidade = `aluna:${payload.sub}`;
     }
   } catch {
     ws.close(1008, 'Não autorizado');
