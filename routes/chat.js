@@ -1,10 +1,20 @@
 /* ============================================================
-   VIDA MÁGICA — routes/chat.js
-   Chat entre aluna e Suellen
-   - Basic: fila normal, mensagens ilimitadas
-   - Prioritário: R$9,90 → 30 interações OU 24h
-   - WebSocket tempo real
-   - Web Push para notificar a Suellen
+   VIDA MÁGICA — routes/chat.js  (v2)
+   Chat entre aluna e Atendimento (Suellen / Equipe Vida Mágica)
+
+   Mudanças principais (v2):
+   - Coluna `favoritada` em chat_conversas
+   - Coluna `identidade` em chat_mensagens ('suellen' | 'equipe')
+   - Nova regra de leitura:
+       * Aluna abrir conversa → marca msgs da Suellen como lidas (igual antes)
+       * Atendimento abrir conversa → NÃO marca como lida
+       * Atendimento responder    → marca todo o bloco pendente como lido
+   - Evento WS `mensagens_lidas` em tempo real
+   - Plano "free" diferenciado de "basic" via usuarios.plano
+       * usuarios.plano='gratuito' → free  (resposta indeterminada)
+       * usuarios.plano!='gratuito' AND chat_conversas.plano_chat='basic' → basic_vm (até 5 dias)
+       * chat_conversas.plano_chat='prioritario' → prioritario (até 24h)
+   - Endpoint POST /favoritar
    ============================================================ */
 
 const express  = require('express');
@@ -12,7 +22,7 @@ const router   = express.Router();
 const webpush  = require('web-push');
 const { pool } = require('../db');
 
-/* ── Web Push config (variáveis de ambiente) ── */
+/* ── Web Push config ── */
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
     `mailto:${process.env.VAPID_EMAIL || 'contato@vidamagica.com.br'}`,
@@ -23,7 +33,6 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
 
 /* ── Init tabelas ── */
 async function initChat(client) {
-  // Conversas — uma por aluna
   await client.query(`
     CREATE TABLE IF NOT EXISTS chat_conversas (
       id                    SERIAL PRIMARY KEY,
@@ -33,6 +42,7 @@ async function initChat(client) {
       prioritario_expira_em TIMESTAMPTZ DEFAULT NULL,
       prioritario_ativado_em TIMESTAMPTZ DEFAULT NULL,
       bloqueada             BOOLEAN DEFAULT FALSE,
+      favoritada            BOOLEAN DEFAULT FALSE,
       ultima_mensagem_em    TIMESTAMPTZ DEFAULT NOW(),
       ultima_preview        TEXT DEFAULT NULL,
       nao_lidas_suellen     INTEGER DEFAULT 0,
@@ -42,8 +52,9 @@ async function initChat(client) {
       UNIQUE(usuario_id)
     )
   `);
+  // Migrations seguras
+  await client.query(`ALTER TABLE chat_conversas ADD COLUMN IF NOT EXISTS favoritada BOOLEAN DEFAULT FALSE`);
 
-  // Mensagens
   await client.query(`
     CREATE TABLE IF NOT EXISTS chat_mensagens (
       id           SERIAL PRIMARY KEY,
@@ -54,14 +65,14 @@ async function initChat(client) {
       url          TEXT,
       lida         BOOLEAN DEFAULT FALSE,
       reply_to_id  INTEGER REFERENCES chat_mensagens(id) ON DELETE SET NULL,
+      identidade   VARCHAR(10) DEFAULT 'suellen',
       criado_em    TIMESTAMPTZ DEFAULT NOW()
     )
   `);
-  // Garante coluna em bancos já existentes
   await client.query(`ALTER TABLE chat_mensagens ADD COLUMN IF NOT EXISTS reply_to_id INTEGER REFERENCES chat_mensagens(id) ON DELETE SET NULL`);
+  await client.query(`ALTER TABLE chat_mensagens ADD COLUMN IF NOT EXISTS identidade VARCHAR(10) DEFAULT 'suellen'`);
   await client.query(`CREATE INDEX IF NOT EXISTS idx_chat_msgs_conversa ON chat_mensagens(conversa_id, criado_em DESC)`);
 
-  // Pacotes prioritários comprados
   await client.query(`
     CREATE TABLE IF NOT EXISTS chat_pacotes (
       id           SERIAL PRIMARY KEY,
@@ -78,7 +89,6 @@ async function initChat(client) {
     )
   `);
 
-  // Push subscriptions da Suellen
   await client.query(`
     CREATE TABLE IF NOT EXISTS chat_push_subscriptions (
       id           SERIAL PRIMARY KEY,
@@ -90,12 +100,11 @@ async function initChat(client) {
     )
   `);
 
-  console.log('✅ Chat: tabelas OK');
+  console.log('✅ Chat: tabelas OK (v2)');
 }
 
 /* ── Helpers ── */
 
-// Retorna ou cria conversa da aluna
 async function getOuCriarConversa(usuario_id) {
   let r = await pool.query(`SELECT * FROM chat_conversas WHERE usuario_id=$1`, [usuario_id]);
   if (r.rows.length) return r.rows[0];
@@ -103,7 +112,6 @@ async function getOuCriarConversa(usuario_id) {
   return r.rows[0];
 }
 
-// Verifica se prioritário ainda é válido e atualiza se não for
 async function verificarPrioritario(conversa) {
   if (conversa.plano_chat !== 'prioritario') return conversa;
   const agora = new Date();
@@ -124,7 +132,14 @@ async function verificarPrioritario(conversa) {
   return conversa;
 }
 
-// Tempo relativo — "agora", "5min", "2h", "1 dia", "3 dias", "1 sem", "2 sem", "1 mês"...
+// Determina o "tier" do chat com base no plano da usuária + plano_chat
+// Retorna: 'free' | 'basic_vm' | 'prioritario'
+function calcularTier(plano_usuario, plano_chat) {
+  if (plano_chat === 'prioritario') return 'prioritario';
+  if (!plano_usuario || plano_usuario === 'gratuito') return 'free';
+  return 'basic_vm';
+}
+
 function tempoRelativo(data) {
   const diff = Date.now() - new Date(data).getTime();
   const min  = Math.floor(diff / 60000);
@@ -142,7 +157,6 @@ function tempoRelativo(data) {
   return `${anos} ano${anos>1?'s':''}`;
 }
 
-// Manda Web Push para todas as subscriptions ativas da Suellen
 async function notificarSuellen(payload) {
   try {
     const r = await pool.query(`SELECT * FROM chat_push_subscriptions WHERE ativo=TRUE`);
@@ -153,7 +167,6 @@ async function notificarSuellen(payload) {
           JSON.stringify(payload)
         );
       } catch (err) {
-        // Se subscription inválida, desativa
         if (err.statusCode === 410 || err.statusCode === 404) {
           await pool.query(`UPDATE chat_push_subscriptions SET ativo=FALSE WHERE id=$1`, [sub.id]);
         }
@@ -164,10 +177,8 @@ async function notificarSuellen(payload) {
   }
 }
 
-// WebSocket clients da Suellen e das alunas
-// Gerenciado pelo server.js via chatWs
-const wsClients = new Map(); // chave: 'suellen' | `aluna:${usuario_id}`
-
+// WebSocket clients
+const wsClients = new Map();
 function registrarWs(chave, ws) { wsClients.set(chave, ws); }
 function removerWs(chave)       { wsClients.delete(chave); }
 function emitirParaAluna(usuario_id, evento, dados) {
@@ -183,33 +194,45 @@ function emitirParaSuellen(evento, dados) {
    ROTAS — ALUNA (autenticadas via JWT no server.js)
    ════════════════════════════════════════════════════════════ */
 
-// GET /api/chat/conversa — retorna (ou cria) a conversa da aluna logada
+// GET /api/chat/conversa
 router.get('/conversa', async (req, res) => {
   try {
     let conv = await getOuCriarConversa(req.usuario.sub);
     conv = await verificarPrioritario(conv);
 
-    // Busca últimas 50 mensagens
+    // Plano da usuária para determinar tier
+    const u = await pool.query(`SELECT plano FROM usuarios WHERE id=$1`, [req.usuario.sub]);
+    const planoUsuario = u.rows[0]?.plano || 'gratuito';
+    const tier = calcularTier(planoUsuario, conv.plano_chat);
+
     const msgs = await pool.query(`
       SELECT m.*,
         r.conteudo   AS reply_to_conteudo,
-        r.remetente  AS reply_to_remetente
+        r.remetente  AS reply_to_remetente,
+        r.identidade AS reply_to_identidade
       FROM chat_mensagens m
       LEFT JOIN chat_mensagens r ON r.id = m.reply_to_id
       WHERE m.conversa_id=$1
       ORDER BY m.criado_em ASC LIMIT 50`, [conv.id]);
 
-    // Marca mensagens da Suellen como lidas
-    await pool.query(`
+    // Aluna abrir conversa MARCA mensagens da Suellen como lidas (esse comportamento se mantém)
+    const lidas = await pool.query(`
       UPDATE chat_mensagens SET lida=TRUE
-      WHERE conversa_id=$1 AND remetente='suellen' AND lida=FALSE`, [conv.id]);
+      WHERE conversa_id=$1 AND remetente='suellen' AND lida=FALSE
+      RETURNING id`, [conv.id]);
     await pool.query(`UPDATE chat_conversas SET nao_lidas_aluna=0 WHERE id=$1`, [conv.id]);
 
+    // Emite para o atendimento que essas mensagens foram lidas (✓✓ ouro em tempo real)
+    if (lidas.rows.length > 0) {
+      emitirParaSuellen('mensagens_lidas', {
+        conversa_id: conv.id,
+        ids: lidas.rows.map(x => x.id),
+        por: 'aluna',
+      });
+    }
+
     res.json({
-      conversa: {
-        ...conv,
-        tempo: tempoRelativo(conv.ultima_mensagem_em),
-      },
+      conversa: { ...conv, tier, plano_usuario: planoUsuario, tempo: tempoRelativo(conv.ultima_mensagem_em) },
       mensagens: msgs.rows,
     });
   } catch (err) {
@@ -218,9 +241,9 @@ router.get('/conversa', async (req, res) => {
   }
 });
 
-// POST /api/chat/mensagem — aluna envia mensagem
+// POST /api/chat/mensagem — aluna envia
 router.post('/mensagem', async (req, res) => {
-  const { conteudo, tipo = 'texto', url } = req.body;
+  const { conteudo, tipo = 'texto', url, reply_to_id } = req.body;
   if (!conteudo && !url) return res.status(400).json({ error: 'conteudo ou url obrigatório' });
 
   try {
@@ -229,14 +252,13 @@ router.post('/mensagem', async (req, res) => {
 
     if (conv.bloqueada) return res.status(403).json({ error: 'Chat bloqueado' });
 
-    // Desconta interação se for prioritário
+    // Desconta interação se prioritário
     if (conv.plano_chat === 'prioritario' && conv.interacoes_restantes !== null) {
       const novas = conv.interacoes_restantes - 1;
       await pool.query(`
         UPDATE chat_conversas SET interacoes_restantes=$1, atualizado_em=NOW() WHERE id=$2`,
         [novas, conv.id]);
       conv.interacoes_restantes = novas;
-      // Verifica se esgotou
       if (novas <= 0) {
         await pool.query(`
           UPDATE chat_conversas SET plano_chat='basic', interacoes_restantes=NULL,
@@ -250,20 +272,17 @@ router.post('/mensagem', async (req, res) => {
 
     const preview = conteudo ? conteudo.substring(0, 80) : (tipo === 'imagem' ? '📷 Imagem' : tipo === 'audio' ? '🎤 Áudio' : '📎 Arquivo');
 
-    // Salva mensagem
     const r = await pool.query(`
-      INSERT INTO chat_mensagens (conversa_id, remetente, tipo, conteudo, url)
-      VALUES ($1,'aluna',$2,$3,$4) RETURNING *`,
-      [conv.id, tipo, conteudo || null, url || null]);
+      INSERT INTO chat_mensagens (conversa_id, remetente, tipo, conteudo, url, reply_to_id)
+      VALUES ($1,'aluna',$2,$3,$4,$5) RETURNING *`,
+      [conv.id, tipo, conteudo || null, url || null, reply_to_id || null]);
     const msg = r.rows[0];
 
-    // Atualiza conversa
     await pool.query(`
       UPDATE chat_conversas SET ultima_mensagem_em=NOW(), ultima_preview=$1,
       nao_lidas_suellen=nao_lidas_suellen+1, atualizado_em=NOW() WHERE id=$2`,
       [preview, conv.id]);
 
-    // Emite via WebSocket para a Suellen
     emitirParaSuellen('nova_mensagem', {
       conversa_id:  conv.id,
       usuario_id:   req.usuario.sub,
@@ -275,12 +294,11 @@ router.post('/mensagem', async (req, res) => {
       tempo:        'agora',
     });
 
-    // Web Push se Suellen não estiver online
     if (!wsClients.has('suellen')) {
       await notificarSuellen({
         title: conv.plano_chat === 'prioritario' ? `⭐ ${req.usuario.nome}` : req.usuario.nome,
         body:  preview,
-        data:  { conversa_id: conv.id, url: '/suellen' },
+        data:  { conversa_id: conv.id, url: '/atendimento' },
       });
     }
 
@@ -298,13 +316,20 @@ router.post('/mensagem', async (req, res) => {
   }
 });
 
-// POST /api/chat/ativar-prioritario — ativa pacote pago
+// POST /api/chat/digitando — sinaliza que aluna está digitando
+router.post('/digitando', async (req, res) => {
+  emitirParaSuellen('digitando', {
+    usuario_id: req.usuario.sub,
+    nome: req.usuario.nome,
+  });
+  res.json({ ok: true });
+});
+
 router.post('/ativar-prioritario', async (req, res) => {
   const { origem = 'pagamento' } = req.body;
   try {
     let conv = await getOuCriarConversa(req.usuario.sub);
     const expira = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
     await pool.query(`
       UPDATE chat_conversas SET
         plano_chat='prioritario',
@@ -313,25 +338,26 @@ router.post('/ativar-prioritario', async (req, res) => {
         prioritario_ativado_em=NOW(),
         atualizado_em=NOW()
       WHERE id=$2`, [expira, conv.id]);
-
     await pool.query(`
       INSERT INTO chat_pacotes (usuario_id, conversa_id, status, ativado_em, expira_em, origem)
       VALUES ($1,$2,'ativo',NOW(),$3,$4)`,
       [req.usuario.sub, conv.id, expira, origem]);
-
     res.json({ success: true, expira_em: expira, interacoes: 30 });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET /api/chat/status — status atual do chat da aluna
 router.get('/status', async (req, res) => {
   try {
     let conv = await getOuCriarConversa(req.usuario.sub);
     conv = await verificarPrioritario(conv);
+    const u = await pool.query(`SELECT plano FROM usuarios WHERE id=$1`, [req.usuario.sub]);
+    const tier = calcularTier(u.rows[0]?.plano, conv.plano_chat);
     res.json({
       plano_chat:            conv.plano_chat,
+      plano_usuario:         u.rows[0]?.plano || 'gratuito',
+      tier,
       interacoes_restantes:  conv.interacoes_restantes,
       prioritario_expira_em: conv.prioritario_expira_em,
       bloqueada:             conv.bloqueada,
@@ -343,25 +369,30 @@ router.get('/status', async (req, res) => {
 });
 
 /* ════════════════════════════════════════════════════════════
-   ROTAS — SUELLEN (Basic Auth via server.js)
+   ROTAS — ATENDIMENTO (Suellen / Equipe)
+   Protegidas por JWT role:atendimento no server.js
    ════════════════════════════════════════════════════════════ */
 
-// GET /api/suellen/chat/conversas — lista todas as conversas
+// GET /api/atendimento/chat/conversas — lista todas, com tier
 router.get('/conversas', async (req, res) => {
   try {
     const r = await pool.query(`
       SELECT
         c.*,
         u.nome, u.foto_url, u.telefone_formatado,
-        u.perfil_teste, u.sementes
+        u.perfil_teste, u.sementes, u.plano AS plano_usuario
       FROM chat_conversas c
       JOIN usuarios u ON u.id = c.usuario_id
       ORDER BY
-        CASE WHEN c.plano_chat='prioritario' THEN 0 ELSE 1 END ASC,
+        CASE WHEN c.plano_chat='prioritario' THEN 0
+             WHEN u.plano IS NOT NULL AND u.plano <> 'gratuito' THEN 1
+             ELSE 2 END ASC,
+        c.favoritada DESC,
         c.ultima_mensagem_em DESC
     `);
     res.json(r.rows.map(row => ({
       ...row,
+      tier: calcularTier(row.plano_usuario, row.plano_chat),
       tempo: tempoRelativo(row.ultima_mensagem_em),
     })));
   } catch (err) {
@@ -369,12 +400,15 @@ router.get('/conversas', async (req, res) => {
   }
 });
 
-// GET /api/suellen/chat/conversa/:id — abre uma conversa
+// GET /api/atendimento/chat/conversa/:id
+// IMPORTANTE: NÃO marca mensagens como lidas (regra nova).
+// Lidas só são marcadas quando a Suellen ENVIA uma resposta.
 router.get('/conversa/:id', async (req, res) => {
   try {
     const conv = await pool.query(`
       SELECT c.*, u.nome, u.foto_url, u.telefone_formatado, u.email,
-             u.perfil_teste, u.percentual_prosperidade, u.sementes, u.plano
+             u.perfil_teste, u.percentual_prosperidade, u.sementes,
+             u.plano AS plano_usuario
       FROM chat_conversas c JOIN usuarios u ON u.id=c.usuario_id
       WHERE c.id=$1`, [req.params.id]);
     if (!conv.rows.length) return res.status(404).json({ error: 'Conversa não encontrada' });
@@ -382,24 +416,23 @@ router.get('/conversa/:id', async (req, res) => {
     const msgs = await pool.query(`
       SELECT m.*,
         r.conteudo   AS reply_to_conteudo,
-        r.remetente  AS reply_to_remetente
+        r.remetente  AS reply_to_remetente,
+        r.identidade AS reply_to_identidade
       FROM chat_mensagens m
       LEFT JOIN chat_mensagens r ON r.id = m.reply_to_id
       WHERE m.conversa_id=$1
       ORDER BY m.criado_em ASC`, [req.params.id]);
 
-    // Marca como lidas
-    await pool.query(`
-      UPDATE chat_mensagens SET lida=TRUE
-      WHERE conversa_id=$1 AND remetente='aluna' AND lida=FALSE`, [req.params.id]);
-    await pool.query(`UPDATE chat_conversas SET nao_lidas_suellen=0 WHERE id=$1`, [req.params.id]);
-
-    // Histórico de pacotes
     const pacotes = await pool.query(`
       SELECT * FROM chat_pacotes WHERE conversa_id=$1 ORDER BY ativado_em DESC`, [req.params.id]);
 
+    const c = conv.rows[0];
     res.json({
-      conversa: { ...conv.rows[0], tempo: tempoRelativo(conv.rows[0].ultima_mensagem_em) },
+      conversa: {
+        ...c,
+        tier: calcularTier(c.plano_usuario, c.plano_chat),
+        tempo: tempoRelativo(c.ultima_mensagem_em),
+      },
       mensagens: msgs.rows,
       pacotes: pacotes.rows,
     });
@@ -408,45 +441,91 @@ router.get('/conversa/:id', async (req, res) => {
   }
 });
 
-// POST /api/suellen/chat/mensagem — Suellen responde
+// POST /api/atendimento/chat/mensagem — Atendimento responde
+// Aceita identidade: 'suellen' (default) | 'equipe'
+// Ao responder, MARCA todas as mensagens pendentes da aluna como lidas
+// e EMITE evento WS para a aluna ver os ✓✓ ouro
 router.post('/mensagem', async (req, res) => {
-  const { conversa_id, conteudo, tipo = 'texto', url, reply_to_id } = req.body;
+  const { conversa_id, conteudo, tipo = 'texto', url, reply_to_id, identidade } = req.body;
   if (!conversa_id || (!conteudo && !url)) return res.status(400).json({ error: 'dados inválidos' });
+
+  const ident = (identidade === 'equipe') ? 'equipe' : 'suellen';
+
   try {
     const conv = await pool.query(`SELECT * FROM chat_conversas WHERE id=$1`, [conversa_id]);
     if (!conv.rows.length) return res.status(404).json({ error: 'Conversa não encontrada' });
 
+    // 1. Marca mensagens pendentes da aluna como lidas (regra nova)
+    const lidas = await pool.query(`
+      UPDATE chat_mensagens SET lida=TRUE
+      WHERE conversa_id=$1 AND remetente='aluna' AND lida=FALSE
+      RETURNING id`, [conversa_id]);
+
+    // 2. Insere a resposta
     const r = await pool.query(`
-      INSERT INTO chat_mensagens (conversa_id, remetente, tipo, conteudo, url, reply_to_id)
-      VALUES ($1,'suellen',$2,$3,$4,$5) RETURNING *`,
-      [conversa_id, tipo, conteudo || null, url || null, reply_to_id || null]);
+      INSERT INTO chat_mensagens (conversa_id, remetente, tipo, conteudo, url, reply_to_id, identidade)
+      VALUES ($1,'suellen',$2,$3,$4,$5,$6) RETURNING *`,
+      [conversa_id, tipo, conteudo || null, url || null, reply_to_id || null, ident]);
     const msg = r.rows[0];
 
     const preview = conteudo ? conteudo.substring(0, 80) : (tipo === 'imagem' ? '📷 Imagem' : '🎤 Áudio');
 
+    // 3. Atualiza conversa
     await pool.query(`
       UPDATE chat_conversas SET ultima_mensagem_em=NOW(), ultima_preview=$1,
-      nao_lidas_aluna=nao_lidas_aluna+1, atualizado_em=NOW() WHERE id=$2`,
+      nao_lidas_aluna=nao_lidas_aluna+1, nao_lidas_suellen=0, atualizado_em=NOW() WHERE id=$2`,
       [preview, conversa_id]);
 
-    // Emite para a aluna via WebSocket
+    // 4. Emite eventos
+    // Para a aluna: nova mensagem chegando + (se houver) confirmação de leitura
     emitirParaAluna(conv.rows[0].usuario_id, 'nova_mensagem', { mensagem: msg });
+    if (lidas.rows.length > 0) {
+      emitirParaAluna(conv.rows[0].usuario_id, 'mensagens_lidas', {
+        conversa_id, ids: lidas.rows.map(x => x.id), por: 'suellen',
+      });
+    }
+    // Para a própria Suellen (se tiver outra aba aberta): atualizar UI
+    emitirParaSuellen('mensagens_lidas', {
+      conversa_id, ids: lidas.rows.map(x => x.id), por: 'suellen',
+    });
 
-    // Web Push para aluna (se não estiver online) — futuro
-    // Por ora só WebSocket
-
-    res.json({ mensagem: msg });
+    res.json({ mensagem: msg, marcadas_lidas: lidas.rows.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── SUPERADMIN — controle total ──
+// POST /api/atendimento/chat/favoritar — favorita/desfavorita conversa
+router.post('/favoritar', async (req, res) => {
+  const { conversa_id, favoritada } = req.body;
+  if (!conversa_id) return res.status(400).json({ error: 'conversa_id obrigatório' });
+  try {
+    await pool.query(`UPDATE chat_conversas SET favoritada=$1, atualizado_em=NOW() WHERE id=$2`,
+      [!!favoritada, conversa_id]);
+    res.json({ success: true, favoritada: !!favoritada });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-// POST /api/suellen/chat/acao — bloquear, dar cortesia, ajustar interações
+// POST /api/atendimento/chat/digitando — Suellen está digitando
+router.post('/digitando-resposta', async (req, res) => {
+  const { conversa_id } = req.body;
+  if (!conversa_id) return res.status(400).json({ error: 'conversa_id obrigatório' });
+  try {
+    const r = await pool.query(`SELECT usuario_id FROM chat_conversas WHERE id=$1`, [conversa_id]);
+    if (r.rows[0]) {
+      emitirParaAluna(r.rows[0].usuario_id, 'suellen_digitando', { conversa_id });
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── SUPERADMIN ──
 router.post('/acao', async (req, res) => {
   const { conversa_id, acao, valor } = req.body;
-  // acao: 'bloquear' | 'desbloquear' | 'cortesia' | 'ajustar_interacoes' | 'estender_prioritario' | 'rebaixar_basic'
   try {
     switch (acao) {
       case 'bloquear':
@@ -492,17 +571,19 @@ router.post('/acao', async (req, res) => {
   }
 });
 
-// GET /api/suellen/chat/stats — métricas
 router.get('/stats', async (req, res) => {
   try {
     const r = await pool.query(`
       SELECT
-        COUNT(*) FILTER (WHERE plano_chat='prioritario') AS prioritarias,
-        COUNT(*) FILTER (WHERE plano_chat='basic') AS basic,
-        COUNT(*) FILTER (WHERE nao_lidas_suellen > 0) AS aguardando,
-        COUNT(*) FILTER (WHERE bloqueada=TRUE) AS bloqueadas,
+        COUNT(*) FILTER (WHERE c.plano_chat='prioritario') AS prioritarias,
+        COUNT(*) FILTER (WHERE c.plano_chat='basic' AND u.plano IS NOT NULL AND u.plano <> 'gratuito') AS basic_vm,
+        COUNT(*) FILTER (WHERE c.plano_chat='basic' AND (u.plano IS NULL OR u.plano = 'gratuito')) AS free,
+        COUNT(*) FILTER (WHERE c.nao_lidas_suellen > 0) AS aguardando,
+        COUNT(*) FILTER (WHERE c.bloqueada=TRUE) AS bloqueadas,
+        COUNT(*) FILTER (WHERE c.favoritada=TRUE) AS favoritadas,
         COUNT(*) AS total
-      FROM chat_conversas
+      FROM chat_conversas c
+      JOIN usuarios u ON u.id = c.usuario_id
     `);
     const receita = await pool.query(`
       SELECT COALESCE(SUM(valor),0) as total, COUNT(*) as pacotes
@@ -514,8 +595,6 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-/* ── Web Push — registro de subscription da Suellen ── */
-// POST /api/suellen/chat/push-subscribe
 router.post('/push-subscribe', async (req, res) => {
   const { endpoint, keys, userAgent } = req.body;
   if (!endpoint || !keys) return res.status(400).json({ error: 'dados inválidos' });
@@ -531,7 +610,6 @@ router.post('/push-subscribe', async (req, res) => {
   }
 });
 
-// GET /api/chat/vapid-public-key — chave pública para o frontend
 router.get('/vapid-public-key', (req, res) => {
   res.json({ key: process.env.VAPID_PUBLIC_KEY || null });
 });
