@@ -11,47 +11,35 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* ════════════════════════════════════════════════
-   ATENDIMENTO — tema claro Vida Mágica
-   Mesmas variáveis do app/app.css da aluna
-   ════════════════════════════════════════════════ */
-
 :root {
   --ouro: #C8922A;
   --ouro-claro: #E8C97A;
   --ouro-brilho: #F4D998;
   --ouro-fundo: #A17523;
   --ouro-pelicula: rgba(200,146,42,0.12);
-
   --texto: #3D2E1A;
   --texto-suave: #6B5436;
   --texto-mute: rgba(61,46,26,0.55);
   --texto-fraco: rgba(61,46,26,0.35);
-
   --vidro: rgba(255,250,240,0.75);
   --vidro-forte: rgba(255,250,240,0.92);
   --vidro-borda: rgba(200,146,42,0.22);
   --vidro-borda-hi: rgba(200,146,42,0.5);
-
   --sombra-suave: 0 2px 12px rgba(161,117,35,0.08);
   --sombra-media: 0 4px 24px rgba(161,117,35,0.14);
   --sombra-forte: 0 12px 48px rgba(161,117,35,0.22);
   --glow-ouro: 0 0 24px rgba(200,146,42,0.35), 0 0 48px rgba(200,146,42,0.18);
-
   --font-display: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body:    'Lora', Georgia, serif;
   --font-ui:      'Open Sans', sans-serif;
-
   --green: #5A9E6F;
   --red:   #B04848;
-
   --safe-top:    env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --r-sm: 8px;
   --r-md: 14px;
   --r-lg: 20px;
   --r-full: 9999px;
-
   --col-lista: 340px;
   --col-painel: 320px;
   --header-h: 60px;
@@ -125,7 +113,6 @@ ul, ol { list-style: none; }
 }
 .col-chat { background: transparent; }
 
-/* Header genérico */
 .header {
   flex-shrink: 0;
   display: flex; align-items: center; gap: 0.6rem;
@@ -156,7 +143,6 @@ ul, ol { list-style: none; }
 .header-btn.ativo svg { stroke: var(--ouro); }
 .header-btn.ativo { background: var(--ouro-pelicula); }
 
-/* Topo da lista */
 .lista-topo {
   flex-shrink: 0;
   padding: calc(var(--safe-top) + 0.6rem) 0.75rem 0.6rem;
@@ -275,9 +261,41 @@ ul, ol { list-style: none; }
 .conversas-scroll::-webkit-scrollbar { width: 4px; }
 .conversas-scroll::-webkit-scrollbar-thumb { background: var(--vidro-borda); border-radius: 2px; }
 
-.plano-divisor {
+/* Divisores agora por CANAL (Suellen / Suporte), depois por plano dentro */
+.canal-divisor {
   display: flex; align-items: center; gap: 0.55rem;
   padding: 0.85rem 0.85rem 0.45rem;
+  font-family: var(--font-display);
+  font-size: 0.7rem; font-weight: 800;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ouro-fundo);
+  background: linear-gradient(180deg, rgba(200,146,42,0.06), transparent);
+  border-bottom: 1px solid var(--vidro-borda);
+}
+.canal-divisor.suporte {
+  color: #5F4A2C;
+  background: linear-gradient(180deg, rgba(95,74,44,0.06), transparent);
+}
+.canal-divisor .avatar {
+  width: 22px; height: 22px;
+  border-radius: 50%; overflow: hidden;
+  flex-shrink: 0; background: var(--vidro);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.72rem;
+  border: 1px solid var(--vidro-borda);
+}
+.canal-divisor .avatar img { width: 100%; height: 100%; object-fit: cover; }
+.canal-divisor .count {
+  margin-left: auto;
+  font-size: 0.62rem;
+  color: var(--texto-fraco);
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.plano-divisor {
+  display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.6rem 0.85rem 0.4rem 1.5rem;
   font-family: var(--font-display);
   font-size: 0.6rem; font-weight: 800;
   letter-spacing: 0.14em; text-transform: uppercase;
@@ -337,6 +355,18 @@ ul, ol { list-style: none; }
   box-shadow: var(--sombra-suave);
 }
 
+/* Marca de canal — cantinho mostrando se é Suellen ou Suporte */
+.conv-canal-mark {
+  position: absolute; top: -2px; right: -2px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #FBF8F3;
+  box-shadow: var(--sombra-suave);
+  background: var(--vidro);
+}
+.conv-canal-mark img { width: 100%; height: 100%; object-fit: cover; }
+
 .conv-corpo { flex: 1; min-width: 0; }
 .conv-linha-1 {
   display: flex; align-items: center; gap: 0.4rem;
@@ -348,6 +378,22 @@ ul, ol { list-style: none; }
   font-size: 0.85rem; font-weight: 700;
   color: var(--texto);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.conv-canal-tag {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 0.52rem; font-weight: 800;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: var(--r-full);
+  background: var(--ouro-pelicula);
+  color: var(--ouro-fundo);
+  border: 1px solid var(--vidro-borda);
+}
+.conv-canal-tag.suporte {
+  background: rgba(95,74,44,0.08);
+  color: #5F4A2C;
+  border-color: rgba(95,74,44,0.2);
 }
 .conv-tempo {
   flex-shrink: 0;
@@ -392,7 +438,6 @@ ul, ol { list-style: none; }
 .lista-vazia .icone { font-size: 2.5rem; opacity: 0.5; }
 .lista-vazia p { font-size: 0.82rem; }
 
-/* Chat */
 .chat-vazio {
   flex: 1;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -426,25 +471,59 @@ ul, ol { list-style: none; }
 @media (max-width: 900px) { .chat-header-back { display: flex; } }
 
 .chat-header-avatar {
+  position: relative;
   flex-shrink: 0;
   width: 40px; height: 40px;
   border-radius: 50%;
-  overflow: hidden;
+  overflow: visible;
   background: var(--vidro-forte);
   border: 1px solid var(--vidro-borda);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   box-shadow: var(--sombra-suave);
 }
-.chat-header-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.chat-header-avatar svg { width: 19px; height: 19px; stroke: var(--texto-fraco); fill: none; stroke-width: 1.6; }
+.chat-header-avatar > img,
+.chat-header-avatar > svg.avatar-default {
+  width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
+}
+.chat-header-avatar > svg.avatar-default { stroke: var(--texto-fraco); fill: none; stroke-width: 1.6; padding: 4px; }
+.chat-header-canal-mark {
+  position: absolute;
+  bottom: -2px; right: -2px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #FBF8F3;
+  background: var(--vidro);
+  z-index: 2;
+}
+.chat-header-canal-mark img { width: 100%; height: 100%; object-fit: cover; }
 
 .chat-header-info { flex: 1; min-width: 0; cursor: pointer; }
+.chat-header-nome-row {
+  display: flex; align-items: center; gap: 0.35rem;
+}
 .chat-header-nome {
   font-family: var(--font-display);
   font-size: 0.9rem; font-weight: 800;
   color: var(--texto);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.chat-header-canal-tag {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 0.52rem; font-weight: 800;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: var(--r-full);
+  background: var(--ouro-pelicula);
+  color: var(--ouro-fundo);
+  border: 1px solid var(--vidro-borda);
+}
+.chat-header-canal-tag.suporte {
+  background: rgba(95,74,44,0.08);
+  color: #5F4A2C;
+  border-color: rgba(95,74,44,0.2);
 }
 .chat-header-status {
   display: flex; align-items: center; gap: 0.4rem;
@@ -513,12 +592,6 @@ ul, ol { list-style: none; }
   color: var(--texto-mute);
 }
 
-/*
-  DIREÇÃO DAS BOLHAS:
-  Suellen escreve à DIREITA (em ouro)
-  Aluna escreve à ESQUERDA (em vidro)
-  ✦ Padrão WhatsApp Web — quem está na tela vê suas próprias mensagens à direita
-*/
 .msg-wrap {
   display: flex; flex-direction: column;
   max-width: 70%;
@@ -534,6 +607,7 @@ ul, ol { list-style: none; }
   font-family: var(--font-ui);
   font-size: 0.88rem; line-height: 1.5;
   word-break: break-word;
+  white-space: pre-wrap;
   position: relative;
   cursor: pointer;
   transition: opacity 0.15s;
@@ -619,7 +693,7 @@ ul, ol { list-style: none; }
   padding: 0.55rem 0.85rem;
   border-radius: 18px;
   display: flex; align-items: center; gap: 0.55rem;
-  min-width: 180px; max-width: 250px;
+  min-width: 200px; max-width: 280px;
   cursor: pointer;
 }
 .msg-wrap.aluna .msg-audio-bolha {
@@ -647,7 +721,7 @@ ul, ol { list-style: none; }
 .msg-wrap.suellen .msg-audio-play-btn { background: rgba(255,255,255,0.22); }
 .msg-wrap.suellen .msg-audio-play-btn svg { fill: white; }
 .msg-audio-play-btn svg { width: 12px; height: 12px; margin-left: 2px; stroke: none; }
-.msg-audio-wave { flex: 1; display: block; height: 28px; }
+.msg-audio-wave { flex: 1; display: block; height: 28px; min-width: 80px; }
 .msg-wrap.aluna .msg-audio-wave-bar { fill: rgba(161,117,35,0.35); }
 .msg-wrap.suellen .msg-audio-wave-bar { fill: rgba(255,255,255,0.4); }
 .msg-wrap.aluna .msg-audio-wave-bar.ativa { fill: var(--ouro); }
@@ -1258,7 +1332,6 @@ ul, ol { list-style: none; }
 
 <div class="particulas" id="particulas"></div>
 
-<!-- Tela de login -->
 <div id="tela-login">
   <div class="login-marca">
     <img src="/assets/logo-equipe.png" alt="Vida Mágica" onerror="this.style.display='none'">
@@ -1275,7 +1348,6 @@ ul, ol { list-style: none; }
   </div>
 </div>
 
-<!-- App -->
 <div id="app">
 
   <aside class="col-lista">
@@ -1310,11 +1382,11 @@ ul, ol { list-style: none; }
 
     <div class="filtros-row" id="filtros-row">
       <button class="filtro-pill ativa" data-fil="todas">Todas <span class="count" id="count-todas">0</span></button>
+      <button class="filtro-pill" data-fil="suellen">Suellen <span class="count" id="count-canal-suellen">0</span></button>
+      <button class="filtro-pill" data-fil="suporte">Suporte <span class="count" id="count-canal-suporte">0</span></button>
       <button class="filtro-pill" data-fil="nao-lidas">Não lidas <span class="count" id="count-nao-lidas">0</span></button>
       <button class="filtro-pill" data-fil="favoritas">★ Favoritas <span class="count" id="count-favoritas">0</span></button>
       <button class="filtro-pill" data-fil="prioritario">⭐ Prioritário <span class="count" id="count-prio">0</span></button>
-      <button class="filtro-pill" data-fil="basic-vm">Básico VM <span class="count" id="count-bvm">0</span></button>
-      <button class="filtro-pill" data-fil="free">Free <span class="count" id="count-free">0</span></button>
     </div>
 
     <div class="busca-row" id="busca-row">
@@ -1409,6 +1481,7 @@ function toast(msg, tipo='ok') {
 }
 
 function tempoRel(data) {
+  if (!data) return '';
   const diff = Date.now() - new Date(data).getTime();
   const m = Math.floor(diff/60000), h = Math.floor(diff/3600000);
   const d = Math.floor(diff/86400000), s = Math.floor(d/7);
@@ -1432,6 +1505,9 @@ function tierSLA(tier) {
     free: 'Resposta em tempo indeterminado',
   }[tier] || '';
 }
+
+function canalLabel(tipo) { return tipo === 'suporte' ? 'Suporte' : 'Suellen'; }
+function canalImg(tipo) { return tipo === 'suporte' ? '/assets/logo-equipe.png' : '/assets/avatar-suellen.jpg'; }
 
 (function() {
   const c = document.getElementById('particulas');
@@ -1525,8 +1601,8 @@ function aplicarFiltros() {
   if (filtroAtivo === 'nao-lidas') lista = lista.filter(c => c.nao_lidas_suellen > 0);
   else if (filtroAtivo === 'favoritas') lista = lista.filter(c => c.favoritada);
   else if (filtroAtivo === 'prioritario') lista = lista.filter(c => c.tier === 'prioritario');
-  else if (filtroAtivo === 'basic-vm') lista = lista.filter(c => c.tier === 'basic_vm');
-  else if (filtroAtivo === 'free') lista = lista.filter(c => c.tier === 'free');
+  else if (filtroAtivo === 'suellen') lista = lista.filter(c => (c.tipo || 'suellen') === 'suellen');
+  else if (filtroAtivo === 'suporte') lista = lista.filter(c => c.tipo === 'suporte');
   return lista;
 }
 
@@ -1551,12 +1627,13 @@ function renderLista() {
   const scroll = document.getElementById('conversas-scroll');
   const lista = aplicarFiltros();
 
+  // Counts
   document.getElementById('count-todas').textContent     = conversas.length;
+  document.getElementById('count-canal-suellen').textContent = conversas.filter(c => (c.tipo || 'suellen') === 'suellen').length;
+  document.getElementById('count-canal-suporte').textContent = conversas.filter(c => c.tipo === 'suporte').length;
   document.getElementById('count-nao-lidas').textContent = conversas.filter(c => c.nao_lidas_suellen > 0).length;
   document.getElementById('count-favoritas').textContent = conversas.filter(c => c.favoritada).length;
   document.getElementById('count-prio').textContent      = conversas.filter(c => c.tier === 'prioritario').length;
-  document.getElementById('count-bvm').textContent       = conversas.filter(c => c.tier === 'basic_vm').length;
-  document.getElementById('count-free').textContent      = conversas.filter(c => c.tier === 'free').length;
 
   if (!lista.length) {
     scroll.innerHTML =
@@ -1564,12 +1641,46 @@ function renderLista() {
     return;
   }
 
+  // Agrupa primeiro por CANAL (Suellen / Suporte), depois por plano dentro
+  const porCanal = {
+    suellen: lista.filter(c => (c.tipo || 'suellen') === 'suellen'),
+    suporte: lista.filter(c => c.tipo === 'suporte'),
+  };
+
+  let html = '';
+
+  // Canal Suellen
+  if (porCanal.suellen.length) {
+    html += `<div class="canal-divisor">
+      <span class="avatar"><img src="/assets/avatar-suellen.jpg" onerror="this.style.display='none';this.parentElement.textContent='S'"></span>
+      <span>Suellen</span>
+      <span class="count">${porCanal.suellen.length}</span>
+    </div>`;
+    html += renderGruposPlano(porCanal.suellen);
+  }
+
+  // Canal Suporte
+  if (porCanal.suporte.length) {
+    html += `<div class="canal-divisor suporte">
+      <span class="avatar"><img src="/assets/logo-equipe.png" onerror="this.style.display='none';this.parentElement.textContent='?'"></span>
+      <span>Suporte</span>
+      <span class="count">${porCanal.suporte.length}</span>
+    </div>`;
+    html += renderGruposPlano(porCanal.suporte);
+  }
+
+  scroll.innerHTML = html;
+  scroll.querySelectorAll('.conv-item').forEach(el => {
+    el.addEventListener('click', () => abrirConversa(parseInt(el.dataset.id)));
+  });
+}
+
+function renderGruposPlano(lista) {
   const grupos = {
     prioritario: lista.filter(c => c.tier === 'prioritario'),
     basic_vm:    lista.filter(c => c.tier === 'basic_vm'),
-    free:        lista.filter(c => c.tier === 'free'),
+    free:        lista.filter(c => c.tier === 'free' || (!c.tier)),
   };
-
   let html = '';
   if (grupos.prioritario.length) {
     html += `<div class="plano-divisor prioritario"><span class="icone">⭐</span><span>Prioritário</span><span class="count">${grupos.prioritario.length}</span><div class="linha"></div></div>`;
@@ -1583,31 +1694,31 @@ function renderLista() {
     html += `<div class="plano-divisor"><span class="icone">·</span><span>Free</span><span class="count">${grupos.free.length}</span><div class="linha"></div></div>`;
     html += ordenarDentroDoGrupo(grupos.free).map(c => itemHtml(c)).join('');
   }
-
-  scroll.innerHTML = html;
-  scroll.querySelectorAll('.conv-item').forEach(el => {
-    el.addEventListener('click', () => abrirConversa(parseInt(el.dataset.id)));
-  });
+  return html;
 }
 
 function itemHtml(c) {
   const naoLida = c.nao_lidas_suellen > 0;
+  const tipo = c.tipo || 'suellen';
   const fotoHtml = c.foto_url
     ? `<img src="${esc(c.foto_url)}" alt="${esc(c.nome)}">`
     : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
   const ativaCls = (convAtual && convAtual.id === c.id) ? ' ativa' : '';
   const priorCls = c.tier === 'prioritario' ? ' prioritario' : '';
   const naoLidaCls = naoLida ? ' tem-nao-lida' : '';
+  const tagCanal = `<span class="conv-canal-tag${tipo==='suporte'?' suporte':''}">${canalLabel(tipo)}</span>`;
 
   return `
     <div class="conv-item${ativaCls}${priorCls}${naoLidaCls}" data-id="${c.id}">
       <div class="conv-avatar">
         ${fotoHtml}
+        <div class="conv-canal-mark"><img src="${canalImg(tipo)}" onerror="this.style.display='none'"></div>
         ${c.tier === 'prioritario' ? '<div class="conv-prior-mark">⭐</div>' : ''}
       </div>
       <div class="conv-corpo">
         <div class="conv-linha-1">
           <div class="conv-nome">${esc(c.nome || '—')}</div>
+          ${tagCanal}
           <div class="conv-tempo">${tempoRel(c.ultima_mensagem_em)}</div>
         </div>
         <div class="conv-linha-2">
@@ -1696,9 +1807,10 @@ function renderChat() {
   if (!convAtual) return;
   const c = convAtual;
   const tier = c.tier;
+  const tipo = c.tipo || 'suellen';
   const fotoHtml = c.foto_url
     ? `<img src="${esc(c.foto_url)}" alt="${esc(c.nome)}">`
-    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+    : `<svg class="avatar-default" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
 
   let statusTxt, statusCls = '';
   if (tier === 'prioritario') {
@@ -1744,14 +1856,22 @@ function renderChat() {
       </div>`;
   }
 
+  const tagCanal = `<span class="chat-header-canal-tag${tipo==='suporte'?' suporte':''}">${canalLabel(tipo)}</span>`;
+
   cont.innerHTML = `
     <div class="chat-header">
       <button class="chat-header-back" id="btn-back-chat">
         <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <div class="chat-header-avatar" id="header-avatar">${fotoHtml}</div>
+      <div class="chat-header-avatar" id="header-avatar">
+        ${fotoHtml}
+        <div class="chat-header-canal-mark"><img src="${canalImg(tipo)}" onerror="this.style.display='none'"></div>
+      </div>
       <div class="chat-header-info" id="header-info">
-        <div class="chat-header-nome">${esc(c.nome || '—')}</div>
+        <div class="chat-header-nome-row">
+          <div class="chat-header-nome">${esc(c.nome || '—')}</div>
+          ${tagCanal}
+        </div>
         <div class="chat-header-status ${statusCls}">
           <span class="status-dot"></span>
           <span>${statusTxt}</span>
@@ -2233,6 +2353,7 @@ function carregarPainel() {
   if (!convAtual) return;
   const c = convAtual;
   const tier = c.tier;
+  const tipo = c.tipo || 'suellen';
   const pacotes = c.pacotes || [];
   const pacoteAtivo = pacotes.find(p => p.status === 'ativo');
   const pct = (tier === 'prioritario' && pacoteAtivo)
@@ -2250,6 +2371,7 @@ function carregarPainel() {
       <div class="painel-nome">${esc(c.nome || '—')}</div>
       <div class="painel-tel">${esc(c.telefone_formatado || c.email || '—')}</div>
       <div class="painel-tags">
+        <span class="tag-pill ${tipo==='suporte'?'tag-vm':'tag-prior'}">${canalLabel(tipo)}</span>
         <span class="tag-pill ${tier==='prioritario'?'tag-prior':tier==='basic_vm'?'tag-vm':'tag-free'}">${tierLabel(tier)}</span>
         ${c.bloqueada ? '<span class="tag-pill tag-bloq">🚫 Bloqueada</span>' : ''}
         ${c.favoritada ? '<span class="tag-pill tag-fav">★ Favorita</span>' : ''}
