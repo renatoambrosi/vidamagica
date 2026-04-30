@@ -3,68 +3,100 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0D0800">
+  <meta name="theme-color" content="#E8DCC0">
   <title>Atendimento — Vida Mágica</title>
   <link rel="icon" href="/favicon.png">
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* ════════════════════════════════════════════════
+   ATENDIMENTO — tema claro Vida Mágica
+   Mesmas variáveis do app/app.css da aluna
+   ════════════════════════════════════════════════ */
+
 :root {
-  --ouro:       #C8922A;
-  --ouro-cl:    #E8C97A;
-  --ouro-br:    #F4D998;
-  --ouro-f:     #A17523;
-  --ouro-film:  rgba(200,146,42,0.12);
-  --ouro-brd:   rgba(200,146,42,0.18);
-  --ouro-brd2:  rgba(200,146,42,0.42);
+  --ouro: #C8922A;
+  --ouro-claro: #E8C97A;
+  --ouro-brilho: #F4D998;
+  --ouro-fundo: #A17523;
+  --ouro-pelicula: rgba(200,146,42,0.12);
 
-  --bg:    #0D0800;
-  --bg2:   #130C00;
-  --bg3:   #1A1100;
-  --bg4:   #221700;
-  --surf:  rgba(255,255,255,0.04);
-  --surf2: rgba(255,255,255,0.07);
-  --surf3: rgba(255,255,255,0.10);
+  --texto: #3D2E1A;
+  --texto-suave: #6B5436;
+  --texto-mute: rgba(61,46,26,0.55);
+  --texto-fraco: rgba(61,46,26,0.35);
 
-  --txt:   #F5F0E8;
-  --txt2:  rgba(245,240,232,0.65);
-  --txt3:  rgba(245,240,232,0.42);
-  --txt4:  rgba(245,240,232,0.22);
+  --vidro: rgba(255,250,240,0.75);
+  --vidro-forte: rgba(255,250,240,0.92);
+  --vidro-borda: rgba(200,146,42,0.22);
+  --vidro-borda-hi: rgba(200,146,42,0.5);
 
-  --green: #25D366;
-  --red:   #EF4444;
-  --prior: #F4D060;
-  --info:  #6BA8E8;
+  --sombra-suave: 0 2px 12px rgba(161,117,35,0.08);
+  --sombra-media: 0 4px 24px rgba(161,117,35,0.14);
+  --sombra-forte: 0 12px 48px rgba(161,117,35,0.22);
+  --glow-ouro: 0 0 24px rgba(200,146,42,0.35), 0 0 48px rgba(200,146,42,0.18);
 
-  --font-d: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-b: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body:    'Lora', Georgia, serif;
+  --font-ui:      'Open Sans', sans-serif;
+
+  --green: #5A9E6F;
+  --red:   #B04848;
 
   --safe-top:    env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-full: 9999px;
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-full: 9999px;
 
   --col-lista: 340px;
   --col-painel: 320px;
-  --header-h: 56px;
+  --header-h: 60px;
 }
 
-* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--txt); font-family:var(--font-b); -webkit-font-smoothing:antialiased; }
-button, input, textarea { font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; outline:none; }
-ul, ol { list-style:none; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font-ui);
+  color: var(--texto);
+  -webkit-font-smoothing: antialiased;
+  background-color: #E8DCC0;
+  background-image:
+    linear-gradient(180deg, rgba(255,250,240,0.72) 0%, rgba(248,243,232,0.60) 40%, rgba(240,232,215,0.55) 100%),
+    url('/assets/background-theme.jpg');
+  background-size: cover;
+  background-position: center top;
+  background-attachment: fixed;
+}
+button, input, textarea { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; outline: none; }
+ul, ol { list-style: none; }
 
-/* ════════ APP CONTAINER ════════ */
+.particulas { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.particula {
+  position: absolute; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,235,180,0.9) 0%, rgba(255,235,180,0) 70%);
+  animation: flutua linear infinite;
+  opacity: 0;
+}
+@keyframes flutua {
+  0%   { transform: translateY(110vh) translateX(0) scale(0.6); opacity: 0; }
+  10%  { opacity: 0.7; }
+  50%  { transform: translateY(50vh) translateX(20px) scale(1); }
+  90%  { opacity: 0.4; }
+  100% { transform: translateY(-10vh) translateX(-15px) scale(0.8); opacity: 0; }
+}
+
 #app {
-  position: fixed; inset: 0;
+  position: fixed; inset: 0; z-index: 10;
   display: grid;
   grid-template-columns: var(--col-lista) 1fr;
-  background: var(--bg);
+  background: transparent;
 }
 #app.com-painel { grid-template-columns: var(--col-lista) 1fr var(--col-painel); }
 
-/* No mobile: vira fullscreen com swipe */
 @media (max-width: 900px) {
   #app, #app.com-painel { grid-template-columns: 1fr; }
   .col-lista, .col-chat, .col-painel {
@@ -73,35 +105,41 @@ ul, ol { list-style:none; }
     will-change: transform;
   }
   .col-chat { transform: translateX(100%); }
-  .col-chat.ativa { transform: translateX(0); z-index:5; }
+  .col-chat.ativa { transform: translateX(0); z-index: 5; }
   .col-painel { transform: translateX(100%); z-index: 6; }
   .col-painel.ativa { transform: translateX(0); }
 }
 
-/* ════════ COLUNAS ════════ */
 .col-lista, .col-chat, .col-painel {
   display: flex; flex-direction: column;
   height: 100%;
-  background: var(--bg);
-  border-right: 1px solid var(--ouro-brd);
+  background: rgba(255,250,240,0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-right: 1px solid var(--vidro-borda);
 }
-.col-painel { border-right: none; border-left: 1px solid var(--ouro-brd); background: var(--bg2); }
+.col-painel {
+  border-right: none;
+  border-left: 1px solid var(--vidro-borda);
+  background: rgba(255,250,240,0.7);
+}
+.col-chat { background: transparent; }
 
-/* ════════ HEADERS ════════ */
+/* Header genérico */
 .header {
   flex-shrink: 0;
   display: flex; align-items: center; gap: 0.6rem;
-  padding: calc(var(--safe-top) + 0.65rem) 0.75rem 0.65rem;
-  background: rgba(13,8,0,0.95);
-  border-bottom: 1px solid var(--ouro-brd);
+  padding: calc(var(--safe-top) + 0.7rem) 0.85rem 0.7rem;
+  background: rgba(255,250,240,0.92);
+  border-bottom: 1px solid var(--vidro-borda);
   backdrop-filter: blur(16px);
   min-height: calc(var(--safe-top) + var(--header-h));
 }
 .header-titulo {
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 0.78rem; font-weight: 800;
   letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--ouro-cl);
+  color: var(--ouro-fundo);
   flex: 1;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -112,41 +150,41 @@ ul, ol { list-style:none; }
   transition: background 0.15s;
   position: relative;
 }
-.header-btn:hover { background: var(--ouro-film); }
-.header-btn svg { width: 20px; height: 20px; stroke: var(--txt2); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.15s; }
-.header-btn:hover svg { stroke: var(--ouro-cl); }
-.header-btn.ativo svg { stroke: var(--ouro-cl); }
-.header-btn.ativo { background: var(--ouro-film); }
+.header-btn:hover { background: var(--ouro-pelicula); }
+.header-btn svg { width: 19px; height: 19px; stroke: var(--texto-mute); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.15s; }
+.header-btn:hover svg { stroke: var(--ouro-fundo); }
+.header-btn.ativo svg { stroke: var(--ouro); }
+.header-btn.ativo { background: var(--ouro-pelicula); }
 
-/* ════════ COLUNA LISTA ════════ */
-/* Topo da lista: identidade + switch */
+/* Topo da lista */
 .lista-topo {
   flex-shrink: 0;
-  padding: calc(var(--safe-top) + 0.6rem) 0.85rem 0.6rem;
-  background: rgba(13,8,0,0.95);
-  border-bottom: 1px solid var(--ouro-brd);
-  display: flex; align-items: center; gap: 0.6rem;
+  padding: calc(var(--safe-top) + 0.6rem) 0.75rem 0.6rem;
+  background: rgba(255,250,240,0.92);
+  border-bottom: 1px solid var(--vidro-borda);
+  display: flex; align-items: center; gap: 0.5rem;
   min-height: calc(var(--safe-top) + var(--header-h));
 }
+
 .identidade-switch {
   flex: 1;
   display: flex;
-  background: var(--surf);
-  border: 1px solid var(--ouro-brd);
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
   border-radius: var(--r-full);
   padding: 3px;
   position: relative;
-  cursor: pointer;
   user-select: none;
+  box-shadow: var(--sombra-suave);
 }
 .identidade-opcao {
   flex: 1;
   display: flex; align-items: center; justify-content: center; gap: 0.4rem;
-  padding: 0.35rem 0.5rem;
-  font-family: var(--font-d);
-  font-size: 0.65rem; font-weight: 700;
+  padding: 0.35rem 0.45rem;
+  font-family: var(--font-display);
+  font-size: 0.62rem; font-weight: 700;
   letter-spacing: 0.04em; text-transform: uppercase;
-  color: var(--txt3);
+  color: var(--texto-mute);
   border-radius: var(--r-full);
   transition: color 0.2s;
   position: relative; z-index: 2;
@@ -156,31 +194,27 @@ ul, ol { list-style:none; }
   width: 18px; height: 18px;
   border-radius: 50%;
   object-fit: cover;
-  background: var(--bg3);
+  background: var(--vidro);
 }
-.identidade-opcao.ativa { color: var(--bg); }
+.identidade-opcao.ativa { color: white; }
 .identidade-pill {
   position: absolute;
   top: 3px; bottom: 3px;
   left: 3px;
   width: calc(50% - 3px);
-  background: linear-gradient(135deg, var(--ouro-f), var(--ouro-cl));
+  background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
   border-radius: var(--r-full);
   transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
   z-index: 1;
+  box-shadow: 0 2px 8px rgba(200,146,42,0.3);
 }
 .identidade-switch[data-modo="equipe"] .identidade-pill { transform: translateX(100%); }
 
-.btn-menu-mobile { display: none; flex-shrink: 0; width: 38px; height: 38px; align-items: center; justify-content: center; border-radius: var(--r-full); }
-@media (max-width: 900px) { .btn-menu-mobile { display: flex; } }
-.btn-menu-mobile svg { width: 20px; height: 20px; stroke: var(--txt2); fill: none; stroke-width: 2; }
-
-/* Filtros pills */
 .filtros-row {
   display: flex; gap: 0.35rem;
   padding: 0.55rem 0.85rem;
-  background: var(--bg2);
-  border-bottom: 1px solid var(--ouro-brd);
+  background: rgba(255,250,240,0.6);
+  border-bottom: 1px solid var(--vidro-borda);
   overflow-x: auto;
   scrollbar-width: none;
   flex-shrink: 0;
@@ -188,128 +222,119 @@ ul, ol { list-style:none; }
 .filtros-row::-webkit-scrollbar { display: none; }
 .filtro-pill {
   flex-shrink: 0;
-  padding: 0.32rem 0.75rem;
-  background: var(--surf);
-  border: 1px solid var(--ouro-brd);
+  padding: 0.32rem 0.7rem;
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
   border-radius: var(--r-full);
-  font-family: var(--font-d);
-  font-size: 0.62rem; font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 0.6rem; font-weight: 700;
   letter-spacing: 0.04em; text-transform: uppercase;
-  color: var(--txt2);
+  color: var(--texto-mute);
   white-space: nowrap;
   transition: all 0.15s;
 }
-.filtro-pill:hover { color: var(--txt); border-color: var(--ouro-brd2); }
+.filtro-pill:hover { color: var(--texto); border-color: var(--vidro-borda-hi); }
 .filtro-pill.ativa {
-  background: var(--ouro);
-  color: var(--bg);
-  border-color: var(--ouro);
+  background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
+  color: white;
+  border-color: transparent;
+  box-shadow: var(--sombra-suave);
 }
 .filtro-pill .count {
   margin-left: 0.3rem;
   opacity: 0.7;
-  font-size: 0.58rem;
+  font-size: 0.55rem;
 }
 
-/* Busca */
 .busca-row {
   flex-shrink: 0;
   padding: 0.5rem 0.85rem 0.6rem;
-  background: var(--bg2);
-  border-bottom: 1px solid var(--ouro-brd);
+  background: rgba(255,250,240,0.6);
+  border-bottom: 1px solid var(--vidro-borda);
   display: none;
 }
 .busca-row.visivel { display: block; }
 .busca-input {
   width: 100%;
-  background: var(--surf2);
-  border: 1px solid var(--ouro-brd);
+  background: var(--vidro-forte);
+  border: 1px solid var(--vidro-borda);
   border-radius: var(--r-full);
   padding: 0.45rem 0.85rem;
   font-size: 0.85rem;
-  color: var(--txt);
-  font-family: var(--font-b);
+  color: var(--texto);
+  font-family: var(--font-ui);
 }
-.busca-input::placeholder { color: var(--txt3); }
-.busca-input:focus { border-color: var(--ouro-brd2); }
+.busca-input::placeholder { color: var(--texto-fraco); }
+.busca-input:focus { border-color: var(--vidro-borda-hi); }
 
-/* Lista de conversas */
 .conversas-scroll {
   flex: 1;
   overflow-y: auto;
   padding-bottom: var(--safe-bottom);
 }
 .conversas-scroll::-webkit-scrollbar { width: 4px; }
-.conversas-scroll::-webkit-scrollbar-thumb { background: var(--ouro-brd); border-radius: 2px; }
+.conversas-scroll::-webkit-scrollbar-thumb { background: var(--vidro-borda); border-radius: 2px; }
 
-/* Divisor de plano */
 .plano-divisor {
-  display: flex; align-items: center; gap: 0.6rem;
+  display: flex; align-items: center; gap: 0.55rem;
   padding: 0.85rem 0.85rem 0.45rem;
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 0.6rem; font-weight: 800;
-  letter-spacing: 0.15em; text-transform: uppercase;
-  color: var(--ouro-f);
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ouro-fundo);
 }
-.plano-divisor .linha {
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, var(--ouro-brd), transparent);
-}
-.plano-divisor.prioritario { color: var(--prior); }
-.plano-divisor.prioritario .linha { background: linear-gradient(90deg, rgba(244,208,96,0.4), transparent); }
-.plano-divisor .icone {
-  font-size: 0.85rem;
-  filter: drop-shadow(0 0 4px currentColor);
-}
+.plano-divisor .linha { flex: 1; height: 1px; background: linear-gradient(90deg, var(--vidro-borda), transparent); }
+.plano-divisor.prioritario { color: var(--ouro); }
+.plano-divisor .icone { font-size: 0.85rem; }
 .plano-divisor .count {
   font-size: 0.55rem;
-  color: var(--txt3);
-  letter-spacing: 0.08em;
+  color: var(--texto-fraco);
+  letter-spacing: 0.06em;
   font-weight: 600;
 }
 
-/* Item de conversa */
 .conv-item {
-  display: flex; align-items: center; gap: 0.8rem;
+  display: flex; align-items: center; gap: 0.75rem;
   padding: 0.7rem 0.85rem;
   cursor: pointer;
   transition: background 0.12s;
   position: relative;
   border-left: 3px solid transparent;
 }
-.conv-item:hover { background: var(--surf); }
+.conv-item:hover { background: var(--vidro); }
 .conv-item.ativa {
-  background: var(--surf2);
+  background: var(--vidro);
   border-left-color: var(--ouro);
 }
-.conv-item.prioritario { background: rgba(244,208,96,0.03); }
-.conv-item.prioritario:hover { background: rgba(244,208,96,0.08); }
+.conv-item.prioritario { background: rgba(200,146,42,0.04); }
+.conv-item.prioritario:hover { background: rgba(200,146,42,0.08); }
 .conv-item.prioritario.ativa {
-  background: rgba(244,208,96,0.1);
-  border-left-color: var(--prior);
+  background: rgba(200,146,42,0.1);
+  border-left-color: var(--ouro);
 }
 
 .conv-avatar {
-  position: relative;
-  flex-shrink: 0;
+  position: relative; flex-shrink: 0;
   width: 46px; height: 46px;
   border-radius: 50%;
   overflow: hidden;
-  background: var(--bg3);
-  border: 1px solid var(--ouro-brd);
+  background: var(--vidro-forte);
+  border: 1px solid var(--vidro-borda);
   display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--sombra-suave);
 }
 .conv-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.conv-avatar svg { width: 22px; height: 22px; stroke: var(--txt3); fill: none; stroke-width: 1.6; }
+.conv-avatar svg { width: 22px; height: 22px; stroke: var(--texto-fraco); fill: none; stroke-width: 1.6; }
 .conv-prior-mark {
   position: absolute; bottom: -1px; right: -1px;
   width: 18px; height: 18px;
-  background: var(--prior);
+  background: var(--ouro);
+  color: white;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  border: 2px solid var(--bg);
-  font-size: 0.65rem;
+  border: 2px solid #FBF8F3;
+  font-size: 0.6rem;
+  box-shadow: var(--sombra-suave);
 }
 
 .conv-corpo { flex: 1; min-width: 0; }
@@ -319,205 +344,181 @@ ul, ol { list-style:none; }
 }
 .conv-nome {
   flex: 1; min-width: 0;
-  font-family: var(--font-d);
-  font-size: 0.86rem; font-weight: 700;
-  color: var(--txt);
+  font-family: var(--font-display);
+  font-size: 0.85rem; font-weight: 700;
+  color: var(--texto);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .conv-tempo {
   flex-shrink: 0;
   font-size: 0.66rem;
-  color: var(--txt3);
+  color: var(--texto-fraco);
 }
-.conv-item.tem-nao-lida .conv-tempo { color: var(--ouro-cl); font-weight: 700; }
+.conv-item.tem-nao-lida .conv-tempo { color: var(--ouro-fundo); font-weight: 700; }
 
-.conv-linha-2 {
-  display: flex; align-items: center; gap: 0.4rem;
-}
+.conv-linha-2 { display: flex; align-items: center; gap: 0.4rem; }
 .conv-preview {
   flex: 1; min-width: 0;
   font-size: 0.76rem;
-  color: var(--txt3);
+  color: var(--texto-mute);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.conv-item.tem-nao-lida .conv-preview { color: var(--txt); font-weight: 500; }
-.conv-preview .check {
-  display: inline-flex; align-items: center;
-  margin-right: 3px;
-  vertical-align: -1px;
-}
-.conv-preview .check svg { width: 14px; height: 14px; }
-
+.conv-item.tem-nao-lida .conv-preview { color: var(--texto); font-weight: 500; }
 .conv-flags { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
 .conv-fav {
   font-size: 0.85rem;
   color: var(--ouro);
-  filter: drop-shadow(0 0 4px rgba(200,146,42,0.5));
 }
 .conv-badge {
   min-width: 19px; height: 19px;
   padding: 0 5px;
-  background: var(--ouro);
-  color: var(--bg);
+  background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
+  color: white;
   border-radius: var(--r-full);
-  font-family: var(--font-d);
-  font-size: 0.62rem; font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 0.6rem; font-weight: 800;
   display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--sombra-suave);
 }
-.conv-badge.prior-badge { background: var(--prior); }
 
-/* Vazio */
 .lista-vazia {
   flex: 1;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 0.6rem;
-  color: var(--txt3);
+  color: var(--texto-fraco);
   padding: 3rem 1.5rem;
   text-align: center;
 }
-.lista-vazia .icone { font-size: 2.5rem; opacity: 0.4; }
+.lista-vazia .icone { font-size: 2.5rem; opacity: 0.5; }
 .lista-vazia p { font-size: 0.82rem; }
 
-/* ════════ COLUNA CHAT ════════ */
-.col-chat { background: var(--bg); }
-
-/* Estado vazio do chat */
+/* Chat */
 .chat-vazio {
   flex: 1;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 0.85rem;
-  color: var(--txt3);
+  color: var(--texto-mute);
   padding: 3rem;
   text-align: center;
-  background:
-    radial-gradient(ellipse at center, rgba(200,146,42,0.04) 0%, transparent 70%),
-    var(--bg);
 }
-.chat-vazio .estrela {
-  width: 80px; height: 80px;
-  opacity: 0.3;
-  margin-bottom: 1rem;
-}
+.chat-vazio .estrela { width: 80px; height: 80px; opacity: 0.45; margin-bottom: 1rem; }
 .chat-vazio h2 {
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 1rem; font-weight: 800;
   letter-spacing: 0.05em; text-transform: uppercase;
-  color: var(--ouro-cl);
+  color: var(--ouro-fundo);
   margin-bottom: 0.3rem;
 }
-.chat-vazio p { font-size: 0.82rem; line-height: 1.6; max-width: 360px; }
+.chat-vazio p { font-size: 0.84rem; line-height: 1.6; max-width: 360px; }
 
-/* Header do chat */
 .chat-header {
   flex-shrink: 0;
   display: flex; align-items: center; gap: 0.7rem;
-  padding: calc(var(--safe-top) + 0.6rem) 0.85rem 0.6rem;
-  background: rgba(13,8,0,0.95);
-  border-bottom: 1px solid var(--ouro-brd);
+  padding: calc(var(--safe-top) + 0.65rem) 0.85rem 0.65rem;
+  background: rgba(255,250,240,0.92);
+  border-bottom: 1px solid var(--vidro-borda);
   backdrop-filter: blur(16px);
   min-height: calc(var(--safe-top) + var(--header-h));
 }
 .chat-header-back { display: none; flex-shrink: 0; width: 36px; height: 36px; align-items: center; justify-content: center; border-radius: var(--r-full); }
-.chat-header-back:hover { background: var(--ouro-film); }
-.chat-header-back svg { width: 22px; height: 22px; stroke: var(--txt2); fill: none; stroke-width: 1.8; }
+.chat-header-back:hover { background: var(--ouro-pelicula); }
+.chat-header-back svg { width: 22px; height: 22px; stroke: var(--texto-mute); fill: none; stroke-width: 1.8; }
 @media (max-width: 900px) { .chat-header-back { display: flex; } }
 
 .chat-header-avatar {
   flex-shrink: 0;
-  width: 38px; height: 38px;
+  width: 40px; height: 40px;
   border-radius: 50%;
   overflow: hidden;
-  background: var(--bg3);
-  border: 1px solid var(--ouro-brd);
+  background: var(--vidro-forte);
+  border: 1px solid var(--vidro-borda);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
+  box-shadow: var(--sombra-suave);
 }
 .chat-header-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.chat-header-avatar svg { width: 18px; height: 18px; stroke: var(--txt3); fill: none; stroke-width: 1.6; }
+.chat-header-avatar svg { width: 19px; height: 19px; stroke: var(--texto-fraco); fill: none; stroke-width: 1.6; }
 
 .chat-header-info { flex: 1; min-width: 0; cursor: pointer; }
 .chat-header-nome {
-  font-family: var(--font-d);
-  font-size: 0.88rem; font-weight: 800;
-  color: var(--txt);
+  font-family: var(--font-display);
+  font-size: 0.9rem; font-weight: 800;
+  color: var(--texto);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .chat-header-status {
   display: flex; align-items: center; gap: 0.4rem;
-  font-size: 0.66rem;
-  color: var(--txt3);
+  font-size: 0.68rem;
+  color: var(--texto-mute);
   margin-top: 1px;
 }
 .chat-header-status .status-dot {
   width: 6px; height: 6px;
   border-radius: 50%;
-  background: var(--txt4);
+  background: var(--texto-fraco);
 }
-.chat-header-status.online .status-dot { background: var(--green); box-shadow: 0 0 6px rgba(37,211,102,0.6); }
-.chat-header-status.online { color: var(--green); }
-.chat-header-status.prioritario { color: var(--prior); font-weight: 700; }
-.chat-header-status.basic-vm { color: var(--ouro-cl); font-weight: 600; }
-
+.chat-header-status.prioritario { color: var(--ouro-fundo); font-weight: 700; }
+.chat-header-status.prioritario .status-dot { background: var(--ouro); box-shadow: 0 0 6px rgba(200,146,42,0.5); }
+.chat-header-status.basic-vm { color: var(--ouro-fundo); font-weight: 600; }
 .chat-header-acoes { display: flex; gap: 0.2rem; flex-shrink: 0; }
 
-/* Banner SLA */
 .sla-banner {
   flex-shrink: 0;
   margin: 0.6rem 0.85rem 0;
   padding: 0.55rem 0.85rem;
-  background: var(--surf);
-  border: 1px solid var(--ouro-brd);
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
   border-radius: var(--r-md);
   display: flex; align-items: center; gap: 0.7rem;
   font-size: 0.74rem;
 }
 .sla-banner.prioritario {
-  background: rgba(244,208,96,0.08);
-  border-color: rgba(244,208,96,0.3);
+  background: rgba(200,146,42,0.08);
+  border-color: var(--vidro-borda-hi);
 }
 .sla-banner.basic-vm {
-  background: rgba(200,146,42,0.06);
-  border-color: var(--ouro-brd2);
+  background: rgba(200,146,42,0.05);
+  border-color: var(--vidro-borda-hi);
 }
 .sla-banner .icone { font-size: 1rem; flex-shrink: 0; }
 .sla-banner .texto { flex: 1; min-width: 0; }
 .sla-banner .titulo {
-  font-family: var(--font-d);
-  font-size: 0.66rem; font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 0.68rem; font-weight: 800;
   letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--ouro-cl);
+  color: var(--ouro-fundo);
   margin-bottom: 1px;
 }
-.sla-banner.prioritario .titulo { color: var(--prior); }
-.sla-banner .desc { font-size: 0.7rem; color: var(--txt2); }
+.sla-banner .desc { font-size: 0.72rem; color: var(--texto-suave); }
 
-/* Mensagens */
 .chat-msgs {
   flex: 1;
   overflow-y: auto;
-  padding: 0.75rem 0.9rem;
-  display: flex; flex-direction: column; gap: 0.35rem;
-  background:
-    radial-gradient(ellipse at top, rgba(200,146,42,0.025) 0%, transparent 60%),
-    var(--bg);
+  padding: 0.75rem 0.95rem;
+  display: flex; flex-direction: column; gap: 0.4rem;
 }
 .chat-msgs::-webkit-scrollbar { width: 4px; }
-.chat-msgs::-webkit-scrollbar-thumb { background: var(--ouro-brd); border-radius: 2px; }
+.chat-msgs::-webkit-scrollbar-thumb { background: var(--vidro-borda); border-radius: 2px; }
 
 .msg-data-sep {
   align-self: center;
-  margin: 0.7rem 0 0.4rem;
-  padding: 0.2rem 0.7rem;
-  background: var(--surf);
-  border: 1px solid var(--ouro-brd);
+  margin: 0.7rem 0 0.5rem;
+  padding: 0.22rem 0.75rem;
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
   border-radius: var(--r-full);
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 0.6rem; font-weight: 700;
   letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--txt3);
+  color: var(--texto-mute);
 }
 
-/* Bolha — wrap */
+/*
+  DIREÇÃO DAS BOLHAS:
+  Suellen escreve à DIREITA (em ouro)
+  Aluna escreve à ESQUERDA (em vidro)
+  ✦ Padrão WhatsApp Web — quem está na tela vê suas próprias mensagens à direita
+*/
 .msg-wrap {
   display: flex; flex-direction: column;
   max-width: 70%;
@@ -525,61 +526,60 @@ ul, ol { list-style:none; }
 }
 .msg-wrap.aluna { align-self: flex-start; align-items: flex-start; }
 .msg-wrap.suellen { align-self: flex-end; align-items: flex-end; }
+@media (max-width: 600px) { .msg-wrap { max-width: 84%; } }
 
-@media (max-width: 600px) {
-  .msg-wrap { max-width: 82%; }
-}
-
-/* Bolha de texto */
 .msg-bolha {
-  padding: 0.5rem 0.8rem 0.4rem;
-  border-radius: 14px;
-  font-size: 0.88rem; line-height: 1.45;
+  padding: 0.55rem 0.85rem 0.45rem;
+  border-radius: 18px;
+  font-family: var(--font-ui);
+  font-size: 0.88rem; line-height: 1.5;
   word-break: break-word;
   position: relative;
   cursor: pointer;
   transition: opacity 0.15s;
   user-select: text;
 }
-.msg-bolha:hover { opacity: 0.95; }
+.msg-bolha:hover { opacity: 0.96; }
+
 .msg-wrap.aluna .msg-bolha {
-  background: var(--surf2);
-  color: var(--txt);
+  background: var(--vidro-forte);
+  color: var(--texto);
+  border: 1px solid var(--vidro-borda);
   border-bottom-left-radius: 4px;
-  border: 1px solid var(--ouro-brd);
 }
+
 .msg-wrap.suellen .msg-bolha {
-  background: linear-gradient(135deg, var(--ouro-f), var(--ouro));
+  background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
   color: white;
   border-bottom-right-radius: 4px;
+  box-shadow: var(--sombra-suave);
 }
 .msg-wrap.suellen .msg-bolha.identidade-equipe {
   background: linear-gradient(135deg, #5C3F0A, #8B6520);
-  border: 1px solid var(--ouro-brd2);
+  border: 1px solid var(--vidro-borda-hi);
 }
 
-/* Etiqueta de identidade acima da bolha */
 .msg-etiqueta {
   display: flex; align-items: center; gap: 0.35rem;
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 0.55rem; font-weight: 800;
   letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--ouro-cl);
+  color: var(--ouro-fundo);
   margin-bottom: 3px;
   padding: 0 0.3rem;
 }
-.msg-etiqueta.equipe { color: var(--ouro-br); }
+.msg-etiqueta.equipe { color: #8B6520; }
 .msg-etiqueta img {
   width: 14px; height: 14px;
   border-radius: 50%;
   object-fit: cover;
-  background: var(--bg3);
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
 }
 
-/* Reply preview dentro da bolha */
 .msg-reply-preview {
-  background: rgba(0,0,0,0.18);
-  border-left: 3px solid var(--ouro-cl);
+  background: rgba(0,0,0,0.06);
+  border-left: 3px solid var(--ouro);
   border-radius: 6px;
   padding: 0.35rem 0.55rem;
   margin-bottom: 0.4rem;
@@ -587,51 +587,50 @@ ul, ol { list-style:none; }
   line-height: 1.35;
   max-width: 100%;
 }
-.msg-wrap.aluna .msg-reply-preview {
-  background: rgba(0,0,0,0.25);
-  border-left-color: var(--ouro);
+.msg-wrap.suellen .msg-reply-preview {
+  background: rgba(0,0,0,0.18);
+  border-left-color: rgba(255,255,255,0.6);
 }
 .msg-reply-preview .reply-autor {
   display: block;
   font-weight: 800;
-  font-size: 0.62rem;
-  color: var(--ouro-cl);
+  font-size: 0.6rem;
   margin-bottom: 1px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  color: var(--ouro-fundo);
 }
-.msg-wrap.suellen .msg-reply-preview .reply-autor { color: var(--ouro-br); }
+.msg-wrap.suellen .msg-reply-preview .reply-autor { color: rgba(255,255,255,0.92); }
 .msg-reply-preview .reply-texto {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
-/* Imagem */
 .msg-img {
   max-width: 240px;
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
   cursor: pointer;
-  background: var(--bg3);
+  background: var(--vidro);
 }
 .msg-img img { width: 100%; display: block; }
 
-/* Áudio — bolha custom */
 .msg-audio-bolha {
   padding: 0.55rem 0.85rem;
-  border-radius: 16px;
+  border-radius: 18px;
   display: flex; align-items: center; gap: 0.55rem;
   min-width: 180px; max-width: 250px;
   cursor: pointer;
 }
 .msg-wrap.aluna .msg-audio-bolha {
-  background: var(--surf2);
-  border: 1px solid var(--ouro-brd);
+  background: var(--vidro-forte);
+  border: 1px solid var(--vidro-borda);
   border-bottom-left-radius: 4px;
 }
 .msg-wrap.suellen .msg-audio-bolha {
-  background: linear-gradient(135deg, var(--ouro-f), var(--ouro));
+  background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
   border-bottom-right-radius: 4px;
+  box-shadow: var(--sombra-suave);
 }
 .msg-audio-play-btn {
   flex-shrink: 0;
@@ -640,27 +639,27 @@ ul, ol { list-style:none; }
   display: flex; align-items: center; justify-content: center;
   transition: transform 0.12s;
   cursor: pointer;
+  border: none;
 }
 .msg-audio-play-btn:hover { transform: scale(1.06); }
-.msg-wrap.aluna .msg-audio-play-btn { background: var(--ouro-film); border: 1px solid var(--ouro-brd2); }
-.msg-wrap.aluna .msg-audio-play-btn svg { fill: var(--ouro-cl); }
-.msg-wrap.suellen .msg-audio-play-btn { background: rgba(255,255,255,0.18); }
+.msg-wrap.aluna .msg-audio-play-btn { background: var(--ouro-pelicula); border: 1px solid rgba(161,117,35,0.2); }
+.msg-wrap.aluna .msg-audio-play-btn svg { fill: var(--ouro-fundo); }
+.msg-wrap.suellen .msg-audio-play-btn { background: rgba(255,255,255,0.22); }
 .msg-wrap.suellen .msg-audio-play-btn svg { fill: white; }
-.msg-audio-play-btn svg { width: 12px; height: 12px; margin-left: 2px; }
+.msg-audio-play-btn svg { width: 12px; height: 12px; margin-left: 2px; stroke: none; }
 .msg-audio-wave { flex: 1; display: block; height: 28px; }
-.msg-wrap.aluna .msg-audio-wave-bar { fill: rgba(200,146,42,0.32); }
-.msg-wrap.suellen .msg-audio-wave-bar { fill: rgba(255,255,255,0.32); }
-.msg-wrap.aluna .msg-audio-wave-bar.ativa { fill: var(--ouro-cl); }
+.msg-wrap.aluna .msg-audio-wave-bar { fill: rgba(161,117,35,0.35); }
+.msg-wrap.suellen .msg-audio-wave-bar { fill: rgba(255,255,255,0.4); }
+.msg-wrap.aluna .msg-audio-wave-bar.ativa { fill: var(--ouro); }
 .msg-wrap.suellen .msg-audio-wave-bar.ativa { fill: rgba(255,255,255,0.95); }
 .msg-audio-dur {
   flex-shrink: 0; min-width: 30px; text-align: right;
-  font-family: var(--font-d);
-  font-size: 0.62rem; font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 0.6rem; font-weight: 700;
 }
-.msg-wrap.aluna .msg-audio-dur { color: var(--txt2); }
+.msg-wrap.aluna .msg-audio-dur { color: var(--texto-mute); }
 .msg-wrap.suellen .msg-audio-dur { color: rgba(255,255,255,0.78); }
 
-/* Rodapé da bolha — hora + checks */
 .msg-footer {
   display: flex; align-items: center; gap: 0.3rem;
   padding: 0 0.3rem;
@@ -668,78 +667,56 @@ ul, ol { list-style:none; }
 }
 .msg-hora {
   font-size: 0.62rem;
-  color: var(--txt3);
+  color: var(--texto-fraco);
 }
-.msg-wrap.suellen .msg-hora { color: var(--txt3); }
 .msg-checks {
   display: inline-flex;
   margin-left: 1px;
 }
-.msg-checks svg { width: 14px; height: 14px; }
-.msg-checks.enviada svg { stroke: var(--txt3); }
-.msg-checks.entregue svg { stroke: var(--txt3); }
-.msg-checks.lida svg { stroke: var(--ouro-cl); filter: drop-shadow(0 0 3px rgba(200,146,42,0.5)); }
-
-/* Indicador "digitando" */
-.digitando-bolha {
-  align-self: flex-start;
-  background: var(--surf2);
-  border: 1px solid var(--ouro-brd);
-  padding: 0.55rem 0.9rem;
-  border-radius: 14px;
-  border-bottom-left-radius: 4px;
-  display: flex; gap: 4px; align-items: center;
-}
-.digitando-bolha span {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--txt3);
-  animation: dig-pulse 1.2s ease-in-out infinite;
-}
-.digitando-bolha span:nth-child(2) { animation-delay: 0.2s; }
-.digitando-bolha span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes dig-pulse {
-  0%, 100% { opacity: 0.3; transform: scale(0.85); }
-  50% { opacity: 1; transform: scale(1); }
+.msg-checks svg { width: 14px; height: 14px; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.msg-checks.entregue svg { stroke: var(--texto-fraco); }
+.msg-checks.lida svg {
+  stroke: var(--ouro);
+  filter: drop-shadow(0 0 3px rgba(200,146,42,0.5));
 }
 
-/* Context menu nas mensagens */
 .msg-ctx-menu {
   position: fixed; z-index: 200;
-  background: var(--bg3);
-  border: 1px solid var(--ouro-brd2);
+  background: var(--vidro-forte);
+  border: 1px solid var(--vidro-borda-hi);
   border-radius: var(--r-md);
   padding: 0.3rem 0;
-  box-shadow: 0 12px 36px rgba(0,0,0,0.6);
+  box-shadow: var(--sombra-forte);
   min-width: 160px;
   display: none;
+  backdrop-filter: blur(20px);
   animation: ctx-fade 0.15s ease;
 }
 .msg-ctx-menu.visivel { display: block; }
-@keyframes ctx-fade { from { opacity:0; transform: scale(0.92); } to { opacity:1; transform: scale(1); } }
+@keyframes ctx-fade { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
 .msg-ctx-item {
   display: flex; align-items: center; gap: 0.6rem;
   padding: 0.55rem 0.95rem;
   font-size: 0.82rem;
-  color: var(--txt);
+  color: var(--texto);
   cursor: pointer;
   transition: background 0.12s;
+  font-family: var(--font-ui);
 }
-.msg-ctx-item:hover { background: var(--surf2); }
+.msg-ctx-item:hover { background: var(--ouro-pelicula); }
 .msg-ctx-item svg {
   width: 16px; height: 16px;
-  stroke: var(--txt2);
+  stroke: var(--texto-mute);
   fill: none; stroke-width: 1.8;
   stroke-linecap: round; stroke-linejoin: round;
 }
 
-/* Reply bar acima do input */
 .reply-bar {
   display: none;
   align-items: center; gap: 0.7rem;
   padding: 0.55rem 0.85rem;
-  background: var(--bg2);
-  border-top: 1px solid var(--ouro-brd);
+  background: var(--vidro);
+  border-top: 1px solid var(--vidro-borda);
   flex-shrink: 0;
 }
 .reply-bar.visivel { display: flex; }
@@ -751,15 +728,15 @@ ul, ol { list-style:none; }
 }
 .reply-bar-corpo { flex: 1; min-width: 0; }
 .reply-bar-autor {
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 0.62rem; font-weight: 800;
-  color: var(--ouro-cl);
+  color: var(--ouro-fundo);
   letter-spacing: 0.06em; text-transform: uppercase;
   margin-bottom: 1px;
 }
 .reply-bar-texto {
   font-size: 0.78rem;
-  color: var(--txt2);
+  color: var(--texto-mute);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .reply-bar-x {
@@ -767,23 +744,20 @@ ul, ol { list-style:none; }
   width: 28px; height: 28px;
   border-radius: var(--r-full);
   display: flex; align-items: center; justify-content: center;
-  color: var(--txt3);
+  color: var(--texto-mute);
   font-size: 1rem;
   transition: background 0.15s, color 0.15s;
 }
-.reply-bar-x:hover { background: var(--surf2); color: var(--txt); }
+.reply-bar-x:hover { background: var(--ouro-pelicula); color: var(--texto); }
 
-/* Input bar */
 .chat-input-wrap {
   flex-shrink: 0;
   padding: 0.55rem 0.7rem calc(0.55rem + var(--safe-bottom));
-  background: rgba(13,8,0,0.95);
-  border-top: 1px solid var(--ouro-brd);
+  background: rgba(255,250,240,0.95);
+  border-top: 1px solid var(--vidro-borda);
   backdrop-filter: blur(16px);
 }
-.chat-input-row {
-  display: flex; align-items: flex-end; gap: 0.4rem;
-}
+.chat-input-row { display: flex; align-items: flex-end; gap: 0.4rem; }
 .chat-input-row.gravando { display: none; }
 
 .btn-icone {
@@ -791,13 +765,13 @@ ul, ol { list-style:none; }
   width: 38px; height: 38px;
   display: flex; align-items: center; justify-content: center;
   border-radius: var(--r-full);
-  color: var(--txt2);
+  color: var(--texto-mute);
   transition: color 0.15s, background 0.15s, transform 0.12s;
 }
-.btn-icone:hover { color: var(--ouro-cl); background: var(--ouro-film); }
+.btn-icone:hover { color: var(--ouro-fundo); background: var(--ouro-pelicula); }
 .btn-icone:active { transform: scale(0.92); }
 .btn-icone svg {
-  width: 19px; height: 19px;
+  width: 18px; height: 18px;
   stroke: currentColor;
   fill: none;
   stroke-linecap: round; stroke-linejoin: round;
@@ -808,36 +782,36 @@ ul, ol { list-style:none; }
 .chat-input {
   width: 100%;
   max-height: 120px;
-  background: var(--surf2);
-  border: 1px solid var(--ouro-brd);
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
   border-radius: 22px;
   padding: 0.55rem 1rem;
-  font-family: var(--font-b);
+  font-family: var(--font-ui);
   font-size: 0.9rem;
-  color: var(--txt);
+  color: var(--texto);
   resize: none;
   line-height: 1.4;
   transition: border-color 0.2s;
   display: block;
 }
-.chat-input:focus { border-color: var(--ouro-brd2); }
-.chat-input::placeholder { color: var(--txt3); }
+.chat-input:focus { border-color: var(--vidro-borda-hi); }
+.chat-input::placeholder { color: var(--texto-fraco); }
 
 .btn-enviar {
   flex-shrink: 0;
   width: 40px; height: 40px;
-  background: linear-gradient(135deg, var(--ouro-f), var(--ouro));
+  background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
   border-radius: var(--r-full);
-  display: flex; align-items: center; justify-content: center;
-  transition: transform 0.15s;
   display: none;
+  align-items: center; justify-content: center;
+  transition: transform 0.15s;
+  box-shadow: var(--sombra-suave);
 }
 .btn-enviar.visivel { display: flex; }
 .btn-enviar:hover { transform: scale(1.06); }
 .btn-enviar:active { transform: scale(0.95); }
 .btn-enviar svg { width: 16px; height: 16px; fill: white; stroke: none; }
 
-/* Gravando — barra que substitui o input */
 .chat-rec-row {
   display: none;
   align-items: center; gap: 0.4rem;
@@ -845,26 +819,24 @@ ul, ol { list-style:none; }
 }
 .chat-rec-row.visivel { display: flex; }
 @keyframes rec-aparecer { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
-
 .btn-rec-cancel {
   flex-shrink: 0;
   width: 40px; height: 40px;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(239,68,68,0.1);
-  border: 1.5px solid rgba(239,68,68,0.3);
+  background: rgba(176,72,72,0.1);
+  border: 1.5px solid rgba(176,72,72,0.3);
   border-radius: var(--r-full);
   color: var(--red);
   transition: background 0.15s, transform 0.12s;
 }
-.btn-rec-cancel:hover { background: rgba(239,68,68,0.2); }
+.btn-rec-cancel:hover { background: rgba(176,72,72,0.18); }
 .btn-rec-cancel:active { transform: scale(0.92); }
 .btn-rec-cancel svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
-
 .rec-visualizer {
   flex: 1;
   display: flex; align-items: center; gap: 0.55rem;
-  background: var(--surf2);
-  border: 1px solid rgba(239,68,68,0.25);
+  background: var(--vidro);
+  border: 1px solid rgba(176,72,72,0.25);
   border-radius: 22px;
   padding: 0 0.85rem;
   height: 40px;
@@ -877,89 +849,83 @@ ul, ol { list-style:none; }
   background: var(--red);
   animation: rec-dot 1s ease-in-out infinite;
 }
-@keyframes rec-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.45; transform: scale(0.75); }
-}
+@keyframes rec-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.75); } }
 .rec-wave { flex: 1; height: 32px; display: block; }
 .rec-timer {
   flex-shrink: 0;
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 0.78rem; font-weight: 700;
   color: var(--red);
   letter-spacing: 0.04em;
   min-width: 32px;
   text-align: right;
 }
-
 .btn-rec-send {
   flex-shrink: 0;
   width: 40px; height: 40px;
-  background: linear-gradient(135deg, var(--ouro-f), var(--ouro));
+  background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
   border-radius: var(--r-full);
   display: flex; align-items: center; justify-content: center;
   transition: transform 0.15s;
+  box-shadow: var(--sombra-suave);
 }
 .btn-rec-send:hover { transform: scale(1.06); }
 .btn-rec-send:active { transform: scale(0.95); }
 .btn-rec-send svg { width: 16px; height: 16px; fill: white; stroke: none; }
 
-/* ════════ COLUNA PAINEL DA ALUNA ════════ */
 .painel-scroll {
   flex: 1;
   overflow-y: auto;
   padding-bottom: var(--safe-bottom);
 }
 .painel-scroll::-webkit-scrollbar { width: 4px; }
-.painel-scroll::-webkit-scrollbar-thumb { background: var(--ouro-brd); border-radius: 2px; }
+.painel-scroll::-webkit-scrollbar-thumb { background: var(--vidro-borda); border-radius: 2px; }
 
 .painel-hero {
   padding: 1.5rem 1.25rem 1.25rem;
   display: flex; flex-direction: column; align-items: center;
   gap: 0.5rem;
   text-align: center;
-  background:
-    radial-gradient(ellipse at top, rgba(200,146,42,0.08) 0%, transparent 60%),
-    var(--bg2);
-  border-bottom: 1px solid var(--ouro-brd);
+  background: rgba(255,250,240,0.7);
+  border-bottom: 1px solid var(--vidro-borda);
 }
 .painel-foto {
-  width: 70px; height: 70px;
+  width: 72px; height: 72px;
   border-radius: 50%;
   overflow: hidden;
-  background: var(--bg3);
-  border: 2px solid var(--ouro-brd2);
+  background: var(--vidro-forte);
+  border: 2px solid var(--vidro-borda-hi);
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 16px rgba(200,146,42,0.18);
+  box-shadow: var(--sombra-media), var(--glow-ouro);
 }
 .painel-foto img { width: 100%; height: 100%; object-fit: cover; }
-.painel-foto svg { width: 30px; height: 30px; stroke: var(--txt3); fill: none; stroke-width: 1.4; }
+.painel-foto svg { width: 30px; height: 30px; stroke: var(--texto-fraco); fill: none; stroke-width: 1.4; }
 .painel-nome {
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 1rem; font-weight: 900;
-  color: var(--txt);
+  color: var(--texto);
 }
-.painel-tel { font-size: 0.72rem; color: var(--txt2); }
+.painel-tel { font-size: 0.74rem; color: var(--texto-mute); }
 .painel-tags { display: flex; gap: 0.3rem; flex-wrap: wrap; justify-content: center; margin-top: 0.4rem; }
 .tag-pill {
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 0.58rem; font-weight: 700;
   letter-spacing: 0.08em; text-transform: uppercase;
   padding: 0.2rem 0.6rem;
   border-radius: var(--r-full);
 }
-.tag-prior { background: rgba(244,208,96,0.12); color: var(--prior); border: 1px solid rgba(244,208,96,0.35); }
-.tag-vm    { background: rgba(200,146,42,0.12); color: var(--ouro-cl); border: 1px solid var(--ouro-brd2); }
-.tag-free  { background: var(--surf); color: var(--txt2); border: 1px solid var(--ouro-brd); }
-.tag-bloq  { background: rgba(239,68,68,0.1); color: #F87171; border: 1px solid rgba(239,68,68,0.3); }
-.tag-fav   { background: rgba(200,146,42,0.15); color: var(--ouro-cl); border: 1px solid var(--ouro-brd2); }
+.tag-prior { background: rgba(200,146,42,0.15); color: var(--ouro-fundo); border: 1px solid var(--vidro-borda-hi); }
+.tag-vm    { background: rgba(200,146,42,0.08); color: var(--ouro-fundo); border: 1px solid var(--vidro-borda); }
+.tag-free  { background: var(--vidro); color: var(--texto-mute); border: 1px solid var(--vidro-borda); }
+.tag-bloq  { background: rgba(176,72,72,0.1); color: var(--red); border: 1px solid rgba(176,72,72,0.3); }
+.tag-fav   { background: rgba(200,146,42,0.15); color: var(--ouro-fundo); border: 1px solid var(--vidro-borda-hi); }
 
 .painel-secao { padding: 1rem 1rem 0.4rem; }
 .painel-secao-titulo {
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 0.6rem; font-weight: 800;
   letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--ouro-f);
+  color: var(--ouro-fundo);
   margin-bottom: 0.65rem;
 }
 .stats-grid {
@@ -969,30 +935,30 @@ ul, ol { list-style:none; }
   margin-bottom: 0.4rem;
 }
 .stat-card {
-  background: var(--surf);
-  border: 1px solid var(--ouro-brd);
+  background: var(--vidro-forte);
+  border: 1px solid var(--vidro-borda);
   border-radius: var(--r-md);
   padding: 0.7rem;
 }
 .stat-num {
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 1.3rem; font-weight: 900;
-  color: var(--ouro-cl);
+  color: var(--ouro-fundo);
   line-height: 1;
   margin-bottom: 2px;
 }
-.stat-label { font-size: 0.62rem; color: var(--txt2); }
+.stat-label { font-size: 0.62rem; color: var(--texto-mute); }
 
 .prior-box {
-  background: rgba(244,208,96,0.06);
-  border: 1px solid rgba(244,208,96,0.25);
+  background: rgba(200,146,42,0.08);
+  border: 1px solid var(--vidro-borda-hi);
   border-radius: var(--r-md);
   padding: 0.85rem;
 }
 .prior-box-titulo {
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 0.7rem; font-weight: 800;
-  color: var(--prior);
+  color: var(--ouro-fundo);
   margin-bottom: 0.55rem;
   display: flex; align-items: center; gap: 0.4rem;
 }
@@ -1001,22 +967,22 @@ ul, ol { list-style:none; }
   padding: 0.25rem 0;
   font-size: 0.74rem;
 }
-.prior-label { color: var(--txt2); }
+.prior-label { color: var(--texto-mute); }
 .prior-val {
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-weight: 700;
-  color: var(--txt);
+  color: var(--texto);
 }
 .prior-barra-bg {
   margin-top: 0.5rem;
   height: 4px;
-  background: rgba(244,208,96,0.15);
+  background: rgba(200,146,42,0.2);
   border-radius: 2px;
   overflow: hidden;
 }
 .prior-barra-fill {
   height: 100%;
-  background: var(--prior);
+  background: linear-gradient(90deg, var(--ouro-fundo), var(--ouro));
   transition: width 0.4s;
 }
 
@@ -1024,38 +990,41 @@ ul, ol { list-style:none; }
 .acao-btn {
   display: flex; align-items: center; gap: 0.7rem;
   padding: 0.7rem 0.85rem;
-  background: var(--surf);
-  border: 1px solid var(--ouro-brd);
+  background: var(--vidro-forte);
+  border: 1px solid var(--vidro-borda);
   border-radius: var(--r-md);
   font-size: 0.8rem;
-  color: var(--txt);
+  color: var(--texto);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
   width: 100%;
   text-align: left;
+  font-family: var(--font-ui);
 }
-.acao-btn:hover { background: var(--surf2); border-color: var(--ouro-brd2); }
-.acao-btn.danger { border-color: rgba(239,68,68,0.18); }
-.acao-btn.danger:hover { background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.35); color: #F87171; }
-.acao-btn.success { border-color: rgba(37,211,102,0.18); }
-.acao-btn.success:hover { background: rgba(37,211,102,0.06); border-color: rgba(37,211,102,0.35); }
+.acao-btn:hover { background: var(--vidro); border-color: var(--vidro-borda-hi); }
+.acao-btn.danger { border-color: rgba(176,72,72,0.18); }
+.acao-btn.danger:hover { background: rgba(176,72,72,0.06); border-color: rgba(176,72,72,0.35); color: var(--red); }
+.acao-btn.success { border-color: rgba(90,158,111,0.2); }
+.acao-btn.success:hover { background: rgba(90,158,111,0.06); border-color: rgba(90,158,111,0.35); }
 .acao-btn svg {
   width: 16px; height: 16px;
-  stroke: var(--txt2);
+  stroke: var(--texto-mute);
   fill: none; stroke-width: 1.8;
   stroke-linecap: round; stroke-linejoin: round;
   flex-shrink: 0;
 }
-.acao-btn.danger svg { stroke: #F87171; }
-.acao-btn.success svg { stroke: #4ADE80; }
+.acao-btn.danger svg { stroke: var(--red); }
+.acao-btn.success svg { stroke: var(--green); }
 
-/* ════════ TELA DE LOGIN ════════ */
 #tela-login {
   position: fixed; inset: 0; z-index: 500;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  background:
-    radial-gradient(ellipse at center, rgba(200,146,42,0.12) 0%, transparent 70%),
-    var(--bg);
+  background-color: #E8DCC0;
+  background-image:
+    linear-gradient(180deg, rgba(255,250,240,0.72) 0%, rgba(248,243,232,0.6) 40%, rgba(240,232,215,0.55) 100%),
+    url('/assets/background-theme.jpg');
+  background-size: cover;
+  background-position: center top;
   padding: 2rem;
   transition: opacity 0.3s, transform 0.3s;
 }
@@ -1067,88 +1036,87 @@ ul, ol { list-style:none; }
 }
 .login-marca img {
   width: 28px; height: 28px;
-  filter: drop-shadow(0 0 8px rgba(200,146,42,0.6));
+  filter: drop-shadow(0 0 8px rgba(200,146,42,0.4));
 }
 .login-marca-txt {
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 0.82rem; font-weight: 900;
-  color: var(--ouro-cl);
+  color: var(--ouro-fundo);
   letter-spacing: 0.1em; text-transform: uppercase;
 }
 .login-sub {
   font-size: 0.74rem;
-  color: var(--txt3);
+  color: var(--texto-mute);
   margin-bottom: 2.2rem;
   letter-spacing: 0.04em;
 }
-
 .login-card {
   width: 100%; max-width: 340px;
-  background: var(--bg2);
-  border: 1px solid var(--ouro-brd2);
-  border-radius: 20px;
+  background: var(--vidro-forte);
+  border: 1px solid var(--vidro-borda-hi);
+  border-radius: var(--r-lg);
   padding: 2rem 1.75rem 1.75rem;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 0 60px rgba(200,146,42,0.08);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--sombra-forte), var(--glow-ouro);
 }
 .login-titulo {
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 1rem; font-weight: 900;
-  color: var(--txt);
+  color: var(--texto);
   margin-bottom: 0.3rem;
 }
 .login-desc {
   font-size: 0.78rem;
-  color: var(--txt2);
+  color: var(--texto-mute);
   margin-bottom: 1.5rem;
   line-height: 1.55;
+  font-family: var(--font-body);
+  font-style: italic;
 }
-
 .login-label {
   display: block;
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 0.6rem; font-weight: 800;
   letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--txt2);
+  color: var(--ouro-fundo);
   margin-bottom: 0.4rem;
 }
 .login-input {
   width: 100%;
-  background: var(--surf2);
-  border: 1px solid var(--ouro-brd);
+  background: rgba(255,250,240,0.6);
+  border: 1px solid var(--vidro-borda);
   border-radius: 10px;
   padding: 0.7rem 1rem;
   font-size: 0.95rem;
-  color: var(--txt);
-  font-family: var(--font-b);
+  color: var(--texto);
+  font-family: var(--font-ui);
   transition: border-color 0.2s;
 }
-.login-input:focus { border-color: var(--ouro-brd2); }
-
+.login-input:focus { border-color: var(--vidro-borda-hi); }
 .login-btn {
   width: 100%;
   padding: 0.85rem;
   margin-top: 1.1rem;
-  background: linear-gradient(135deg, var(--ouro-f), var(--ouro));
+  background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
   color: white;
   border-radius: 10px;
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 0.85rem; font-weight: 800;
   letter-spacing: 0.04em;
   transition: opacity 0.15s, transform 0.12s;
+  box-shadow: var(--sombra-suave);
 }
 .login-btn:hover { opacity: 0.9; }
 .login-btn:active { transform: scale(0.98); }
 .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
 .login-erro {
-  color: #F87171;
+  color: var(--red);
   font-size: 0.78rem;
   margin-top: 0.85rem;
   text-align: center;
   min-height: 1.2em;
 }
 
-/* ════════ TOAST ════════ */
 #toast {
   position: fixed;
   bottom: calc(1.25rem + var(--safe-bottom));
@@ -1163,67 +1131,69 @@ ul, ol { list-style:none; }
   pointer-events: none;
   white-space: nowrap;
   backdrop-filter: blur(12px);
+  border: 1px solid var(--vidro-borda-hi);
+  box-shadow: var(--sombra-forte);
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-#toast.ok { background: rgba(37,211,102,0.18); border: 1px solid rgba(37,211,102,0.35); color: #4ADE80; }
-#toast.err { background: rgba(239,68,68,0.18); border: 1px solid rgba(239,68,68,0.35); color: #F87171; }
+#toast.ok { background: rgba(90,158,111,0.18); color: var(--green); }
+#toast.err { background: rgba(176,72,72,0.18); color: var(--red); }
 
-/* ════════ MODAL DE INPUT ════════ */
 .modal-overlay {
   position: fixed; inset: 0; z-index: 300;
-  background: rgba(0,0,0,0.7);
+  background: rgba(13,8,0,0.45);
   backdrop-filter: blur(6px);
   display: none; align-items: center; justify-content: center;
   padding: 1rem;
 }
 .modal-overlay.aberto { display: flex; }
 .modal-box {
-  background: var(--bg2);
-  border: 1px solid var(--ouro-brd2);
+  background: var(--vidro-forte);
+  border: 1px solid var(--vidro-borda-hi);
   border-radius: var(--r-lg);
   padding: 1.5rem;
   width: 100%; max-width: 320px;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+  box-shadow: var(--sombra-forte);
+  backdrop-filter: blur(20px);
 }
 .modal-titulo {
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 0.85rem; font-weight: 800;
-  color: var(--ouro-cl);
+  color: var(--ouro-fundo);
   margin-bottom: 0.4rem;
 }
 .modal-desc {
   font-size: 0.78rem;
-  color: var(--txt2);
+  color: var(--texto-mute);
   margin-bottom: 1rem;
   line-height: 1.5;
 }
 .modal-input {
   width: 100%;
-  background: var(--surf2);
-  border: 1px solid var(--ouro-brd);
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
   border-radius: var(--r-sm);
   padding: 0.6rem 0.85rem;
   font-size: 0.95rem;
-  color: var(--txt);
+  color: var(--texto);
   margin-bottom: 1rem;
+  font-family: var(--font-ui);
 }
-.modal-input:focus { border-color: var(--ouro-brd2); }
+.modal-input:focus { border-color: var(--vidro-borda-hi); }
 .modal-acoes { display: flex; gap: 0.5rem; }
 .modal-acoes button {
   flex: 1;
   padding: 0.6rem;
   border-radius: var(--r-sm);
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 0.72rem; font-weight: 800;
   letter-spacing: 0.04em; text-transform: uppercase;
   transition: opacity 0.15s;
 }
-.modal-acoes .ok { background: var(--ouro); color: var(--bg); }
+.modal-acoes .ok { background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro)); color: white; box-shadow: var(--sombra-suave); }
 .modal-acoes .ok:hover { opacity: 0.88; }
-.modal-acoes .cancel { background: transparent; color: var(--txt2); border: 1px solid var(--ouro-brd); }
-.modal-acoes .cancel:hover { background: var(--surf); }
+.modal-acoes .cancel { background: transparent; color: var(--texto-mute); border: 1px solid var(--vidro-borda); }
+.modal-acoes .cancel:hover { background: var(--vidro); }
 
-/* ════════ LOADING ════════ */
 .loading-dots {
   display: flex; gap: 6px; align-items: center; justify-content: center;
   padding: 3rem;
@@ -1241,16 +1211,16 @@ ul, ol { list-style:none; }
   50% { transform: scale(1); opacity: 1; }
 }
 
-/* ════════ MENU DE ORDENAÇÃO ════════ */
 .dropdown-menu {
   position: absolute;
   top: 100%; right: 0;
   margin-top: 4px;
   min-width: 200px;
-  background: var(--bg3);
-  border: 1px solid var(--ouro-brd2);
+  background: var(--vidro-forte);
+  border: 1px solid var(--vidro-borda-hi);
   border-radius: var(--r-md);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  box-shadow: var(--sombra-forte);
+  backdrop-filter: blur(20px);
   z-index: 50;
   display: none;
   overflow: hidden;
@@ -1258,22 +1228,23 @@ ul, ol { list-style:none; }
 .dropdown-menu.aberto { display: block; }
 .dropdown-titulo {
   padding: 0.5rem 0.85rem 0.4rem;
-  font-family: var(--font-d);
+  font-family: var(--font-display);
   font-size: 0.58rem; font-weight: 800;
   letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--txt3);
-  border-bottom: 1px solid var(--ouro-brd);
+  color: var(--texto-mute);
+  border-bottom: 1px solid var(--vidro-borda);
 }
 .dropdown-item {
   display: flex; align-items: center; gap: 0.55rem;
   padding: 0.55rem 0.85rem;
   font-size: 0.82rem;
-  color: var(--txt);
+  color: var(--texto);
   cursor: pointer;
   transition: background 0.12s;
+  font-family: var(--font-ui);
 }
-.dropdown-item:hover { background: var(--surf2); }
-.dropdown-item.ativo { background: var(--ouro-film); color: var(--ouro-cl); }
+.dropdown-item:hover { background: var(--ouro-pelicula); }
+.dropdown-item.ativo { background: var(--ouro-pelicula); color: var(--ouro-fundo); font-weight: 600; }
 .dropdown-item .check {
   margin-left: auto;
   font-size: 0.85rem;
@@ -1285,7 +1256,9 @@ ul, ol { list-style:none; }
 </head>
 <body>
 
-<!-- ══════════ TELA DE LOGIN ══════════ -->
+<div class="particulas" id="particulas"></div>
+
+<!-- Tela de login -->
 <div id="tela-login">
   <div class="login-marca">
     <img src="/assets/logo-equipe.png" alt="Vida Mágica" onerror="this.style.display='none'">
@@ -1294,7 +1267,7 @@ ul, ol { list-style:none; }
   <div class="login-sub">Painel de Atendimento</div>
   <div class="login-card">
     <div class="login-titulo">Bem-vinda 👋</div>
-    <div class="login-desc">Digite a senha para acessar o painel de atendimento.</div>
+    <div class="login-desc">Digite a senha para acessar o painel.</div>
     <label class="login-label" for="login-senha">Senha</label>
     <input class="login-input" type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password">
     <button class="login-btn" id="login-btn">Entrar</button>
@@ -1302,20 +1275,18 @@ ul, ol { list-style:none; }
   </div>
 </div>
 
-<!-- ══════════ APP ══════════ -->
+<!-- App -->
 <div id="app">
 
-  <!-- ━━━━━ COLUNA: LISTA ━━━━━ -->
   <aside class="col-lista">
-    <!-- Topo: switch identidade -->
     <div class="lista-topo">
       <div class="identidade-switch" id="identidade-switch" data-modo="suellen">
         <div class="identidade-pill"></div>
-        <button class="identidade-opcao ativa" data-modo="suellen" id="opt-suellen">
-          <img src="/assets/avatar-suellen.png" alt="Suellen" onerror="this.style.display='none'">
+        <button class="identidade-opcao ativa" data-modo="suellen">
+          <img src="/assets/avatar-suellen.jpg" alt="Suellen" onerror="this.style.display='none'">
           <span>Suellen</span>
         </button>
-        <button class="identidade-opcao" data-modo="equipe" id="opt-equipe">
+        <button class="identidade-opcao" data-modo="equipe">
           <img src="/assets/logo-equipe.png" alt="Equipe" onerror="this.style.display='none'">
           <span>Equipe</span>
         </button>
@@ -1324,12 +1295,12 @@ ul, ol { list-style:none; }
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </button>
       <div style="position:relative">
-        <button class="header-btn" id="btn-menu" title="Ordenar e filtrar">
+        <button class="header-btn" id="btn-menu" title="Ordenar">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
         </button>
         <div class="dropdown-menu" id="dropdown-menu">
           <div class="dropdown-titulo">Ordenar por</div>
-          <div class="dropdown-item" data-ord="recentes">Recentes primeiro <span class="check">✓</span></div>
+          <div class="dropdown-item ativo" data-ord="recentes">Recentes primeiro <span class="check">✓</span></div>
           <div class="dropdown-item" data-ord="nao-respondidas">Não respondidas <span class="check">✓</span></div>
           <div class="dropdown-item" data-ord="antigas">Mais antigas <span class="check">✓</span></div>
           <div class="dropdown-item" data-ord="favoritas">Favoritas primeiro <span class="check">✓</span></div>
@@ -1337,7 +1308,6 @@ ul, ol { list-style:none; }
       </div>
     </div>
 
-    <!-- Filtros -->
     <div class="filtros-row" id="filtros-row">
       <button class="filtro-pill ativa" data-fil="todas">Todas <span class="count" id="count-todas">0</span></button>
       <button class="filtro-pill" data-fil="nao-lidas">Não lidas <span class="count" id="count-nao-lidas">0</span></button>
@@ -1347,36 +1317,29 @@ ul, ol { list-style:none; }
       <button class="filtro-pill" data-fil="free">Free <span class="count" id="count-free">0</span></button>
     </div>
 
-    <!-- Busca -->
     <div class="busca-row" id="busca-row">
-      <input class="busca-input" type="text" id="busca-input" placeholder="Buscar conversa…">
+      <input class="busca-input" type="text" id="busca-input" placeholder="Buscar…">
     </div>
 
-    <!-- Lista -->
     <div class="conversas-scroll" id="conversas-scroll">
       <div class="loading-dots"><span></span><span></span><span></span></div>
     </div>
   </aside>
 
-  <!-- ━━━━━ COLUNA: CHAT ━━━━━ -->
   <main class="col-chat" id="col-chat">
-    <!-- Estado vazio -->
     <div class="chat-vazio" id="chat-vazio">
-      <svg class="estrela" viewBox="0 0 24 24" fill="none" stroke="rgba(200,146,42,0.5)" stroke-width="1.2">
-        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="rgba(200,146,42,0.1)"/>
+      <svg class="estrela" viewBox="0 0 24 24" fill="rgba(200,146,42,0.18)" stroke="var(--ouro-fundo)" stroke-width="1.2">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
       </svg>
       <h2>Atendimento Vida Mágica</h2>
-      <p>Selecione uma conversa para começar.<br>As mensagens aparecem em tempo real.</p>
+      <p>Selecione uma conversa para começar.<br>As mensagens chegam em tempo real.</p>
     </div>
-
-    <!-- Conteúdo do chat (preenchido via JS) -->
     <div id="chat-conteudo" style="display:none;flex-direction:column;height:100%"></div>
   </main>
 
-  <!-- ━━━━━ COLUNA: PAINEL DA ALUNA ━━━━━ -->
   <aside class="col-painel" id="col-painel" style="display:none">
     <div class="header">
-      <button class="header-btn" id="btn-fechar-painel" title="Fechar painel">
+      <button class="header-btn" id="btn-fechar-painel">
         <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
       <span class="header-titulo">Perfil da Aluna</span>
@@ -1388,7 +1351,6 @@ ul, ol { list-style:none; }
 
 </div>
 
-<!-- Context menu -->
 <div id="msg-ctx-menu" class="msg-ctx-menu">
   <div class="msg-ctx-item" id="ctx-responder">
     <svg viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
@@ -1400,7 +1362,6 @@ ul, ol { list-style:none; }
   </div>
 </div>
 
-<!-- Modal numérico -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal-box">
     <div class="modal-titulo" id="modal-titulo">Ajustar</div>
@@ -1413,24 +1374,17 @@ ul, ol { list-style:none; }
   </div>
 </div>
 
-<!-- Toast -->
 <div id="toast"></div>
 
-<!-- File input invisível -->
 <input type="file" id="file-input" accept="image/*" style="display:none">
 
 <script>
-/* ════════════════════════════════════════════════
-   ATENDIMENTO — Vida Mágica
-   ════════════════════════════════════════════════ */
-
 const API = '';
 const TOKEN_KEY = 'vm_atendimento_token';
 const IDENTIDADE_KEY = 'vm_identidade';
 
-// ── State ──
 let token       = null;
-let identidade  = localStorage.getItem(IDENTIDADE_KEY) || 'suellen'; // suellen | equipe
+let identidade  = localStorage.getItem(IDENTIDADE_KEY) || 'suellen';
 let conversas   = [];
 let convAtual   = null;
 let mensagens   = [];
@@ -1442,7 +1396,6 @@ let ordemAtiva  = 'recentes';
 let buscaTexto  = '';
 let painelAberto = false;
 
-// ── Helpers ──
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function getToken() { return localStorage.getItem(TOKEN_KEY); }
 function setToken(t) { localStorage.setItem(TOKEN_KEY, t); token = t; }
@@ -1468,25 +1421,10 @@ function tempoRel(data) {
   if (me < 12) return `${me}m`;
   return `${a}a`;
 }
+function hora(data) { return new Date(data).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}); }
+function fmtTempo(s) { return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
 
-function hora(data) {
-  return new Date(data).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-}
-
-function fmtTempo(s) {
-  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
-}
-
-function calcularTier(planoUsuario, planoChat) {
-  if (planoChat === 'prioritario') return 'prioritario';
-  if (!planoUsuario || planoUsuario === 'gratuito') return 'free';
-  return 'basic_vm';
-}
-
-function tierLabel(tier) {
-  return { prioritario: 'Prioritário', basic_vm: 'Básico VM', free: 'Free' }[tier] || tier;
-}
-
+function tierLabel(tier) { return { prioritario: 'Prioritário', basic_vm: 'Básico VM', free: 'Free' }[tier] || tier; }
 function tierSLA(tier) {
   return {
     prioritario: 'Resposta em até 24h',
@@ -1495,7 +1433,18 @@ function tierSLA(tier) {
   }[tier] || '';
 }
 
-/* ════════ AUTH / LOGIN ════════ */
+(function() {
+  const c = document.getElementById('particulas');
+  if (!c) return;
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    p.className = 'particula';
+    const t = Math.random() * 4 + 2;
+    p.style.cssText = `width:${t}px;height:${t}px;left:${Math.random()*100}%;animation-duration:${Math.random()*18+12}s;animation-delay:${Math.random()*20}s;`;
+    c.appendChild(p);
+  }
+})();
+
 async function verificarToken() {
   const t = getToken();
   if (!t) return false;
@@ -1536,7 +1485,6 @@ document.getElementById('login-senha').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('login-btn').click();
 });
 
-/* ════════ IDENTIDADE SWITCH ════════ */
 function setIdentidade(modo) {
   identidade = modo;
   localStorage.setItem(IDENTIDADE_KEY, modo);
@@ -1545,30 +1493,27 @@ function setIdentidade(modo) {
   document.querySelectorAll('.identidade-opcao').forEach(el => {
     el.classList.toggle('ativa', el.dataset.modo === modo);
   });
+  const inp = document.getElementById('chat-input');
+  if (inp) inp.placeholder = `Mensagem como ${modo==='equipe'?'Equipe Vida Mágica':'Suellen'}…`;
 }
 document.querySelectorAll('.identidade-opcao').forEach(btn => {
   btn.addEventListener('click', () => setIdentidade(btn.dataset.modo));
 });
 
-/* ════════ CARREGAR LISTA ════════ */
 async function carregarLista() {
   try {
     const r = await fetch(`${API}/api/atendimento/chat/conversas`, { headers: authHeader() });
     if (!r.ok) throw new Error();
     conversas = await r.json();
     renderLista();
-  } catch (err) {
-    document.getElementById('conversas-scroll').innerHTML = `
-      <div class="lista-vazia">
-        <div class="icone">⚠️</div>
-        <p>Erro ao carregar conversas. Verifique sua conexão.</p>
-      </div>`;
+  } catch {
+    document.getElementById('conversas-scroll').innerHTML =
+      `<div class="lista-vazia"><div class="icone">⚠️</div><p>Erro ao carregar.</p></div>`;
   }
 }
 
 function aplicarFiltros() {
   let lista = [...conversas];
-  // Busca
   if (buscaTexto) {
     const q = buscaTexto.toLowerCase();
     lista = lista.filter(c =>
@@ -1577,7 +1522,6 @@ function aplicarFiltros() {
       (c.telefone_formatado||'').includes(q)
     );
   }
-  // Filtros
   if (filtroAtivo === 'nao-lidas') lista = lista.filter(c => c.nao_lidas_suellen > 0);
   else if (filtroAtivo === 'favoritas') lista = lista.filter(c => c.favoritada);
   else if (filtroAtivo === 'prioritario') lista = lista.filter(c => c.tier === 'prioritario');
@@ -1597,7 +1541,6 @@ function ordenarDentroDoGrupo(grupo) {
     arr.sort((a,b) => (b.favoritada?1:0) - (a.favoritada?1:0)
                    || new Date(b.ultima_mensagem_em) - new Date(a.ultima_mensagem_em));
   } else {
-    // recentes (default)
     arr.sort((a,b) => (b.favoritada?1:0) - (a.favoritada?1:0)
                    || new Date(b.ultima_mensagem_em) - new Date(a.ultima_mensagem_em));
   }
@@ -1608,7 +1551,6 @@ function renderLista() {
   const scroll = document.getElementById('conversas-scroll');
   const lista = aplicarFiltros();
 
-  // Atualiza contadores
   document.getElementById('count-todas').textContent     = conversas.length;
   document.getElementById('count-nao-lidas').textContent = conversas.filter(c => c.nao_lidas_suellen > 0).length;
   document.getElementById('count-favoritas').textContent = conversas.filter(c => c.favoritada).length;
@@ -1617,15 +1559,11 @@ function renderLista() {
   document.getElementById('count-free').textContent      = conversas.filter(c => c.tier === 'free').length;
 
   if (!lista.length) {
-    scroll.innerHTML = `
-      <div class="lista-vazia">
-        <div class="icone">💬</div>
-        <p>Nenhuma conversa ${buscaTexto?'encontrada':'nesse filtro'}.</p>
-      </div>`;
+    scroll.innerHTML =
+      `<div class="lista-vazia"><div class="icone">💬</div><p>Nenhuma conversa ${buscaTexto?'encontrada':'nesse filtro'}.</p></div>`;
     return;
   }
 
-  // Agrupar por tier
   const grupos = {
     prioritario: lista.filter(c => c.tier === 'prioritario'),
     basic_vm:    lista.filter(c => c.tier === 'basic_vm'),
@@ -1638,7 +1576,7 @@ function renderLista() {
     html += ordenarDentroDoGrupo(grupos.prioritario).map(c => itemHtml(c)).join('');
   }
   if (grupos.basic_vm.length) {
-    html += `<div class="plano-divisor"><span class="icone">💛</span><span>Básico Vida Mágica</span><span class="count">${grupos.basic_vm.length}</span><div class="linha"></div></div>`;
+    html += `<div class="plano-divisor"><span class="icone">💛</span><span>Básico VM</span><span class="count">${grupos.basic_vm.length}</span><div class="linha"></div></div>`;
     html += ordenarDentroDoGrupo(grupos.basic_vm).map(c => itemHtml(c)).join('');
   }
   if (grupos.free.length) {
@@ -1647,8 +1585,6 @@ function renderLista() {
   }
 
   scroll.innerHTML = html;
-
-  // Eventos
   scroll.querySelectorAll('.conv-item').forEach(el => {
     el.addEventListener('click', () => abrirConversa(parseInt(el.dataset.id)));
   });
@@ -1659,11 +1595,6 @@ function itemHtml(c) {
   const fotoHtml = c.foto_url
     ? `<img src="${esc(c.foto_url)}" alt="${esc(c.nome)}">`
     : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
-
-  // Check para mensagens enviadas pela Suellen (preview)
-  let checkHtml = '';
-  // Não temos info de last-message-author na lista, deixaremos sem por enquanto
-
   const ativaCls = (convAtual && convAtual.id === c.id) ? ' ativa' : '';
   const priorCls = c.tier === 'prioritario' ? ' prioritario' : '';
   const naoLidaCls = naoLida ? ' tem-nao-lida' : '';
@@ -1683,15 +1614,13 @@ function itemHtml(c) {
           <div class="conv-preview">${esc(c.ultima_preview || 'Nenhuma mensagem')}</div>
           <div class="conv-flags">
             ${c.favoritada ? '<span class="conv-fav">★</span>' : ''}
-            ${naoLida ? `<span class="conv-badge${c.tier==='prioritario'?' prior-badge':''}">${c.nao_lidas_suellen}</span>` : ''}
+            ${naoLida ? `<span class="conv-badge">${c.nao_lidas_suellen}</span>` : ''}
           </div>
         </div>
       </div>
     </div>`;
 }
 
-/* ════════ EVENTOS DA LISTA ════════ */
-// Filtros
 document.querySelectorAll('.filtro-pill').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.filtro-pill').forEach(b => b.classList.remove('ativa'));
@@ -1701,7 +1630,6 @@ document.querySelectorAll('.filtro-pill').forEach(btn => {
   });
 });
 
-// Busca toggle
 document.getElementById('btn-busca').addEventListener('click', () => {
   const row = document.getElementById('busca-row');
   row.classList.toggle('visivel');
@@ -1720,7 +1648,6 @@ document.getElementById('busca-input').addEventListener('input', e => {
   renderLista();
 });
 
-// Menu de ordenação
 document.getElementById('btn-menu').addEventListener('click', e => {
   e.stopPropagation();
   document.getElementById('dropdown-menu').classList.toggle('aberto');
@@ -1738,12 +1665,8 @@ document.querySelectorAll('.dropdown-item').forEach(item => {
     renderLista();
   });
 });
-// Default: recentes ativo
-document.querySelector('.dropdown-item[data-ord="recentes"]').classList.add('ativo');
 
-/* ════════ ABRIR CONVERSA ════════ */
 async function abrirConversa(id) {
-  // Marca ativa na lista
   document.querySelectorAll('.conv-item').forEach(el => {
     el.classList.toggle('ativa', parseInt(el.dataset.id) === id);
   });
@@ -1753,7 +1676,6 @@ async function abrirConversa(id) {
   cont.style.display = 'flex';
   cont.innerHTML = `<div class="loading-dots"><span></span><span></span><span></span></div>`;
 
-  // No mobile: mostra coluna chat
   document.getElementById('col-chat').classList.add('ativa');
 
   try {
@@ -1765,22 +1687,20 @@ async function abrirConversa(id) {
     renderChat();
     conectarWs();
   } catch {
-    cont.innerHTML = `<p style="color:var(--txt3);text-align:center;padding:3rem;font-size:0.85rem">Erro ao carregar a conversa.</p>`;
+    cont.innerHTML = `<p style="color:var(--texto-mute);text-align:center;padding:3rem;font-size:0.85rem">Erro ao carregar.</p>`;
   }
 }
 
 function renderChat() {
   const cont = document.getElementById('chat-conteudo');
   if (!convAtual) return;
-
   const c = convAtual;
   const tier = c.tier;
   const fotoHtml = c.foto_url
     ? `<img src="${esc(c.foto_url)}" alt="${esc(c.nome)}">`
     : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
 
-  let statusTxt = '';
-  let statusCls = '';
+  let statusTxt, statusCls = '';
   if (tier === 'prioritario') {
     statusTxt = `⭐ Prioritário · ${c.interacoes_restantes ?? '—'} interações`;
     statusCls = 'prioritario';
@@ -1791,15 +1711,16 @@ function renderChat() {
     statusTxt = 'Free';
   }
 
-  // Banner SLA
   let slaBanner = '';
   if (tier === 'prioritario') {
-    const expira = c.prioritario_expira_em ? new Date(c.prioritario_expira_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+    const expira = c.prioritario_expira_em
+      ? new Date(c.prioritario_expira_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+      : '—';
     slaBanner = `
       <div class="sla-banner prioritario">
         <span class="icone">⏱️</span>
         <div class="texto">
-          <div class="titulo">Prioritário · resposta em até 24h</div>
+          <div class="titulo">Prioritário · até 24h</div>
           <div class="desc">${c.interacoes_restantes ?? 0} interações · expira ${expira}</div>
         </div>
       </div>`;
@@ -1842,7 +1763,7 @@ function renderChat() {
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
           </svg>
         </button>
-        <button class="header-btn" id="btn-painel" title="Painel da aluna">
+        <button class="header-btn" id="btn-painel" title="Perfil">
           <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </button>
       </div>
@@ -1892,10 +1813,8 @@ function renderChat() {
     </div>
   `;
 
-  // Renderiza mensagens
   renderMensagens();
 
-  // Listeners
   document.getElementById('btn-back-chat').addEventListener('click', () => {
     document.getElementById('col-chat').classList.remove('ativa');
     document.getElementById('chat-vazio').style.display = 'flex';
@@ -1907,17 +1826,14 @@ function renderChat() {
   document.getElementById('btn-painel').addEventListener('click', togglePainel);
   document.getElementById('btn-favoritar').addEventListener('click', toggleFavoritar);
 
-  // Reply
   document.getElementById('reply-fechar').addEventListener('click', () => {
     replyMsg = null;
     document.getElementById('reply-bar').classList.remove('visivel');
   });
 
-  // Input
   const input = document.getElementById('chat-input');
   const btnEnviar = document.getElementById('btn-enviar');
   const btnAudio  = document.getElementById('btn-audio');
-
   input.addEventListener('input', () => {
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 120) + 'px';
@@ -1926,23 +1842,15 @@ function renderChat() {
     btnAudio.style.display = tem ? 'none' : 'flex';
   });
   input.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      enviarTexto();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarTexto(); }
   });
   btnEnviar.addEventListener('click', enviarTexto);
-
-  // Anexo
   document.getElementById('btn-anexo').addEventListener('click', () => document.getElementById('file-input').click());
-
-  // Áudio
   btnAudio.addEventListener('click', iniciarGravacao);
   document.getElementById('btn-rec-cancel').addEventListener('click', () => pararGravacao(false));
   document.getElementById('btn-rec-send').addEventListener('click', () => pararGravacao(true));
 }
 
-/* ════════ RENDER MENSAGENS ════════ */
 function renderMensagens() {
   const el = document.getElementById('chat-msgs');
   if (!el) return;
@@ -1977,11 +1885,10 @@ function criarBolha(msg) {
   wrap.className = `msg-wrap ${isAluna ? 'aluna' : 'suellen'}`;
   wrap.dataset.id = msg.id;
 
-  // Etiqueta de identidade (apenas para Suellen, fora da bolha)
   if (!isAluna) {
     const ident = msg.identidade || 'suellen';
     const nomeIdent = ident === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen';
-    const imgSrc = ident === 'equipe' ? '/assets/logo-equipe.png' : '/assets/avatar-suellen.png';
+    const imgSrc = ident === 'equipe' ? '/assets/logo-equipe.png' : '/assets/avatar-suellen.jpg';
     const etiq = document.createElement('div');
     etiq.className = `msg-etiqueta ${ident === 'equipe' ? 'equipe' : ''}`;
     etiq.innerHTML = `<img src="${imgSrc}" alt="${nomeIdent}" onerror="this.style.display='none'"><span>${nomeIdent}</span>`;
@@ -1989,8 +1896,6 @@ function criarBolha(msg) {
   }
 
   let contHtml = '';
-
-  // Reply preview
   if (msg.reply_to_conteudo) {
     let autor = msg.reply_to_remetente === 'aluna'
       ? (convAtual?.nome || 'Aluna')
@@ -2001,17 +1906,16 @@ function criarBolha(msg) {
     </div>`;
   }
 
-  // Conteúdo
   if (msg.tipo === 'imagem' && msg.url) {
     const bolha = document.createElement('div');
     bolha.className = 'msg-bolha';
-    if (!isAluna && (msg.identidade === 'equipe')) bolha.classList.add('identidade-equipe');
+    if (!isAluna && msg.identidade === 'equipe') bolha.classList.add('identidade-equipe');
     bolha.innerHTML = contHtml + `<div class="msg-img"><img src="${esc(msg.url)}" loading="lazy"></div>`;
     bolha.querySelector('.msg-img').addEventListener('click', () => window.open(msg.url, '_blank'));
     setupCtxMenu(bolha, msg);
     wrap.appendChild(bolha);
   } else if (msg.tipo === 'audio' && msg.url) {
-    wrap.appendChild(criarAudioBolha(msg));
+    return criarAudioBolha(msg);
   } else {
     const bolha = document.createElement('div');
     bolha.className = 'msg-bolha';
@@ -2021,7 +1925,6 @@ function criarBolha(msg) {
     wrap.appendChild(bolha);
   }
 
-  // Footer com hora + checks
   const footer = document.createElement('div');
   footer.className = 'msg-footer';
   footer.innerHTML = `<span class="msg-hora">${hora(msg.criado_em)}</span>`;
@@ -2029,29 +1932,20 @@ function criarBolha(msg) {
     const checks = document.createElement('span');
     checks.className = `msg-checks ${msg.lida ? 'lida' : 'entregue'}`;
     checks.dataset.msgId = msg.id;
-    checks.innerHTML = msg.lida ? checkSvg('lida') : checkSvg('entregue');
+    checks.innerHTML = checkSvg();
     footer.appendChild(checks);
   }
   wrap.appendChild(footer);
-
   return wrap;
 }
 
-function checkSvg(tipo) {
-  // ✓ enviada/entregue (1 ou 2 ticks cinzas)
-  // ✓✓ lida (2 ticks dourados)
-  if (tipo === 'lida' || tipo === 'entregue') {
-    return `<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="2 9 6 13 12 5"/>
-      <polyline points="7 13 11 13 17 5"/>
-    </svg>`;
-  }
+function checkSvg() {
   return `<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <polyline points="3 9 7 13 15 5"/>
+    <polyline points="2 9 6 13 12 5"/>
+    <polyline points="7 13 11 13 17 5"/>
   </svg>`;
 }
 
-/* Áudio bolha */
 function gerarWaveform(n=28) {
   const a = [];
   for (let i=0; i<n; i++) a.push(Math.random()*0.7 + 0.18);
@@ -2076,11 +1970,10 @@ function criarAudioBolha(msg) {
   const dur = msg.duracao || 0;
   const durFmt = fmtTempo(dur);
 
-  // Etiqueta para Suellen
   if (!isAluna) {
     const ident = msg.identidade || 'suellen';
     const nomeIdent = ident === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen';
-    const imgSrc = ident === 'equipe' ? '/assets/logo-equipe.png' : '/assets/avatar-suellen.png';
+    const imgSrc = ident === 'equipe' ? '/assets/logo-equipe.png' : '/assets/avatar-suellen.jpg';
     const etiq = document.createElement('div');
     etiq.className = `msg-etiqueta ${ident==='equipe'?'equipe':''}`;
     etiq.innerHTML = `<img src="${imgSrc}" onerror="this.style.display='none'"><span>${nomeIdent}</span>`;
@@ -2098,7 +1991,6 @@ function criarAudioBolha(msg) {
   `;
   setupCtxMenu(bolha, msg);
 
-  // Player
   let audio = null;
   const playBtn = bolha.querySelector('.msg-audio-play-btn');
   const bars = bolha.querySelectorAll('.msg-audio-wave-bar');
@@ -2132,7 +2024,6 @@ function criarAudioBolha(msg) {
 
   wrap.appendChild(bolha);
 
-  // Footer
   const footer = document.createElement('div');
   footer.className = 'msg-footer';
   footer.innerHTML = `<span class="msg-hora">${hora(msg.criado_em)}</span>`;
@@ -2140,11 +2031,10 @@ function criarAudioBolha(msg) {
     const checks = document.createElement('span');
     checks.className = `msg-checks ${msg.lida ? 'lida' : 'entregue'}`;
     checks.dataset.msgId = msg.id;
-    checks.innerHTML = msg.lida ? checkSvg('lida') : checkSvg('entregue');
+    checks.innerHTML = checkSvg();
     footer.appendChild(checks);
   }
   wrap.appendChild(footer);
-
   return wrap;
 }
 
@@ -2153,7 +2043,6 @@ function scrollChat() {
   if (el) setTimeout(() => { el.scrollTop = el.scrollHeight; }, 50);
 }
 
-/* ════════ CONTEXT MENU ════════ */
 function setupCtxMenu(el, msg) {
   const abrir = (e) => {
     e.preventDefault();
@@ -2170,7 +2059,6 @@ function setupCtxMenu(el, msg) {
   el.addEventListener('touchend', () => clearTimeout(holdTimer));
   el.addEventListener('touchmove', () => clearTimeout(holdTimer));
 }
-
 function mostrarCtxMenu(x, y) {
   const menu = document.getElementById('msg-ctx-menu');
   menu.classList.add('visivel');
@@ -2204,17 +2092,14 @@ document.getElementById('ctx-copiar').addEventListener('click', () => {
   }
 });
 
-/* ════════ ENVIAR MENSAGEM ════════ */
 async function enviarTexto() {
   if (!convAtual) return;
   const input = document.getElementById('chat-input');
   const texto = input.value.trim();
   if (!texto) return;
-
   const replyId = replyMsg?.id || null;
   const ident = identidade;
 
-  // Otimista
   const msgTemp = {
     id: 'tmp-' + Date.now(),
     remetente: 'suellen',
@@ -2253,14 +2138,9 @@ async function enviarTexto() {
     });
     if (!r.ok) throw new Error();
     const dados = await r.json();
-    // Atualiza ID local
     const idx = mensagens.findIndex(m => m.id === msgTemp.id);
     if (idx >= 0) mensagens[idx] = { ...msgTemp, ...dados.mensagem };
-
-    // Marca todas as msgs da aluna desta conversa como lidas (regra nova)
     mensagens.forEach(m => { if (m.remetente === 'aluna') m.lida = true; });
-
-    // Recarrega contador da lista (zera não-lidas)
     if (convAtual) convAtual.nao_lidas_suellen = 0;
     await carregarLista();
   } catch {
@@ -2268,13 +2148,10 @@ async function enviarTexto() {
   }
 }
 
-/* Anexo imagem */
 document.getElementById('file-input').addEventListener('change', async e => {
   const file = e.target.files?.[0];
   if (!file || !convAtual) return;
   e.target.value = '';
-
-  // Otimista
   const url = URL.createObjectURL(file);
   const msgTemp = {
     id: 'tmp-' + Date.now(),
@@ -2299,15 +2176,12 @@ document.getElementById('file-input').addEventListener('change', async e => {
     });
     if (!up.ok) throw new Error('upload');
     const { url: urlReal } = await up.json();
-
     await fetch(`${API}/api/atendimento/chat/mensagem`, {
       method: 'POST',
       headers: { ...authHeader(), 'Content-Type':'application/json' },
       body: JSON.stringify({
-        conversa_id: convAtual.id,
-        tipo: 'imagem',
-        url: urlReal,
-        identidade,
+        conversa_id: convAtual.id, tipo: 'imagem',
+        url: urlReal, identidade,
       }),
     });
     toast('Imagem enviada');
@@ -2316,12 +2190,10 @@ document.getElementById('file-input').addEventListener('change', async e => {
   }
 });
 
-/* ════════ FAVORITAR ════════ */
 async function toggleFavoritar() {
   if (!convAtual) return;
   const novo = !convAtual.favoritada;
   convAtual.favoritada = novo;
-  // Atualiza UI imediatamente
   document.querySelector('#btn-favoritar svg').setAttribute('fill', novo ? 'var(--ouro)' : 'none');
   document.querySelector('#btn-favoritar svg').setAttribute('stroke', novo ? 'var(--ouro)' : 'currentColor');
   try {
@@ -2334,11 +2206,10 @@ async function toggleFavoritar() {
     await carregarLista();
   } catch {
     convAtual.favoritada = !novo;
-    toast('Erro ao favoritar', 'err');
+    toast('Erro', 'err');
   }
 }
 
-/* ════════ PAINEL DA ALUNA ════════ */
 function togglePainel() {
   if (!convAtual) return;
   painelAberto = !painelAberto;
@@ -2366,11 +2237,9 @@ function carregarPainel() {
   const pacoteAtivo = pacotes.find(p => p.status === 'ativo');
   const pct = (tier === 'prioritario' && pacoteAtivo)
     ? Math.round(((30 - (c.interacoes_restantes||0)) / 30) * 100) : 0;
-
   const fotoHtml = c.foto_url
     ? `<img src="${esc(c.foto_url)}" alt="${esc(c.nome)}">`
     : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
-
   const expiraFmt = pacoteAtivo?.expira_em
     ? new Date(pacoteAtivo.expira_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
     : '—';
@@ -2411,8 +2280,8 @@ function carregarPainel() {
         </div>
       </div>
       ${c.perfil_teste ? `
-      <div style="background:var(--surf);border:1px solid var(--ouro-brd);border-radius:var(--r-md);padding:0.6rem 0.85rem;margin-top:0.4rem;font-size:0.78rem;color:var(--txt2)">
-        Perfil: <strong style="color:var(--ouro-cl)">${esc(c.perfil_teste)}</strong>
+      <div style="background:var(--vidro-forte);border:1px solid var(--vidro-borda);border-radius:var(--r-md);padding:0.6rem 0.85rem;margin-top:0.4rem;font-size:0.78rem;color:var(--texto-mute)">
+        Perfil: <strong style="color:var(--ouro-fundo)">${esc(c.perfil_teste)}</strong>
       </div>` : ''}
     </div>
 
@@ -2421,7 +2290,7 @@ function carregarPainel() {
       <div class="painel-secao-titulo">Atendimento Prioritário</div>
       <div class="prior-box">
         <div class="prior-box-titulo"><span>⭐</span><span>Pacote ativo</span></div>
-        <div class="prior-row"><span class="prior-label">Interações restantes</span><span class="prior-val">${c.interacoes_restantes ?? '—'} / 30</span></div>
+        <div class="prior-row"><span class="prior-label">Interações</span><span class="prior-val">${c.interacoes_restantes ?? '—'} / 30</span></div>
         <div class="prior-row"><span class="prior-label">Expira em</span><span class="prior-val">${expiraFmt}</span></div>
         <div class="prior-row"><span class="prior-label">Origem</span><span class="prior-val">${esc(pacoteAtivo.origem)}</span></div>
         <div class="prior-barra-bg"><div class="prior-barra-fill" style="width:${pct}%"></div></div>
@@ -2433,7 +2302,7 @@ function carregarPainel() {
       <div class="acoes-grid">
         <button class="acao-btn success" data-acao="cortesia">
           <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          Dar Cortesia (30 interações · 24h)
+          Dar Cortesia (30 · 24h)
         </button>
         <button class="acao-btn" data-acao="ajustar_interacoes">
           <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -2450,7 +2319,7 @@ function carregarPainel() {
         </button>` : ''}
         <button class="acao-btn danger" data-acao="${c.bloqueada?'desbloquear':'bloquear'}">
           <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          ${c.bloqueada ? 'Desbloquear chat' : 'Bloquear chat'}
+          ${c.bloqueada ? 'Desbloquear' : 'Bloquear'} chat
         </button>
       </div>
     </div>
@@ -2459,20 +2328,18 @@ function carregarPainel() {
     <div class="painel-secao" style="padding-bottom:1.5rem">
       <div class="painel-secao-titulo">Histórico Prioritário</div>
       ${pacotes.map(p => `
-        <div style="font-size:0.74rem;padding:0.5rem 0;border-bottom:1px solid var(--ouro-brd);display:flex;justify-content:space-between">
-          <span style="color:var(--txt2)">${new Date(p.ativado_em).toLocaleDateString('pt-BR')} · ${esc(p.origem)}</span>
-          <span style="color:${p.status==='ativo'?'var(--ouro-cl)':'var(--txt3)'};font-weight:700">${esc(p.status)}</span>
+        <div style="font-size:0.74rem;padding:0.5rem 0;border-bottom:1px solid var(--vidro-borda);display:flex;justify-content:space-between">
+          <span style="color:var(--texto-mute)">${new Date(p.ativado_em).toLocaleDateString('pt-BR')} · ${esc(p.origem)}</span>
+          <span style="color:${p.status==='ativo'?'var(--ouro-fundo)':'var(--texto-fraco)'};font-weight:700">${esc(p.status)}</span>
         </div>`).join('')}
     </div>` : ''}
   `;
 
-  // Listeners das ações
   scroll.querySelectorAll('.acao-btn').forEach(btn => {
     btn.addEventListener('click', () => acaoAdmin(btn.dataset.acao));
   });
 }
 
-/* ════════ AÇÕES ADMIN ════════ */
 async function acaoAdmin(acao) {
   if (!convAtual) return;
   if (acao === 'ajustar_interacoes') {
@@ -2506,7 +2373,6 @@ async function executarAcao(acao, valor) {
     });
     if (r.ok) {
       toast('✓ ' + acao.replace(/_/g,' '));
-      // Recarrega conversa e lista
       await abrirConversa(convAtual.id);
       await carregarLista();
       if (painelAberto) carregarPainel();
@@ -2514,12 +2380,9 @@ async function executarAcao(acao, valor) {
       const d = await r.json().catch(() => ({}));
       toast(d.error || 'Erro', 'err');
     }
-  } catch {
-    toast('Erro de conexão', 'err');
-  }
+  } catch { toast('Erro de conexão', 'err'); }
 }
 
-/* ════════ MODAL ════════ */
 let modalCallback = null;
 function abrirModal(titulo, desc, cb, valorInicial='') {
   document.getElementById('modal-titulo').textContent = titulo;
@@ -2529,9 +2392,7 @@ function abrirModal(titulo, desc, cb, valorInicial='') {
   document.getElementById('modal-overlay').classList.add('aberto');
   setTimeout(() => document.getElementById('modal-input').focus(), 50);
 }
-function fecharModal() {
-  document.getElementById('modal-overlay').classList.remove('aberto');
-}
+function fecharModal() { document.getElementById('modal-overlay').classList.remove('aberto'); }
 document.getElementById('modal-cancelar').addEventListener('click', fecharModal);
 document.getElementById('modal-ok').addEventListener('click', () => {
   const val = document.getElementById('modal-input').value;
@@ -2543,29 +2404,22 @@ document.getElementById('modal-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('modal-ok').click();
 });
 
-/* ════════ WEBSOCKET ════════ */
 function conectarWs() {
   if (ws && ws.readyState <= 1) return;
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   const t = getToken() || '';
   ws = new WebSocket(`${proto}://${location.host}/ws/chat?token=${t}&modo=atendimento`);
-
   ws.onmessage = e => {
     try {
       const data = JSON.parse(e.data);
-
-      // Nova mensagem da aluna
       if (data.evento === 'nova_mensagem') {
         if (convAtual && data.conversa_id === convAtual.id && data.mensagem.remetente === 'aluna') {
           mensagens.push(data.mensagem);
           document.getElementById('chat-msgs').appendChild(criarBolha(data.mensagem));
           scrollChat();
         }
-        // Atualiza lista
         carregarLista();
       }
-
-      // Mensagens lidas pela aluna → ✓✓ ouro em tempo real
       if (data.evento === 'mensagens_lidas' && data.por === 'aluna') {
         if (convAtual && data.conversa_id === convAtual.id) {
           (data.ids || []).forEach(id => {
@@ -2574,20 +2428,16 @@ function conectarWs() {
             const checkEl = document.querySelector(`.msg-checks[data-msg-id="${id}"]`);
             if (checkEl) {
               checkEl.className = 'msg-checks lida';
-              checkEl.innerHTML = checkSvg('lida');
+              checkEl.innerHTML = checkSvg();
             }
           });
         }
       }
-    } catch (err) {
-      console.error('[WS]', err);
-    }
+    } catch (err) { console.error('[WS]', err); }
   };
-
   ws.onclose = () => setTimeout(conectarWs, 4000);
 }
 
-/* ════════ ÁUDIO — Gravação ════════ */
 let mr = null, chunks = [], audCtx = null, analyser = null;
 let animFrame = null, recTimer = null, recSeg = 0, recMime = '';
 
@@ -2613,19 +2463,10 @@ function desenharOnda() {
 }
 
 async function iniciarGravacao() {
-  // Diagnóstico claro de erros
-  if (!window.isSecureContext) {
-    toast('Microfone exige HTTPS', 'err');
-    return;
-  }
-  if (!navigator.mediaDevices?.getUserMedia) {
-    toast('Navegador não suporta microfone', 'err');
-    return;
-  }
+  if (!window.isSecureContext) { toast('Microfone exige HTTPS', 'err'); return; }
+  if (!navigator.mediaDevices?.getUserMedia) { toast('Navegador sem suporte', 'err'); return; }
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-    // Fallback de mimetype
     const candidatos = ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus','audio/ogg'];
     recMime = candidatos.find(t => MediaRecorder.isTypeSupported(t)) || '';
     mr = recMime ? new MediaRecorder(stream, { mimeType: recMime }) : new MediaRecorder(stream);
@@ -2651,12 +2492,11 @@ async function iniciarGravacao() {
     mr.onstop = finalizarGravacao;
     mr.start(200);
   } catch (err) {
-    let msg = 'Erro ao acessar microfone';
-    if (err.name === 'NotAllowedError') msg = 'Permissão negada. Habilite o microfone nas configurações do navegador.';
+    let msg = 'Erro no microfone';
+    if (err.name === 'NotAllowedError') msg = 'Permissão negada. Habilite o microfone no navegador.';
     else if (err.name === 'NotFoundError') msg = 'Nenhum microfone encontrado.';
     else if (err.name === 'NotReadableError') msg = 'Microfone em uso por outro app.';
     else if (err.name === 'SecurityError') msg = 'Bloqueio de segurança. Use HTTPS.';
-    else msg = err.message || msg;
     toast(msg, 'err');
     console.error('[Audio]', err);
   }
@@ -2674,26 +2514,18 @@ async function finalizarGravacao() {
   cancelAnimationFrame(animFrame);
   try { audCtx?.close(); } catch {}
   analyser = null; audCtx = null;
-
   document.getElementById('chat-rec-row').classList.remove('visivel');
   document.getElementById('chat-input-row').classList.remove('gravando');
-
   if (!mr._enviar || recSeg < 1 || !convAtual) return;
 
   const blob = new Blob(chunks, { type: recMime || 'audio/webm' });
   const dur = recSeg;
-
-  // Otimista
   const urlLocal = URL.createObjectURL(blob);
   const msgTemp = {
     id: 'tmp-' + Date.now(),
-    remetente: 'suellen',
-    tipo: 'audio',
-    url: urlLocal,
-    duracao: dur,
-    identidade,
-    lida: false,
-    criado_em: new Date().toISOString(),
+    remetente: 'suellen', tipo: 'audio',
+    url: urlLocal, duracao: dur, identidade,
+    lida: false, criado_em: new Date().toISOString(),
   };
   mensagens.push(msgTemp);
   document.getElementById('chat-msgs').appendChild(criarBolha(msgTemp));
@@ -2703,37 +2535,25 @@ async function finalizarGravacao() {
     const form = new FormData();
     form.append('audio', blob, `audio-${Date.now()}.webm`);
     const up = await fetch(`${API}/api/upload/audio`, {
-      method: 'POST',
-      headers: authHeader(),
-      body: form,
+      method: 'POST', headers: authHeader(), body: form,
     });
     if (!up.ok) throw new Error('upload');
     const { url, duracao: durReal } = await up.json();
-
     await fetch(`${API}/api/atendimento/chat/mensagem`, {
       method: 'POST',
       headers: { ...authHeader(), 'Content-Type':'application/json' },
       body: JSON.stringify({
-        conversa_id: convAtual.id,
-        tipo: 'audio',
-        url,
-        duracao: durReal || dur,
-        identidade,
+        conversa_id: convAtual.id, tipo: 'audio',
+        url, duracao: durReal || dur, identidade,
       }),
     });
-  } catch (err) {
-    toast('Erro ao enviar áudio', 'err');
-    console.error('[Audio upload]', err);
-  }
+  } catch { toast('Erro ao enviar áudio', 'err'); }
 }
 
-/* ════════ WEB PUSH ════════ */
 async function registrarPush() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
   try {
-    const r = await fetch(`${API}/api/atendimento/chat/vapid-public-key`).catch(() =>
-      fetch(`${API}/api/chat/vapid-public-key`)
-    );
+    const r = await fetch(`${API}/api/chat/vapid-public-key`);
     const { key } = await r.json();
     if (!key) return;
     const reg = await navigator.serviceWorker.register('/sw-atendimento.js');
@@ -2753,20 +2573,14 @@ async function registrarPush() {
         userAgent: navigator.userAgent,
       }),
     });
-  } catch (err) {
-    console.warn('[Push]', err.message);
-  }
+  } catch (err) { console.warn('[Push]', err.message); }
 }
 
-/* ════════ INIT ════════ */
 async function iniciar() {
-  // Aplica identidade salva
   setIdentidade(identidade);
-  // Carrega lista e conecta WS
   await carregarLista();
   conectarWs();
   registrarPush();
-  // Refresh periódico da lista
   setInterval(carregarLista, 30000);
 }
 
