@@ -576,68 +576,69 @@ ul, ol { list-style: none; }
 .chat-rec-send svg { width: 16px; height: 16px; fill: white; stroke: none; }
 
 /* ════════════════════════════════════════════════
-   BOLHA DE ÁUDIO — premium
+   BOLHA DE ÁUDIO — idêntica às bolhas de texto
    ════════════════════════════════════════════════ */
+
+/* Container — padding e border-radius iguais à .msg-bolha */
 .msg-audio-bolha {
-  display: flex; align-items: center; gap: 0.65rem;
-  padding: 0.65rem 0.85rem 0.65rem 0.75rem;
+  padding: 0.6rem 0.85rem;
   border-radius: 18px;
-  min-width: 210px; max-width: 270px;
-  position: relative;
+  display: flex; align-items: center; gap: 0.6rem;
+  min-width: 180px; max-width: 260px;
 }
-/* Aluna — dourado (ela envia) */
+
+/* Aluna — mesmo gradiente das bolhas de texto */
 .msg-wrap.aluna .msg-audio-bolha {
   background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
   border-bottom-right-radius: 4px;
-  box-shadow: 0 2px 10px rgba(161,117,35,0.25);
 }
-/* Suellen — vidro claro (ela envia) */
+
+/* Suellen — mesmo vidro claro das bolhas de texto */
 .msg-wrap.suellen .msg-audio-bolha {
   background: var(--vidro-forte);
-  border: 1px solid var(--vidro-borda-hi);
+  border: 1px solid var(--vidro-borda);
   border-bottom-left-radius: 4px;
-  box-shadow: var(--sombra-suave);
 }
-/* Nome Suellen acima */
+
+/* "Suellen" acima — igual ao ::before das bolhas de texto */
 .msg-wrap.suellen .msg-audio-bolha::before {
   content: 'Suellen';
-  position: absolute; top: -1.2rem; left: 0;
+  display: block;
   font-family: var(--font-display); font-size: 0.55rem; font-weight: 800;
   letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--ouro-fundo);
+  color: var(--ouro-fundo); margin-bottom: 0.2rem;
+  width: 100%;
 }
 
-/* Botão play */
+/* Botão play — pequeno, sóbrio */
 .msg-audio-play-btn {
-  flex-shrink: 0;
-  width: 36px; height: 36px;
-  border-radius: 50%;
+  flex-shrink: 0; width: 30px; height: 30px;
+  border-radius: 50%; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  border: none; cursor: pointer;
-  transition: transform 0.12s, filter 0.12s;
+  transition: transform 0.12s, opacity 0.12s;
+  background: rgba(255,255,255,0.2);
 }
-.msg-audio-play-btn:hover  { transform: scale(1.08); filter: brightness(1.1); }
-.msg-audio-play-btn:active { transform: scale(0.95); }
-.msg-wrap.aluna   .msg-audio-play-btn { background: rgba(255,255,255,0.22); }
-.msg-wrap.suellen .msg-audio-play-btn { background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro)); }
-.msg-audio-play-btn svg { fill: white; width: 14px; height: 14px; margin-left: 2px; stroke: none; }
+.msg-wrap.suellen .msg-audio-play-btn {
+  background: rgba(161,117,35,0.12);
+  border: 1px solid rgba(161,117,35,0.2);
+}
+.msg-audio-play-btn:hover  { transform: scale(1.06); }
+.msg-audio-play-btn:active { opacity: 0.75; }
+.msg-audio-play-btn svg { fill: white; stroke: none; width: 12px; height: 12px; margin-left: 2px; }
+.msg-wrap.suellen .msg-audio-play-btn svg { fill: var(--ouro-fundo); }
 
-/* Waveform SVG */
-.msg-audio-wave { flex: 1; overflow: visible; }
-/* Barras não ativas */
+/* Waveform */
+.msg-audio-wave { flex: 1; display: block; }
 .msg-wrap.aluna   .msg-audio-wave-bar { fill: rgba(255,255,255,0.35); }
 .msg-wrap.suellen .msg-audio-wave-bar { fill: rgba(161,117,35,0.3); }
-/* Barras ativas (progresso do play) */
 .msg-wrap.aluna   .msg-audio-wave-bar.ativa { fill: rgba(255,255,255,0.92); }
 .msg-wrap.suellen .msg-audio-wave-bar.ativa { fill: var(--ouro); }
 
-/* Duração / timer */
+/* Timer */
 .msg-audio-dur {
-  flex-shrink: 0;
-  font-family: var(--font-display);
-  font-size: 0.62rem; font-weight: 700;
-  letter-spacing: 0.03em;
-  min-width: 30px; text-align: right;
+  flex-shrink: 0; min-width: 28px; text-align: right;
+  font-family: var(--font-display); font-size: 0.6rem; font-weight: 700;
+  letter-spacing: 0.02em;
 }
-.msg-wrap.aluna   .msg-audio-dur { color: rgba(255,255,255,0.82); }
+.msg-wrap.aluna   .msg-audio-dur { color: rgba(255,255,255,0.72); }
 .msg-wrap.suellen .msg-audio-dur { color: var(--texto-mute); }
