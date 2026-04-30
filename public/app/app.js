@@ -2,13 +2,21 @@
 window.VmSession=(function(){const K='vm_s',P='vm_lembrar';function salvar(d,l){const p=l!==undefined?l:getLembrar();localStorage.setItem(P,p?'1':'0');const s=p?localStorage:sessionStorage,o=p?sessionStorage:localStorage;o.removeItem(K);s.setItem(K,JSON.stringify(d));}function carregar(){try{const r=localStorage.getItem(K)||sessionStorage.getItem(K);return r?JSON.parse(r):null;}catch{return null;}}function destruir(){localStorage.removeItem(K);sessionStorage.removeItem(K);}function getAccess(){return carregar()?.access_token||null;}function getRefresh(){return carregar()?.refresh_token||null;}function getLembrar(){return localStorage.getItem(P)!=='0';}return{salvar,carregar,destruir,getAccess,getRefresh,getLembrar};})();
 
 /* ============================================================
-   VIDA MÁGICA — App v7
+   VIDA MÁGICA — App v8
+   Chat agora tem 2 canais separados: Suellen e Suporte
    ============================================================ */
 
 const API = '';
 let usuario  = null;
 let chatWs   = null;
-let chatConv = null;
+
+// Estado do chat
+let canalAtivo = null;       // 'suellen' | 'suporte' | null (na tela de escolha)
+let chatConv = null;         // dados da conversa atual
+let mensagensAtuais = [];    // mensagens do canal aberto
+let timerInterval = null;    // intervalo do timer regressivo
+let replyMsgAtual = null;
+let ctxMsgAtual = null;
 
 // ── AUTH ────────────────────────────────────────────────────
 async function checarAuth() {
@@ -32,6 +40,8 @@ async function checarAuth() {
   } catch {}
   return null;
 }
+
+function authHeader() { return { Authorization: `Bearer ${VmSession.getAccess()}` }; }
 
 function hidratarUI(u) {
   if (!u) return;
@@ -80,6 +90,15 @@ function criarSprites() {
   });
 }
 
+// ── TOAST ────────────────────────────────────────────────────
+function toast(msg, tipo='ok') {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.className = `show ${tipo}`;
+  setTimeout(() => t.className = '', 3000);
+}
+
 // ══════════════════════════════════════════════════════════
 // BOTTOM NAV
 // ══════════════════════════════════════════════════════════
@@ -88,7 +107,9 @@ function irPara(viewId) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById(`view-${viewId}`)?.classList.add('active');
   document.querySelector(`.nav-tab[data-view="${viewId}"]`)?.classList.add('active');
-  if (viewId === 'chat' && !chatConv) iniciarChat();
+  if (viewId === 'chat') {
+    abrirTelaEscolhaChat();
+  }
   if (viewId === 'perfil') renderPerfil();
 }
 document.querySelectorAll('.nav-tab').forEach(tab => {
@@ -192,7 +213,7 @@ function ativarItem(card) {
 }
 
 // ══════════════════════════════════════════════════════════
-// TESOURO DA SU
+// TESOURO
 // ══════════════════════════════════════════════════════════
 const TESOURO_KEY = 'vm_tesouro_resgatado';
 function tesouroJaResgatado(id) { try { return JSON.parse(localStorage.getItem(TESOURO_KEY)||'[]').includes(id); } catch { return false; } }
@@ -265,7 +286,7 @@ async function carregarTestes() {
   const corpo = document.getElementById('testes-corpo'); if (!corpo) return;
   corpo.innerHTML = '<div class="loading-inline">Carregando...</div>';
   try {
-    const r = await fetch(`${API}/api/auth/testes`, { headers:{ Authorization:`Bearer ${VmSession.getAccess()}` } });
+    const r = await fetch(`${API}/api/auth/testes`, { headers: authHeader() });
     if (!r.ok) throw new Error();
     const testes = await r.json();
     if (!testes.length) { corpo.innerHTML='<div class="loading-inline">Nenhum teste realizado ainda.</div>'; return; }
@@ -283,71 +304,353 @@ function renderPerfil() {
 }
 
 // ══════════════════════════════════════════════════════════
-// CHAT
+// ════════════════════════════════════════════════════════════
+// CHAT — 2 canais (Suellen / Suporte)
+// ════════════════════════════════════════════════════════════
 // ══════════════════════════════════════════════════════════
-function horaFmt(data) { return new Date(data).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
-function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-/* Gera waveform estática aleatória para bolha de áudio */
-function gerarWaveform(n=28) {
-  const alturas = [];
-  for (let i=0;i<n;i++) alturas.push(Math.random()*0.7+0.15);
-  // Suaviza
-  for (let i=1;i<n-1;i++) alturas[i]=(alturas[i-1]+alturas[i]+alturas[i+1])/3;
-  return alturas;
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function horaFmt(data) { return new Date(data).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+function fmtTempo(s) { return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
+
+// ── Tela de escolha ──
+function abrirTelaEscolhaChat() {
+  canalAtivo = null;
+  document.getElementById('chat-escolha-tela').style.display = 'flex';
+  document.getElementById('chat-conversa-tela').style.display = 'none';
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  carregarResumoChats();
 }
 
-function criarBolhaAudio(msg, alturas) {
+async function carregarResumoChats() {
+  try {
+    const r = await fetch(`${API}/api/chat/resumo`, { headers: authHeader() });
+    if (!r.ok) return;
+    const dados = await r.json();
+    atualizarCardCanal('suellen', dados.suellen);
+    atualizarCardCanal('suporte', dados.suporte);
+  } catch (err) {
+    console.warn('[resumo]', err.message);
+  }
+}
+
+function atualizarCardCanal(canal, info) {
+  const badge = document.getElementById(`canal-${canal}-badge`);
+  const preview = document.getElementById(`canal-${canal}-preview`);
+  const abaBadge = document.getElementById(`aba-${canal}-badge`);
+
+  if (!info) return;
+
+  const naoLidas = info.nao_lidas || 0;
+  if (badge) {
+    if (naoLidas > 0) {
+      badge.textContent = naoLidas;
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+  if (preview) {
+    preview.textContent = info.ultima_preview || '';
+  }
+  if (abaBadge) {
+    if (naoLidas > 0) {
+      abaBadge.textContent = naoLidas;
+      abaBadge.style.display = '';
+    } else {
+      abaBadge.style.display = 'none';
+    }
+  }
+}
+
+// ── Abrir um canal ──
+async function abrirCanal(canal) {
+  canalAtivo = canal;
+  document.getElementById('chat-escolha-tela').style.display = 'none';
+  document.getElementById('chat-conversa-tela').style.display = 'flex';
+
+  // Header do canal
+  const isS = canal === 'suellen';
+  const headerImg = document.getElementById('chat-canal-header-img');
+  const headerNome = document.getElementById('chat-canal-header-nome');
+  const headerStatus = document.getElementById('chat-canal-header-status');
+  if (headerImg) headerImg.src = isS ? '/assets/avatar-suellen.jpg' : '/assets/logo-equipe.png';
+  if (headerNome) headerNome.textContent = isS ? 'Suellen' : 'Equipe Vida Mágica';
+  if (headerStatus) headerStatus.textContent = isS ? 'Atendimento' : 'Dúvidas e suporte';
+
+  // Atualiza estado das abas
+  document.querySelectorAll('.chat-aba').forEach(b => {
+    b.classList.toggle('ativa', b.dataset.aba === canal);
+  });
+
+  await carregarConversaCanal(canal);
+}
+
+async function carregarConversaCanal(canal) {
+  const loading = document.getElementById('chat-loading');
+  const msgsEl = document.getElementById('chat-msgs');
+  const inputWrap = document.getElementById('chat-input-wrap');
+  const replyBar = document.getElementById('reply-bar');
+
+  loading.style.display = 'flex';
+  msgsEl.style.display = 'none';
+  inputWrap.style.display = 'none';
+  if (replyBar) { replyBar.style.display = 'none'; replyBar.classList.remove('visivel'); }
+  replyMsgAtual = null;
+
+  try {
+    const r = await fetch(`${API}/api/chat/conversa?tipo=${canal}`, { headers: authHeader() });
+    if (!r.ok) throw new Error();
+    const dados = await r.json();
+    chatConv = dados.conversa;
+    mensagensAtuais = dados.mensagens || [];
+
+    msgsEl.innerHTML = '';
+    mensagensAtuais.forEach(msg => msgsEl.appendChild(renderMensagem(msg)));
+
+    loading.style.display = 'none';
+    msgsEl.style.display = 'flex';
+    inputWrap.style.display = '';
+    if (replyBar) replyBar.style.display = '';
+    scrollChat();
+    atualizarBannerPlano(chatConv);
+  } catch (err) {
+    loading.innerHTML = `<p style="color:var(--texto-mute);font-size:0.82rem;text-align:center;padding:2rem">Erro ao carregar chat.</p>`;
+    console.error('[carregarConversaCanal]', err);
+  }
+}
+
+// ── Banner de plano (Free/VM/Prioritário) ──
+function atualizarBannerPlano(conv) {
+  const banner = document.getElementById('plano-banner');
+  const titulo = document.getElementById('plano-banner-titulo');
+  const desc = document.getElementById('plano-banner-desc');
+  const btn = document.getElementById('plano-banner-acao');
+  if (!banner || !titulo || !desc || !btn) return;
+
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+
+  banner.classList.remove('tier-free', 'tier-basic_vm', 'tier-prioritario', 'alerta');
+  const tier = conv.tier || 'free';
+
+  if (tier === 'prioritario') {
+    banner.classList.add('tier-prioritario');
+    titulo.innerHTML = '⭐ PRIORITÁRIO';
+    btn.style.display = 'none';
+    atualizarTimerPrioritario(conv);
+    timerInterval = setInterval(() => atualizarTimerPrioritario(conv), 30000);
+  } else if (tier === 'basic_vm') {
+    banner.classList.add('tier-basic_vm');
+    titulo.textContent = 'VIDA MÁGICA';
+    desc.textContent = 'Resposta em até 5 dias';
+    btn.style.display = '';
+    btn.textContent = 'Ativar prioritário';
+    btn.onclick = acaoAtivarPrioritario;
+  } else {
+    banner.classList.add('tier-free');
+    titulo.textContent = 'PLANO FREE';
+    desc.textContent = 'Tempo de resposta indeterminado';
+    btn.style.display = '';
+    btn.textContent = 'Assinar Vida Mágica';
+    btn.onclick = acaoAssinarVM;
+  }
+}
+
+function atualizarTimerPrioritario(conv) {
+  const desc = document.getElementById('plano-banner-desc');
+  const banner = document.getElementById('plano-banner');
+  if (!desc) return;
+  const interacoes = `${conv.interacoes_restantes ?? 30}/30 interações`;
+
+  if (!conv.prioritario_expira_em) {
+    desc.textContent = interacoes;
+    return;
+  }
+  const restMs = new Date(conv.prioritario_expira_em).getTime() - Date.now();
+  if (restMs <= 0) {
+    desc.textContent = `${interacoes} · expirado`;
+    banner.classList.add('alerta');
+    return;
+  }
+  const totalMin = Math.floor(restMs / 60000);
+  const horas = Math.floor(totalMin / 60);
+  const min = totalMin % 60;
+  let tempoStr;
+  if (horas > 0) tempoStr = `${horas}h ${min}m`;
+  else if (totalMin > 0) tempoStr = `${totalMin}min`;
+  else tempoStr = 'expirando';
+  desc.textContent = `${interacoes} · ${tempoStr}`;
+  if (totalMin < 60) banner.classList.add('alerta');
+}
+
+// ── Ação: Free clica em "Assinar Vida Mágica" ──
+async function acaoAssinarVM() {
+  if (canalAtivo !== 'suellen') {
+    await abrirCanal('suellen');
+  }
+  try {
+    const r = await fetch(`${API}/api/chat/assinar-vm-template`, {
+      method: 'POST',
+      headers: { ...authHeader(), 'Content-Type': 'application/json' },
+    });
+    if (!r.ok) throw new Error();
+    setTimeout(() => carregarConversaCanal('suellen'), 300);
+  } catch {
+    toast('Erro. Tente novamente.', 'err');
+  }
+}
+
+// ── Ação: Vida Mágica/Free clica em "Ativar Prioritário" ──
+async function acaoAtivarPrioritario() {
+  if (!confirm('Ativar Atendimento Prioritário (R$ 9,90 · 30 interações em 24h)?')) return;
+  try {
+    const r = await fetch(`${API}/api/chat/ativar-prioritario`, {
+      method: 'POST',
+      headers: { ...authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo_chat: canalAtivo, origem: 'pagamento' }),
+    });
+    if (!r.ok) throw new Error();
+    toast('⭐ Prioritário ativado!');
+    carregarConversaCanal(canalAtivo);
+  } catch {
+    toast('Erro ao ativar', 'err');
+  }
+}
+
+// ── Renderização de mensagens ──
+function gerarWaveform(n=28) {
+  const a = [];
+  for (let i=0; i<n; i++) a.push(Math.random()*0.7 + 0.18);
+  for (let i=1; i<n-1; i++) a[i] = (a[i-1]+a[i]+a[i+1])/3;
+  return a;
+}
+
+function checkSvg() {
+  return `<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="2 9 6 13 12 5"/>
+    <polyline points="7 13 11 13 17 5"/>
+  </svg>`;
+}
+
+function renderMensagem(msg) {
+  if (msg.tipo === 'audio' && msg.url) return criarBolhaAudio(msg);
+
   const isAluna = msg.remetente === 'aluna';
   const wrap = document.createElement('div');
-  wrap.className = `msg-wrap ${isAluna?'aluna':'suellen'}`;
+  wrap.className = `msg-wrap ${isAluna ? 'aluna' : 'suellen'}`;
+  wrap.dataset.id = msg.id;
 
-  const duracaoFmt = msg.duracao ? `${Math.floor(msg.duracao/60)}:${String(msg.duracao%60).padStart(2,'0')}` : '0:00';
+  const ident = msg.identidade || 'suellen';
+  const nomeIdent = ident === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen';
 
-  // Gera barras SVG
-  const barCount = alturas.length;
-  const barW = 3, gap = 2, totalW = barCount*(barW+gap)-gap;
-  const barsHtml = alturas.map((h,i) => {
-    const bh = Math.max(4, Math.round(h*24));
-    const y  = (28-bh)/2;
+  // Reply preview
+  let replyHtml = '';
+  if (msg.reply_to_conteudo) {
+    const replyAutor = msg.reply_to_remetente === 'aluna'
+      ? 'Você'
+      : (msg.reply_to_identidade === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen');
+    replyHtml = `<div class="msg-reply-preview">
+      <span class="reply-autor">${escHtml(replyAutor)}</span>
+      <span class="reply-texto">${escHtml((msg.reply_to_conteudo||'').substring(0,100))}</span>
+    </div>`;
+  }
+
+  // Bolha
+  if (msg.tipo === 'imagem' && msg.url) {
+    const bolha = document.createElement('div');
+    bolha.className = 'msg-bolha';
+    if (!isAluna) {
+      bolha.dataset.identidade = ident;
+      bolha.dataset.identidadeNome = nomeIdent;
+    }
+    bolha.innerHTML = replyHtml + `<div class="msg-imagem"><img src="${escHtml(msg.url)}" loading="lazy"></div>`;
+    bolha.querySelector('.msg-imagem')?.addEventListener('click', () => window.open(msg.url, '_blank'));
+    setupCtxMenu(bolha, msg);
+    wrap.appendChild(bolha);
+  } else {
+    const bolha = document.createElement('div');
+    bolha.className = 'msg-bolha';
+    if (!isAluna) {
+      bolha.dataset.identidade = ident;
+      bolha.dataset.identidadeNome = nomeIdent;
+    }
+    bolha.innerHTML = replyHtml + escHtml(msg.conteudo || '');
+    setupCtxMenu(bolha, msg);
+    wrap.appendChild(bolha);
+  }
+
+  // Footer (hora + checks)
+  const footer = document.createElement('div');
+  footer.className = 'msg-footer';
+  footer.innerHTML = `<span class="msg-hora">${horaFmt(msg.criado_em)}</span>`;
+  if (isAluna) {
+    const checks = document.createElement('span');
+    checks.className = `msg-checks ${msg.lida ? 'lida' : 'entregue'}`;
+    checks.dataset.msgId = msg.id;
+    checks.innerHTML = checkSvg();
+    footer.appendChild(checks);
+  }
+  wrap.appendChild(footer);
+
+  return wrap;
+}
+
+function criarBolhaAudio(msg) {
+  const isAluna = msg.remetente === 'aluna';
+  const wrap = document.createElement('div');
+  wrap.className = `msg-wrap ${isAluna ? 'aluna' : 'suellen'}`;
+  wrap.dataset.id = msg.id;
+
+  const ident = msg.identidade || 'suellen';
+  const nomeIdent = ident === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen';
+
+  const alturas = msg._alturas || gerarWaveform(28);
+  const N = alturas.length;
+  const barW = 3, gap = 2, totalW = N * (barW + gap) - gap;
+  const barsHtml = alturas.map((h, i) => {
+    const bh = Math.max(4, Math.round(h * 22));
+    const y = (28 - bh) / 2;
     return `<rect x="${i*(barW+gap)}" y="${y}" width="${barW}" height="${bh}" rx="1.5" class="msg-audio-wave-bar" data-idx="${i}"/>`;
   }).join('');
 
-  wrap.innerHTML = `
-    <div class="msg-audio-bolha">
-      <button class="msg-audio-play-btn" data-url="${escHtml(msg.url||'')}">
-        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-      </button>
-      <svg class="msg-audio-wave" viewBox="0 0 ${totalW} 28" width="${totalW}" height="28" xmlns="http://www.w3.org/2000/svg">
-        ${barsHtml}
-      </svg>
-      <span class="msg-audio-dur" id="audio-dur-${msg.id||Date.now()}">${duracaoFmt}</span>
-    </div>
-    <span class="msg-hora">${horaFmt(msg.criado_em)}</span>
+  const dur = msg.duracao || 0;
+  const durFmt = fmtTempo(dur);
+
+  const bolha = document.createElement('div');
+  bolha.className = 'msg-audio-bolha';
+  if (!isAluna) {
+    bolha.dataset.identidade = ident;
+    bolha.dataset.identidadeNome = nomeIdent;
+  }
+  bolha.innerHTML = `
+    <button class="msg-audio-play-btn">
+      <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    </button>
+    <svg class="msg-audio-wave" viewBox="0 0 ${totalW} 28" xmlns="http://www.w3.org/2000/svg">${barsHtml}</svg>
+    <span class="msg-audio-dur">${durFmt}</span>
   `;
+  setupCtxMenu(bolha, msg);
 
-  // Player de áudio
   let audio = null;
-  let rafId = null;
-  const playBtn = wrap.querySelector('.msg-audio-play-btn');
-  const bars    = wrap.querySelectorAll('.msg-audio-wave-bar');
-  const durEl   = wrap.querySelector('.msg-audio-dur');
-
-  playBtn.addEventListener('click', () => {
+  const playBtn = bolha.querySelector('.msg-audio-play-btn');
+  const bars = bolha.querySelectorAll('.msg-audio-wave-bar');
+  const durEl = bolha.querySelector('.msg-audio-dur');
+  playBtn.addEventListener('click', e => {
+    e.stopPropagation();
     if (!audio) {
       audio = new Audio(msg.url);
       audio.addEventListener('timeupdate', () => {
         if (!audio.duration) return;
-        const pct  = audio.currentTime / audio.duration;
-        const idx  = Math.floor(pct * bars.length);
-        bars.forEach((b,i) => b.classList.toggle('ativa', i <= idx));
-        const rem  = Math.floor(audio.duration - audio.currentTime);
-        durEl.textContent = `${Math.floor(rem/60)}:${String(rem%60).padStart(2,'0')}`;
+        const pct = audio.currentTime / audio.duration;
+        const idx = Math.floor(pct * bars.length);
+        bars.forEach((b, i) => b.classList.toggle('ativa', i <= idx));
+        const rem = Math.floor(audio.duration - audio.currentTime);
+        durEl.textContent = fmtTempo(rem);
       });
       audio.addEventListener('ended', () => {
         bars.forEach(b => b.classList.remove('ativa'));
         playBtn.innerHTML = `<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
-        durEl.textContent = duracaoFmt;
+        durEl.textContent = durFmt;
       });
     }
     if (audio.paused) {
@@ -359,304 +662,375 @@ function criarBolhaAudio(msg, alturas) {
     }
   });
 
-  return wrap;
-}
+  wrap.appendChild(bolha);
 
-function renderMensagem(msg) {
-  if (msg.tipo === 'audio') return criarBolhaAudio(msg, msg._alturas || gerarWaveform());
-
-  const isAluna = msg.remetente === 'aluna';
-  const wrap = document.createElement('div');
-  wrap.className = `msg-wrap ${isAluna?'aluna':'suellen'}`;
-
-  let html = '';
-  if (msg.tipo === 'imagem' && msg.url) {
-    html = `<div class="msg-imagem"><img src="${escHtml(msg.url)}" loading="lazy"></div>`;
-  } else {
-    html = `<div class="msg-bolha">${escHtml(msg.conteudo||'')}</div>`;
+  const footer = document.createElement('div');
+  footer.className = 'msg-footer';
+  footer.innerHTML = `<span class="msg-hora">${horaFmt(msg.criado_em)}</span>`;
+  if (isAluna) {
+    const checks = document.createElement('span');
+    checks.className = `msg-checks ${msg.lida ? 'lida' : 'entregue'}`;
+    checks.dataset.msgId = msg.id;
+    checks.innerHTML = checkSvg();
+    footer.appendChild(checks);
   }
-
-  wrap.innerHTML = `${html}<span class="msg-hora">${horaFmt(msg.criado_em)}</span>`;
+  wrap.appendChild(footer);
   return wrap;
 }
 
 function scrollChat() {
   const msgs = document.getElementById('chat-msgs');
-  if (msgs) setTimeout(()=>{ msgs.scrollTop = msgs.scrollHeight; }, 50);
+  if (msgs) setTimeout(() => { msgs.scrollTop = msgs.scrollHeight; }, 50);
 }
 
-function renderPlanoInfo(conv) {
-  const info   = document.getElementById('chat-plano-info');
-  const banner = document.getElementById('chat-prior-banner');
-  const upg    = document.getElementById('chat-upgrade');
-  const det    = document.getElementById('chat-prior-detalhe');
-  if (conv.plano_chat === 'prioritario') {
-    const restam = conv.interacoes_restantes??'—';
-    const expira = conv.prioritario_expira_em ? new Date(conv.prioritario_expira_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '—';
-    if (info) { info.textContent=`⭐ Prioritário · ${restam} interações`; info.style.color='var(--ouro-fundo)'; }
-    if (banner) banner.style.display='';
-    if (upg)    upg.style.display='none';
-    if (det)    det.textContent=`${restam} interações · expira às ${expira}`;
-  } else {
-    if (info) { info.textContent='💬 Chat Basic · resposta em breve'; info.style.color=''; }
-    if (banner) banner.style.display='none';
-    if (upg)    upg.style.display='';
+// ── Context menu (long-press) ──
+function setupCtxMenu(el, msg) {
+  const abrir = (e) => {
+    e.preventDefault();
+    ctxMsgAtual = msg;
+    const x = e.clientX || e.touches?.[0]?.clientX || 100;
+    const y = e.clientY || e.touches?.[0]?.clientY || 200;
+    const menu = document.getElementById('msg-ctx-menu');
+    if (!menu) return;
+    menu.classList.add('visivel');
+    const maxX = window.innerWidth - menu.offsetWidth - 8;
+    const maxY = window.innerHeight - menu.offsetHeight - 8;
+    menu.style.left = Math.min(x, maxX) + 'px';
+    menu.style.top = Math.min(y, maxY) + 'px';
+  };
+  el.addEventListener('contextmenu', abrir);
+  let holdTimer;
+  el.addEventListener('touchstart', (e) => {
+    holdTimer = setTimeout(() => abrir(e), 500);
+  }, { passive: true });
+  el.addEventListener('touchend', () => clearTimeout(holdTimer));
+  el.addEventListener('touchmove', () => clearTimeout(holdTimer));
+}
+document.addEventListener('click', () => {
+  document.getElementById('msg-ctx-menu')?.classList.remove('visivel');
+});
+document.getElementById('ctx-responder')?.addEventListener('click', () => {
+  if (!ctxMsgAtual) return;
+  replyMsgAtual = ctxMsgAtual;
+  const autor = ctxMsgAtual.remetente === 'aluna'
+    ? 'Você'
+    : (ctxMsgAtual.identidade === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen');
+  const texto = ctxMsgAtual.conteudo
+    || (ctxMsgAtual.tipo === 'imagem' ? '📷 Imagem' : ctxMsgAtual.tipo === 'audio' ? '🎤 Áudio' : '');
+  const replyBar = document.getElementById('reply-bar');
+  document.getElementById('reply-autor').textContent = autor;
+  document.getElementById('reply-texto').textContent = texto;
+  replyBar.classList.add('visivel');
+  document.getElementById('chat-input')?.focus();
+});
+document.getElementById('ctx-copiar')?.addEventListener('click', () => {
+  if (ctxMsgAtual?.conteudo) {
+    navigator.clipboard.writeText(ctxMsgAtual.conteudo).then(() => toast('Copiado'));
   }
-}
+});
+document.getElementById('reply-fechar')?.addEventListener('click', () => {
+  replyMsgAtual = null;
+  document.getElementById('reply-bar')?.classList.remove('visivel');
+});
 
-async function iniciarChat() {
-  const loading   = document.getElementById('chat-loading');
-  const msgsEl    = document.getElementById('chat-msgs');
-  const inputWrap = document.getElementById('chat-input-wrap');
-
-  loading.style.display = 'flex';
-  msgsEl.style.display  = 'none';
-
-  try {
-    const r = await fetch(`${API}/api/chat/conversa`, { headers:{ Authorization:`Bearer ${VmSession.getAccess()}` } });
-    if (!r.ok) throw new Error();
-    const dados = await r.json();
-    chatConv = dados.conversa;
-
-    msgsEl.innerHTML = '';
-    dados.mensagens.forEach(msg => msgsEl.appendChild(renderMensagem(msg)));
-
-    loading.style.display   = 'none';
-    msgsEl.style.display    = 'flex';
-    inputWrap.style.display = '';
-    renderPlanoInfo(chatConv);
-    scrollChat();
-    conectarChatWs();
-  } catch {
-    loading.innerHTML = `<p style="color:var(--texto-mute);font-size:0.82rem;text-align:center;padding:2rem">Erro ao carregar chat.</p>`;
-  }
-}
-
+// ── WebSocket ──
 function conectarChatWs() {
   if (chatWs && chatWs.readyState <= 1) return;
   const token = VmSession.getAccess();
-  if (!token) return; // não conecta sem token
-  const proto = location.protocol==='https:'?'wss':'ws';
+  if (!token) return;
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   chatWs = new WebSocket(`${proto}://${location.host}/ws/chat?token=${token}&modo=aluna`);
   chatWs.onmessage = (e) => {
     try {
       const data = JSON.parse(e.data);
-      if (data.evento==='nova_mensagem' && data.mensagem.remetente==='suellen') {
-        document.getElementById('chat-msgs').appendChild(renderMensagem(data.mensagem));
-        scrollChat();
+
+      if (data.evento === 'nova_mensagem' && data.mensagem) {
+        const msg = data.mensagem;
+        const convId = data.conversa_id;
+        // Se a conversa atual é a que recebeu a mensagem, adicionar bolha
+        if (chatConv && convId === chatConv.id) {
+          mensagensAtuais.push(msg);
+          document.getElementById('chat-msgs')?.appendChild(renderMensagem(msg));
+          scrollChat();
+        }
+        // Atualiza badges/preview na tela de escolha
+        carregarResumoChats();
+        // Badge no botão do nav
         if (!document.querySelector('.nav-tab[data-view="chat"]').classList.contains('active')) {
-          document.getElementById('nav-chat-badge').style.display='';
+          document.getElementById('nav-chat-badge').style.display = '';
         }
       }
-    } catch {}
+
+      if (data.evento === 'mensagens_lidas' && data.por === 'suellen') {
+        if (chatConv && data.conversa_id === chatConv.id) {
+          (data.ids || []).forEach(id => {
+            const msg = mensagensAtuais.find(m => m.id === id);
+            if (msg) msg.lida = true;
+            const checkEl = document.querySelector(`.msg-checks[data-msg-id="${id}"]`);
+            if (checkEl) {
+              checkEl.classList.remove('entregue');
+              checkEl.classList.add('lida');
+            }
+          });
+        }
+      }
+    } catch (err) { console.error('[WS]', err); }
   };
-  chatWs.onclose = () => setTimeout(conectarChatWs, 4000); // reconecta sempre, independe da aba
+  chatWs.onclose = () => setTimeout(conectarChatWs, 4000);
 }
 
-// Input
+// ── Botões / Inputs ──
 const chatInput = document.getElementById('chat-input');
-const sendBtn   = document.getElementById('chat-send-btn');
-const audioBtn  = document.getElementById('chat-audio-btn');
+const sendBtn = document.getElementById('chat-send-btn');
+const audioBtn = document.getElementById('chat-audio-btn');
 
 chatInput?.addEventListener('input', () => {
   chatInput.style.height = 'auto';
-  chatInput.style.height = Math.min(chatInput.scrollHeight,120)+'px';
+  chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
   const tem = chatInput.value.trim().length > 0;
-  sendBtn.style.display  = tem ? 'flex' : 'none';
+  sendBtn.style.display = tem ? 'flex' : 'none';
   audioBtn.style.display = tem ? 'none' : 'flex';
 });
-chatInput?.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();enviarMensagem();} });
+chatInput?.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarMensagem(); }
+});
 sendBtn?.addEventListener('click', enviarMensagem);
 
 async function enviarMensagem() {
   const texto = chatInput?.value.trim();
-  if (!texto || !usuario) return;
-  const msgTemp = { id:Date.now(), remetente:'aluna', tipo:'texto', conteudo:texto, criado_em:new Date().toISOString() };
+  if (!texto || !usuario || !canalAtivo) return;
+  const replyId = replyMsgAtual?.id || null;
+  const replyMsg = replyMsgAtual;
+
+  const msgTemp = {
+    id: 'tmp-'+Date.now(),
+    remetente: 'aluna',
+    tipo: 'texto',
+    conteudo: texto,
+    lida: false,
+    reply_to_id: replyId,
+    reply_to_conteudo: replyMsg?.conteudo,
+    reply_to_remetente: replyMsg?.remetente,
+    reply_to_identidade: replyMsg?.identidade,
+    criado_em: new Date().toISOString(),
+  };
+  mensagensAtuais.push(msgTemp);
   document.getElementById('chat-msgs').appendChild(renderMensagem(msgTemp));
-  chatInput.value=''; chatInput.style.height='auto';
-  sendBtn.style.display='none'; audioBtn.style.display='flex';
+
+  chatInput.value = '';
+  chatInput.style.height = 'auto';
+  sendBtn.style.display = 'none';
+  audioBtn.style.display = 'flex';
+  replyMsgAtual = null;
+  document.getElementById('reply-bar')?.classList.remove('visivel');
   scrollChat();
+
   try {
-    const r = await fetch(`${API}/api/chat/mensagem`, { method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${VmSession.getAccess()}`}, body:JSON.stringify({conteudo:texto,tipo:'texto'}) });
-    if (r.ok) { const d=await r.json(); if(d.conversa) renderPlanoInfo({...chatConv,...d.conversa}); }
+    const r = await fetch(`${API}/api/chat/mensagem`, {
+      method: 'POST',
+      headers: { ...authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        conteudo: texto,
+        tipo: 'texto',
+        reply_to_id: replyId,
+        tipo_chat: canalAtivo,
+      }),
+    });
+    if (r.ok) {
+      const d = await r.json();
+      if (d.mensagem) {
+        const idx = mensagensAtuais.findIndex(m => m.id === msgTemp.id);
+        if (idx >= 0) mensagensAtuais[idx] = { ...msgTemp, ...d.mensagem };
+      }
+      if (d.conversa) {
+        chatConv = { ...chatConv, ...d.conversa };
+        atualizarBannerPlano(chatConv);
+      }
+    }
   } catch {}
 }
 
 // Anexo
-document.getElementById('chat-anexo-btn')?.addEventListener('click', ()=>document.getElementById('chat-file-input')?.click());
-document.getElementById('chat-file-input')?.addEventListener('change', e=>{
-  const file=e.target.files?.[0]; if(!file) return;
-  const url=URL.createObjectURL(file);
-  document.getElementById('chat-msgs').appendChild(renderMensagem({id:Date.now(),remetente:'aluna',tipo:'imagem',url,criado_em:new Date().toISOString()}));
-  scrollChat(); e.target.value='';
+document.getElementById('chat-anexo-btn')?.addEventListener('click', () => document.getElementById('chat-file-input')?.click());
+document.getElementById('chat-file-input')?.addEventListener('change', async e => {
+  const file = e.target.files?.[0];
+  if (!file || !canalAtivo) return;
+  e.target.value = '';
+  const url = URL.createObjectURL(file);
+  const msgTemp = {
+    id: 'tmp-'+Date.now(),
+    remetente: 'aluna',
+    tipo: 'imagem',
+    url,
+    lida: false,
+    criado_em: new Date().toISOString(),
+  };
+  mensagensAtuais.push(msgTemp);
+  document.getElementById('chat-msgs').appendChild(renderMensagem(msgTemp));
+  scrollChat();
+
+  try {
+    const form = new FormData();
+    form.append('imagem', file);
+    const up = await fetch(`${API}/api/upload/imagem`, {
+      method: 'POST', headers: authHeader(), body: form,
+    });
+    if (!up.ok) throw new Error();
+    const { url: urlReal } = await up.json();
+    await fetch(`${API}/api/chat/mensagem`, {
+      method: 'POST',
+      headers: { ...authHeader(), 'Content-Type':'application/json' },
+      body: JSON.stringify({ tipo: 'imagem', url: urlReal, tipo_chat: canalAtivo }),
+    });
+  } catch {
+    toast('Erro ao enviar imagem', 'err');
+  }
 });
 
-// Upgrade
-document.getElementById('chat-upgrade-btn')?.addEventListener('click', ()=>alert('Em breve: Atendimento Prioritário por R$ 9,90'));
-
 // ══════════════════════════════════════════════════════════
-// ÁUDIO — gravação premium com waveform em tempo real
+// ÁUDIO
 // ══════════════════════════════════════════════════════════
-let mediaRecorder  = null;
-let audioChunks    = [];
-let audioCtx       = null;
-let analyser       = null;
-let animFrame      = null;
-let audioTimer     = null;
-let audioSeg       = 0;
-let audioMimeType  = '';
-let permissaoMic   = false; // já pediu permissão antes
+let mediaRecorder = null;
+let audioChunks = [];
+let audioCtx = null;
+let analyser = null;
+let animFrame = null;
+let audioTimer = null;
+let audioSeg = 0;
+let audioMimeType = '';
+let permissaoMic = false;
 
-function fmtTempo(s) { return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
-
-/* Desenha waveform em tempo real no canvas */
 function desenharOnda() {
   const canvas = document.getElementById('chat-rec-wave');
   if (!canvas || !analyser) return;
-  const ctx   = canvas.getContext('2d');
-  const W     = canvas.width, H = canvas.height;
-  const buf   = new Uint8Array(analyser.frequencyBinCount);
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth || 160;
+  const W = canvas.width, H = canvas.height;
+  const buf = new Uint8Array(analyser.frequencyBinCount);
   analyser.getByteTimeDomainData(buf);
-  ctx.clearRect(0,0,W,H);
+  ctx.clearRect(0, 0, W, H);
   ctx.beginPath();
   const step = W / buf.length;
-  buf.forEach((v,i)=>{
-    const y = (v/128.0) * (H/2);
-    i===0 ? ctx.moveTo(0,y) : ctx.lineTo(i*step,y);
+  buf.forEach((v, i) => {
+    const y = (v / 128.0) * (H / 2);
+    i === 0 ? ctx.moveTo(0, y) : ctx.lineTo(i * step, y);
   });
   ctx.strokeStyle = 'rgba(200,146,42,0.8)';
-  ctx.lineWidth   = 1.5;
+  ctx.lineWidth = 1.5;
   ctx.stroke();
   animFrame = requestAnimationFrame(desenharOnda);
 }
 
-/* Redimensiona canvas ao aparecer */
-function ajustarCanvas() {
-  const canvas = document.getElementById('chat-rec-wave');
-  if (!canvas) return;
-  canvas.width = canvas.offsetWidth || 160;
-}
-
 async function iniciarGravacao() {
+  if (!window.isSecureContext) { toast('Microfone exige HTTPS', 'err'); return; }
+  if (!navigator.mediaDevices?.getUserMedia) { toast('Navegador sem suporte', 'err'); return; }
   try {
-    const stream   = await navigator.mediaDevices.getUserMedia({ audio: true });
-    permissaoMic   = true;
-    audioMimeType  = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
-    mediaRecorder  = new MediaRecorder(stream, { mimeType: audioMimeType });
-    audioChunks    = [];
-    audioSeg       = 0;
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    permissaoMic = true;
+    const candidatos = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus', 'audio/ogg'];
+    audioMimeType = candidatos.find(t => MediaRecorder.isTypeSupported(t)) || '';
+    mediaRecorder = audioMimeType ? new MediaRecorder(stream, { mimeType: audioMimeType }) : new MediaRecorder(stream);
+    audioChunks = [];
+    audioSeg = 0;
 
-    // Configura analyser para visualização
-    audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
-    analyser  = audioCtx.createAnalyser();
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
     analyser.fftSize = 256;
-    const src = audioCtx.createMediaStreamSource(stream);
-    src.connect(analyser);
+    audioCtx.createMediaStreamSource(stream).connect(analyser);
 
-    // Mostra barra de gravação
     document.getElementById('chat-input-row-normal').style.display = 'none';
     document.getElementById('chat-rec-row').style.display = 'flex';
-    ajustarCanvas();
+    document.getElementById('chat-rec-timer').textContent = '0:00';
     desenharOnda();
 
-    // Timer
-    document.getElementById('chat-rec-timer').textContent = '0:00';
-    audioTimer = setInterval(()=>{
+    audioTimer = setInterval(() => {
       audioSeg++;
       document.getElementById('chat-rec-timer').textContent = fmtTempo(audioSeg);
-      if (audioSeg >= 120) pararGravacao(true);
+      if (audioSeg >= 180) pararGravacao(true);
     }, 1000);
 
-    mediaRecorder.ondataavailable = e => { if(e.data.size>0) audioChunks.push(e.data); };
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
     mediaRecorder.onstop = finalizarGravacao;
     mediaRecorder.start(200);
-
-  } catch {
-    alert('Não foi possível acessar o microfone.\nVerifique as permissões do navegador.');
+  } catch (err) {
+    let msg = 'Erro no microfone';
+    if (err.name === 'NotAllowedError') msg = 'Permissão negada. Habilite no navegador.';
+    else if (err.name === 'NotFoundError') msg = 'Nenhum microfone encontrado.';
+    else if (err.name === 'NotReadableError') msg = 'Microfone em uso por outro app.';
+    toast(msg, 'err');
   }
 }
 
 function pararGravacao(enviar=true) {
-  if (!mediaRecorder || mediaRecorder.state==='inactive') return;
+  if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
   mediaRecorder._enviar = enviar;
   mediaRecorder.stop();
-  mediaRecorder.stream?.getTracks().forEach(t=>t.stop());
+  mediaRecorder.stream?.getTracks().forEach(t => t.stop());
 }
 
-function cancelarGravacao() { pararGravacao(false); }
-
 async function finalizarGravacao() {
-  // Limpa
   clearInterval(audioTimer);
   cancelAnimationFrame(animFrame);
   try { audioCtx?.close(); } catch {}
   analyser = null; audioCtx = null;
-
-  // Restaura barra normal
   document.getElementById('chat-rec-row').style.display = 'none';
   document.getElementById('chat-input-row-normal').style.display = 'flex';
+  if (!mediaRecorder._enviar || audioSeg < 1 || !canalAtivo) return;
 
-  if (!mediaRecorder._enviar || audioSeg < 1) return;
-
-  const blob    = new Blob(audioChunks, { type: audioMimeType });
-  const alturas = gerarWaveform();
-  const duracao = audioSeg;
-
-  // Mostra bolha otimista com URL local enquanto faz upload
+  const blob = new Blob(audioChunks, { type: audioMimeType || 'audio/webm' });
+  const dur = audioSeg;
   const urlLocal = URL.createObjectURL(blob);
-  const msgTemp  = { id: Date.now(), remetente:'aluna', tipo:'audio', url:urlLocal, duracao, criado_em:new Date().toISOString(), _alturas:alturas };
-  const bolhaEl  = criarBolhaAudio(msgTemp, alturas);
-  document.getElementById('chat-msgs').appendChild(bolhaEl);
+  const msgTemp = {
+    id: 'tmp-'+Date.now(),
+    remetente: 'aluna',
+    tipo: 'audio',
+    url: urlLocal,
+    duracao: dur,
+    lida: false,
+    criado_em: new Date().toISOString(),
+    _alturas: gerarWaveform(28),
+  };
+  mensagensAtuais.push(msgTemp);
+  document.getElementById('chat-msgs').appendChild(renderMensagem(msgTemp));
   scrollChat();
 
   try {
-    // Upload para Cloudinary via backend
     const form = new FormData();
     form.append('audio', blob, `audio-${Date.now()}.webm`);
-    const r = await fetch(`${API}/api/upload/audio`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${VmSession.getAccess()}` },
-      body: form,
+    const up = await fetch(`${API}/api/upload/audio`, {
+      method: 'POST', headers: authHeader(), body: form,
     });
-    if (!r.ok) throw new Error('upload falhou');
-    const { url, duracao: dur } = await r.json();
-
-    // Envia mensagem para o backend com URL real
-    const r2 = await fetch(`${API}/api/chat/mensagem`, {
+    if (!up.ok) throw new Error();
+    const { url, duracao: durReal } = await up.json();
+    await fetch(`${API}/api/chat/mensagem`, {
       method: 'POST',
-      headers: { 'Content-Type':'application/json', Authorization:`Bearer ${VmSession.getAccess()}` },
-      body: JSON.stringify({ tipo:'audio', url, duracao: dur || duracao }),
+      headers: { ...authHeader(), 'Content-Type':'application/json' },
+      body: JSON.stringify({ tipo: 'audio', url, duracao: durReal || dur, tipo_chat: canalAtivo }),
     });
-    if (r2.ok) {
-      const d = await r2.json();
-      if (d.conversa) renderPlanoInfo({ ...chatConv, ...d.conversa });
-    }
-  } catch (err) {
-    console.error('[Audio upload]', err.message);
-    // Mantém a bolha local mesmo se falhar o upload
+  } catch {
+    toast('Erro ao enviar áudio', 'err');
   }
 }
 
-/* Botão microfone — abre pré-aviso se nunca pediu, ou inicia direto */
-audioBtn?.addEventListener('click', ()=>{
-  if (permissaoMic) {
-    iniciarGravacao();
-  } else {
-    abrirModal('modal-mic');
-  }
+audioBtn?.addEventListener('click', () => {
+  if (permissaoMic) iniciarGravacao();
+  else abrirModal('modal-mic');
 });
-
-/* Confirmação do modal de pré-aviso */
-document.getElementById('modal-mic-ok')?.addEventListener('click', ()=>{
+document.getElementById('modal-mic-ok')?.addEventListener('click', () => {
   fecharModal('modal-mic');
-  setTimeout(iniciarGravacao, 150); // pequeno delay para fechar o modal antes
+  setTimeout(iniciarGravacao, 150);
 });
+document.getElementById('chat-rec-cancel')?.addEventListener('click', () => pararGravacao(false));
+document.getElementById('chat-rec-send')?.addEventListener('click', () => pararGravacao(true));
 
-/* Cancelar gravação */
-document.getElementById('chat-rec-cancel')?.addEventListener('click', cancelarGravacao);
-
-/* Enviar gravação */
-document.getElementById('chat-rec-send')?.addEventListener('click', ()=>pararGravacao(true));
+// ── Conexões da tela de escolha e abas ──
+document.querySelectorAll('.chat-canal-card').forEach(btn => {
+  btn.addEventListener('click', () => abrirCanal(btn.dataset.canal));
+});
+document.querySelectorAll('.chat-aba').forEach(btn => {
+  btn.addEventListener('click', () => abrirCanal(btn.dataset.aba));
+});
+document.getElementById('btn-back-escolha')?.addEventListener('click', abrirTelaEscolhaChat);
 
 // ══════════════════════════════════════════════════════════
 // INIT
@@ -672,7 +1046,7 @@ document.getElementById('chat-rec-send')?.addEventListener('click', ()=>pararGra
   hidratarUI(usuario);
   carregarFeed();
   carregarTesouro();
-
-  // Conecta WebSocket imediatamente — não espera abrir a aba de chat
   conectarChatWs();
+  carregarResumoChats();
+  setInterval(carregarResumoChats, 30000);
 })();
