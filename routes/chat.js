@@ -53,9 +53,12 @@ async function initChat(client) {
       conteudo     TEXT,
       url          TEXT,
       lida         BOOLEAN DEFAULT FALSE,
+      reply_to_id  INTEGER REFERENCES chat_mensagens(id) ON DELETE SET NULL,
       criado_em    TIMESTAMPTZ DEFAULT NOW()
     )
   `);
+  // Garante coluna em bancos já existentes
+  await client.query(`ALTER TABLE chat_mensagens ADD COLUMN IF NOT EXISTS reply_to_id INTEGER REFERENCES chat_mensagens(id) ON DELETE SET NULL`);
   await client.query(`CREATE INDEX IF NOT EXISTS idx_chat_msgs_conversa ON chat_mensagens(conversa_id, criado_em DESC)`);
 
   // Pacotes prioritários comprados
@@ -188,8 +191,13 @@ router.get('/conversa', async (req, res) => {
 
     // Busca últimas 50 mensagens
     const msgs = await pool.query(`
-      SELECT * FROM chat_mensagens WHERE conversa_id=$1
-      ORDER BY criado_em ASC LIMIT 50`, [conv.id]);
+      SELECT m.*,
+        r.conteudo   AS reply_to_conteudo,
+        r.remetente  AS reply_to_remetente
+      FROM chat_mensagens m
+      LEFT JOIN chat_mensagens r ON r.id = m.reply_to_id
+      WHERE m.conversa_id=$1
+      ORDER BY m.criado_em ASC LIMIT 50`, [conv.id]);
 
     // Marca mensagens da Suellen como lidas
     await pool.query(`
@@ -372,8 +380,13 @@ router.get('/conversa/:id', async (req, res) => {
     if (!conv.rows.length) return res.status(404).json({ error: 'Conversa não encontrada' });
 
     const msgs = await pool.query(`
-      SELECT * FROM chat_mensagens WHERE conversa_id=$1
-      ORDER BY criado_em ASC`, [req.params.id]);
+      SELECT m.*,
+        r.conteudo   AS reply_to_conteudo,
+        r.remetente  AS reply_to_remetente
+      FROM chat_mensagens m
+      LEFT JOIN chat_mensagens r ON r.id = m.reply_to_id
+      WHERE m.conversa_id=$1
+      ORDER BY m.criado_em ASC`, [req.params.id]);
 
     // Marca como lidas
     await pool.query(`
@@ -397,17 +410,16 @@ router.get('/conversa/:id', async (req, res) => {
 
 // POST /api/suellen/chat/mensagem — Suellen responde
 router.post('/mensagem', async (req, res) => {
-  const { conversa_id, conteudo, tipo = 'texto', url } = req.body;
+  const { conversa_id, conteudo, tipo = 'texto', url, reply_to_id } = req.body;
   if (!conversa_id || (!conteudo && !url)) return res.status(400).json({ error: 'dados inválidos' });
   try {
-    // Verifica se conversa existe
     const conv = await pool.query(`SELECT * FROM chat_conversas WHERE id=$1`, [conversa_id]);
     if (!conv.rows.length) return res.status(404).json({ error: 'Conversa não encontrada' });
 
     const r = await pool.query(`
-      INSERT INTO chat_mensagens (conversa_id, remetente, tipo, conteudo, url)
-      VALUES ($1,'suellen',$2,$3,$4) RETURNING *`,
-      [conversa_id, tipo, conteudo || null, url || null]);
+      INSERT INTO chat_mensagens (conversa_id, remetente, tipo, conteudo, url, reply_to_id)
+      VALUES ($1,'suellen',$2,$3,$4,$5) RETURNING *`,
+      [conversa_id, tipo, conteudo || null, url || null, reply_to_id || null]);
     const msg = r.rows[0];
 
     const preview = conteudo ? conteudo.substring(0, 80) : (tipo === 'imagem' ? '📷 Imagem' : '🎤 Áudio');
