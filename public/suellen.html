@@ -356,6 +356,26 @@ button { font-family:inherit; cursor:pointer; border:none; background:none; colo
 
 .login-erro { color: #F87171; font-size: 0.78rem; margin-top: 0.75rem; text-align: center; min-height: 1.2em; }
 
+
+/* ── Gravação de áudio — Suellen ── */
+.chat-rec-row-s {
+  display:none; align-items:center; gap:0.5rem;
+  animation: rec-ap 0.2s ease;
+}
+@keyframes rec-ap { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.chat-rec-row-s.visivel { display:flex; }
+.btn-rec-cancel { flex-shrink:0; width:40px; height:40px; display:flex; align-items:center; justify-content:center; background:rgba(239,68,68,0.1); border:1.5px solid rgba(239,68,68,0.3); border-radius:50%; color:#EF4444; cursor:pointer; transition:background 0.15s; }
+.btn-rec-cancel:hover { background:rgba(239,68,68,0.2); }
+.btn-rec-cancel svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; }
+.rec-visualizer-s { flex:1; display:flex; align-items:center; gap:0.5rem; background:var(--surf2); border:1px solid rgba(239,68,68,0.25); border-radius:22px; padding:0 0.85rem; height:40px; overflow:hidden; }
+.rec-dot-s { flex-shrink:0; width:8px; height:8px; border-radius:50%; background:#EF4444; animation:rdot 1s ease-in-out infinite; }
+@keyframes rdot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+.rec-wave-s { flex:1; height:32px; display:block; }
+.rec-timer-s { flex-shrink:0; font-family:var(--font-d); font-size:0.75rem; font-weight:700; color:#EF4444; min-width:30px; text-align:right; }
+.btn-rec-send { flex-shrink:0; width:40px; height:40px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,var(--ouro-f),var(--ouro)); border-radius:50%; cursor:pointer; transition:transform 0.12s; }
+.btn-rec-send:hover { transform:scale(1.06); }
+.btn-rec-send svg { fill:white; width:15px; height:15px; }
+
 </style>
 </head>
 <body>
@@ -1114,6 +1134,199 @@ document.getElementById('login-senha')?.addEventListener('keydown', e => {
     // Mostra tela de login (já visível por padrão)
   }
 })();
+
+/* ════════ GRAVAÇÃO DE ÁUDIO — Suellen ════════ */
+let sMediaRecorder = null, sAudioChunks = [], sAudioCtx = null, sAnalyser = null;
+let sAnimFrame = null, sTimer = null, sSeg = 0, sMime = '', sPermissao = false;
+
+function sFmtTempo(s) { return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
+
+function sDesenharOnda() {
+  const canvas = document.getElementById('rec-wave-s');
+  if (!canvas || !sAnalyser) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const buf = new Uint8Array(sAnalyser.frequencyBinCount);
+  sAnalyser.getByteTimeDomainData(buf);
+  ctx.clearRect(0,0,W,H);
+  ctx.beginPath();
+  buf.forEach((v,i) => {
+    const y = (v/128.0)*(H/2);
+    i===0 ? ctx.moveTo(0,y) : ctx.lineTo(i*(W/buf.length),y);
+  });
+  ctx.strokeStyle = 'rgba(200,146,42,0.85)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  sAnimFrame = requestAnimationFrame(sDesenharOnda);
+}
+
+async function sIniciarGravacao() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    sPermissao = true;
+    sMime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+    sMediaRecorder = new MediaRecorder(stream, { mimeType: sMime });
+    sAudioChunks = []; sSeg = 0;
+
+    sAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    sAnalyser = sAudioCtx.createAnalyser();
+    sAnalyser.fftSize = 256;
+    sAudioCtx.createMediaStreamSource(stream).connect(sAnalyser);
+
+    // Mostra barra de gravação
+    document.getElementById('chat-input-normal').style.display = 'none';
+    const recRow = document.getElementById('chat-rec-row-s');
+    recRow.classList.add('visivel');
+    const canvas = document.getElementById('rec-wave-s');
+    if (canvas) canvas.width = canvas.offsetWidth || 160;
+    sDesenharOnda();
+
+    document.getElementById('rec-timer-s').textContent = '0:00';
+    sTimer = setInterval(() => {
+      sSeg++;
+      document.getElementById('rec-timer-s').textContent = sFmtTempo(sSeg);
+      if (sSeg >= 120) sPararGravacao(true);
+    }, 1000);
+
+    sMediaRecorder.ondataavailable = e => { if(e.data.size>0) sAudioChunks.push(e.data); };
+    sMediaRecorder.onstop = sFinalizarGravacao;
+    sMediaRecorder.start(200);
+  } catch {
+    alert('Não foi possível acessar o microfone.');
+  }
+}
+
+function sPararGravacao(enviar=true) {
+  if (!sMediaRecorder || sMediaRecorder.state==='inactive') return;
+  sMediaRecorder._enviar = enviar;
+  sMediaRecorder.stop();
+  sMediaRecorder.stream?.getTracks().forEach(t=>t.stop());
+}
+
+function sGerarWaveform(n=28) {
+  const a=[]; for(let i=0;i<n;i++) a.push(Math.random()*0.7+0.15);
+  for(let i=1;i<n-1;i++) a[i]=(a[i-1]+a[i]+a[i+1])/3;
+  return a;
+}
+
+async function sFinalizarGravacao() {
+  clearInterval(sTimer); cancelAnimationFrame(sAnimFrame);
+  try { sAudioCtx?.close(); } catch {}
+  sAnalyser = null; sAudioCtx = null;
+
+  document.getElementById('chat-rec-row-s').classList.remove('visivel');
+  document.getElementById('chat-input-normal').style.display = 'flex';
+
+  if (!sMediaRecorder._enviar || sSeg < 1) return;
+
+  const blob    = new Blob(sAudioChunks, { type: sMime });
+  const alturas = sGerarWaveform();
+  const dur     = sSeg;
+
+  // Bolha otimista local
+  const urlLocal = URL.createObjectURL(blob);
+  const msgsEl   = document.getElementById('chat-msgs');
+  const bolhaEl  = criarBolhaAudio({ id:Date.now(), remetente:'suellen', tipo:'audio', url:urlLocal, duracao:dur, criado_em:new Date().toISOString() }, alturas);
+  msgsEl.appendChild(bolhaEl);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  try {
+    // Upload para Cloudinary
+    const form = new FormData();
+    form.append('audio', blob, `audio-${Date.now()}.webm`);
+    const r = await fetch(`${API}/api/upload/audio`, {
+      method: 'POST',
+      headers: authHeader(),
+      body: form,
+    });
+    if (!r.ok) throw new Error('upload');
+    const { url, duracao: durReal } = await r.json();
+
+    // Envia para o chat
+    await fetch(`${API}/api/suellen/chat/mensagem`, {
+      method: 'POST',
+      headers: { ...authHeader(), 'Content-Type':'application/json' },
+      body: JSON.stringify({ conversa_id: convAtual.id, tipo:'audio', url, duracao: durReal||dur }),
+    });
+  } catch(err) {
+    console.error('[Suellen audio upload]', err.message);
+  }
+}
+
+// Bolha de áudio para o painel da Suellen (reutiliza a mesma lógica)
+function criarBolhaAudio(msg, alturas) {
+  const isAluna = msg.remetente === 'aluna';
+  const wrap = document.createElement('div');
+  wrap.className = `msg-wrap ${isAluna?'aluna':'suellen'}`;
+
+  const duracaoFmt = msg.duracao ? sFmtTempo(msg.duracao) : '0:00';
+  const barCount = alturas.length, barW=3, gap=2, totalW=barCount*(barW+gap)-gap;
+  const barsHtml = alturas.map((h,i)=>{
+    const bh=Math.max(4,Math.round(h*24)), y=(28-bh)/2;
+    return `<rect x="${i*(barW+gap)}" y="${y}" width="${barW}" height="${bh}" rx="1.5" class="msg-audio-wave-bar" data-idx="${i}"/>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div class="msg-audio-bolha">
+      <button class="msg-audio-play-btn" data-url="${msg.url||''}">
+        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      </button>
+      <svg class="msg-audio-wave" viewBox="0 0 ${totalW} 28" width="${totalW}" height="28">
+        ${barsHtml}
+      </svg>
+      <span class="msg-audio-dur">${duracaoFmt}</span>
+    </div>
+    <span class="msg-hora">${new Date(msg.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span>
+  `;
+
+  // Player
+  let audio = null;
+  const playBtn = wrap.querySelector('.msg-audio-play-btn');
+  const bars    = wrap.querySelectorAll('.msg-audio-wave-bar');
+  const durEl   = wrap.querySelector('.msg-audio-dur');
+  playBtn?.addEventListener('click', () => {
+    if (!audio) {
+      audio = new Audio(msg.url);
+      audio.addEventListener('timeupdate', () => {
+        if (!audio.duration) return;
+        const pct=audio.currentTime/audio.duration, idx=Math.floor(pct*bars.length);
+        bars.forEach((b,i)=>b.classList.toggle('ativa',i<=idx));
+        const rem=Math.floor(audio.duration-audio.currentTime);
+        durEl.textContent=sFmtTempo(rem);
+      });
+      audio.addEventListener('ended', ()=>{ bars.forEach(b=>b.classList.remove('ativa')); playBtn.innerHTML=`<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>`; durEl.textContent=duracaoFmt; });
+    }
+    if (audio.paused) { audio.play(); playBtn.innerHTML=`<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`; }
+    else              { audio.pause(); playBtn.innerHTML=`<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>`; }
+  });
+  return wrap;
+}
+
+// Estilos para bolha de áudio no painel (inline para não precisar de CSS separado)
+const audioStyle = document.createElement('style');
+audioStyle.textContent = `
+  .msg-audio-bolha{display:flex;align-items:center;gap:0.7rem;padding:0.6rem 0.9rem;border-radius:16px;min-width:180px;max-width:240px}
+  .msg-wrap.aluna .msg-audio-bolha{background:var(--surf2);border:1px solid var(--ouro-brd);border-bottom-left-radius:3px}
+  .msg-wrap.suellen .msg-audio-bolha{background:linear-gradient(135deg,var(--ouro-f),var(--ouro));border-bottom-right-radius:3px}
+  .msg-audio-play-btn{flex-shrink:0;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(255,255,255,0.2);border:none;transition:transform 0.12s}
+  .msg-audio-play-btn:hover{transform:scale(1.08)}
+  .msg-audio-play-btn svg{fill:white;width:13px;height:13px;margin-left:2px}
+  .msg-wrap.aluna .msg-audio-play-btn svg{fill:var(--ouro-cl)}
+  .msg-audio-wave{flex:1}
+  .msg-audio-wave-bar{fill:rgba(255,255,255,0.4)}
+  .msg-wrap.aluna .msg-audio-wave-bar{fill:rgba(200,146,42,0.4)}
+  .msg-audio-wave-bar.ativa{fill:rgba(255,255,255,0.9)}
+  .msg-wrap.aluna .msg-audio-wave-bar.ativa{fill:var(--ouro)}
+  .msg-audio-dur{flex-shrink:0;font-family:var(--font-d);font-size:0.62rem;font-weight:700;color:rgba(255,255,255,0.8);min-width:28px;text-align:right}
+  .msg-wrap.aluna .msg-audio-dur{color:var(--txt2)}
+`;
+document.head.appendChild(audioStyle);
+
+// Botão microfone da Suellen
+document.getElementById('btn-audio')?.addEventListener('click', sIniciarGravacao);
+document.getElementById('btn-rec-cancel-s')?.addEventListener('click', ()=>sPararGravacao(false));
+document.getElementById('btn-rec-send-s')?.addEventListener('click', ()=>sPararGravacao(true));
+
 </script>
 </body>
 </html>
