@@ -55,19 +55,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ── BASIC AUTH ──
 const { autenticar: basicAuth } = require('./routes/precos');
 
-// ── JWT MIDDLEWARE para chat da aluna ──
-const jwt = require('jsonwebtoken');
-function jwtAuth(req, res, next) {
-  const header = req.headers.authorization || '';
-  const token  = header.replace('Bearer ', '').trim();
-  if (!token) return res.status(401).json({ error: 'Token obrigatório' });
-  try {
-    req.usuario = jwt.verify(token, process.env.JWT_SECRET);
-    next();
-  } catch {
-    res.status(401).json({ error: 'Token inválido' });
-  }
-}
+// ── JWT MIDDLEWARE para chat da aluna — usa o mesmo do sistema ──
+const { autenticar: jwtAuth } = require('./middleware/autenticar');
 
 // ── PÁGINAS ──
 app.get('/admin',    basicAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
@@ -138,8 +127,9 @@ wss.on('connection', async (ws, req) => {
       if (u !== process.env.ADMIN_USER || p !== process.env.ADMIN_PASS) throw new Error('auth');
       identidade = 'suellen';
     } else {
-      // Aluna autentica via JWT
-      const payload = require('jsonwebtoken').verify(token, process.env.JWT_SECRET);
+      // Aluna autentica via JWT — usa o mesmo secret do middleware
+      const { JWT_SECRET } = require('./middleware/autenticar');
+      const payload = require('jsonwebtoken').verify(token, JWT_SECRET);
       identidade = `aluna:${payload.id}`;
     }
   } catch {
