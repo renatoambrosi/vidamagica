@@ -594,3 +594,81 @@ document.getElementById('chat-upgrade-btn')?.addEventListener('click', () => {
   carregarFeed();
   carregarTesouro();
 })();
+
+// ── Gravação de áudio com MediaRecorder ──
+let mediaRecorder = null;
+let audioChunks   = [];
+let audioTimer    = null;
+let audioSeg      = 0;
+
+function formatarTempo(s) {
+  const m = Math.floor(s / 60);
+  return `${m}:${String(s % 60).padStart(2,'0')}`;
+}
+
+document.getElementById('chat-audio-btn')?.addEventListener('click', async () => {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    audioChunks = [];
+    audioSeg = 0;
+
+    const audioBtn       = document.getElementById('chat-audio-btn');
+    const sendBtn        = document.getElementById('chat-send-btn');
+    const inputContainer = document.querySelector('.chat-input-container');
+
+    // Guarda o input original
+    const originalHTML = inputContainer.innerHTML;
+
+    // Mostra preview de gravação
+    inputContainer.innerHTML = `
+      <div class="chat-audio-preview">
+        <div class="chat-audio-preview-dot"></div>
+        <span style="flex:1;font-size:0.82rem;color:var(--texto-mute)">Gravando áudio...</span>
+        <span class="chat-audio-preview-timer" id="audio-timer">0:00</span>
+      </div>`;
+
+    audioBtn.classList.add('gravando');
+    sendBtn.style.display = 'flex';
+
+    audioTimer = setInterval(() => {
+      audioSeg++;
+      const el = document.getElementById('audio-timer');
+      if (el) el.textContent = formatarTempo(audioSeg);
+      if (audioSeg >= 120) mediaRecorder.stop();
+    }, 1000);
+
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+
+    mediaRecorder.onstop = () => {
+      clearInterval(audioTimer);
+      stream.getTracks().forEach(t => t.stop());
+      audioBtn.classList.remove('gravando');
+      inputContainer.innerHTML = originalHTML;
+      sendBtn.style.display = 'none';
+      audioBtn.style.display = 'flex';
+
+      if (audioSeg < 1) return;
+
+      const blob = new Blob(audioChunks, { type: mimeType });
+      const url  = URL.createObjectURL(blob);
+      const msgTemp = {
+        id: Date.now(), remetente: 'aluna', tipo: 'audio',
+        url, criado_em: new Date().toISOString()
+      };
+      document.getElementById('chat-msgs').appendChild(renderMensagem(msgTemp));
+      scrollChat();
+    };
+
+    mediaRecorder.start(200);
+
+  } catch {
+    alert('Não foi possível acessar o microfone. Verifique as permissões.');
+  }
+});
