@@ -1,26 +1,25 @@
 /* ============================================================
-   VIDA MÁGICA — routes/chat.js  (v3)
+   VIDA MÁGICA — routes/chat.js  (v4)
    Chat entre aluna e Atendimento (Suellen / Equipe Vida Mágica)
 
-   CORREÇÃO v3:
-   - Antes havia UM único `router` com rotas da aluna E do atendimento.
-     Se o server.js montava ele em dois `app.use()`, o Express tentava
-     casar o POST /mensagem do atendimento com a rota POST /mensagem
-     da aluna (que lia req.usuario.sub → undefined → erro 500).
-   - Agora há DOIS routers separados:
-       * routerAluna       → exportado para /api/chat
-       * routerAtendimento → exportado para /api/atendimento/chat
-     Cada router só tem as suas rotas. Sem conflito.
+   NOVIDADES v4:
+   - Coluna `tipo` em chat_conversas ('suellen' | 'suporte')
+   - UNIQUE composto (usuario_id, tipo) → cada aluna tem 2 conversas
+   - Timer prioritário só roda quando a Suellen responde
+     (Equipe respondendo NÃO inicia/reseta o timer)
+   - Endpoint POST /assinar-vm-template → injeta mensagem da Suellen
+     no chat com explicação + link de assinatura
+   - Flag CHAT_RESET_DB=true (env) → DROP e recria tabelas de chat
+     (usar uma vez e remover a env após o reset)
 
-   Comportamento mantido (v2):
+   Mantido (v3):
+   - routerAluna e routerAtendimento separados (2 routers)
    - Coluna `favoritada` em chat_conversas
    - Coluna `identidade` em chat_mensagens ('suellen' | 'equipe')
    - Aluna abrir conversa → marca msgs da Suellen como lidas
    - Atendimento abrir conversa → NÃO marca como lida
    - Atendimento responder → marca todo o bloco pendente como lido
    - Evento WS `mensagens_lidas` em tempo real
-   - Cálculo de tier: free / basic_vm / prioritario
-   - Endpoint POST /favoritar
    ============================================================ */
 
 const express = require('express');
@@ -30,7 +29,6 @@ const { pool } = require('../db');
 const routerAluna       = express.Router();
 const routerAtendimento = express.Router();
 
-/* ── Web Push config ── */
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
     `mailto:${process.env.VAPID_EMAIL || 'contato@vidamagica.com.br'}`,
@@ -41,10 +39,21 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
 
 /* ── Init tabelas ── */
 async function initChat(client) {
+  // ⚠️ Reset opcional — usar UMA VEZ e remover a env CHAT_RESET_DB
+  if (process.env.CHAT_RESET_DB === 'true') {
+    console.log('⚠️  CHAT_RESET_DB=true — apagando tabelas de chat para recriar do zero...');
+    await client.query(`DROP TABLE IF EXISTS chat_mensagens CASCADE`);
+    await client.query(`DROP TABLE IF EXISTS chat_pacotes CASCADE`);
+    await client.query(`DROP TABLE IF EXISTS chat_push_subscriptions CASCADE`);
+    await client.query(`DROP TABLE IF EXISTS chat_conversas CASCADE`);
+    console.log('✅ Tabelas de chat apagadas. Lembre-se de REMOVER a env CHAT_RESET_DB após o deploy.');
+  }
+
   await client.query(`
     CREATE TABLE IF NOT EXISTS chat_conversas (
       id                    SERIAL PRIMARY KEY,
       usuario_id            UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+      tipo                  VARCHAR(10) NOT NULL DEFAULT 'suellen' CHECK (tipo IN ('suellen','suporte')),
       plano_chat            VARCHAR(20) DEFAULT 'basic' CHECK (plano_chat IN ('basic','prioritario')),
       interacoes_restantes  INTEGER DEFAULT NULL,
       prioritario_expira_em TIMESTAMPTZ DEFAULT NULL,
@@ -57,10 +66,24 @@ async function initChat(client) {
       nao_lidas_aluna       INTEGER DEFAULT 0,
       criado_em             TIMESTAMPTZ DEFAULT NOW(),
       atualizado_em         TIMESTAMPTZ DEFAULT NOW(),
-      UNIQUE(usuario_id)
+      UNIQUE(usuario_id, tipo)
     )
   `);
+  // Migrations de tabelas existentes (caso CHAT_RESET_DB nunca tenha sido true)
   await client.query(`ALTER TABLE chat_conversas ADD COLUMN IF NOT EXISTS favoritada BOOLEAN DEFAULT FALSE`);
+  await client.query(`ALTER TABLE chat_conversas ADD COLUMN IF NOT EXISTS tipo VARCHAR(10) DEFAULT 'suellen'`);
+  await client.query(`ALTER TABLE chat_conversas DROP CONSTRAINT IF EXISTS chat_conversas_usuario_id_key`);
+  await client.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'chat_conversas_usuario_id_tipo_key'
+      ) THEN
+        ALTER TABLE chat_conversas ADD CONSTRAINT chat_conversas_usuario_id_tipo_key UNIQUE (usuario_id, tipo);
+      END IF;
+    END $$;
+  `);
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS chat_mensagens (
@@ -107,15 +130,15 @@ async function initChat(client) {
     )
   `);
 
-  console.log('✅ Chat: tabelas OK (v3 — routers separados)');
+  console.log('✅ Chat: tabelas OK (v4 — Suellen + Suporte)');
 }
 
 /* ── Helpers ── */
 
-async function getOuCriarConversa(usuario_id) {
-  let r = await pool.query(`SELECT * FROM chat_conversas WHERE usuario_id=$1`, [usuario_id]);
+async function getOuCriarConversa(usuario_id, tipo = 'suellen') {
+  let r = await pool.query(`SELECT * FROM chat_conversas WHERE usuario_id=$1 AND tipo=$2`, [usuario_id, tipo]);
   if (r.rows.length) return r.rows[0];
-  r = await pool.query(`INSERT INTO chat_conversas (usuario_id) VALUES ($1) RETURNING *`, [usuario_id]);
+  r = await pool.query(`INSERT INTO chat_conversas (usuario_id, tipo) VALUES ($1, $2) RETURNING *`, [usuario_id, tipo]);
   return r.rows[0];
 }
 
@@ -194,24 +217,37 @@ function emitirParaSuellen(evento, dados) {
   if (ws && ws.readyState === 1) ws.send(JSON.stringify({ evento, ...dados }));
 }
 
-/* Helper que extrai o ID do "operador" do atendimento de qualquer
-   formato de payload que o middleware atendimentoAuth possa colocar. */
-function getOperadorId(req) {
-  return (req.atendimento?.sub)
-      || (req.atendimento?.id)
-      || (req.suellen?.sub)
-      || (req.user?.sub)
-      || (req.user?.id)
-      || 'atendimento';
+/* Texto-template enviado quando aluna Free clica em "Assinar Vida Mágica" */
+function gerarMensagemAssinaturaVM() {
+  return [
+    'Oi, que bom te ver por aqui! 🌟',
+    '',
+    'O Vida Mágica é o nosso plano de acompanhamento contínuo. Aqui vão os detalhes:',
+    '',
+    '✨ Vantagens:',
+    '• Resposta em até 5 dias úteis',
+    '• Acesso completo aos materiais e conteúdos da plataforma',
+    '• Acompanhamento das suas Sementes e Prosperidade',
+    '• Suporte direto comigo neste chat',
+    '',
+    '⭐ Quer resposta em até 24h? Você também pode ativar o Atendimento Prioritário (R$ 9,90 por 30 interações em 24h) a qualquer momento.',
+    '',
+    '👉 Para assinar o Vida Mágica, é só acessar:',
+    'https://www.vidamagica.com.br/assinar',
+    '',
+    'Qualquer dúvida, me chama por aqui! Estou com você nessa jornada. 💛',
+  ].join('\n');
 }
 
 /* ════════════════════════════════════════════════════════════
-   ROTAS — ALUNA  (montar em /api/chat com middleware da aluna)
+   ROTAS — ALUNA  (em /api/chat com middleware da aluna)
    ════════════════════════════════════════════════════════════ */
 
+// GET /api/chat/conversa  ?tipo=suellen | suporte (default: suellen)
 routerAluna.get('/conversa', async (req, res) => {
+  const tipo = (req.query.tipo === 'suporte') ? 'suporte' : 'suellen';
   try {
-    let conv = await getOuCriarConversa(req.usuario.sub);
+    let conv = await getOuCriarConversa(req.usuario.sub, tipo);
     conv = await verificarPrioritario(conv);
 
     const u = await pool.query(`SELECT plano FROM usuarios WHERE id=$1`, [req.usuario.sub]);
@@ -252,12 +288,14 @@ routerAluna.get('/conversa', async (req, res) => {
   }
 });
 
+// POST /api/chat/mensagem  body: { tipo_chat, conteudo, tipo, url, reply_to_id }
 routerAluna.post('/mensagem', async (req, res) => {
-  const { conteudo, tipo = 'texto', url, reply_to_id } = req.body;
+  const { tipo_chat, conteudo, tipo = 'texto', url, reply_to_id } = req.body;
+  const tipoChat = (tipo_chat === 'suporte') ? 'suporte' : 'suellen';
   if (!conteudo && !url) return res.status(400).json({ error: 'conteudo ou url obrigatório' });
 
   try {
-    let conv = await getOuCriarConversa(req.usuario.sub);
+    let conv = await getOuCriarConversa(req.usuario.sub, tipoChat);
     conv = await verificarPrioritario(conv);
 
     if (conv.bloqueada) return res.status(403).json({ error: 'Chat bloqueado' });
@@ -294,6 +332,7 @@ routerAluna.post('/mensagem', async (req, res) => {
 
     emitirParaSuellen('nova_mensagem', {
       conversa_id:  conv.id,
+      conversa_tipo: tipoChat,
       usuario_id:   req.usuario.sub,
       nome:         req.usuario.nome,
       foto_url:     req.usuario.foto_url,
@@ -325,6 +364,7 @@ routerAluna.post('/mensagem', async (req, res) => {
   }
 });
 
+// POST /api/chat/digitando
 routerAluna.post('/digitando', async (req, res) => {
   emitirParaSuellen('digitando', {
     usuario_id: req.usuario.sub,
@@ -333,10 +373,12 @@ routerAluna.post('/digitando', async (req, res) => {
   res.json({ ok: true });
 });
 
+// POST /api/chat/ativar-prioritario
 routerAluna.post('/ativar-prioritario', async (req, res) => {
-  const { origem = 'pagamento' } = req.body;
+  const { origem = 'pagamento', tipo_chat } = req.body;
+  const tipoChat = (tipo_chat === 'suporte') ? 'suporte' : 'suellen';
   try {
-    let conv = await getOuCriarConversa(req.usuario.sub);
+    let conv = await getOuCriarConversa(req.usuario.sub, tipoChat);
     const expira = new Date(Date.now() + 24 * 60 * 60 * 1000);
     await pool.query(`
       UPDATE chat_conversas SET
@@ -356,13 +398,16 @@ routerAluna.post('/ativar-prioritario', async (req, res) => {
   }
 });
 
+// GET /api/chat/status  ?tipo=suellen|suporte
 routerAluna.get('/status', async (req, res) => {
+  const tipo = (req.query.tipo === 'suporte') ? 'suporte' : 'suellen';
   try {
-    let conv = await getOuCriarConversa(req.usuario.sub);
+    let conv = await getOuCriarConversa(req.usuario.sub, tipo);
     conv = await verificarPrioritario(conv);
     const u = await pool.query(`SELECT plano FROM usuarios WHERE id=$1`, [req.usuario.sub]);
     const tier = calcularTier(u.rows[0]?.plano, conv.plano_chat);
     res.json({
+      tipo,
       plano_chat:            conv.plano_chat,
       plano_usuario:         u.rows[0]?.plano || 'gratuito',
       tier,
@@ -376,12 +421,73 @@ routerAluna.get('/status', async (req, res) => {
   }
 });
 
+// GET /api/chat/resumo — info dos 2 chats da aluna pra tela de escolha
+routerAluna.get('/resumo', async (req, res) => {
+  try {
+    let convSuellen = await getOuCriarConversa(req.usuario.sub, 'suellen');
+    let convSuporte = await getOuCriarConversa(req.usuario.sub, 'suporte');
+    convSuellen = await verificarPrioritario(convSuellen);
+    convSuporte = await verificarPrioritario(convSuporte);
+    const u = await pool.query(`SELECT plano FROM usuarios WHERE id=$1`, [req.usuario.sub]);
+    const planoUsuario = u.rows[0]?.plano || 'gratuito';
+    res.json({
+      plano_usuario: planoUsuario,
+      suellen: {
+        nao_lidas: convSuellen.nao_lidas_aluna,
+        ultima_preview: convSuellen.ultima_preview,
+        ultima_mensagem_em: convSuellen.ultima_mensagem_em,
+        tier: calcularTier(planoUsuario, convSuellen.plano_chat),
+      },
+      suporte: {
+        nao_lidas: convSuporte.nao_lidas_aluna,
+        ultima_preview: convSuporte.ultima_preview,
+        ultima_mensagem_em: convSuporte.ultima_mensagem_em,
+        tier: calcularTier(planoUsuario, convSuporte.plano_chat),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/chat/assinar-vm-template
+// Aluna Free clica em "Assinar Vida Mágica" → injeta msg da Suellen explicando assinatura
+routerAluna.post('/assinar-vm-template', async (req, res) => {
+  try {
+    const conv = await getOuCriarConversa(req.usuario.sub, 'suellen');
+    const conteudo = gerarMensagemAssinaturaVM();
+    const r = await pool.query(`
+      INSERT INTO chat_mensagens (conversa_id, remetente, tipo, conteudo, identidade)
+      VALUES ($1, 'suellen', 'texto', $2, 'suellen')
+      RETURNING *`,
+      [conv.id, conteudo]);
+    const msg = r.rows[0];
+
+    const preview = conteudo.substring(0, 80);
+    await pool.query(`
+      UPDATE chat_conversas SET ultima_mensagem_em=NOW(), ultima_preview=$1,
+      nao_lidas_aluna=nao_lidas_aluna+1, atualizado_em=NOW() WHERE id=$2`,
+      [preview, conv.id]);
+
+    emitirParaAluna(req.usuario.sub, 'nova_mensagem', { mensagem: msg, conversa_id: conv.id });
+    emitirParaSuellen('nova_mensagem', {
+      conversa_id: conv.id, conversa_tipo: 'suellen',
+      usuario_id: req.usuario.sub, nome: req.usuario.nome,
+      mensagem: msg, preview, tempo: 'agora', origem: 'template_assinar_vm',
+    });
+    res.json({ success: true, mensagem: msg });
+  } catch (err) {
+    console.error('[ChatAluna] POST assinar-vm-template:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 routerAluna.get('/vapid-public-key', (req, res) => {
   res.json({ key: process.env.VAPID_PUBLIC_KEY || null });
 });
 
 /* ════════════════════════════════════════════════════════════
-   ROTAS — ATENDIMENTO  (montar em /api/atendimento/chat)
+   ROTAS — ATENDIMENTO  (em /api/atendimento/chat)
    ════════════════════════════════════════════════════════════ */
 
 routerAtendimento.get('/conversas', async (req, res) => {
@@ -477,13 +583,24 @@ routerAtendimento.post('/mensagem', async (req, res) => {
     const preview = conteudo ? conteudo.substring(0, 80) : (tipo === 'imagem' ? '📷 Imagem' : '🎤 Áudio');
 
     // 3. Atualiza conversa
+    // ⚠️ TIMER PRIORITÁRIO: só inicia/reseta quando IDENTIDADE='suellen'
+    //    Equipe respondendo NÃO afeta o timer.
+    let updateExtra = '';
+    let updateParams = [preview, conversa_id];
+    if (ident === 'suellen' && conv.rows[0].plano_chat === 'prioritario') {
+      // Inicia/reseta o timer de 24h a partir da resposta da Suellen
+      const novaExpira = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      updateExtra = `, prioritario_expira_em=$3`;
+      updateParams.push(novaExpira);
+    }
     await pool.query(`
       UPDATE chat_conversas SET ultima_mensagem_em=NOW(), ultima_preview=$1,
-      nao_lidas_aluna=nao_lidas_aluna+1, nao_lidas_suellen=0, atualizado_em=NOW() WHERE id=$2`,
-      [preview, conversa_id]);
+      nao_lidas_aluna=nao_lidas_aluna+1, nao_lidas_suellen=0, atualizado_em=NOW()
+      ${updateExtra}
+      WHERE id=$2`, updateParams);
 
     // 4. Emite eventos WS
-    emitirParaAluna(conv.rows[0].usuario_id, 'nova_mensagem', { mensagem: msg });
+    emitirParaAluna(conv.rows[0].usuario_id, 'nova_mensagem', { mensagem: msg, conversa_id });
     if (lidas.rows.length > 0) {
       emitirParaAluna(conv.rows[0].usuario_id, 'mensagens_lidas', {
         conversa_id, ids: lidas.rows.map(x => x.id), por: 'suellen',
@@ -493,7 +610,7 @@ routerAtendimento.post('/mensagem', async (req, res) => {
       conversa_id, ids: lidas.rows.map(x => x.id), por: 'suellen',
     });
 
-    res.json({ mensagem: msg, marcadas_lidas: lidas.rows.length });
+    res.json({ mensagem: msg, marcadas_lidas: lidas.rows.length, timer_resetado: ident === 'suellen' && conv.rows[0].plano_chat === 'prioritario' });
   } catch (err) {
     console.error('[ChatAtend] POST mensagem:', err.message);
     res.status(500).json({ error: err.message });
@@ -585,6 +702,8 @@ routerAtendimento.get('/stats', async (req, res) => {
         COUNT(*) FILTER (WHERE c.nao_lidas_suellen > 0) AS aguardando,
         COUNT(*) FILTER (WHERE c.bloqueada=TRUE) AS bloqueadas,
         COUNT(*) FILTER (WHERE c.favoritada=TRUE) AS favoritadas,
+        COUNT(*) FILTER (WHERE c.tipo='suellen') AS chats_suellen,
+        COUNT(*) FILTER (WHERE c.tipo='suporte') AS chats_suporte,
         COUNT(*) AS total
       FROM chat_conversas c
       JOIN usuarios u ON u.id = c.usuario_id
@@ -618,12 +737,10 @@ routerAtendimento.post('/push-subscribe', async (req, res) => {
    EXPORTS
    ════════════════════════════════════════════════════════════ */
 
-// Compat: `router` antigo continua exportado, apontando agora para
-// o router da aluna (mantém retrocompatibilidade caso server.js use)
-const router = routerAluna;
+const router = routerAluna; // legado
 
 module.exports = {
-  router,                // legado → routerAluna
+  router,
   routerAluna,
   routerAtendimento,
   initChat,
