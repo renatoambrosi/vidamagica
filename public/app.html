@@ -260,20 +260,18 @@
               </svg>
             </button>
             <div class="chat-input-container">
-              <div
+              <textarea
                 class="chat-input"
                 id="chat-input"
-                contenteditable="true"
-                role="textbox"
-                aria-label="Escreva sua mensagem"
-                aria-multiline="true"
-                data-placeholder="Escreva sua mensagem..."
+                placeholder="Escreva sua mensagem..."
+                rows="1"
                 autocomplete="off"
                 autocorrect="on"
                 autocapitalize="sentences"
                 spellcheck="true"
                 inputmode="text"
-                enterkeyhint="send"></div>
+                enterkeyhint="send"
+                aria-autocomplete="none"></textarea>
             </div>
             <button class="chat-audio-btn" id="chat-audio-btn" aria-label="Gravar áudio" type="button">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
