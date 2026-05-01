@@ -1,11 +1,13 @@
 /* ============================================================
    VIDA MÁGICA — server.js
-   Servidor Express. Conecta nos 4 bancos e carrega módulos.
+   Servidor Express + WebSocket nativo (ws).
+   Conecta nos 4 bancos e carrega módulos.
 
    Fases ativas:
    - Fase 1 — Fundação ✅
    - Fase 2 — Auth ✅ (em /api/auth)
    - Fase 3 — Conteúdo ✅ (precos, depoimentos, feed, config)
+   - Fase 4A — Chat ✅ (REST + WS em /ws/chat)
    ============================================================ */
 
 const express = require('express');
@@ -13,13 +15,18 @@ const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
 const http = require('http');
+const url = require('url');
+const jwt = require('jsonwebtoken');
+const WebSocket = require('ws');
 require('dotenv').config();
 
 const { initDb, checkHealth } = require('./db');
+const chat = require('./routes/chat');
 
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // ── SEGURANÇA ──────────────────────────────────────────────
 app.use(helmet({
@@ -50,7 +57,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // ── LOG ────────────────────────────────────────────────────
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+  if (!req.path.startsWith('/ws')) {
+    console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+  }
   next();
 });
 
@@ -72,8 +81,10 @@ app.use('/api',      require('./routes/precos'));
 app.use('/api',      require('./routes/depoimentos'));
 app.use('/api',      require('./routes/feed'));
 app.use('/api',      require('./routes/config'));
+app.use('/api/chat',              chat.routerAluna);
+app.use('/api/atendimento/chat',  chat.routerAtendimento);
 
-// ── ESTÁTICOS PÚBLICOS ─────────────────────────────────────
+// ── ESTÁTICOS ──────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── PÁGINAS ESTÁTICAS PÚBLICAS ─────────────────────────────
@@ -95,6 +106,81 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Erro interno' });
 });
 
+// ──────────────────────────────────────────────────────────
+// WEBSOCKET — /ws/chat
+// ──────────────────────────────────────────────────────────
+//
+// Aluna:        wss://.../ws/chat?token=<JWT>&modo=aluna
+// Atendimento:  wss://.../ws/chat?token=<base64(admin:senha)>&modo=atendimento
+//
+// O WS só aceita conexão se a credencial bater. Caso contrário, fecha.
+// ──────────────────────────────────────────────────────────
+
+const wss = new WebSocket.Server({ noServer: true });
+
+function autenticarWsAluna(token) {
+  if (!token || !JWT_SECRET) return null;
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (_) { return null; }
+}
+
+function autenticarWsAtendimento(token) {
+  if (!token) return false;
+  try {
+    const decoded = Buffer.from(token, 'base64').toString();
+    const [user, pass] = decoded.split(':');
+    return user === process.env.ADMIN_USER && pass === process.env.ADMIN_PASSWORD;
+  } catch (_) { return false; }
+}
+
+server.on('upgrade', (req, socket, head) => {
+  const { pathname, query } = url.parse(req.url, true);
+  if (pathname !== '/ws/chat') {
+    socket.destroy();
+    return;
+  }
+  const { token, modo } = query;
+
+  if (modo === 'aluna') {
+    const payload = autenticarWsAluna(token);
+    if (!payload) { socket.destroy(); return; }
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      ws.usuarioId = payload.sub;
+      ws.modo = 'aluna';
+      chat.registrarWsAluna(payload.sub, ws);
+      ws.send(JSON.stringify({ evento: 'conectado', modo: 'aluna' }));
+    });
+    return;
+  }
+
+  if (modo === 'atendimento' || modo === 'suellen') {
+    if (!autenticarWsAtendimento(token)) { socket.destroy(); return; }
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      ws.modo = 'atendimento';
+      chat.registrarWsAtendimento(ws);
+      ws.send(JSON.stringify({ evento: 'conectado', modo: 'atendimento' }));
+    });
+    return;
+  }
+
+  socket.destroy();
+});
+
+// Heartbeat — mata conexões zumbis
+const heartbeat = setInterval(() => {
+  wss.clients.forEach((ws) => {
+    if (ws.isAlive === false) return ws.terminate();
+    ws.isAlive = false;
+    try { ws.ping(); } catch (_) {}
+  });
+}, 30000);
+wss.on('connection', (ws) => {
+  ws.isAlive = true;
+  ws.on('pong', () => { ws.isAlive = true; });
+});
+wss.on('close', () => clearInterval(heartbeat));
+
 // ── START ──────────────────────────────────────────────────
 server.listen(PORT, async () => {
   console.log(`
@@ -106,6 +192,9 @@ server.listen(PORT, async () => {
 💬 Depoimentos:   GET  /api/depoimentos
 📰 Feed:          GET  /api/feed
 ⚙️  Config:        GET  /api/config
+✦  Chat aluna:         /api/chat/*           (JWT)
+✦  Chat atend.:        /api/atendimento/chat/* (Basic Auth)
+🔌 WebSocket:     WS   /ws/chat
   `);
   try {
     await initDb();
