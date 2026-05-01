@@ -8,7 +8,7 @@
    - Fase 2 — Auth ✅ (em /api/auth)
    - Fase 3 — Conteúdo ✅ (precos, depoimentos, feed, config)
    - Fase 4A — Chat (REST + WS) ✅
-   - Fase 4B — Painéis Chat ✅ (/atendimento protegido)
+   - Fase 4B — Painéis Chat ✅
    ============================================================ */
 
 const express = require('express');
@@ -22,7 +22,6 @@ const WebSocket = require('ws');
 require('dotenv').config();
 
 const { initDb, checkHealth } = require('./db');
-const { autenticarAdmin } = require('./middleware/autenticar');
 const chat = require('./routes/chat');
 
 const app = express();
@@ -77,8 +76,10 @@ app.get('/health', async (req, res) => {
   });
 });
 
-// ── PÁGINAS PROTEGIDAS (antes do static!) ──────────────────
-app.get('/atendimento', autenticarAdmin, (req, res) => {
+// ── ROTA AMIGÁVEL — /atendimento serve atendimento.html ───────
+// Note: a página atendimento.html tem login próprio embutido
+// e protege as chamadas de API com header Authorization Basic.
+app.get('/atendimento', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'atendimento.html'));
 });
 
@@ -92,14 +93,9 @@ app.use('/api/chat',              chat.routerAluna);
 app.use('/api/atendimento/chat',  chat.routerAtendimento);
 
 // ── ESTÁTICOS ──────────────────────────────────────────────
-// IMPORTANTE: o atendimento.html foi movido pra rota protegida acima.
-// Mas como ele AINDA está em public/, qualquer pessoa poderia acessar
-// /atendimento.html direto. Vamos bloquear esse caminho:
-app.get('/atendimento.html', (req, res) => res.redirect('/atendimento'));
-
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── PÁGINAS ESTÁTICAS PÚBLICAS ─────────────────────────────
+// ── PÁGINA INICIAL ─────────────────────────────────────────
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // ── 404 PARA /api ──────────────────────────────────────────
@@ -199,7 +195,7 @@ server.listen(PORT, async () => {
 ⚙️  Config:        GET  /api/config
 ✦  Chat aluna:         /api/chat/*           (JWT)
 ✦  Chat atend.:        /api/atendimento/chat/* (Basic Auth)
-🖥️  Painel:        GET  /atendimento  (Basic Auth)
+🖥️  Painel:        GET  /atendimento
 🔌 WebSocket:     WS   /ws/chat
   `);
   try {
