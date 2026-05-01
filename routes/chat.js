@@ -2,30 +2,37 @@
    VIDA MÁGICA — routes/chat.js
    Chat entre aluna e Atendimento (Suellen / Equipe Vida Mágica).
 
-   Banco: poolMensagens (chat_conversas, chat_mensagens, chat_pacotes).
+   Banco: poolMensagens (chat_conversas, chat_mensagens, chat_pacotes,
+                         chat_push_subscriptions).
    Para validar usuario_id, consulta poolCore (usuarios).
 
    Rotas montadas em:
      /api/chat              → ALUNA (JWT)
-     /api/atendimento/chat  → ATENDIMENTO (Basic Auth)
+     /api/atendimento/chat  → ATENDIMENTO (JWT role 'atendimento')
 
-   Regras de negócio:
-   - Cada aluna tem 1 conversa do tipo 'suellen' (criada na primeira msg).
-   - Plano free (usuarios.plano='gratuito')      → resposta indeterminada
-   - Plano basic (usuarios.plano≠'gratuito')     → resposta em até 5 dias
-   - Plano prioritário (chat_conversas.plano_chat='prioritario')
-       → R$ 9,90 por 30 interações OU 24h
-       → resposta em até 24h
-   - Aluna abre conversa → marca msgs do atendimento como lidas.
-   - Atendimento abre conversa → NÃO marca como lida (só marca ao responder).
-   - Identidade da resposta: 'suellen' ou 'equipe' (escolhida no painel).
+   Web Push:
+     - GET  /api/chat/vapid-public-key     (público)
+     - POST /api/atendimento/chat/push-subscribe  (atendimento)
+     - notificarAtendimento() chamada quando aluna manda msg
    ============================================================ */
 
 const express = require('express');
 const router = express.Router();
+const webpush = require('web-push');
 
 const { poolCore, poolMensagens } = require('../db');
-const { autenticar, autenticarAdmin } = require('../middleware/autenticar');
+const { autenticar, autenticarAtendimento } = require('../middleware/autenticar');
+
+// ── WEB PUSH CONFIG ───────────────────────────────────────
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    `mailto:${process.env.VAPID_EMAIL || 'contato@vidamagica.com.br'}`,
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+} else {
+  console.warn('⚠️ VAPID keys não configuradas — push notifications desativadas');
+}
 
 // ──────────────────────────────────────────────────────────
 // HELPERS
@@ -54,7 +61,6 @@ async function buscarUsuarioBasico(usuarioId) {
 }
 
 async function tipoPlanoAluna(conversa, usuario) {
-  // prioritario tem precedência (paga / cortesia ativa)
   if (
     conversa.plano_chat === 'prioritario' &&
     conversa.prioritario_expira_em &&
@@ -67,14 +73,46 @@ async function tipoPlanoAluna(conversa, usuario) {
   return 'free';
 }
 
+async function notificarAtendimento(payload) {
+  try {
+    const r = await poolMensagens.query(
+      `SELECT * FROM chat_push_subscriptions WHERE ativo = TRUE`
+    );
+    for (const sub of r.rows) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: sub.keys },
+          JSON.stringify(payload)
+        );
+      } catch (err) {
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          await poolMensagens.query(
+            `UPDATE chat_push_subscriptions SET ativo = FALSE WHERE id = $1`,
+            [sub.id]
+          );
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[Chat Push]', err.message);
+  }
+}
+
 // ──────────────────────────────────────────────────────────
 // ROUTER ALUNA — exige JWT
 // ──────────────────────────────────────────────────────────
 
 const routerAluna = express.Router();
+
+// VAPID public key — endpoint PÚBLICO (sem auth)
+routerAluna.get('/vapid-public-key', (req, res) => {
+  res.json({ publicKey: process.env.VAPID_PUBLIC_KEY || '' });
+});
+
+// As demais rotas exigem autenticação
 routerAluna.use(autenticar);
 
-// GET /api/chat/conversa — abre / cria a conversa, retorna últimas msgs
+// GET /api/chat/conversa
 routerAluna.get('/conversa', async (req, res) => {
   try {
     const usuarioId = req.usuario.sub;
@@ -86,7 +124,6 @@ routerAluna.get('/conversa', async (req, res) => {
       [conversa.id]
     );
 
-    // Marca mensagens do atendimento como lidas (a aluna está abrindo)
     const idsParaMarcar = m.rows
       .filter(x => x.remetente === 'suellen' && !x.lida)
       .map(x => x.id);
@@ -100,7 +137,6 @@ routerAluna.get('/conversa', async (req, res) => {
         `UPDATE chat_conversas SET nao_lidas_aluna = 0, atualizado_em = NOW() WHERE id = $1`,
         [conversa.id]
       );
-      // Notifica atendimento via WS (se conectado)
       emitirParaAtendimento('mensagens_lidas', {
         conversa_id: conversa.id,
         ids: idsParaMarcar,
@@ -119,7 +155,7 @@ routerAluna.get('/conversa', async (req, res) => {
   }
 });
 
-// POST /api/chat/mensagem — aluna manda mensagem
+// POST /api/chat/mensagem
 routerAluna.post('/mensagem', async (req, res) => {
   const c = await poolMensagens.connect();
   try {
@@ -135,7 +171,6 @@ routerAluna.post('/mensagem', async (req, res) => {
 
     await c.query('BEGIN');
 
-    // Insere mensagem
     const ins = await c.query(
       `INSERT INTO chat_mensagens
          (conversa_id, usuario_id, remetente, tipo, conteudo, url,
@@ -151,7 +186,6 @@ routerAluna.post('/mensagem', async (req, res) => {
       ? String(conteudo || '').substring(0, 80)
       : (tipo === 'imagem' ? '📷 Imagem' : '🎤 Áudio');
 
-    // Atualiza conversa: incrementa não-lidas do atendimento
     await c.query(
       `UPDATE chat_conversas SET
          ultima_mensagem_em = NOW(),
@@ -162,7 +196,6 @@ routerAluna.post('/mensagem', async (req, res) => {
       [preview, conversa.id]
     );
 
-    // Decrementa interação se prioritário
     if (planoAtual === 'prioritario') {
       await c.query(
         `UPDATE chat_conversas SET interacoes_restantes = GREATEST(interacoes_restantes - 1, 0) WHERE id = $1`,
@@ -172,11 +205,18 @@ routerAluna.post('/mensagem', async (req, res) => {
 
     await c.query('COMMIT');
 
-    // Notifica atendimento via WS
+    // WS para atendimento
     emitirParaAtendimento('nova_mensagem', {
       conversa_id: conversa.id,
       mensagem: msg,
       usuario: { id: usuario.id, nome: usuario.nome, foto_url: usuario.foto_url, telefone: usuario.telefone },
+    });
+
+    // Push notification para atendimento
+    notificarAtendimento({
+      title: `${usuario.nome || 'Aluna'} enviou uma mensagem`,
+      body: preview,
+      data: { url: '/atendimento', conversa_id: conversa.id },
     });
 
     res.json({ mensagem: msg, tipo_plano: planoAtual });
@@ -189,7 +229,7 @@ routerAluna.post('/mensagem', async (req, res) => {
   }
 });
 
-// GET /api/chat/status — info do plano atual
+// GET /api/chat/status
 routerAluna.get('/status', async (req, res) => {
   try {
     const usuarioId = req.usuario.sub;
@@ -207,17 +247,17 @@ routerAluna.get('/status', async (req, res) => {
 });
 
 // ──────────────────────────────────────────────────────────
-// ROUTER ATENDIMENTO — exige Basic Auth
+// ROUTER ATENDIMENTO — exige JWT role='atendimento'
 // ──────────────────────────────────────────────────────────
 
 const routerAtendimento = express.Router();
-routerAtendimento.use(autenticarAdmin);
+routerAtendimento.use(autenticarAtendimento);
 
-// GET /api/atendimento/chat/conversas — lista todas
+// GET /api/atendimento/chat/conversas
 routerAtendimento.get('/conversas', async (req, res) => {
   try {
     const r = await poolMensagens.query(
-      `SELECT id, usuario_id, plano_chat, interacoes_restantes,
+      `SELECT id, usuario_id, tipo, plano_chat, interacoes_restantes,
               prioritario_expira_em, bloqueada, favoritada,
               ultima_mensagem_em, ultima_preview, nao_lidas_suellen, criado_em
          FROM chat_conversas
@@ -225,7 +265,6 @@ routerAtendimento.get('/conversas', async (req, res) => {
          LIMIT 200`
     );
 
-    // Enriquece com dados do usuário (tabela em outro banco — Core)
     const ids = r.rows.map(c => c.usuario_id);
     let usuariosMap = {};
     if (ids.length) {
@@ -236,10 +275,17 @@ routerAtendimento.get('/conversas', async (req, res) => {
       usuariosMap = Object.fromEntries(u.rows.map(x => [x.id, x]));
     }
 
-    const conversas = r.rows.map(c => ({
-      ...c,
-      usuario: usuariosMap[c.usuario_id] || { id: c.usuario_id, nome: '(?)' },
-    }));
+    const conversas = r.rows.map(c => {
+      const u = usuariosMap[c.usuario_id] || { id: c.usuario_id, nome: '(?)' };
+      // tier: prioritario | basic_vm | free
+      let tier = 'free';
+      if (c.plano_chat === 'prioritario' && c.prioritario_expira_em && new Date(c.prioritario_expira_em) > new Date() && (c.interacoes_restantes ?? 0) > 0) {
+        tier = 'prioritario';
+      } else if (u.plano && u.plano !== 'gratuito') {
+        tier = 'basic_vm';
+      }
+      return { ...c, usuario: u, tier };
+    });
 
     res.json({ conversas });
   } catch (err) {
@@ -248,7 +294,7 @@ routerAtendimento.get('/conversas', async (req, res) => {
   }
 });
 
-// GET /api/atendimento/chat/conversa/:id — abre conversa específica (NÃO marca como lida)
+// GET /api/atendimento/chat/conversa/:id
 routerAtendimento.get('/conversa/:id', async (req, res) => {
   try {
     const conv = await poolMensagens.query(
@@ -256,23 +302,42 @@ routerAtendimento.get('/conversa/:id', async (req, res) => {
       [req.params.id]
     );
     if (!conv.rows.length) return res.status(404).json({ error: 'Conversa não encontrada' });
+    const conversa = conv.rows[0];
 
     const m = await poolMensagens.query(
       `SELECT * FROM chat_mensagens WHERE conversa_id = $1 ORDER BY criado_em ASC LIMIT 500`,
       [req.params.id]
     );
 
-    const usuario = await buscarUsuarioBasico(conv.rows[0].usuario_id);
+    const usuario = await buscarUsuarioBasico(conversa.usuario_id);
 
-    res.json({ conversa: conv.rows[0], mensagens: m.rows, usuario });
+    // tier
+    let tier = 'free';
+    if (conversa.plano_chat === 'prioritario' && conversa.prioritario_expira_em && new Date(conversa.prioritario_expira_em) > new Date() && (conversa.interacoes_restantes ?? 0) > 0) {
+      tier = 'prioritario';
+    } else if (usuario && usuario.plano && usuario.plano !== 'gratuito') {
+      tier = 'basic_vm';
+    }
+
+    // pacotes
+    const p = await poolMensagens.query(
+      `SELECT * FROM chat_pacotes WHERE usuario_id = $1 ORDER BY ativado_em DESC LIMIT 10`,
+      [conversa.usuario_id]
+    );
+
+    res.json({
+      conversa: { ...conversa, tier, foto_url: usuario?.foto_url, nome: usuario?.nome, telefone: usuario?.telefone, plano: usuario?.plano },
+      mensagens: m.rows,
+      usuario,
+      pacotes: p.rows,
+    });
   } catch (err) {
     console.error('❌ /atendimento/conversa/:id:', err.message);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
 
-// POST /api/atendimento/chat/mensagem — atendimento responde
-// Body: { conversa_id, conteudo, tipo, url, identidade ('suellen'|'equipe'), reply_to_* }
+// POST /api/atendimento/chat/mensagem
 routerAtendimento.post('/mensagem', async (req, res) => {
   const c = await poolMensagens.connect();
   try {
@@ -294,7 +359,6 @@ routerAtendimento.post('/mensagem', async (req, res) => {
 
     await c.query('BEGIN');
 
-    // Insere mensagem do atendimento
     const ins = await c.query(
       `INSERT INTO chat_mensagens
          (conversa_id, usuario_id, remetente, identidade, tipo, conteudo, url,
@@ -310,7 +374,6 @@ routerAtendimento.post('/mensagem', async (req, res) => {
       ? String(conteudo || '').substring(0, 80)
       : (tipo === 'imagem' ? '📷 Imagem' : '🎤 Áudio');
 
-    // Atualiza conversa + zera não lidas do atendimento + incrementa não lidas da aluna
     await c.query(
       `UPDATE chat_conversas SET
          ultima_mensagem_em = NOW(),
@@ -322,8 +385,6 @@ routerAtendimento.post('/mensagem', async (req, res) => {
       [preview, conversa_id]
     );
 
-    // Marca todas as msgs anteriores DA ALUNA como lidas (a equipe está respondendo,
-    // logo viu tudo até aqui)
     const lidas = await c.query(
       `UPDATE chat_mensagens
          SET lida = TRUE, lida_em = NOW()
@@ -334,7 +395,6 @@ routerAtendimento.post('/mensagem', async (req, res) => {
 
     await c.query('COMMIT');
 
-    // Emite eventos via WS
     emitirParaAluna(conversa.usuario_id, 'nova_mensagem', { mensagem: msg });
     if (lidas.rows.length) {
       emitirParaAluna(conversa.usuario_id, 'mensagens_lidas', {
@@ -354,7 +414,7 @@ routerAtendimento.post('/mensagem', async (req, res) => {
   }
 });
 
-// POST /api/atendimento/chat/favoritar — toggle estrela
+// POST /api/atendimento/chat/favoritar
 routerAtendimento.post('/favoritar', async (req, res) => {
   try {
     const { conversa_id, favoritada } = req.body;
@@ -368,7 +428,7 @@ routerAtendimento.post('/favoritar', async (req, res) => {
   }
 });
 
-// POST /api/atendimento/chat/acao — superadmin
+// POST /api/atendimento/chat/acao
 routerAtendimento.post('/acao', async (req, res) => {
   try {
     const { conversa_id, acao, valor } = req.body;
@@ -442,12 +502,31 @@ routerAtendimento.get('/stats', async (req, res) => {
   }
 });
 
+// POST /api/atendimento/chat/push-subscribe — registra device para push
+routerAtendimento.post('/push-subscribe', async (req, res) => {
+  try {
+    const { endpoint, keys } = req.body || {};
+    if (!endpoint || !keys) return res.status(400).json({ error: 'endpoint e keys obrigatórios' });
+    const ua = req.headers['user-agent'] || null;
+    await poolMensagens.query(
+      `INSERT INTO chat_push_subscriptions (endpoint, keys, user_agent, ativo)
+       VALUES ($1, $2, $3, TRUE)
+       ON CONFLICT (endpoint) DO UPDATE SET keys = EXCLUDED.keys, user_agent = EXCLUDED.user_agent, ativo = TRUE`,
+      [endpoint, keys, ua]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ push-subscribe:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ──────────────────────────────────────────────────────────
-// WEBSOCKET — conexões em memória
+// WEBSOCKET
 // ──────────────────────────────────────────────────────────
 
-const wsClientesAlunas = new Map();        // usuario_id → Set<ws>
-const wsClientesAtendimento = new Set();   // ws
+const wsClientesAlunas = new Map();
+const wsClientesAtendimento = new Set();
 
 function emitirParaAluna(usuarioId, evento, dados) {
   const conjunto = wsClientesAlunas.get(usuarioId);
@@ -481,10 +560,6 @@ function registrarWsAtendimento(ws) {
   wsClientesAtendimento.add(ws);
   ws.on('close', () => wsClientesAtendimento.delete(ws));
 }
-
-// ──────────────────────────────────────────────────────────
-// EXPORT
-// ──────────────────────────────────────────────────────────
 
 module.exports = {
   routerAluna,
