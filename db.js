@@ -432,6 +432,17 @@ async function initMensagens() {
     `);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_chat_pac_usuario ON chat_pacotes(usuario_id)`);
 
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS chat_push_subscriptions (
+        id SERIAL PRIMARY KEY,
+        endpoint TEXT UNIQUE NOT NULL,
+        keys JSONB NOT NULL,
+        user_agent TEXT,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        ativo BOOLEAN DEFAULT TRUE
+      )
+    `);
+
     console.log('✅ Banco Mensagens iniciado');
   } finally {
     c.release();
