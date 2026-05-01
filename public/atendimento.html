@@ -1340,10 +1340,22 @@ ul, ol { list-style: none; }
   <div class="login-sub">Painel de Atendimento</div>
   <div class="login-card">
     <div class="login-titulo">Bem-vinda 👋</div>
-    <div class="login-desc">Digite a senha para acessar o painel.</div>
-    <label class="login-label" for="login-senha">Senha</label>
-    <input class="login-input" type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password">
-    <button class="login-btn" id="login-btn">Entrar</button>
+
+    <div id="login-step-tel">
+      <div class="login-desc">Informe seu WhatsApp para receber o código.</div>
+      <label class="login-label" for="login-tel">Telefone (WhatsApp)</label>
+      <input class="login-input" type="tel" id="login-tel" placeholder="(62) 98308-6320" autocomplete="tel">
+      <button class="login-btn" id="login-btn-otp">RECEBER CÓDIGO</button>
+    </div>
+
+    <div id="login-step-codigo" style="display:none">
+      <div class="login-desc" style="color:#5A9E6F">✓ Código enviado pro WhatsApp</div>
+      <label class="login-label" for="login-codigo">Código (6 dígitos)</label>
+      <input class="login-input" type="text" id="login-codigo" maxlength="6" inputmode="numeric" placeholder="000000" style="letter-spacing:6px;text-align:center;font-family:monospace">
+      <button class="login-btn" id="login-btn-verify">ENTRAR</button>
+      <button class="login-btn" id="login-btn-back" style="background:transparent;color:#8a8a8a;margin-top:8px">← Voltar</button>
+    </div>
+
     <div class="login-erro" id="login-erro"></div>
   </div>
 </div>
@@ -1525,41 +1537,71 @@ async function verificarToken() {
   const t = getToken();
   if (!t) return false;
   try {
-    const r = await fetch(`${API}/api/atendimento/chat/stats`, { headers: authHeader() });
+    const r = await fetch(`${API}/api/painel/me`, { headers: authHeader() });
     return r.ok;
   } catch { return false; }
 }
 
-async function fazerLogin(senha) {
-  const r = await fetch(`${API}/api/atendimento/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ senha }),
-  });
-  if (!r.ok) throw new Error('Senha incorreta');
-  const { token: tk } = await r.json();
-  setToken(tk);
+async function loginSolicitarOtp() {
+  const tel = document.getElementById('login-tel').value.trim();
+  const erro = document.getElementById('login-erro');
+  const btn = document.getElementById('login-btn-otp');
+  if (!tel) { erro.textContent = 'Informe o telefone'; return; }
+  erro.textContent = '';
+  btn.disabled = true; btn.textContent = 'Enviando…';
+  try {
+    const r = await fetch(`${API}/api/painel/solicitar-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telefone: tel, escopo: 'atendimento' }),
+    });
+    if (!r.ok) throw new Error('Erro');
+    sessionStorage.setItem('vm_atend_login_tel', tel);
+    document.getElementById('login-step-tel').style.display = 'none';
+    document.getElementById('login-step-codigo').style.display = '';
+    setTimeout(() => document.getElementById('login-codigo').focus(), 100);
+  } catch {
+    erro.textContent = 'Erro ao enviar. Tente novamente.';
+  } finally {
+    btn.disabled = false; btn.textContent = 'RECEBER CÓDIGO';
+  }
 }
 
-document.getElementById('login-btn').addEventListener('click', async () => {
-  const senha = document.getElementById('login-senha').value;
-  const btn   = document.getElementById('login-btn');
-  const erro  = document.getElementById('login-erro');
-  if (!senha) { erro.textContent = 'Digite a senha'; return; }
-  btn.disabled = true; btn.textContent = 'Entrando…';
+async function loginVerificarOtp() {
+  const tel = sessionStorage.getItem('vm_atend_login_tel');
+  const codigo = document.getElementById('login-codigo').value.trim();
+  const erro = document.getElementById('login-erro');
+  const btn = document.getElementById('login-btn-verify');
+  if (!codigo) { erro.textContent = 'Informe o código'; return; }
   erro.textContent = '';
+  btn.disabled = true; btn.textContent = 'Verificando…';
   try {
-    await fazerLogin(senha);
+    const r = await fetch(`${API}/api/painel/verificar-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telefone: tel, codigo, escopo: 'atendimento' }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'Código inválido');
+    setToken(d.token);
+    sessionStorage.removeItem('vm_atend_login_tel');
     document.getElementById('tela-login').classList.add('oculta');
     iniciar();
-  } catch {
-    erro.textContent = 'Senha incorreta. Tente novamente.';
-    btn.disabled = false; btn.textContent = 'Entrar';
+  } catch (e) {
+    erro.textContent = e.message;
+    btn.disabled = false; btn.textContent = 'ENTRAR';
   }
+}
+
+document.getElementById('login-btn-otp').addEventListener('click', loginSolicitarOtp);
+document.getElementById('login-btn-verify').addEventListener('click', loginVerificarOtp);
+document.getElementById('login-btn-back').addEventListener('click', () => {
+  document.getElementById('login-step-codigo').style.display = 'none';
+  document.getElementById('login-step-tel').style.display = '';
+  document.getElementById('login-erro').textContent = '';
 });
-document.getElementById('login-senha').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('login-btn').click();
-});
+document.getElementById('login-tel').addEventListener('keydown', e => { if (e.key === 'Enter') loginSolicitarOtp(); });
+document.getElementById('login-codigo').addEventListener('keydown', e => { if (e.key === 'Enter') loginVerificarOtp(); });
 
 function setIdentidade(modo) {
   identidade = modo;
