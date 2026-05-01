@@ -9,7 +9,7 @@
 const express = require('express');
 const router = express.Router();
 const { poolComunicacao } = require('../db');
-const { autenticarAdmin } = require('../middleware/autenticar');
+const { autenticarPainel } = require('../middleware/autenticar');
 
 const PRECOS_INICIAIS = {
   clube_vida_magica: {
@@ -119,7 +119,7 @@ const PRECOS_INICIAIS = {
   }
 };
 
-router.post('/admin/seed', autenticarAdmin, async (req, res) => {
+router.post('/admin/seed', autenticarPainel('admin'), async (req, res) => {
   const client = await poolComunicacao.connect();
   try {
     await client.query('BEGIN');
