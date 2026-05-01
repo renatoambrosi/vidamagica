@@ -16,7 +16,6 @@ const http = require('http');
 require('dotenv').config();
 
 const { initDb, checkHealth } = require('./db');
-const { autenticarAdmin } = require('./middleware/autenticar');
 
 const app = express();
 const server = http.createServer(app);
@@ -55,9 +54,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── ESTÁTICOS ──────────────────────────────────────────────
-app.use(express.static(path.join(__dirname, 'public')));
-
 // ── HEALTH ─────────────────────────────────────────────────
 app.get('/health', async (req, res) => {
   const bancos = await checkHealth();
@@ -76,12 +72,9 @@ app.use('/api',      require('./routes/precos'));
 app.use('/api',      require('./routes/depoimentos'));
 app.use('/api',      require('./routes/feed'));
 app.use('/api',      require('./routes/config'));
-app.use('/api',      require('./routes/migracao'));
 
-// ── PÁGINAS ADMIN PROTEGIDAS ───────────────────────────────
-app.get('/admin/migracao', autenticarAdmin, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin-migracao.html'));
-});
+// ── ESTÁTICOS PÚBLICOS ─────────────────────────────────────
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ── PÁGINAS ESTÁTICAS PÚBLICAS ─────────────────────────────
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
@@ -113,7 +106,6 @@ server.listen(PORT, async () => {
 💬 Depoimentos:   GET  /api/depoimentos
 📰 Feed:          GET  /api/feed
 ⚙️  Config:        GET  /api/config
-🔧 Migração:           /admin/migracao
   `);
   try {
     await initDb();
