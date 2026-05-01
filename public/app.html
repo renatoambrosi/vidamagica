@@ -15,7 +15,7 @@
 
   <div id="particulas" class="particulas"></div>
 
-  <!-- TOPO -->
+  <!-- TOPO (esconde quando o chat está ativo) -->
   <header class="topo" id="topo">
     <div class="topo-logo">
       <img src="/assets/logo-horizontal.png" alt="Vida Mágica" onerror="this.style.display='none'">
@@ -50,7 +50,6 @@
         <p class="saudacao-frase">A vida começa quando a mente desperta.</p>
       </div>
 
-      <!-- Tesouro -->
       <div class="tesouro-wrap" id="tesouro-wrap">
         <button class="tesouro-btn" id="tesouro-btn" aria-label="Tesouro da Su">
           <div class="tesouro-glow"></div>
@@ -97,7 +96,6 @@
         </button>
       </div>
 
-      <!-- Feed -->
       <section class="feed" id="feed">
         <div class="feed-carrossel-wrap" id="feed-carrossel-wrap" style="display:none">
           <div class="feed-carrossel" id="feed-carrossel"></div>
@@ -106,7 +104,6 @@
         <div class="feed-lista" id="feed-lista"></div>
       </section>
 
-      <!-- Trilha -->
       <section class="trilha">
         <div class="trilha-header">
           <span class="trilha-eyebrow">Fase 1 · Despertando</span>
@@ -164,9 +161,7 @@
       </div>
     </section>
 
-    <!-- ════════════════════════════════════════════════
-         CHAT — tela de escolha + conversa
-         ════════════════════════════════════════════════ -->
+    <!-- CHAT -->
     <section class="view" id="view-chat">
 
       <!-- Tela 1: escolha de canal -->
@@ -175,10 +170,10 @@
 
         <button class="chat-canal-card principal" data-canal="suellen" type="button">
           <div class="chat-canal-avatar">
-            <img src="/assets/avatar-suellen.jpg" alt="Suellen" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=&quot;color:#A17523;font-weight:700;font-size:1.2rem&quot;>S</span>'">
+            <img src="/assets/avatar-suellen.jpg" alt="Suellen Seragi" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=&quot;color:#A17523;font-weight:700;font-size:1.2rem&quot;>S</span>'">
           </div>
           <div class="chat-canal-info">
-            <p class="chat-canal-titulo">Falar com a Suellen</p>
+            <p class="chat-canal-titulo">Falar com a Suellen Seragi</p>
             <p class="chat-canal-desc">Acolhimento, dúvidas pessoais e jornada</p>
             <p class="chat-canal-preview" id="canal-suellen-preview"></p>
           </div>
@@ -198,10 +193,9 @@
         </button>
       </div>
 
-      <!-- Tela 2: conversa ativa -->
+      <!-- Tela 2: conversa -->
       <div id="chat-conversa-tela" style="display:none;flex-direction:column;flex:1;min-height:0;">
 
-        <!-- Header com voltar + avatar do canal ativo -->
         <div class="chat-canal-header">
           <button class="chat-back-escolha" id="btn-back-escolha" type="button" aria-label="Voltar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -212,18 +206,17 @@
             <img id="chat-canal-header-img" src="/assets/avatar-suellen.jpg" alt="" onerror="this.style.display='none'">
           </div>
           <div class="chat-canal-header-info">
-            <div class="chat-canal-header-nome" id="chat-canal-header-nome">Suellen</div>
+            <div class="chat-canal-header-nome" id="chat-canal-header-nome">Suellen Seragi</div>
             <div class="chat-canal-header-status" id="chat-canal-header-status">Atendimento</div>
           </div>
         </div>
 
-        <!-- Abas Suellen | Suporte -->
         <div class="chat-abas">
           <button class="chat-aba ativa" data-aba="suellen" type="button">
             <span class="aba-avatar">
               <img src="/assets/avatar-suellen.jpg" onerror="this.style.display='none';this.parentElement.innerHTML='S'">
             </span>
-            Suellen
+            Suellen Seragi
             <span class="aba-badge" id="aba-suellen-badge" style="display:none">0</span>
           </button>
           <button class="chat-aba" data-aba="suporte" type="button">
@@ -235,7 +228,6 @@
           </button>
         </div>
 
-        <!-- Barra superior dinâmica (Free / VM / Prioritário) -->
         <div class="plano-banner tier-free" id="plano-banner">
           <div class="plano-banner-icone"></div>
           <div class="plano-banner-texto">
@@ -245,15 +237,12 @@
           <button class="plano-banner-acao" id="plano-banner-acao" type="button">Assinar Vida Mágica</button>
         </div>
 
-        <!-- Loading -->
         <div class="chat-loading" id="chat-loading">
           <div class="chat-loading-dots"><span></span><span></span><span></span></div>
         </div>
 
-        <!-- Mensagens -->
         <div class="chat-msgs" id="chat-msgs" style="display:none"></div>
 
-        <!-- Reply bar -->
         <div class="reply-bar" id="reply-bar" style="display:none">
           <div class="reply-bar-pipe"></div>
           <div class="reply-bar-corpo">
@@ -263,7 +252,6 @@
           <button class="reply-bar-x" id="reply-fechar" type="button">✕</button>
         </div>
 
-        <!-- Input bar -->
         <div class="chat-input-wrap" id="chat-input-wrap" style="display:none">
           <div class="chat-input-row" id="chat-input-row-normal">
             <button class="chat-anexo-btn" id="chat-anexo-btn" aria-label="Anexar">
@@ -272,7 +260,21 @@
               </svg>
             </button>
             <div class="chat-input-container">
-              <textarea class="chat-input" id="chat-input" placeholder="Escreva sua mensagem..." rows="1"></textarea>
+              <textarea
+                class="chat-input"
+                id="chat-input"
+                placeholder="Escreva sua mensagem..."
+                rows="1"
+                autocomplete="off"
+                autocorrect="on"
+                autocapitalize="sentences"
+                spellcheck="true"
+                inputmode="text"
+                enterkeyhint="send"
+                name="chat_message"
+                data-form-type="other"
+                data-1p-ignore="true"
+                data-lpignore="true"></textarea>
             </div>
             <button class="chat-audio-btn" id="chat-audio-btn" aria-label="Gravar áudio">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -289,7 +291,6 @@
             </button>
           </div>
 
-          <!-- Barra de gravação -->
           <div class="chat-input-row chat-rec-row" id="chat-rec-row" style="display:none">
             <button class="chat-rec-cancel" id="chat-rec-cancel" aria-label="Cancelar">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -311,7 +312,6 @@
           <input type="file" id="chat-file-input" accept="image/*" style="display:none">
         </div>
       </div>
-
     </section>
 
     <!-- PERFIL -->
@@ -379,12 +379,12 @@
       </div>
       <span class="nav-tab-label">Produtos</span>
     </button>
-    <button class="nav-tab" data-view="chat" aria-label="Chat" id="nav-chat">
-      <div class="nav-tab-icon nav-tab-chat">
+    <button class="nav-tab" data-view="chat" aria-label="Fale com a Su" id="nav-chat">
+      <div class="nav-tab-icon">
         <svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         <span class="nav-chat-badge" id="nav-chat-badge" style="display:none"></span>
       </div>
-      <span class="nav-tab-label">Chat</span>
+      <span class="nav-tab-label">Fale com a Su</span>
     </button>
     <button class="nav-tab" data-view="perfil" aria-label="Perfil">
       <div class="nav-tab-icon">
@@ -394,7 +394,7 @@
     </button>
   </nav>
 
-  <!-- Context menu (long-press) -->
+  <!-- Context menu -->
   <div id="msg-ctx-menu" class="msg-ctx-menu">
     <div class="msg-ctx-item" id="ctx-responder">
       <svg viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
@@ -407,8 +407,6 @@
   </div>
 
   <!-- MODAIS -->
-
-  <!-- Tesouro -->
   <div class="modal" id="modal-tesouro" aria-hidden="true">
     <div class="modal-overlay" data-close></div>
     <div class="modal-sheet">
@@ -418,7 +416,6 @@
     </div>
   </div>
 
-  <!-- Player -->
   <div class="modal modal-player" id="modal-player" aria-hidden="true">
     <div class="modal-overlay" data-close></div>
     <div class="modal-sheet modal-sheet-player">
@@ -439,7 +436,6 @@
     </div>
   </div>
 
-  <!-- Avisos -->
   <div class="modal" id="modal-avisos" aria-hidden="true">
     <div class="modal-overlay" data-close></div>
     <div class="modal-sheet">
@@ -452,7 +448,6 @@
     </div>
   </div>
 
-  <!-- Testes -->
   <div class="modal" id="modal-testes" aria-hidden="true">
     <div class="modal-overlay" data-close></div>
     <div class="modal-sheet">
@@ -467,7 +462,6 @@
     </div>
   </div>
 
-  <!-- Pré-aviso de microfone -->
   <div class="modal" id="modal-mic" aria-hidden="true">
     <div class="modal-overlay" data-close></div>
     <div class="modal-sheet">
@@ -482,7 +476,6 @@
     </div>
   </div>
 
-  <!-- Toast -->
   <div id="toast"></div>
 
   <script type="module" src="/app/app.js"></script>
