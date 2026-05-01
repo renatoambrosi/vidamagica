@@ -11,7 +11,7 @@
 const express = require('express');
 const router = express.Router();
 const { poolComunicacao } = require('../db');
-const { autenticarAdmin } = require('../middleware/autenticar');
+const { autenticarPainel } = require('../middleware/autenticar');
 
 // ── PÚBLICO ──
 router.get('/depoimentos', async (req, res) => {
@@ -27,7 +27,7 @@ router.get('/depoimentos', async (req, res) => {
 });
 
 // ── ADMIN: LER ──
-router.get('/admin/depoimentos', autenticarAdmin, async (req, res) => {
+router.get('/admin/depoimentos', autenticarPainel('admin'), async (req, res) => {
   try {
     const result = await poolComunicacao.query(
       'SELECT id, nome, cidade, texto, tags, ordem, ativo FROM depoimentos ORDER BY ordem ASC, id ASC'
@@ -39,7 +39,7 @@ router.get('/admin/depoimentos', autenticarAdmin, async (req, res) => {
 });
 
 // ── ADMIN: SALVAR LISTA COMPLETA ──
-router.post('/admin/depoimentos', autenticarAdmin, async (req, res) => {
+router.post('/admin/depoimentos', autenticarPainel('admin'), async (req, res) => {
   const lista = req.body;
   if (!Array.isArray(lista)) return res.status(400).json({ error: 'Dados inválidos' });
 
