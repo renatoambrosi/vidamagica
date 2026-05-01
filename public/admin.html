@@ -510,7 +510,119 @@ function toast(msg, tipo = 'success') {
 const API = 'https://vidamagica-production.up.railway.app';
 const ADMIN_USER = 'admin';
 const ADMIN_PASS = 'admin';
-function authHeader() { return 'Basic ' + btoa(`${ADMIN_USER}:${ADMIN_PASS}`); }
+// === AUTH OTP ADMIN (Vida Mágica) ===
+const VM_PAINEL_ESCOPO = 'admin';
+const VM_PAINEL_TOKEN_KEY = 'vm_painel_admin_token';
+function vmGetToken() { return localStorage.getItem(VM_PAINEL_TOKEN_KEY) || ''; }
+function vmSetToken(t) { localStorage.setItem(VM_PAINEL_TOKEN_KEY, t); }
+function vmClearToken() { localStorage.removeItem(VM_PAINEL_TOKEN_KEY); }
+function authHeader() {
+  const t = vmGetToken();
+  return t ? `Bearer ${t}` : '';
+}
+// Mostra tela de login se não tem token, ou se token deu 401 em algum momento
+function vmMostrarLogin() {
+  if (document.getElementById('vm-login-overlay')) return;
+  const html = `
+  <div id="vm-login-overlay" style="position:fixed;inset:0;background:#0a1628;display:flex;align-items:center;justify-content:center;z-index:99999;font-family:'Open Sans',sans-serif">
+    <div style="background:#1a2a4a;border:1px solid rgba(200,146,42,0.3);border-radius:16px;padding:32px;width:90%;max-width:380px;box-shadow:0 12px 48px rgba(0,0,0,0.4)">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-family:'Montserrat',sans-serif;font-weight:800;color:#E8C97A;font-size:18px;letter-spacing:0.04em">VIDA MÁGICA</div>
+        <div style="color:#c8c0a8;font-size:13px;margin-top:4px">Painel Admin</div>
+      </div>
+      <div id="vm-login-erro" style="color:#F09090;font-size:12px;text-align:center;min-height:18px;margin-bottom:8px"></div>
+      <div id="vm-login-step1">
+        <label style="display:block;color:#c8c0a8;font-size:12px;margin-bottom:6px">Telefone (WhatsApp)</label>
+        <input id="vm-login-tel" type="tel" placeholder="(62) 98308-6320" autocomplete="tel"
+          style="width:100%;padding:12px 14px;background:#0a1628;border:1px solid rgba(200,146,42,0.3);color:#fff;border-radius:8px;font-size:15px;margin-bottom:14px">
+        <button id="vm-login-btn-otp" style="width:100%;padding:12px;background:linear-gradient(135deg,#A17523,#C8922A);color:#0a1628;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;letter-spacing:0.04em">RECEBER CÓDIGO</button>
+      </div>
+      <div id="vm-login-step2" style="display:none">
+        <p style="color:#8BA75F;font-size:12px;text-align:center;margin-bottom:10px">✓ Código enviado pro WhatsApp</p>
+        <label style="display:block;color:#c8c0a8;font-size:12px;margin-bottom:6px">Código (6 dígitos)</label>
+        <input id="vm-login-codigo" type="text" maxlength="6" inputmode="numeric" placeholder="000000"
+          style="width:100%;padding:12px 14px;background:#0a1628;border:1px solid rgba(200,146,42,0.3);color:#fff;border-radius:8px;font-size:18px;letter-spacing:6px;text-align:center;margin-bottom:14px;font-family:monospace">
+        <button id="vm-login-btn-verify" style="width:100%;padding:12px;background:linear-gradient(135deg,#A17523,#C8922A);color:#0a1628;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;letter-spacing:0.04em">ENTRAR</button>
+        <button id="vm-login-btn-back" style="width:100%;padding:8px;background:transparent;color:#8a8a8a;border:none;font-size:12px;cursor:pointer;margin-top:8px">← Voltar</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  document.getElementById('vm-login-btn-otp').onclick = vmSolicitarOtp;
+  document.getElementById('vm-login-btn-verify').onclick = vmVerificarOtp;
+  document.getElementById('vm-login-btn-back').onclick = () => {
+    document.getElementById('vm-login-step1').style.display = '';
+    document.getElementById('vm-login-step2').style.display = 'none';
+    document.getElementById('vm-login-erro').textContent = '';
+  };
+  document.getElementById('vm-login-tel').addEventListener('keydown', e => { if (e.key === 'Enter') vmSolicitarOtp(); });
+  document.getElementById('vm-login-codigo').addEventListener('keydown', e => { if (e.key === 'Enter') vmVerificarOtp(); });
+}
+function vmEsconderLogin() {
+  const el = document.getElementById('vm-login-overlay');
+  if (el) el.remove();
+}
+async function vmSolicitarOtp() {
+  const tel = document.getElementById('vm-login-tel').value.trim();
+  const erro = document.getElementById('vm-login-erro');
+  if (!tel) { erro.textContent = 'Informe o telefone'; return; }
+  erro.textContent = '';
+  const btn = document.getElementById('vm-login-btn-otp');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    const r = await fetch('/api/painel/solicitar-otp', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telefone: tel, escopo: VM_PAINEL_ESCOPO }),
+    });
+    if (!r.ok) throw new Error('Erro ao enviar código');
+    sessionStorage.setItem('vm_login_tel', tel);
+    document.getElementById('vm-login-step1').style.display = 'none';
+    document.getElementById('vm-login-step2').style.display = '';
+    document.getElementById('vm-login-codigo').focus();
+  } catch (e) {
+    erro.textContent = 'Erro ao enviar. Tente novamente.';
+  } finally {
+    btn.disabled = false; btn.textContent = 'RECEBER CÓDIGO';
+  }
+}
+async function vmVerificarOtp() {
+  const tel = sessionStorage.getItem('vm_login_tel');
+  const codigo = document.getElementById('vm-login-codigo').value.trim();
+  const erro = document.getElementById('vm-login-erro');
+  if (!codigo) { erro.textContent = 'Informe o código'; return; }
+  erro.textContent = '';
+  const btn = document.getElementById('vm-login-btn-verify');
+  btn.disabled = true; btn.textContent = 'Verificando...';
+  try {
+    const r = await fetch('/api/painel/verificar-otp', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telefone: tel, codigo, escopo: VM_PAINEL_ESCOPO }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'Código inválido');
+    vmSetToken(d.token);
+    sessionStorage.removeItem('vm_login_tel');
+    vmEsconderLogin();
+    location.reload();
+  } catch (e) {
+    erro.textContent = e.message;
+    btn.disabled = false; btn.textContent = 'ENTRAR';
+  }
+}
+// Verifica token ao carregar — se não tem ou expirou, mostra login
+(async function vmIniciarAuth() {
+  const t = vmGetToken();
+  if (!t) { vmMostrarLogin(); return; }
+  try {
+    const r = await fetch('/api/painel/me', { headers: { 'Authorization': `Bearer ${t}` } });
+    if (!r.ok) {
+      vmClearToken();
+      vmMostrarLogin();
+    }
+  } catch {
+    vmMostrarLogin();
+  }
+})();
 
 // ============================================================
 // PREÇOS
@@ -717,3 +829,7 @@ carregarDeps();
 </script>
 </body>
 </html>
+
+
+
+================================================
