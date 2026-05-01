@@ -738,7 +738,7 @@ body.teclado-aberto .bottom-nav {
   width: 100%;
   margin-top: 16px;
   margin-bottom: 4px;
-  padding: 7px 18px;
+  padding: 9px 18px;
   background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
   color: white !important;
   text-decoration: none !important;
@@ -924,19 +924,36 @@ body.teclado-aberto .bottom-nav {
 .chat-anexo-btn svg, .chat-audio-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
 .chat-input-container { flex: 1; min-width: 0; }
 .chat-input {
-  width: 100%; max-height: 120px;
+  width: 100%;
+  max-height: 120px;
+  min-height: 38px;
+  overflow-y: auto;
   background: var(--vidro);
   border: 1px solid var(--vidro-borda);
   border-radius: 22px;
   padding: 0.5rem 1rem;
-  font-family: var(--font-ui); font-size: 1rem; /* 16px+ pra evitar zoom no iOS */
-  color: var(--texto); resize: none; outline: none;
+  font-family: var(--font-ui);
+  font-size: 1rem; /* 16px+ pra evitar zoom no iOS */
+  color: var(--texto);
+  outline: none;
   line-height: 1.45;
   transition: border-color 0.2s;
   display: block;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: text;
 }
 .chat-input:focus { border-color: var(--vidro-borda-hi); }
-.chat-input::placeholder { color: var(--texto-fraco); font-size: 0.88rem; }
+/* Placeholder do contenteditable */
+.chat-input:empty::before {
+  content: attr(data-placeholder);
+  color: var(--texto-fraco);
+  font-size: 0.88rem;
+  pointer-events: none;
+  display: block;
+}
 .chat-send-btn { background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro)); }
 .chat-send-btn:hover { transform: scale(1.05); }
 .chat-send-btn:active { transform: scale(0.95); }
