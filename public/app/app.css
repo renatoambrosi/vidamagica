@@ -738,10 +738,10 @@ body.teclado-aberto .bottom-nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   margin-top: 16px;
   margin-bottom: 4px;
-  padding: 4px 18px;
+  padding: 3px 18px;
   background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
   color: white !important;
   text-decoration: none !important;
@@ -750,7 +750,7 @@ body.teclado-aberto .bottom-nav {
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.04em;
-  line-height: 1.6;
+  line-height: 1;
   box-shadow: 0 2px 10px rgba(200,146,42,0.3);
   transition: transform 0.12s, box-shadow 0.12s;
   border: none;
