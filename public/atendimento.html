@@ -246,7 +246,7 @@ ul, ol { list-style: none; }
   border: 1px solid var(--vidro-borda);
   border-radius: var(--r-full);
   padding: 0.45rem 0.85rem;
-  font-size: 0.85rem;
+  font-size: 16px;
   color: var(--texto);
   font-family: var(--font-ui);
 }
@@ -861,7 +861,7 @@ ul, ol { list-style: none; }
   border-radius: 22px;
   padding: 0.55rem 1rem;
   font-family: var(--font-ui);
-  font-size: 0.9rem;
+  font-size: 16px;
   color: var(--texto);
   resize: none;
   line-height: 1.4;
@@ -1161,7 +1161,7 @@ ul, ol { list-style: none; }
   border: 1px solid var(--vidro-borda);
   border-radius: 10px;
   padding: 0.7rem 1rem;
-  font-size: 0.95rem;
+  font-size: 16px;
   color: var(--texto);
   font-family: var(--font-ui);
   transition: border-color 0.2s;
@@ -1247,7 +1247,7 @@ ul, ol { list-style: none; }
   border: 1px solid var(--vidro-borda);
   border-radius: var(--r-sm);
   padding: 0.6rem 0.85rem;
-  font-size: 0.95rem;
+  font-size: 16px;
   color: var(--texto);
   margin-bottom: 1rem;
   font-family: var(--font-ui);
@@ -1344,7 +1344,7 @@ ul, ol { list-style: none; }
     <div id="login-step-tel">
       <div class="login-desc">Informe seu WhatsApp para receber o código.</div>
       <label class="login-label" for="login-tel">Telefone (WhatsApp)</label>
-      <input class="login-input" type="tel" id="login-tel" placeholder="(62) 98308-6320" autocomplete="tel">
+      <input class="login-input" type="tel" id="login-tel" placeholder="(__) _____-____" autocomplete="tel">
       <button class="login-btn" id="login-btn-otp">RECEBER CÓDIGO</button>
     </div>
 
@@ -1465,6 +1465,7 @@ ul, ol { list-style: none; }
 <script>
 const API = '';
 const TOKEN_KEY = 'vm_atendimento_token';
+const TEL_KEY = 'vm_atendimento_tel';
 const IDENTIDADE_KEY = 'vm_identidade';
 
 let token       = null;
@@ -1484,6 +1485,8 @@ function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
 function getToken() { return localStorage.getItem(TOKEN_KEY); }
 function setToken(t) { localStorage.setItem(TOKEN_KEY, t); token = t; }
 function clearToken() { localStorage.removeItem(TOKEN_KEY); token = null; }
+function getTelLembrado() { return localStorage.getItem(TEL_KEY) || ''; }
+function setTelLembrado(tel) { localStorage.setItem(TEL_KEY, tel); }
 function authHeader() { const t = getToken(); return t ? { 'Authorization': `Bearer ${t}` } : {}; }
 
 function toast(msg, tipo='ok') {
@@ -1584,6 +1587,7 @@ async function loginVerificarOtp() {
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || 'Código inválido');
     setToken(d.token);
+    setTelLembrado(tel);
     sessionStorage.removeItem('vm_atend_login_tel');
     document.getElementById('tela-login').classList.add('oculta');
     iniciar();
@@ -2754,7 +2758,12 @@ async function iniciar() {
     iniciar();
   } else {
     clearToken();
-    setTimeout(() => document.getElementById('login-senha').focus(), 200);
+    // Pré-preenche o telefone se já logou nesse dispositivo antes
+    const telLembrado = getTelLembrado();
+    if (telLembrado) {
+      document.getElementById('login-tel').value = telLembrado;
+    }
+    setTimeout(() => document.getElementById('login-tel').focus(), 200);
   }
 })();
 </script>
