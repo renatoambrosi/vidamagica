@@ -9,12 +9,10 @@
     body { font-family: system-ui, -apple-system, sans-serif; background: #0F0E0B; color: #F0EAD6; height: 100vh; overflow: hidden; }
     .app { display: grid; grid-template-columns: 320px 1fr 280px; height: 100vh; }
 
-    /* HEADER comum */
     .col-header { background: #1A1813; border-bottom: 1px solid rgba(201,168,76,0.15); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
     .col-header h2 { font-size: 14px; font-weight: 600; color: #C9A84C; letter-spacing: 0.04em; }
     .col-header .meta { font-size: 11px; color: #8A8070; }
 
-    /* COLUNA LISTA */
     .col-lista { background: #161410; border-right: 1px solid rgba(201,168,76,0.1); display: flex; flex-direction: column; }
     .lista-stats { padding: 10px 14px; font-size: 11px; color: #8A8070; display: flex; gap: 12px; border-bottom: 1px solid rgba(201,168,76,0.08); }
     .lista-stats span { color: #C9A84C; font-weight: 600; margin-right: 4px; }
@@ -40,7 +38,6 @@
     .tag.fav { background: rgba(201,168,76,0.15); color: #fbbf24; }
     .tag.unread { background: #C9A84C; color: #0F0E0B; }
 
-    /* COLUNA CHAT */
     .col-chat { display: flex; flex-direction: column; background: #0F0E0B; }
     .chat-msgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
     .chat-empty { display: flex; flex: 1; align-items: center; justify-content: center; color: #8A8070; font-size: 14px; }
@@ -63,7 +60,6 @@
     .composer-row button { padding: 10px 22px; background: linear-gradient(135deg, #8B6914, #C9A84C); color: #0F0E0B; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
     .composer-row button:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    /* COLUNA PERFIL */
     .col-perfil { background: #161410; border-left: 1px solid rgba(201,168,76,0.1); display: flex; flex-direction: column; overflow-y: auto; }
     .perfil-empty { padding: 30px 20px; text-align: center; color: #8A8070; font-size: 13px; }
     .perfil-card { padding: 20px 18px; }
@@ -82,23 +78,43 @@
     .ws-pill.on { background: rgba(74,222,128,0.15); color: #4ade80; }
     .ws-pill.off { background: rgba(239,68,68,0.15); color: #f87171; }
 
-    /* MOBILE */
+    .login-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .login-overlay.hidden { display: none; }
+    .login-box { background: #1A1813; padding: 28px; border-radius: 14px; width: 90%; max-width: 360px; border: 1px solid rgba(201,168,76,0.2); }
+    .login-box h2 { color: #C9A84C; font-weight: 300; letter-spacing: 0.04em; margin-bottom: 18px; }
+    .login-box input { width: 100%; padding: 10px 14px; background: #0F0E0B; border: 1px solid rgba(201,168,76,0.2); color: #F0EAD6; border-radius: 8px; font-size: 15px; margin-bottom: 10px; font-family: inherit; }
+    .login-box button { width: 100%; padding: 11px; background: linear-gradient(135deg, #8B6914, #C9A84C); color: #0F0E0B; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; margin-top: 6px; }
+    .login-erro { color: #f87171; font-size: 12px; margin-top: 8px; min-height: 16px; }
+
     @media (max-width: 900px) {
       .app { grid-template-columns: 1fr; }
       .col-lista, .col-perfil { display: none; }
-      .col-lista.show-mobile, .col-perfil.show-mobile { display: flex; position: fixed; inset: 0; z-index: 50; }
     }
   </style>
 </head>
 <body>
 
-<div class="app">
+<!-- LOGIN -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>🔐 Atendimento</h2>
+    <input id="lUser" placeholder="Usuário" autocomplete="username" />
+    <input id="lPass" type="password" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')logar()" />
+    <button onclick="logar()">Entrar</button>
+    <div class="login-erro" id="lErro"></div>
+  </div>
+</div>
+
+<div class="app" id="app" style="display:none">
 
   <!-- COLUNA LISTA -->
   <aside class="col-lista">
     <div class="col-header">
       <h2>💬 Conversas</h2>
-      <span class="ws-pill off" id="wsPill">offline</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="ws-pill off" id="wsPill">offline</span>
+        <button onclick="logout()" style="background:none;border:none;color:#8A8070;cursor:pointer;font-size:11px">sair</button>
+      </div>
     </div>
     <div class="lista-stats">
       <div><span id="statTotal">—</span>total</div>
@@ -135,7 +151,7 @@
   </main>
 
   <!-- COLUNA PERFIL -->
-  <aside class="col-perfil" id="colPerfil">
+  <aside class="col-perfil">
     <div class="col-header">
       <h2>👤 Perfil</h2>
     </div>
@@ -180,28 +196,97 @@
 </div>
 
 <script>
-  // O acesso a essa página JÁ exige Basic Auth (configurado no server.js... bem, ainda não)
-  // — mas as rotas /api/atendimento/chat/* exigem. O navegador vai pedir login na primeira chamada.
-
+  // ── AUTH ──
+  // Token Basic guardado no localStorage e enviado em TODAS as chamadas
+  let basicToken = localStorage.getItem('vm_atend_token') || '';
   let conversas = [];
   let conversaAtual = null;
   let usuarioAtual = null;
   let identidade = 'suellen';
   let ws = null;
 
-  // ── INIT ──
-  carregar();
-  conectarWs();
-  setInterval(carregar, 30000);
+  // Se já tem token salvo, valida antes de mostrar o app
+  if (basicToken) {
+    validarToken();
+  }
 
-  // ── API ──
+  async function validarToken() {
+    try {
+      const r = await fetch('/api/atendimento/chat/conversas', {
+        headers: { 'Authorization': 'Basic ' + basicToken }
+      });
+      if (r.ok) {
+        mostrarApp();
+      } else {
+        // Token inválido, limpa e mostra login
+        localStorage.removeItem('vm_atend_token');
+        basicToken = '';
+      }
+    } catch (_) {
+      localStorage.removeItem('vm_atend_token');
+      basicToken = '';
+    }
+  }
+
+  async function logar() {
+    const u = document.getElementById('lUser').value.trim();
+    const p = document.getElementById('lPass').value;
+    if (!u || !p) {
+      document.getElementById('lErro').textContent = 'Usuário e senha obrigatórios';
+      return;
+    }
+    const token = btoa(`${u}:${p}`);
+    try {
+      const r = await fetch('/api/atendimento/chat/conversas', {
+        headers: { 'Authorization': 'Basic ' + token }
+      });
+      if (r.ok) {
+        basicToken = token;
+        localStorage.setItem('vm_atend_token', token);
+        document.getElementById('lErro').textContent = '';
+        mostrarApp();
+      } else {
+        document.getElementById('lErro').textContent = '✕ Usuário ou senha incorretos';
+      }
+    } catch (err) {
+      document.getElementById('lErro').textContent = '✕ Erro de conexão';
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem('vm_atend_token');
+    basicToken = '';
+    if (ws) try { ws.close(); } catch (_) {}
+    location.reload();
+  }
+
+  function mostrarApp() {
+    document.getElementById('loginOverlay').classList.add('hidden');
+    document.getElementById('app').style.display = 'grid';
+    iniciar();
+  }
+
+  // ── INIT ──
+  function iniciar() {
+    carregar();
+    conectarWs();
+    setInterval(carregar, 30000);
+  }
+
+  // ── API — sempre com Authorization Basic ──
   async function api(path, method = 'GET', body = null) {
-    const opt = { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include' };
+    const opt = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic ' + basicToken,
+      }
+    };
     if (body) opt.body = JSON.stringify(body);
     const r = await fetch(path, opt);
     if (r.status === 401) {
-      // navegador vai pedir basic auth automaticamente
-      window.location.reload();
+      // token deixou de valer, força relogin
+      logout();
       return null;
     }
     return await r.json().catch(() => ({}));
@@ -256,7 +341,6 @@
     }).join('');
   }
 
-  // ── ABRIR CONVERSA ──
   async function abrirConversa(id) {
     const d = await api('/api/atendimento/chat/conversa/' + id);
     if (!d) return;
@@ -326,7 +410,6 @@
     document.getElementById('btnFavTxt').textContent = conversaAtual.favoritada ? 'Desfavoritar' : 'Favoritar';
   }
 
-  // ── ENVIAR ──
   function setIdent(qual) {
     identidade = qual;
     document.getElementById('btnSuellen').classList.toggle('active', qual === 'suellen');
@@ -353,16 +436,14 @@
       if (empty) empty.remove();
       el.appendChild(montarBolha(d.mensagem));
       el.scrollTop = el.scrollHeight;
-      carregar(); // atualiza lista
+      carregar();
     }
   }
 
-  // ── AÇÕES SUPERADMIN ──
   async function acao(corpo) {
     if (!conversaAtual) return;
     const d = await api('/api/atendimento/chat/acao', 'POST', { conversa_id: conversaAtual.id, ...corpo });
     if (d && d.success) {
-      // recarrega tudo
       await abrirConversa(conversaAtual.id);
       await carregar();
     } else if (d && d.error) {
@@ -388,19 +469,9 @@
   // ── WEBSOCKET ──
   function conectarWs() {
     if (ws && ws.readyState <= 1) return;
-    // token Basic auth no WS — pega do header que o navegador já tem
-    // como o Basic Auth da rota é interativo, vamos pedir uma vez
-    const token = localStorage.getItem('vm_atend_token');
-    if (!token) {
-      const u = prompt('Usuário admin:');
-      const p = prompt('Senha admin:');
-      if (!u || !p) return;
-      const t = btoa(`${u}:${p}`);
-      localStorage.setItem('vm_atend_token', t);
-      return conectarWs();
-    }
+    if (!basicToken) return;
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    ws = new WebSocket(`${proto}://${location.host}/ws/chat?token=${token}&modo=atendimento`);
+    ws = new WebSocket(`${proto}://${location.host}/ws/chat?token=${basicToken}&modo=atendimento`);
     ws.onopen = () => setWs(true);
     ws.onclose = () => { setWs(false); setTimeout(conectarWs, 4000); };
     ws.onerror = () => setWs(false);
@@ -408,7 +479,6 @@
       try {
         const data = JSON.parse(e.data);
         if (data.evento === 'nova_mensagem' && data.mensagem) {
-          // se for da conversa aberta, adiciona inline
           if (conversaAtual && data.conversa_id === conversaAtual.id) {
             const el = document.getElementById('chatMsgs');
             const empty = el.querySelector('.chat-empty');
@@ -416,7 +486,6 @@
             el.appendChild(montarBolha(data.mensagem));
             el.scrollTop = el.scrollHeight;
           }
-          // sempre atualiza lista
           carregar();
         }
         if (data.evento === 'mensagens_lidas' && data.por === 'aluna' && Array.isArray(data.ids)) {
@@ -438,7 +507,6 @@
     el.textContent = on ? 'online' : 'offline';
   }
 
-  // ── HELPERS ──
   function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function tempoRel(iso) {
     if (!iso) return '';
