@@ -640,6 +640,53 @@ async function initComunicacao() {
       )
     `);
 
+    // ── ADMINS — login do painel admin/atendimento (OTP via WhatsApp) ──
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS admins (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        telefone_canonico VARCHAR(20) UNIQUE NOT NULL,
+        nome VARCHAR(120),
+        ativo BOOLEAN DEFAULT TRUE,
+        ultimo_acesso TIMESTAMPTZ,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS admin_otp_tokens (
+        id SERIAL PRIMARY KEY,
+        telefone_canonico VARCHAR(20) NOT NULL,
+        codigo VARCHAR(6) NOT NULL,
+        usado BOOLEAN DEFAULT FALSE,
+        tentativas INTEGER DEFAULT 0,
+        expira_em TIMESTAMPTZ NOT NULL,
+        criado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_admin_otp_tel ON admin_otp_tokens(telefone_canonico)`);
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS admin_sessoes (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        admin_id UUID NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+        escopo VARCHAR(20) NOT NULL CHECK (escopo IN ('admin','atendimento')),
+        device_fingerprint TEXT,
+        user_agent TEXT,
+        ip VARCHAR(45),
+        ultimo_uso TIMESTAMPTZ DEFAULT NOW(),
+        expira_em TIMESTAMPTZ NOT NULL,
+        revogada BOOLEAN DEFAULT FALSE,
+        criado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_admin_sessoes_admin ON admin_sessoes(admin_id, escopo) WHERE revogada=FALSE`);
+
+    // Seed: garante que o telefone do Renato existe como admin
+    await c.query(`
+      INSERT INTO admins (telefone_canonico, nome)
+      VALUES ('5562983086320', 'Renato Ambrosi')
+      ON CONFLICT (telefone_canonico) DO NOTHING
+    `);
+
     console.log('✅ Banco Comunicação iniciado');
   } finally {
     c.release();
