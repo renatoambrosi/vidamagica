@@ -71,7 +71,7 @@
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     body { font-family:var(--font-b); background:var(--dark); color:var(--pearl); min-height:100dvh; overflow-x:hidden; }
 
-    .bg-layer { position:fixed; inset:0; z-index:0; background-image:url('assets/background-theme.jpg'); background-size:cover; background-position:center top; }
+    .bg-layer { position:fixed; inset:0; z-index:0; background-image:url('/assets/background-theme.jpg'); background-size:cover; background-position:center top; }
     .bg-layer::after { content:''; position:absolute; inset:0; background:linear-gradient(160deg,rgba(13,8,0,0.82) 0%,rgba(26,18,5,0.88) 100%); }
     .particles { position:fixed; inset:0; z-index:1; pointer-events:none; overflow:hidden; }
     .p { position:absolute; border-radius:50%; opacity:0; animation:rise linear infinite; }
@@ -218,18 +218,18 @@
 <div class="particles" id="particles"></div>
 
 <nav>
-  <img src="assets/logo-horizontal.png" alt="Vida Mágica" class="nav-logo">
+  <img src="/assets/logo-horizontal.png" alt="Vida Mágica" class="nav-logo">
   <a href="/" class="nav-link">← Início</a>
 </nav>
 
 <div class="overlay" id="overlay">
-  <img src="assets/logo-vertical.png" alt="Vida Mágica">
+  <img src="/assets/logo-vertical.png" alt="Vida Mágica">
   <div class="overlay-spin"></div>
   <div class="overlay-msg" id="overlay-msg">Reconhecendo sua conta…</div>
 </div>
 
 <div class="page"><div class="card">
-  <div class="card-logo"><img src="assets/logo-vertical.png" alt="Vida Mágica"></div>
+  <div class="card-logo"><img src="/assets/logo-vertical.png" alt="Vida Mágica"></div>
 
   <!-- LOGIN -->
   <div class="tela ativa" id="t-login">
