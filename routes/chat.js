@@ -21,7 +21,7 @@ const router = express.Router();
 const webpush = require('web-push');
 
 const { poolCore, poolMensagens } = require('../db');
-const { autenticar, autenticarAtendimento } = require('../middleware/autenticar');
+const { autenticar, autenticarPainel } = require('../middleware/autenticar');
 
 // ── WEB PUSH CONFIG ───────────────────────────────────────
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
@@ -251,7 +251,7 @@ routerAluna.get('/status', async (req, res) => {
 // ──────────────────────────────────────────────────────────
 
 const routerAtendimento = express.Router();
-routerAtendimento.use(autenticarAtendimento);
+routerAtendimento.use(autenticarPainel('atendimento'));
 
 // GET /api/atendimento/chat/conversas
 routerAtendimento.get('/conversas', async (req, res) => {
