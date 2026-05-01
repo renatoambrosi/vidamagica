@@ -15,7 +15,7 @@
 const express = require('express');
 const router = express.Router();
 const { poolComunicacao } = require('../db');
-const { autenticarAdmin } = require('../middleware/autenticar');
+const { autenticarPainel } = require('../middleware/autenticar');
 
 // ── PÚBLICO — GET /api/feed ──
 router.get('/feed', async (req, res) => {
@@ -33,7 +33,7 @@ router.get('/feed', async (req, res) => {
 });
 
 // ── ADMIN — GET /api/admin/feed ──
-router.get('/admin/feed', autenticarAdmin, async (req, res) => {
+router.get('/admin/feed', autenticarPainel('admin'), async (req, res) => {
   try {
     const r = await poolComunicacao.query(`SELECT * FROM feed ORDER BY ordem ASC, publicado_em DESC`);
     res.json(r.rows);
@@ -43,7 +43,7 @@ router.get('/admin/feed', autenticarAdmin, async (req, res) => {
 });
 
 // ── ADMIN — POST /api/admin/feed (criar) ──
-router.post('/admin/feed', autenticarAdmin, async (req, res) => {
+router.post('/admin/feed', autenticarPainel('admin'), async (req, res) => {
   const { tipo, titulo, subtitulo, corpo, url, imagem_url, destaque, ativo, ordem, publicado_em } = req.body;
   if (!tipo || !titulo) return res.status(400).json({ error: 'tipo e titulo são obrigatórios' });
   try {
@@ -59,7 +59,7 @@ router.post('/admin/feed', autenticarAdmin, async (req, res) => {
 });
 
 // ── ADMIN — PUT /api/admin/feed/:id ──
-router.put('/admin/feed/:id', autenticarAdmin, async (req, res) => {
+router.put('/admin/feed/:id', autenticarPainel('admin'), async (req, res) => {
   const { tipo, titulo, subtitulo, corpo, url, imagem_url, destaque, ativo, ordem, publicado_em } = req.body;
   try {
     const r = await poolComunicacao.query(`
@@ -77,7 +77,7 @@ router.put('/admin/feed/:id', autenticarAdmin, async (req, res) => {
 });
 
 // ── ADMIN — DELETE /api/admin/feed/:id ──
-router.delete('/admin/feed/:id', autenticarAdmin, async (req, res) => {
+router.delete('/admin/feed/:id', autenticarPainel('admin'), async (req, res) => {
   try {
     await poolComunicacao.query('DELETE FROM feed WHERE id=$1', [req.params.id]);
     res.json({ success: true });
@@ -87,7 +87,7 @@ router.delete('/admin/feed/:id', autenticarAdmin, async (req, res) => {
 });
 
 // ── ADMIN — POST /api/admin/feed/reordenar ──
-router.post('/admin/feed/reordenar', autenticarAdmin, async (req, res) => {
+router.post('/admin/feed/reordenar', autenticarPainel('admin'), async (req, res) => {
   const { ids } = req.body;
   if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids inválido' });
   const client = await poolComunicacao.connect();
