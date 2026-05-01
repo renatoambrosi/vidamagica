@@ -513,9 +513,12 @@ const ADMIN_PASS = 'admin';
 // === AUTH OTP ADMIN (Vida Mágica) ===
 const VM_PAINEL_ESCOPO = 'admin';
 const VM_PAINEL_TOKEN_KEY = 'vm_painel_admin_token';
+const VM_PAINEL_TEL_KEY = 'vm_painel_admin_tel';
 function vmGetToken() { return localStorage.getItem(VM_PAINEL_TOKEN_KEY) || ''; }
 function vmSetToken(t) { localStorage.setItem(VM_PAINEL_TOKEN_KEY, t); }
 function vmClearToken() { localStorage.removeItem(VM_PAINEL_TOKEN_KEY); }
+function vmGetTelLembrado() { return localStorage.getItem(VM_PAINEL_TEL_KEY) || ''; }
+function vmSetTelLembrado(tel) { localStorage.setItem(VM_PAINEL_TEL_KEY, tel); }
 function authHeader() {
   const t = vmGetToken();
   return t ? `Bearer ${t}` : '';
@@ -533,7 +536,7 @@ function vmMostrarLogin() {
       <div id="vm-login-erro" style="color:#F09090;font-size:12px;text-align:center;min-height:18px;margin-bottom:8px"></div>
       <div id="vm-login-step1">
         <label style="display:block;color:#c8c0a8;font-size:12px;margin-bottom:6px">Telefone (WhatsApp)</label>
-        <input id="vm-login-tel" type="tel" placeholder="(62) 98308-6320" autocomplete="tel"
+        <input id="vm-login-tel" type="tel" placeholder="(__) _____-____" autocomplete="tel"
           style="width:100%;padding:12px 14px;background:#0a1628;border:1px solid rgba(200,146,42,0.3);color:#fff;border-radius:8px;font-size:15px;margin-bottom:14px">
         <button id="vm-login-btn-otp" style="width:100%;padding:12px;background:linear-gradient(135deg,#A17523,#C8922A);color:#0a1628;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;letter-spacing:0.04em">RECEBER CÓDIGO</button>
       </div>
@@ -548,6 +551,11 @@ function vmMostrarLogin() {
     </div>
   </div>`;
   document.body.insertAdjacentHTML('beforeend', html);
+  // Pré-preenche o telefone se já logou nesse dispositivo antes
+  const telLembrado = vmGetTelLembrado();
+  if (telLembrado) {
+    document.getElementById('vm-login-tel').value = telLembrado;
+  }
   document.getElementById('vm-login-btn-otp').onclick = vmSolicitarOtp;
   document.getElementById('vm-login-btn-verify').onclick = vmVerificarOtp;
   document.getElementById('vm-login-btn-back').onclick = () => {
@@ -601,6 +609,7 @@ async function vmVerificarOtp() {
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || 'Código inválido');
     vmSetToken(d.token);
+    vmSetTelLembrado(tel);
     sessionStorage.removeItem('vm_login_tel');
     vmEsconderLogin();
     location.reload();
