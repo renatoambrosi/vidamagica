@@ -253,7 +253,6 @@
         </div>
 
         <div class="chat-input-wrap" id="chat-input-wrap" style="display:none">
-          <form id="chat-input-form" autocomplete="off" onsubmit="return false;" style="display:contents;">
           <div class="chat-input-row" id="chat-input-row-normal">
             <button class="chat-anexo-btn" id="chat-anexo-btn" aria-label="Anexar" type="button">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -261,17 +260,20 @@
               </svg>
             </button>
             <div class="chat-input-container">
-              <textarea
+              <div
                 class="chat-input"
                 id="chat-input"
-                placeholder="Escreva sua mensagem..."
-                rows="1"
+                contenteditable="true"
+                role="textbox"
+                aria-label="Escreva sua mensagem"
+                aria-multiline="true"
+                data-placeholder="Escreva sua mensagem..."
                 autocomplete="off"
                 autocorrect="on"
                 autocapitalize="sentences"
                 spellcheck="true"
                 inputmode="text"
-                enterkeyhint="send"></textarea>
+                enterkeyhint="send"></div>
             </div>
             <button class="chat-audio-btn" id="chat-audio-btn" aria-label="Gravar áudio" type="button">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -287,7 +289,6 @@
               </svg>
             </button>
           </div>
-          </form>
 
           <div class="chat-input-row chat-rec-row" id="chat-rec-row" style="display:none">
             <button class="chat-rec-cancel" id="chat-rec-cancel" aria-label="Cancelar">
