@@ -1,29 +1,31 @@
+/* ============================================================
+   VIDA MÁGICA — middleware/autenticar.js
+   Middleware JWT para proteger rotas da aluna.
+
+   Banco: nenhum (apenas valida assinatura JWT).
+
+   Como usar nas rotas:
+     const { autenticar } = require('../middleware/autenticar');
+     router.get('/me', autenticar, (req, res) => { req.usuario.id ... });
+   ============================================================ */
+
 const jwt = require('jsonwebtoken');
-const { buscarUsuarioPorId } = require('../db');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'vida-magica-secret-troque-em-producao';
+const JWT_SECRET = process.env.JWT_SECRET;
 
-// ── Gera access token (15 min) ──
-function gerarAccessToken(usuario) {
-  return jwt.sign(
-    {
-      sub: usuario.id,
-      tel: usuario.telefone_formatado,
-      plano: usuario.plano,
-      nome: usuario.nome,
-    },
-    JWT_SECRET,
-    { expiresIn: '15m' }
-  );
+if (!JWT_SECRET) {
+  console.warn('⚠️ JWT_SECRET não configurado — autenticação não vai funcionar');
 }
 
-// ── Middleware: verifica access token no header Authorization ──
+/**
+ * Middleware que valida o access token (Bearer) e popula req.usuario.
+ */
 function autenticar(req, res, next) {
-  const header = req.headers['authorization'];
-  if (!header || !header.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Token ausente' });
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token não fornecido' });
   }
-  const token = header.split(' ')[1];
+  const token = auth.slice(7).trim();
   try {
     const payload = jwt.verify(token, JWT_SECRET);
     req.usuario = payload;
@@ -36,30 +38,22 @@ function autenticar(req, res, next) {
   }
 }
 
-// ── Middleware: autenticação opcional (não bloqueia se não tiver token) ──
-function autenticarOpcional(req, res, next) {
-  const header = req.headers['authorization'];
-  if (!header || !header.startsWith('Bearer ')) return next();
-  try {
-    req.usuario = jwt.verify(header.split(' ')[1], JWT_SECRET);
-  } catch (_) {}
-  next();
+/**
+ * Middleware Basic Auth para rotas administrativas.
+ * Lê ADMIN_USER e ADMIN_PASSWORD do ambiente.
+ */
+function autenticarAdmin(req, res, next) {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Basic ')) {
+    res.set('WWW-Authenticate', 'Basic realm="Admin"');
+    return res.status(401).send('Acesso negado');
+  }
+  const [user, pass] = Buffer.from(auth.slice(6), 'base64').toString().split(':');
+  if (user === process.env.ADMIN_USER && pass === process.env.ADMIN_PASSWORD) {
+    return next();
+  }
+  res.set('WWW-Authenticate', 'Basic realm="Admin"');
+  return res.status(401).send('Usuário ou senha incorretos');
 }
 
-// ── Middleware: exige plano mínimo ──
-function exigirPlano(...planos) {
-  return (req, res, next) => {
-    if (!req.usuario) return res.status(401).json({ error: 'Não autenticado' });
-    if (!planos.includes(req.usuario.plano)) {
-      return res.status(403).json({
-        error: 'Plano insuficiente',
-        plano_atual: req.usuario.plano,
-        planos_necessarios: planos,
-        code: 'PLANO_INSUFICIENTE'
-      });
-    }
-    next();
-  };
-}
-
-module.exports = { gerarAccessToken, autenticar, autenticarOpcional, exigirPlano, JWT_SECRET };
+module.exports = { autenticar, autenticarAdmin };
