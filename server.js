@@ -81,6 +81,11 @@ app.get('/atendimento', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'atendimento.html'));
 });
 
+// ── ROTA AMIGÁVEL: /admin serve admin.html ─────────────────
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
 // ── MÓDULOS DA API ─────────────────────────────────────────
 app.use('/api/auth',          require('./routes/auth'));
 app.use('/api/atendimento',   require('./routes/atendimento-auth'));  // /api/atendimento/login
@@ -88,6 +93,7 @@ app.use('/api',               require('./routes/precos'));
 app.use('/api',               require('./routes/depoimentos'));
 app.use('/api',               require('./routes/feed'));
 app.use('/api',               require('./routes/config'));
+app.use('/api',               require('./routes/seed'));
 app.use('/api/chat',              chat.routerAluna);
 app.use('/api/atendimento/chat',  chat.routerAtendimento);
 app.use('/api/upload',        require('./routes/upload'));
@@ -201,6 +207,7 @@ server.listen(PORT, async () => {
 ✦  Chat atend.:        /api/atendimento/chat/*
 📤 Upload:             /api/upload/*
 🖥️  Painel:        GET  /atendimento
+🛡️  Admin:         GET  /admin
 🔌 WebSocket:     WS   /ws/chat
   `);
   try {
