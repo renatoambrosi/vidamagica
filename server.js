@@ -7,7 +7,8 @@
    - Fase 1 — Fundação ✅
    - Fase 2 — Auth ✅ (em /api/auth)
    - Fase 3 — Conteúdo ✅ (precos, depoimentos, feed, config)
-   - Fase 4A — Chat ✅ (REST + WS em /ws/chat)
+   - Fase 4A — Chat (REST + WS) ✅
+   - Fase 4B — Painéis Chat ✅ (/atendimento protegido)
    ============================================================ */
 
 const express = require('express');
@@ -21,6 +22,7 @@ const WebSocket = require('ws');
 require('dotenv').config();
 
 const { initDb, checkHealth } = require('./db');
+const { autenticarAdmin } = require('./middleware/autenticar');
 const chat = require('./routes/chat');
 
 const app = express();
@@ -75,6 +77,11 @@ app.get('/health', async (req, res) => {
   });
 });
 
+// ── PÁGINAS PROTEGIDAS (antes do static!) ──────────────────
+app.get('/atendimento', autenticarAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'atendimento.html'));
+});
+
 // ── MÓDULOS DA API ─────────────────────────────────────────
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api',      require('./routes/precos'));
@@ -85,6 +92,11 @@ app.use('/api/chat',              chat.routerAluna);
 app.use('/api/atendimento/chat',  chat.routerAtendimento);
 
 // ── ESTÁTICOS ──────────────────────────────────────────────
+// IMPORTANTE: o atendimento.html foi movido pra rota protegida acima.
+// Mas como ele AINDA está em public/, qualquer pessoa poderia acessar
+// /atendimento.html direto. Vamos bloquear esse caminho:
+app.get('/atendimento.html', (req, res) => res.redirect('/atendimento'));
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── PÁGINAS ESTÁTICAS PÚBLICAS ─────────────────────────────
@@ -108,12 +120,6 @@ app.use((err, req, res, next) => {
 
 // ──────────────────────────────────────────────────────────
 // WEBSOCKET — /ws/chat
-// ──────────────────────────────────────────────────────────
-//
-// Aluna:        wss://.../ws/chat?token=<JWT>&modo=aluna
-// Atendimento:  wss://.../ws/chat?token=<base64(admin:senha)>&modo=atendimento
-//
-// O WS só aceita conexão se a credencial bater. Caso contrário, fecha.
 // ──────────────────────────────────────────────────────────
 
 const wss = new WebSocket.Server({ noServer: true });
@@ -167,7 +173,6 @@ server.on('upgrade', (req, socket, head) => {
   socket.destroy();
 });
 
-// Heartbeat — mata conexões zumbis
 const heartbeat = setInterval(() => {
   wss.clients.forEach((ws) => {
     if (ws.isAlive === false) return ws.terminate();
@@ -194,6 +199,7 @@ server.listen(PORT, async () => {
 ⚙️  Config:        GET  /api/config
 ✦  Chat aluna:         /api/chat/*           (JWT)
 ✦  Chat atend.:        /api/atendimento/chat/* (Basic Auth)
+🖥️  Painel:        GET  /atendimento  (Basic Auth)
 🔌 WebSocket:     WS   /ws/chat
   `);
   try {
