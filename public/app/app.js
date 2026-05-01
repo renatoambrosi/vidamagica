@@ -2,19 +2,18 @@
 window.VmSession=(function(){const K='vm_s',P='vm_lembrar';function salvar(d,l){const p=l!==undefined?l:getLembrar();localStorage.setItem(P,p?'1':'0');const s=p?localStorage:sessionStorage,o=p?sessionStorage:localStorage;o.removeItem(K);s.setItem(K,JSON.stringify(d));}function carregar(){try{const r=localStorage.getItem(K)||sessionStorage.getItem(K);return r?JSON.parse(r):null;}catch{return null;}}function destruir(){localStorage.removeItem(K);sessionStorage.removeItem(K);}function getAccess(){return carregar()?.access_token||null;}function getRefresh(){return carregar()?.refresh_token||null;}function getLembrar(){return localStorage.getItem(P)!=='0';}return{salvar,carregar,destruir,getAccess,getRefresh,getLembrar};})();
 
 /* ============================================================
-   VIDA MÁGICA — App v8
-   Chat agora tem 2 canais separados: Suellen e Suporte
+   VIDA MÁGICA — App v9
    ============================================================ */
 
 const API = '';
+const LINK_ASSINAR = 'https://www.vidamagica.com.br/assinar';
 let usuario  = null;
 let chatWs   = null;
 
-// Estado do chat
-let canalAtivo = null;       // 'suellen' | 'suporte' | null (na tela de escolha)
-let chatConv = null;         // dados da conversa atual
-let mensagensAtuais = [];    // mensagens do canal aberto
-let timerInterval = null;    // intervalo do timer regressivo
+let canalAtivo = null;
+let chatConv = null;
+let mensagensAtuais = [];
+let timerInterval = null;
 let replyMsgAtual = null;
 let ctxMsgAtual = null;
 
@@ -71,7 +70,6 @@ function criarParticulas() {
   }
 }
 
-// ── SPRITES ─────────────────────────────────────────────────
 function criarSprites() {
   const S = [
     {top:'15%',left:'8%',size:18,dur:4.2,delay:0},
@@ -99,17 +97,23 @@ function toast(msg, tipo='ok') {
   setTimeout(() => t.className = '', 3000);
 }
 
-// ══════════════════════════════════════════════════════════
-// BOTTOM NAV
-// ══════════════════════════════════════════════════════════
+// ── BOTTOM NAV ───────────────────────────────────────────────
 function irPara(viewId) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById(`view-${viewId}`)?.classList.add('active');
   document.querySelector(`.nav-tab[data-view="${viewId}"]`)?.classList.add('active');
+
+  // Esconde header preto quando entra no chat
   if (viewId === 'chat') {
+    document.body.classList.add('chat-aberto');
     abrirTelaEscolhaChat();
+  } else {
+    document.body.classList.remove('chat-aberto');
+    // Tira foco do textarea pra fechar teclado se estava aberto
+    document.getElementById('chat-input')?.blur();
   }
+
   if (viewId === 'perfil') renderPerfil();
 }
 document.querySelectorAll('.nav-tab').forEach(tab => {
@@ -119,9 +123,7 @@ document.querySelector('.nav-tab[data-view="chat"]')?.addEventListener('click', 
   document.getElementById('nav-chat-badge').style.display = 'none';
 });
 
-// ══════════════════════════════════════════════════════════
-// MODAIS
-// ══════════════════════════════════════════════════════════
+// ── MODAIS ───────────────────────────────────────────────────
 function abrirModal(id) {
   document.getElementById(id)?.setAttribute('aria-hidden','false');
   document.body.style.overflow = 'hidden';
@@ -147,9 +149,7 @@ document.getElementById('menu-logout')?.addEventListener('click',  async () => {
   VmSession.destruir(); window.location.replace('/auth?intencional');
 });
 
-// ══════════════════════════════════════════════════════════
-// PLAYER DE VÍDEO
-// ══════════════════════════════════════════════════════════
+// ── PLAYER ───────────────────────────────────────────────────
 function embedDeUrl(url) {
   if (!url) return '';
   const origin = encodeURIComponent(window.location.origin);
@@ -177,9 +177,7 @@ function abrirPlayer({ titulo, subtitulo, corpo, url }) {
 }
 function pararPlayer() { const iframe = document.getElementById('player-iframe'); if (iframe) iframe.src=''; }
 
-// ══════════════════════════════════════════════════════════
-// FEED
-// ══════════════════════════════════════════════════════════
+// ── FEED ─────────────────────────────────────────────────────
 function icone(tipo) { return {video:'🎬',texto:'📝',imagem:'🖼️',link:'🔗'}[tipo]||'✦'; }
 async function carregarFeed() {
   try {
@@ -212,9 +210,7 @@ function ativarItem(card) {
   else abrirPlayer({titulo,subtitulo,corpo,url:null});
 }
 
-// ══════════════════════════════════════════════════════════
-// TESOURO
-// ══════════════════════════════════════════════════════════
+// ── TESOURO ──────────────────────────────────────────────────
 const TESOURO_KEY = 'vm_tesouro_resgatado';
 function tesouroJaResgatado(id) { try { return JSON.parse(localStorage.getItem(TESOURO_KEY)||'[]').includes(id); } catch { return false; } }
 function marcarTesouroResgatado(id) { try { const l=JSON.parse(localStorage.getItem(TESOURO_KEY)||'[]'); if(!l.includes(id)){l.push(id);localStorage.setItem(TESOURO_KEY,JSON.stringify(l));} } catch {} }
@@ -258,13 +254,11 @@ document.getElementById('modal-tesouro-resgatar')?.addEventListener('click', asy
   btn.disabled = false; btn.textContent = '🌱 Resgatar Tesouro';
 });
 
-// ══════════════════════════════════════════════════════════
-// AVISOS
-// ══════════════════════════════════════════════════════════
+// ── AVISOS ───────────────────────────────────────────────────
 const AVISOS_KEY = 'vm_avisos_lidos';
 const AVISOS = [
   {id:'av1',tag:'Tesouro da Su',titulo:'Seu presente chegou! ✨',desc:'Um novo tesouro está disponível para você hoje.',data:'Hoje'},
-  {id:'av2',tag:'Comunidade',titulo:'Novo conteúdo disponível',desc:'A Suellen publicou um conteúdo exclusivo para membros.',data:'1 dia'},
+  {id:'av2',tag:'Comunidade',titulo:'Novo conteúdo disponível',desc:'A Suellen Seragi publicou um conteúdo exclusivo para membros.',data:'1 dia'},
 ];
 function getLidos() { try { return JSON.parse(localStorage.getItem(AVISOS_KEY)||'[]'); } catch { return []; } }
 function marcarLido(id) { const l=getLidos(); if(!l.includes(id)){l.push(id);localStorage.setItem(AVISOS_KEY,JSON.stringify(l));} }
@@ -279,9 +273,7 @@ function renderAvisos() {
   corpo.querySelectorAll('.aviso-item').forEach(el=>el.addEventListener('click',()=>{marcarLido(el.dataset.id);el.classList.remove('nao-lido');atualizarBadgeAvisos();}));
 }
 
-// ══════════════════════════════════════════════════════════
-// TESTES
-// ══════════════════════════════════════════════════════════
+// ── TESTES ───────────────────────────────────────────────────
 async function carregarTestes() {
   const corpo = document.getElementById('testes-corpo'); if (!corpo) return;
   corpo.innerHTML = '<div class="loading-inline">Carregando...</div>';
@@ -294,24 +286,36 @@ async function carregarTestes() {
   } catch { corpo.innerHTML='<div class="loading-inline">Erro ao carregar.</div>'; }
 }
 
-// ══════════════════════════════════════════════════════════
-// PERFIL
-// ══════════════════════════════════════════════════════════
+// ── PERFIL ───────────────────────────────────────────────────
 function renderPerfil() {
   if (!usuario) return;
   document.getElementById('perfil-nome').textContent     = usuario.nome || '—';
   document.getElementById('perfil-sementes').textContent = usuario.sementes || 0;
 }
 
-// ══════════════════════════════════════════════════════════
 // ════════════════════════════════════════════════════════════
-// CHAT — 2 canais (Suellen / Suporte)
+// CHAT
 // ════════════════════════════════════════════════════════════
-// ══════════════════════════════════════════════════════════
 
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function horaFmt(data) { return new Date(data).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
 function fmtTempo(s) { return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
+
+// Linkifica URLs num texto, retornando HTML seguro.
+function linkificar(texto) {
+  const escaped = escHtml(texto || '');
+  return escaped.replace(
+    /(https?:\/\/[^\s<>]+)/gi,
+    (m) => `<a href="${m}" target="_blank" rel="noopener">${m}</a>`
+  );
+}
+
+// Detecta se a mensagem é o template de assinatura (mostra botão CTA)
+function isMensagemAssinatura(msg) {
+  if (!msg || msg.remetente !== 'suellen') return false;
+  const c = String(msg.conteudo || '');
+  return c.includes('vidamagica.com.br/assinar') || c.includes('Para assinar o Vida Mágica');
+}
 
 // ── Tela de escolha ──
 function abrirTelaEscolhaChat() {
@@ -338,47 +342,33 @@ function atualizarCardCanal(canal, info) {
   const badge = document.getElementById(`canal-${canal}-badge`);
   const preview = document.getElementById(`canal-${canal}-preview`);
   const abaBadge = document.getElementById(`aba-${canal}-badge`);
-
   if (!info) return;
-
   const naoLidas = info.nao_lidas || 0;
   if (badge) {
-    if (naoLidas > 0) {
-      badge.textContent = naoLidas;
-      badge.style.display = '';
-    } else {
-      badge.style.display = 'none';
-    }
+    if (naoLidas > 0) { badge.textContent = naoLidas; badge.style.display = ''; }
+    else badge.style.display = 'none';
   }
-  if (preview) {
-    preview.textContent = info.ultima_preview || '';
-  }
+  if (preview) preview.textContent = info.ultima_preview || '';
   if (abaBadge) {
-    if (naoLidas > 0) {
-      abaBadge.textContent = naoLidas;
-      abaBadge.style.display = '';
-    } else {
-      abaBadge.style.display = 'none';
-    }
+    if (naoLidas > 0) { abaBadge.textContent = naoLidas; abaBadge.style.display = ''; }
+    else abaBadge.style.display = 'none';
   }
 }
 
-// ── Abrir um canal ──
+// ── Abrir canal ──
 async function abrirCanal(canal) {
   canalAtivo = canal;
   document.getElementById('chat-escolha-tela').style.display = 'none';
   document.getElementById('chat-conversa-tela').style.display = 'flex';
 
-  // Header do canal
   const isS = canal === 'suellen';
   const headerImg = document.getElementById('chat-canal-header-img');
   const headerNome = document.getElementById('chat-canal-header-nome');
   const headerStatus = document.getElementById('chat-canal-header-status');
   if (headerImg) headerImg.src = isS ? '/assets/avatar-suellen.jpg' : '/assets/logo-equipe.png';
-  if (headerNome) headerNome.textContent = isS ? 'Suellen' : 'Equipe Vida Mágica';
+  if (headerNome) headerNome.textContent = isS ? 'Suellen Seragi' : 'Equipe Vida Mágica';
   if (headerStatus) headerStatus.textContent = isS ? 'Atendimento' : 'Dúvidas e suporte';
 
-  // Atualiza estado das abas
   document.querySelectorAll('.chat-aba').forEach(b => {
     b.classList.toggle('ativa', b.dataset.aba === canal);
   });
@@ -420,7 +410,7 @@ async function carregarConversaCanal(canal) {
   }
 }
 
-// ── Banner de plano (Free/VM/Prioritário) ──
+// ── Banner ──
 function atualizarBannerPlano(conv) {
   const banner = document.getElementById('plano-banner');
   const titulo = document.getElementById('plano-banner-titulo');
@@ -483,7 +473,7 @@ function atualizarTimerPrioritario(conv) {
   if (totalMin < 60) banner.classList.add('alerta');
 }
 
-// ── Ação: Free clica em "Assinar Vida Mágica" ──
+// ── Ações ──
 async function acaoAssinarVM() {
   if (canalAtivo !== 'suellen') {
     await abrirCanal('suellen');
@@ -500,7 +490,6 @@ async function acaoAssinarVM() {
   }
 }
 
-// ── Ação: Vida Mágica/Free clica em "Ativar Prioritário" ──
 async function acaoAtivarPrioritario() {
   if (!confirm('Ativar Atendimento Prioritário (R$ 9,90 · 30 interações em 24h)?')) return;
   try {
@@ -517,7 +506,7 @@ async function acaoAtivarPrioritario() {
   }
 }
 
-// ── Renderização de mensagens ──
+// ── Render mensagens ──
 function gerarWaveform(n=28) {
   const a = [];
   for (let i=0; i<n; i++) a.push(Math.random()*0.7 + 0.18);
@@ -541,21 +530,20 @@ function renderMensagem(msg) {
   wrap.dataset.id = msg.id;
 
   const ident = msg.identidade || 'suellen';
-  const nomeIdent = ident === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen';
+  const nomeIdent = ident === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen Seragi';
 
   // Reply preview
   let replyHtml = '';
   if (msg.reply_to_conteudo) {
     const replyAutor = msg.reply_to_remetente === 'aluna'
       ? 'Você'
-      : (msg.reply_to_identidade === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen');
+      : (msg.reply_to_identidade === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen Seragi');
     replyHtml = `<div class="msg-reply-preview">
       <span class="reply-autor">${escHtml(replyAutor)}</span>
       <span class="reply-texto">${escHtml((msg.reply_to_conteudo||'').substring(0,100))}</span>
     </div>`;
   }
 
-  // Bolha
   if (msg.tipo === 'imagem' && msg.url) {
     const bolha = document.createElement('div');
     bolha.className = 'msg-bolha';
@@ -574,12 +562,21 @@ function renderMensagem(msg) {
       bolha.dataset.identidade = ident;
       bolha.dataset.identidadeNome = nomeIdent;
     }
-    bolha.innerHTML = replyHtml + escHtml(msg.conteudo || '');
+    // Texto com links clicáveis
+    const corpoHtml = linkificar(msg.conteudo || '');
+    let ctaHtml = '';
+    if (isMensagemAssinatura(msg)) {
+      ctaHtml = `<a class="msg-cta-btn" href="${LINK_ASSINAR}" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Assinar agora
+      </a>`;
+    }
+    bolha.innerHTML = replyHtml + corpoHtml + ctaHtml;
     setupCtxMenu(bolha, msg);
     wrap.appendChild(bolha);
   }
 
-  // Footer (hora + checks)
+  // Footer
   const footer = document.createElement('div');
   footer.className = 'msg-footer';
   footer.innerHTML = `<span class="msg-hora">${horaFmt(msg.criado_em)}</span>`;
@@ -592,6 +589,8 @@ function renderMensagem(msg) {
   }
   wrap.appendChild(footer);
 
+  setupSwipe(wrap, msg);
+
   return wrap;
 }
 
@@ -602,7 +601,7 @@ function criarBolhaAudio(msg) {
   wrap.dataset.id = msg.id;
 
   const ident = msg.identidade || 'suellen';
-  const nomeIdent = ident === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen';
+  const nomeIdent = ident === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen Seragi';
 
   const alturas = msg._alturas || gerarWaveform(28);
   const N = alturas.length;
@@ -675,6 +674,9 @@ function criarBolhaAudio(msg) {
     footer.appendChild(checks);
   }
   wrap.appendChild(footer);
+
+  setupSwipe(wrap, msg);
+
   return wrap;
 }
 
@@ -683,38 +685,130 @@ function scrollChat() {
   if (msgs) setTimeout(() => { msgs.scrollTop = msgs.scrollHeight; }, 50);
 }
 
-// ── Context menu (long-press) ──
+// ════════════════════════════════════════════════
+// SWIPE PARA RESPONDER
+// ════════════════════════════════════════════════
+function setupSwipe(wrap, msg) {
+  let startX = 0, startY = 0, currentX = 0;
+  let arrastando = false;
+  let direcaoBloqueada = null; // 'h' | 'v' | null
+  const isAluna = msg.remetente === 'aluna';
+  // Aluna mexe direita-pra-esquerda; Suellen esquerda-pra-direita
+  const fator = isAluna ? -1 : 1;
+  const triggerDist = 60;
+  const maxDist = 90;
+
+  wrap.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    arrastando = true;
+    direcaoBloqueada = null;
+  }, { passive: true });
+
+  wrap.addEventListener('touchmove', (e) => {
+    if (!arrastando || e.touches.length !== 1) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+
+    if (!direcaoBloqueada) {
+      if (Math.abs(dx) > Math.abs(dy) + 4) direcaoBloqueada = 'h';
+      else if (Math.abs(dy) > 6) { direcaoBloqueada = 'v'; arrastando = false; return; }
+    }
+    if (direcaoBloqueada !== 'h') return;
+
+    // Só permite na direção certa
+    const dxAjustado = fator > 0 ? Math.max(0, dx) : Math.min(0, dx);
+    currentX = Math.max(-maxDist, Math.min(maxDist, dxAjustado));
+    wrap.style.transform = `translateX(${currentX}px)`;
+    if (Math.abs(currentX) > triggerDist) wrap.classList.add('swipe-revealing');
+    else wrap.classList.remove('swipe-revealing');
+  }, { passive: true });
+
+  wrap.addEventListener('touchend', () => {
+    if (!arrastando) return;
+    arrastando = false;
+    const triggered = Math.abs(currentX) > triggerDist;
+    wrap.style.transform = '';
+    wrap.classList.remove('swipe-revealing');
+    currentX = 0;
+    if (triggered) {
+      ctxMsgAtual = msg;
+      acaoResponder();
+    }
+  });
+
+  wrap.addEventListener('touchcancel', () => {
+    arrastando = false;
+    wrap.style.transform = '';
+    wrap.classList.remove('swipe-revealing');
+    currentX = 0;
+  });
+}
+
+// ════════════════════════════════════════════════
+// LONG-PRESS / CONTEXT MENU
+// ════════════════════════════════════════════════
 function setupCtxMenu(el, msg) {
-  const abrir = (e) => {
-    e.preventDefault();
+  // Bloqueia o menu nativo do iOS
+  el.addEventListener('contextmenu', (e) => e.preventDefault());
+
+  let pressTimer = null;
+  let startX = 0, startY = 0;
+  let cancelado = false;
+
+  const abrirMenu = (x, y) => {
+    if (navigator.vibrate) try { navigator.vibrate(15); } catch {}
     ctxMsgAtual = msg;
-    const x = e.clientX || e.touches?.[0]?.clientX || 100;
-    const y = e.clientY || e.touches?.[0]?.clientY || 200;
     const menu = document.getElementById('msg-ctx-menu');
     if (!menu) return;
     menu.classList.add('visivel');
     const maxX = window.innerWidth - menu.offsetWidth - 8;
     const maxY = window.innerHeight - menu.offsetHeight - 8;
-    menu.style.left = Math.min(x, maxX) + 'px';
-    menu.style.top = Math.min(y, maxY) + 'px';
+    menu.style.left = Math.min(Math.max(8, x), maxX) + 'px';
+    menu.style.top = Math.min(Math.max(8, y), maxY) + 'px';
   };
-  el.addEventListener('contextmenu', abrir);
-  let holdTimer;
+
   el.addEventListener('touchstart', (e) => {
-    holdTimer = setTimeout(() => abrir(e), 500);
+    if (e.touches.length !== 1) return;
+    cancelado = false;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    clearTimeout(pressTimer);
+    pressTimer = setTimeout(() => {
+      if (cancelado) return;
+      abrirMenu(startX, startY);
+    }, 450);
   }, { passive: true });
-  el.addEventListener('touchend', () => clearTimeout(holdTimer));
-  el.addEventListener('touchmove', () => clearTimeout(holdTimer));
+
+  el.addEventListener('touchmove', (e) => {
+    const dx = Math.abs(e.touches[0].clientX - startX);
+    const dy = Math.abs(e.touches[0].clientY - startY);
+    if (dx > 8 || dy > 8) { cancelado = true; clearTimeout(pressTimer); }
+  }, { passive: true });
+
+  el.addEventListener('touchend', () => { cancelado = true; clearTimeout(pressTimer); });
+  el.addEventListener('touchcancel', () => { cancelado = true; clearTimeout(pressTimer); });
+
+  // Desktop: contextmenu (right-click)
+  el.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    abrirMenu(e.clientX, e.clientY);
+  });
 }
-document.addEventListener('click', () => {
+
+document.addEventListener('click', (e) => {
+  // Não fecha se o clique foi num item do menu
+  if (e.target.closest('.msg-ctx-menu')) return;
   document.getElementById('msg-ctx-menu')?.classList.remove('visivel');
 });
-document.getElementById('ctx-responder')?.addEventListener('click', () => {
+
+function acaoResponder() {
   if (!ctxMsgAtual) return;
   replyMsgAtual = ctxMsgAtual;
   const autor = ctxMsgAtual.remetente === 'aluna'
     ? 'Você'
-    : (ctxMsgAtual.identidade === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen');
+    : (ctxMsgAtual.identidade === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen Seragi');
   const texto = ctxMsgAtual.conteudo
     || (ctxMsgAtual.tipo === 'imagem' ? '📷 Imagem' : ctxMsgAtual.tipo === 'audio' ? '🎤 Áudio' : '');
   const replyBar = document.getElementById('reply-bar');
@@ -722,11 +816,15 @@ document.getElementById('ctx-responder')?.addEventListener('click', () => {
   document.getElementById('reply-texto').textContent = texto;
   replyBar.classList.add('visivel');
   document.getElementById('chat-input')?.focus();
-});
+  document.getElementById('msg-ctx-menu')?.classList.remove('visivel');
+}
+
+document.getElementById('ctx-responder')?.addEventListener('click', acaoResponder);
 document.getElementById('ctx-copiar')?.addEventListener('click', () => {
   if (ctxMsgAtual?.conteudo) {
     navigator.clipboard.writeText(ctxMsgAtual.conteudo).then(() => toast('Copiado'));
   }
+  document.getElementById('msg-ctx-menu')?.classList.remove('visivel');
 });
 document.getElementById('reply-fechar')?.addEventListener('click', () => {
   replyMsgAtual = null;
@@ -743,24 +841,19 @@ function conectarChatWs() {
   chatWs.onmessage = (e) => {
     try {
       const data = JSON.parse(e.data);
-
       if (data.evento === 'nova_mensagem' && data.mensagem) {
         const msg = data.mensagem;
         const convId = data.conversa_id;
-        // Se a conversa atual é a que recebeu a mensagem, adicionar bolha
         if (chatConv && convId === chatConv.id) {
           mensagensAtuais.push(msg);
           document.getElementById('chat-msgs')?.appendChild(renderMensagem(msg));
           scrollChat();
         }
-        // Atualiza badges/preview na tela de escolha
         carregarResumoChats();
-        // Badge no botão do nav
         if (!document.querySelector('.nav-tab[data-view="chat"]').classList.contains('active')) {
           document.getElementById('nav-chat-badge').style.display = '';
         }
       }
-
       if (data.evento === 'mensagens_lidas' && data.por === 'suellen') {
         if (chatConv && data.conversa_id === chatConv.id) {
           (data.ids || []).forEach(id => {
@@ -779,7 +872,7 @@ function conectarChatWs() {
   chatWs.onclose = () => setTimeout(conectarChatWs, 4000);
 }
 
-// ── Botões / Inputs ──
+// ── Input ──
 const chatInput = document.getElementById('chat-input');
 const sendBtn = document.getElementById('chat-send-btn');
 const audioBtn = document.getElementById('chat-audio-btn');
@@ -868,7 +961,6 @@ document.getElementById('chat-file-input')?.addEventListener('change', async e =
   mensagensAtuais.push(msgTemp);
   document.getElementById('chat-msgs').appendChild(renderMensagem(msgTemp));
   scrollChat();
-
   try {
     const form = new FormData();
     form.append('imagem', file);
@@ -887,9 +979,7 @@ document.getElementById('chat-file-input')?.addEventListener('change', async e =
   }
 });
 
-// ══════════════════════════════════════════════════════════
-// ÁUDIO
-// ══════════════════════════════════════════════════════════
+// ── ÁUDIO ────────────────────────────────────────────────────
 let mediaRecorder = null;
 let audioChunks = [];
 let audioCtx = null;
@@ -993,7 +1083,6 @@ async function finalizarGravacao() {
   mensagensAtuais.push(msgTemp);
   document.getElementById('chat-msgs').appendChild(renderMensagem(msgTemp));
   scrollChat();
-
   try {
     const form = new FormData();
     form.append('audio', blob, `audio-${Date.now()}.webm`);
@@ -1023,7 +1112,7 @@ document.getElementById('modal-mic-ok')?.addEventListener('click', () => {
 document.getElementById('chat-rec-cancel')?.addEventListener('click', () => pararGravacao(false));
 document.getElementById('chat-rec-send')?.addEventListener('click', () => pararGravacao(true));
 
-// ── Conexões da tela de escolha e abas ──
+// ── Tela de escolha + abas ──
 document.querySelectorAll('.chat-canal-card').forEach(btn => {
   btn.addEventListener('click', () => abrirCanal(btn.dataset.canal));
 });
@@ -1032,13 +1121,33 @@ document.querySelectorAll('.chat-aba').forEach(btn => {
 });
 document.getElementById('btn-back-escolha')?.addEventListener('click', abrirTelaEscolhaChat);
 
-// ══════════════════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════
+// VISUAL VIEWPORT — teclado fluido
+// ════════════════════════════════════════════════
+function setupVisualViewport() {
+  if (!window.visualViewport) return;
+  const vv = window.visualViewport;
+  const update = () => {
+    const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    document.documentElement.style.setProperty('--kbd-offset', offset + 'px');
+    if (offset > 80) {
+      document.body.classList.add('teclado-aberto');
+      // Garante que a última mensagem fica visível
+      setTimeout(scrollChat, 200);
+    } else {
+      document.body.classList.remove('teclado-aberto');
+    }
+  };
+  vv.addEventListener('resize', update);
+  vv.addEventListener('scroll', update);
+}
+
+// ── INIT ──
 (async function init() {
   criarParticulas();
   criarSprites();
   atualizarBadgeAvisos();
+  setupVisualViewport();
 
   usuario = await checarAuth();
   if (!usuario) return;
