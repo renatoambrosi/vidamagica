@@ -1,136 +1,104 @@
 /* ============================================================
    VIDA MÁGICA — routes/feed.js
-   CRUD do Feed do App
-   Tipos: video | texto | imagem | link
+   Feed do app (vídeo, texto, imagem, link).
+
+   Banco: poolComunicacao (tabela `feed`).
+
+   Endpoints:
+     GET    /api/feed                  → público (itens ativos)
+     GET    /api/admin/feed            → admin (todos)
+     POST   /api/admin/feed            → admin (criar)
+     PUT    /api/admin/feed/:id        → admin (atualizar)
+     DELETE /api/admin/feed/:id        → admin (apagar)
    ============================================================ */
 
 const express = require('express');
-const router  = express.Router();
-const { pool } = require('../db');
+const router = express.Router();
 
-/* ── Chamada pelo initDb() em db.js ── */
-async function initFeed(client) {
-  await client.query(`
-    CREATE TABLE IF NOT EXISTS feed (
-      id            SERIAL PRIMARY KEY,
-      tipo          VARCHAR(20)  NOT NULL CHECK (tipo IN ('video','texto','imagem','link')),
-      titulo        TEXT         NOT NULL,
-      subtitulo     TEXT,
-      corpo         TEXT,
-      url           TEXT,
-      imagem_url    TEXT,
-      destaque      BOOLEAN      DEFAULT FALSE,
-      ativo         BOOLEAN      DEFAULT TRUE,
-      ordem         INTEGER      DEFAULT 0,
-      publicado_em  TIMESTAMPTZ  DEFAULT NOW(),
-      criado_em     TIMESTAMPTZ  DEFAULT NOW(),
-      atualizado_em TIMESTAMPTZ  DEFAULT NOW()
-    )
-  `);
-  await client.query(`CREATE INDEX IF NOT EXISTS idx_feed_ativo ON feed(ativo, ordem)`);
-}
+const { poolComunicacao } = require('../db');
+const { autenticarAdmin } = require('../middleware/autenticar');
 
-/* ──────────────────────────────────────────────────
-   PÚBLICO — GET /api/feed
-   Retorna itens ativos, destaques primeiro
-   ────────────────────────────────────────────────── */
+// ── PÚBLICO ────────────────────────────────────────────────
+
 router.get('/feed', async (req, res) => {
   try {
-    const r = await pool.query(`
-      SELECT * FROM feed
-      WHERE ativo = TRUE
-      ORDER BY destaque DESC, ordem ASC, publicado_em DESC
-    `);
+    const r = await poolComunicacao.query(
+      `SELECT id, tipo, titulo, subtitulo, corpo, url, imagem_url, destaque, ordem, publicado_em
+         FROM feed WHERE ativo = TRUE
+         ORDER BY destaque DESC, ordem ASC, publicado_em DESC`
+    );
     res.json(r.rows);
   } catch (err) {
-    console.error('❌ feed GET público:', err.message);
+    console.error('❌ GET /feed:', err.message);
     res.status(500).json({ error: 'Erro ao carregar feed' });
   }
 });
 
-/* ──────────────────────────────────────────────────
-   ADMIN — GET /api/admin/feed  (todos, inclusive inativos)
-   ────────────────────────────────────────────────── */
-router.get('/feed', async (req, res) => {
+// ── ADMIN ──────────────────────────────────────────────────
+
+router.get('/admin/feed', autenticarAdmin, async (req, res) => {
   try {
-    const r = await pool.query(`SELECT * FROM feed ORDER BY ordem ASC, publicado_em DESC`);
+    const r = await poolComunicacao.query(
+      `SELECT * FROM feed ORDER BY destaque DESC, ordem ASC, publicado_em DESC`
+    );
     res.json(r.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-/* ──────────────────────────────────────────────────
-   ADMIN — POST /api/admin/feed  (criar)
-   ────────────────────────────────────────────────── */
-router.post('/feed', async (req, res) => {
-  const { tipo, titulo, subtitulo, corpo, url, imagem_url, destaque, ativo, ordem, publicado_em } = req.body;
-  if (!tipo || !titulo) return res.status(400).json({ error: 'tipo e titulo são obrigatórios' });
+router.post('/admin/feed', autenticarAdmin, async (req, res) => {
   try {
-    const r = await pool.query(`
-      INSERT INTO feed (tipo, titulo, subtitulo, corpo, url, imagem_url, destaque, ativo, ordem, publicado_em)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *
-    `, [tipo, titulo, subtitulo || null, corpo || null, url || null, imagem_url || null,
-        destaque || false, ativo !== false, ordem || 0, publicado_em || new Date()]);
-    res.json(r.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-/* ──────────────────────────────────────────────────
-   ADMIN — PUT /api/admin/feed/:id  (editar)
-   ────────────────────────────────────────────────── */
-router.put('/feed/:id', async (req, res) => {
-  const { tipo, titulo, subtitulo, corpo, url, imagem_url, destaque, ativo, ordem, publicado_em } = req.body;
-  try {
-    const r = await pool.query(`
-      UPDATE feed SET
-        tipo=$1, titulo=$2, subtitulo=$3, corpo=$4, url=$5, imagem_url=$6,
-        destaque=$7, ativo=$8, ordem=$9, publicado_em=$10, atualizado_em=NOW()
-      WHERE id=$11 RETURNING *
-    `, [tipo, titulo, subtitulo || null, corpo || null, url || null, imagem_url || null,
-        destaque || false, ativo !== false, ordem || 0, publicado_em || new Date(), req.params.id]);
-    if (!r.rows.length) return res.status(404).json({ error: 'Item não encontrado' });
-    res.json(r.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-/* ──────────────────────────────────────────────────
-   ADMIN — DELETE /api/admin/feed/:id
-   ────────────────────────────────────────────────── */
-router.delete('/feed/:id', async (req, res) => {
-  try {
-    await pool.query('DELETE FROM feed WHERE id=$1', [req.params.id]);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-/* ──────────────────────────────────────────────────
-   ADMIN — POST /api/admin/feed/reordenar
-   body: { ids: [3, 1, 5, 2] }  — nova ordem
-   ────────────────────────────────────────────────── */
-router.post('/feed/reordenar', async (req, res) => {
-  const { ids } = req.body;
-  if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids inválido' });
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    for (let i = 0; i < ids.length; i++) {
-      await client.query('UPDATE feed SET ordem=$1 WHERE id=$2', [i, ids[i]]);
+    const { tipo, titulo, subtitulo, corpo, url, imagem_url, destaque = false, ativo = true, ordem = 0 } = req.body;
+    if (!tipo || !titulo) return res.status(400).json({ error: 'Tipo e título obrigatórios' });
+    if (!['video', 'texto', 'imagem', 'link'].includes(tipo)) {
+      return res.status(400).json({ error: 'Tipo inválido' });
     }
-    await client.query('COMMIT');
-    res.json({ success: true });
+    const r = await poolComunicacao.query(
+      `INSERT INTO feed (tipo, titulo, subtitulo, corpo, url, imagem_url, destaque, ativo, ordem)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [tipo, titulo, subtitulo || null, corpo || null, url || null, imagem_url || null, destaque, ativo, ordem]
+    );
+    res.json({ success: true, item: r.rows[0] });
   } catch (err) {
-    await client.query('ROLLBACK');
     res.status(500).json({ error: err.message });
-  } finally {
-    client.release();
   }
 });
 
-module.exports = { router, initFeed };
+router.put('/admin/feed/:id', autenticarAdmin, async (req, res) => {
+  try {
+    const { tipo, titulo, subtitulo, corpo, url, imagem_url, destaque, ativo, ordem } = req.body;
+    const r = await poolComunicacao.query(
+      `UPDATE feed SET
+         tipo = COALESCE($1, tipo),
+         titulo = COALESCE($2, titulo),
+         subtitulo = COALESCE($3, subtitulo),
+         corpo = COALESCE($4, corpo),
+         url = COALESCE($5, url),
+         imagem_url = COALESCE($6, imagem_url),
+         destaque = COALESCE($7, destaque),
+         ativo = COALESCE($8, ativo),
+         ordem = COALESCE($9, ordem),
+         atualizado_em = NOW()
+       WHERE id = $10
+       RETURNING *`,
+      [tipo ?? null, titulo ?? null, subtitulo ?? null, corpo ?? null, url ?? null, imagem_url ?? null, destaque ?? null, ativo ?? null, ordem ?? null, req.params.id]
+    );
+    if (!r.rows.length) return res.status(404).json({ error: 'Item não encontrado' });
+    res.json({ success: true, item: r.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/admin/feed/:id', autenticarAdmin, async (req, res) => {
+  try {
+    await poolComunicacao.query(`DELETE FROM feed WHERE id = $1`, [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+module.exports = router;
