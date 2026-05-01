@@ -1,9 +1,10 @@
 /* ============================================================
    VIDA MÁGICA — server.js
-   Servidor Express. Conecta nos 4 bancos no boot.
+   Servidor Express. Conecta nos 4 bancos e carrega módulos.
 
-   Esta é a Fase 1 (Fundação): só /health e estáticos.
-   Rotas de negócio vêm nas próximas fases.
+   Fases ativas:
+   - Fase 1 — Fundação ✅
+   - Fase 2 — Auth ✅ (em /api/auth)
    ============================================================ */
 
 const express = require('express');
@@ -67,12 +68,15 @@ app.get('/health', async (req, res) => {
   });
 });
 
+// ── MÓDULOS ────────────────────────────────────────────────
+app.use('/api/auth', require('./routes/auth'));
+
 // ── PÁGINAS ESTÁTICAS ──────────────────────────────────────
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // ── 404 PARA /api ──────────────────────────────────────────
-app.get('/api/*', (req, res) => {
-  res.status(404).json({ error: 'Rota ainda não disponível (Fase 1 — Fundação)' });
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'Rota não encontrada' });
 });
 
 // ── SPA FALLBACK ───────────────────────────────────────────
@@ -89,9 +93,10 @@ app.use((err, req, res, next) => {
 // ── START ──────────────────────────────────────────────────
 server.listen(PORT, async () => {
   console.log(`
-🚀 Vida Mágica API — Fase 1 (Fundação)
+🚀 Vida Mágica API
 🌐 Porta: ${PORT}
 🏥 Health: GET /health
+🔐 Auth:   /api/auth/*
   `);
   try {
     await initDb();
