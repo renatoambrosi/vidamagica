@@ -1,343 +1,643 @@
 /* ============================================================
    VIDA MÁGICA — routes/auth.js
-   Módulo de identidade: OTP, login, refresh, dispositivos.
+   Auth da aluna: OTP (WhatsApp + Email), login com senha,
+   esqueci/redefinir senha, dispositivos, sessões.
 
-   Banco: poolCore (usuarios, otp_tokens, dispositivos, sessoes).
-
-   Fluxo OTP:
-     1) POST /api/auth/otp/solicitar { telefone }
-        - Cria OTP de 6 dígitos, expira em 5min
-        - Envia via WhatsApp (Evolution)
-     2) POST /api/auth/otp/validar { telefone, codigo, device_id, tipo }
-        - Valida OTP, cria/recupera usuário
-        - Cria/atualiza dispositivo e sessão
-        - Retorna { access, refresh, usuario }
-     3) POST /api/auth/refresh { refresh_token }
-        - Renova access token (15min)
-     4) POST /api/auth/logout { refresh_token }
-        - Revoga sessão
-
-   Regras:
-     - Telefone sempre canônico (formatarTelefone) antes de gravar/buscar.
-     - Access token: 15min. Refresh token: 30 dias.
-     - 1 dispositivo por tipo (mobile/desktop) por usuário.
-     - 5 tentativas máximas de OTP antes de invalidar.
+   Banco: poolCore (via core/usuarios.js).
+   Envio de WhatsApp: usa core/whatsapp.js (envio direto Evolution).
+                       Quando a Fase de Comunidade subir, troca pra
+                       gateway com fila + cooldown.
+   Envio de Email: Brevo direto.
    ============================================================ */
 
 const express = require('express');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
 const router = express.Router();
+const bcrypt = require('bcrypt');
+const { v4: uuidv4 } = require('uuid');
 
 const { poolCore } = require('../db');
-const { formatarTelefone, telefoneValido } = require('../core/utils');
-const { enviarTexto } = require('../core/whatsapp');
-const { autenticar } = require('../middleware/autenticar');
+const {
+  buscarUsuarioPorTelefone, buscarUsuarioPorId, criarOuAtualizarUsuario, atualizarUsuario,
+  criarOTP, validarOTP, limparOTPsExpirados,
+  upsertDispositivo, listarDispositivosUsuario, revogarDispositivo,
+  criarSessao, buscarSessaoPorRefreshToken, renovarSessao,
+  revogarSessao, revogarTodasSessoesUsuario,
+} = require('../core/usuarios');
+const { enviarTexto: enviarWhatsAppDireto } = require('../core/whatsapp');
+const { gerarAccessToken, autenticar } = require('../middleware/autenticar');
 
-const JWT_SECRET = process.env.JWT_SECRET;
-const ACCESS_EXPIRA = '15m';
-const REFRESH_DIAS = 30;
-const OTP_EXPIRA_MIN = 5;
-const OTP_MAX_TENTATIVAS = 5;
+// ── HELPERS ───────────────────────────────────────────────
 
-// ── HELPERS ────────────────────────────────────────────────
+function formatarTelefone(tel) {
+  const num = String(tel).replace(/\D/g, '');
+  if (num.startsWith('55')) return num;
+  if (num.startsWith('0')) return `55${num.slice(1)}`;
+  return `55${num}`;
+}
 
 function gerarOTP() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-function gerarRefreshToken() {
-  return crypto.randomBytes(32).toString('hex');
+function detectarTipo(ua = '') {
+  return /android|iphone|ipad|ipod|mobile|blackberry|opera mini/i.test(ua) ? 'mobile' : 'desktop';
 }
 
-function gerarAccessToken(usuario) {
-  return jwt.sign(
-    { sub: usuario.id, telefone: usuario.telefone, nome: usuario.nome },
-    JWT_SECRET,
-    { expiresIn: ACCESS_EXPIRA }
-  );
+function nomearDispositivo(ua = '') {
+  let os = 'Desconhecido', browser = 'Navegador';
+  if (/Windows/i.test(ua)) os = 'Windows';
+  else if (/Macintosh/i.test(ua)) os = 'Mac';
+  else if (/iPhone/i.test(ua)) os = 'iPhone';
+  else if (/iPad/i.test(ua)) os = 'iPad';
+  else if (/Android/i.test(ua)) os = 'Android';
+  else if (/Linux/i.test(ua)) os = 'Linux';
+  if (/Chrome/i.test(ua) && !/Edge|Chromium/i.test(ua)) browser = 'Chrome';
+  else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari';
+  else if (/Firefox/i.test(ua)) browser = 'Firefox';
+  else if (/Edge/i.test(ua)) browser = 'Edge';
+  return `${browser} · ${os}`;
 }
 
-function dataDaqui(dias) {
-  const d = new Date();
-  d.setDate(d.getDate() + dias);
-  return d;
+function getIP(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip;
 }
 
-// ── 1. SOLICITAR OTP ────────────────────────────────────────
+async function enviarOTPWhatsApp(telefone, codigo, nome) {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`[DEV] OTP para ${telefone}: ${codigo}`);
+  }
+  const saudacao = nome ? `Olá, ${nome.split(' ')[0]}!` : 'Olá!';
+  const mensagem = `${saudacao} 🔐\n\nSeu código de acesso ao *Vida Mágica* é:\n\n*${codigo}*\n\nVálido por 10 minutos. Não compartilhe com ninguém.\n\n— Vida Mágica`;
+  try {
+    await enviarWhatsAppDireto(telefone, mensagem);
+    console.log(`✅ OTP enviado para ${telefone}`);
+    return true;
+  } catch (err) {
+    console.error(`❌ Erro ao enviar OTP:`, err.message);
+    return false;
+  }
+}
 
-router.post('/otp/solicitar', async (req, res) => {
+async function enviarOTPEmail(email, codigo, nome) {
+  const axios = require('axios');
+  const apiKey = process.env.BREVO_API_KEY;
+  const senderEmail = process.env.SENDER_EMAIL || 'sistema@suellenseragi.com.br';
+  if (!apiKey || !email) return false;
+  try {
+    await axios.post('https://api.brevo.com/v3/smtp/email', {
+      sender: { name: 'Vida Mágica', email: senderEmail },
+      to: [{ email }],
+      subject: `${codigo} — seu código de acesso`,
+      htmlContent: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0a1628;border-radius:12px">
+          <h2 style="color:#E8C97A;font-size:18px;margin:0 0 12px">Olá, ${nome || 'você'}!</h2>
+          <p style="color:#c8c0a8;font-size:14px;margin:0 0 20px">Seu código de acesso ao Vida Mágica:</p>
+          <div style="background:#1a2a4a;border:1px solid rgba(200,146,42,0.3);border-radius:8px;padding:20px;text-align:center;margin-bottom:20px">
+            <span style="font-size:34px;font-weight:700;letter-spacing:8px;color:#E8C97A">${codigo}</span>
+          </div>
+          <p style="color:#888;font-size:12px;margin:0">Válido por 10 minutos. Não compartilhe este código.</p>
+        </div>`,
+    }, {
+      headers: { 'accept': 'application/json', 'api-key': apiKey, 'content-type': 'application/json' },
+    });
+    return true;
+  } catch (err) {
+    console.error('❌ Erro OTP email:', err.message);
+    return false;
+  }
+}
+
+// Rate limit em memória
+const rateMap = new Map();
+function checarRate(chave, max = 3, janelaMs = 60000) {
+  const agora = Date.now();
+  const e = rateMap.get(chave) || { count: 0, reset: agora + janelaMs };
+  if (agora > e.reset) { e.count = 0; e.reset = agora + janelaMs; }
+  e.count++;
+  rateMap.set(chave, e);
+  return e.count <= max;
+}
+
+function resUsuario(u) {
+  return {
+    id: u.id,
+    nome: u.nome,
+    email: u.email,
+    telefone_formatado: u.telefone_formatado,
+    email_verificado: u.email_verificado,
+    plano: u.plano,
+    perfil_teste: u.perfil_teste,
+    percentual_prosperidade: u.percentual_prosperidade,
+    sementes: u.sementes,
+    estagio_arvore: u.estagio_arvore,
+  };
+}
+
+// Busca por identificador flexível: telefone, email ou vm_id
+async function buscarUsuarioPorIdentificador(id) {
+  if (id.includes('@')) {
+    const r = await poolCore.query(
+      `SELECT * FROM usuarios WHERE LOWER(email) = LOWER($1)`,
+      [id]
+    );
+    if (r.rows[0]) return r.rows[0];
+  }
+
+  const digits = id.replace(/\D/g, '');
+  if (digits.length >= 8) {
+    let r = await poolCore.query(
+      `SELECT * FROM usuarios WHERE telefone_formatado = $1`,
+      [digits]
+    );
+    if (r.rows[0]) return r.rows[0];
+
+    if (!digits.startsWith('55')) {
+      r = await poolCore.query(
+        `SELECT * FROM usuarios WHERE telefone_formatado = $1`,
+        [`55${digits}`]
+      );
+      if (r.rows[0]) return r.rows[0];
+    }
+
+    if (digits.startsWith('55') && digits.length > 11) {
+      r = await poolCore.query(
+        `SELECT * FROM usuarios WHERE telefone_formatado = $1`,
+        [digits.slice(2)]
+      );
+      if (r.rows[0]) return r.rows[0];
+    }
+  }
+
+  if (/^VM-\d+$/i.test(id)) {
+    try {
+      const r = await poolCore.query(
+        `SELECT * FROM usuarios WHERE UPPER(vm_id) = UPPER($1)`,
+        [id]
+      );
+      if (r.rows[0]) return r.rows[0];
+    } catch (_) {}
+  }
+
+  return null;
+}
+
+// ──────────────────────────────────────────────────────────
+// 1. SOLICITAR OTP (WhatsApp)
+// ──────────────────────────────────────────────────────────
+
+router.post('/solicitar-otp', async (req, res) => {
   try {
     const { telefone } = req.body;
     if (!telefone) return res.status(400).json({ error: 'Telefone obrigatório' });
 
     const tel = formatarTelefone(telefone);
-    if (!telefoneValido(tel)) return res.status(400).json({ error: 'Telefone inválido' });
-
-    // Invalida OTPs anteriores não usados
-    await poolCore.query(
-      `UPDATE otp_tokens SET usado = TRUE WHERE telefone = $1 AND usado = FALSE`,
-      [tel]
-    );
-
-    const codigo = gerarOTP();
-    const expira = new Date(Date.now() + OTP_EXPIRA_MIN * 60 * 1000);
-
-    await poolCore.query(
-      `INSERT INTO otp_tokens (telefone, codigo, expira_em) VALUES ($1, $2, $3)`,
-      [tel, codigo, expira]
-    );
-
-    const mensagem =
-      `🔐 Vida Mágica — código de acesso\n\n` +
-      `${codigo}\n\n` +
-      `Esse código expira em ${OTP_EXPIRA_MIN} minutos.\n` +
-      `Se você não solicitou, ignore esta mensagem.`;
-
-    const enviado = await enviarTexto(tel, mensagem);
-    if (!enviado) {
-      return res.status(502).json({ error: 'Falha ao enviar código pelo WhatsApp' });
+    if (!checarRate(`otp:${tel}`, 3, 60000)) {
+      return res.status(429).json({ error: 'Muitas tentativas. Aguarde 1 minuto.' });
     }
 
-    res.json({ success: true, telefone: tel, expira_em_segundos: OTP_EXPIRA_MIN * 60 });
+    const usuario = await criarOuAtualizarUsuario({ telefone: tel, telefone_formatado: tel });
+    const codigo = gerarOTP();
+    await criarOTP(tel, codigo, 'whatsapp', 10);
+    await enviarOTPWhatsApp(tel, codigo, usuario.nome);
+    limparOTPsExpirados().catch(() => {});
+
+    res.json({ success: true, message: 'Código enviado via WhatsApp' });
   } catch (err) {
-    console.error('❌ /otp/solicitar:', err.message);
+    console.error('❌ /solicitar-otp:', err.message);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
 
-// ── 2. VALIDAR OTP ──────────────────────────────────────────
+// ──────────────────────────────────────────────────────────
+// 2. SOLICITAR OTP (Email — para verificar email já logado)
+// ──────────────────────────────────────────────────────────
 
-router.post('/otp/validar', async (req, res) => {
-  const c = await poolCore.connect();
+router.post('/solicitar-otp-email', autenticar, async (req, res) => {
   try {
-    const { telefone, codigo, device_id, tipo, fingerprint, nome_amigavel } = req.body;
-    if (!telefone || !codigo) return res.status(400).json({ error: 'Telefone e código obrigatórios' });
-    if (!device_id) return res.status(400).json({ error: 'device_id obrigatório' });
-    if (!['mobile', 'desktop'].includes(tipo)) {
-      return res.status(400).json({ error: 'tipo deve ser mobile ou desktop' });
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email obrigatório' });
+
+    const usuario_id = req.usuario.sub;
+    if (!checarRate(`otp-email:${usuario_id}`, 3, 60000)) {
+      return res.status(429).json({ error: 'Muitas tentativas. Aguarde 1 minuto.' });
     }
+
+    const usuario = await buscarUsuarioPorId(usuario_id);
+    const codigo = gerarOTP();
+    await criarOTP(email, codigo, 'email', 10);
+    await enviarOTPEmail(email, codigo, usuario?.nome);
+
+    res.json({ success: true, message: 'Código enviado por email' });
+  } catch (err) {
+    console.error('❌ /solicitar-otp-email:', err.message);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// ──────────────────────────────────────────────────────────
+// 3. VERIFICAR OTP + LOGIN/CADASTRO
+// ──────────────────────────────────────────────────────────
+
+router.post('/verificar-otp', async (req, res) => {
+  try {
+    const { telefone, codigo, device_fingerprint } = req.body;
+    if (!telefone || !codigo) return res.status(400).json({ error: 'Telefone e código obrigatórios' });
 
     const tel = formatarTelefone(telefone);
-
-    await c.query('BEGIN');
-
-    // Busca OTP válido
-    const r = await c.query(
-      `SELECT id, codigo, tentativas FROM otp_tokens
-       WHERE telefone = $1 AND usado = FALSE AND expira_em > NOW()
-       ORDER BY criado_em DESC LIMIT 1`,
-      [tel]
-    );
-
-    if (!r.rows.length) {
-      await c.query('ROLLBACK');
-      return res.status(400).json({ error: 'Código expirado ou não solicitado' });
+    if (!checarRate(`verify:${tel}`, 5, 60000)) {
+      return res.status(429).json({ error: 'Muitas tentativas. Aguarde 1 minuto.' });
     }
 
-    const otp = r.rows[0];
+    const valido = await validarOTP(tel, codigo);
+    if (!valido) return res.status(401).json({ error: 'Código inválido ou expirado' });
 
-    if (otp.tentativas >= OTP_MAX_TENTATIVAS) {
-      await c.query(`UPDATE otp_tokens SET usado = TRUE WHERE id = $1`, [otp.id]);
-      await c.query('COMMIT');
-      return res.status(400).json({ error: 'Muitas tentativas. Solicite um novo código.' });
-    }
+    const usuario = await buscarUsuarioPorTelefone(tel);
+    if (!usuario) return res.status(404).json({ error: 'Usuário não encontrado' });
 
-    if (String(codigo).trim() !== otp.codigo) {
-      await c.query(`UPDATE otp_tokens SET tentativas = tentativas + 1 WHERE id = $1`, [otp.id]);
-      await c.query('COMMIT');
-      return res.status(400).json({ error: 'Código incorreto' });
-    }
+    const ua = req.headers['user-agent'] || '';
+    const tipo = detectarTipo(ua);
+    const nome_amigavel = nomearDispositivo(ua);
+    const device_id = device_fingerprint?.device_id || uuidv4();
+    const ip = getIP(req);
 
-    // OTP válido — marca como usado
-    await c.query(`UPDATE otp_tokens SET usado = TRUE WHERE id = $1`, [otp.id]);
+    const dispositivo = await upsertDispositivo({
+      usuario_id: usuario.id, tipo, device_id,
+      fingerprint: device_fingerprint || { ua: ua.substring(0, 200) },
+      nome_amigavel, ip,
+    });
 
-    // Cria ou recupera usuário
-    let usuario;
-    const u = await c.query(`SELECT * FROM usuarios WHERE telefone = $1`, [tel]);
-    if (u.rows.length) {
-      usuario = u.rows[0];
-    } else {
-      const novo = await c.query(
-        `INSERT INTO usuarios (telefone, telefone_formatado)
-         VALUES ($1, $1) RETURNING *`,
-        [tel]
-      );
-      usuario = novo.rows[0];
-    }
+    const access_token = gerarAccessToken(usuario);
+    const refresh_token = uuidv4();
 
-    // Upsert dispositivo
-    const dev = await c.query(
-      `INSERT INTO dispositivos (usuario_id, tipo, device_id, fingerprint, nome_amigavel, ip_primeiro_acesso, ultimo_acesso, ativo)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW(), TRUE)
-       ON CONFLICT (usuario_id, tipo) DO UPDATE SET
-         device_id = EXCLUDED.device_id,
-         fingerprint = EXCLUDED.fingerprint,
-         nome_amigavel = COALESCE(EXCLUDED.nome_amigavel, dispositivos.nome_amigavel),
-         ultimo_acesso = NOW(),
-         ativo = TRUE
-       RETURNING id`,
-      [usuario.id, tipo, device_id, fingerprint || null, nome_amigavel || null, req.ip || null]
-    );
-    const dispositivoId = dev.rows[0].id;
+    await criarSessao({
+      usuario_id: usuario.id,
+      device_id: dispositivo.id,
+      refresh_token, ip,
+      user_agent: ua.substring(0, 500),
+      diasExpiracao: 365,
+    });
 
-    // Cria sessão (refresh token)
-    const refreshToken = gerarRefreshToken();
-    const expiraRefresh = dataDaqui(REFRESH_DIAS);
-
-    await c.query(
-      `INSERT INTO sessoes (usuario_id, device_id, refresh_token, ip, user_agent, expira_em)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [usuario.id, dispositivoId, refreshToken, req.ip || null, req.headers['user-agent'] || null, expiraRefresh]
-    );
-
-    const accessToken = gerarAccessToken(usuario);
-
-    await c.query('COMMIT');
+    const novo_usuario = !usuario.nome;
+    console.log(`✅ OTP Login: ${tel} | ${tipo} | ${nome_amigavel} | novo: ${novo_usuario}`);
 
     res.json({
       success: true,
-      access_token: accessToken,
-      refresh_token: refreshToken,
-      usuario: {
-        id: usuario.id,
-        telefone: usuario.telefone,
-        nome: usuario.nome,
-        email: usuario.email,
-        foto_url: usuario.foto_url,
-        plano: usuario.plano,
-        sementes: usuario.sementes,
-        estagio_arvore: usuario.estagio_arvore,
-        perfil_teste: usuario.perfil_teste,
-      },
+      access_token,
+      refresh_token,
+      expires_in: 900,
+      usuario: resUsuario(usuario),
+      dispositivo: { tipo, nome: nome_amigavel },
+      novo_usuario,
     });
   } catch (err) {
-    await c.query('ROLLBACK').catch(() => {});
-    console.error('❌ /otp/validar:', err.message);
+    console.error('❌ /verificar-otp:', err.message);
     res.status(500).json({ error: 'Erro interno' });
-  } finally {
-    c.release();
   }
 });
 
-// ── 3. REFRESH ──────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────
+// 4. VERIFICAR OTP DE EMAIL
+// ──────────────────────────────────────────────────────────
 
-router.post('/refresh', async (req, res) => {
+router.post('/verificar-otp-email', autenticar, async (req, res) => {
+  try {
+    const { email, codigo } = req.body;
+    if (!email || !codigo) return res.status(400).json({ error: 'Email e código obrigatórios' });
+
+    const valido = await validarOTP(email, codigo);
+    if (!valido) return res.status(401).json({ error: 'Código inválido ou expirado' });
+
+    const usuario = await atualizarUsuario(req.usuario.sub, {
+      email: email.toLowerCase().trim(),
+      email_verificado: true,
+    });
+
+    res.json({ success: true, usuario: resUsuario(usuario) });
+  } catch (err) {
+    console.error('❌ /verificar-otp-email:', err.message);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// ──────────────────────────────────────────────────────────
+// 5. RENOVAR ACCESS TOKEN
+// ──────────────────────────────────────────────────────────
+
+router.post('/renovar', async (req, res) => {
   try {
     const { refresh_token } = req.body;
     if (!refresh_token) return res.status(400).json({ error: 'refresh_token obrigatório' });
 
-    const r = await poolCore.query(
-      `SELECT s.*, u.id AS uid, u.telefone, u.nome
-         FROM sessoes s JOIN usuarios u ON u.id = s.usuario_id
-        WHERE s.refresh_token = $1 AND s.revogada = FALSE AND s.expira_em > NOW()`,
-      [refresh_token]
-    );
+    const sessao = await buscarSessaoPorRefreshToken(refresh_token);
+    if (!sessao) return res.status(401).json({ error: 'Sessão inválida ou expirada', code: 'SESSION_EXPIRED' });
 
-    if (!r.rows.length) return res.status(401).json({ error: 'Refresh token inválido ou expirado' });
+    await renovarSessao(refresh_token);
 
-    const s = r.rows[0];
-    const usuario = { id: s.uid, telefone: s.telefone, nome: s.nome };
-    const accessToken = gerarAccessToken(usuario);
+    const access_token = gerarAccessToken({
+      id: sessao.uid,
+      telefone_formatado: sessao.telefone_formatado,
+      plano: sessao.plano,
+      nome: sessao.nome,
+    });
 
-    await poolCore.query(`UPDATE sessoes SET ultimo_uso = NOW() WHERE id = $1`, [s.id]);
-
-    res.json({ success: true, access_token: accessToken });
+    res.json({
+      success: true,
+      access_token,
+      expires_in: 900,
+      usuario: {
+        id: sessao.uid,
+        nome: sessao.nome,
+        email: sessao.email,
+        telefone_formatado: sessao.telefone_formatado,
+        plano: sessao.plano,
+        perfil_teste: sessao.perfil_teste,
+        percentual_prosperidade: sessao.percentual_prosperidade,
+        sementes: sessao.sementes,
+        estagio_arvore: sessao.estagio_arvore,
+      },
+    });
   } catch (err) {
-    console.error('❌ /refresh:', err.message);
+    console.error('❌ /renovar:', err.message);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
 
-// ── 4. LOGOUT ───────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────
+// 6. COMPLETAR / ATUALIZAR PERFIL
+// ──────────────────────────────────────────────────────────
+
+router.put('/perfil', autenticar, async (req, res) => {
+  try {
+    const { nome, email, senha } = req.body;
+    const campos = {};
+
+    if (nome) campos.nome = nome.trim();
+    if (email) campos.email = email.trim().toLowerCase();
+    if (senha) {
+      if (senha.length < 8) return res.status(400).json({ error: 'Senha mínima: 8 caracteres' });
+      campos.senha_hash = await bcrypt.hash(senha, 12);
+    }
+
+    if (!Object.keys(campos).length) return res.status(400).json({ error: 'Nada para atualizar' });
+    if (campos.email) campos.email_verificado = false;
+
+    const usuario = await atualizarUsuario(req.usuario.sub, campos);
+    res.json({ success: true, usuario: resUsuario(usuario) });
+  } catch (err) {
+    console.error('❌ /perfil:', err.message);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// ──────────────────────────────────────────────────────────
+// 7. LOGIN COM SENHA
+// ──────────────────────────────────────────────────────────
+
+router.post('/login-senha', async (req, res) => {
+  try {
+    const { identificador, telefone, senha, device_fingerprint } = req.body;
+
+    const id = (identificador || telefone || '').trim();
+    if (!id || !senha) {
+      return res.status(400).json({ error: 'Informe seu WhatsApp ou e-mail e sua senha.' });
+    }
+
+    if (!checarRate(`senha:${id}`, 5, 120000)) {
+      return res.status(429).json({ error: 'Muitas tentativas. Aguarde 2 minutos.' });
+    }
+
+    const usuario = await buscarUsuarioPorIdentificador(id);
+
+    if (!usuario || !usuario.senha_hash) {
+      return res.status(401).json({ error: 'Dados incorretos. Verifique seu WhatsApp/e-mail e a senha.' });
+    }
+
+    const ok = await bcrypt.compare(senha, usuario.senha_hash);
+    if (!ok) {
+      return res.status(401).json({ error: 'Dados incorretos. Verifique seu WhatsApp/e-mail e a senha.' });
+    }
+
+    const ua = req.headers['user-agent'] || '';
+    const tipo = detectarTipo(ua);
+    const device_id = device_fingerprint?.device_id || uuidv4();
+    const ip = getIP(req);
+
+    // Limite 1 mobile + 1 desktop
+    const dispositivosAtivos = await listarDispositivosUsuario(usuario.id);
+    const mesmotipo = dispositivosAtivos.filter(d => d.ativo && d.tipo === tipo);
+    if (mesmotipo.length > 0 && mesmotipo[0].device_id !== device_id) {
+      await revogarDispositivo(mesmotipo[0].id);
+    }
+
+    const dispositivo = await upsertDispositivo({
+      usuario_id: usuario.id, tipo, device_id,
+      fingerprint: device_fingerprint || { ua: ua.substring(0, 200) },
+      nome_amigavel: nomearDispositivo(ua), ip,
+    });
+
+    const access_token = gerarAccessToken(usuario);
+    const refresh_token = uuidv4();
+
+    await criarSessao({
+      usuario_id: usuario.id,
+      device_id: dispositivo.id,
+      refresh_token, ip,
+      user_agent: ua.substring(0, 500),
+      diasExpiracao: 365,
+    });
+
+    console.log(`✅ Login senha: ${id} | ${tipo} | ${nomearDispositivo(ua)}`);
+
+    res.json({
+      success: true,
+      access_token,
+      refresh_token,
+      expires_in: 900,
+      usuario: resUsuario(usuario),
+    });
+  } catch (err) {
+    console.error('❌ /login-senha:', err.message);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// ──────────────────────────────────────────────────────────
+// 8. ESQUECI SENHA — envia link pelo WhatsApp
+// ──────────────────────────────────────────────────────────
+
+router.post('/esqueci-senha', async (req, res) => {
+  try {
+    const { identificador } = req.body;
+    if (!identificador) return res.status(400).json({ error: 'Identificador obrigatório' });
+
+    if (!checarRate(`reset:${identificador}`, 3, 300000)) {
+      return res.status(429).json({ error: 'Muitas tentativas. Aguarde 5 minutos.' });
+    }
+
+    const usuario = await buscarUsuarioPorIdentificador(identificador.trim());
+
+    // Resposta sempre genérica por segurança
+    if (!usuario || !usuario.telefone_formatado) {
+      return res.json({ success: true });
+    }
+
+    const resetToken = uuidv4();
+    const expira = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+    try {
+      await poolCore.query(
+        `UPDATE usuarios SET reset_token=$1, reset_token_expira=$2, atualizado_em=NOW() WHERE id=$3`,
+        [resetToken, expira, usuario.id]
+      );
+    } catch (_) {
+      console.warn('⚠️  Coluna reset_token não encontrada.');
+      return res.json({ success: true });
+    }
+
+    const baseUrl = process.env.APP_URL || 'https://www.vidamagica.com.br';
+    const link = `${baseUrl}/auth?token=${resetToken}`;
+    const nome = usuario.nome ? usuario.nome.split(' ')[0] : 'Olá';
+    const mensagem = `${nome}! 🔐\n\nVocê solicitou a redefinição de senha do *Vida Mágica*.\n\nClique no link para criar uma nova senha:\n\n${link}\n\n_Válido por 30 minutos. Se não foi você, ignore._\n\n— Vida Mágica`;
+
+    try {
+      await enviarWhatsAppDireto(usuario.telefone_formatado, mensagem);
+    } catch (e) {
+      console.error('❌ Erro ao enviar reset:', e.message);
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ /esqueci-senha:', err.message);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// ──────────────────────────────────────────────────────────
+// 9. REDEFINIR SENHA (via token do link)
+// ──────────────────────────────────────────────────────────
+
+router.post('/redefinir-senha', async (req, res) => {
+  try {
+    const { token, nova_senha } = req.body;
+    if (!token || !nova_senha) return res.status(400).json({ error: 'Token e nova senha obrigatórios' });
+    if (nova_senha.length < 8) return res.status(400).json({ error: 'Senha mínima: 8 caracteres' });
+
+    let usuario = null;
+    try {
+      const r = await poolCore.query(
+        `SELECT * FROM usuarios WHERE reset_token=$1 AND reset_token_expira > NOW()`,
+        [token]
+      );
+      usuario = r.rows[0] || null;
+    } catch (_) {
+      return res.status(500).json({ error: 'Erro interno' });
+    }
+
+    if (!usuario) return res.status(401).json({ error: 'Link inválido ou expirado. Solicite um novo.' });
+
+    const senha_hash = await bcrypt.hash(nova_senha, 12);
+    const updated = await atualizarUsuario(usuario.id, { senha_hash });
+
+    await poolCore.query(
+      `UPDATE usuarios SET reset_token=NULL, reset_token_expira=NULL WHERE id=$1`,
+      [usuario.id]
+    );
+
+    await revogarTodasSessoesUsuario(usuario.id);
+
+    const ua = req.headers['user-agent'] || '';
+    const tipo = detectarTipo(ua);
+    const device_id = uuidv4();
+    const ip = getIP(req);
+
+    const dispositivo = await upsertDispositivo({
+      usuario_id: usuario.id, tipo, device_id,
+      fingerprint: { ua: ua.substring(0, 200) },
+      nome_amigavel: nomearDispositivo(ua), ip,
+    });
+
+    const access_token = gerarAccessToken(updated);
+    const refresh_token = uuidv4();
+
+    await criarSessao({
+      usuario_id: usuario.id,
+      device_id: dispositivo.id,
+      refresh_token, ip,
+      user_agent: ua.substring(0, 500),
+      diasExpiracao: 365,
+    });
+
+    res.json({ success: true, access_token, refresh_token, expires_in: 900, usuario: resUsuario(updated) });
+  } catch (err) {
+    console.error('❌ /redefinir-senha:', err.message);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// ──────────────────────────────────────────────────────────
+// 10. LOGOUT
+// ──────────────────────────────────────────────────────────
 
 router.post('/logout', async (req, res) => {
   try {
     const { refresh_token } = req.body;
-    if (!refresh_token) return res.status(400).json({ error: 'refresh_token obrigatório' });
-    await poolCore.query(
-      `UPDATE sessoes SET revogada = TRUE WHERE refresh_token = $1`,
-      [refresh_token]
-    );
+    if (refresh_token) await revogarSessao(refresh_token);
     res.json({ success: true });
   } catch (err) {
-    console.error('❌ /logout:', err.message);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
 
-// ── 5. ME (dados do usuário logado) ─────────────────────────
-
-router.get('/me', autenticar, async (req, res) => {
+router.post('/logout-todos', autenticar, async (req, res) => {
   try {
-    const r = await poolCore.query(
-      `SELECT id, telefone, nome, email, foto_url, plano, plano_expira_em,
-              perfil_teste, percentual_prosperidade, sementes, estagio_arvore,
-              criado_em
-         FROM usuarios WHERE id = $1`,
-      [req.usuario.sub]
-    );
-    if (!r.rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
-    res.json({ usuario: r.rows[0] });
+    await revogarTodasSessoesUsuario(req.usuario.sub);
+    res.json({ success: true });
   } catch (err) {
-    console.error('❌ /me:', err.message);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
 
-// ── 6. ATUALIZAR PERFIL ─────────────────────────────────────
-
-router.put('/me', autenticar, async (req, res) => {
-  try {
-    const { nome, email, foto_url } = req.body;
-    const r = await poolCore.query(
-      `UPDATE usuarios SET
-         nome = COALESCE($1, nome),
-         email = COALESCE($2, email),
-         foto_url = COALESCE($3, foto_url),
-         atualizado_em = NOW()
-       WHERE id = $4
-       RETURNING id, telefone, nome, email, foto_url, plano, sementes, estagio_arvore`,
-      [nome ?? null, email ?? null, foto_url ?? null, req.usuario.sub]
-    );
-    res.json({ success: true, usuario: r.rows[0] });
-  } catch (err) {
-    console.error('❌ PUT /me:', err.message);
-    res.status(500).json({ error: 'Erro interno' });
-  }
-});
-
-// ── 7. LISTAR DISPOSITIVOS ──────────────────────────────────
+// ──────────────────────────────────────────────────────────
+// 12. LISTAR DISPOSITIVOS
+// ──────────────────────────────────────────────────────────
 
 router.get('/dispositivos', autenticar, async (req, res) => {
   try {
-    const r = await poolCore.query(
-      `SELECT id, tipo, nome_amigavel, ip_primeiro_acesso, ultimo_acesso, ativo, criado_em
-         FROM dispositivos WHERE usuario_id = $1 ORDER BY ultimo_acesso DESC`,
-      [req.usuario.sub]
-    );
-    res.json({ dispositivos: r.rows });
+    const lista = await listarDispositivosUsuario(req.usuario.sub);
+    res.json(lista.map(d => ({
+      id: d.id,
+      tipo: d.tipo,
+      nome: d.nome_amigavel,
+      ultimo_acesso: d.ultimo_acesso,
+      ativo: d.ativo,
+    })));
   } catch (err) {
-    console.error('❌ /dispositivos:', err.message);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
 
-// ── 8. REVOGAR DISPOSITIVO ──────────────────────────────────
-
 router.delete('/dispositivos/:id', autenticar, async (req, res) => {
   try {
-    await poolCore.query(
-      `UPDATE dispositivos SET ativo = FALSE WHERE id = $1 AND usuario_id = $2`,
-      [req.params.id, req.usuario.sub]
-    );
-    await poolCore.query(
-      `UPDATE sessoes SET revogada = TRUE WHERE device_id = $1 AND usuario_id = $2`,
-      [req.params.id, req.usuario.sub]
-    );
+    const lista = await listarDispositivosUsuario(req.usuario.sub);
+    const disp = lista.find(d => d.id === req.params.id);
+    if (!disp) return res.status(404).json({ error: 'Dispositivo não encontrado' });
+    await revogarDispositivo(disp.id);
     res.json({ success: true });
   } catch (err) {
-    console.error('❌ DELETE /dispositivos:', err.message);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// ──────────────────────────────────────────────────────────
+// 14. ME
+// ──────────────────────────────────────────────────────────
+
+router.get('/me', autenticar, async (req, res) => {
+  try {
+    const usuario = await buscarUsuarioPorId(req.usuario.sub);
+    if (!usuario) return res.status(404).json({ error: 'Usuário não encontrado' });
+    res.json(resUsuario(usuario));
+  } catch (err) {
     res.status(500).json({ error: 'Erro interno' });
   }
 });
