@@ -75,6 +75,13 @@ async function initCore() {
     `);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_usuarios_telefone ON usuarios(telefone)`);
 
+    // Migrations idempotentes — caso a tabela já exista sem essas colunas
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS email_verificado BOOLEAN DEFAULT FALSE`);
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_hash TEXT`);
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_url TEXT`);
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS reset_token TEXT`);
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS reset_token_expira TIMESTAMPTZ`);
+
     await c.query(`
       CREATE TABLE IF NOT EXISTS otp_tokens (
         id SERIAL PRIMARY KEY,
@@ -281,6 +288,18 @@ async function initCore() {
         criado_em TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+
+    // Anti-duplicata do scheduler do Clube — controla se já enviou D-3, D-1, D+5 etc.
+    // Vive aqui no Core porque é parte do ciclo de vida da assinatura (membros).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS mensagens_enviadas (
+        id SERIAL PRIMARY KEY,
+        subscription_id VARCHAR(100),
+        chave VARCHAR(80),
+        enviado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_msg_env_sub ON mensagens_enviadas(subscription_id, chave, enviado_em)`);
 
     await c.query(`
       CREATE TABLE IF NOT EXISTS sementes (
@@ -499,17 +518,6 @@ async function initComunicacao() {
       )
     `);
 
-    // Anti-duplicata por âncora (subscription_id + chave, janela de 35d)
-    await c.query(`
-      CREATE TABLE IF NOT EXISTS mensagens_enviadas (
-        id SERIAL PRIMARY KEY,
-        subscription_id VARCHAR(100),
-        chave VARCHAR(80),
-        enviado_em TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    await c.query(`CREATE INDEX IF NOT EXISTS idx_msg_env_sub ON mensagens_enviadas(subscription_id, chave, enviado_em)`);
-
     // Config do gateway
     await c.query(`
       CREATE TABLE IF NOT EXISTS gateway_config (
@@ -524,20 +532,6 @@ async function initComunicacao() {
         ('pausado','false')
       ON CONFLICT (chave) DO NOTHING
     `);
-
-    // Push notifications da aluna
-    await c.query(`
-      CREATE TABLE IF NOT EXISTS push_subscriptions (
-        id SERIAL PRIMARY KEY,
-        usuario_id UUID NOT NULL,
-        endpoint TEXT NOT NULL,
-        p256dh TEXT NOT NULL,
-        auth TEXT NOT NULL,
-        criado_em TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE(usuario_id, endpoint)
-      )
-    `);
-    await c.query(`CREATE INDEX IF NOT EXISTS idx_push_usuario ON push_subscriptions(usuario_id)`);
 
     // CRM — Sessão de Diagnóstico
     await c.query(`
