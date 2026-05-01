@@ -586,13 +586,25 @@ routerAtendimento.post('/mensagem', async (req, res) => {
     if (!convResult.rows.length) return res.status(404).json({ error: 'Conversa não encontrada' });
     const conv = convResult.rows[0];
 
-    // 1. Marca mensagens pendentes da aluna como lidas
-    const lidas = await poolMensagens.query(
-      `UPDATE chat_mensagens SET lida=TRUE, lida_em=NOW()
-       WHERE conversa_id=$1 AND remetente='aluna' AND lida=FALSE
-       RETURNING id`,
-      [conversa_id]
-    );
+    // 1. Marca mensagens pendentes da aluna como lidas — REGRA DE NEGÓCIO:
+    //    - Chat 'suellen' → SÓ a Suellen marca como lida (Equipe NÃO marca, é encaminhamento interno)
+    //    - Chat 'suporte' → tanto Suellen quanto Equipe podem marcar (qualquer um do suporte)
+    //    Em ambos os casos, marcar como lida acontece na hora em que a resposta é enviada
+    //    (não quando a conversa é só aberta).
+    const podeMarcarLida =
+      (conv.tipo === 'suellen' && ident === 'suellen') ||
+      (conv.tipo === 'suporte');
+
+    let lidasIds = [];
+    if (podeMarcarLida) {
+      const lidas = await poolMensagens.query(
+        `UPDATE chat_mensagens SET lida=TRUE, lida_em=NOW()
+         WHERE conversa_id=$1 AND remetente='aluna' AND lida=FALSE
+         RETURNING id`,
+        [conversa_id]
+      );
+      lidasIds = lidas.rows.map(x => x.id);
+    }
 
     // 2. Reply denormalizado
     let replyDenorm = { conteudo: null, remetente: null, identidade: null };
@@ -620,19 +632,21 @@ routerAtendimento.post('/mensagem', async (req, res) => {
                   : (tipo === 'imagem' ? '📷 Imagem' : '🎤 Áudio');
 
     // 4. Atualiza conversa
-    // ⚠️ TIMER PRIORITÁRIO: só inicia/reseta quando IDENTIDADE='suellen'
+    // ⚠️ TIMER PRIORITÁRIO: só inicia/reseta quando IDENTIDADE='suellen' (no chat suellen)
+    // ⚠️ nao_lidas_suellen=0 só quando alguém autorizado marcou como lida
     let updateExtra = '';
     let updateParams = [preview, conversa_id];
     let timer_resetado = false;
-    if (ident === 'suellen' && conv.plano_chat === 'prioritario') {
+    if (ident === 'suellen' && conv.plano_chat === 'prioritario' && conv.tipo === 'suellen') {
       const novaExpira = new Date(Date.now() + 24 * 60 * 60 * 1000);
       updateExtra = `, prioritario_expira_em=$3`;
       updateParams.push(novaExpira);
       timer_resetado = true;
     }
+    const setNaoLidasSuellen = podeMarcarLida ? ', nao_lidas_suellen=0' : '';
     await poolMensagens.query(
       `UPDATE chat_conversas SET ultima_mensagem_em=NOW(), ultima_preview=$1,
-         nao_lidas_aluna=nao_lidas_aluna+1, nao_lidas_suellen=0, atualizado_em=NOW()
+         nao_lidas_aluna=nao_lidas_aluna+1${setNaoLidasSuellen}, atualizado_em=NOW()
          ${updateExtra}
        WHERE id=$2`,
       updateParams
@@ -640,18 +654,18 @@ routerAtendimento.post('/mensagem', async (req, res) => {
 
     // 5. Eventos WS
     emitirParaAluna(conv.usuario_id, 'nova_mensagem', { mensagem: msg, conversa_id });
-    if (lidas.rows.length > 0) {
+    if (lidasIds.length > 0) {
       emitirParaAluna(conv.usuario_id, 'mensagens_lidas', {
-        conversa_id, ids: lidas.rows.map(x => x.id), por: 'suellen',
+        conversa_id, ids: lidasIds, por: 'suellen',
+      });
+      emitirParaSuellen('mensagens_lidas', {
+        conversa_id, ids: lidasIds, por: 'suellen',
       });
     }
-    emitirParaSuellen('mensagens_lidas', {
-      conversa_id, ids: lidas.rows.map(x => x.id), por: 'suellen',
-    });
 
     res.json({
       mensagem: msg,
-      marcadas_lidas: lidas.rows.length,
+      marcadas_lidas: lidasIds.length,
       timer_resetado,
     });
   } catch (err) {
