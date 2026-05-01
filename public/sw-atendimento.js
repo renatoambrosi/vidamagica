@@ -1,6 +1,5 @@
 /* ── Service Worker — Atendimento Vida Mágica ──
-   Notificações push para o painel /atendimento.
-   Substitui o antigo sw suellen.js (que tinha espaço no nome — bug). */
+   Notificações push para o painel /atendimento. */
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -35,13 +34,11 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Se já tem aba aberta no /atendimento, foca nela
       for (const client of clientList) {
         if (client.url.includes('/atendimento') && 'focus' in client) {
           return client.focus();
         }
       }
-      // Senão, abre nova
       if (clients.openWindow) return clients.openWindow(url);
     })
   );
