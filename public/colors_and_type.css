@@ -8,7 +8,7 @@
 /* Open Sans - Regular */
 @font-face {
   font-family: 'Open Sans';
-  src: url('fonts/OpenSans-Regular.ttf') format('truetype');
+  src: url('/fonts/OpenSans-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -16,7 +16,7 @@
 
 @font-face {
   font-family: 'Open Sans';
-  src: url('fonts/OpenSans-Italic.ttf') format('truetype');
+  src: url('/fonts/OpenSans-Italic.ttf') format('truetype');
   font-weight: 400;
   font-style: italic;
   font-display: swap;
@@ -25,7 +25,7 @@
 /* Open Sans - Light */
 @font-face {
   font-family: 'Open Sans';
-  src: url('fonts/OpenSans-Light.ttf') format('truetype');
+  src: url('/fonts/OpenSans-Light.ttf') format('truetype');
   font-weight: 300;
   font-style: normal;
   font-display: swap;
@@ -33,7 +33,7 @@
 
 @font-face {
   font-family: 'Open Sans';
-  src: url('fonts/OpenSans-LightItalic.ttf') format('truetype');
+  src: url('/fonts/OpenSans-LightItalic.ttf') format('truetype');
   font-weight: 300;
   font-style: italic;
   font-display: swap;
@@ -42,7 +42,7 @@
 /* Open Sans - Medium */
 @font-face {
   font-family: 'Open Sans';
-  src: url('fonts/OpenSans-Medium.ttf') format('truetype');
+  src: url('/fonts/OpenSans-Medium.ttf') format('truetype');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -50,7 +50,7 @@
 
 @font-face {
   font-family: 'Open Sans';
-  src: url('fonts/OpenSans-MediumItalic.ttf') format('truetype');
+  src: url('/fonts/OpenSans-MediumItalic.ttf') format('truetype');
   font-weight: 500;
   font-style: italic;
   font-display: swap;
@@ -59,7 +59,7 @@
 /* Open Sans - SemiBold */
 @font-face {
   font-family: 'Open Sans';
-  src: url('fonts/OpenSans-SemiBold.ttf') format('truetype');
+  src: url('/fonts/OpenSans-SemiBold.ttf') format('truetype');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -67,7 +67,7 @@
 
 @font-face {
   font-family: 'Open Sans';
-  src: url('fonts/OpenSans-SemiBoldItalic.ttf') format('truetype');
+  src: url('/fonts/OpenSans-SemiBoldItalic.ttf') format('truetype');
   font-weight: 600;
   font-style: italic;
   font-display: swap;
@@ -76,7 +76,7 @@
 /* Open Sans - Bold */
 @font-face {
   font-family: 'Open Sans';
-  src: url('fonts/OpenSans-Bold.ttf') format('truetype');
+  src: url('/fonts/OpenSans-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -84,7 +84,7 @@
 
 @font-face {
   font-family: 'Open Sans';
-  src: url('fonts/OpenSans-BoldItalic.ttf') format('truetype');
+  src: url('/fonts/OpenSans-BoldItalic.ttf') format('truetype');
   font-weight: 700;
   font-style: italic;
   font-display: swap;
@@ -93,7 +93,7 @@
 /* Open Sans - ExtraBold */
 @font-face {
   font-family: 'Open Sans';
-  src: url('fonts/OpenSans-ExtraBold.ttf') format('truetype');
+  src: url('/fonts/OpenSans-ExtraBold.ttf') format('truetype');
   font-weight: 800;
   font-style: normal;
   font-display: swap;
@@ -101,7 +101,7 @@
 
 @font-face {
   font-family: 'Open Sans';
-  src: url('fonts/OpenSans-ExtraBoldItalic.ttf') format('truetype');
+  src: url('/fonts/OpenSans-ExtraBoldItalic.ttf') format('truetype');
   font-weight: 800;
   font-style: italic;
   font-display: swap;
