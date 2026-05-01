@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Migração de Dados — Admin</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0F0E0B; color: #F0EAD6; min-height: 100vh; padding: 20px; }
+    .container { max-width: 720px; margin: 0 auto; }
+    h1 { color: #C9A84C; font-weight: 300; letter-spacing: 0.04em; margin-bottom: 8px; }
+    .sub { color: #8A8070; font-size: 14px; margin-bottom: 24px; }
+    .alerta { background: rgba(224,85,85,0.08); border: 1px solid rgba(224,85,85,0.3); color: #F09090; padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; line-height: 1.5; }
+    .card { background: #1A1813; border: 1px solid rgba(201,168,76,0.15); border-radius: 12px; padding: 20px; margin-bottom: 14px; }
+    .card h2 { color: #C9A84C; font-size: 16px; font-weight: 500; margin-bottom: 14px; }
+    button { background: linear-gradient(135deg, #8B6914, #C9A84C); color: #0F0E0B; border: none; padding: 11px 22px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 8px; margin-bottom: 6px; }
+    button:hover { opacity: 0.85; }
+    button.secundario { background: #1A1813; border: 1px solid rgba(201,168,76,0.3); color: #C9A84C; }
+    button.tudo { background: linear-gradient(135deg, #5A9E6F, #8BA75F); padding: 14px 30px; font-size: 14px; }
+    pre { background: #0F0E0B; border: 1px solid rgba(201,168,76,0.1); border-radius: 8px; padding: 12px; font-size: 12px; color: #8BA75F; max-height: 400px; overflow: auto; white-space: pre-wrap; word-break: break-word; margin-top: 12px; }
+    pre.err { color: #E05555; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+    th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid rgba(201,168,76,0.1); }
+    th { color: #8A8070; font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .num { font-family: monospace; color: #C9A84C; }
+    .num.zero { color: #8A8070; }
+    .num.ok { color: #8BA75F; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Migração de Dados</h1>
+  <p class="sub">Mover dados do banco antigo (Core) para o banco novo (Comunicacao)</p>
+
+  <div class="alerta">
+    <strong>⚠️ Atenção</strong><br>
+    Esta página deve ser usada UMA vez para mover seus dados existentes (preços, depoimentos, feed, config) do banco Core para o Comunicacao.<br>
+    Após confirmar que tudo migrou, esta página pode ser ignorada.
+  </div>
+
+  <!-- STATUS -->
+  <div class="card">
+    <h2>📊 Status — quantas linhas em cada banco</h2>
+    <button class="secundario" onclick="verStatus()">Verificar status</button>
+    <table id="tabStatus" style="display:none">
+      <thead><tr><th>Tabela</th><th>Core (origem)</th><th>Comunicacao (destino)</th></tr></thead>
+      <tbody id="statusBody"></tbody>
+    </table>
+  </div>
+
+  <!-- MIGRAR TUDO -->
+  <div class="card">
+    <h2>🚀 Migrar tudo de uma vez</h2>
+    <p style="font-size:13px;color:#8A8070;margin-bottom:14px">Recomendado. Migra preços + depoimentos + feed + config em sequência.</p>
+    <button class="tudo" onclick="migrarTudo()">Migrar TUDO agora</button>
+    <pre id="rTudo" style="display:none"></pre>
+  </div>
+
+  <!-- INDIVIDUAL -->
+  <div class="card">
+    <h2>🔧 Migrar individual (avançado)</h2>
+    <p style="font-size:13px;color:#8A8070;margin-bottom:14px">Use se precisar repetir alguma migração específica.</p>
+    <button onclick="migrar('precos')">Migrar Preços</button>
+    <button onclick="migrar('depoimentos')">Migrar Depoimentos</button>
+    <button onclick="migrar('feed')">Migrar Feed</button>
+    <button onclick="migrar('config')">Migrar Config</button>
+    <pre id="rIndividual" style="display:none"></pre>
+  </div>
+</div>
+
+<script>
+  async function api(path, method = 'POST') {
+    const r = await fetch(path, { method });
+    if (r.status === 401) {
+      // força browser pedir Basic Auth
+      window.location.reload();
+      return;
+    }
+    const data = await r.json().catch(() => ({}));
+    return { status: r.status, ok: r.ok, data };
+  }
+
+  function show(id, data, isErr) {
+    const el = document.getElementById(id);
+    el.style.display = 'block';
+    el.className = isErr ? 'err' : '';
+    el.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+  }
+
+  async function verStatus() {
+    const r = await fetch('/api/admin/migracao/status');
+    if (r.status === 401) { window.location.reload(); return; }
+    const data = await r.json();
+    const body = document.getElementById('statusBody');
+    body.innerHTML = '';
+    for (const [tabela, val] of Object.entries(data.status || {})) {
+      const tr = document.createElement('tr');
+      const coreClass = val.core < 0 ? 'zero' : (val.core === 0 ? 'zero' : 'ok');
+      const comClass = val.comunicacao < 0 ? 'zero' : (val.comunicacao === 0 ? 'zero' : 'ok');
+      tr.innerHTML = `
+        <td>${tabela}</td>
+        <td class="num ${coreClass}">${val.core < 0 ? '— (não existe)' : val.core}</td>
+        <td class="num ${comClass}">${val.comunicacao < 0 ? '— (não existe)' : val.comunicacao}</td>
+      `;
+      body.appendChild(tr);
+    }
+    document.getElementById('tabStatus').style.display = 'table';
+  }
+
+  async function migrarTudo() {
+    if (!confirm('Migrar TODOS os dados (preços, depoimentos, feed, config)? Os dados existentes no destino serão sobrescritos.')) return;
+    show('rTudo', '⏳ Migrando...');
+    const r = await api('/api/admin/migracao/tudo');
+    show('rTudo', r.data, !r.ok);
+    verStatus();
+  }
+
+  async function migrar(qual) {
+    if (!confirm(`Migrar ${qual}? Os dados existentes no destino serão sobrescritos.`)) return;
+    show('rIndividual', '⏳ Migrando ' + qual + '...');
+    const r = await api('/api/admin/migracao/' + qual);
+    show('rIndividual', r.data, !r.ok);
+    verStatus();
+  }
+
+  // Carrega status ao abrir
+  verStatus();
+</script>
+</body>
+</html>
