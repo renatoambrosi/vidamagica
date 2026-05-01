@@ -147,7 +147,6 @@ document.getElementById('menu-logout')?.addEventListener('click',  async () => {
   const refresh = VmSession.getRefresh();
   try { await fetch(`${API}/api/auth/logout`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({refresh_token:refresh}) }); } catch {}
   VmSession.destruir();
-  try { localStorage.removeItem('vm_u'); } catch {}
   window.location.replace('/');
 });
 
