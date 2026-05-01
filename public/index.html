@@ -1639,7 +1639,6 @@
     window.navLogout = async function(){
       try{ await fetch(`${API}/api/auth/logout`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:VmSession.getRefresh()})}); }catch{}
       VmSession.destruir();
-      VmSession.limparUsuarioLembrado();
       renderBotoes();
     };
 
