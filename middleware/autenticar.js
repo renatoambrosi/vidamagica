@@ -1,12 +1,13 @@
 /* ============================================================
    VIDA MÁGICA — middleware/autenticar.js
-   Middlewares de autenticação.
+   3 middlewares de autenticação:
 
-   PADRÃO ÚNICO:
-   - Aluna: JWT (Bearer) → autenticar
-   - Admin: Basic Auth, retorna 401 JSON (sem WWW-Authenticate).
-            Navegador NUNCA abre popup nativo. Cada tela admin
-            tem login próprio que envia o header Authorization Basic.
+   - autenticar          → aluna (JWT Bearer, role implícito)
+   - autenticarAdmin     → admin (Basic Auth, sem WWW-Authenticate)
+   - autenticarAtendimento → painel atendimento (JWT Bearer com role 'atendimento')
+
+   Todos retornam 401 JSON simples (sem WWW-Authenticate).
+   Navegador NUNCA abre popup nativo.
    ============================================================ */
 
 const jwt = require('jsonwebtoken');
@@ -18,7 +19,7 @@ if (!JWT_SECRET) {
 }
 
 /**
- * Valida access token (Bearer) e popula req.usuario.
+ * Aluna — JWT Bearer.
  */
 function autenticar(req, res, next) {
   const auth = req.headers.authorization;
@@ -39,8 +40,7 @@ function autenticar(req, res, next) {
 }
 
 /**
- * Basic Auth admin — sem WWW-Authenticate.
- * Navegador NÃO abre popup. Tela admin trata o 401 sozinha.
+ * Admin — Basic Auth (sem popup nativo).
  */
 function autenticarAdmin(req, res, next) {
   const auth = req.headers.authorization;
@@ -56,4 +56,25 @@ function autenticarAdmin(req, res, next) {
   return res.status(401).json({ error: 'Não autorizado' });
 }
 
-module.exports = { autenticar, autenticarAdmin };
+/**
+ * Atendimento — JWT Bearer com role 'atendimento' ou 'suellen' (compat).
+ */
+function autenticarAtendimento(req, res, next) {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token obrigatório' });
+  }
+  const token = auth.slice(7).trim();
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    if (payload.role !== 'atendimento' && payload.role !== 'suellen') {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+    req.atendimento = payload;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Token inválido ou expirado' });
+  }
+}
+
+module.exports = { autenticar, autenticarAdmin, autenticarAtendimento, JWT_SECRET };
