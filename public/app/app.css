@@ -733,37 +733,43 @@ body.teclado-aberto .bottom-nav {
   color: var(--ouro-fundo);
 }
 
-/* Botão "Assinar agora" embutido na bolha */
+/* Botão "Assinar agora" embutido na bolha — discreto, inline */
 .msg-cta-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 10px;
-  padding: 10px 18px;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 7px 13px;
   background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
   color: white !important;
   text-decoration: none !important;
   border-radius: var(--radius-full);
   font-family: var(--font-display);
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  box-shadow: 0 3px 10px rgba(200,146,42,0.35);
-  transition: transform 0.12s;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 6px rgba(200,146,42,0.28);
+  transition: transform 0.12s, box-shadow 0.12s;
   border: none;
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
+  width: auto;
+  align-self: flex-start;
 }
-.msg-cta-btn:hover { transform: scale(1.04); }
+.msg-cta-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(200,146,42,0.4);
+}
 .msg-cta-btn:active { transform: scale(0.97); }
 .msg-cta-btn svg {
-  width: 12px; height: 12px;
+  width: 11px; height: 11px;
   stroke: white;
   fill: none;
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
+  flex-shrink: 0;
 }
 
 /* Reply preview */
