@@ -1,27 +1,33 @@
 /* ============================================================
    VIDA MÁGICA — routes/upload.js
-   Upload de áudio e imagem via Cloudinary
+   Upload de áudio e imagem via Cloudinary.
+
+   Autenticação: JWT atendimento (autenticarAtendimento).
+
+   Endpoints:
+     POST /api/upload/imagem  (multipart, campo 'imagem')
+     POST /api/upload/audio   (multipart, campo 'audio')
    ============================================================ */
 
-const express  = require('express');
-const router   = express.Router();
+const express = require('express');
+const router = express.Router();
 const cloudinary = require('cloudinary').v2;
-const multer   = require('multer');
+const multer = require('multer');
 
-// Configura Cloudinary
+const { autenticarAtendimento } = require('../middleware/autenticar');
+
+// Configura Cloudinary com vars do Railway
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key:    process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Multer — armazena em memória (sem disco)
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB máximo
+  limits: { fileSize: 20 * 1024 * 1024 },
 });
 
-// Faz upload do buffer para o Cloudinary
 function uploadBuffer(buffer, options) {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(options, (err, result) => {
@@ -32,19 +38,18 @@ function uploadBuffer(buffer, options) {
   });
 }
 
-/* ── POST /api/upload/audio ── */
-router.post('/audio', upload.single('audio'), async (req, res) => {
+router.post('/audio', autenticarAtendimento, upload.single('audio'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo enviado' });
   try {
     const result = await uploadBuffer(req.file.buffer, {
-      resource_type: 'video', // Cloudinary usa 'video' para áudio também
-      folder:        'vidamagica/audio',
-      format:        'mp3',   // converte para mp3 para compatibilidade
+      resource_type: 'video',
+      folder: 'vidamagica/audio',
+      format: 'mp3',
       transformation: [{ quality: 'auto' }],
     });
     res.json({
-      url:      result.secure_url,
-      duracao:  Math.round(result.duration || 0),
+      url: result.secure_url,
+      duracao: Math.round(result.duration || 0),
       public_id: result.public_id,
     });
   } catch (err) {
@@ -53,13 +58,12 @@ router.post('/audio', upload.single('audio'), async (req, res) => {
   }
 });
 
-/* ── POST /api/upload/imagem ── */
-router.post('/imagem', upload.single('imagem'), async (req, res) => {
+router.post('/imagem', autenticarAtendimento, upload.single('imagem'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo enviado' });
   try {
     const result = await uploadBuffer(req.file.buffer, {
       resource_type: 'image',
-      folder:        'vidamagica/imagens',
+      folder: 'vidamagica/imagens',
       transformation: [{ quality: 'auto', fetch_format: 'auto' }],
     });
     res.json({ url: result.secure_url, public_id: result.public_id });
