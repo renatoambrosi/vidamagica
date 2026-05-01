@@ -1,39 +1,25 @@
-const express    = require('express');
-const cors       = require('cors');
-const helmet     = require('helmet');
-const path       = require('path');
-const http       = require('http');
-const { WebSocketServer } = require('ws');
+/* ============================================================
+   VIDA MÁGICA — server.js
+   Servidor Express. Conecta nos 4 bancos no boot.
+
+   Esta é a Fase 1 (Fundação): só /health e estáticos.
+   Rotas de negócio vêm nas próximas fases.
+   ============================================================ */
+
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const path = require('path');
+const http = require('http');
 require('dotenv').config();
 
-const { initDb } = require('./db');
-const precosRoutes      = require('./routes/precos');
-const depoimentosRoutes = require('./routes/depoimentos');
-const seedRoutes        = require('./routes/seed');
-const configRoutes      = require('./routes/config');
-const authRoutes        = require('./routes/auth');
-const adminRoutes       = require('./routes/admin');
-const { router: feedRoutes }    = require('./routes/feed');
-const uploadRoutes      = require('./routes/upload');
-const { router: gatewayRouter, iniciarGateway } = require('./routes/gateway');
+const { initDb, checkHealth } = require('./db');
 
-// ✦ NOVO: importa os DOIS routers separados (aluna e atendimento)
-//   O chat.js v3 expõe routerAluna e routerAtendimento em vez de um único router.
-const {
-  routerAluna,
-  routerAtendimento,
-  initChat,
-  registrarWs, removerWs,
-  emitirParaSuellen,
-} = require('./routes/chat');
-
-const app    = express();
+const app = express();
 const server = http.createServer(app);
-const PORT   = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
-// ── SEGURANÇA ──
-// IMPORTANTE: Permissions-Policy padrão do helmet bloqueia microfone.
-// Sobrescrevemos para liberar microphone/camera no mesmo origin.
+// ── SEGURANÇA ──────────────────────────────────────────────
 app.use(helmet({
   contentSecurityPolicy: false,
   permissionsPolicy: false,
@@ -56,195 +42,66 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// ── LOG ──
+// ── LOG ────────────────────────────────────────────────────
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
   next();
 });
 
-// ── ESTÁTICOS ──
+// ── ESTÁTICOS ──────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── BASIC AUTH (admin) ──
-const { autenticar: basicAuth } = require('./routes/precos');
-
-// ── JWT MIDDLEWARE ──
-const jwt = require('jsonwebtoken');
-const { autenticar: jwtAuth, JWT_SECRET } = require('./middleware/autenticar');
-
-// Middleware JWT para Atendimento — verifica role:atendimento
-// (mantém retrocompatibilidade com tokens antigos role:suellen)
-function atendimentoAuth(req, res, next) {
-  const header = req.headers.authorization || '';
-  const token  = header.replace('Bearer ', '').trim();
-  if (!token) return res.status(401).json({ error: 'Token obrigatório' });
-  try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    if (payload.role !== 'atendimento' && payload.role !== 'suellen') {
-      return res.status(403).json({ error: 'Acesso negado' });
-    }
-    req.atendimento = payload;   // ← agora guarda o payload completo (não só `true`)
-    next();
-  } catch {
-    res.status(401).json({ error: 'Token inválido ou expirado' });
-  }
-}
-
-// ── PÁGINAS ──
-app.get('/admin',        basicAuth, (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
-app.get('/atendimento',             (req, res) => res.sendFile(path.join(__dirname, 'public', 'atendimento.html')));
-// Retrocompatibilidade: /suellen redireciona para /atendimento
-app.get('/suellen',                 (req, res) => res.redirect(301, '/atendimento'));
-app.get('/auth',                    (req, res) => res.sendFile(path.join(__dirname, 'public', 'auth.html')));
-app.get('/cadastro',                (req, res) => res.sendFile(path.join(__dirname, 'public', 'cadastro.html')));
-app.get('/app',                     (req, res) => res.sendFile(path.join(__dirname, 'public', 'app.html')));
-
-// ── LOGIN ATENDIMENTO ──
-app.post('/api/atendimento/login', (req, res) => {
-  const { senha } = req.body;
-  const senhaCorreta = process.env.ADMIN_PASS || 'admin';
-  if (!senha || senha !== senhaCorreta) {
-    return res.status(401).json({ error: 'Senha incorreta' });
-  }
-  const token = jwt.sign({ role: 'atendimento' }, JWT_SECRET, { expiresIn: '30d' });
-  res.json({ token });
-});
-// Retrocompatibilidade temporária
-app.post('/api/suellen/login', (req, res) => {
-  const { senha } = req.body;
-  const senhaCorreta = process.env.ADMIN_PASS || 'admin';
-  if (!senha || senha !== senhaCorreta) {
-    return res.status(401).json({ error: 'Senha incorreta' });
-  }
-  const token = jwt.sign({ role: 'atendimento' }, JWT_SECRET, { expiresIn: '30d' });
-  res.json({ token });
+// ── HEALTH ─────────────────────────────────────────────────
+app.get('/health', async (req, res) => {
+  const bancos = await checkHealth();
+  const tudoOk = Object.values(bancos).every(s => s === 'ok');
+  res.status(tudoOk ? 200 : 503).json({
+    status: tudoOk ? 'OK' : 'DEGRADED',
+    service: 'Vida Mágica API',
+    timestamp: new Date().toISOString(),
+    bancos,
+  });
 });
 
-// ── API PÚBLICA ──
-app.use('/api', precosRoutes);
-app.use('/api', depoimentosRoutes);
-app.use('/api', configRoutes);
-app.use('/api', seedRoutes);
-app.use('/api', feedRoutes);
+// ── PÁGINAS ESTÁTICAS ──────────────────────────────────────
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
-// ✦ ALTERADO: agora usa routerAluna (só rotas da aluna)
-//   Antes era `chatRouter` que tinha tudo misturado.
-app.use('/api/chat', (req, res, next) => {
-  if (req.path === '/vapid-public-key') return next();
-  jwtAuth(req, res, next);
-}, routerAluna);
-
-// ── UPLOAD (JWT aluna ou atendimento) ──
-app.use('/api/upload', (req, res, next) => {
-  const header = req.headers.authorization || '';
-  const token  = header.replace('Bearer ', '').trim();
-  if (!token) return res.status(401).json({ error: 'Token obrigatório' });
-  try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    req.uploadUser = payload;
-    next();
-  } catch { res.status(401).json({ error: 'Token inválido' }); }
-}, uploadRoutes);
-
-// ── API AUTH ──
-app.use('/api/auth', authRoutes);
-
-// ── API ADMIN ──
-app.use('/api/admin', basicAuth, adminRoutes);
-app.use('/api/admin', basicAuth, feedRoutes);
-
-// ✦ ALTERADO: agora usa routerAtendimento (só rotas do atendimento)
-//   Isso elimina o conflito que causava o erro
-//   "Cannot read properties of undefined (reading 'sub')"
-app.use('/api/atendimento/chat', atendimentoAuth, routerAtendimento);
-// Retrocompatibilidade: rotas /api/suellen/chat/* continuam funcionando
-app.use('/api/suellen/chat', atendimentoAuth, routerAtendimento);
-
-// ── GATEWAY ──
-app.use('/', gatewayRouter);
-
-// ── HEALTH ──
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', service: 'Vida Mágica API', timestamp: new Date().toISOString() });
+// ── 404 PARA /api ──────────────────────────────────────────
+app.get('/api/*', (req, res) => {
+  res.status(404).json({ error: 'Rota ainda não disponível (Fase 1 — Fundação)' });
 });
 
-// ── SPA FALLBACK ──
+// ── SPA FALLBACK ───────────────────────────────────────────
 app.get('*', (req, res) => {
-  if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Rota não encontrada' });
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// ── ERROS ──
+// ── ERROS ──────────────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error('❌ Erro:', err.message);
   res.status(500).json({ error: 'Erro interno' });
 });
 
-// ════════════════════════════════════════════════
-// WEBSOCKET
-// ════════════════════════════════════════════════
-const wss = new WebSocketServer({ server, path: '/ws/chat' });
-
-wss.on('connection', async (ws, req) => {
-  const url   = new URL(req.url, `http://localhost`);
-  const token = url.searchParams.get('token');
-  const modo  = url.searchParams.get('modo');
-
-  let identidade = null;
-  try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    if (modo === 'atendimento' || modo === 'suellen') {
-      if (payload.role !== 'atendimento' && payload.role !== 'suellen') throw new Error('auth');
-      identidade = 'suellen';
-    } else {
-      identidade = `aluna:${payload.sub}`;
-    }
-  } catch {
-    ws.close(1008, 'Não autorizado');
-    return;
-  }
-
-  registrarWs(identidade, ws);
-  console.log(`[WS Chat] conectado: ${identidade}`);
-
-  ws.on('close', () => { removerWs(identidade); });
-  ws.on('error', (err) => { console.error(`[WS Chat] erro:`, err.message); });
-
-  ws.isAlive = true;
-  ws.on('pong', () => { ws.isAlive = true; });
-});
-
-const heartbeat = setInterval(() => {
-  wss.clients.forEach(ws => {
-    if (!ws.isAlive) { ws.terminate(); return; }
-    ws.isAlive = false;
-    ws.ping();
-  });
-}, 30000);
-wss.on('close', () => clearInterval(heartbeat));
-
-// ── START ──
+// ── START ──────────────────────────────────────────────────
 server.listen(PORT, async () => {
   console.log(`
-🚀 Vida Mágica API — porta ${PORT}
-🏥  GET  /health
-📡  GET  /api/feed
-🔐  *    /api/auth/*
-💬  *    /api/chat/*          (JWT aluna)
-✦   *    /api/atendimento/*   (JWT atendimento)
-🛡️   *    /api/admin/*         (Basic Auth)
-🌐  GET  /
-🖥️   GET  /admin
-✦   GET  /atendimento
-🌳  GET  /app
-🔌  WS   /ws/chat
+🚀 Vida Mágica API — Fase 1 (Fundação)
+🌐 Porta: ${PORT}
+🏥 Health: GET /health
   `);
-  await initDb();
-  iniciarGateway();
+  try {
+    await initDb();
+  } catch (err) {
+    console.error('💥 Falha ao iniciar bancos:', err.message);
+    process.exit(1);
+  }
 });
 
 process.on('SIGTERM', () => { server.close(); process.exit(0); });
 process.on('SIGINT',  () => { server.close(); process.exit(0); });
+process.on('uncaughtException', err => console.error('💥 uncaughtException:', err));
+process.on('unhandledRejection', err => console.error('💥 unhandledRejection:', err));
