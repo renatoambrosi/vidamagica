@@ -1,62 +1,55 @@
 /* ============================================================
    VIDA MÁGICA — routes/config.js
-   Config geral do site/app (chave→valor JSON).
-
-   Banco: poolComunicacao (tabela `config`).
+   Config do site/app — armazenada como UMA ÚNICA chave 'site'.
+   Banco: poolComunicacao.
 
    Endpoints:
-     GET  /api/config           → público (todas as configs)
-     GET  /api/config/:chave    → público (1 config)
-     POST /api/admin/config     → admin (upsert por chave)
+   - GET  /api/config         → público (objeto inteiro)
+   - GET  /api/admin/config   → admin (objeto inteiro)
+   - POST /api/admin/config   → admin (substitui objeto inteiro)
    ============================================================ */
 
 const express = require('express');
 const router = express.Router();
-
 const { poolComunicacao } = require('../db');
 const { autenticarAdmin } = require('../middleware/autenticar');
 
-// ── PÚBLICO ────────────────────────────────────────────────
-
+// ── PÚBLICO ──
 router.get('/config', async (req, res) => {
   try {
-    const r = await poolComunicacao.query(`SELECT chave, dados FROM config`);
-    const out = {};
-    for (const row of r.rows) out[row.chave] = row.dados;
-    res.json(out);
+    const result = await poolComunicacao.query('SELECT dados FROM config WHERE chave = $1', ['site']);
+    if (result.rows.length === 0) return res.json({});
+    res.json(result.rows[0].dados);
   } catch (err) {
-    console.error('❌ GET /config:', err.message);
+    console.error('❌ Erro ao buscar config:', err.message);
     res.status(500).json({ error: 'Erro ao carregar config' });
   }
 });
 
-router.get('/config/:chave', async (req, res) => {
+// ── ADMIN: LER ──
+router.get('/admin/config', autenticarAdmin, async (req, res) => {
   try {
-    const r = await poolComunicacao.query(
-      `SELECT dados FROM config WHERE chave = $1`,
-      [req.params.chave]
-    );
-    if (!r.rows.length) return res.status(404).json({ error: 'Config não encontrada' });
-    res.json(r.rows[0].dados);
+    const result = await poolComunicacao.query('SELECT dados FROM config WHERE chave = $1', ['site']);
+    if (result.rows.length === 0) return res.json({});
+    res.json(result.rows[0].dados);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── ADMIN ──────────────────────────────────────────────────
-
+// ── ADMIN: SALVAR ──
 router.post('/admin/config', autenticarAdmin, async (req, res) => {
+  const dados = req.body;
+  if (!dados || typeof dados !== 'object') return res.status(400).json({ error: 'Dados inválidos' });
   try {
-    const { chave, dados } = req.body;
-    if (!chave || dados === undefined) return res.status(400).json({ error: 'chave e dados obrigatórios' });
-    await poolComunicacao.query(
-      `INSERT INTO config (chave, dados, atualizado_em)
-       VALUES ($1, $2, NOW())
-       ON CONFLICT (chave) DO UPDATE SET dados = EXCLUDED.dados, atualizado_em = NOW()`,
-      [chave, dados]
-    );
+    await poolComunicacao.query(`
+      INSERT INTO config (chave, dados, atualizado_em)
+      VALUES ($1, $2, NOW())
+      ON CONFLICT (chave) DO UPDATE SET dados = $2, atualizado_em = NOW()
+    `, ['site', JSON.stringify(dados)]);
     res.json({ success: true });
   } catch (err) {
+    console.error('❌ Erro ao salvar config:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
