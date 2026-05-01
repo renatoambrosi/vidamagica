@@ -566,10 +566,7 @@ function renderMensagem(msg) {
     const corpoHtml = linkificar(msg.conteudo || '');
     let ctaHtml = '';
     if (isMensagemAssinatura(msg)) {
-      ctaHtml = `<a class="msg-cta-btn" href="${LINK_ASSINAR}" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-        Assinar agora
-      </a>`;
+      ctaHtml = `<a class="msg-cta-btn" href="${LINK_ASSINAR}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Assinar agora</a>`;
     }
     bolha.innerHTML = replyHtml + corpoHtml + ctaHtml;
     setupCtxMenu(bolha, msg);
