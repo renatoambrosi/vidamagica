@@ -2,7 +2,7 @@
    VIDA MÁGICA — routes/upload.js
    Upload de áudio e imagem via Cloudinary.
 
-   Autenticação: JWT atendimento (autenticarAtendimento).
+   Autenticação: JWT atendimento (autenticarPainel('atendimento')).
 
    Endpoints:
      POST /api/upload/imagem  (multipart, campo 'imagem')
@@ -14,7 +14,7 @@ const router = express.Router();
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 
-const { autenticarAtendimento } = require('../middleware/autenticar');
+const { autenticarPainel } = require('../middleware/autenticar');
 
 // Configura Cloudinary com vars do Railway
 cloudinary.config({
@@ -38,7 +38,7 @@ function uploadBuffer(buffer, options) {
   });
 }
 
-router.post('/audio', autenticarAtendimento, upload.single('audio'), async (req, res) => {
+router.post('/audio', autenticarPainel('atendimento'), upload.single('audio'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo enviado' });
   try {
     const result = await uploadBuffer(req.file.buffer, {
@@ -58,7 +58,7 @@ router.post('/audio', autenticarAtendimento, upload.single('audio'), async (req,
   }
 });
 
-router.post('/imagem', autenticarAtendimento, upload.single('imagem'), async (req, res) => {
+router.post('/imagem', autenticarPainel('atendimento'), upload.single('imagem'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo enviado' });
   try {
     const result = await uploadBuffer(req.file.buffer, {
