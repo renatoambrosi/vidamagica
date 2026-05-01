@@ -869,25 +869,52 @@ function conectarChatWs() {
   chatWs.onclose = () => setTimeout(conectarChatWs, 4000);
 }
 
-// ── Input ──
+// ── Input (contenteditable, não textarea) ──
 const chatInput = document.getElementById('chat-input');
 const sendBtn = document.getElementById('chat-send-btn');
 const audioBtn = document.getElementById('chat-audio-btn');
 
+// Helper: lê texto do contenteditable
+function getInputTexto() {
+  if (!chatInput) return '';
+  // textContent ignora HTML, pega só texto puro com quebras
+  return (chatInput.textContent || '').replace(/\u00A0/g, ' ');
+}
+
+// Helper: limpa o input
+function limparInput() {
+  if (!chatInput) return;
+  chatInput.textContent = '';
+  // dispara input pra recalcular botões
+  chatInput.dispatchEvent(new Event('input'));
+}
+
 chatInput?.addEventListener('input', () => {
-  chatInput.style.height = 'auto';
-  chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
-  const tem = chatInput.value.trim().length > 0;
+  // Auto-resize: contenteditable ajusta sozinho a altura via min/max-height + overflow,
+  // não precisa setar height manual como no textarea
+  const tem = getInputTexto().trim().length > 0;
   sendBtn.style.display = tem ? 'flex' : 'none';
   audioBtn.style.display = tem ? 'none' : 'flex';
 });
+
 chatInput?.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarMensagem(); }
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    enviarMensagem();
+  }
 });
+
+// Paste: força texto puro, sem HTML formatado
+chatInput?.addEventListener('paste', (e) => {
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+  document.execCommand('insertText', false, text);
+});
+
 sendBtn?.addEventListener('click', enviarMensagem);
 
 async function enviarMensagem() {
-  const texto = chatInput?.value.trim();
+  const texto = getInputTexto().trim();
   if (!texto || !usuario || !canalAtivo) return;
   const replyId = replyMsgAtual?.id || null;
   const replyMsg = replyMsgAtual;
@@ -907,8 +934,7 @@ async function enviarMensagem() {
   mensagensAtuais.push(msgTemp);
   document.getElementById('chat-msgs').appendChild(renderMensagem(msgTemp));
 
-  chatInput.value = '';
-  chatInput.style.height = 'auto';
+  limparInput();
   sendBtn.style.display = 'none';
   audioBtn.style.display = 'flex';
   replyMsgAtual = null;
