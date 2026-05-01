@@ -284,10 +284,19 @@ routerAtendimento.get('/conversas', async (req, res) => {
       } else if (u.plano && u.plano !== 'gratuito') {
         tier = 'basic_vm';
       }
-      return { ...c, usuario: u, tier };
+      // Achata os campos do usuário para o painel antigo (que espera c.nome, c.foto_url, etc)
+      return {
+        ...c,
+        tier,
+        nome: u.nome,
+        foto_url: u.foto_url,
+        telefone: u.telefone,
+        plano: u.plano,
+        usuario: u,
+      };
     });
 
-    res.json({ conversas });
+    res.json(conversas);
   } catch (err) {
     console.error('❌ /atendimento/conversas:', err.message);
     res.status(500).json({ error: 'Erro interno' });
