@@ -12,7 +12,7 @@
 const express = require('express');
 const router = express.Router();
 const { poolComunicacao } = require('../db');
-const { autenticarAdmin } = require('../middleware/autenticar');
+const { autenticarPainel } = require('../middleware/autenticar');
 
 // ── PÚBLICO ──
 router.get('/config', async (req, res) => {
@@ -27,7 +27,7 @@ router.get('/config', async (req, res) => {
 });
 
 // ── ADMIN: LER ──
-router.get('/admin/config', autenticarAdmin, async (req, res) => {
+router.get('/admin/config', autenticarPainel('admin'), async (req, res) => {
   try {
     const result = await poolComunicacao.query('SELECT dados FROM config WHERE chave = $1', ['site']);
     if (result.rows.length === 0) return res.json({});
@@ -38,7 +38,7 @@ router.get('/admin/config', autenticarAdmin, async (req, res) => {
 });
 
 // ── ADMIN: SALVAR ──
-router.post('/admin/config', autenticarAdmin, async (req, res) => {
+router.post('/admin/config', autenticarPainel('admin'), async (req, res) => {
   const dados = req.body;
   if (!dados || typeof dados !== 'object') return res.status(400).json({ error: 'Dados inválidos' });
   try {
