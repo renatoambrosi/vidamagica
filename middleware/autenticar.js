@@ -12,10 +12,26 @@
 
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || 'vida-magica-secret-troque-em-producao';
 
-if (!JWT_SECRET) {
-  console.warn('⚠️ JWT_SECRET não configurado — autenticação não vai funcionar');
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️ JWT_SECRET não configurado — usando default inseguro');
+}
+
+/**
+ * Gera access token (15 min) para a aluna.
+ */
+function gerarAccessToken(usuario) {
+  return jwt.sign(
+    {
+      sub: usuario.id,
+      tel: usuario.telefone_formatado,
+      plano: usuario.plano,
+      nome: usuario.nome,
+    },
+    JWT_SECRET,
+    { expiresIn: '15m' }
+  );
 }
 
 /**
@@ -77,4 +93,4 @@ function autenticarAtendimento(req, res, next) {
   }
 }
 
-module.exports = { autenticar, autenticarAdmin, autenticarAtendimento, JWT_SECRET };
+module.exports = { autenticar, autenticarAdmin, autenticarAtendimento, gerarAccessToken, JWT_SECRET };
