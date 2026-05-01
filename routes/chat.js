@@ -1,83 +1,114 @@
 /* ============================================================
    VIDA MÁGICA — routes/chat.js
-   Chat entre aluna e Atendimento (Suellen / Equipe Vida Mágica).
+   Chat aluna ↔ Atendimento (Suellen / Equipe).
+   Port fiel do antigo, adaptado pros 4 pools.
 
-   Banco: poolMensagens (chat_conversas, chat_mensagens, chat_pacotes,
-                         chat_push_subscriptions).
-   Para validar usuario_id, consulta poolCore (usuarios).
+   Pools:
+   - poolCore       → tabela usuarios (busca info da aluna)
+   - poolMensagens  → chat_conversas, chat_mensagens, chat_pacotes,
+                       chat_push_subscriptions
 
-   Rotas montadas em:
-     /api/chat              → ALUNA (JWT)
-     /api/atendimento/chat  → ATENDIMENTO (JWT role 'atendimento')
+   Middleware:
+   - routerAluna       → autenticar (JWT aluna)
+   - routerAtendimento → autenticarPainel('atendimento') (JWT painel)
 
-   Web Push:
-     - GET  /api/chat/vapid-public-key     (público)
-     - POST /api/atendimento/chat/push-subscribe  (atendimento)
-     - notificarAtendimento() chamada quando aluna manda msg
+   Notas:
+   - Schema usa reply_to_* denormalizado (em vez de JOIN do antigo)
+   - Timer prioritário só roda quando IDENTIDADE='suellen' (não equipe)
+   - WS suellen é registrado por chave 'suellen'
    ============================================================ */
 
 const express = require('express');
-const router = express.Router();
 const webpush = require('web-push');
-
 const { poolCore, poolMensagens } = require('../db');
 const { autenticar, autenticarPainel } = require('../middleware/autenticar');
 
-// ── WEB PUSH CONFIG ───────────────────────────────────────
+const routerAluna       = express.Router();
+const routerAtendimento = express.Router();
+
+// ── VAPID config ──────────────────────────────────────────
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
     `mailto:${process.env.VAPID_EMAIL || 'contato@vidamagica.com.br'}`,
     process.env.VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY
   );
-} else {
-  console.warn('⚠️ VAPID keys não configuradas — push notifications desativadas');
 }
 
-// ──────────────────────────────────────────────────────────
-// HELPERS
-// ──────────────────────────────────────────────────────────
+// ── HELPERS ───────────────────────────────────────────────
 
-async function getOuCriarConversa(usuarioId, tipo = 'suellen') {
-  const r = await poolMensagens.query(
-    `SELECT * FROM chat_conversas WHERE usuario_id = $1 AND tipo = $2`,
-    [usuarioId, tipo]
+async function getOuCriarConversa(usuario_id, tipo = 'suellen') {
+  let r = await poolMensagens.query(
+    `SELECT * FROM chat_conversas WHERE usuario_id=$1 AND tipo=$2`,
+    [usuario_id, tipo]
   );
   if (r.rows.length) return r.rows[0];
-
-  const novo = await poolMensagens.query(
+  r = await poolMensagens.query(
     `INSERT INTO chat_conversas (usuario_id, tipo) VALUES ($1, $2) RETURNING *`,
-    [usuarioId, tipo]
+    [usuario_id, tipo]
   );
-  return novo.rows[0];
+  return r.rows[0];
 }
 
-async function buscarUsuarioBasico(usuarioId) {
+async function verificarPrioritario(conversa) {
+  if (conversa.plano_chat !== 'prioritario') return conversa;
+  const agora = new Date();
+  const expirou = conversa.prioritario_expira_em && new Date(conversa.prioritario_expira_em) < agora;
+  const semInteracoes = conversa.interacoes_restantes !== null && conversa.interacoes_restantes <= 0;
+  if (expirou || semInteracoes) {
+    await poolMensagens.query(`
+      UPDATE chat_conversas SET plano_chat='basic', interacoes_restantes=NULL,
+        prioritario_expira_em=NULL, atualizado_em=NOW()
+      WHERE id=$1`, [conversa.id]);
+    // Marca pacotes ativos como expirado/esgotado
+    const motivo = expirou ? 'expirado' : 'esgotado';
+    await poolMensagens.query(`
+      UPDATE chat_pacotes SET status=$1
+      WHERE usuario_id=$2 AND status='ativo'`,
+      [motivo, conversa.usuario_id]);
+    conversa.plano_chat = 'basic';
+    conversa.interacoes_restantes = null;
+    conversa.prioritario_expira_em = null;
+  }
+  return conversa;
+}
+
+function calcularTier(plano_usuario, plano_chat) {
+  if (plano_chat === 'prioritario') return 'prioritario';
+  if (!plano_usuario || plano_usuario === 'gratuito') return 'free';
+  return 'basic_vm';
+}
+
+function tempoRelativo(data) {
+  const diff = Date.now() - new Date(data).getTime();
+  const min  = Math.floor(diff / 60000);
+  const h    = Math.floor(diff / 3600000);
+  const dias = Math.floor(diff / 86400000);
+  const sem  = Math.floor(dias / 7);
+  const mes  = Math.floor(dias / 30);
+  const anos = Math.floor(dias / 365);
+  if (min < 1)   return 'agora';
+  if (min < 60)  return `${min}min`;
+  if (h < 24)    return `${h}h`;
+  if (dias < 7)  return `${dias} dia${dias>1?'s':''}`;
+  if (sem < 4)   return `${sem} sem`;
+  if (mes < 12)  return `${mes} ${mes>1?'meses':'mês'}`;
+  return `${anos} ano${anos>1?'s':''}`;
+}
+
+async function buscarUsuarioBasico(usuario_id) {
   const r = await poolCore.query(
-    `SELECT id, nome, foto_url, plano, telefone FROM usuarios WHERE id = $1`,
-    [usuarioId]
+    `SELECT id, nome, email, telefone_formatado, foto_url, plano,
+            perfil_teste, percentual_prosperidade, sementes
+     FROM usuarios WHERE id=$1`,
+    [usuario_id]
   );
   return r.rows[0] || null;
 }
 
-async function tipoPlanoAluna(conversa, usuario) {
-  if (
-    conversa.plano_chat === 'prioritario' &&
-    conversa.prioritario_expira_em &&
-    new Date(conversa.prioritario_expira_em) > new Date() &&
-    (conversa.interacoes_restantes ?? 0) > 0
-  ) {
-    return 'prioritario';
-  }
-  if (usuario && usuario.plano && usuario.plano !== 'gratuito') return 'basic_vm';
-  return 'free';
-}
-
-async function notificarAtendimento(payload) {
+async function notificarSuellen(payload) {
   try {
-    const r = await poolMensagens.query(
-      `SELECT * FROM chat_push_subscriptions WHERE ativo = TRUE`
-    );
+    const r = await poolMensagens.query(`SELECT * FROM chat_push_subscriptions WHERE ativo=TRUE`);
     for (const sub of r.rows) {
       try {
         await webpush.sendNotification(
@@ -86,10 +117,7 @@ async function notificarAtendimento(payload) {
         );
       } catch (err) {
         if (err.statusCode === 410 || err.statusCode === 404) {
-          await poolMensagens.query(
-            `UPDATE chat_push_subscriptions SET ativo = FALSE WHERE id = $1`,
-            [sub.id]
-          );
+          await poolMensagens.query(`UPDATE chat_push_subscriptions SET ativo=FALSE WHERE id=$1`, [sub.id]);
         }
       }
     }
@@ -98,357 +126,596 @@ async function notificarAtendimento(payload) {
   }
 }
 
-// ──────────────────────────────────────────────────────────
-// ROUTER ALUNA — exige JWT
-// ──────────────────────────────────────────────────────────
+// ── WS clients ────────────────────────────────────────────
 
-const routerAluna = express.Router();
+const wsClients = new Map();
+function registrarWs(chave, ws) { wsClients.set(chave, ws); }
+function removerWs(chave)       { wsClients.delete(chave); }
 
-// VAPID public key — endpoint PÚBLICO (sem auth)
+// Helpers de compatibilidade com server.js
+function registrarWsAluna(usuario_id, ws) {
+  const chave = `aluna:${usuario_id}`;
+  wsClients.set(chave, ws);
+  ws.on('close', () => wsClients.delete(chave));
+}
+function registrarWsAtendimento(ws) {
+  wsClients.set('suellen', ws);
+  ws.on('close', () => wsClients.delete('suellen'));
+}
+
+function emitirParaAluna(usuario_id, evento, dados) {
+  const ws = wsClients.get(`aluna:${usuario_id}`);
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify({ evento, ...dados }));
+}
+function emitirParaSuellen(evento, dados) {
+  const ws = wsClients.get('suellen');
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify({ evento, ...dados }));
+}
+
+// Texto-template: aluna Free clica em "Assinar Vida Mágica"
+function gerarMensagemAssinaturaVM() {
+  return [
+    'Oi, que bom te ver por aqui! 🌟',
+    '',
+    'O Vida Mágica é o nosso plano de acompanhamento contínuo. Aqui vão os detalhes:',
+    '',
+    '✨ Vantagens:',
+    '• Resposta em até 5 dias úteis',
+    '• Acesso completo aos materiais e conteúdos da plataforma',
+    '• Acompanhamento das suas Sementes e Prosperidade',
+    '• Suporte direto comigo neste chat',
+    '',
+    '⭐ Quer resposta em até 24h? Você também pode ativar o Atendimento Prioritário (R$ 9,90 por 30 interações em 24h) a qualquer momento.',
+    '',
+    '👉 Para assinar o Vida Mágica, é só acessar:',
+    'https://www.vidamagica.com.br/assinar',
+    '',
+    'Qualquer dúvida, me chama por aqui! Estou com você nessa jornada. 💛',
+  ].join('\n');
+}
+
+// ════════════════════════════════════════════════════════════
+// ROTAS — ALUNA  (montadas em /api/chat)
+// ════════════════════════════════════════════════════════════
+
+// Endpoint público (sem autenticar) — VAPID public key
 routerAluna.get('/vapid-public-key', (req, res) => {
-  res.json({ publicKey: process.env.VAPID_PUBLIC_KEY || '' });
+  res.json({ key: process.env.VAPID_PUBLIC_KEY || null });
 });
 
-// As demais rotas exigem autenticação
+// A partir daqui exige auth
 routerAluna.use(autenticar);
 
-// GET /api/chat/conversa
+// GET /api/chat/conversa  ?tipo=suellen|suporte
 routerAluna.get('/conversa', async (req, res) => {
+  const tipo = (req.query.tipo === 'suporte') ? 'suporte' : 'suellen';
   try {
-    const usuarioId = req.usuario.sub;
-    const conversa = await getOuCriarConversa(usuarioId, 'suellen');
-    const usuario = await buscarUsuarioBasico(usuarioId);
+    let conv = await getOuCriarConversa(req.usuario.sub, tipo);
+    conv = await verificarPrioritario(conv);
 
-    const m = await poolMensagens.query(
-      `SELECT * FROM chat_mensagens WHERE conversa_id = $1 ORDER BY criado_em ASC LIMIT 200`,
-      [conversa.id]
+    const usuario = await buscarUsuarioBasico(req.usuario.sub);
+    const planoUsuario = usuario?.plano || 'gratuito';
+    const tier = calcularTier(planoUsuario, conv.plano_chat);
+
+    const msgs = await poolMensagens.query(
+      `SELECT * FROM chat_mensagens WHERE conversa_id=$1
+       ORDER BY criado_em ASC LIMIT 50`,
+      [conv.id]
     );
 
-    const idsParaMarcar = m.rows
-      .filter(x => x.remetente === 'suellen' && !x.lida)
-      .map(x => x.id);
+    // Marca msgs da Suellen como lidas (aluna abriu o chat)
+    const lidas = await poolMensagens.query(
+      `UPDATE chat_mensagens SET lida=TRUE, lida_em=NOW()
+       WHERE conversa_id=$1 AND remetente='suellen' AND lida=FALSE
+       RETURNING id`,
+      [conv.id]
+    );
+    await poolMensagens.query(
+      `UPDATE chat_conversas SET nao_lidas_aluna=0 WHERE id=$1`,
+      [conv.id]
+    );
 
-    if (idsParaMarcar.length) {
-      await poolMensagens.query(
-        `UPDATE chat_mensagens SET lida = TRUE, lida_em = NOW() WHERE id = ANY($1::int[])`,
-        [idsParaMarcar]
-      );
-      await poolMensagens.query(
-        `UPDATE chat_conversas SET nao_lidas_aluna = 0, atualizado_em = NOW() WHERE id = $1`,
-        [conversa.id]
-      );
-      emitirParaAtendimento('mensagens_lidas', {
-        conversa_id: conversa.id,
-        ids: idsParaMarcar,
+    if (lidas.rows.length > 0) {
+      emitirParaSuellen('mensagens_lidas', {
+        conversa_id: conv.id,
+        ids: lidas.rows.map(x => x.id),
         por: 'aluna',
       });
     }
 
     res.json({
-      conversa,
-      mensagens: m.rows,
-      tipo_plano: await tipoPlanoAluna(conversa, usuario),
+      conversa: {
+        ...conv,
+        tier,
+        plano_usuario: planoUsuario,
+        tempo: tempoRelativo(conv.ultima_mensagem_em),
+      },
+      mensagens: msgs.rows,
     });
   } catch (err) {
-    console.error('❌ /chat/conversa:', err.message);
-    res.status(500).json({ error: 'Erro interno' });
+    console.error('[ChatAluna] GET conversa:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/chat/mensagem
+// POST /api/chat/mensagem  body: { tipo_chat, conteudo, tipo, url, reply_to_id }
 routerAluna.post('/mensagem', async (req, res) => {
-  const c = await poolMensagens.connect();
+  const { tipo_chat, conteudo, tipo = 'texto', url, reply_to_id } = req.body || {};
+  const tipoChat = (tipo_chat === 'suporte') ? 'suporte' : 'suellen';
+  if (!conteudo && !url) return res.status(400).json({ error: 'conteudo ou url obrigatório' });
+
   try {
-    const usuarioId = req.usuario.sub;
-    const { conteudo, tipo = 'texto', url, reply_to_id, reply_to_conteudo, reply_to_remetente, reply_to_identidade } = req.body;
-    if (!conteudo && !url) return res.status(400).json({ error: 'Mensagem vazia' });
+    let conv = await getOuCriarConversa(req.usuario.sub, tipoChat);
+    conv = await verificarPrioritario(conv);
 
-    const conversa = await getOuCriarConversa(usuarioId, 'suellen');
-    if (conversa.bloqueada) return res.status(403).json({ error: 'Conversa bloqueada' });
+    if (conv.bloqueada) return res.status(403).json({ error: 'Chat bloqueado' });
 
-    const usuario = await buscarUsuarioBasico(usuarioId);
-    const planoAtual = await tipoPlanoAluna(conversa, usuario);
+    // Decrementa interações se for prioritário
+    if (conv.plano_chat === 'prioritario' && conv.interacoes_restantes !== null) {
+      const novas = conv.interacoes_restantes - 1;
+      await poolMensagens.query(
+        `UPDATE chat_conversas SET interacoes_restantes=$1, atualizado_em=NOW() WHERE id=$2`,
+        [novas, conv.id]
+      );
+      conv.interacoes_restantes = novas;
+      if (novas <= 0) {
+        await poolMensagens.query(
+          `UPDATE chat_conversas SET plano_chat='basic', interacoes_restantes=NULL,
+             prioritario_expira_em=NULL, atualizado_em=NOW() WHERE id=$1`,
+          [conv.id]
+        );
+        await poolMensagens.query(
+          `UPDATE chat_pacotes SET status='esgotado' WHERE usuario_id=$1 AND status='ativo'`,
+          [req.usuario.sub]
+        );
+        conv.plano_chat = 'basic';
+      }
+    }
 
-    await c.query('BEGIN');
+    const preview = conteudo ? conteudo.substring(0, 80)
+                  : (tipo === 'imagem' ? '📷 Imagem' : tipo === 'audio' ? '🎤 Áudio' : '📎 Arquivo');
 
-    const ins = await c.query(
+    // Buscar dados denormalizados do reply_to (se houver)
+    let replyDenorm = { conteudo: null, remetente: null, identidade: null };
+    if (reply_to_id) {
+      const rep = await poolMensagens.query(
+        `SELECT conteudo, remetente, identidade FROM chat_mensagens WHERE id=$1`,
+        [reply_to_id]
+      );
+      if (rep.rows[0]) replyDenorm = rep.rows[0];
+    }
+
+    const r = await poolMensagens.query(
       `INSERT INTO chat_mensagens
-         (conversa_id, usuario_id, remetente, tipo, conteudo, url,
-          reply_to_id, reply_to_conteudo, reply_to_remetente, reply_to_identidade)
+        (conversa_id, usuario_id, remetente, tipo, conteudo, url, reply_to_id,
+         reply_to_conteudo, reply_to_remetente, reply_to_identidade)
        VALUES ($1, $2, 'aluna', $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [conversa.id, usuarioId, tipo, conteudo || null, url || null,
-       reply_to_id || null, reply_to_conteudo || null, reply_to_remetente || null, reply_to_identidade || null]
+      [conv.id, req.usuario.sub, tipo, conteudo || null, url || null, reply_to_id || null,
+       replyDenorm.conteudo, replyDenorm.remetente, replyDenorm.identidade]
     );
-    const msg = ins.rows[0];
+    const msg = r.rows[0];
 
-    const preview = tipo === 'texto'
-      ? String(conteudo || '').substring(0, 80)
-      : (tipo === 'imagem' ? '📷 Imagem' : '🎤 Áudio');
-
-    await c.query(
-      `UPDATE chat_conversas SET
-         ultima_mensagem_em = NOW(),
-         ultima_preview = $1,
-         nao_lidas_suellen = nao_lidas_suellen + 1,
-         atualizado_em = NOW()
-       WHERE id = $2`,
-      [preview, conversa.id]
+    await poolMensagens.query(
+      `UPDATE chat_conversas SET ultima_mensagem_em=NOW(), ultima_preview=$1,
+         nao_lidas_suellen=nao_lidas_suellen+1, atualizado_em=NOW()
+       WHERE id=$2`,
+      [preview, conv.id]
     );
 
-    if (planoAtual === 'prioritario') {
-      await c.query(
-        `UPDATE chat_conversas SET interacoes_restantes = GREATEST(interacoes_restantes - 1, 0) WHERE id = $1`,
-        [conversa.id]
-      );
-    }
-
-    await c.query('COMMIT');
-
-    // WS para atendimento
-    emitirParaAtendimento('nova_mensagem', {
-      conversa_id: conversa.id,
-      mensagem: msg,
-      usuario: { id: usuario.id, nome: usuario.nome, foto_url: usuario.foto_url, telefone: usuario.telefone },
+    emitirParaSuellen('nova_mensagem', {
+      conversa_id:   conv.id,
+      conversa_tipo: tipoChat,
+      usuario_id:    req.usuario.sub,
+      nome:          req.usuario.nome,
+      plano_chat:    conv.plano_chat,
+      mensagem:      msg,
+      preview,
+      tempo: 'agora',
     });
 
-    // Push notification para atendimento
-    notificarAtendimento({
-      title: `${usuario.nome || 'Aluna'} enviou uma mensagem`,
-      body: preview,
-      data: { url: '/atendimento', conversa_id: conversa.id },
-    });
-
-    res.json({ mensagem: msg, tipo_plano: planoAtual });
-  } catch (err) {
-    await c.query('ROLLBACK').catch(() => {});
-    console.error('❌ POST /chat/mensagem:', err.message);
-    res.status(500).json({ error: 'Erro interno' });
-  } finally {
-    c.release();
-  }
-});
-
-// GET /api/chat/status
-routerAluna.get('/status', async (req, res) => {
-  try {
-    const usuarioId = req.usuario.sub;
-    const conversa = await getOuCriarConversa(usuarioId, 'suellen');
-    const usuario = await buscarUsuarioBasico(usuarioId);
-    res.json({
-      tipo_plano: await tipoPlanoAluna(conversa, usuario),
-      interacoes_restantes: conversa.interacoes_restantes,
-      prioritario_expira_em: conversa.prioritario_expira_em,
-      bloqueada: conversa.bloqueada,
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Erro interno' });
-  }
-});
-
-// ──────────────────────────────────────────────────────────
-// ROUTER ATENDIMENTO — exige JWT role='atendimento'
-// ──────────────────────────────────────────────────────────
-
-const routerAtendimento = express.Router();
-routerAtendimento.use(autenticarPainel('atendimento'));
-
-// GET /api/atendimento/chat/conversas
-routerAtendimento.get('/conversas', async (req, res) => {
-  try {
-    const r = await poolMensagens.query(
-      `SELECT id, usuario_id, tipo, plano_chat, interacoes_restantes,
-              prioritario_expira_em, bloqueada, favoritada,
-              ultima_mensagem_em, ultima_preview, nao_lidas_suellen, criado_em
-         FROM chat_conversas
-         ORDER BY plano_chat = 'prioritario' DESC, favoritada DESC, ultima_mensagem_em DESC
-         LIMIT 200`
-    );
-
-    const ids = r.rows.map(c => c.usuario_id);
-    let usuariosMap = {};
-    if (ids.length) {
-      const u = await poolCore.query(
-        `SELECT id, nome, foto_url, telefone, plano FROM usuarios WHERE id = ANY($1::uuid[])`,
-        [ids]
-      );
-      usuariosMap = Object.fromEntries(u.rows.map(x => [x.id, x]));
-    }
-
-    const conversas = r.rows.map(c => {
-      const u = usuariosMap[c.usuario_id] || { id: c.usuario_id, nome: '(?)' };
-      // tier: prioritario | basic_vm | free
-      let tier = 'free';
-      if (c.plano_chat === 'prioritario' && c.prioritario_expira_em && new Date(c.prioritario_expira_em) > new Date() && (c.interacoes_restantes ?? 0) > 0) {
-        tier = 'prioritario';
-      } else if (u.plano && u.plano !== 'gratuito') {
-        tier = 'basic_vm';
-      }
-      // Achata os campos do usuário para o painel antigo (que espera c.nome, c.foto_url, etc)
-      return {
-        ...c,
-        tier,
-        nome: u.nome,
-        foto_url: u.foto_url,
-        telefone: u.telefone,
-        plano: u.plano,
-        usuario: u,
-      };
-    });
-
-    res.json(conversas);
-  } catch (err) {
-    console.error('❌ /atendimento/conversas:', err.message);
-    res.status(500).json({ error: 'Erro interno' });
-  }
-});
-
-// GET /api/atendimento/chat/conversa/:id
-routerAtendimento.get('/conversa/:id', async (req, res) => {
-  try {
-    const conv = await poolMensagens.query(
-      `SELECT * FROM chat_conversas WHERE id = $1`,
-      [req.params.id]
-    );
-    if (!conv.rows.length) return res.status(404).json({ error: 'Conversa não encontrada' });
-    const conversa = conv.rows[0];
-
-    const m = await poolMensagens.query(
-      `SELECT * FROM chat_mensagens WHERE conversa_id = $1 ORDER BY criado_em ASC LIMIT 500`,
-      [req.params.id]
-    );
-
-    const usuario = await buscarUsuarioBasico(conversa.usuario_id);
-
-    // tier
-    let tier = 'free';
-    if (conversa.plano_chat === 'prioritario' && conversa.prioritario_expira_em && new Date(conversa.prioritario_expira_em) > new Date() && (conversa.interacoes_restantes ?? 0) > 0) {
-      tier = 'prioritario';
-    } else if (usuario && usuario.plano && usuario.plano !== 'gratuito') {
-      tier = 'basic_vm';
-    }
-
-    // pacotes
-    const p = await poolMensagens.query(
-      `SELECT * FROM chat_pacotes WHERE usuario_id = $1 ORDER BY ativado_em DESC LIMIT 10`,
-      [conversa.usuario_id]
-    );
-
-    res.json({
-      conversa: { ...conversa, tier, foto_url: usuario?.foto_url, nome: usuario?.nome, telefone: usuario?.telefone, plano: usuario?.plano },
-      mensagens: m.rows,
-      usuario,
-      pacotes: p.rows,
-    });
-  } catch (err) {
-    console.error('❌ /atendimento/conversa/:id:', err.message);
-    res.status(500).json({ error: 'Erro interno' });
-  }
-});
-
-// POST /api/atendimento/chat/mensagem
-routerAtendimento.post('/mensagem', async (req, res) => {
-  const c = await poolMensagens.connect();
-  try {
-    const { conversa_id, conteudo, tipo = 'texto', url, identidade = 'suellen',
-            reply_to_id, reply_to_conteudo, reply_to_remetente, reply_to_identidade } = req.body;
-
-    if (!conversa_id) return res.status(400).json({ error: 'conversa_id obrigatório' });
-    if (!conteudo && !url) return res.status(400).json({ error: 'Mensagem vazia' });
-    if (!['suellen', 'equipe'].includes(identidade)) {
-      return res.status(400).json({ error: 'identidade deve ser suellen ou equipe' });
-    }
-
-    const conv = await poolMensagens.query(
-      `SELECT * FROM chat_conversas WHERE id = $1`,
-      [conversa_id]
-    );
-    if (!conv.rows.length) return res.status(404).json({ error: 'Conversa não encontrada' });
-    const conversa = conv.rows[0];
-
-    await c.query('BEGIN');
-
-    const ins = await c.query(
-      `INSERT INTO chat_mensagens
-         (conversa_id, usuario_id, remetente, identidade, tipo, conteudo, url,
-          reply_to_id, reply_to_conteudo, reply_to_remetente, reply_to_identidade)
-       VALUES ($1, $2, 'suellen', $3, $4, $5, $6, $7, $8, $9, $10)
-       RETURNING *`,
-      [conversa_id, conversa.usuario_id, identidade, tipo, conteudo || null, url || null,
-       reply_to_id || null, reply_to_conteudo || null, reply_to_remetente || null, reply_to_identidade || null]
-    );
-    const msg = ins.rows[0];
-
-    const preview = tipo === 'texto'
-      ? String(conteudo || '').substring(0, 80)
-      : (tipo === 'imagem' ? '📷 Imagem' : '🎤 Áudio');
-
-    await c.query(
-      `UPDATE chat_conversas SET
-         ultima_mensagem_em = NOW(),
-         ultima_preview = $1,
-         nao_lidas_suellen = 0,
-         nao_lidas_aluna = nao_lidas_aluna + 1,
-         atualizado_em = NOW()
-       WHERE id = $2`,
-      [preview, conversa_id]
-    );
-
-    const lidas = await c.query(
-      `UPDATE chat_mensagens
-         SET lida = TRUE, lida_em = NOW()
-       WHERE conversa_id = $1 AND remetente = 'aluna' AND lida = FALSE
-       RETURNING id`,
-      [conversa_id]
-    );
-
-    await c.query('COMMIT');
-
-    emitirParaAluna(conversa.usuario_id, 'nova_mensagem', { mensagem: msg });
-    if (lidas.rows.length) {
-      emitirParaAluna(conversa.usuario_id, 'mensagens_lidas', {
-        conversa_id,
-        ids: lidas.rows.map(r => r.id),
-        por: 'suellen',
+    if (!wsClients.has('suellen')) {
+      await notificarSuellen({
+        title: conv.plano_chat === 'prioritario'
+          ? `⭐ ${req.usuario.nome || 'Aluna'}`
+          : (req.usuario.nome || 'Aluna'),
+        body:  preview,
+        data:  { conversa_id: conv.id, url: '/atendimento' },
       });
     }
 
-    res.json({ mensagem: msg });
+    res.json({
+      mensagem: msg,
+      conversa: {
+        plano_chat:           conv.plano_chat,
+        interacoes_restantes: conv.interacoes_restantes,
+        prioritario_expira_em: conv.prioritario_expira_em,
+      },
+    });
   } catch (err) {
-    await c.query('ROLLBACK').catch(() => {});
-    console.error('❌ POST /atendimento/mensagem:', err.message);
-    res.status(500).json({ error: 'Erro interno' });
-  } finally {
-    c.release();
+    console.error('[ChatAluna] POST mensagem:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/atendimento/chat/favoritar
-routerAtendimento.post('/favoritar', async (req, res) => {
+// POST /api/chat/digitando
+routerAluna.post('/digitando', async (req, res) => {
+  emitirParaSuellen('digitando', {
+    usuario_id: req.usuario.sub,
+    nome: req.usuario.nome,
+  });
+  res.json({ ok: true });
+});
+
+// POST /api/chat/ativar-prioritario
+routerAluna.post('/ativar-prioritario', async (req, res) => {
+  const { origem = 'pagamento', tipo_chat } = req.body || {};
+  const tipoChat = (tipo_chat === 'suporte') ? 'suporte' : 'suellen';
   try {
-    const { conversa_id, favoritada } = req.body;
+    const conv = await getOuCriarConversa(req.usuario.sub, tipoChat);
+    const expira = new Date(Date.now() + 24 * 60 * 60 * 1000);
     await poolMensagens.query(
-      `UPDATE chat_conversas SET favoritada = $1, atualizado_em = NOW() WHERE id = $2`,
-      [!!favoritada, conversa_id]
+      `UPDATE chat_conversas SET
+         plano_chat='prioritario',
+         interacoes_restantes=30,
+         prioritario_expira_em=$1,
+         prioritario_ativado_em=NOW(),
+         atualizado_em=NOW()
+       WHERE id=$2`,
+      [expira, conv.id]
     );
-    res.json({ success: true });
+    await poolMensagens.query(
+      `INSERT INTO chat_pacotes (usuario_id, interacoes, valor_pago, status, ativado_em, expira_em)
+       VALUES ($1, 30, 9.90, 'ativo', NOW(), $2)`,
+      [req.usuario.sub, expira]
+    );
+    res.json({ success: true, expira_em: expira, interacoes: 30, origem });
+  } catch (err) {
+    console.error('[ChatAluna] POST ativar-prioritario:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/chat/status  ?tipo=suellen|suporte
+routerAluna.get('/status', async (req, res) => {
+  const tipo = (req.query.tipo === 'suporte') ? 'suporte' : 'suellen';
+  try {
+    let conv = await getOuCriarConversa(req.usuario.sub, tipo);
+    conv = await verificarPrioritario(conv);
+    const usuario = await buscarUsuarioBasico(req.usuario.sub);
+    const tier = calcularTier(usuario?.plano, conv.plano_chat);
+    res.json({
+      tipo,
+      plano_chat:            conv.plano_chat,
+      plano_usuario:         usuario?.plano || 'gratuito',
+      tier,
+      interacoes_restantes:  conv.interacoes_restantes,
+      prioritario_expira_em: conv.prioritario_expira_em,
+      bloqueada:             conv.bloqueada,
+      nao_lidas:             conv.nao_lidas_aluna,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/atendimento/chat/acao
-routerAtendimento.post('/acao', async (req, res) => {
+// GET /api/chat/resumo — info dos 2 chats da aluna pra tela de escolha
+routerAluna.get('/resumo', async (req, res) => {
   try {
-    const { conversa_id, acao, valor } = req.body;
+    let convSuellen = await getOuCriarConversa(req.usuario.sub, 'suellen');
+    let convSuporte = await getOuCriarConversa(req.usuario.sub, 'suporte');
+    convSuellen = await verificarPrioritario(convSuellen);
+    convSuporte = await verificarPrioritario(convSuporte);
+    const usuario = await buscarUsuarioBasico(req.usuario.sub);
+    const planoUsuario = usuario?.plano || 'gratuito';
+    res.json({
+      plano_usuario: planoUsuario,
+      suellen: {
+        nao_lidas: convSuellen.nao_lidas_aluna,
+        ultima_preview: convSuellen.ultima_preview,
+        ultima_mensagem_em: convSuellen.ultima_mensagem_em,
+        tier: calcularTier(planoUsuario, convSuellen.plano_chat),
+      },
+      suporte: {
+        nao_lidas: convSuporte.nao_lidas_aluna,
+        ultima_preview: convSuporte.ultima_preview,
+        ultima_mensagem_em: convSuporte.ultima_mensagem_em,
+        tier: calcularTier(planoUsuario, convSuporte.plano_chat),
+      },
+    });
+  } catch (err) {
+    console.error('[ChatAluna] GET resumo:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/chat/assinar-vm-template
+// Aluna Free clica "Assinar Vida Mágica" → injeta msg da Suellen explicando assinatura
+routerAluna.post('/assinar-vm-template', async (req, res) => {
+  try {
+    const conv = await getOuCriarConversa(req.usuario.sub, 'suellen');
+    const conteudo = gerarMensagemAssinaturaVM();
+    const r = await poolMensagens.query(
+      `INSERT INTO chat_mensagens (conversa_id, usuario_id, remetente, identidade, tipo, conteudo)
+       VALUES ($1, $2, 'suellen', 'suellen', 'texto', $3)
+       RETURNING *`,
+      [conv.id, req.usuario.sub, conteudo]
+    );
+    const msg = r.rows[0];
+
+    const preview = conteudo.substring(0, 80);
+    await poolMensagens.query(
+      `UPDATE chat_conversas SET ultima_mensagem_em=NOW(), ultima_preview=$1,
+         nao_lidas_aluna=nao_lidas_aluna+1, atualizado_em=NOW()
+       WHERE id=$2`,
+      [preview, conv.id]
+    );
+
+    emitirParaAluna(req.usuario.sub, 'nova_mensagem', { mensagem: msg, conversa_id: conv.id });
+    emitirParaSuellen('nova_mensagem', {
+      conversa_id: conv.id, conversa_tipo: 'suellen',
+      usuario_id: req.usuario.sub, nome: req.usuario.nome,
+      mensagem: msg, preview, tempo: 'agora', origem: 'template_assinar_vm',
+    });
+    res.json({ success: true, mensagem: msg });
+  } catch (err) {
+    console.error('[ChatAluna] POST assinar-vm-template:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// ROTAS — ATENDIMENTO  (montadas em /api/atendimento/chat)
+// ════════════════════════════════════════════════════════════
+
+routerAtendimento.use(autenticarPainel('atendimento'));
+
+routerAtendimento.get('/conversas', async (req, res) => {
+  try {
+    // 1. Buscar conversas
+    const convs = await poolMensagens.query(`
+      SELECT * FROM chat_conversas
+      ORDER BY favoritada DESC, ultima_mensagem_em DESC
+    `);
+    if (!convs.rows.length) return res.json([]);
+
+    // 2. Buscar dados dos usuários (no banco Core, sem JOIN entre bancos)
+    const userIds = [...new Set(convs.rows.map(c => c.usuario_id))];
+    const usuariosResult = await poolCore.query(
+      `SELECT id, nome, foto_url, telefone_formatado,
+              perfil_teste, sementes, plano AS plano_usuario
+       FROM usuarios WHERE id = ANY($1::uuid[])`,
+      [userIds]
+    );
+    const userMap = new Map(usuariosResult.rows.map(u => [u.id, u]));
+
+    // 3. Combinar e ordenar
+    const enriched = convs.rows
+      .map(c => {
+        const u = userMap.get(c.usuario_id) || {};
+        return {
+          ...c,
+          nome: u.nome || null,
+          foto_url: u.foto_url || null,
+          telefone_formatado: u.telefone_formatado || null,
+          perfil_teste: u.perfil_teste || null,
+          sementes: u.sementes || 0,
+          plano_usuario: u.plano_usuario || 'gratuito',
+          tier: calcularTier(u.plano_usuario, c.plano_chat),
+          tempo: tempoRelativo(c.ultima_mensagem_em),
+        };
+      })
+      // Ordem final: prioritário primeiro, depois VM, depois free; favoritados sobem
+      .sort((a, b) => {
+        const peso = (x) => {
+          if (x.plano_chat === 'prioritario') return 0;
+          if (x.plano_usuario && x.plano_usuario !== 'gratuito') return 1;
+          return 2;
+        };
+        const da = peso(a), db = peso(b);
+        if (da !== db) return da - db;
+        if (a.favoritada !== b.favoritada) return b.favoritada - a.favoritada;
+        return new Date(b.ultima_mensagem_em) - new Date(a.ultima_mensagem_em);
+      });
+
+    res.json(enriched);
+  } catch (err) {
+    console.error('[ChatAtend] GET conversas:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+routerAtendimento.get('/conversa/:id', async (req, res) => {
+  try {
+    const convResult = await poolMensagens.query(
+      `SELECT * FROM chat_conversas WHERE id=$1`,
+      [req.params.id]
+    );
+    if (!convResult.rows.length) return res.status(404).json({ error: 'Conversa não encontrada' });
+    const conv = convResult.rows[0];
+
+    // Dados do usuário (banco Core)
+    const usuario = await buscarUsuarioBasico(conv.usuario_id);
+
+    const msgs = await poolMensagens.query(
+      `SELECT * FROM chat_mensagens WHERE conversa_id=$1 ORDER BY criado_em ASC`,
+      [req.params.id]
+    );
+
+    const pacotes = await poolMensagens.query(
+      `SELECT * FROM chat_pacotes WHERE usuario_id=$1 ORDER BY ativado_em DESC`,
+      [conv.usuario_id]
+    );
+
+    const planoUsuario = usuario?.plano || 'gratuito';
+    res.json({
+      conversa: {
+        ...conv,
+        nome: usuario?.nome || null,
+        foto_url: usuario?.foto_url || null,
+        telefone_formatado: usuario?.telefone_formatado || null,
+        email: usuario?.email || null,
+        perfil_teste: usuario?.perfil_teste || null,
+        percentual_prosperidade: usuario?.percentual_prosperidade || 0,
+        sementes: usuario?.sementes || 0,
+        plano_usuario: planoUsuario,
+        tier: calcularTier(planoUsuario, conv.plano_chat),
+        tempo: tempoRelativo(conv.ultima_mensagem_em),
+      },
+      mensagens: msgs.rows,
+      pacotes: pacotes.rows,
+    });
+  } catch (err) {
+    console.error('[ChatAtend] GET conversa/:id:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+routerAtendimento.post('/mensagem', async (req, res) => {
+  const { conversa_id, conteudo, tipo = 'texto', url, reply_to_id, identidade } = req.body || {};
+  if (!conversa_id || (!conteudo && !url)) {
+    return res.status(400).json({ error: 'dados inválidos' });
+  }
+  const ident = (identidade === 'equipe') ? 'equipe' : 'suellen';
+
+  try {
+    const convResult = await poolMensagens.query(
+      `SELECT * FROM chat_conversas WHERE id=$1`,
+      [conversa_id]
+    );
+    if (!convResult.rows.length) return res.status(404).json({ error: 'Conversa não encontrada' });
+    const conv = convResult.rows[0];
+
+    // 1. Marca mensagens pendentes da aluna como lidas
+    const lidas = await poolMensagens.query(
+      `UPDATE chat_mensagens SET lida=TRUE, lida_em=NOW()
+       WHERE conversa_id=$1 AND remetente='aluna' AND lida=FALSE
+       RETURNING id`,
+      [conversa_id]
+    );
+
+    // 2. Reply denormalizado
+    let replyDenorm = { conteudo: null, remetente: null, identidade: null };
+    if (reply_to_id) {
+      const rep = await poolMensagens.query(
+        `SELECT conteudo, remetente, identidade FROM chat_mensagens WHERE id=$1`,
+        [reply_to_id]
+      );
+      if (rep.rows[0]) replyDenorm = rep.rows[0];
+    }
+
+    // 3. Insere a resposta
+    const r = await poolMensagens.query(
+      `INSERT INTO chat_mensagens
+        (conversa_id, usuario_id, remetente, identidade, tipo, conteudo, url, reply_to_id,
+         reply_to_conteudo, reply_to_remetente, reply_to_identidade)
+       VALUES ($1, $2, 'suellen', $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING *`,
+      [conversa_id, conv.usuario_id, ident, tipo, conteudo || null, url || null, reply_to_id || null,
+       replyDenorm.conteudo, replyDenorm.remetente, replyDenorm.identidade]
+    );
+    const msg = r.rows[0];
+
+    const preview = conteudo ? conteudo.substring(0, 80)
+                  : (tipo === 'imagem' ? '📷 Imagem' : '🎤 Áudio');
+
+    // 4. Atualiza conversa
+    // ⚠️ TIMER PRIORITÁRIO: só inicia/reseta quando IDENTIDADE='suellen'
+    let updateExtra = '';
+    let updateParams = [preview, conversa_id];
+    let timer_resetado = false;
+    if (ident === 'suellen' && conv.plano_chat === 'prioritario') {
+      const novaExpira = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      updateExtra = `, prioritario_expira_em=$3`;
+      updateParams.push(novaExpira);
+      timer_resetado = true;
+    }
+    await poolMensagens.query(
+      `UPDATE chat_conversas SET ultima_mensagem_em=NOW(), ultima_preview=$1,
+         nao_lidas_aluna=nao_lidas_aluna+1, nao_lidas_suellen=0, atualizado_em=NOW()
+         ${updateExtra}
+       WHERE id=$2`,
+      updateParams
+    );
+
+    // 5. Eventos WS
+    emitirParaAluna(conv.usuario_id, 'nova_mensagem', { mensagem: msg, conversa_id });
+    if (lidas.rows.length > 0) {
+      emitirParaAluna(conv.usuario_id, 'mensagens_lidas', {
+        conversa_id, ids: lidas.rows.map(x => x.id), por: 'suellen',
+      });
+    }
+    emitirParaSuellen('mensagens_lidas', {
+      conversa_id, ids: lidas.rows.map(x => x.id), por: 'suellen',
+    });
+
+    res.json({
+      mensagem: msg,
+      marcadas_lidas: lidas.rows.length,
+      timer_resetado,
+    });
+  } catch (err) {
+    console.error('[ChatAtend] POST mensagem:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+routerAtendimento.post('/favoritar', async (req, res) => {
+  const { conversa_id, favoritada } = req.body || {};
+  if (!conversa_id) return res.status(400).json({ error: 'conversa_id obrigatório' });
+  try {
+    await poolMensagens.query(
+      `UPDATE chat_conversas SET favoritada=$1, atualizado_em=NOW() WHERE id=$2`,
+      [!!favoritada, conversa_id]
+    );
+    res.json({ success: true, favoritada: !!favoritada });
+  } catch (err) {
+    console.error('[ChatAtend] POST favoritar:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+routerAtendimento.post('/digitando-resposta', async (req, res) => {
+  const { conversa_id } = req.body || {};
+  if (!conversa_id) return res.status(400).json({ error: 'conversa_id obrigatório' });
+  try {
+    const r = await poolMensagens.query(
+      `SELECT usuario_id FROM chat_conversas WHERE id=$1`,
+      [conversa_id]
+    );
+    if (r.rows[0]) {
+      emitirParaAluna(r.rows[0].usuario_id, 'suellen_digitando', { conversa_id });
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+routerAtendimento.post('/acao', async (req, res) => {
+  const { conversa_id, acao, valor } = req.body || {};
+  try {
+    const convResult = await poolMensagens.query(
+      `SELECT usuario_id FROM chat_conversas WHERE id=$1`,
+      [conversa_id]
+    );
+    const usuario_id = convResult.rows[0]?.usuario_id;
+
     switch (acao) {
       case 'bloquear':
-        await poolMensagens.query(`UPDATE chat_conversas SET bloqueada=TRUE, atualizado_em=NOW() WHERE id=$1`, [conversa_id]);
+        await poolMensagens.query(
+          `UPDATE chat_conversas SET bloqueada=TRUE, atualizado_em=NOW() WHERE id=$1`,
+          [conversa_id]
+        );
         break;
       case 'desbloquear':
-        await poolMensagens.query(`UPDATE chat_conversas SET bloqueada=FALSE, atualizado_em=NOW() WHERE id=$1`, [conversa_id]);
+        await poolMensagens.query(
+          `UPDATE chat_conversas SET bloqueada=FALSE, atualizado_em=NOW() WHERE id=$1`,
+          [conversa_id]
+        );
         break;
       case 'cortesia': {
+        if (!usuario_id) return res.status(404).json({ error: 'Conversa sem usuário' });
         const expira = new Date(Date.now() + 24 * 60 * 60 * 1000);
         await poolMensagens.query(
           `UPDATE chat_conversas SET plano_chat='prioritario', interacoes_restantes=30,
@@ -456,125 +723,114 @@ routerAtendimento.post('/acao', async (req, res) => {
            WHERE id=$2`,
           [expira, conversa_id]
         );
-        const conv = await poolMensagens.query(`SELECT usuario_id FROM chat_conversas WHERE id=$1`, [conversa_id]);
         await poolMensagens.query(
-          `INSERT INTO chat_pacotes (usuario_id, interacoes, valor_pago, expira_em, status)
-           VALUES ($1, 30, 0, $2, 'ativo')`,
-          [conv.rows[0].usuario_id, expira]
+          `INSERT INTO chat_pacotes (usuario_id, interacoes, valor_pago, status, ativado_em, expira_em)
+           VALUES ($1, 30, 0, 'ativo', NOW(), $2)`,
+          [usuario_id, expira]
         );
         break;
       }
       case 'ajustar_interacoes':
         await poolMensagens.query(
           `UPDATE chat_conversas SET interacoes_restantes=$1, atualizado_em=NOW() WHERE id=$2`,
-          [Number(valor) || 0, conversa_id]
+          [valor, conversa_id]
         );
         break;
       case 'estender_prioritario': {
-        const novaExpiracao = new Date(Date.now() + (Number(valor) || 24) * 60 * 60 * 1000);
+        const novaExpiracao = new Date(Date.now() + (valor || 24) * 60 * 60 * 1000);
         await poolMensagens.query(
           `UPDATE chat_conversas SET prioritario_expira_em=$1, atualizado_em=NOW() WHERE id=$2`,
           [novaExpiracao, conversa_id]
         );
+        if (usuario_id) {
+          await poolMensagens.query(
+            `UPDATE chat_pacotes SET expira_em=$1 WHERE usuario_id=$2 AND status='ativo'`,
+            [novaExpiracao, usuario_id]
+          );
+        }
         break;
       }
       case 'rebaixar_basic':
         await poolMensagens.query(
           `UPDATE chat_conversas SET plano_chat='basic', interacoes_restantes=NULL,
-             prioritario_expira_em=NULL, atualizado_em=NOW() WHERE id=$1`,
+             prioritario_expira_em=NULL, atualizado_em=NOW()
+           WHERE id=$1`,
           [conversa_id]
         );
+        if (usuario_id) {
+          await poolMensagens.query(
+            `UPDATE chat_pacotes SET status='esgotado' WHERE usuario_id=$1 AND status='ativo'`,
+            [usuario_id]
+          );
+        }
         break;
       default:
-        return res.status(400).json({ error: 'Ação inválida' });
+        return res.status(400).json({ error: 'ação inválida' });
     }
-    res.json({ success: true });
+    res.json({ success: true, acao });
   } catch (err) {
-    console.error('❌ /atendimento/acao:', err.message);
+    console.error('[ChatAtend] POST acao:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET /api/atendimento/chat/stats
 routerAtendimento.get('/stats', async (req, res) => {
   try {
-    const r = await poolMensagens.query(`
+    // Stats das conversas (banco Mensagens)
+    const convs = await poolMensagens.query(`
       SELECT
-        COUNT(*) FILTER (WHERE plano_chat = 'prioritario' AND prioritario_expira_em > NOW()) AS prioritarios_ativos,
-        COUNT(*) AS total_conversas,
-        SUM(nao_lidas_suellen) AS total_nao_lidas
+        COUNT(*) FILTER (WHERE plano_chat='prioritario') AS prioritarias,
+        COUNT(*) FILTER (WHERE plano_chat='basic') AS basic,
+        COUNT(*) FILTER (WHERE nao_lidas_suellen > 0) AS aguardando,
+        COUNT(*) FILTER (WHERE bloqueada=TRUE) AS bloqueadas,
+        COUNT(*) FILTER (WHERE favoritada=TRUE) AS favoritadas,
+        COUNT(*) FILTER (WHERE tipo='suellen') AS chats_suellen,
+        COUNT(*) FILTER (WHERE tipo='suporte') AS chats_suporte,
+        COUNT(*) AS total
       FROM chat_conversas
     `);
-    res.json(r.rows[0]);
+
+    // Receita (banco Mensagens)
+    const receita = await poolMensagens.query(`
+      SELECT COALESCE(SUM(valor_pago),0) AS total, COUNT(*) AS pacotes
+      FROM chat_pacotes WHERE valor_pago > 0
+    `);
+
+    res.json({ ...convs.rows[0], ...receita.rows[0] });
   } catch (err) {
+    console.error('[ChatAtend] GET stats:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/atendimento/chat/push-subscribe — registra device para push
 routerAtendimento.post('/push-subscribe', async (req, res) => {
+  const { endpoint, keys, userAgent } = req.body || {};
+  if (!endpoint || !keys) return res.status(400).json({ error: 'dados inválidos' });
   try {
-    const { endpoint, keys } = req.body || {};
-    if (!endpoint || !keys) return res.status(400).json({ error: 'endpoint e keys obrigatórios' });
-    const ua = req.headers['user-agent'] || null;
     await poolMensagens.query(
-      `INSERT INTO chat_push_subscriptions (endpoint, keys, user_agent, ativo)
-       VALUES ($1, $2, $3, TRUE)
-       ON CONFLICT (endpoint) DO UPDATE SET keys = EXCLUDED.keys, user_agent = EXCLUDED.user_agent, ativo = TRUE`,
-      [endpoint, keys, ua]
+      `INSERT INTO chat_push_subscriptions (endpoint, keys, user_agent)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (endpoint) DO UPDATE SET keys=$2, ativo=TRUE, user_agent=$3`,
+      [endpoint, JSON.stringify(keys), userAgent || null]
     );
     res.json({ success: true });
   } catch (err) {
-    console.error('❌ push-subscribe:', err.message);
+    console.error('[ChatAtend] POST push-subscribe:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// ──────────────────────────────────────────────────────────
-// WEBSOCKET
-// ──────────────────────────────────────────────────────────
-
-const wsClientesAlunas = new Map();
-const wsClientesAtendimento = new Set();
-
-function emitirParaAluna(usuarioId, evento, dados) {
-  const conjunto = wsClientesAlunas.get(usuarioId);
-  if (!conjunto) return;
-  const payload = JSON.stringify({ evento, ...dados });
-  for (const ws of conjunto) {
-    try { ws.send(payload); } catch (_) {}
-  }
-}
-
-function emitirParaAtendimento(evento, dados) {
-  const payload = JSON.stringify({ evento, ...dados });
-  for (const ws of wsClientesAtendimento) {
-    try { ws.send(payload); } catch (_) {}
-  }
-}
-
-function registrarWsAluna(usuarioId, ws) {
-  if (!wsClientesAlunas.has(usuarioId)) wsClientesAlunas.set(usuarioId, new Set());
-  wsClientesAlunas.get(usuarioId).add(ws);
-  ws.on('close', () => {
-    const set = wsClientesAlunas.get(usuarioId);
-    if (set) {
-      set.delete(ws);
-      if (!set.size) wsClientesAlunas.delete(usuarioId);
-    }
-  });
-}
-
-function registrarWsAtendimento(ws) {
-  wsClientesAtendimento.add(ws);
-  ws.on('close', () => wsClientesAtendimento.delete(ws));
-}
+// ════════════════════════════════════════════════════════════
+// EXPORTS
+// ════════════════════════════════════════════════════════════
 
 module.exports = {
   routerAluna,
   routerAtendimento,
+  registrarWs,
+  removerWs,
   registrarWsAluna,
   registrarWsAtendimento,
   emitirParaAluna,
-  emitirParaAtendimento,
+  emitirParaSuellen,
 };
