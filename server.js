@@ -88,7 +88,7 @@ app.get('/admin', (req, res) => {
 
 // ── MÓDULOS DA API ─────────────────────────────────────────
 app.use('/api/auth',          require('./routes/auth'));
-app.use('/api/atendimento',   require('./routes/atendimento-auth'));  // /api/atendimento/login
+app.use('/api/painel',        require('./routes/admin-auth'));        // OTP do admin/atendimento
 app.use('/api',               require('./routes/precos'));
 app.use('/api',               require('./routes/depoimentos'));
 app.use('/api',               require('./routes/feed'));
@@ -139,8 +139,10 @@ function autenticarWsAtendimento(token) {
   if (!token || !JWT_SECRET) return null;
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    if (payload.role !== 'atendimento' && payload.role !== 'suellen') return null;
-    return payload;
+    // Aceita: novo formato (role=admin + escopo=atendimento) OU legado (role=atendimento/suellen)
+    if (payload.role === 'admin' && payload.escopo === 'atendimento') return payload;
+    if (payload.role === 'atendimento' || payload.role === 'suellen') return payload;
+    return null;
   } catch (_) { return null; }
 }
 
@@ -198,7 +200,7 @@ server.listen(PORT, async () => {
 🌐 Porta: ${PORT}
 🏥 Health:        GET  /health
 🔐 Auth aluna:         /api/auth/*
-🔑 Login atend:   POST /api/atendimento/login
+🔑 Login painel:       /api/painel/* (OTP via WhatsApp)
 💰 Preços:        GET  /api/precos
 💬 Depoimentos:   GET  /api/depoimentos
 📰 Feed:          GET  /api/feed
