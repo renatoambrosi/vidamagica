@@ -5,10 +5,10 @@
 
    Fases ativas:
    - Fase 1 — Fundação ✅
-   - Fase 2 — Auth ✅ (em /api/auth)
-   - Fase 3 — Conteúdo ✅ (precos, depoimentos, feed, config)
+   - Fase 2 — Auth aluna ✅
+   - Fase 3 — Conteúdo ✅
    - Fase 4A — Chat (REST + WS) ✅
-   - Fase 4B — Painéis Chat ✅
+   - Fase 4B — Painel atendimento ✅ (HTML antigo + login JWT + upload + push)
    ============================================================ */
 
 const express = require('express');
@@ -76,21 +76,21 @@ app.get('/health', async (req, res) => {
   });
 });
 
-// ── ROTA AMIGÁVEL — /atendimento serve atendimento.html ───────
-// Note: a página atendimento.html tem login próprio embutido
-// e protege as chamadas de API com header Authorization Basic.
+// ── ROTA AMIGÁVEL: /atendimento serve atendimento.html ─────
 app.get('/atendimento', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'atendimento.html'));
 });
 
 // ── MÓDULOS DA API ─────────────────────────────────────────
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api',      require('./routes/precos'));
-app.use('/api',      require('./routes/depoimentos'));
-app.use('/api',      require('./routes/feed'));
-app.use('/api',      require('./routes/config'));
+app.use('/api/auth',          require('./routes/auth'));
+app.use('/api/atendimento',   require('./routes/atendimento-auth'));  // /api/atendimento/login
+app.use('/api',               require('./routes/precos'));
+app.use('/api',               require('./routes/depoimentos'));
+app.use('/api',               require('./routes/feed'));
+app.use('/api',               require('./routes/config'));
 app.use('/api/chat',              chat.routerAluna);
 app.use('/api/atendimento/chat',  chat.routerAtendimento);
+app.use('/api/upload',        require('./routes/upload'));
 
 // ── ESTÁTICOS ──────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
@@ -116,6 +116,8 @@ app.use((err, req, res, next) => {
 
 // ──────────────────────────────────────────────────────────
 // WEBSOCKET — /ws/chat
+// Aluna:        wss://.../ws/chat?token=<JWT aluna>&modo=aluna
+// Atendimento:  wss://.../ws/chat?token=<JWT atendimento>&modo=atendimento
 // ──────────────────────────────────────────────────────────
 
 const wss = new WebSocket.Server({ noServer: true });
@@ -128,12 +130,12 @@ function autenticarWsAluna(token) {
 }
 
 function autenticarWsAtendimento(token) {
-  if (!token) return false;
+  if (!token || !JWT_SECRET) return null;
   try {
-    const decoded = Buffer.from(token, 'base64').toString();
-    const [user, pass] = decoded.split(':');
-    return user === process.env.ADMIN_USER && pass === process.env.ADMIN_PASSWORD;
-  } catch (_) { return false; }
+    const payload = jwt.verify(token, JWT_SECRET);
+    if (payload.role !== 'atendimento' && payload.role !== 'suellen') return null;
+    return payload;
+  } catch (_) { return null; }
 }
 
 server.on('upgrade', (req, socket, head) => {
@@ -157,7 +159,8 @@ server.on('upgrade', (req, socket, head) => {
   }
 
   if (modo === 'atendimento' || modo === 'suellen') {
-    if (!autenticarWsAtendimento(token)) { socket.destroy(); return; }
+    const payload = autenticarWsAtendimento(token);
+    if (!payload) { socket.destroy(); return; }
     wss.handleUpgrade(req, socket, head, (ws) => {
       ws.modo = 'atendimento';
       chat.registrarWsAtendimento(ws);
@@ -188,13 +191,15 @@ server.listen(PORT, async () => {
 🚀 Vida Mágica API
 🌐 Porta: ${PORT}
 🏥 Health:        GET  /health
-🔐 Auth:               /api/auth/*
+🔐 Auth aluna:         /api/auth/*
+🔑 Login atend:   POST /api/atendimento/login
 💰 Preços:        GET  /api/precos
 💬 Depoimentos:   GET  /api/depoimentos
 📰 Feed:          GET  /api/feed
 ⚙️  Config:        GET  /api/config
-✦  Chat aluna:         /api/chat/*           (JWT)
-✦  Chat atend.:        /api/atendimento/chat/* (Basic Auth)
+✦  Chat aluna:         /api/chat/*
+✦  Chat atend.:        /api/atendimento/chat/*
+📤 Upload:             /api/upload/*
 🖥️  Painel:        GET  /atendimento
 🔌 WebSocket:     WS   /ws/chat
   `);
