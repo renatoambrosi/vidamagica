@@ -642,4 +642,24 @@ router.get('/me', autenticar, async (req, res) => {
   }
 });
 
+// ──────────────────────────────────────────────────────────
+// 15. TESTES — lista testes de prosperidade da aluna
+// ──────────────────────────────────────────────────────────
+
+router.get('/testes', autenticar, async (req, res) => {
+  try {
+    const { poolTeste } = require('../db');
+    const r = await poolTeste.query(
+      `SELECT id, perfil_dominante, percentual_prosperidade, nivel_prosperidade,
+              respostas, contagem, percentuais, feito_em
+       FROM testes WHERE usuario_id=$1 ORDER BY feito_em DESC`,
+      [req.usuario.sub]
+    );
+    res.json(r.rows);
+  } catch (err) {
+    console.error('❌ /testes:', err.message);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
 module.exports = router;
