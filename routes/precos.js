@@ -11,7 +11,7 @@
 const express = require('express');
 const router = express.Router();
 const { poolComunicacao } = require('../db');
-const { autenticarAdmin } = require('../middleware/autenticar');
+const { autenticarPainel } = require('../middleware/autenticar');
 
 // ── HELPERS ──
 function calcularDesconto(de, por) {
@@ -91,7 +91,7 @@ router.get('/precos', async (req, res) => {
 });
 
 // ── ADMIN: LER ──
-router.get('/admin/precos', autenticarAdmin, async (req, res) => {
+router.get('/admin/precos', autenticarPainel('admin'), async (req, res) => {
   try {
     const result = await poolComunicacao.query('SELECT key, dados FROM precos ORDER BY key');
     const precos = {};
@@ -103,7 +103,7 @@ router.get('/admin/precos', autenticarAdmin, async (req, res) => {
 });
 
 // ── ADMIN: SALVAR ──
-router.post('/admin/precos', autenticarAdmin, async (req, res) => {
+router.post('/admin/precos', autenticarPainel('admin'), async (req, res) => {
   const dados = req.body;
   if (!dados || typeof dados !== 'object') {
     return res.status(400).json({ error: 'Dados inválidos' });
