@@ -86,6 +86,23 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+// ── ROTA AMIGÁVEL: /auth serve auth.html (login da aluna) ──
+app.get('/auth', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'auth.html'));
+});
+
+// ── ROTA AMIGÁVEL: /cadastro serve cadastro.html ───────────
+app.get('/cadastro', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'cadastro.html'));
+});
+
+// ── ROTA AMIGÁVEL: /app e /app/* (exceto arquivos estáticos) → app.html ──
+// Permite /app/dashboard, /app/perfil etc. — sem .html
+// Exclui /app/app.css, /app/app.js, /app/scene.js, /app/assets/*
+app.get(/^\/app(\/(dashboard|perfil|chat|loja|sementes)?)?$/, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'app.html'));
+});
+
 // ── MÓDULOS DA API ─────────────────────────────────────────
 app.use('/api/auth',          require('./routes/auth'));
 app.use('/api/painel',        require('./routes/admin-auth'));        // OTP do admin/atendimento
