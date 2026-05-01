@@ -1,12 +1,12 @@
 /* ============================================================
    VIDA MÁGICA — middleware/autenticar.js
-   Middleware JWT para proteger rotas da aluna.
+   Middlewares de autenticação.
 
-   Banco: nenhum (apenas valida assinatura JWT).
-
-   Como usar nas rotas:
-     const { autenticar } = require('../middleware/autenticar');
-     router.get('/me', autenticar, (req, res) => { req.usuario.id ... });
+   PADRÃO ÚNICO:
+   - Aluna: JWT (Bearer) → autenticar
+   - Admin: Basic Auth, retorna 401 JSON (sem WWW-Authenticate).
+            Navegador NUNCA abre popup nativo. Cada tela admin
+            tem login próprio que envia o header Authorization Basic.
    ============================================================ */
 
 const jwt = require('jsonwebtoken');
@@ -18,7 +18,7 @@ if (!JWT_SECRET) {
 }
 
 /**
- * Middleware que valida o access token (Bearer) e popula req.usuario.
+ * Valida access token (Bearer) e popula req.usuario.
  */
 function autenticar(req, res, next) {
   const auth = req.headers.authorization;
@@ -39,21 +39,21 @@ function autenticar(req, res, next) {
 }
 
 /**
- * Middleware Basic Auth para rotas administrativas.
- * Lê ADMIN_USER e ADMIN_PASSWORD do ambiente.
+ * Basic Auth admin — sem WWW-Authenticate.
+ * Navegador NÃO abre popup. Tela admin trata o 401 sozinha.
  */
 function autenticarAdmin(req, res, next) {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Basic ')) {
-    res.set('WWW-Authenticate', 'Basic realm="Admin"');
-    return res.status(401).send('Acesso negado');
+    return res.status(401).json({ error: 'Não autorizado' });
   }
-  const [user, pass] = Buffer.from(auth.slice(6), 'base64').toString().split(':');
-  if (user === process.env.ADMIN_USER && pass === process.env.ADMIN_PASSWORD) {
-    return next();
-  }
-  res.set('WWW-Authenticate', 'Basic realm="Admin"');
-  return res.status(401).send('Usuário ou senha incorretos');
+  try {
+    const [user, pass] = Buffer.from(auth.slice(6), 'base64').toString().split(':');
+    if (user === process.env.ADMIN_USER && pass === process.env.ADMIN_PASSWORD) {
+      return next();
+    }
+  } catch (_) {}
+  return res.status(401).json({ error: 'Não autorizado' });
 }
 
 module.exports = { autenticar, autenticarAdmin };
