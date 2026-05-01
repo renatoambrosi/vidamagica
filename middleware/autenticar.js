@@ -1,16 +1,19 @@
 /* ============================================================
    VIDA MÁGICA — middleware/autenticar.js
-   3 middlewares de autenticação:
+   Middlewares de autenticação:
 
-   - autenticar          → aluna (JWT Bearer, role implícito)
-   - autenticarAdmin     → admin (Basic Auth, sem WWW-Authenticate)
-   - autenticarAtendimento → painel atendimento (JWT Bearer com role 'atendimento')
+   - autenticar (aluna)              → JWT Bearer
+   - autenticarPainel(escopo)        → JWT Bearer com role='admin' e escopo
+                                        ('admin' ou 'atendimento')
+   - autenticarAdmin (Basic legado)  → mantido pro caso de algum endpoint
+                                        ainda usar Basic admin/admin (depreciado)
 
    Todos retornam 401 JSON simples (sem WWW-Authenticate).
    Navegador NUNCA abre popup nativo.
    ============================================================ */
 
 const jwt = require('jsonwebtoken');
+const { buscarSessaoAdmin, tocarSessaoAdmin } = require('../core/admins');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'vida-magica-secret-troque-em-producao';
 
@@ -35,8 +38,19 @@ function gerarAccessToken(usuario) {
 }
 
 /**
- * Aluna — JWT Bearer.
+ * Gera token de painel (30 dias) para admin/atendimento.
+ * Inclui sessao_id pra validação contra banco e escopo.
  */
+function gerarTokenPainel({ admin_id, escopo, sessao_id }) {
+  return jwt.sign(
+    { sub: admin_id, role: 'admin', escopo, sid: sessao_id },
+    JWT_SECRET,
+    { expiresIn: '30d' }
+  );
+}
+
+// ── ALUNA ────────────────────────────────────────────────
+
 function autenticar(req, res, next) {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Bearer ')) {
@@ -55,9 +69,58 @@ function autenticar(req, res, next) {
   }
 }
 
-/**
- * Admin — Basic Auth (sem popup nativo).
- */
+// ── PAINEL (admin/atendimento) ───────────────────────────
+
+function autenticarPainel(escopoRequerido) {
+  return async function (req, res, next) {
+    const auth = req.headers.authorization;
+    if (!auth || !auth.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Token não fornecido' });
+    }
+    const token = auth.slice(7).trim();
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({ error: 'Sessão expirada', code: 'TOKEN_EXPIRED' });
+      }
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    // Valida role e escopo
+    if (payload.role !== 'admin') {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+    if (payload.escopo !== escopoRequerido) {
+      return res.status(403).json({ error: 'Escopo incorreto' });
+    }
+    if (!payload.sid) {
+      return res.status(401).json({ error: 'Token inválido (sem sessão)' });
+    }
+
+    // Valida sessão no banco (não revogada, não expirada)
+    try {
+      const sessao = await buscarSessaoAdmin(payload.sid);
+      if (!sessao) {
+        return res.status(401).json({ error: 'Sessão revogada ou expirada', code: 'SESSION_EXPIRED' });
+      }
+      if (sessao.escopo !== escopoRequerido) {
+        return res.status(403).json({ error: 'Escopo incorreto' });
+      }
+      // Toca último uso (não bloqueia se falhar)
+      tocarSessaoAdmin(payload.sid).catch(() => {});
+      req.admin = { id: payload.sub, escopo: payload.escopo, sessao_id: payload.sid };
+      next();
+    } catch (err) {
+      console.error('❌ autenticarPainel:', err.message);
+      return res.status(500).json({ error: 'Erro interno' });
+    }
+  };
+}
+
+// ── BASIC AUTH LEGADO (depreciado, mantido pra retrocompatibilidade) ──
+
 function autenticarAdmin(req, res, next) {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Basic ')) {
@@ -72,9 +135,8 @@ function autenticarAdmin(req, res, next) {
   return res.status(401).json({ error: 'Não autorizado' });
 }
 
-/**
- * Atendimento — JWT Bearer com role 'atendimento' ou 'suellen' (compat).
- */
+// ── JWT ATENDIMENTO LEGADO (era usado antes da Etapa 1, mantido por enquanto) ──
+
 function autenticarAtendimento(req, res, next) {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Bearer ')) {
@@ -83,7 +145,7 @@ function autenticarAtendimento(req, res, next) {
   const token = auth.slice(7).trim();
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    if (payload.role !== 'atendimento' && payload.role !== 'suellen') {
+    if (payload.role !== 'atendimento' && payload.role !== 'suellen' && payload.role !== 'admin') {
       return res.status(403).json({ error: 'Acesso negado' });
     }
     req.atendimento = payload;
@@ -93,4 +155,12 @@ function autenticarAtendimento(req, res, next) {
   }
 }
 
-module.exports = { autenticar, autenticarAdmin, autenticarAtendimento, gerarAccessToken, JWT_SECRET };
+module.exports = {
+  autenticar,
+  autenticarPainel,
+  autenticarAdmin,
+  autenticarAtendimento,
+  gerarAccessToken,
+  gerarTokenPainel,
+  JWT_SECRET,
+};
