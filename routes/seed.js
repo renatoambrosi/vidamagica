@@ -1,7 +1,15 @@
+/* ============================================================
+   VIDA MÁGICA — routes/seed.js
+   Popula preços iniciais (executar uma vez).
+   Banco: poolComunicacao.
+
+   Endpoint: POST /api/admin/seed (idempotente — não sobrescreve)
+   ============================================================ */
+
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../db');
-const { autenticar } = require('./precos');
+const { poolComunicacao } = require('../db');
+const { autenticarAdmin } = require('../middleware/autenticar');
 
 const PRECOS_INICIAIS = {
   clube_vida_magica: {
@@ -111,9 +119,8 @@ const PRECOS_INICIAIS = {
   }
 };
 
-// ── SEED — popula preços iniciais ──
-router.post('/admin/seed', autenticar, async (req, res) => {
-  const client = await pool.connect();
+router.post('/admin/seed', autenticarAdmin, async (req, res) => {
+  const client = await poolComunicacao.connect();
   try {
     await client.query('BEGIN');
     for (const [key, valor] of Object.entries(PRECOS_INICIAIS)) {
