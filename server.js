@@ -5,6 +5,7 @@
    Fases ativas:
    - Fase 1 — Fundação ✅
    - Fase 2 — Auth ✅ (em /api/auth)
+   - Fase 3 — Conteúdo ✅ (precos, depoimentos, feed, config)
    ============================================================ */
 
 const express = require('express');
@@ -15,6 +16,7 @@ const http = require('http');
 require('dotenv').config();
 
 const { initDb, checkHealth } = require('./db');
+const { autenticarAdmin } = require('./middleware/autenticar');
 
 const app = express();
 const server = http.createServer(app);
@@ -68,10 +70,20 @@ app.get('/health', async (req, res) => {
   });
 });
 
-// ── MÓDULOS ────────────────────────────────────────────────
+// ── MÓDULOS DA API ─────────────────────────────────────────
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api',      require('./routes/precos'));
+app.use('/api',      require('./routes/depoimentos'));
+app.use('/api',      require('./routes/feed'));
+app.use('/api',      require('./routes/config'));
+app.use('/api',      require('./routes/migracao'));
 
-// ── PÁGINAS ESTÁTICAS ──────────────────────────────────────
+// ── PÁGINAS ADMIN PROTEGIDAS ───────────────────────────────
+app.get('/admin/migracao', autenticarAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin-migracao.html'));
+});
+
+// ── PÁGINAS ESTÁTICAS PÚBLICAS ─────────────────────────────
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // ── 404 PARA /api ──────────────────────────────────────────
@@ -95,8 +107,13 @@ server.listen(PORT, async () => {
   console.log(`
 🚀 Vida Mágica API
 🌐 Porta: ${PORT}
-🏥 Health: GET /health
-🔐 Auth:   /api/auth/*
+🏥 Health:        GET  /health
+🔐 Auth:               /api/auth/*
+💰 Preços:        GET  /api/precos
+💬 Depoimentos:   GET  /api/depoimentos
+📰 Feed:          GET  /api/feed
+⚙️  Config:        GET  /api/config
+🔧 Migração:           /admin/migracao
   `);
   try {
     await initDb();
