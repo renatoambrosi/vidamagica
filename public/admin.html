@@ -229,11 +229,14 @@ select option { background: #1a1205; }
 
   <div class="sidebar-section-label" style="margin-top:0.5rem">Comunidade</div>
   <div class="nav-item" id="nav-whatsapp" onclick="goTab('whatsapp', this)">
-    <span class="nav-icon">📲</span> WhatsApp
+    <span class="nav-icon">📲</span> Gateway WA
+  </div>
+  <div class="nav-item" id="nav-usuarios" onclick="goTab('usuarios', this)">
+    <span class="nav-icon">👤</span> Usuárias
   </div>
 
   <div class="sidebar-section-label" style="margin-top:0.5rem">Em breve</div>
-  <div class="nav-item disabled"><span class="nav-icon">👥</span> Membros <span class="nav-tag">—</span></div>
+  <div class="nav-item disabled"><span class="nav-icon">👥</span> Membros do Clube <span class="nav-tag">—</span></div>
   <div class="nav-item disabled"><span class="nav-icon">📊</span> Métricas <span class="nav-tag">—</span></div>
 
   <div class="sidebar-footer">
@@ -390,9 +393,99 @@ select option { background: #1a1205; }
 
     <!-- ABA WHATSAPP -->
     <div class="tab-panel" id="tab-whatsapp">
+
+      <!-- ════════════ NOVO: STATUS GERAL DO GATEWAY ════════════ -->
+      <div class="wz-section" style="background:linear-gradient(135deg,rgba(200,146,42,0.06),rgba(200,146,42,0.02));border:1px solid rgba(200,146,42,0.18)">
+        <div class="wz-section-header">
+          <div>
+            <div class="wz-section-title">🚪 Status do Gateway</div>
+            <div class="wz-section-sub">Painel ao vivo — atualiza a cada 3s</div>
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <span id="gw-status-badge" style="padding:0.3rem 0.65rem;border-radius:999px;background:rgba(76,175,80,0.18);color:#7DD87E;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em">Ativo</span>
+            <button class="btn btn-danger btn-sm" id="btn-pausa-total" onclick="togglePausaTotal()">⏸ Pausar geral</button>
+          </div>
+        </div>
+        <div class="wz-stats-row">
+          <div class="wz-stat"><div class="wz-stat-n" id="gw-ativas">—</div><div class="wz-stat-l">Ativas hoje</div></div>
+          <div class="wz-stat"><div class="wz-stat-n" id="gw-reativas">—</div><div class="wz-stat-l">Reativas hoje</div></div>
+          <div class="wz-stat"><div class="wz-stat-n" id="gw-erros">—</div><div class="wz-stat-l">Erros hoje</div></div>
+          <div class="wz-stat"><div class="wz-stat-n" id="gw-restante">—</div><div class="wz-stat-l">Limite restante</div></div>
+        </div>
+      </div>
+
+      <!-- ════════════ COOLDOWNS E LIMITE ════════════ -->
       <div class="wz-section">
         <div class="wz-section-header">
-          <div><div class="wz-section-title">📋 Grupos Ativos</div><div class="wz-section-sub">Grupos gerenciados pela plataforma via Evolution API</div></div>
+          <div>
+            <div class="wz-section-title">⚙️ Cooldowns e limite</div>
+            <div class="wz-section-sub">Tempos em segundos entre mensagens / atendimentos</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="salvarConfigGateway()" id="btn-save-config-gw">Salvar</button>
+        </div>
+        <div class="fields-grid">
+          <div>
+            <label class="field-label">Entre msgs do mesmo atendimento (s)</label>
+            <input type="number" id="gw-cd-msgs" class="field-input" min="0" max="60">
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.25rem">Recomendado: 2</div>
+          </div>
+          <div>
+            <label class="field-label">Entre atendimentos REATIVOS (s)</label>
+            <input type="number" id="gw-cd-react" class="field-input" min="0" max="600">
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.25rem">OTPs, links — recomendado: 5</div>
+          </div>
+          <div>
+            <label class="field-label">Entre atendimentos ATIVOS (s)</label>
+            <input type="number" id="gw-cd-ativ" class="field-input" min="0" max="3600">
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.25rem">Cobranças, anúncios — recomendado: 60</div>
+          </div>
+          <div>
+            <label class="field-label">Limite diário de ATIVAS</label>
+            <input type="number" id="gw-limite" class="field-input" min="1" max="10000">
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.25rem">Reativas bypassam — recomendado: 200</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════ CATEGORIAS ════════════ -->
+      <div class="wz-section">
+        <div class="wz-section-header">
+          <div>
+            <div class="wz-section-title">🗂️ Categorias de mensagens ativas</div>
+            <div class="wz-section-sub">Pause grupos individuais sem afetar reativas</div>
+          </div>
+        </div>
+        <div id="gw-categorias-lista"><div class="loading">Carregando categorias...</div></div>
+      </div>
+
+      <!-- ════════════ FILA AO VIVO ════════════ -->
+      <div class="wz-section">
+        <div class="wz-section-header">
+          <div>
+            <div class="wz-section-title">📬 Fila ao vivo</div>
+            <div class="wz-section-sub">Atendimentos pendentes, processando e com erro</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="carregarStatusGateway()">↺ Atualizar</button>
+        </div>
+        <div id="gw-fila-lista"><div class="loading">Carregando fila...</div></div>
+      </div>
+
+      <!-- ════════════ TEMPLATES ════════════ -->
+      <div class="wz-section">
+        <div class="wz-section-header">
+          <div>
+            <div class="wz-section-title">✉️ Templates de mensagem</div>
+            <div class="wz-section-sub">Edite o texto sem precisar de deploy. Use {nome}, {codigo} para personalizar.</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="salvarTemplates()" id="btn-save-tpl">Salvar templates</button>
+        </div>
+        <div id="templates-container"><div class="loading">Carregando templates...</div></div>
+      </div>
+
+      <!-- ════════════ GRUPOS (existente) ════════════ -->
+      <div class="wz-section">
+        <div class="wz-section-header">
+          <div><div class="wz-section-title">📋 Grupos do Clube</div><div class="wz-section-sub">Gerenciados pela plataforma via Evolution API</div></div>
         </div>
         <div class="wz-grupos-grid">
           <div class="wz-grupo-card"><div class="wz-grupo-nome">Grupo Ouro</div><div class="wz-grupo-id">120363407525402346@g.us</div><div class="wz-grupo-badge badge-ouro">Premium</div></div>
@@ -400,62 +493,33 @@ select option { background: #1a1205; }
           <div class="wz-grupo-card"><div class="wz-grupo-nome">Avisos</div><div class="wz-grupo-id">120363424105041817@g.us</div><div class="wz-grupo-badge badge-avisos">Avisos</div></div>
         </div>
       </div>
+
+    </div>
+
+    <!-- ════════════ ABA USUÁRIAS ════════════ -->
+    <div class="tab-panel" id="tab-usuarios">
       <div class="wz-section">
         <div class="wz-section-header">
-          <div><div class="wz-section-title">✉️ Templates de Mensagem</div><div class="wz-section-sub">Mensagens enviadas automaticamente. Use {nome} para personalizar.</div></div>
-          <button class="btn btn-primary btn-sm" onclick="salvarTemplates()">Salvar templates</button>
-        </div>
-        <div id="templates-container"><div class="loading">Carregando templates...</div></div>
-      </div>
-      <div class="wz-section">
-        <div class="wz-section-header">
-          <div><div class="wz-section-title">⏰ Scheduler de Remoção</div><div class="wz-section-sub">Membros com assinatura expirada pendentes de remoção dos grupos</div></div>
-          <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-            <button class="btn btn-ghost btn-sm" onclick="carregarScheduler()">↺ Atualizar</button>
-            <button class="btn btn-danger btn-sm" onclick="executarSchedulerAgora()">▶ Executar agora</button>
+          <div>
+            <div class="wz-section-title">👤 Usuárias</div>
+            <div class="wz-section-sub">Busque por nome, e-mail ou telefone</div>
           </div>
+          <button class="btn btn-ghost btn-sm" onclick="carregarUsuarios()">↺ Atualizar</button>
         </div>
-        <div class="wz-stats-row">
-          <div class="wz-stat"><div class="wz-stat-n" id="stat-ativos">—</div><div class="wz-stat-l">Ativos</div></div>
-          <div class="wz-stat"><div class="wz-stat-n" id="stat-cancelados">—</div><div class="wz-stat-l">Cancelados</div></div>
-          <div class="wz-stat"><div class="wz-stat-n" id="stat-pendentes">—</div><div class="wz-stat-l">Remoção pendente</div></div>
-          <div class="wz-stat"><div class="wz-stat-n" id="stat-excecoes">—</div><div class="wz-stat-l">Exceções</div></div>
+        <div style="margin-bottom:0.85rem">
+          <input type="text" id="us-busca" class="field-input" placeholder="Buscar por nome, e-mail ou telefone..." oninput="filtrarUsuariosDebounce()">
         </div>
-        <div id="scheduler-lista"><div class="loading">Carregando...</div></div>
+        <div id="us-lista"><div class="loading">Carregando usuárias...</div></div>
       </div>
-      <div class="wz-section">
-        <div class="wz-section-header">
-          <div><div class="wz-section-title">🔒 Exceções — nunca remover</div><div class="wz-section-sub">Telefones que nunca serão removidos dos grupos independente do status</div></div>
-          <button class="btn btn-ghost btn-sm" onclick="abrirFormExcecao()">+ Adicionar</button>
-        </div>
-        <div class="add-form" id="form-excecao" style="display:none">
-          <div class="fields-grid">
-            <div><label class="field-label">Telefone (com DDI, sem espaços)</label><input type="text" id="exc-tel" class="field-input" placeholder="5511999999999"></div>
-            <div><label class="field-label">Nome</label><input type="text" id="exc-nome" class="field-input" placeholder="Nome da pessoa"></div>
+
+      <!-- Modal de detalhe -->
+      <div id="us-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);max-width:780px;width:100%;padding:1.5rem;color:var(--text-light)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+            <h3 id="us-modal-titulo" style="margin:0;font-family:var(--font-display);color:var(--color-gold-light)">Usuária</h3>
+            <button class="btn btn-ghost btn-sm" onclick="fecharModalUsuario()">✕ Fechar</button>
           </div>
-          <div style="margin-top:0.65rem"><label class="field-label">Motivo</label><input type="text" id="exc-motivo" class="field-input" placeholder="Por que esta pessoa nunca deve ser removida?"></div>
-          <div style="display:flex;gap:0.5rem;margin-top:0.75rem">
-            <button class="btn btn-primary btn-sm" onclick="salvarExcecao()">Salvar</button>
-            <button class="btn btn-ghost btn-sm" onclick="fecharFormExcecao()">Cancelar</button>
-          </div>
-        </div>
-        <div id="excecoes-lista"><div class="loading">Carregando...</div></div>
-      </div>
-      <div class="wz-section">
-        <div class="wz-section-header">
-          <div><div class="wz-section-title">📤 Envio Manual</div><div class="wz-section-sub">Envia uma mensagem avulsa para um número via gateway interno</div></div>
-        </div>
-        <div class="fields-grid">
-          <div><label class="field-label">Telefone destino</label><input type="text" id="manual-tel" class="field-input" placeholder="5511999999999"></div>
-          <div><label class="field-label">Nome (para {nome} no template)</label><input type="text" id="manual-nome" class="field-input" placeholder="Nome da pessoa"></div>
-        </div>
-        <div style="margin-top:0.65rem"><label class="field-label">Mensagem</label><textarea id="manual-msg" class="field-input" style="min-height:90px;resize:vertical" placeholder="Olá {nome}, escreva sua mensagem aqui..."></textarea></div>
-        <div style="display:flex;align-items:center;gap:1rem;margin-top:0.75rem;flex-wrap:wrap">
-          <button class="btn btn-primary" onclick="enviarManual()" id="btn-manual">Enviar via gateway</button>
-          <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;color:var(--text-muted);cursor:pointer">
-            <input type="checkbox" id="manual-imediato" style="accent-color:var(--color-gold-amber)">
-            Imediato (pula fila, envia agora)
-          </label>
+          <div id="us-modal-body"><div class="loading">Carregando...</div></div>
         </div>
       </div>
     </div>
@@ -483,11 +547,14 @@ const tabMeta = {
   precos:      { title: 'Gestão de Preços',   sub: 'Preços públicos, promoções e descontos de alunos' },
   depoimentos: { title: 'Depoimentos',         sub: 'Frases exibidas no ticker do site' },
   feed:        { title: 'Feed do App',          sub: 'Conteúdo publicado no app — vídeos, textos, imagens e links' },
-  whatsapp:    { title: 'WhatsApp',            sub: 'Mensagens automáticas, scheduler e grupos' },
+  whatsapp:    { title: 'Gateway WhatsApp',    sub: 'Cooldowns, categorias, fila ao vivo e templates' },
+  usuarios:    { title: 'Usuárias',             sub: 'Cadastros, telefones, sessões e dispositivos' },
 };
 
 let wzCarregado = false;
 let feedCarregado = false;
+let usuariosCarregado = false;
+let gwIntervalId = null;  // interval do refresh ao vivo da fila
 
 function goTab(id, el) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -497,8 +564,24 @@ function goTab(id, el) {
   document.getElementById('topbar-title').textContent = tabMeta[id].title;
   document.getElementById('topbar-sub').textContent = tabMeta[id].sub;
   closeSidebar();
-  if (id === 'whatsapp' && !wzCarregado) { wzCarregado = true; carregarTemplates(); carregarScheduler(); carregarExcecoes(); }
+
+  // Para o auto-refresh do gateway se sair da aba
+  if (id !== 'whatsapp' && gwIntervalId) {
+    clearInterval(gwIntervalId);
+    gwIntervalId = null;
+  }
+
+  if (id === 'whatsapp') {
+    if (!wzCarregado) {
+      wzCarregado = true;
+      carregarTemplates();
+    }
+    // Sempre que entra na aba, recarrega status e liga o auto-refresh
+    carregarStatusGateway();
+    if (!gwIntervalId) gwIntervalId = setInterval(carregarStatusGateway, 3000);
+  }
   if (id === 'feed' && !feedCarregado) { feedCarregado = true; carregarFeedAdmin(); }
+  if (id === 'usuarios' && !usuariosCarregado) { usuariosCarregado = true; carregarUsuarios(); }
 }
 
 function toast(msg, tipo = 'success') {
@@ -813,24 +896,349 @@ async function salvarNovoFeedItem() {
 }
 
 // ============================================================
-// WHATSAPP
+// GATEWAY WHATSAPP — STATUS + COOLDOWNS + CATEGORIAS + FILA
 // ============================================================
-let templatesData=[];
-async function carregarTemplates(){try{const r=await fetch(`${API}/api/admin/mensagens`,{headers:{'Authorization':authHeader()}});if(!r.ok)throw new Error('HTTP '+r.status);templatesData=await r.json();renderTemplates();}catch(e){document.getElementById('templates-container').innerHTML=`<p style="color:#F09090;font-size:0.78rem;padding:0.5rem 0">Erro ao carregar templates: ${e.message}</p>`;}}
-function renderTemplates(){const c=document.getElementById('templates-container');if(!templatesData.length){c.innerHTML='<p style="color:var(--text-muted);font-size:0.78rem">Nenhum template cadastrado.</p>';return;}c.innerHTML=templatesData.map(t=>`<div class="tpl-card"><div class="tpl-chave">${t.chave}</div><div class="tpl-titulo">${t.titulo||''}</div><textarea class="tpl-textarea" data-chave="${t.chave}">${escHtml(t.texto||'')}</textarea></div>`).join('');}
-async function salvarTemplates(){const inputs=document.querySelectorAll('.tpl-textarea');let ok=0,err=0;for(const inp of inputs){try{const r=await fetch(`${API}/api/admin/mensagens/${inp.dataset.chave}`,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':authHeader()},body:JSON.stringify({texto:inp.value})});if(r.ok)ok++;else err++;}catch{err++;}}toast(err?`${ok} salvos, ${err} com erro`:`✓ ${ok} template(s) salvos`,err?'error':'success');}
-async function carregarScheduler(){try{const[rStats,rPend]=await Promise.all([fetch(`${API}/api/admin/membros/stats`,{headers:{'Authorization':authHeader()}}),fetch(`${API}/api/admin/membros/remocao-pendente`,{headers:{'Authorization':authHeader()}})]);if(rStats.ok){const s=await rStats.json();document.getElementById('stat-ativos').textContent=s.ativos??'—';document.getElementById('stat-cancelados').textContent=s.cancelados??'—';document.getElementById('stat-pendentes').textContent=s.pendentes??'—';document.getElementById('stat-excecoes').textContent=s.excecoes??'—';}if(rPend.ok){const lista=await rPend.json();renderScheduler(lista);}}catch(e){document.getElementById('scheduler-lista').innerHTML=`<p style="color:#F09090;font-size:0.78rem">Erro: ${e.message}</p>`;}}
-function renderScheduler(lista){const c=document.getElementById('scheduler-lista');if(!lista.length){c.innerHTML='<p style="color:var(--text-muted);font-size:0.78rem;padding:0.5rem 0">Nenhum membro pendente de remoção. ✓</p>';return;}c.innerHTML=lista.map(m=>{const data=m.remocao_agendada?new Date(m.remocao_agendada).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';const sc={cancelado:'status-cancelado',expirado:'status-expirado',atrasado:'status-atrasado'}[m.status]||'status-cancelado';return`<div class="sched-row"><div class="sched-nome">${m.nome||'—'}</div><div class="sched-tel">${m.telefone_formatado||m.telefone||'—'}</div><div class="sched-data">🗓 ${data}</div><span class="sched-status ${sc}">${m.status}</span><button class="sched-btn btn-ok" onclick="cancelarRemocaoMembro(${m.id})">Cancelar remoção</button><button class="sched-btn" style="border-color:rgba(200,80,80,0.4);color:#F09090" onclick="removerAgora(${m.id},'${escHtml(m.nome||'')}')">Remover já</button></div>`;}).join('');}
-async function cancelarRemocaoMembro(id){if(!confirm('Cancelar a remoção deste membro?'))return;try{const r=await fetch(`${API}/api/admin/membros/${id}/cancelar-remocao`,{method:'POST',headers:{'Authorization':authHeader()}});if(r.ok){toast('✓ Remoção cancelada');carregarScheduler();}else toast('Erro ao cancelar','error');}catch{toast('Erro de conexão','error');}}
-async function removerAgora(id,nome){if(!confirm(`Remover "${nome}" dos grupos AGORA? Esta ação não pode ser desfeita.`))return;try{const r=await fetch(`${API}/api/admin/membros/${id}/remover-grupos`,{method:'POST',headers:{'Authorization':authHeader()}});const d=await r.json();if(r.ok){toast(`✓ ${nome} removido dos grupos`);carregarScheduler();}else toast(d.error||'Erro ao remover','error');}catch{toast('Erro de conexão','error');}}
-async function executarSchedulerAgora(){if(!confirm('Executar o scheduler agora?'))return;try{const r=await fetch(`${API}/api/admin/scheduler/executar`,{method:'POST',headers:{'Authorization':authHeader()}});const d=await r.json();if(r.ok){toast(`✓ Scheduler executado: ${d.removidos||0} removido(s)`);carregarScheduler();}else toast(d.error||'Erro','error');}catch{toast('Erro de conexão','error');}}
-async function carregarExcecoes(){try{const r=await fetch(`${API}/api/admin/excecoes`,{headers:{'Authorization':authHeader()}});const lista=await r.json();renderExcecoes(lista);}catch(e){document.getElementById('excecoes-lista').innerHTML=`<p style="color:#F09090;font-size:0.78rem">Erro: ${e.message}</p>`;}}
-function renderExcecoes(lista){const c=document.getElementById('excecoes-lista');if(!lista.length){c.innerHTML='<p style="color:var(--text-muted);font-size:0.78rem;padding:0.5rem 0">Nenhuma exceção cadastrada.</p>';return;}c.innerHTML=lista.map(e=>`<div class="exc-row"><div class="exc-nome">${e.nome||'—'}</div><div class="exc-tel">${e.telefone}</div><div class="exc-motivo">${e.motivo||''}</div><button class="exc-del" onclick="deletarExcecao(${e.id},'${escHtml(e.nome||e.telefone)}')">✕</button></div>`).join('');}
-function abrirFormExcecao(){document.getElementById('form-excecao').style.display='block';}
-function fecharFormExcecao(){document.getElementById('form-excecao').style.display='none';}
-async function salvarExcecao(){const tel=document.getElementById('exc-tel').value.trim(),nome=document.getElementById('exc-nome').value.trim(),motivo=document.getElementById('exc-motivo').value.trim();if(!tel){toast('Informe o telefone','error');return;}try{const r=await fetch(`${API}/api/admin/excecoes`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':authHeader()},body:JSON.stringify({telefone:tel,nome,motivo})});if(r.ok){toast('✓ Exceção adicionada');fecharFormExcecao();document.getElementById('exc-tel').value='';document.getElementById('exc-nome').value='';document.getElementById('exc-motivo').value='';carregarExcecoes();}else{const d=await r.json();toast(d.error||'Erro ao salvar','error');}}catch{toast('Erro de conexão','error');}}
-async function deletarExcecao(id,nome){if(!confirm(`Remover "${nome}" das exceções?`))return;try{const r=await fetch(`${API}/api/admin/excecoes/${id}`,{method:'DELETE',headers:{'Authorization':authHeader()}});if(r.ok){toast('✓ Exceção removida');carregarExcecoes();}else toast('Erro ao remover','error');}catch{toast('Erro de conexão','error');}}
-async function enviarManual(){const tel=document.getElementById('manual-tel').value.trim(),nome=document.getElementById('manual-nome').value.trim(),mensagem=document.getElementById('manual-msg').value.trim(),imediato=document.getElementById('manual-imediato').checked;if(!tel||!mensagem){toast('Preencha telefone e mensagem','error');return;}const btn=document.getElementById('btn-manual');btn.disabled=true;btn.textContent='Enviando...';try{const r=await fetch(`${API}/api/admin/mensagens/enviar-manual`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':authHeader()},body:JSON.stringify({telefone:tel,nome,mensagem,imediato})});const d=await r.json();if(r.ok){toast(imediato?'✓ Mensagem enviada':'✓ Mensagem enfileirada');document.getElementById('manual-tel').value='';document.getElementById('manual-nome').value='';document.getElementById('manual-msg').value='';}else toast(d.error||'Erro ao enviar','error');}catch{toast('Erro de conexão','error');}finally{btn.disabled=false;btn.textContent='Enviar via gateway';}}
+let gwConfigCarregada = false;
+
+async function carregarStatusGateway() {
+  try {
+    const r = await fetch(`${API}/api/admin/gateway/status`, { headers:{'Authorization':authHeader()} });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+
+    // Status badge
+    const badge = document.getElementById('gw-status-badge');
+    const btnPausa = document.getElementById('btn-pausa-total');
+    if (d.config.pausado_geral) {
+      badge.textContent = 'Pausado';
+      badge.style.background = 'rgba(220,80,80,0.2)';
+      badge.style.color = '#F09090';
+      btnPausa.textContent = '▶ Reativar';
+      btnPausa.classList.remove('btn-danger');
+      btnPausa.classList.add('btn-primary');
+    } else {
+      badge.textContent = 'Ativo';
+      badge.style.background = 'rgba(76,175,80,0.18)';
+      badge.style.color = '#7DD87E';
+      btnPausa.textContent = '⏸ Pausar geral';
+      btnPausa.classList.remove('btn-primary');
+      btnPausa.classList.add('btn-danger');
+    }
+
+    // Contador
+    document.getElementById('gw-ativas').textContent  = d.contador.ativas_hoje ?? 0;
+    document.getElementById('gw-reativas').textContent= d.contador.reativas_hoje ?? 0;
+    document.getElementById('gw-erros').textContent   = d.contador.erros_hoje ?? 0;
+    document.getElementById('gw-restante').textContent= Math.max(0, d.config.limite_msgs_dia_ativas - (d.contador.ativas_hoje || 0));
+
+    // Config (só preenche uma vez pra não sobrescrever enquanto admin edita)
+    if (!gwConfigCarregada) {
+      document.getElementById('gw-cd-msgs').value  = d.config.cooldown_entre_msgs_atendimento;
+      document.getElementById('gw-cd-react').value = d.config.cooldown_atendimentos_reativos;
+      document.getElementById('gw-cd-ativ').value  = d.config.cooldown_atendimentos_ativos;
+      document.getElementById('gw-limite').value   = d.config.limite_msgs_dia_ativas;
+      gwConfigCarregada = true;
+    }
+
+    renderCategorias(d.categorias || []);
+    renderFila(d.fila || []);
+  } catch (e) {
+    console.error('carregarStatusGateway', e);
+  }
+}
+
+function renderCategorias(cats) {
+  const c = document.getElementById('gw-categorias-lista');
+  if (!cats.length) { c.innerHTML = '<p style="color:var(--text-muted);font-size:0.78rem">Nenhuma categoria.</p>'; return; }
+  c.innerHTML = cats.map(cat => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.7rem 0.85rem;border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:0.45rem;background:var(--bg-input)">
+      <div>
+        <div style="font-family:var(--font-display);font-weight:600;font-size:0.9rem;color:var(--text-light)">${cat.emoji||''} ${escHtml(cat.nome_exibicao)}</div>
+        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.15rem;font-family:monospace">${cat.chave}</div>
+      </div>
+      <label style="display:flex;align-items:center;gap:0.55rem;cursor:pointer">
+        <span style="font-size:0.75rem;color:${cat.pausado?'#F09090':'#7DD87E'};font-weight:600">${cat.pausado?'PAUSADA':'ATIVA'}</span>
+        <input type="checkbox" ${cat.pausado?'':'checked'} onchange="toggleCategoria('${cat.chave}', !this.checked)" style="width:42px;height:22px;accent-color:var(--color-gold-amber);cursor:pointer">
+      </label>
+    </div>`).join('');
+}
+
+function renderFila(fila) {
+  const c = document.getElementById('gw-fila-lista');
+  if (!fila.length) { c.innerHTML = '<p style="color:var(--text-muted);font-size:0.78rem;padding:0.5rem 0">Fila vazia. Tudo entregue. ✓</p>'; return; }
+  c.innerHTML = fila.map(at => {
+    const statusInfo = at.enviando > 0
+      ? { txt: 'PROCESSANDO', cor: '#E8C97A', bg: 'rgba(232,201,122,0.15)' }
+      : at.com_erro > 0
+      ? { txt: 'ERRO',         cor: '#F09090', bg: 'rgba(220,80,80,0.18)' }
+      : at.pendentes > 0
+      ? { txt: 'PENDENTE',     cor: '#90CAF9', bg: 'rgba(144,202,249,0.15)' }
+      : { txt: 'CONCLUÍDO',    cor: '#7DD87E', bg: 'rgba(76,175,80,0.18)' };
+    const tempo = at.entrou_em ? new Date(at.entrou_em).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—';
+    const tipoBadge = at.tipo === 'reativo'
+      ? '<span style="padding:0.15rem 0.45rem;border-radius:4px;background:rgba(120,120,255,0.15);color:#A0B0FF;font-size:0.65rem;font-weight:700">REATIVA</span>'
+      : '<span style="padding:0.15rem 0.45rem;border-radius:4px;background:rgba(255,180,80,0.15);color:#FFD57A;font-size:0.65rem;font-weight:700">ATIVA</span>';
+    const podeCancelar = at.pendentes > 0;
+    return `
+      <div style="display:grid;grid-template-columns:1fr auto;gap:0.65rem;align-items:center;padding:0.7rem 0.85rem;border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:0.4rem;background:var(--bg-input)">
+        <div>
+          <div style="display:flex;align-items:center;gap:0.55rem;flex-wrap:wrap;margin-bottom:0.25rem">
+            ${tipoBadge}
+            <span style="padding:0.15rem 0.45rem;border-radius:4px;background:${statusInfo.bg};color:${statusInfo.cor};font-size:0.65rem;font-weight:700">${statusInfo.txt}</span>
+            <span style="font-size:0.7rem;color:var(--text-muted)">prio ${at.prioridade}</span>
+            <span style="font-size:0.7rem;color:var(--text-muted)">${at.enviadas}/${at.total_msgs} msgs</span>
+          </div>
+          <div style="font-family:var(--font-display);font-weight:600;font-size:0.85rem;color:var(--text-light)">${escHtml(at.nome||'(sem nome)')} · ${at.telefone}</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.15rem">${at.categoria||at.origem} · ${tempo}${at.ultimo_erro?(' · ⚠ '+escHtml(at.ultimo_erro)):''}</div>
+        </div>
+        ${podeCancelar?`<button class="btn btn-ghost btn-sm" onclick="cancelarAtendimento('${at.atendimento_id}')">✕ Cancelar</button>`:''}
+      </div>`;
+  }).join('');
+}
+
+async function salvarConfigGateway() {
+  const btn = document.getElementById('btn-save-config-gw');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    const r = await fetch(`${API}/api/admin/gateway/config`, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body:JSON.stringify({
+        cooldown_entre_msgs_atendimento: +document.getElementById('gw-cd-msgs').value,
+        cooldown_atendimentos_reativos:  +document.getElementById('gw-cd-react').value,
+        cooldown_atendimentos_ativos:    +document.getElementById('gw-cd-ativ').value,
+        limite_msgs_dia_ativas:          +document.getElementById('gw-limite').value,
+      }),
+    });
+    if (r.ok) toast('✓ Configuração salva');
+    else toast('Erro ao salvar','error');
+  } catch { toast('Erro de conexão','error'); }
+  finally { btn.disabled = false; btn.textContent = 'Salvar'; }
+}
+
+async function togglePausaTotal() {
+  try {
+    const statusAtual = document.getElementById('gw-status-badge').textContent.trim();
+    const novoPausado = statusAtual === 'Ativo';  // se está ativo, vai pausar; se está pausado, vai despausar
+    const cfgAtual = {
+      cooldown_entre_msgs_atendimento: +document.getElementById('gw-cd-msgs').value,
+      cooldown_atendimentos_reativos:  +document.getElementById('gw-cd-react').value,
+      cooldown_atendimentos_ativos:    +document.getElementById('gw-cd-ativ').value,
+      limite_msgs_dia_ativas:          +document.getElementById('gw-limite').value,
+      pausado_geral: novoPausado,
+    };
+    const r = await fetch(`${API}/api/admin/gateway/config`, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body:JSON.stringify(cfgAtual),
+    });
+    if (r.ok) {
+      toast(novoPausado?'⏸ Gateway pausado':'▶ Gateway reativado');
+      carregarStatusGateway();
+    } else toast('Erro','error');
+  } catch { toast('Erro de conexão','error'); }
+}
+
+async function toggleCategoria(chave, pausado) {
+  try {
+    const r = await fetch(`${API}/api/admin/gateway/categoria/${encodeURIComponent(chave)}`, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body:JSON.stringify({ pausado }),
+    });
+    if (r.ok) {
+      toast(pausado?'Categoria pausada':'Categoria ativada');
+      carregarStatusGateway();
+    } else toast('Erro','error');
+  } catch { toast('Erro de conexão','error'); }
+}
+
+async function cancelarAtendimento(atId) {
+  if (!confirm('Cancelar este atendimento? As mensagens pendentes não serão enviadas.')) return;
+  try {
+    const r = await fetch(`${API}/api/admin/gateway/fila/${atId}/cancelar`, {
+      method:'POST',
+      headers:{'Authorization':authHeader()},
+    });
+    if (r.ok) {
+      toast('✓ Atendimento cancelado');
+      carregarStatusGateway();
+    } else toast('Erro','error');
+  } catch { toast('Erro de conexão','error'); }
+}
+
+// ============================================================
+// TEMPLATES (4A) — agora apontando pra /api/admin/templates
+// ============================================================
+let templatesData = [];
+
+async function carregarTemplates() {
+  try {
+    const r = await fetch(`${API}/api/admin/templates`, { headers:{'Authorization':authHeader()} });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    templatesData = d.templates || [];
+    renderTemplates();
+  } catch (e) {
+    document.getElementById('templates-container').innerHTML = `<p style="color:#F09090;font-size:0.78rem;padding:0.5rem 0">Erro ao carregar templates: ${e.message}</p>`;
+  }
+}
+
+function renderTemplates() {
+  const c = document.getElementById('templates-container');
+  if (!templatesData.length) { c.innerHTML = '<p style="color:var(--text-muted);font-size:0.78rem">Nenhum template cadastrado.</p>'; return; }
+  c.innerHTML = templatesData.map(t => `
+    <div class="tpl-card">
+      <div class="tpl-chave">${t.chave}</div>
+      <div class="tpl-titulo">${escHtml(t.titulo||'')}</div>
+      <textarea class="tpl-textarea" data-chave="${t.chave}">${escHtml(t.texto||'')}</textarea>
+    </div>`).join('');
+}
+
+async function salvarTemplates() {
+  const inputs = document.querySelectorAll('.tpl-textarea');
+  const btn = document.getElementById('btn-save-tpl');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  let ok = 0, err = 0;
+  for (const inp of inputs) {
+    try {
+      const r = await fetch(`${API}/api/admin/templates/${encodeURIComponent(inp.dataset.chave)}`, {
+        method:'PUT',
+        headers:{'Content-Type':'application/json','Authorization':authHeader()},
+        body:JSON.stringify({ texto: inp.value }),
+      });
+      if (r.ok) ok++; else err++;
+    } catch { err++; }
+  }
+  toast(err?`${ok} salvos, ${err} com erro`:`✓ ${ok} template(s) salvos`, err?'error':'success');
+  btn.disabled = false; btn.textContent = 'Salvar templates';
+}
+
+// ============================================================
+// USUÁRIAS (4C)
+// ============================================================
+let usuariosLista = [];
+let usuariosBuscaTimer = null;
+
+async function carregarUsuarios(q='') {
+  const c = document.getElementById('us-lista');
+  c.innerHTML = '<div class="loading">Carregando usuárias...</div>';
+  try {
+    const url = `${API}/api/admin/usuarios${q?('?q='+encodeURIComponent(q)):''}`;
+    const r = await fetch(url, { headers:{'Authorization':authHeader()} });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    usuariosLista = d.usuarios || [];
+    renderUsuarios();
+  } catch (e) {
+    c.innerHTML = `<p style="color:#F09090;font-size:0.78rem">Erro: ${e.message}</p>`;
+  }
+}
+
+function filtrarUsuariosDebounce() {
+  clearTimeout(usuariosBuscaTimer);
+  usuariosBuscaTimer = setTimeout(() => {
+    const q = document.getElementById('us-busca').value.trim();
+    carregarUsuarios(q);
+  }, 350);
+}
+
+function renderUsuarios() {
+  const c = document.getElementById('us-lista');
+  if (!usuariosLista.length) { c.innerHTML = '<p style="color:var(--text-muted);font-size:0.78rem;padding:0.5rem 0">Nenhuma usuária encontrada.</p>'; return; }
+  c.innerHTML = usuariosLista.map(u => {
+    const iniciais = (u.nome||'?').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
+    const origem = u.origem_cadastro
+      ? `<span style="padding:0.1rem 0.4rem;border-radius:4px;background:rgba(200,146,42,0.12);color:var(--color-gold-light);font-size:0.65rem;font-weight:600;text-transform:uppercase">${u.origem_cadastro}</span>`
+      : '';
+    return `
+      <div onclick="abrirDetalheUsuario('${u.id}')" style="display:grid;grid-template-columns:auto 1fr auto;gap:0.85rem;align-items:center;padding:0.7rem 0.85rem;border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:0.4rem;background:var(--bg-input);cursor:pointer;transition:border-color 0.15s" onmouseover="this.style.borderColor='var(--border-hover)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="width:40px;height:40px;border-radius:50%;background:rgba(200,146,42,0.18);color:var(--color-gold-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;font-family:var(--font-display)">${iniciais||'?'}</div>
+        <div>
+          <div style="font-family:var(--font-display);font-weight:600;font-size:0.9rem;color:var(--text-light)">${escHtml(u.nome||'(sem nome)')}</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.15rem">${u.telefone_formatado||u.telefone||'—'} ${u.email?(' · '+escHtml(u.email)):''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.45rem">${origem}<span style="color:var(--text-muted);font-size:1.1rem">›</span></div>
+      </div>`;
+  }).join('');
+}
+
+async function abrirDetalheUsuario(id) {
+  document.getElementById('us-modal').style.display = 'flex';
+  document.getElementById('us-modal-body').innerHTML = '<div class="loading">Carregando...</div>';
+  try {
+    const r = await fetch(`${API}/api/admin/usuarios/${id}`, { headers:{'Authorization':authHeader()} });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    document.getElementById('us-modal-titulo').textContent = d.usuario.nome || '(sem nome)';
+
+    const dataFmt = (s) => s ? new Date(s).toLocaleString('pt-BR') : '—';
+    const sessoesHtml = d.sessoes.length
+      ? d.sessoes.map(s=>`<div style="padding:0.45rem 0.65rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.3rem;background:var(--bg-input);font-size:0.78rem"><div><strong>${s.dispositivo_nome||'?'}</strong> (${s.dispositivo_tipo||'?'})</div><div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.15rem">Iniciada ${dataFmt(s.criado_em)} · expira ${dataFmt(s.expira_em)}${s.ip?(' · '+s.ip):''}</div></div>`).join('')
+      : '<p style="color:var(--text-muted);font-size:0.78rem">Nenhuma sessão ativa.</p>';
+
+    const dispsHtml = d.dispositivos.length
+      ? d.dispositivos.map(disp=>`<div style="padding:0.45rem 0.65rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.3rem;background:var(--bg-input);font-size:0.78rem;${disp.ativo?'':'opacity:0.55'}"><div><strong>${escHtml(disp.nome_amigavel||'?')}</strong> (${disp.tipo}) ${disp.ativo?'':' — inativo'}</div><div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.15rem">Última atividade: ${dataFmt(disp.ultima_atividade_em)}${disp.ip_ultimo?(' · '+disp.ip_ultimo):''}</div></div>`).join('')
+      : '<p style="color:var(--text-muted);font-size:0.78rem">Nenhum dispositivo registrado.</p>';
+
+    const telsHtml = d.telefones.length
+      ? d.telefones.map(t=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:0.45rem 0.65rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.3rem;background:var(--bg-input);font-size:0.78rem;${t.ativo?'':'opacity:0.55'}"><div><div><strong>${escHtml(t.telefone_formatado||t.telefone)}</strong> ${t.ativo?'<span style="color:#7DD87E;font-size:0.7rem;margin-left:0.3rem">● ativo</span>':'<span style="color:var(--text-muted);font-size:0.7rem;margin-left:0.3rem">○ inativo</span>'}</div><div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.15rem">Origem: ${t.origem||'—'} · vinculado ${dataFmt(t.vinculado_em)}${t.observacao?(' · '+escHtml(t.observacao)):''}</div></div>${t.ativo&&d.telefones.filter(x=>x.ativo).length>1?`<button class="btn btn-ghost btn-sm" onclick="desvincularTelefone('${id}',${t.id})">Desvincular</button>`:''}</div>`).join('')
+      : '<p style="color:var(--text-muted);font-size:0.78rem">Nenhum telefone histórico.</p>';
+
+    document.getElementById('us-modal-body').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;margin-bottom:1rem">
+        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Nome</label><div style="margin-top:0.2rem">${escHtml(d.usuario.nome||'—')}</div></div>
+        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">E-mail</label><div style="margin-top:0.2rem">${escHtml(d.usuario.email||'—')} ${d.usuario.email_verificado?'<span style="color:#7DD87E;font-size:0.7rem">✓</span>':''}</div></div>
+        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Telefone principal</label><div style="margin-top:0.2rem">${d.usuario.telefone_formatado||d.usuario.telefone||'—'}</div></div>
+        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Origem do cadastro</label><div style="margin-top:0.2rem">${d.usuario.origem_cadastro||'—'}</div></div>
+        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Cadastro</label><div style="margin-top:0.2rem;font-size:0.8rem">${dataFmt(d.usuario.criado_em)}</div></div>
+        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Última atualização</label><div style="margin-top:0.2rem;font-size:0.8rem">${dataFmt(d.usuario.atualizado_em)}</div></div>
+      </div>
+
+      <div style="margin-top:1.2rem"><h4 style="font-family:var(--font-display);color:var(--color-gold-light);margin:0 0 0.5rem;font-size:0.95rem">📞 Telefones (${d.telefones.length})</h4>${telsHtml}</div>
+
+      <div style="margin-top:1.2rem"><h4 style="font-family:var(--font-display);color:var(--color-gold-light);margin:0 0 0.5rem;font-size:0.95rem">🔐 Sessões ativas (${d.sessoes.length})</h4>${sessoesHtml}</div>
+
+      <div style="margin-top:1.2rem"><h4 style="font-family:var(--font-display);color:var(--color-gold-light);margin:0 0 0.5rem;font-size:0.95rem">📱 Dispositivos (${d.dispositivos.length})</h4>${dispsHtml}</div>
+
+      <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);display:flex;gap:0.5rem;flex-wrap:wrap">
+        <button class="btn btn-danger btn-sm" onclick="forcarLogoutUsuario('${id}')">⏏ Forçar logout (revogar todas as sessões)</button>
+      </div>`;
+  } catch (e) {
+    document.getElementById('us-modal-body').innerHTML = `<p style="color:#F09090">Erro: ${e.message}</p>`;
+  }
+}
+
+function fecharModalUsuario() {
+  document.getElementById('us-modal').style.display = 'none';
+}
+
+async function forcarLogoutUsuario(id) {
+  if (!confirm('Revogar TODAS as sessões ativas desta usuária?')) return;
+  try {
+    const r = await fetch(`${API}/api/admin/usuarios/${id}/logout-tudo`, {
+      method:'POST',
+      headers:{'Authorization':authHeader()},
+    });
+    const d = await r.json();
+    if (r.ok) { toast(`✓ ${d.sessoes_revogadas||0} sessão(ões) revogada(s)`); abrirDetalheUsuario(id); }
+    else toast('Erro','error');
+  } catch { toast('Erro de conexão','error'); }
+}
+
+async function desvincularTelefone(usuarioId, telId) {
+  const obs = prompt('Motivo da desvinculação (opcional):');
+  if (obs === null) return;
+  try {
+    const r = await fetch(`${API}/api/admin/usuarios/${usuarioId}/telefones/${telId}/desvincular`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body:JSON.stringify({ observacao: obs || null }),
+    });
+    if (r.ok) { toast('✓ Telefone desvinculado'); abrirDetalheUsuario(usuarioId); }
+    else { const d = await r.json(); toast(d.error||'Erro','error'); }
+  } catch { toast('Erro de conexão','error'); }
+}
 
 // ===== INIT =====
 carregarPrecos();
