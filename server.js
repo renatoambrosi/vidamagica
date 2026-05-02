@@ -225,19 +225,31 @@ server.listen(PORT, async () => {
 ✦  Chat aluna:         /api/chat/*
 ✦  Chat atend.:        /api/atendimento/chat/*
 📤 Upload:             /api/upload/*
+🚪 Gateway WA:    fila + cooldown + categorias (worker em loop)
 🖥️  Painel:        GET  /atendimento
 🛡️  Admin:         GET  /admin
 🔌 WebSocket:     WS   /ws/chat
   `);
   try {
     await initDb();
+    // Liga o worker do gateway de WhatsApp DEPOIS dos bancos estarem prontos
+    const gateway = require('./core/gateway');
+    gateway.iniciarWorker();
   } catch (err) {
     console.error('💥 Falha ao iniciar bancos:', err.message);
     process.exit(1);
   }
 });
 
-process.on('SIGTERM', () => { server.close(); process.exit(0); });
-process.on('SIGINT',  () => { server.close(); process.exit(0); });
+process.on('SIGTERM', () => {
+  try { require('./core/gateway').pararWorker(); } catch (_) {}
+  server.close();
+  process.exit(0);
+});
+process.on('SIGINT',  () => {
+  try { require('./core/gateway').pararWorker(); } catch (_) {}
+  server.close();
+  process.exit(0);
+});
 process.on('uncaughtException', err => console.error('💥 uncaughtException:', err));
 process.on('unhandledRejection', err => console.error('💥 unhandledRejection:', err));
