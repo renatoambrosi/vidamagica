@@ -522,6 +522,44 @@ function checkSvg() {
   </svg>`;
 }
 
+// Analisa um texto pra detectar se é SÓ emojis (zero letras/números) e quantos.
+// Suporta emojis com modificadores (👏🏻 = punho + tom de pele). Conta clusters Unicode.
+// Retorna: { soEmojis: bool, qtd: number }
+function analisarConteudoEmoji(texto) {
+  if (!texto) return { soEmojis: false, qtd: 0 };
+  const t = texto.trim();
+  if (!t) return { soEmojis: false, qtd: 0 };
+  // Se tem letras/números/pontuação que não seja espaço entre emojis → não é "só emoji"
+  if (/[\p{L}\p{N}]/u.test(t)) return { soEmojis: false, qtd: 0 };
+  // Conta clusters de emoji (cada emoji visível, mesmo composto)
+  let qtd = 0;
+  if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+    const seg = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+    for (const _ of seg.segment(t)) qtd++;
+  } else {
+    // Fallback: conta code points "extended pictographic"
+    const sem = t.replace(/\s+/g, '');
+    qtd = Array.from(sem).length; // imperfeito mas razoável
+  }
+  return { soEmojis: qtd > 0 && qtd <= 6, qtd };
+}
+
+// Renderiza balãozinhos de reação debaixo da bolha.
+function renderReacoesEl(reacoes) {
+  if (!reacoes || !Object.keys(reacoes).length) return null;
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-reacoes';
+  for (const emoji of Object.keys(reacoes)) {
+    const r = reacoes[emoji];
+    const chip = document.createElement('span');
+    chip.className = 'msg-reacao-chip';
+    chip.dataset.emoji = emoji;
+    chip.innerHTML = `<span class="emoji">${emoji}</span>${r.count > 1 ? `<span class="cnt">${r.count}</span>` : ''}`;
+    wrap.appendChild(chip);
+  }
+  return wrap;
+}
+
 function renderMensagem(msg) {
   if (msg.tipo === 'audio' && msg.url) return criarBolhaAudio(msg);
 
@@ -563,6 +601,16 @@ function renderMensagem(msg) {
       bolha.dataset.identidade = ident;
       bolha.dataset.identidadeNome = nomeIdent;
     }
+    // Detecta "só emojis" — aplica escala maior na bolha
+    const analise = analisarConteudoEmoji(msg.conteudo);
+    if (analise.soEmojis && !msg.reply_to_conteudo) {
+      // 1 emoji = grande; 2-3 = médio; 4-6 = pequeno-médio
+      let escala = 'med';
+      if (analise.qtd === 1) escala = 'big';
+      else if (analise.qtd <= 3) escala = 'med';
+      else escala = 'sm';
+      bolha.classList.add('msg-bolha-emoji', `msg-bolha-emoji-${escala}`);
+    }
     // Texto com links clicáveis
     const corpoHtml = linkificar(msg.conteudo || '');
     let ctaHtml = '';
@@ -574,13 +622,16 @@ function renderMensagem(msg) {
     wrap.appendChild(bolha);
   }
 
+  // Reações (debaixo da bolha)
+  const reacoesEl = renderReacoesEl(msg.reacoes);
+  if (reacoesEl) wrap.appendChild(reacoesEl);
+
   // Footer
   const footer = document.createElement('div');
   footer.className = 'msg-footer';
   footer.innerHTML = `<span class="msg-hora">${horaFmt(msg.criado_em)}</span>`;
   if (isAluna) {
     const checks = document.createElement('span');
-    // 3 estados: 'enviada' (✓), 'entregue' (✓✓ cinza), 'lida' (✓✓ azul)
     let estado = 'enviada';
     if (msg.lida) estado = 'lida';
     else if (msg.entregue) estado = 'entregue';
@@ -831,6 +882,68 @@ document.getElementById('ctx-copiar')?.addEventListener('click', () => {
   }
   document.getElementById('msg-ctx-menu')?.classList.remove('visivel');
 });
+
+// ── REAÇÕES ──
+async function reagirNaMsg(emoji) {
+  if (!ctxMsgAtual || !emoji) return;
+  const msgId = ctxMsgAtual.id;
+  document.getElementById('msg-ctx-menu')?.classList.remove('visivel');
+  try {
+    await fetch(`${API}/api/chat/reacao`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ mensagem_id: msgId, emoji }),
+    });
+    // O retorno via WebSocket atualiza a UI — não precisa mexer aqui.
+  } catch (err) { console.error('[reagir]', err); }
+}
+
+document.querySelectorAll('#msg-ctx-emojis .msg-ctx-emoji[data-emoji]').forEach(btn => {
+  btn.addEventListener('click', () => reagirNaMsg(btn.dataset.emoji));
+});
+
+// Botão "+" abre o picker nativo de emoji do teclado do celular.
+// Usamos um input invisível com inputmode='text' — o teclado do iOS/Android tem
+// botão pra trocar pra teclado de emoji (😀 ao lado da barra de espaço).
+const pickerInput = document.getElementById('msg-ctx-emoji-picker');
+document.getElementById('msg-ctx-emoji-mais')?.addEventListener('click', () => {
+  if (!pickerInput) return;
+  pickerInput.value = '';
+  pickerInput.focus();
+});
+pickerInput?.addEventListener('input', () => {
+  const v = pickerInput.value.trim();
+  if (!v) return;
+  // Pega o primeiro cluster grafêmico (1 emoji só)
+  let primeiro = v;
+  if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+    const seg = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+    for (const s of seg.segment(v)) { primeiro = s.segment; break; }
+  } else {
+    primeiro = Array.from(v)[0] || v;
+  }
+  pickerInput.value = '';
+  pickerInput.blur();
+  reagirNaMsg(primeiro);
+});
+
+// Toggle reação clicando direto no chip já existente sob a bolha
+document.addEventListener('click', (e) => {
+  const chip = e.target.closest('.msg-reacao-chip');
+  if (!chip) return;
+  const wrap = chip.closest('.msg-wrap');
+  if (!wrap) return;
+  const msgId = parseInt(wrap.dataset.id, 10);
+  const emoji = chip.dataset.emoji;
+  if (!msgId || !emoji) return;
+  // Aciona toggle
+  fetch(`${API}/api/chat/reacao`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({ mensagem_id: msgId, emoji }),
+  }).catch(err => console.error('[toggle reacao]', err));
+});
+
 document.getElementById('reply-fechar')?.addEventListener('click', () => {
   replyMsgAtual = null;
   document.getElementById('reply-bar')?.classList.remove('visivel');
@@ -1089,6 +1202,24 @@ function conectarChatWs() {
           document.getElementById('nav-chat-badge').style.display = '';
         }
       }
+      if (data.evento === 'reacao_atualizada') {
+        if (chatConv && data.conversa_id === chatConv.id) {
+          const msg = mensagensAtuais.find(m => m.id === data.mensagem_id);
+          if (msg) msg.reacoes = data.reacoes;
+          // Re-renderiza só o bloco de reações da bolha
+          const wrap = document.querySelector(`.msg-wrap[data-id="${data.mensagem_id}"]`);
+          if (wrap) {
+            const antigo = wrap.querySelector('.msg-reacoes');
+            if (antigo) antigo.remove();
+            const novo = renderReacoesEl(data.reacoes);
+            if (novo) {
+              const footer = wrap.querySelector('.msg-footer');
+              if (footer) wrap.insertBefore(novo, footer); else wrap.appendChild(novo);
+            }
+          }
+        }
+      }
+
       if (data.evento === 'mensagens_lidas' && data.por === 'suellen') {
         if (chatConv && data.conversa_id === chatConv.id) {
           (data.ids || []).forEach(id => {
