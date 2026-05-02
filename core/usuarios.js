@@ -11,11 +11,62 @@ const { poolCore } = require('../db');
 // ── USUÁRIOS ──────────────────────────────────────────────
 
 async function buscarUsuarioPorTelefone(tel) {
+  // Busca pelo telefone PRINCIPAL atual (usuarios.telefone_formatado)
+  // Se não achar, busca no HISTÓRICO ainda vinculado (telefones_historicos.ativo=TRUE).
+  // Histórico só sai quando admin desvincula manualmente pelo painel — então
+  // qualquer compra/contato vindo de número antigo continua sendo reconhecido
+  // como a mesma aluna. Princípio: conta duplicada NUNCA pode existir.
   const r = await poolCore.query(
-    'SELECT * FROM usuarios WHERE telefone_formatado=$1',
+    `SELECT u.*
+       FROM usuarios u
+      WHERE u.telefone_formatado = $1
+         OR u.telefone           = $1
+         OR u.id IN (
+              SELECT usuario_id FROM telefones_historicos
+               WHERE (telefone = $1 OR telefone_formatado = $1)
+                 AND ativo = TRUE
+            )
+      LIMIT 1`,
     [tel]
   );
   return r.rows[0] || null;
+}
+
+// Igual à função acima, mas retorna TAMBÉM a origem do match.
+// origem='principal' → telefone é o ativo atual da conta
+// origem='historico' → telefone está em telefones_historicos.ativo=TRUE
+//                      (aluna trocou de número, mas histórico ainda válido)
+// origem=null        → não achou
+//
+// Usado por: webhook-evolution (pra responder "número alterado") e fluxo
+// de login (mesma regra: histórico identifica, mas não autentica).
+async function buscarUsuarioPorTelefoneComOrigem(tel) {
+  // 1. Tenta principal primeiro
+  const rPrincipal = await poolCore.query(
+    `SELECT * FROM usuarios
+      WHERE telefone_formatado = $1 OR telefone = $1
+      LIMIT 1`,
+    [tel]
+  );
+  if (rPrincipal.rows[0]) {
+    return { usuario: rPrincipal.rows[0], origem: 'principal' };
+  }
+
+  // 2. Não achou — tenta histórico ativo
+  const rHist = await poolCore.query(
+    `SELECT u.*
+       FROM usuarios u
+       JOIN telefones_historicos h ON h.usuario_id = u.id
+      WHERE (h.telefone = $1 OR h.telefone_formatado = $1)
+        AND h.ativo = TRUE
+      LIMIT 1`,
+    [tel]
+  );
+  if (rHist.rows[0]) {
+    return { usuario: rHist.rows[0], origem: 'historico' };
+  }
+
+  return null;
 }
 
 async function buscarUsuarioPorId(id) {
@@ -316,6 +367,7 @@ async function historicoSementes(usuario_id) {
 
 module.exports = {
   buscarUsuarioPorTelefone,
+  buscarUsuarioPorTelefoneComOrigem,
   buscarUsuarioPorId,
   criarOuAtualizarUsuario,
   atualizarUsuario,
