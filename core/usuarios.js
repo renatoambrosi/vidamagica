@@ -465,6 +465,188 @@ async function trocarTelefonePrincipal(usuarioId, novoTelefone, novoTelefoneForm
   );
 }
 
+// ── CPF: normalização e validação ────────────────────────
+// Sempre armazenamos somente dígitos. Validação por checksum padrão BR.
+
+function normalizarCpf(cpf) {
+  if (!cpf) return null;
+  const digitos = String(cpf).replace(/\D/g, '');
+  return digitos || null;
+}
+
+function validarCpf(cpf) {
+  const c = normalizarCpf(cpf);
+  if (!c || c.length !== 11) return false;
+  // Rejeita sequências triviais (111.111.111-11 etc)
+  if (/^(\d)\1{10}$/.test(c)) return false;
+  // Checksum dígito 1
+  let soma = 0;
+  for (let i = 0; i < 9; i++) soma += parseInt(c[i], 10) * (10 - i);
+  let d1 = 11 - (soma % 11);
+  if (d1 >= 10) d1 = 0;
+  if (d1 !== parseInt(c[9], 10)) return false;
+  // Checksum dígito 2
+  soma = 0;
+  for (let i = 0; i < 10; i++) soma += parseInt(c[i], 10) * (11 - i);
+  let d2 = 11 - (soma % 11);
+  if (d2 >= 10) d2 = 0;
+  return d2 === parseInt(c[10], 10);
+}
+
+// ── DUPLICIDADE: verifica se algum identificador conflita com OUTRA conta ──
+// Retorna { campo, conflito } no PRIMEIRO conflito encontrado, ou null se OK.
+// `campo`     = 'telefone' | 'email' | 'cpf'
+// `conflito`  = { id, nome, telefone_formatado, email } da outra conta
+//
+// Se usuarioIdAtual=null, é uma criação (verifica contra TODAS as contas).
+// Se usuarioIdAtual=ID, é edição (ignora a própria conta).
+async function verificarDuplicidade({ usuarioIdAtual = null, telefone = null, email = null, cpf = null } = {}) {
+  const idAtual = usuarioIdAtual || '00000000-0000-0000-0000-000000000000';
+
+  // Telefone — checa em usuarios E em telefones_historicos.ativo=TRUE
+  if (telefone && telefone.trim()) {
+    const tel = telefone.trim();
+    // Em usuarios.telefone
+    const r1 = await poolCore.query(
+      `SELECT id, nome, telefone_formatado, email FROM usuarios
+        WHERE telefone=$1 AND id<>$2 LIMIT 1`,
+      [tel, idAtual]
+    );
+    if (r1.rows.length) return { campo: 'telefone', conflito: r1.rows[0] };
+
+    // Em telefones_historicos
+    const r2 = await poolCore.query(
+      `SELECT u.id, u.nome, u.telefone_formatado, u.email
+         FROM telefones_historicos h
+         JOIN usuarios u ON u.id = h.usuario_id
+        WHERE h.telefone=$1 AND h.ativo=TRUE AND u.id<>$2 LIMIT 1`,
+      [tel, idAtual]
+    );
+    if (r2.rows.length) return { campo: 'telefone_historico', conflito: r2.rows[0] };
+  }
+
+  // Email
+  if (email && email.trim()) {
+    const e = email.trim().toLowerCase();
+    const r = await poolCore.query(
+      `SELECT id, nome, telefone_formatado, email FROM usuarios
+        WHERE LOWER(email)=$1 AND id<>$2 LIMIT 1`,
+      [e, idAtual]
+    );
+    if (r.rows.length) return { campo: 'email', conflito: r.rows[0] };
+  }
+
+  // CPF
+  if (cpf) {
+    const c = normalizarCpf(cpf);
+    if (c) {
+      const r = await poolCore.query(
+        `SELECT id, nome, telefone_formatado, email FROM usuarios
+          WHERE cpf=$1 AND id<>$2 LIMIT 1`,
+        [c, idAtual]
+      );
+      if (r.rows.length) return { campo: 'cpf', conflito: r.rows[0] };
+    }
+  }
+
+  return null;
+}
+
+// ── Busca por QUALQUER identificador ──────────────────────
+// Útil pro webhook Kiwify futuro: "achei essa pessoa por telefone, email OU cpf?"
+async function buscarUsuarioPorIdentificador({ telefone, email, cpf } = {}) {
+  if (telefone) {
+    const r = await poolCore.query(
+      `SELECT u.* FROM usuarios u
+        WHERE u.telefone=$1 OR u.telefone_formatado=$1
+           OR u.id IN (SELECT usuario_id FROM telefones_historicos
+                        WHERE (telefone=$1 OR telefone_formatado=$1) AND ativo=TRUE)
+        LIMIT 1`,
+      [telefone]
+    );
+    if (r.rows[0]) return r.rows[0];
+  }
+  if (email) {
+    const r = await poolCore.query(
+      `SELECT * FROM usuarios WHERE LOWER(email)=$1 LIMIT 1`,
+      [email.toLowerCase()]
+    );
+    if (r.rows[0]) return r.rows[0];
+  }
+  if (cpf) {
+    const c = normalizarCpf(cpf);
+    if (c) {
+      const r = await poolCore.query(
+        `SELECT * FROM usuarios WHERE cpf=$1 LIMIT 1`,
+        [c]
+      );
+      if (r.rows[0]) return r.rows[0];
+    }
+  }
+  return null;
+}
+
+// ── ENDEREÇOS ─────────────────────────────────────────────
+// 1 aluna = N endereços. Sem validação de duplicata.
+
+async function listarEnderecos(usuarioId) {
+  const r = await poolCore.query(
+    `SELECT * FROM enderecos WHERE usuario_id=$1
+      ORDER BY principal DESC, criado_em DESC`,
+    [usuarioId]
+  );
+  return r.rows;
+}
+
+async function criarEndereco(usuarioId, dados) {
+  const { cep, rua, numero, complemento, bairro, cidade, estado, tipo, principal } = dados || {};
+  // Se vai ser principal, desmarca os outros antes
+  if (principal) {
+    await poolCore.query(`UPDATE enderecos SET principal=FALSE WHERE usuario_id=$1`, [usuarioId]);
+  }
+  const r = await poolCore.query(
+    `INSERT INTO enderecos (usuario_id, cep, rua, numero, complemento, bairro, cidade, estado, tipo, principal)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+    [usuarioId, cep||null, rua||null, numero||null, complemento||null,
+     bairro||null, cidade||null, estado||null, tipo||'casa', !!principal]
+  );
+  return r.rows[0];
+}
+
+async function atualizarEndereco(enderecoId, usuarioId, dados) {
+  if (dados.principal) {
+    await poolCore.query(
+      `UPDATE enderecos SET principal=FALSE WHERE usuario_id=$1 AND id<>$2`,
+      [usuarioId, enderecoId]
+    );
+  }
+  const campos = ['cep','rua','numero','complemento','bairro','cidade','estado','tipo','principal'];
+  const sets = [];
+  const params = [];
+  for (const c of campos) {
+    if (dados[c] !== undefined) {
+      params.push(dados[c]); sets.push(`${c}=$${params.length}`);
+    }
+  }
+  if (!sets.length) return null;
+  params.push(enderecoId, usuarioId);
+  const r = await poolCore.query(
+    `UPDATE enderecos SET ${sets.join(', ')}, atualizado_em=NOW()
+      WHERE id=$${params.length-1} AND usuario_id=$${params.length}
+      RETURNING *`,
+    params
+  );
+  return r.rows[0];
+}
+
+async function deletarEndereco(enderecoId, usuarioId) {
+  const r = await poolCore.query(
+    `DELETE FROM enderecos WHERE id=$1 AND usuario_id=$2`,
+    [enderecoId, usuarioId]
+  );
+  return r.rowCount > 0;
+}
+
 module.exports = {
   buscarUsuarioPorTelefone,
   buscarUsuarioPorTelefoneComOrigem,
@@ -473,6 +655,16 @@ module.exports = {
   apagarUsuarioPermanente,
   marcarComoAtiva,
   trocarTelefonePrincipal,
+  // identidade
+  normalizarCpf,
+  validarCpf,
+  verificarDuplicidade,
+  buscarUsuarioPorIdentificador,
+  // endereços
+  listarEnderecos,
+  criarEndereco,
+  atualizarEndereco,
+  deletarEndereco,
   buscarUsuarioPorId,
   criarOuAtualizarUsuario,
   atualizarUsuario,
