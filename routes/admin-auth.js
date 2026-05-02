@@ -37,7 +37,7 @@ const {
   revogarSessaoAdmin,
 } = require('../core/admins');
 
-const { enviarTexto: enviarWhatsAppDireto } = require('../core/whatsapp');
+const { enfileirarAtendimento } = require('../core/gateway');
 const { gerarTokenPainel, autenticarPainel } = require('../middleware/autenticar');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../middleware/autenticar');
@@ -71,14 +71,23 @@ function checarRate(chave, max = 3, janelaMs = 60000) {
 }
 
 async function enviarOtpAdminWhatsApp(telefone, codigo, nome, escopo) {
-  const saudacao = nome ? `Olá, ${nome.split(' ')[0]}!` : 'Olá!';
-  const onde = escopo === 'admin' ? 'Painel Admin' : 'Painel de Atendimento';
-  const mensagem = `${saudacao} 🔐\n\nSeu código de acesso ao *${onde} — Vida Mágica*:\n\n*${codigo}*\n\nVálido por 10 minutos. Não compartilhe com ninguém.\n\n— Vida Mágica`;
+  const primeiroNome = nome ? nome.split(' ')[0] : '';
+  const templateChave = escopo === 'admin' ? 'otp_painel_admin' : 'otp_painel_atendimento';
+
   try {
-    await enviarWhatsAppDireto(telefone, mensagem);
+    // OTP do painel é REATIVO — entra na fila com prioridade 1, cooldown 5s entre atendimentos
+    await enfileirarAtendimento({
+      telefone,
+      tipo: 'reativo',
+      origem: `painel-otp-${escopo}`,
+      nome: primeiroNome,
+      mensagens: [
+        { template: templateChave, variaveis: { nome: primeiroNome, codigo } },
+      ],
+    });
     return true;
   } catch (err) {
-    console.error('❌ Erro ao enviar OTP admin:', err.message);
+    console.error('❌ Erro ao enfileirar OTP admin:', err.message);
     return false;
   }
 }
