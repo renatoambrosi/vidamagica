@@ -48,13 +48,13 @@
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-html, body { height: 100%; overflow-x: hidden; }
+html, body { height: 100%; overflow-x: hidden; overscroll-behavior: none; }
 body {
   font-family: var(--font-body);
   color: var(--texto);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
-  overscroll-behavior-x: none;
+  overscroll-behavior: none;
   background-color: #E8DCC0;
   background-image:
     linear-gradient(180deg, rgba(255,250,240,0.72) 0%, rgba(248,243,232,0.60) 40%, rgba(240,232,215,0.55) 100%),
@@ -814,7 +814,12 @@ body.teclado-aberto .bottom-nav {
 .msg-hora { font-size: 0.62rem; color: var(--texto-fraco); }
 .msg-checks { display: inline-flex; margin-left: 1px; }
 .msg-checks svg { width: 14px; height: 14px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* ✓ enviada — só o primeiro tick, cinza fraco */
+.msg-checks.enviada svg { stroke: var(--texto-fraco); opacity: 0.5; }
+.msg-checks.enviada svg polyline:nth-child(2) { display: none; }
+/* ✓✓ entregue — 2 ticks cinza */
 .msg-checks.entregue svg { stroke: var(--texto-fraco); }
+/* ✓✓ lida — 2 ticks dourados */
 .msg-checks.lida svg {
   stroke: var(--ouro) !important;
   filter: drop-shadow(0 0 3px rgba(200,146,42,0.55));
