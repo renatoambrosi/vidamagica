@@ -657,8 +657,11 @@ body.teclado-aberto .bottom-nav {
 @keyframes girarRefresh { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 /* Indicador "puxe pra atualizar" — círculo dourado com seta que gira conforme aluna puxa */
+/* Indicador "puxe pra atualizar" — fica como ELEMENTO IRMÃO acima do chat-msgs.
+   Altura 0 quando inativo (não ocupa espaço). Cresce + mostra círculo girando
+   quando puxando/armado/atualizando. */
 .chat-pull-indicator {
-  position: absolute; top: 0; left: 0; right: 0;
+  flex-shrink: 0;
   height: 0; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
   background: transparent;
