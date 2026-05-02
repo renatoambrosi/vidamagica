@@ -108,7 +108,9 @@ async function buscarUsuarioBasico(usuario_id) {
 
 async function notificarSuellen(payload) {
   try {
-    const r = await poolMensagens.query(`SELECT * FROM chat_push_subscriptions WHERE ativo=TRUE`);
+    const r = await poolMensagens.query(
+      `SELECT * FROM chat_push_subscriptions WHERE ativo=TRUE AND usuario_id IS NULL`
+    );
     for (const sub of r.rows) {
       try {
         await webpush.sendNotification(
@@ -122,7 +124,32 @@ async function notificarSuellen(payload) {
       }
     }
   } catch (err) {
-    console.error('[Chat Push]', err.message);
+    console.error('[Chat Push Suellen]', err.message);
+  }
+}
+
+// Envia push pra aluna em todos os dispositivos onde ela autorizou.
+// Usado quando Suellen responde e a aluna NÃO está com WS conectado (não está vendo o app).
+async function notificarAluna(usuarioId, payload) {
+  try {
+    const r = await poolMensagens.query(
+      `SELECT * FROM chat_push_subscriptions WHERE ativo=TRUE AND usuario_id=$1`,
+      [usuarioId]
+    );
+    for (const sub of r.rows) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: sub.keys },
+          JSON.stringify(payload)
+        );
+      } catch (err) {
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          await poolMensagens.query(`UPDATE chat_push_subscriptions SET ativo=FALSE WHERE id=$1`, [sub.id]);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[Chat Push Aluna]', err.message);
   }
 }
 
@@ -185,6 +212,100 @@ routerAluna.get('/vapid-public-key', (req, res) => {
 
 // A partir daqui exige auth
 routerAluna.use(autenticar);
+
+// ── PUSH NOTIFICATIONS DA ALUNA ────────────────────────────
+// Modal "Permita as notificações da Suellen!" pede autorização ao browser.
+// Se aluna autoriza → frontend manda subscription pra cá → atrelamos ao usuario_id dela.
+// Quando Suellen responde e aluna não está online (sem WS), backend dispara push.
+
+// Status atual: o que mostrar/não mostrar no modal
+routerAluna.get('/notif-status', async (req, res) => {
+  try {
+    const r = await poolCore.query(
+      `SELECT notif_status, notif_modal_ultima_em FROM usuarios WHERE id=$1`,
+      [req.usuario.sub]
+    );
+    const u = r.rows[0] || {};
+    // Pra mostrar o modal, precisa ser:
+    //   - nunca mostrou (notif_status IS NULL)
+    //   - OU já tocou "agora não" mas faz mais de 7 dias
+    let mostrar_modal = !u.notif_status;
+    if (u.notif_status === 'agora_nao' && u.notif_modal_ultima_em) {
+      const diff = Date.now() - new Date(u.notif_modal_ultima_em).getTime();
+      mostrar_modal = diff > 7 * 24 * 60 * 60 * 1000;
+    }
+    res.json({
+      status: u.notif_status || null,
+      ultima_em: u.notif_modal_ultima_em,
+      mostrar_modal,
+    });
+  } catch (err) {
+    console.error('[ChatAluna] /notif-status:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Aluna tocou "Agora não" no modal — registra cooldown
+routerAluna.post('/notif-status', async (req, res) => {
+  const { status } = req.body || {};
+  if (!['permitida','recusada','agora_nao'].includes(status)) {
+    return res.status(400).json({ error: 'status inválido' });
+  }
+  try {
+    await poolCore.query(
+      `UPDATE usuarios
+          SET notif_status=$1, notif_modal_ultima_em=NOW(), atualizado_em=NOW()
+        WHERE id=$2`,
+      [status, req.usuario.sub]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[ChatAluna] /notif-status POST:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Aluna aceitou no browser → manda subscription, atrelamos ao id dela
+routerAluna.post('/push-subscribe', async (req, res) => {
+  const { endpoint, keys, userAgent } = req.body || {};
+  if (!endpoint || !keys) return res.status(400).json({ error: 'dados inválidos' });
+  try {
+    await poolMensagens.query(
+      `INSERT INTO chat_push_subscriptions (endpoint, keys, user_agent, usuario_id)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (endpoint) DO UPDATE SET
+         keys=$2, user_agent=$3, usuario_id=$4, ativo=TRUE`,
+      [endpoint, JSON.stringify(keys), userAgent || null, req.usuario.sub]
+    );
+    // Marca status na conta
+    await poolCore.query(
+      `UPDATE usuarios
+          SET notif_status='permitida', notif_modal_ultima_em=NOW(), atualizado_em=NOW()
+        WHERE id=$1`,
+      [req.usuario.sub]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[ChatAluna] /push-subscribe:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Aluna desativou ou desinstalou — remove subscription dela
+routerAluna.post('/push-unsubscribe', async (req, res) => {
+  const { endpoint } = req.body || {};
+  if (!endpoint) return res.status(400).json({ error: 'endpoint obrigatório' });
+  try {
+    await poolMensagens.query(
+      `UPDATE chat_push_subscriptions SET ativo=FALSE WHERE endpoint=$1 AND usuario_id=$2`,
+      [endpoint, req.usuario.sub]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[ChatAluna] /push-unsubscribe:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // GET /api/chat/conversa  ?tipo=suellen|suporte
 routerAluna.get('/conversa', async (req, res) => {
@@ -770,6 +891,16 @@ routerAtendimento.post('/mensagem', async (req, res) => {
       emitirParaSuellen('mensagens_lidas', {
         conversa_id, ids: lidasIds, por: ident,
       });
+    }
+
+    // PUSH pra aluna — se ela NÃO está online no app, manda notificação push.
+    // Texto fixo (a aluna abre o app pra ler — privacidade): "A Suellen falou com você ✨"
+    if (!alunaOnline) {
+      notificarAluna(conv.usuario_id, {
+        title: 'Vida Mágica',
+        body:  'A Suellen falou com você ✨',
+        data:  { conversa_id, url: '/app' },
+      }).catch(() => {});
     }
 
     res.json({
