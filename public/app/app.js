@@ -873,14 +873,14 @@ function conectarChatWs() {
       // Processa as 2 coisas no mesmo tick de JS pra evitar dessincronia visual.
       if (data.evento === 'resposta_atendimento_e_lidas') {
         const convId = data.conversa_id;
-        // 1º — pinta ✓✓ azul nas mensagens antigas (que viraram lidas)
+        // 1º — pinta ✓✓ dourado nas mensagens antigas (que viraram lidas)
         if (chatConv && convId === chatConv.id && Array.isArray(data.lidas_ids)) {
           data.lidas_ids.forEach(id => {
             const msg = mensagensAtuais.find(m => m.id === id);
-            if (msg) msg.lida = true;
+            if (msg) { msg.lida = true; msg.entregue = true; }
             const checkEl = document.querySelector(`.msg-checks[data-msg-id="${id}"]`);
             if (checkEl) {
-              checkEl.classList.remove('entregue');
+              checkEl.classList.remove('enviada', 'entregue');
               checkEl.classList.add('lida');
             }
           });
@@ -928,10 +928,10 @@ function conectarChatWs() {
         if (chatConv && data.conversa_id === chatConv.id) {
           (data.ids || []).forEach(id => {
             const msg = mensagensAtuais.find(m => m.id === id);
-            if (msg) msg.lida = true;
+            if (msg) { msg.lida = true; msg.entregue = true; }
             const checkEl = document.querySelector(`.msg-checks[data-msg-id="${id}"]`);
             if (checkEl) {
-              checkEl.classList.remove('entregue');
+              checkEl.classList.remove('enviada', 'entregue');
               checkEl.classList.add('lida');
             }
           });
