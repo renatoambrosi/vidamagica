@@ -81,6 +81,28 @@ async function initCore() {
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_url TEXT`);
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS reset_token TEXT`);
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS reset_token_expira TIMESTAMPTZ`);
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS origem_cadastro VARCHAR(30)`);
+    // valores possíveis: 'kiwify', 'teste', 'cadastro_direto', 'manual_admin', null
+
+    // Histórico de telefones — telefone é chave-âncora, NUNCA apaga.
+    // Aluna pode trocar telefone, mas o antigo continua vinculado à conta.
+    // Apenas o admin (Renato) pode desvincular pelo painel.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS telefones_historicos (
+        id SERIAL PRIMARY KEY,
+        usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        telefone VARCHAR(30) NOT NULL,
+        telefone_formatado VARCHAR(30),
+        origem VARCHAR(30),
+        ativo BOOLEAN DEFAULT TRUE,
+        vinculado_em TIMESTAMPTZ DEFAULT NOW(),
+        desvinculado_em TIMESTAMPTZ,
+        desvinculado_por UUID,
+        observacao TEXT
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_tel_hist_usuario ON telefones_historicos(usuario_id)`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_tel_hist_tel_ativo ON telefones_historicos(telefone) WHERE ativo=TRUE`);
 
     await c.query(`
       CREATE TABLE IF NOT EXISTS otp_tokens (
@@ -91,10 +113,18 @@ async function initCore() {
         usado BOOLEAN DEFAULT FALSE,
         tentativas INTEGER DEFAULT 0,
         expira_em TIMESTAMPTZ NOT NULL,
-        criado_em TIMESTAMPTZ DEFAULT NOW()
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        token TEXT,
+        tipo VARCHAR(20) DEFAULT 'codigo'
       )
     `);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_otp_telefone ON otp_tokens(telefone)`);
+    // Migrations idempotentes
+    await c.query(`ALTER TABLE otp_tokens ADD COLUMN IF NOT EXISTS token TEXT`);
+    await c.query(`ALTER TABLE otp_tokens ADD COLUMN IF NOT EXISTS tipo VARCHAR(20) DEFAULT 'codigo'`);
+    // tipo: 'codigo' (OTP painel) | 'magic_login' | 'magic_boas_vindas' | 'reset_senha'
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_otp_token ON otp_tokens(token) WHERE token IS NOT NULL AND usado=FALSE`);
+
 
     await c.query(`
       CREATE TABLE IF NOT EXISTS dispositivos (
@@ -484,7 +514,7 @@ async function initComunicacao() {
       )
     `);
 
-    // Fila persistente
+    // Fila persistente — agora trabalhada por ATENDIMENTO (1 atendimento = 1+ msgs em sequência)
     await c.query(`
       CREATE TABLE IF NOT EXISTS fila_mensagens (
         id SERIAL PRIMARY KEY,
@@ -498,10 +528,51 @@ async function initComunicacao() {
         erro TEXT,
         entrou_em TIMESTAMPTZ DEFAULT NOW(),
         enviado_em TIMESTAMPTZ,
-        ordem INTEGER DEFAULT 0
+        ordem INTEGER DEFAULT 0,
+        atendimento_id UUID,
+        ordem_no_atendimento INTEGER DEFAULT 1,
+        categoria VARCHAR(50),
+        tipo VARCHAR(10) DEFAULT 'ativo' CHECK (tipo IN ('ativo','reativo')),
+        prioridade INTEGER DEFAULT 2,
+        template_chave VARCHAR(80)
       )
     `);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_fila_status ON fila_mensagens(status, ordem, entrou_em)`);
+
+    // Migrations idempotentes — caso a tabela já exista sem as colunas novas
+    await c.query(`ALTER TABLE fila_mensagens ADD COLUMN IF NOT EXISTS atendimento_id UUID`);
+    await c.query(`ALTER TABLE fila_mensagens ADD COLUMN IF NOT EXISTS ordem_no_atendimento INTEGER DEFAULT 1`);
+    await c.query(`ALTER TABLE fila_mensagens ADD COLUMN IF NOT EXISTS categoria VARCHAR(50)`);
+    await c.query(`ALTER TABLE fila_mensagens ADD COLUMN IF NOT EXISTS tipo VARCHAR(10) DEFAULT 'ativo'`);
+    await c.query(`ALTER TABLE fila_mensagens ADD COLUMN IF NOT EXISTS prioridade INTEGER DEFAULT 2`);
+    await c.query(`ALTER TABLE fila_mensagens ADD COLUMN IF NOT EXISTS template_chave VARCHAR(80)`);
+
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_fila_atendimento ON fila_mensagens(atendimento_id, ordem_no_atendimento)`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_fila_pendentes ON fila_mensagens(status, prioridade, entrou_em) WHERE status='pendente'`);
+
+    // Categorias do gateway (pausa por categoria)
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS gateway_categorias (
+        chave VARCHAR(50) PRIMARY KEY,
+        nome_exibicao VARCHAR(100) NOT NULL,
+        emoji VARCHAR(10),
+        pausado BOOLEAN DEFAULT FALSE,
+        ordem INTEGER DEFAULT 0,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    // Seed das categorias iniciais
+    await c.query(`
+      INSERT INTO gateway_categorias (chave, nome_exibicao, emoji, ordem) VALUES
+        ('cobranca_clube',     'Cobranças do Clube (D-3, D-1, D+5)', '💰', 1),
+        ('convite_sessao',     'Convite sessão diagnóstico',         '🎁', 2),
+        ('pos_venda_kiwify',   'Pós-venda Kiwify',                    '🛒', 3),
+        ('anuncio_geral',      'Anúncios gerais',                     '📢', 4),
+        ('manual_admin',       'Manual do admin',                     '✋', 5)
+      ON CONFLICT (chave) DO NOTHING
+    `);
 
     // Histórico de envio
     await c.query(`
@@ -518,7 +589,7 @@ async function initComunicacao() {
       )
     `);
 
-    // Config do gateway
+    // Config do gateway — chaves de comportamento
     await c.query(`
       CREATE TABLE IF NOT EXISTS gateway_config (
         chave TEXT PRIMARY KEY,
@@ -528,8 +599,49 @@ async function initComunicacao() {
     `);
     await c.query(`
       INSERT INTO gateway_config (chave, valor) VALUES
-        ('cooldown_segundos','60'),
-        ('pausado','false')
+        ('cooldown_entre_msgs_atendimento', '2'),
+        ('cooldown_atendimentos_reativos',  '5'),
+        ('cooldown_atendimentos_ativos',   '60'),
+        ('limite_msgs_dia_ativas',        '200'),
+        ('pausado_geral',                'false'),
+        ('cooldown_segundos',             '60'),
+        ('pausado',                      'false')
+      ON CONFLICT (chave) DO NOTHING
+    `);
+
+    // Seed de templates iniciais (Renato edita pelo painel quando quiser)
+    await c.query(`
+      INSERT INTO templates_mensagens (chave, titulo, texto) VALUES
+        ('magic_login_msg1',
+         'Magic Link — Login (msg 1 de 2)',
+         'Olá, {nome}! 👇 Aqui está seu acesso ao Vida Mágica'),
+        ('magic_boas_vindas_msg1',
+         'Magic Link — Primeiro acesso (msg 1 de 2)',
+         'Olá, {nome}! 🌟 Bem vinda! Toque no link abaixo pra entrar pela primeira vez 👇'),
+        ('reset_senha_msg1',
+         'Reset de senha (msg 1 de 2)',
+         'Olá, {nome}! 🔐 Vou gerar o link abaixo pra você criar uma nova senha. 👇'),
+        ('otp_painel_admin',
+         'OTP Painel Admin',
+         'Olá, {nome}! 🔐 Seu código de acesso ao Painel Admin — Vida Mágica: *{codigo}*. Válido por 10 minutos.'),
+        ('otp_painel_atendimento',
+         'OTP Painel Atendimento',
+         'Olá, {nome}! 🔐 Seu código de acesso ao Painel de Atendimento — Vida Mágica: *{codigo}*. Válido por 10 minutos.'),
+        ('cobranca_clube_d_menos_3',
+         'Cobrança Clube D-3',
+         'Oi {nome}! Faltam 3 dias pra renovação da sua assinatura no Clube Vida Mágica.'),
+        ('cobranca_clube_d_menos_1',
+         'Cobrança Clube D-1',
+         'Oi {nome}! Amanhã é dia da renovação do seu Clube Vida Mágica.'),
+        ('cobranca_clube_d_mais_5',
+         'Cobrança Clube D+5 (atraso)',
+         'Oi {nome}! Sua mensalidade do Clube está em atraso há 5 dias. Vamos regularizar?'),
+        ('convite_sessao_diagnostico',
+         'Convite Sessão Diagnóstico',
+         'Olá {nome}! Te convido para nossa Sessão de Diagnóstico no próximo sábado. 💛'),
+        ('pos_venda_kiwify',
+         'Pós-venda Kiwify',
+         'Olá {nome}! Bem vinda ao Vida Mágica. Aqui você acessa tudo que comprou.')
       ON CONFLICT (chave) DO NOTHING
     `);
 
