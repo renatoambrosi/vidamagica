@@ -82,7 +82,16 @@ async function initCore() {
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS reset_token TEXT`);
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS reset_token_expira TIMESTAMPTZ`);
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS origem_cadastro VARCHAR(30)`);
-    // valores possíveis: 'kiwify', 'teste', 'cadastro_direto', 'manual_admin', null
+    // valores possíveis: 'kiwify', 'teste', 'cadastro_direto', 'manual_admin', 'whatsapp', null
+
+    // Conta arquivada: aluna pediu pra apagar OU admin arquivou.
+    // Não loga, não recebe mensagens, mas dados permanecem (reversível).
+    // Apenas o admin pode desarquivar / apagar permanentemente.
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS arquivada BOOLEAN DEFAULT FALSE`);
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS arquivada_em TIMESTAMPTZ`);
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS arquivada_por VARCHAR(20)`);
+    // valores: 'admin' ou 'aluna' (auditoria)
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS arquivada_motivo TEXT`);
 
     // Histórico de telefones — telefone é chave-âncora, NUNCA apaga.
     // Aluna pode trocar telefone, mas o antigo continua vinculado à conta.
