@@ -836,6 +836,82 @@ document.getElementById('reply-fechar')?.addEventListener('click', () => {
   document.getElementById('reply-bar')?.classList.remove('visivel');
 });
 
+// ── REFRESH DO CHAT (botão + pull-to-refresh) ──
+
+let _refreshLock = false;
+
+async function recarregarChatAtual() {
+  if (_refreshLock) return;
+  if (!chatConv) return;
+  _refreshLock = true;
+  const btn = document.getElementById('btn-chat-refresh');
+  if (btn) btn.classList.add('atualizando');
+  try {
+    await carregarConversaCanal(chatConv.tipo);
+  } finally {
+    _refreshLock = false;
+    if (btn) btn.classList.remove('atualizando');
+  }
+}
+
+document.getElementById('btn-chat-refresh')?.addEventListener('click', recarregarChatAtual);
+
+// Pull-to-refresh — só na área de mensagens, sem afetar o resto da tela.
+// O indicador "puxe pra atualizar" fica posicionado absoluto NO TOPO da #chat-msgs.
+(function setupPullToRefresh() {
+  const msgsEl = document.getElementById('chat-msgs');
+  if (!msgsEl) return;
+
+  // Indicador visual
+  const indic = document.createElement('div');
+  indic.className = 'chat-pull-indicator';
+  indic.id = 'chat-pull-indicator';
+  indic.textContent = 'Puxe pra atualizar';
+  msgsEl.appendChild(indic);
+
+  let startY = 0;
+  let pulling = false;
+  let armed = false;
+  const LIMITE_ARMAR = 60; // px puxados pra disparar
+
+  msgsEl.addEventListener('touchstart', (e) => {
+    // Só ativa se já está no TOPO da área (scroll = 0)
+    if (msgsEl.scrollTop > 0) { pulling = false; return; }
+    startY = e.touches[0].clientY;
+    pulling = true;
+    armed = false;
+    indic.classList.remove('armado', 'atualizando');
+    indic.textContent = 'Puxe pra atualizar';
+  }, { passive: true });
+
+  msgsEl.addEventListener('touchmove', (e) => {
+    if (!pulling) return;
+    const diff = e.touches[0].clientY - startY;
+    if (diff > LIMITE_ARMAR && !armed) {
+      armed = true;
+      indic.classList.add('armado');
+      indic.textContent = 'Solte pra atualizar';
+    } else if (diff <= LIMITE_ARMAR && armed) {
+      armed = false;
+      indic.classList.remove('armado');
+      indic.textContent = 'Puxe pra atualizar';
+    }
+  }, { passive: true });
+
+  msgsEl.addEventListener('touchend', async () => {
+    if (!pulling) return;
+    pulling = false;
+    if (armed) {
+      indic.classList.remove('armado');
+      indic.classList.add('atualizando');
+      indic.innerHTML = `<span class="girando"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span>Atualizando...`;
+      await recarregarChatAtual();
+      indic.classList.remove('atualizando');
+      indic.textContent = 'Puxe pra atualizar';
+    }
+  });
+})();
+
 // ── WebSocket ──
 
 // Dispara quando aluna está com chat aberto e ativo, marcando msgs do
@@ -850,13 +926,16 @@ async function marcarLidas(tipoChat) {
   } catch (_) { /* silencioso */ }
 }
 
-// Quando aluna volta o foco pra aba/app com chat aberto → marca como lida.
-// Cobre o caso: msg chegou enquanto ela estava em outra aba/app, ela volta, viu.
+// Quando aluna volta o foco pra aba/app com chat aberto:
+//   1. reconecta WS (caso tenha caído em background)
+//   2. recarrega histórico do chat (pega tudo que aconteceu enquanto offline)
+//   3. marca como lida
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;
+  conectarChatWs();
   if (!chatConv) return;
   if (!document.querySelector('.nav-tab[data-view="chat"]')?.classList.contains('active')) return;
-  marcarLidas(chatConv.tipo);
+  recarregarChatAtual();
 });
 
 function conectarChatWs() {
@@ -1004,6 +1083,19 @@ async function enviarMensagem() {
       if (d.mensagem) {
         const idx = mensagensAtuais.findIndex(m => m.id === msgTemp.id);
         if (idx >= 0) mensagensAtuais[idx] = { ...msgTemp, ...d.mensagem };
+        // Atualiza o DOM: troca id temporário pelo real (importante pro check
+        // virar lida quando atendimento responder — é por data-msg-id que acha)
+        const wrapEl = document.querySelector(`.msg-wrap[data-id="${msgTemp.id}"]`);
+        if (wrapEl) wrapEl.dataset.id = d.mensagem.id;
+        const checkEl = document.querySelector(`.msg-checks[data-msg-id="${msgTemp.id}"]`);
+        if (checkEl) {
+          checkEl.dataset.msgId = d.mensagem.id;
+          // Estado correto vindo do backend (entregue se atendimento online)
+          checkEl.classList.remove('enviada','entregue','lida');
+          if (d.mensagem.lida)         checkEl.classList.add('lida');
+          else if (d.mensagem.entregue) checkEl.classList.add('entregue');
+          else                          checkEl.classList.add('enviada');
+        }
       }
       if (d.conversa) {
         chatConv = { ...chatConv, ...d.conversa };
