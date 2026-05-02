@@ -106,6 +106,7 @@ app.get(/^\/app(\/(dashboard|perfil|chat|loja|sementes)?)?$/, (req, res) => {
 // ── MÓDULOS DA API ─────────────────────────────────────────
 app.use('/api/auth',          require('./routes/auth'));
 app.use('/api/painel',        require('./routes/admin-auth'));        // OTP do admin/atendimento
+app.use('/api/admin',         require('./routes/admin'));             // Painel admin (gateway, templates, usuários)
 app.use('/api',               require('./routes/precos'));
 app.use('/api',               require('./routes/depoimentos'));
 app.use('/api',               require('./routes/feed'));
@@ -225,6 +226,7 @@ server.listen(PORT, async () => {
 ✦  Chat aluna:         /api/chat/*
 ✦  Chat atend.:        /api/atendimento/chat/*
 📤 Upload:             /api/upload/*
+🛡️  Admin API:    /api/admin/* (gateway, templates, usuários)
 🚪 Gateway WA:    fila + cooldown + categorias (worker em loop)
 🖥️  Painel:        GET  /atendimento
 🛡️  Admin:         GET  /admin
