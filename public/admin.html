@@ -1192,14 +1192,17 @@ function renderUsuarios() {
     const origem = u.origem_cadastro
       ? `<span style="padding:0.1rem 0.4rem;border-radius:4px;background:rgba(200,146,42,0.12);color:var(--color-gold-light);font-size:0.65rem;font-weight:600;text-transform:uppercase">${u.origem_cadastro}</span>`
       : '';
+    const arquivadaBadge = u.arquivada
+      ? `<span style="padding:0.1rem 0.4rem;border-radius:4px;background:rgba(220,80,80,0.18);color:#F09090;font-size:0.65rem;font-weight:700;text-transform:uppercase">arquivada</span>`
+      : '';
     return `
-      <div onclick="abrirDetalheUsuario('${u.id}')" style="display:grid;grid-template-columns:auto 1fr auto;gap:0.85rem;align-items:center;padding:0.7rem 0.85rem;border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:0.4rem;background:var(--bg-input);cursor:pointer;transition:border-color 0.15s" onmouseover="this.style.borderColor='var(--border-hover)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div onclick="abrirDetalheUsuario('${u.id}')" style="display:grid;grid-template-columns:auto 1fr auto;gap:0.85rem;align-items:center;padding:0.7rem 0.85rem;border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:0.4rem;background:var(--bg-input);cursor:pointer;transition:border-color 0.15s;${u.arquivada?'opacity:0.55;':''}" onmouseover="this.style.borderColor='var(--border-hover)'" onmouseout="this.style.borderColor='var(--border)'">
         <div style="width:40px;height:40px;border-radius:50%;background:rgba(200,146,42,0.18);color:var(--color-gold-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;font-family:var(--font-display)">${iniciais||'?'}</div>
         <div>
           <div style="font-family:var(--font-display);font-weight:600;font-size:0.9rem;color:var(--text-light)">${escHtml(u.nome||'(sem nome)')}</div>
           <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.15rem">${u.telefone_formatado||u.telefone||'—'} ${u.email?(' · '+escHtml(u.email)):''}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:0.45rem">${origem}<span style="color:var(--text-muted);font-size:1.1rem">›</span></div>
+        <div style="display:flex;align-items:center;gap:0.45rem">${arquivadaBadge}${origem}<span style="color:var(--text-muted);font-size:1.1rem">›</span></div>
       </div>`;
   }).join('');
 }
@@ -1256,7 +1259,13 @@ async function abrirDetalheUsuario(id) {
       <div style="margin-top:1.2rem"><h4 style="font-family:var(--font-display);color:var(--color-gold-light);margin:0 0 0.5rem;font-size:0.95rem">📱 Dispositivos (${d.dispositivos.length})</h4>${dispsHtml}</div>
 
       <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);display:flex;gap:0.5rem;flex-wrap:wrap">
-        <button class="btn btn-danger btn-sm" onclick="forcarLogoutUsuario('${id}')">⏏ Forçar logout (revogar todas as sessões)</button>
+        <button class="btn btn-ghost btn-sm" onclick="forcarLogoutUsuario('${id}')">⏏ Forçar logout</button>
+        ${d.usuario.arquivada
+          ? `<button class="btn btn-success btn-sm" onclick="desarquivarUsuario('${id}')" style="background:rgba(76,175,80,0.18);color:#7DD87E;border:1px solid rgba(76,175,80,0.3)">↺ Desarquivar conta</button>
+             <div style="flex-basis:100%;font-size:0.72rem;color:#F09090;margin-top:0.3rem">⚠ Conta arquivada por ${d.usuario.arquivada_por||'?'} em ${dataFmt(d.usuario.arquivada_em)}${d.usuario.arquivada_motivo?(' — '+escHtml(d.usuario.arquivada_motivo)):''}</div>`
+          : `<button class="btn btn-warn btn-sm" onclick="arquivarUsuario('${id}')">🗄️ Arquivar</button>`
+        }
+        <button class="btn btn-danger btn-sm" onclick="apagarUsuarioPermanente('${id}','${escHtml(d.usuario.nome||d.usuario.telefone||'')}')">💥 Apagar permanentemente</button>
       </div>`;
   } catch (e) {
     document.getElementById('us-modal-body').innerHTML = `<p style="color:#F09090">Erro: ${e.message}</p>`;
@@ -1324,6 +1333,62 @@ async function desvincularTelefone(usuarioId, telId) {
     });
     if (r.ok) { toast('✓ Telefone desvinculado'); abrirDetalheUsuario(usuarioId); }
     else { const d = await r.json(); toast(d.error||'Erro','error'); }
+  } catch { toast('Erro de conexão','error'); }
+}
+
+async function arquivarUsuario(id) {
+  const motivo = prompt('Arquivar essa conta?\n\nEla não vai mais conseguir logar nem receber mensagens.\nA ação é reversível (botão Desarquivar fica disponível).\n\nMotivo (opcional):');
+  if (motivo === null) return;
+  try {
+    const r = await fetch(`${API}/api/admin/usuarios/${id}/arquivar`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body:JSON.stringify({ motivo: motivo || null }),
+    });
+    const d = await r.json();
+    if (r.ok) {
+      toast('✓ Conta arquivada');
+      abrirDetalheUsuario(id);
+      carregarUsuarios(document.getElementById('us-busca').value.trim());
+    } else toast(d.error||'Erro','error');
+  } catch { toast('Erro de conexão','error'); }
+}
+
+async function desarquivarUsuario(id) {
+  if (!confirm('Reativar essa conta? Ela vai voltar a poder logar e receber mensagens.')) return;
+  try {
+    const r = await fetch(`${API}/api/admin/usuarios/${id}/desarquivar`, {
+      method:'POST',
+      headers:{'Authorization':authHeader()},
+    });
+    const d = await r.json();
+    if (r.ok) {
+      toast('✓ Conta reativada');
+      abrirDetalheUsuario(id);
+      carregarUsuarios(document.getElementById('us-busca').value.trim());
+    } else toast(d.error||'Erro','error');
+  } catch { toast('Erro de conexão','error'); }
+}
+
+async function apagarUsuarioPermanente(id, nomeOuTel) {
+  // Dupla confirmação. A primeira explica o impacto. A segunda exige digitar o telefone/nome.
+  if (!confirm(`⚠ APAGAR PERMANENTEMENTE a conta de "${nomeOuTel}"?\n\nIsto vai REMOVER:\n• A conta da tabela usuarios\n• Todas as sessões e dispositivos\n• Todo o histórico de telefones (em cascata)\n\nIrreversível. Histórico financeiro em outros bancos permanece.\n\nContinuar?`)) return;
+  const conf = prompt(`Pra confirmar, digite exatamente:\n\n${nomeOuTel}`);
+  if (conf !== nomeOuTel) {
+    toast('Confirmação não bate. Cancelado.', 'error');
+    return;
+  }
+  try {
+    const r = await fetch(`${API}/api/admin/usuarios/${id}`, {
+      method:'DELETE',
+      headers:{'Authorization':authHeader()},
+    });
+    const d = await r.json();
+    if (r.ok) {
+      toast('✓ Conta apagada permanentemente');
+      fecharModalUsuario();
+      carregarUsuarios(document.getElementById('us-busca').value.trim());
+    } else toast(d.error||'Erro','error');
   } catch { toast('Erro de conexão','error'); }
 }
 
