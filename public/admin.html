@@ -1337,13 +1337,12 @@ async function desvincularTelefone(usuarioId, telId) {
 }
 
 async function arquivarUsuario(id) {
-  const motivo = prompt('Arquivar essa conta?\n\nEla não vai mais conseguir logar nem receber mensagens.\nA ação é reversível (botão Desarquivar fica disponível).\n\nMotivo (opcional):');
-  if (motivo === null) return;
+  if (!confirm('Arquivar essa conta?')) return;
   try {
     const r = await fetch(`${API}/api/admin/usuarios/${id}/arquivar`, {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':authHeader()},
-      body:JSON.stringify({ motivo: motivo || null }),
+      body:JSON.stringify({}),
     });
     const d = await r.json();
     if (r.ok) {
@@ -1355,7 +1354,7 @@ async function arquivarUsuario(id) {
 }
 
 async function desarquivarUsuario(id) {
-  if (!confirm('Reativar essa conta? Ela vai voltar a poder logar e receber mensagens.')) return;
+  if (!confirm('Reativar essa conta?')) return;
   try {
     const r = await fetch(`${API}/api/admin/usuarios/${id}/desarquivar`, {
       method:'POST',
@@ -1371,13 +1370,7 @@ async function desarquivarUsuario(id) {
 }
 
 async function apagarUsuarioPermanente(id, nomeOuTel) {
-  // Dupla confirmação. A primeira explica o impacto. A segunda exige digitar o telefone/nome.
-  if (!confirm(`⚠ APAGAR PERMANENTEMENTE a conta de "${nomeOuTel}"?\n\nIsto vai REMOVER:\n• A conta da tabela usuarios\n• Todas as sessões e dispositivos\n• Todo o histórico de telefones (em cascata)\n\nIrreversível. Histórico financeiro em outros bancos permanece.\n\nContinuar?`)) return;
-  const conf = prompt(`Pra confirmar, digite exatamente:\n\n${nomeOuTel}`);
-  if (conf !== nomeOuTel) {
-    toast('Confirmação não bate. Cancelado.', 'error');
-    return;
-  }
+  if (!confirm(`Apagar permanentemente "${nomeOuTel}"?\n\nIrreversível.`)) return;
   try {
     const r = await fetch(`${API}/api/admin/usuarios/${id}`, {
       method:'DELETE',
