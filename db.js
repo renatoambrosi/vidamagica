@@ -105,6 +105,13 @@ async function initCore() {
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS cpf VARCHAR(14)`);
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS data_nascimento DATE`);
 
+    // Modal de pedir notificações: estado "agora não" com cooldown
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS notif_modal_ultima_em TIMESTAMPTZ`);
+    // valores possíveis: 'permitida' (já tocou Permitir e respondeu OK no browser),
+    //                    'recusada'  (browser rejeitou), 'agora_nao' (tocou "Agora não"),
+    //                    null        (nunca perguntou)
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS notif_status VARCHAR(20)`);
+
     // Antes de criar índices únicos, normalizar strings vazias pra NULL.
     // Cadastros antigos gravavam email='' quando vazio — isso quebra o índice
     // porque o WHERE email IS NOT NULL não filtra string vazia.
@@ -635,6 +642,11 @@ async function initMensagens() {
         ativo BOOLEAN DEFAULT TRUE
       )
     `);
+    // Pra qual identidade serve a subscription:
+    //   NULL          = painel atendimento (Suellen / equipe)
+    //   UUID da aluna = push da própria aluna pra receber notificação da Suellen
+    await c.query(`ALTER TABLE chat_push_subscriptions ADD COLUMN IF NOT EXISTS usuario_id UUID`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_chat_push_usuario ON chat_push_subscriptions(usuario_id) WHERE ativo=TRUE`);
 
     console.log('✅ Banco Mensagens iniciado');
   } finally {
