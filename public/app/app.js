@@ -857,44 +857,65 @@ async function recarregarChatAtual() {
 document.getElementById('btn-chat-refresh')?.addEventListener('click', recarregarChatAtual);
 
 // Pull-to-refresh — só na área de mensagens, sem afetar o resto da tela.
-// O indicador "puxe pra atualizar" fica posicionado absoluto NO TOPO da #chat-msgs.
+// O indicador é um botão circular dourado que aparece NO TOPO da #chat-msgs,
+// gira conforme aluna puxa e completa giro quando "arma".
 (function setupPullToRefresh() {
   const msgsEl = document.getElementById('chat-msgs');
   if (!msgsEl) return;
 
-  // Indicador visual
+  // Indicador visual: círculo dourado com ícone de refresh dentro
   const indic = document.createElement('div');
   indic.className = 'chat-pull-indicator';
   indic.id = 'chat-pull-indicator';
-  indic.textContent = 'Puxe pra atualizar';
+  indic.innerHTML = `
+    <span class="chat-pull-indicator-circle">
+      <svg viewBox="0 0 24 24">
+        <polyline points="23 4 23 10 17 10"/>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+      </svg>
+    </span>`;
   msgsEl.appendChild(indic);
+  const circle = indic.querySelector('.chat-pull-indicator-circle');
 
   let startY = 0;
   let pulling = false;
   let armed = false;
-  const LIMITE_ARMAR = 60; // px puxados pra disparar
+  const LIMITE_ARMAR = 70; // px puxados pra disparar
 
   msgsEl.addEventListener('touchstart', (e) => {
-    // Só ativa se já está no TOPO da área (scroll = 0)
     if (msgsEl.scrollTop > 0) { pulling = false; return; }
     startY = e.touches[0].clientY;
     pulling = true;
     armed = false;
-    indic.classList.remove('armado', 'atualizando');
-    indic.textContent = 'Puxe pra atualizar';
+    indic.classList.remove('puxando', 'armado', 'atualizando');
+    circle.style.transform = ''; // reset
   }, { passive: true });
 
   msgsEl.addEventListener('touchmove', (e) => {
     if (!pulling) return;
     const diff = e.touches[0].clientY - startY;
-    if (diff > LIMITE_ARMAR && !armed) {
-      armed = true;
-      indic.classList.add('armado');
-      indic.textContent = 'Solte pra atualizar';
-    } else if (diff <= LIMITE_ARMAR && armed) {
-      armed = false;
-      indic.classList.remove('armado');
-      indic.textContent = 'Puxe pra atualizar';
+    if (diff <= 0) return;
+
+    // Mostra indicador progressivamente conforme puxa
+    indic.classList.add('puxando');
+
+    // Rotação proporcional ao quanto puxou (até 360° em LIMITE_ARMAR)
+    const ratio = Math.min(diff / LIMITE_ARMAR, 1);
+    const rot = ratio * 360;
+    const scale = 0.4 + (0.6 * ratio); // de 0.4 a 1.0
+
+    if (diff < LIMITE_ARMAR) {
+      circle.style.transform = `scale(${scale}) rotate(${rot}deg)`;
+      if (armed) {
+        armed = false;
+        indic.classList.remove('armado');
+      }
+    } else {
+      circle.style.transform = ''; // deixa CSS de .armado tomar conta
+      if (!armed) {
+        armed = true;
+        indic.classList.add('armado');
+      }
     }
   }, { passive: true });
 
@@ -902,12 +923,15 @@ document.getElementById('btn-chat-refresh')?.addEventListener('click', recarrega
     if (!pulling) return;
     pulling = false;
     if (armed) {
-      indic.classList.remove('armado');
+      circle.style.transform = ''; // CSS de .atualizando assume
+      indic.classList.remove('armado', 'puxando');
       indic.classList.add('atualizando');
-      indic.innerHTML = `<span class="girando"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span>Atualizando...`;
       await recarregarChatAtual();
       indic.classList.remove('atualizando');
-      indic.textContent = 'Puxe pra atualizar';
+    } else {
+      // Não armou: recolhe sem atualizar
+      indic.classList.remove('puxando');
+      circle.style.transform = '';
     }
   });
 })();
