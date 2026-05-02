@@ -594,6 +594,23 @@ async function initMensagens() {
     await c.query(`ALTER TABLE chat_mensagens ADD COLUMN IF NOT EXISTS entregue BOOLEAN DEFAULT FALSE`);
     await c.query(`ALTER TABLE chat_mensagens ADD COLUMN IF NOT EXISTS entregue_em TIMESTAMPTZ`);
 
+    // Reações de mensagens (modelo Slack: 1 pessoa pode reagir com vários emojis na mesma msg).
+    // autor_tipo: 'aluna' | 'suellen' | 'equipe' (quem reagiu)
+    // autor_id:   UUID do usuário (aluna) OU NULL pra suellen/equipe (vem identidade do painel)
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS chat_reacoes (
+        id SERIAL PRIMARY KEY,
+        mensagem_id INTEGER NOT NULL REFERENCES chat_mensagens(id) ON DELETE CASCADE,
+        conversa_id INTEGER NOT NULL REFERENCES chat_conversas(id) ON DELETE CASCADE,
+        autor_tipo VARCHAR(10) NOT NULL CHECK (autor_tipo IN ('aluna','suellen','equipe')),
+        autor_id UUID,
+        emoji TEXT NOT NULL,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (mensagem_id, autor_tipo, autor_id, emoji)
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_chat_reacoes_msg ON chat_reacoes(mensagem_id)`);
+
     await c.query(`
       CREATE TABLE IF NOT EXISTS chat_pacotes (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
