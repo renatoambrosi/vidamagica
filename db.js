@@ -587,6 +587,13 @@ async function initMensagens() {
     await c.query(`CREATE INDEX IF NOT EXISTS idx_chat_msg_conv ON chat_mensagens(conversa_id)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_chat_msg_usuario ON chat_mensagens(usuario_id)`);
 
+    // Estados de entrega do WhatsApp:
+    //   ✓ enviada  = persistida no banco (campo criado_em)
+    //   ✓✓ entregue = outro lado online (WebSocket conectado) recebeu
+    //   ✓✓ lida    = outro lado leu/respondeu conforme a regra
+    await c.query(`ALTER TABLE chat_mensagens ADD COLUMN IF NOT EXISTS entregue BOOLEAN DEFAULT FALSE`);
+    await c.query(`ALTER TABLE chat_mensagens ADD COLUMN IF NOT EXISTS entregue_em TIMESTAMPTZ`);
+
     await c.query(`
       CREATE TABLE IF NOT EXISTS chat_pacotes (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
