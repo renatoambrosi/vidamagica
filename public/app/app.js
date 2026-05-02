@@ -840,12 +840,12 @@ document.getElementById('reply-fechar')?.addEventListener('click', () => {
 
 let _refreshLock = false;
 
-// Garante que o indicador de pull existe dentro do #chat-msgs (idempotente).
+// Garante que o indicador de pull existe ACIMA do #chat-msgs como irmão (idempotente).
 function getOuCriarPullIndicator() {
   let indic = document.getElementById('chat-pull-indicator');
   if (indic) return indic;
   const msgsEl = document.getElementById('chat-msgs');
-  if (!msgsEl) return null;
+  if (!msgsEl || !msgsEl.parentNode) return null;
   indic = document.createElement('div');
   indic.className = 'chat-pull-indicator';
   indic.id = 'chat-pull-indicator';
@@ -856,14 +856,12 @@ function getOuCriarPullIndicator() {
         <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
       </svg>
     </span>`;
-  msgsEl.appendChild(indic);
+  // Insere ACIMA da área de mensagens (não dentro)
+  msgsEl.parentNode.insertBefore(indic, msgsEl);
   return indic;
 }
 
 // origem: 'botao' | 'pull' | 'push'
-//   'botao' → botão ↻ gira + indicador na tela
-//   'pull'  → só indicador (já está girando porque foi puxado)
-//   'push'  → só indicador (atualização automática via WS/visibility)
 async function recarregarChatAtual(origem = 'botao') {
   if (_refreshLock) return;
   if (!chatConv) return;
@@ -871,12 +869,13 @@ async function recarregarChatAtual(origem = 'botao') {
 
   const indic = getOuCriarPullIndicator();
   const btn = document.getElementById('btn-chat-refresh');
+  const t0 = Date.now();
+  const TEMPO_MIN = 700; // tempo mínimo do indicador visível (transição suave)
 
   if (indic) {
     indic.classList.remove('puxando', 'armado');
     indic.classList.add('atualizando');
   }
-  // Botão gira SÓ quando origem='botao'
   if (origem === 'botao' && btn) btn.classList.add('atualizando');
 
   try {
@@ -888,10 +887,7 @@ async function recarregarChatAtual(origem = 'botao') {
 
     const msgsEl = document.getElementById('chat-msgs');
     if (msgsEl) {
-      // Limpa apenas as bolhas (mantém o indicador no topo)
-      Array.from(msgsEl.children).forEach(child => {
-        if (child.id !== 'chat-pull-indicator') msgsEl.removeChild(child);
-      });
+      msgsEl.innerHTML = '';
       mensagensAtuais.forEach(msg => msgsEl.appendChild(renderMensagem(msg)));
       scrollChat();
     }
@@ -899,6 +895,9 @@ async function recarregarChatAtual(origem = 'botao') {
   } catch (err) {
     console.error('[recarregarChatAtual]', err);
   } finally {
+    // Aguarda tempo mínimo pra animação ficar visível e suave
+    const elapsed = Date.now() - t0;
+    if (elapsed < TEMPO_MIN) await new Promise(r => setTimeout(r, TEMPO_MIN - elapsed));
     if (indic) indic.classList.remove('atualizando');
     if (btn) btn.classList.remove('atualizando');
     _refreshLock = false;
