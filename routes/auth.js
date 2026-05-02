@@ -21,6 +21,7 @@ const {
   criarOTP, validarOTP, limparOTPsExpirados,
   criarMagicToken, validarMagicToken,
   criarSolicitacaoAcesso, buscarSolicitacaoPorToken,
+  marcarComoAtiva,
   upsertDispositivo, listarDispositivosUsuario, revogarDispositivo,
   criarSessao, buscarSessaoPorRefreshToken, renovarSessao,
   revogarSessao, revogarTodasSessoesUsuario,
@@ -337,11 +338,18 @@ router.post('/login-magic', async (req, res) => {
     const tel = registro.telefone;
     const usuario = await buscarUsuarioPorTelefone(tel);
     if (!usuario) return res.status(404).json({ error: 'Usuário não encontrado' });
-    if (usuario.arquivada) {
+    if (usuario.arquivada || usuario.status === 'arquivada') {
       return res.status(403).json({
         error: 'Esta conta está inativa. Entre em contato com a Comunidade pra reativar.',
         code: 'CONTA_ARQUIVADA',
       });
+    }
+
+    // Tocar o magic link valida o telefone — conta vira ATIVA aqui.
+    // (Pode estar 'incompleta' por origem Kiwify/manual — agora ela validou.)
+    if (usuario.status !== 'ativa') {
+      await marcarComoAtiva(usuario.id);
+      usuario.status = 'ativa';
     }
 
     const ua = req.headers['user-agent'] || '';
@@ -590,10 +598,17 @@ router.post('/login-senha', async (req, res) => {
       return res.status(401).json({ error: 'Dados incorretos. Verifique seu WhatsApp/e-mail e a senha.' });
     }
 
-    if (usuario.arquivada) {
+    if (usuario.arquivada || usuario.status === 'arquivada') {
       return res.status(403).json({
         error: 'Esta conta está inativa. Entre em contato com a Comunidade pra reativar.',
         code: 'CONTA_ARQUIVADA',
+      });
+    }
+
+    if (usuario.status === 'incompleta') {
+      return res.status(403).json({
+        error: 'Sua conta ainda não foi ativada. Solicite seu acesso pelo WhatsApp.',
+        code: 'CONTA_INCOMPLETA',
       });
     }
 
