@@ -493,6 +493,28 @@
     </div>
   </div>
 
+  <!-- Modal "Permita as notificações da Suellen" -->
+  <div class="notif-modal" id="notif-modal" aria-hidden="true">
+    <div class="notif-modal-overlay"></div>
+    <div class="notif-modal-card" role="dialog" aria-labelledby="notif-modal-titulo">
+      <div class="notif-modal-icone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      </div>
+      <h2 class="notif-modal-titulo" id="notif-modal-titulo">Permita as notificações da Suellen!</h2>
+      <p class="notif-modal-texto">
+        Nosso objetivo como comunidade é estarmos mais conectados.
+        Permita as notificações para você saber quando a Suellen falar com você.
+      </p>
+      <div class="notif-modal-acoes">
+        <button class="notif-modal-btn primario" id="notif-modal-permitir">Permitir</button>
+        <button class="notif-modal-btn secundario" id="notif-modal-agora-nao">Agora não</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast"></div>
 
   <script type="module" src="/app/app.js"></script>
