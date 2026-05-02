@@ -204,6 +204,12 @@ router.post('/evolution', async (req, res) => {
       return;
     }
 
+    // 1b. Conta arquivada — sistema não responde nada. Conversa humana se ela quiser.
+    if (match && match.usuario && match.usuario.arquivada) {
+      console.log(`[webhook-evolution] conta arquivada (${match.usuario.id}) — ignorando`);
+      return;
+    }
+
     // 2. Não achou em lugar nenhum — cria conta incompleta com origem='whatsapp'
     //    e segue pro fluxo normal de boas-vindas (cai na branch 3 abaixo).
     let usuario = match?.usuario || null;
