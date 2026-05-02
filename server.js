@@ -239,6 +239,9 @@ server.listen(PORT, async () => {
     // Liga o worker do gateway de WhatsApp DEPOIS dos bancos estarem prontos
     const gateway = require('./core/gateway');
     gateway.iniciarWorker();
+    // Liga o scheduler de lembrete por e-mail (48h)
+    const notifEmail = require('./core/notif-email');
+    notifEmail.iniciarSchedulerLembrete();
   } catch (err) {
     console.error('💥 Falha ao iniciar bancos:', err.message);
     process.exit(1);
@@ -247,11 +250,13 @@ server.listen(PORT, async () => {
 
 process.on('SIGTERM', () => {
   try { require('./core/gateway').pararWorker(); } catch (_) {}
+  try { require('./core/notif-email').pararSchedulerLembrete(); } catch (_) {}
   server.close();
   process.exit(0);
 });
 process.on('SIGINT',  () => {
   try { require('./core/gateway').pararWorker(); } catch (_) {}
+  try { require('./core/notif-email').pararSchedulerLembrete(); } catch (_) {}
   server.close();
   process.exit(0);
 });
