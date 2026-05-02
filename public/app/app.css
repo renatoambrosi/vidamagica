@@ -637,16 +637,22 @@ body.teclado-aberto .bottom-nav {
 .chat-msgs::-webkit-scrollbar { width: 3px; }
 .chat-msgs::-webkit-scrollbar-thumb { background: rgba(200,146,42,0.2); border-radius: 2px; }
 
-/* Botão de refresh no header do chat */
+/* Botão de refresh no header do chat — sem borda, sem fundo, só o ícone */
 .chat-refresh-btn {
   flex-shrink: 0; width: 36px; height: 36px;
   display: flex; align-items: center; justify-content: center;
-  border-radius: var(--r-full); border: none; background: transparent;
-  cursor: pointer; color: var(--ouro);
-  transition: background 0.15s, transform 0.4s;
+  border: none; background: transparent; outline: none;
+  -webkit-appearance: none; appearance: none;
+  cursor: pointer; padding: 0;
+  color: var(--ouro);
+  transition: opacity 0.15s, transform 0.4s;
 }
-.chat-refresh-btn:hover { background: var(--ouro-pelicula); }
-.chat-refresh-btn svg { width: 18px; height: 18px; }
+.chat-refresh-btn:focus, .chat-refresh-btn:focus-visible {
+  outline: none; border: none; background: transparent;
+}
+/* Feedback de toque: escurece ao apertar */
+.chat-refresh-btn:active { opacity: 0.55; }
+.chat-refresh-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; }
 .chat-refresh-btn.atualizando { animation: girarRefresh 0.6s linear infinite; }
 @keyframes girarRefresh { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
