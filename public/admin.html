@@ -528,7 +528,7 @@ select option { background: #1a1205; }
 
       <!-- Modal de CRIAR USUÁRIO -->
       <div id="us-criar-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto">
-        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);max-width:520px;width:100%;padding:1.5rem;color:var(--text-light)">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);max-width:560px;width:100%;padding:1.5rem;color:var(--text-light)">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
             <h3 style="margin:0;font-family:var(--font-display);color:var(--color-gold-light)">Adicionar usuário</h3>
             <button class="btn btn-ghost btn-sm" onclick="fecharCriarUsuario()">✕ Fechar</button>
@@ -538,13 +538,25 @@ select option { background: #1a1205; }
               <label class="field-label">Telefone *</label>
               <input id="us-criar-tel" type="tel" class="field-input" placeholder="5562999999999">
             </div>
-            <div>
-              <label class="field-label">Nome <span style="color:var(--text-muted);font-size:0.7rem">(opcional)</span></label>
-              <input id="us-criar-nome" type="text" class="field-input" placeholder="Nome completo">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.65rem">
+              <div>
+                <label class="field-label">Nome <span style="color:var(--text-muted);font-size:0.7rem">(opcional)</span></label>
+                <input id="us-criar-nome" type="text" class="field-input" placeholder="Nome completo">
+              </div>
+              <div>
+                <label class="field-label">Data nascimento</label>
+                <input id="us-criar-data-nasc" type="date" class="field-input">
+              </div>
             </div>
-            <div>
-              <label class="field-label">E-mail <span style="color:var(--text-muted);font-size:0.7rem">(opcional)</span></label>
-              <input id="us-criar-email" type="email" class="field-input" placeholder="email@exemplo.com">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.65rem">
+              <div>
+                <label class="field-label">E-mail</label>
+                <input id="us-criar-email" type="email" class="field-input" placeholder="email@exemplo.com">
+              </div>
+              <div>
+                <label class="field-label">CPF</label>
+                <input id="us-criar-cpf" type="text" class="field-input" placeholder="000.000.000-00">
+              </div>
             </div>
             <div>
               <label class="field-label">Origem do cadastro</label>
@@ -557,7 +569,8 @@ select option { background: #1a1205; }
               </select>
             </div>
           </div>
-          <div style="display:flex;gap:0.5rem;margin-top:1.2rem">
+          <div id="us-criar-erro" style="margin-top:0.85rem;font-size:0.78rem;color:#F09090;min-height:1.1rem"></div>
+          <div style="display:flex;gap:0.5rem;margin-top:0.85rem">
             <button class="btn btn-primary" onclick="salvarCriarUsuario()" id="btn-salvar-criar">Criar conta</button>
             <button class="btn btn-ghost" onclick="fecharCriarUsuario()">Cancelar</button>
           </div>
@@ -1292,6 +1305,14 @@ async function abrirDetalheUsuario(id) {
           <input id="us-edit-tel" type="tel" value="${escHtml(d.usuario.telefone_formatado||d.usuario.telefone||'')}" style="width:100%;margin-top:0.25rem;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.7rem;color:var(--text-light);font-family:inherit;font-size:0.85rem;outline:none">
         </div>
         <div>
+          <label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">CPF</label>
+          <input id="us-edit-cpf" type="text" value="${escHtml(d.usuario.cpf||'')}" placeholder="Sem CPF" style="width:100%;margin-top:0.25rem;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.7rem;color:var(--text-light);font-family:inherit;font-size:0.85rem;outline:none">
+        </div>
+        <div>
+          <label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Data de nascimento</label>
+          <input id="us-edit-data-nasc" type="date" value="${(d.usuario.data_nascimento||'').slice(0,10)}" style="width:100%;margin-top:0.25rem;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.7rem;color:var(--text-light);font-family:inherit;font-size:0.85rem;outline:none">
+        </div>
+        <div>
           <label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Status</label>
           <select id="us-edit-status" style="width:100%;margin-top:0.25rem;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.7rem;color:var(--text-light);font-family:inherit;font-size:0.85rem;outline:none">
             <option value="incompleta" ${d.usuario.status==='incompleta'?'selected':''}>Incompleta (não loga)</option>
@@ -1326,6 +1347,14 @@ async function abrirDetalheUsuario(id) {
 
       <div style="margin-top:1.2rem"><h4 style="font-family:var(--font-display);color:var(--color-gold-light);margin:0 0 0.5rem;font-size:0.95rem">📞 Telefones (${d.telefones.length})</h4>${telsHtml}</div>
 
+      <div style="margin-top:1.2rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 0.5rem">
+          <h4 style="font-family:var(--font-display);color:var(--color-gold-light);margin:0;font-size:0.95rem">🏠 Endereços (${(d.enderecos||[]).length})</h4>
+          <button class="btn btn-ghost btn-sm" onclick="abrirNovoEndereco('${id}')">+ Adicionar endereço</button>
+        </div>
+        <div id="us-enderecos-lista">${renderEnderecos(d.enderecos||[], id)}</div>
+      </div>
+
       <div style="margin-top:1.2rem"><h4 style="font-family:var(--font-display);color:var(--color-gold-light);margin:0 0 0.5rem;font-size:0.95rem">🔐 Sessões ativas (${d.sessoes.length})</h4>${sessoesHtml}</div>
 
       <div style="margin-top:1.2rem"><h4 style="font-family:var(--font-display);color:var(--color-gold-light);margin:0 0 0.5rem;font-size:0.95rem">📱 Dispositivos (${d.dispositivos.length})</h4>${dispsHtml}</div>
@@ -1345,10 +1374,12 @@ async function abrirDetalheUsuario(id) {
 }
 
 async function salvarEdicaoUsuario(id) {
-  const nome     = (document.getElementById('us-edit-nome').value     || '').trim();
-  const email    = (document.getElementById('us-edit-email').value    || '').trim();
-  const telefone = (document.getElementById('us-edit-tel').value      || '').trim();
-  const status   = document.getElementById('us-edit-status').value;
+  const nome            = (document.getElementById('us-edit-nome').value     || '').trim();
+  const email           = (document.getElementById('us-edit-email').value    || '').trim();
+  const telefone        = (document.getElementById('us-edit-tel').value      || '').trim();
+  const cpf             = (document.getElementById('us-edit-cpf').value      || '').trim();
+  const data_nascimento = (document.getElementById('us-edit-data-nasc').value|| '').trim();
+  const status          = document.getElementById('us-edit-status').value;
   const origem_cadastro = document.getElementById('us-edit-origem').value;
   const btn = document.getElementById('btn-salvar-us');
   const fb  = document.getElementById('us-edit-feedback');
@@ -1358,18 +1389,22 @@ async function salvarEdicaoUsuario(id) {
     const r = await fetch(`${API}/api/admin/usuarios/${id}`, {
       method:'PUT',
       headers:{'Content-Type':'application/json','Authorization':authHeader()},
-      body:JSON.stringify({ nome, email, telefone, status, origem_cadastro }),
+      body:JSON.stringify({ nome, email, telefone, cpf, data_nascimento, status, origem_cadastro }),
     });
     const d = await r.json();
     if (r.ok) {
       toast('✓ Alterações salvas');
       carregarUsuarios(document.getElementById('us-busca').value.trim());
-      // Reabre detalhe pra ver dados atualizados (incluindo telefone histórico se trocou)
       abrirDetalheUsuario(id);
+      return;
+    }
+    if (d.code === 'DUPLICATA' && d.conflito) {
+      const nomeOutra = d.conflito.nome || d.conflito.telefone_formatado || 'outra conta';
+      fb.innerHTML = `✕ <strong>${escHtml(d.error)}.</strong> Conta existente: ${escHtml(nomeOutra)}`;
     } else {
       fb.textContent = '✕ ' + (d.error || 'Erro ao salvar');
-      fb.style.color = '#F09090';
     }
+    fb.style.color = '#F09090';
   } catch (_) {
     fb.textContent = '✕ Erro de conexão';
     fb.style.color = '#F09090';
@@ -1460,10 +1495,13 @@ async function apagarUsuarioPermanente(id, nomeOuTel) {
 
 // ── CRIAR USUÁRIO MANUAL ────────────────────────────────────
 function abrirCriarUsuario() {
-  document.getElementById('us-criar-tel').value   = '';
-  document.getElementById('us-criar-nome').value  = '';
-  document.getElementById('us-criar-email').value = '';
-  document.getElementById('us-criar-origem').value= 'manual_admin';
+  document.getElementById('us-criar-tel').value       = '';
+  document.getElementById('us-criar-nome').value      = '';
+  document.getElementById('us-criar-email').value     = '';
+  document.getElementById('us-criar-cpf').value       = '';
+  document.getElementById('us-criar-data-nasc').value = '';
+  document.getElementById('us-criar-origem').value    = 'manual_admin';
+  document.getElementById('us-criar-erro').textContent = '';
   document.getElementById('us-criar-modal').style.display = 'flex';
   setTimeout(() => document.getElementById('us-criar-tel').focus(), 50);
 }
@@ -1473,31 +1511,40 @@ function fecharCriarUsuario() {
 }
 
 async function salvarCriarUsuario() {
-  const telefone = (document.getElementById('us-criar-tel').value || '').trim();
-  if (!telefone) { toast('Telefone obrigatório', 'error'); return; }
-  const nome     = (document.getElementById('us-criar-nome').value || '').trim();
-  const email    = (document.getElementById('us-criar-email').value || '').trim();
-  const origem   = document.getElementById('us-criar-origem').value;
+  const telefone        = (document.getElementById('us-criar-tel').value || '').trim();
+  if (!telefone) { document.getElementById('us-criar-erro').textContent = 'Telefone obrigatório'; return; }
+  const nome            = (document.getElementById('us-criar-nome').value || '').trim();
+  const email           = (document.getElementById('us-criar-email').value || '').trim();
+  const cpf             = (document.getElementById('us-criar-cpf').value || '').trim();
+  const data_nascimento = (document.getElementById('us-criar-data-nasc').value || '').trim();
+  const origem          = document.getElementById('us-criar-origem').value;
+  const erroEl = document.getElementById('us-criar-erro');
+  erroEl.textContent = '';
   const btn = document.getElementById('btn-salvar-criar');
   btn.disabled = true; btn.textContent = 'Criando...';
   try {
     const r = await fetch(`${API}/api/admin/usuarios`, {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':authHeader()},
-      body:JSON.stringify({ telefone, nome, email, origem_cadastro: origem }),
+      body:JSON.stringify({ telefone, nome, email, cpf, data_nascimento, origem_cadastro: origem }),
     });
     const d = await r.json();
     if (r.ok) {
       toast('✓ Conta criada (incompleta)');
       fecharCriarUsuario();
       await carregarUsuarios(document.getElementById('us-busca').value.trim());
-      // Abre o detalhe da nova conta — admin já pode mandar magic link
       abrirDetalheUsuario(d.usuario.id);
+      return;
+    }
+    // Erro de duplicata: mostra qual campo + nome da outra conta
+    if (d.code === 'DUPLICATA' && d.conflito) {
+      const nomeOutra = d.conflito.nome || d.conflito.telefone_formatado || 'outra conta';
+      erroEl.innerHTML = `<strong>${escHtml(d.error)}.</strong> Conta existente: ${escHtml(nomeOutra)}`;
     } else {
-      toast(d.error || 'Erro ao criar', 'error');
+      erroEl.textContent = d.error || 'Erro ao criar';
     }
   } catch {
-    toast('Erro de conexão', 'error');
+    erroEl.textContent = 'Erro de conexão';
   } finally {
     btn.disabled = false; btn.textContent = 'Criar conta';
   }
@@ -1531,6 +1578,176 @@ async function resetarSenhaAdmin(id) {
     if (r.ok) { toast('✓ Senha resetada'); abrirDetalheUsuario(id); }
     else toast(d.error || 'Erro', 'error');
   } catch { toast('Erro de conexão', 'error'); }
+}
+
+// ── ENDEREÇOS ───────────────────────────────────────────────
+function renderEnderecos(enderecos, userId) {
+  if (!enderecos.length) {
+    return `<p style="color:var(--text-muted);font-size:0.78rem;padding:0.5rem 0;font-style:italic">Nenhum endereço cadastrado.</p>`;
+  }
+  return enderecos.map(e => {
+    const linha = [e.rua, e.numero].filter(Boolean).join(', ') + (e.complemento?(' — '+e.complemento):'');
+    const cidade = [e.bairro, e.cidade, e.estado].filter(Boolean).join(' · ');
+    const principal = e.principal
+      ? `<span style="padding:0.1rem 0.4rem;border-radius:4px;background:rgba(76,175,80,0.18);color:#7DD87E;font-size:0.65rem;font-weight:700">PRINCIPAL</span>`
+      : '';
+    return `
+      <div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:0.7rem 0.85rem;margin-bottom:0.4rem;background:var(--bg-input)">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:0.5rem">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.2rem">
+              <span style="text-transform:capitalize;font-weight:600;font-size:0.82rem">${escHtml(e.tipo||'casa')}</span>
+              ${principal}
+            </div>
+            <div style="font-size:0.78rem;color:var(--text-light)">${escHtml(linha) || '<em style="color:var(--text-muted)">Sem rua/número</em>'}</div>
+            ${cidade?`<div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.1rem">${escHtml(cidade)}</div>`:''}
+            ${e.cep?`<div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.1rem">CEP ${escHtml(e.cep)}</div>`:''}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0.25rem">
+            <button class="btn btn-ghost btn-sm" onclick="editarEndereco('${userId}', ${e.id})">✎ Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="deletarEndereco('${userId}', ${e.id})">🗑 Apagar</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+let _enderecoEditando = null; // { userId, id (null=novo) }
+
+function abrirNovoEndereco(userId) {
+  _enderecoEditando = { userId, id: null, dados: {} };
+  abrirFormEndereco('Novo endereço');
+}
+
+function editarEndereco(userId, enderecoId) {
+  // Pega o endereço dos dados já carregados no DOM (dataset não tem — busco via fetch detalhe)
+  fetch(`${API}/api/admin/usuarios/${userId}`, { headers:{'Authorization':authHeader()} })
+    .then(r => r.json())
+    .then(d => {
+      const e = (d.enderecos||[]).find(x => x.id === enderecoId);
+      if (!e) return toast('Endereço não encontrado','error');
+      _enderecoEditando = { userId, id: enderecoId, dados: e };
+      abrirFormEndereco('Editar endereço');
+    });
+}
+
+function abrirFormEndereco(titulo) {
+  const e = _enderecoEditando.dados || {};
+  const html = `
+    <div id="end-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto">
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);max-width:520px;width:100%;padding:1.5rem;color:var(--text-light)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+          <h3 style="margin:0;font-family:var(--font-display);color:var(--color-gold-light)">${titulo}</h3>
+          <button class="btn btn-ghost btn-sm" onclick="fecharFormEndereco()">✕ Fechar</button>
+        </div>
+        <div style="display:grid;gap:0.65rem">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.65rem">
+            <div>
+              <label class="field-label">Tipo</label>
+              <select id="end-tipo" class="field-input">
+                <option value="casa"      ${(e.tipo||'casa')==='casa'?'selected':''}>Casa</option>
+                <option value="trabalho"  ${e.tipo==='trabalho'?'selected':''}>Trabalho</option>
+                <option value="outro"     ${e.tipo==='outro'?'selected':''}>Outro</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label">CEP</label>
+              <input id="end-cep" type="text" class="field-input" value="${escHtml(e.cep||'')}" placeholder="00000-000">
+            </div>
+          </div>
+          <div>
+            <label class="field-label">Rua</label>
+            <input id="end-rua" type="text" class="field-input" value="${escHtml(e.rua||'')}">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 2fr;gap:0.65rem">
+            <div>
+              <label class="field-label">Número</label>
+              <input id="end-numero" type="text" class="field-input" value="${escHtml(e.numero||'')}">
+            </div>
+            <div>
+              <label class="field-label">Complemento</label>
+              <input id="end-complemento" type="text" class="field-input" value="${escHtml(e.complemento||'')}">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.65rem">
+            <div>
+              <label class="field-label">Bairro</label>
+              <input id="end-bairro" type="text" class="field-input" value="${escHtml(e.bairro||'')}">
+            </div>
+            <div>
+              <label class="field-label">Cidade</label>
+              <input id="end-cidade" type="text" class="field-input" value="${escHtml(e.cidade||'')}">
+            </div>
+          </div>
+          <div>
+            <label class="field-label">Estado (UF)</label>
+            <input id="end-estado" type="text" maxlength="2" class="field-input" value="${escHtml(e.estado||'')}" style="text-transform:uppercase;max-width:80px">
+          </div>
+          <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;cursor:pointer">
+            <input id="end-principal" type="checkbox" ${e.principal?'checked':''}>
+            <span>Endereço principal</span>
+          </label>
+        </div>
+        <div style="display:flex;gap:0.5rem;margin-top:1rem">
+          <button class="btn btn-primary" onclick="salvarEndereco()">💾 Salvar</button>
+          <button class="btn btn-ghost" onclick="fecharFormEndereco()">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  document.body.appendChild(div.firstElementChild);
+}
+
+function fecharFormEndereco() {
+  const m = document.getElementById('end-modal');
+  if (m) m.remove();
+}
+
+async function salvarEndereco() {
+  const { userId, id } = _enderecoEditando;
+  const body = {
+    tipo:        document.getElementById('end-tipo').value,
+    cep:         document.getElementById('end-cep').value.trim() || null,
+    rua:         document.getElementById('end-rua').value.trim() || null,
+    numero:      document.getElementById('end-numero').value.trim() || null,
+    complemento: document.getElementById('end-complemento').value.trim() || null,
+    bairro:      document.getElementById('end-bairro').value.trim() || null,
+    cidade:      document.getElementById('end-cidade').value.trim() || null,
+    estado:      (document.getElementById('end-estado').value.trim() || '').toUpperCase() || null,
+    principal:   document.getElementById('end-principal').checked,
+  };
+  try {
+    const url = id
+      ? `${API}/api/admin/usuarios/${userId}/enderecos/${id}`
+      : `${API}/api/admin/usuarios/${userId}/enderecos`;
+    const r = await fetch(url, {
+      method: id ? 'PUT' : 'POST',
+      headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body: JSON.stringify(body),
+    });
+    const d = await r.json();
+    if (r.ok) {
+      toast('✓ Endereço salvo');
+      fecharFormEndereco();
+      abrirDetalheUsuario(userId);
+    } else {
+      toast(d.error||'Erro','error');
+    }
+  } catch { toast('Erro de conexão','error'); }
+}
+
+async function deletarEndereco(userId, enderecoId) {
+  if (!confirm('Apagar este endereço?')) return;
+  try {
+    const r = await fetch(`${API}/api/admin/usuarios/${userId}/enderecos/${enderecoId}`, {
+      method:'DELETE',
+      headers:{'Authorization':authHeader()},
+    });
+    const d = await r.json();
+    if (r.ok) { toast('✓ Endereço apagado'); abrirDetalheUsuario(userId); }
+    else toast(d.error||'Erro','error');
+  } catch { toast('Erro de conexão','error'); }
 }
 
 // ===== INIT =====
