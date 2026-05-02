@@ -205,7 +205,7 @@ router.post('/evolution', async (req, res) => {
     }
 
     // 1b. Conta arquivada — sistema não responde nada. Conversa humana se ela quiser.
-    if (match && match.usuario && match.usuario.arquivada) {
+    if (match && match.usuario && (match.usuario.arquivada || match.usuario.status === 'arquivada')) {
       console.log(`[webhook-evolution] conta arquivada (${match.usuario.id}) — ignorando`);
       return;
     }
