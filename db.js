@@ -87,11 +87,34 @@ async function initCore() {
     // Conta arquivada: aluna pediu pra apagar OU admin arquivou.
     // Não loga, não recebe mensagens, mas dados permanecem (reversível).
     // Apenas o admin pode desarquivar / apagar permanentemente.
+    // Auditoria de arquivamento (quando admin arquivou OU quando aluna pediu)
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS arquivada BOOLEAN DEFAULT FALSE`);
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS arquivada_em TIMESTAMPTZ`);
-    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS arquivada_por VARCHAR(20)`);
-    // valores: 'admin' ou 'aluna' (auditoria)
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS arquivada_por VARCHAR(20)`); // 'admin' ou 'aluna'
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS arquivada_motivo TEXT`);
+
+    // Status da conta:
+    //   'incompleta' = criada por origem externa, ainda não validou telefone (não loga)
+    //   'ativa'      = telefone validado pelo menos uma vez (pode logar)
+    //   'arquivada'  = aluna pediu pra apagar OU admin arquivou (não loga)
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'incompleta'`);
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS telefone_validado_em TIMESTAMPTZ`);
+
+    // Migration de retrocompatibilidade: contas antigas que existiam antes da coluna `status`
+    // ficaram como 'incompleta' por default (do ALTER ADD COLUMN). Atualizamos:
+    //   - Conta com senha_hash OU já com sessões ativas → consideramos 'ativa' (já logou em algum momento)
+    //   - Conta marcada como arquivada → 'arquivada'
+    await c.query(`
+      UPDATE usuarios SET status='ativa', telefone_validado_em=COALESCE(telefone_validado_em, criado_em)
+       WHERE status='incompleta'
+         AND (senha_hash IS NOT NULL
+              OR id IN (SELECT DISTINCT usuario_id FROM sessoes WHERE revogada=FALSE))
+    `);
+    await c.query(`UPDATE usuarios SET status='arquivada' WHERE arquivada=TRUE AND status<>'arquivada'`);
+
+    // Mantemos a coluna `arquivada` (boolean) por compatibilidade com queries existentes,
+    // mas a fonte da verdade passa a ser `status`. Triggers/queries serão sempre via status.
+    // (a coluna boolean continua sendo escrita como espelho)
 
     // Histórico de telefones — telefone é chave-âncora, NUNCA apaga.
     // Aluna pode trocar telefone, mas o antigo continua vinculado à conta.
