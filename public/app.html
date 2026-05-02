@@ -399,15 +399,29 @@
 
   <!-- Context menu -->
   <div id="msg-ctx-menu" class="msg-ctx-menu">
-    <div class="msg-ctx-item" id="ctx-responder">
-      <svg viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
-      Responder
+    <div class="msg-ctx-emojis" id="msg-ctx-emojis">
+      <button type="button" class="msg-ctx-emoji" data-emoji="🤩">🤩</button>
+      <button type="button" class="msg-ctx-emoji" data-emoji="🎉">🎉</button>
+      <button type="button" class="msg-ctx-emoji" data-emoji="👏🏻">👏🏻</button>
+      <button type="button" class="msg-ctx-emoji" data-emoji="🙌🏻">🙌🏻</button>
+      <button type="button" class="msg-ctx-emoji" data-emoji="💛">💛</button>
+      <button type="button" class="msg-ctx-emoji" data-emoji="⚡">⚡</button>
+      <button type="button" class="msg-ctx-emoji msg-ctx-emoji-mais" id="msg-ctx-emoji-mais" aria-label="Mais emojis">+</button>
     </div>
-    <div class="msg-ctx-item" id="ctx-copiar">
-      <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      Copiar texto
+    <div class="msg-ctx-acoes">
+      <button type="button" class="msg-ctx-acao" id="ctx-responder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+        <span>Responder</span>
+      </button>
+      <button type="button" class="msg-ctx-acao" id="ctx-copiar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span>Copiar</span>
+      </button>
     </div>
   </div>
+  <!-- input invisível pra abrir teclado de emoji nativo -->
+  <input type="text" id="msg-ctx-emoji-picker" inputmode="text" enterkeyhint="done"
+         style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0" aria-hidden="true">
 
   <!-- MODAIS -->
   <div class="modal" id="modal-tesouro" aria-hidden="true">
