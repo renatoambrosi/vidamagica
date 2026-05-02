@@ -107,6 +107,7 @@ app.get(/^\/app(\/(dashboard|perfil|chat|loja|sementes)?)?$/, (req, res) => {
 app.use('/api/auth',          require('./routes/auth'));
 app.use('/api/painel',        require('./routes/admin-auth'));        // OTP do admin/atendimento
 app.use('/api/admin',         require('./routes/admin'));             // Painel admin (gateway, templates, usuários)
+app.use('/webhook',           require('./routes/webhook-evolution')); // Webhook Evolution (zap entrante)
 app.use('/api',               require('./routes/precos'));
 app.use('/api',               require('./routes/depoimentos'));
 app.use('/api',               require('./routes/feed'));
@@ -228,6 +229,7 @@ server.listen(PORT, async () => {
 📤 Upload:             /api/upload/*
 🛡️  Admin API:    /api/admin/* (gateway, templates, usuários)
 🚪 Gateway WA:    fila + cooldown + categorias (worker em loop)
+📥 Webhook WA:    POST /webhook/evolution (zap entrante → magic link)
 🖥️  Painel:        GET  /atendimento
 🛡️  Admin:         GET  /admin
 🔌 WebSocket:     WS   /ws/chat
