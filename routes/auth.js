@@ -337,6 +337,12 @@ router.post('/login-magic', async (req, res) => {
     const tel = registro.telefone;
     const usuario = await buscarUsuarioPorTelefone(tel);
     if (!usuario) return res.status(404).json({ error: 'Usuário não encontrado' });
+    if (usuario.arquivada) {
+      return res.status(403).json({
+        error: 'Esta conta está inativa. Entre em contato com a Comunidade pra reativar.',
+        code: 'CONTA_ARQUIVADA',
+      });
+    }
 
     const ua = req.headers['user-agent'] || '';
     const tipo = detectarTipo(ua);
@@ -582,6 +588,13 @@ router.post('/login-senha', async (req, res) => {
     const ok = await bcrypt.compare(senha, usuario.senha_hash);
     if (!ok) {
       return res.status(401).json({ error: 'Dados incorretos. Verifique seu WhatsApp/e-mail e a senha.' });
+    }
+
+    if (usuario.arquivada) {
+      return res.status(403).json({
+        error: 'Esta conta está inativa. Entre em contato com a Comunidade pra reativar.',
+        code: 'CONTA_ARQUIVADA',
+      });
     }
 
     const ua = req.headers['user-agent'] || '';
