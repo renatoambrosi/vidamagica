@@ -830,6 +830,28 @@ document.getElementById('reply-fechar')?.addEventListener('click', () => {
 });
 
 // ── WebSocket ──
+
+// Dispara quando aluna está com chat aberto e ativo, marcando msgs do
+// atendimento como lidas pra Suellen/suporte verem ✓✓ azul instantâneo.
+async function marcarLidas(tipoChat) {
+  try {
+    await fetch(`${API}/api/chat/marcar-lidas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + VmSession.getAccess() },
+      body: JSON.stringify({ tipo_chat: tipoChat || 'suellen' }),
+    });
+  } catch (_) { /* silencioso */ }
+}
+
+// Quando aluna volta o foco pra aba/app com chat aberto → marca como lida.
+// Cobre o caso: msg chegou enquanto ela estava em outra aba/app, ela volta, viu.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  if (!chatConv) return;
+  if (!document.querySelector('.nav-tab[data-view="chat"]')?.classList.contains('active')) return;
+  marcarLidas(chatConv.tipo);
+});
+
 function conectarChatWs() {
   if (chatWs && chatWs.readyState <= 1) return;
   const token = VmSession.getAccess();
@@ -839,6 +861,45 @@ function conectarChatWs() {
   chatWs.onmessage = (e) => {
     try {
       const data = JSON.parse(e.data);
+
+      // ═══ EVENTO ATÔMICO: atendimento respondeu + marcou anteriores como lidas ═══
+      // Processa as 2 coisas no mesmo tick de JS pra evitar dessincronia visual.
+      if (data.evento === 'resposta_atendimento_e_lidas') {
+        const convId = data.conversa_id;
+        // 1º — pinta ✓✓ azul nas mensagens antigas (que viraram lidas)
+        if (chatConv && convId === chatConv.id && Array.isArray(data.lidas_ids)) {
+          data.lidas_ids.forEach(id => {
+            const msg = mensagensAtuais.find(m => m.id === id);
+            if (msg) msg.lida = true;
+            const checkEl = document.querySelector(`.msg-checks[data-msg-id="${id}"]`);
+            if (checkEl) {
+              checkEl.classList.remove('entregue');
+              checkEl.classList.add('lida');
+            }
+          });
+        }
+        // 2º — agora sim mostra a mensagem nova
+        const msg = data.mensagem;
+        if (msg) {
+          if (chatConv && convId === chatConv.id) {
+            mensagensAtuais.push(msg);
+            document.getElementById('chat-msgs')?.appendChild(renderMensagem(msg));
+            scrollChat();
+            // Aluna está vendo o chat AGORA → marca lida instantâneo (✓✓ azul pra Suellen).
+            if (document.querySelector('.nav-tab[data-view="chat"]').classList.contains('active')
+                && document.visibilityState === 'visible') {
+              marcarLidas(chatConv.tipo);
+            }
+          }
+          carregarResumoChats();
+          if (!document.querySelector('.nav-tab[data-view="chat"]').classList.contains('active')) {
+            document.getElementById('nav-chat-badge').style.display = '';
+          }
+        }
+        return;
+      }
+
+      // Compatibilidade (eventos antigos — caso ainda chegue algum)
       if (data.evento === 'nova_mensagem' && data.mensagem) {
         const msg = data.mensagem;
         const convId = data.conversa_id;
@@ -846,6 +907,10 @@ function conectarChatWs() {
           mensagensAtuais.push(msg);
           document.getElementById('chat-msgs')?.appendChild(renderMensagem(msg));
           scrollChat();
+          if (document.querySelector('.nav-tab[data-view="chat"]').classList.contains('active')
+              && document.visibilityState === 'visible') {
+            marcarLidas(chatConv.tipo);
+          }
         }
         carregarResumoChats();
         if (!document.querySelector('.nav-tab[data-view="chat"]').classList.contains('active')) {
