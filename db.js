@@ -100,6 +100,16 @@ async function initCore() {
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'incompleta'`);
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS telefone_validado_em TIMESTAMPTZ`);
 
+    // Identificadores únicos extras: CPF (1 pessoa = 1 CPF)
+    // Data de nascimento (não-único, usado pra aniversário e idade)
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS cpf VARCHAR(14)`);
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS data_nascimento DATE`);
+
+    // Índice único em CPF (parcial — permite vários NULLs, bloqueia duplicata real)
+    await c.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_cpf_unique ON usuarios(cpf) WHERE cpf IS NOT NULL`);
+    // Índice único em email (parcial — mesmo motivo)
+    await c.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_email_unique ON usuarios(LOWER(email)) WHERE email IS NOT NULL`);
+
     // Migration de retrocompatibilidade: contas antigas que existiam antes da coluna `status`
     // ficaram como 'incompleta' por default (do ALTER ADD COLUMN). Atualizamos:
     //   - Conta com senha_hash OU já com sessões ativas → consideramos 'ativa' (já logou em algum momento)
@@ -135,6 +145,30 @@ async function initCore() {
     `);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_tel_hist_usuario ON telefones_historicos(usuario_id)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_tel_hist_tel_ativo ON telefones_historicos(telefone) WHERE ativo=TRUE`);
+
+    // Endereços — 1 aluna pode ter VÁRIOS (casa, trabalho, casa da mãe, etc).
+    // Sem trava de duplicata: várias alunas podem morar no mesmo CEP/endereço.
+    // Campo `principal` indica qual é o padrão pra entregas/cobranças.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS enderecos (
+        id SERIAL PRIMARY KEY,
+        usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        cep VARCHAR(10),
+        rua VARCHAR(255),
+        numero VARCHAR(20),
+        complemento VARCHAR(100),
+        bairro VARCHAR(100),
+        cidade VARCHAR(100),
+        estado VARCHAR(2),
+        tipo VARCHAR(20) DEFAULT 'casa',
+        principal BOOLEAN DEFAULT FALSE,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_enderecos_usuario ON enderecos(usuario_id)`);
+    // Garante no máximo 1 principal por usuário (parcial — só onde principal=TRUE)
+    await c.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_enderecos_principal ON enderecos(usuario_id) WHERE principal=TRUE`);
 
     // Solicitações de acesso pendentes (token gerado pelo /auth, validado pelo zap)
     // Aluna digita telefone → toca botão → site gera token → abre wa.me com texto
