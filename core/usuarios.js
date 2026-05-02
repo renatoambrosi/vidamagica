@@ -26,15 +26,15 @@ async function buscarUsuarioPorId(id) {
   return r.rows[0] || null;
 }
 
-async function criarOuAtualizarUsuario({ telefone, telefone_formatado, nome, email }) {
+async function criarOuAtualizarUsuario({ telefone, telefone_formatado, nome, email, origem_cadastro }) {
   const r = await poolCore.query(
-    `INSERT INTO usuarios (telefone, telefone_formatado, nome, email)
-     VALUES ($1,$2,$3,$4)
+    `INSERT INTO usuarios (telefone, telefone_formatado, nome, email, origem_cadastro)
+     VALUES ($1,$2,$3,$4,$5)
      ON CONFLICT (telefone) DO UPDATE SET
        nome=COALESCE(EXCLUDED.nome,usuarios.nome),
        atualizado_em=NOW()
      RETURNING *`,
-    [telefone, telefone_formatado, nome || null, email || null]
+    [telefone, telefone_formatado, nome || null, email || null, origem_cadastro || null]
   );
   return r.rows[0];
 }
