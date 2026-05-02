@@ -21,6 +21,7 @@ const {
   detectarTokenNaMensagem,
   marcarSolicitacaoUsada,
   buscarUsuarioPorTelefone,
+  criarOuAtualizarUsuario,
   criarMagicToken,
 } = require('../core/usuarios');
 const { enfileirarAtendimento } = require('../core/gateway');
@@ -185,23 +186,18 @@ router.post('/evolution', async (req, res) => {
     await marcarSolicitacaoUsada(sol.token);
 
     // ── Decidir cenário ─────────────────────────────────────
-    const usuario = await buscarUsuarioPorTelefone(telefoneFinal);
+    let usuario = await buscarUsuarioPorTelefone(telefoneFinal);
 
     if (!usuario) {
-      // Conta não existe — manda mensagem de boas-vindas com link pra cadastro
-      console.log(`[webhook-evolution] sem cadastro — enviando primeiro_contato_sem_cadastro`);
-      const linkCadastro = `${APP_URL}/cadastro`;
-      await enfileirarAtendimento({
+      // Aluna ainda não tem conta — criamos uma INCOMPLETA na hora.
+      // Telefone já foi validado pelo zap (origem do webhook bate com o token).
+      // Magic link de boas-vindas vai levar ela direto pra tela de "completar dados".
+      console.log(`[webhook-evolution] sem cadastro — criando conta incompleta com origem='whatsapp'`);
+      usuario = await criarOuAtualizarUsuario({
         telefone: telefoneFinal,
-        tipo: 'reativo',
-        origem: 'webhook-evolution-sem-cadastro',
-        nome: '',
-        mensagens: [
-          { template: 'primeiro_contato_sem_cadastro', variaveis: {} },
-          { texto: linkCadastro },
-        ],
+        telefone_formatado: telefoneFinal,  // forma canônica
+        origem_cadastro: 'whatsapp',
       });
-      return;
     }
 
     // Decide entre magic_login (cadastro completo) ou magic_boas_vindas (incompleto)
