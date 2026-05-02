@@ -89,6 +89,46 @@ async function limparOTPsExpirados() {
   );
 }
 
+// ── MAGIC TOKENS ──────────────────────────────────────────
+// Tokens longos pra magic link de login, boas-vindas e reset de senha.
+// Reusam a tabela otp_tokens (campo `token` + `tipo`).
+
+const crypto = require('crypto');
+
+function gerarTokenMagico() {
+  // 32 bytes hex = 64 chars, suficiente pra ser imprevisível na URL
+  return crypto.randomBytes(32).toString('hex');
+}
+
+async function criarMagicToken(telefone, tipo, ttlMin = 10) {
+  if (!['magic_login', 'magic_boas_vindas', 'reset_senha'].includes(tipo)) {
+    throw new Error(`tipo inválido: ${tipo}`);
+  }
+  const token = gerarTokenMagico();
+  await poolCore.query(
+    `INSERT INTO otp_tokens (telefone, codigo, canal, token, tipo, expira_em)
+     VALUES ($1, '', 'whatsapp', $2, $3, NOW() + $4::interval)`,
+    [telefone, token, tipo, `${ttlMin} minutes`]
+  );
+  return token;
+}
+
+async function validarMagicToken(token, tiposPermitidos) {
+  // tiposPermitidos = ['magic_login','magic_boas_vindas'] etc
+  const tipos = Array.isArray(tiposPermitidos) ? tiposPermitidos : [tiposPermitidos];
+  const r = await poolCore.query(
+    `SELECT * FROM otp_tokens
+      WHERE token=$1 AND usado=FALSE AND expira_em>NOW()
+        AND tipo = ANY($2::text[])
+      ORDER BY criado_em DESC
+      LIMIT 1`,
+    [token, tipos]
+  );
+  if (!r.rows.length) return null;
+  await poolCore.query(`UPDATE otp_tokens SET usado=TRUE WHERE id=$1`, [r.rows[0].id]);
+  return r.rows[0];  // tem .telefone e .tipo
+}
+
 // ── DISPOSITIVOS ──────────────────────────────────────────
 
 async function upsertDispositivo({ usuario_id, tipo, device_id, fingerprint, nome_amigavel, ip }) {
@@ -211,6 +251,8 @@ module.exports = {
   criarOTP,
   validarOTP,
   limparOTPsExpirados,
+  criarMagicToken,
+  validarMagicToken,
   upsertDispositivo,
   buscarDispositivoAtivo,
   listarDispositivosUsuario,
