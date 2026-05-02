@@ -202,9 +202,19 @@ router.post('/gateway/fila/:atendimento_id/cancelar', async (req, res) => {
 router.get('/templates', async (req, res) => {
   try {
     const r = await poolComunicacao.query(
-      `SELECT chave, titulo, texto, atualizado_em
+      `SELECT chave, titulo, texto, categoria, ordem, atualizado_em
          FROM templates_mensagens
-        ORDER BY chave ASC`
+        ORDER BY
+          CASE COALESCE(categoria,'outros')
+            WHEN 'acesso'     THEN 1
+            WHEN 'cobranca'   THEN 2
+            WHEN 'pos_venda'  THEN 3
+            WHEN 'convites'   THEN 4
+            WHEN 'otp_painel' THEN 5
+            ELSE 9
+          END ASC,
+          COALESCE(ordem, 99) ASC,
+          chave ASC`
     );
     res.json({ templates: r.rows });
   } catch (err) {
