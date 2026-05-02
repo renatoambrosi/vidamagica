@@ -104,6 +104,25 @@ async function initCore() {
     await c.query(`CREATE INDEX IF NOT EXISTS idx_tel_hist_usuario ON telefones_historicos(usuario_id)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_tel_hist_tel_ativo ON telefones_historicos(telefone) WHERE ativo=TRUE`);
 
+    // Solicitações de acesso pendentes (token gerado pelo /auth, validado pelo zap)
+    // Aluna digita telefone → toca botão → site gera token → abre wa.me com texto
+    // Aluna manda zap → webhook recebe → valida token + telefone → manda magic link
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS acesso_solicitacoes (
+        id SERIAL PRIMARY KEY,
+        token VARCHAR(20) UNIQUE NOT NULL,
+        telefone VARCHAR(30) NOT NULL,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        expira_em TIMESTAMPTZ NOT NULL,
+        usado BOOLEAN DEFAULT FALSE,
+        usado_em TIMESTAMPTZ,
+        webhook_recebido_em TIMESTAMPTZ,
+        magic_token TEXT
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_acesso_token ON acesso_solicitacoes(token) WHERE usado=FALSE`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_acesso_telefone ON acesso_solicitacoes(telefone, criado_em DESC)`);
+
     await c.query(`
       CREATE TABLE IF NOT EXISTS otp_tokens (
         id SERIAL PRIMARY KEY,
@@ -509,10 +528,15 @@ async function initComunicacao() {
         chave VARCHAR(80) PRIMARY KEY,
         titulo VARCHAR(200),
         texto TEXT NOT NULL,
+        categoria VARCHAR(40) DEFAULT 'outros',
+        ordem INTEGER DEFAULT 99,
         criado_em TIMESTAMPTZ DEFAULT NOW(),
         atualizado_em TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+    // Migrations idempotentes
+    await c.query(`ALTER TABLE templates_mensagens ADD COLUMN IF NOT EXISTS categoria VARCHAR(40) DEFAULT 'outros'`);
+    await c.query(`ALTER TABLE templates_mensagens ADD COLUMN IF NOT EXISTS ordem INTEGER DEFAULT 99`);
 
     // Fila persistente — agora trabalhada por ATENDIMENTO (1 atendimento = 1+ msgs em sequência)
     await c.query(`
@@ -610,39 +634,73 @@ async function initComunicacao() {
     `);
 
     // Seed de templates iniciais (Renato edita pelo painel quando quiser)
+    // Categorias: 'acesso', 'cobranca', 'pos_venda', 'convites', 'otp_painel'
     await c.query(`
-      INSERT INTO templates_mensagens (chave, titulo, texto) VALUES
+      INSERT INTO templates_mensagens (chave, titulo, texto, categoria, ordem) VALUES
         ('magic_login_msg1',
-         'Magic Link — Login (msg 1 de 2)',
-         'Olá, {nome}! 👇 Aqui está seu acesso ao Vida Mágica'),
+         'Magic Link — Login (volta para casa)',
+         E'Que bom te ver de volta, {nome}. ✨\nSeu Magic Link está pronto!\nToque no caminho abaixo pra entrar:',
+         'acesso', 1),
         ('magic_boas_vindas_msg1',
-         'Magic Link — Primeiro acesso (msg 1 de 2)',
-         'Olá, {nome}! 🌟 Bem vinda! Toque no link abaixo pra entrar pela primeira vez 👇'),
+         'Magic Link — Primeiro acesso',
+         E'Bem-vinda, {nome}. 🌟\nEstávamos te esperando.\nSeu Magic Link está pronto.\nToque no caminho abaixo para acessar:',
+         'acesso', 2),
         ('reset_senha_msg1',
-         'Reset de senha (msg 1 de 2)',
-         'Olá, {nome}! 🔐 Vou gerar o link abaixo pra você criar uma nova senha. 👇'),
-        ('otp_painel_admin',
-         'OTP Painel Admin',
-         'Olá, {nome}! 🔐 Seu código de acesso ao Painel Admin — Vida Mágica: *{codigo}*. Válido por 10 minutos.'),
-        ('otp_painel_atendimento',
-         'OTP Painel Atendimento',
-         'Olá, {nome}! 🔐 Seu código de acesso ao Painel de Atendimento — Vida Mágica: *{codigo}*. Válido por 10 minutos.'),
+         'Reset de senha',
+         E'Olá, {nome}. 🔐\nRecebemos seu pedido pra criar uma nova senha.\nToque no caminho abaixo pra começar:',
+         'acesso', 3),
+        ('primeiro_contato_sem_cadastro',
+         'Primeiro contato — sem cadastro',
+         E'Seja bem-vinda ao Vida Mágica. ✨\n\nAqui é onde pessoas se reencontram com o próprio caminho — através de uma mente alinhada com Deus, de um método eficaz e nossos produtos de autoconhecimento.\n\nPra começar sua jornada com a gente, toque no caminho abaixo. É lá que você vai:\n\n🌱 Fazer o Teste do Subconsciente\n📿 Iniciar sua trilha de conhecimento\n💛 Falar com a Su e nosso suporte\n\nTe vejo por lá.',
+         'acesso', 4),
         ('cobranca_clube_d_menos_3',
-         'Cobrança Clube D-3',
-         'Oi {nome}! Faltam 3 dias pra renovação da sua assinatura no Clube Vida Mágica.'),
+         'Cobrança Clube — 3 dias antes',
+         E'Olá, {nome}. 💛\nSua jornada no Clube renova em 3 dias.\nPra continuar com a gente sem pausa, deixamos o caminho abaixo:',
+         'cobranca', 1),
         ('cobranca_clube_d_menos_1',
-         'Cobrança Clube D-1',
-         'Oi {nome}! Amanhã é dia da renovação do seu Clube Vida Mágica.'),
+         'Cobrança Clube — 1 dia antes',
+         E'{nome}, sua renovação chega amanhã. ✨\nPra seguir com a gente sem interrupção, toque no caminho abaixo:',
+         'cobranca', 2),
         ('cobranca_clube_d_mais_5',
-         'Cobrança Clube D+5 (atraso)',
-         'Oi {nome}! Sua mensalidade do Clube está em atraso há 5 dias. Vamos regularizar?'),
-        ('convite_sessao_diagnostico',
-         'Convite Sessão Diagnóstico',
-         'Olá {nome}! Te convido para nossa Sessão de Diagnóstico no próximo sábado. 💛'),
+         'Cobrança Clube — 5 dias em atraso',
+         E'{nome}, sentimos sua falta no Clube. 💛\nSua mensalidade ficou pendente há 5 dias.\nPra voltar pra dentro, toque no caminho abaixo:',
+         'cobranca', 3),
         ('pos_venda_kiwify',
-         'Pós-venda Kiwify',
-         'Olá {nome}! Bem vinda ao Vida Mágica. Aqui você acessa tudo que comprou.')
+         'Pós-venda — boas-vindas após compra',
+         E'Bem-vinda ao Vida Mágica, {nome}. 💛\nSua jornada começa agora.\nSeu acesso está pronto. Toque no caminho abaixo:',
+         'pos_venda', 1),
+        ('convite_sessao_diagnostico',
+         'Convite — Sessão de Diagnóstico',
+         E'Olá, {nome}. ✨\nTe queremos perto neste sábado.\nSua Sessão de Diagnóstico está reservada — toque no caminho abaixo pra confirmar:',
+         'convites', 1),
+        ('otp_painel_admin',
+         'OTP — Painel Admin',
+         E'{nome}, seu acesso ao Painel Admin do Vida Mágica está pronto.\nCódigo: *{codigo}*\nVálido por 10 minutos.',
+         'otp_painel', 1),
+        ('otp_painel_atendimento',
+         'OTP — Painel de Atendimento',
+         E'{nome}, seu acesso ao Painel de Atendimento do Vida Mágica está pronto.\nCódigo: *{codigo}*\nVálido por 10 minutos.',
+         'otp_painel', 2)
       ON CONFLICT (chave) DO NOTHING
+    `);
+
+    // Update categoria/ordem em templates JÁ existentes (caso tenham sido seedados antes do schema novo)
+    await c.query(`
+      UPDATE templates_mensagens SET categoria = CASE chave
+        WHEN 'magic_login_msg1'              THEN 'acesso'
+        WHEN 'magic_boas_vindas_msg1'        THEN 'acesso'
+        WHEN 'reset_senha_msg1'              THEN 'acesso'
+        WHEN 'primeiro_contato_sem_cadastro' THEN 'acesso'
+        WHEN 'cobranca_clube_d_menos_3'      THEN 'cobranca'
+        WHEN 'cobranca_clube_d_menos_1'      THEN 'cobranca'
+        WHEN 'cobranca_clube_d_mais_5'       THEN 'cobranca'
+        WHEN 'pos_venda_kiwify'              THEN 'pos_venda'
+        WHEN 'convite_sessao_diagnostico'    THEN 'convites'
+        WHEN 'otp_painel_admin'              THEN 'otp_painel'
+        WHEN 'otp_painel_atendimento'        THEN 'otp_painel'
+        ELSE COALESCE(categoria, 'outros')
+      END
+      WHERE categoria IS NULL OR categoria='outros'
     `);
 
     // CRM — Sessão de Diagnóstico
