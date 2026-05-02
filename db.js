@@ -653,6 +653,10 @@ async function initComunicacao() {
          'Primeiro contato — sem cadastro',
          E'Seja bem-vinda ao Vida Mágica. ✨\n\nAqui é onde pessoas se reencontram com o próprio caminho — através de uma mente alinhada com Deus, de um método eficaz e nossos produtos de autoconhecimento.\n\nPra começar sua jornada com a gente, toque no caminho abaixo. É lá que você vai:\n\n🌱 Fazer o Teste do Subconsciente\n📿 Iniciar sua trilha de conhecimento\n💛 Falar com a Su e nosso suporte\n\nTe vejo por lá.',
          'acesso', 4),
+        ('telefone_alterado',
+         'Telefone alterado — número antigo tentou logar',
+         E'Olá. ✨\nEsta conta teve seu número alterado.\nFaça o login utilizando seu número atual.',
+         'acesso', 5),
         ('cobranca_clube_d_menos_3',
          'Cobrança Clube — 3 dias antes',
          E'Olá, {nome}. 💛\nSua jornada no Clube renova em 3 dias.\nPra continuar com a gente sem pausa, deixamos o caminho abaixo:',
@@ -691,6 +695,7 @@ async function initComunicacao() {
         WHEN 'magic_boas_vindas_msg1'        THEN 'acesso'
         WHEN 'reset_senha_msg1'              THEN 'acesso'
         WHEN 'primeiro_contato_sem_cadastro' THEN 'acesso'
+        WHEN 'telefone_alterado'             THEN 'acesso'
         WHEN 'cobranca_clube_d_menos_3'      THEN 'cobranca'
         WHEN 'cobranca_clube_d_menos_1'      THEN 'cobranca'
         WHEN 'cobranca_clube_d_mais_5'       THEN 'cobranca'
