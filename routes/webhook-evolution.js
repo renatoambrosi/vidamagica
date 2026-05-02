@@ -20,7 +20,7 @@ const { formatarTelefone } = require('../core/utils');
 const {
   detectarTokenNaMensagem,
   marcarSolicitacaoUsada,
-  buscarUsuarioPorTelefone,
+  buscarUsuarioPorTelefoneComOrigem,
   criarOuAtualizarUsuario,
   criarMagicToken,
 } = require('../core/usuarios');
@@ -186,16 +186,32 @@ router.post('/evolution', async (req, res) => {
     await marcarSolicitacaoUsada(sol.token);
 
     // ── Decidir cenário ─────────────────────────────────────
-    let usuario = await buscarUsuarioPorTelefone(telefoneFinal);
+    const match = await buscarUsuarioPorTelefoneComOrigem(telefoneFinal);
 
+    // 1. Telefone bate com HISTÓRICO (aluna trocou de número, mas histórico ativo).
+    //    Reconhecemos a conta MAS não autenticamos. Mandamos aviso e paramos.
+    if (match && match.origem === 'historico') {
+      console.log(`[webhook-evolution] telefone histórico — enviando aviso "telefone_alterado"`);
+      await enfileirarAtendimento({
+        telefone: telefoneFinal,
+        tipo: 'reativo',
+        origem: 'webhook-evolution-telefone-alterado',
+        nome: (match.usuario.nome || '').split(' ')[0] || '',
+        mensagens: [
+          { template: 'telefone_alterado', variaveis: {} },
+        ],
+      });
+      return;
+    }
+
+    // 2. Não achou em lugar nenhum — cria conta incompleta com origem='whatsapp'
+    //    e segue pro fluxo normal de boas-vindas (cai na branch 3 abaixo).
+    let usuario = match?.usuario || null;
     if (!usuario) {
-      // Aluna ainda não tem conta — criamos uma INCOMPLETA na hora.
-      // Telefone já foi validado pelo zap (origem do webhook bate com o token).
-      // Magic link de boas-vindas vai levar ela direto pra tela de "completar dados".
       console.log(`[webhook-evolution] sem cadastro — criando conta incompleta com origem='whatsapp'`);
       usuario = await criarOuAtualizarUsuario({
         telefone: telefoneFinal,
-        telefone_formatado: telefoneFinal,  // forma canônica
+        telefone_formatado: telefoneFinal,
         origem_cadastro: 'whatsapp',
       });
     }
