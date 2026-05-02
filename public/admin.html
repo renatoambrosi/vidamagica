@@ -504,7 +504,10 @@ select option { background: #1a1205; }
             <div class="wz-section-title">👤 Usuários</div>
             <div class="wz-section-sub">Busque por nome, e-mail ou telefone</div>
           </div>
-          <button class="btn btn-ghost btn-sm" onclick="carregarUsuarios()">↺ Atualizar</button>
+          <div style="display:flex;gap:0.4rem">
+            <button class="btn btn-ghost btn-sm" onclick="carregarUsuarios()">↺ Atualizar</button>
+            <button class="btn btn-primary btn-sm" onclick="abrirCriarUsuario()">+ Adicionar usuário</button>
+          </div>
         </div>
         <div style="margin-bottom:0.85rem">
           <input type="text" id="us-busca" class="field-input" placeholder="Buscar por nome, e-mail ou telefone..." oninput="filtrarUsuariosDebounce()">
@@ -512,7 +515,7 @@ select option { background: #1a1205; }
         <div id="us-lista"><div class="loading">Carregando usuários...</div></div>
       </div>
 
-      <!-- Modal de detalhe -->
+      <!-- Modal de DETALHE -->
       <div id="us-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto">
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);max-width:780px;width:100%;padding:1.5rem;color:var(--text-light)">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
@@ -520,6 +523,45 @@ select option { background: #1a1205; }
             <button class="btn btn-ghost btn-sm" onclick="fecharModalUsuario()">✕ Fechar</button>
           </div>
           <div id="us-modal-body"><div class="loading">Carregando...</div></div>
+        </div>
+      </div>
+
+      <!-- Modal de CRIAR USUÁRIO -->
+      <div id="us-criar-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);max-width:520px;width:100%;padding:1.5rem;color:var(--text-light)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+            <h3 style="margin:0;font-family:var(--font-display);color:var(--color-gold-light)">Adicionar usuário</h3>
+            <button class="btn btn-ghost btn-sm" onclick="fecharCriarUsuario()">✕ Fechar</button>
+          </div>
+          <div style="display:grid;gap:0.85rem">
+            <div>
+              <label class="field-label">Telefone *</label>
+              <input id="us-criar-tel" type="tel" class="field-input" placeholder="5562999999999">
+            </div>
+            <div>
+              <label class="field-label">Nome <span style="color:var(--text-muted);font-size:0.7rem">(opcional)</span></label>
+              <input id="us-criar-nome" type="text" class="field-input" placeholder="Nome completo">
+            </div>
+            <div>
+              <label class="field-label">E-mail <span style="color:var(--text-muted);font-size:0.7rem">(opcional)</span></label>
+              <input id="us-criar-email" type="email" class="field-input" placeholder="email@exemplo.com">
+            </div>
+            <div>
+              <label class="field-label">Origem do cadastro</label>
+              <select id="us-criar-origem" class="field-input">
+                <option value="manual_admin">Manual (admin)</option>
+                <option value="kiwify">Kiwify</option>
+                <option value="teste">Teste</option>
+                <option value="cadastro_direto">Cadastro direto</option>
+                <option value="whatsapp">WhatsApp</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:0.5rem;margin-top:1.2rem">
+            <button class="btn btn-primary" onclick="salvarCriarUsuario()" id="btn-salvar-criar">Criar conta</button>
+            <button class="btn btn-ghost" onclick="fecharCriarUsuario()">Cancelar</button>
+          </div>
+          <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.85rem;line-height:1.5">A conta será criada como <strong style="color:#FFD57A">incompleta</strong>. Após criar, você pode enviar o magic link pra ela ativar.</p>
         </div>
       </div>
     </div>
@@ -1187,22 +1229,28 @@ function filtrarUsuariosDebounce() {
 function renderUsuarios() {
   const c = document.getElementById('us-lista');
   if (!usuariosLista.length) { c.innerHTML = '<p style="color:var(--text-muted);font-size:0.78rem;padding:0.5rem 0">Nenhuma usuária encontrada.</p>'; return; }
+
+  const STATUS_BADGE = {
+    incompleta: { txt:'INCOMPLETA', cor:'#FFD57A', bg:'rgba(255,213,122,0.15)' },
+    ativa:      { txt:'ATIVA',      cor:'#7DD87E', bg:'rgba(76,175,80,0.18)' },
+    arquivada:  { txt:'ARQUIVADA',  cor:'#F09090', bg:'rgba(220,80,80,0.18)' },
+  };
+
   c.innerHTML = usuariosLista.map(u => {
     const iniciais = (u.nome||'?').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
     const origem = u.origem_cadastro
       ? `<span style="padding:0.1rem 0.4rem;border-radius:4px;background:rgba(200,146,42,0.12);color:var(--color-gold-light);font-size:0.65rem;font-weight:600;text-transform:uppercase">${u.origem_cadastro}</span>`
       : '';
-    const arquivadaBadge = u.arquivada
-      ? `<span style="padding:0.1rem 0.4rem;border-radius:4px;background:rgba(220,80,80,0.18);color:#F09090;font-size:0.65rem;font-weight:700;text-transform:uppercase">arquivada</span>`
-      : '';
+    const st = STATUS_BADGE[u.status] || STATUS_BADGE.incompleta;
+    const statusBadge = `<span style="padding:0.1rem 0.4rem;border-radius:4px;background:${st.bg};color:${st.cor};font-size:0.65rem;font-weight:700">${st.txt}</span>`;
     return `
-      <div onclick="abrirDetalheUsuario('${u.id}')" style="display:grid;grid-template-columns:auto 1fr auto;gap:0.85rem;align-items:center;padding:0.7rem 0.85rem;border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:0.4rem;background:var(--bg-input);cursor:pointer;transition:border-color 0.15s;${u.arquivada?'opacity:0.55;':''}" onmouseover="this.style.borderColor='var(--border-hover)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div onclick="abrirDetalheUsuario('${u.id}')" style="display:grid;grid-template-columns:auto 1fr auto;gap:0.85rem;align-items:center;padding:0.7rem 0.85rem;border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:0.4rem;background:var(--bg-input);cursor:pointer;transition:border-color 0.15s;${u.status==='arquivada'?'opacity:0.55;':''}" onmouseover="this.style.borderColor='var(--border-hover)'" onmouseout="this.style.borderColor='var(--border)'">
         <div style="width:40px;height:40px;border-radius:50%;background:rgba(200,146,42,0.18);color:var(--color-gold-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;font-family:var(--font-display)">${iniciais||'?'}</div>
         <div>
           <div style="font-family:var(--font-display);font-weight:600;font-size:0.9rem;color:var(--text-light)">${escHtml(u.nome||'(sem nome)')}</div>
           <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.15rem">${u.telefone_formatado||u.telefone||'—'} ${u.email?(' · '+escHtml(u.email)):''}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:0.45rem">${arquivadaBadge}${origem}<span style="color:var(--text-muted);font-size:1.1rem">›</span></div>
+        <div style="display:flex;align-items:center;gap:0.4rem">${statusBadge}${origem}<span style="color:var(--text-muted);font-size:1.1rem;margin-left:0.2rem">›</span></div>
       </div>`;
   }).join('');
 }
@@ -1239,18 +1287,42 @@ async function abrirDetalheUsuario(id) {
           <label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">E-mail ${d.usuario.email_verificado?'<span style="color:#7DD87E;font-size:0.7rem;margin-left:0.2rem">verificado ✓</span>':''}</label>
           <input id="us-edit-email" type="email" value="${escHtml(d.usuario.email||'')}" placeholder="Sem e-mail" style="width:100%;margin-top:0.25rem;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.7rem;color:var(--text-light);font-family:inherit;font-size:0.85rem;outline:none">
         </div>
-        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Telefone principal</label><div style="margin-top:0.45rem;font-size:0.85rem">${d.usuario.telefone_formatado||d.usuario.telefone||'—'}</div></div>
-        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Origem do cadastro</label><div style="margin-top:0.45rem;font-size:0.85rem">${d.usuario.origem_cadastro||'—'}</div></div>
-        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Cadastro</label><div style="margin-top:0.45rem;font-size:0.8rem">${dataFmt(d.usuario.criado_em)}</div></div>
-        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Última atualização</label><div style="margin-top:0.45rem;font-size:0.8rem">${dataFmt(d.usuario.atualizado_em)}</div></div>
+        <div>
+          <label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Telefone principal</label>
+          <input id="us-edit-tel" type="tel" value="${escHtml(d.usuario.telefone_formatado||d.usuario.telefone||'')}" style="width:100%;margin-top:0.25rem;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.7rem;color:var(--text-light);font-family:inherit;font-size:0.85rem;outline:none">
+        </div>
+        <div>
+          <label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Status</label>
+          <select id="us-edit-status" style="width:100%;margin-top:0.25rem;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.7rem;color:var(--text-light);font-family:inherit;font-size:0.85rem;outline:none">
+            <option value="incompleta" ${d.usuario.status==='incompleta'?'selected':''}>Incompleta (não loga)</option>
+            <option value="ativa"      ${d.usuario.status==='ativa'?'selected':''}>Ativa</option>
+            <option value="arquivada"  ${d.usuario.status==='arquivada'?'selected':''}>Arquivada (não loga)</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Origem do cadastro</label>
+          <select id="us-edit-origem" style="width:100%;margin-top:0.25rem;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.7rem;color:var(--text-light);font-family:inherit;font-size:0.85rem;outline:none">
+            <option value="" ${!d.usuario.origem_cadastro?'selected':''}>—</option>
+            <option value="manual_admin"    ${d.usuario.origem_cadastro==='manual_admin'?'selected':''}>Manual (admin)</option>
+            <option value="kiwify"          ${d.usuario.origem_cadastro==='kiwify'?'selected':''}>Kiwify</option>
+            <option value="teste"           ${d.usuario.origem_cadastro==='teste'?'selected':''}>Teste</option>
+            <option value="cadastro_direto" ${d.usuario.origem_cadastro==='cadastro_direto'?'selected':''}>Cadastro direto</option>
+            <option value="whatsapp"        ${d.usuario.origem_cadastro==='whatsapp'?'selected':''}>WhatsApp</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Cadastrada em</label>
+          <div style="margin-top:0.45rem;font-size:0.8rem">${dataFmt(d.usuario.criado_em)}</div>
+          ${d.usuario.telefone_validado_em?`<div style="font-size:0.7rem;color:#7DD87E;margin-top:0.15rem">Ativada: ${dataFmt(d.usuario.telefone_validado_em)}</div>`:''}
+        </div>
       </div>
 
-      <div style="display:flex;gap:0.5rem;margin-bottom:0.4rem;align-items:center">
+      <div style="display:flex;gap:0.5rem;margin-bottom:0.4rem;align-items:center;flex-wrap:wrap">
         <button class="btn btn-primary btn-sm" onclick="salvarEdicaoUsuario('${id}')" id="btn-salvar-us">💾 Salvar alterações</button>
+        <button class="btn btn-ghost btn-sm" onclick="enviarMagicAdmin('${id}')" id="btn-magic-us">📲 Enviar magic link</button>
+        ${d.usuario.tem_senha?`<button class="btn btn-ghost btn-sm" onclick="resetarSenhaAdmin('${id}')">🔑 Resetar senha</button>`:''}
         <span id="us-edit-feedback" style="font-size:0.75rem;color:var(--text-muted)"></span>
       </div>
-
-      <p style="font-size:0.7rem;color:var(--text-muted);margin:0 0 0.3rem">O telefone só pode ser trocado pela própria usuária no app dela.</p>
 
       <div style="margin-top:1.2rem"><h4 style="font-family:var(--font-display);color:var(--color-gold-light);margin:0 0 0.5rem;font-size:0.95rem">📞 Telefones (${d.telefones.length})</h4>${telsHtml}</div>
 
@@ -1260,9 +1332,9 @@ async function abrirDetalheUsuario(id) {
 
       <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);display:flex;gap:0.5rem;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" onclick="forcarLogoutUsuario('${id}')">⏏ Forçar logout</button>
-        ${d.usuario.arquivada
-          ? `<button class="btn btn-success btn-sm" onclick="desarquivarUsuario('${id}')" style="background:rgba(76,175,80,0.18);color:#7DD87E;border:1px solid rgba(76,175,80,0.3)">↺ Desarquivar conta</button>
-             <div style="flex-basis:100%;font-size:0.72rem;color:#F09090;margin-top:0.3rem">⚠ Conta arquivada por ${d.usuario.arquivada_por||'?'} em ${dataFmt(d.usuario.arquivada_em)}${d.usuario.arquivada_motivo?(' — '+escHtml(d.usuario.arquivada_motivo)):''}</div>`
+        ${d.usuario.status==='arquivada'
+          ? `<button class="btn btn-success btn-sm" onclick="desarquivarUsuario('${id}')" style="background:rgba(76,175,80,0.18);color:#7DD87E;border:1px solid rgba(76,175,80,0.3)">↺ Desarquivar</button>
+             <div style="flex-basis:100%;font-size:0.72rem;color:#F09090;margin-top:0.3rem">⚠ Arquivada por ${d.usuario.arquivada_por||'?'} em ${dataFmt(d.usuario.arquivada_em)}${d.usuario.arquivada_motivo?(' — '+escHtml(d.usuario.arquivada_motivo)):''}</div>`
           : `<button class="btn btn-warn btn-sm" onclick="arquivarUsuario('${id}')">🗄️ Arquivar</button>`
         }
         <button class="btn btn-danger btn-sm" onclick="apagarUsuarioPermanente('${id}','${escHtml(d.usuario.nome||d.usuario.telefone||'')}')">💥 Apagar permanentemente</button>
@@ -1273,8 +1345,11 @@ async function abrirDetalheUsuario(id) {
 }
 
 async function salvarEdicaoUsuario(id) {
-  const nome  = (document.getElementById('us-edit-nome').value  || '').trim();
-  const email = (document.getElementById('us-edit-email').value || '').trim();
+  const nome     = (document.getElementById('us-edit-nome').value     || '').trim();
+  const email    = (document.getElementById('us-edit-email').value    || '').trim();
+  const telefone = (document.getElementById('us-edit-tel').value      || '').trim();
+  const status   = document.getElementById('us-edit-status').value;
+  const origem_cadastro = document.getElementById('us-edit-origem').value;
   const btn = document.getElementById('btn-salvar-us');
   const fb  = document.getElementById('us-edit-feedback');
   btn.disabled = true; btn.textContent = 'Salvando...';
@@ -1283,17 +1358,15 @@ async function salvarEdicaoUsuario(id) {
     const r = await fetch(`${API}/api/admin/usuarios/${id}`, {
       method:'PUT',
       headers:{'Content-Type':'application/json','Authorization':authHeader()},
-      body:JSON.stringify({ nome, email }),
+      body:JSON.stringify({ nome, email, telefone, status, origem_cadastro }),
     });
     const d = await r.json();
     if (r.ok) {
       toast('✓ Alterações salvas');
-      // Atualiza a lista por trás (sem fechar o modal)
       carregarUsuarios(document.getElementById('us-busca').value.trim());
-      fb.textContent = 'Salvo às ' + new Date().toLocaleTimeString('pt-BR');
-      fb.style.color = '#7DD87E';
+      // Reabre detalhe pra ver dados atualizados (incluindo telefone histórico se trocou)
+      abrirDetalheUsuario(id);
     } else {
-      // Mensagem específica pra duplicata, pra qualquer outro caso usa msg do backend
       fb.textContent = '✕ ' + (d.error || 'Erro ao salvar');
       fb.style.color = '#F09090';
     }
@@ -1383,6 +1456,81 @@ async function apagarUsuarioPermanente(id, nomeOuTel) {
       carregarUsuarios(document.getElementById('us-busca').value.trim());
     } else toast(d.error||'Erro','error');
   } catch { toast('Erro de conexão','error'); }
+}
+
+// ── CRIAR USUÁRIO MANUAL ────────────────────────────────────
+function abrirCriarUsuario() {
+  document.getElementById('us-criar-tel').value   = '';
+  document.getElementById('us-criar-nome').value  = '';
+  document.getElementById('us-criar-email').value = '';
+  document.getElementById('us-criar-origem').value= 'manual_admin';
+  document.getElementById('us-criar-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('us-criar-tel').focus(), 50);
+}
+
+function fecharCriarUsuario() {
+  document.getElementById('us-criar-modal').style.display = 'none';
+}
+
+async function salvarCriarUsuario() {
+  const telefone = (document.getElementById('us-criar-tel').value || '').trim();
+  if (!telefone) { toast('Telefone obrigatório', 'error'); return; }
+  const nome     = (document.getElementById('us-criar-nome').value || '').trim();
+  const email    = (document.getElementById('us-criar-email').value || '').trim();
+  const origem   = document.getElementById('us-criar-origem').value;
+  const btn = document.getElementById('btn-salvar-criar');
+  btn.disabled = true; btn.textContent = 'Criando...';
+  try {
+    const r = await fetch(`${API}/api/admin/usuarios`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body:JSON.stringify({ telefone, nome, email, origem_cadastro: origem }),
+    });
+    const d = await r.json();
+    if (r.ok) {
+      toast('✓ Conta criada (incompleta)');
+      fecharCriarUsuario();
+      await carregarUsuarios(document.getElementById('us-busca').value.trim());
+      // Abre o detalhe da nova conta — admin já pode mandar magic link
+      abrirDetalheUsuario(d.usuario.id);
+    } else {
+      toast(d.error || 'Erro ao criar', 'error');
+    }
+  } catch {
+    toast('Erro de conexão', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Criar conta';
+  }
+}
+
+// ── AÇÕES DENTRO DO DETALHE ────────────────────────────────
+async function enviarMagicAdmin(id) {
+  if (!confirm('Enviar magic link agora pra ela?')) return;
+  const btn = document.getElementById('btn-magic-us');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    const r = await fetch(`${API}/api/admin/usuarios/${id}/enviar-magic`, {
+      method:'POST',
+      headers:{'Authorization':authHeader()},
+    });
+    const d = await r.json();
+    if (r.ok) toast('✓ Magic link enfileirado no gateway');
+    else toast(d.error || 'Erro', 'error');
+  } catch { toast('Erro de conexão', 'error'); }
+  finally { btn.disabled = false; btn.textContent = '📲 Enviar magic link'; }
+}
+
+async function resetarSenhaAdmin(id) {
+  if (!confirm('Resetar senha dessa conta? Próxima entrada só vai funcionar via magic link.')) return;
+  try {
+    const r = await fetch(`${API}/api/admin/usuarios/${id}/resetar-senha`, {
+      method:'POST',
+      headers:{'Authorization':authHeader()},
+    });
+    const d = await r.json();
+    if (r.ok) { toast('✓ Senha resetada'); abrirDetalheUsuario(id); }
+    else toast(d.error || 'Erro', 'error');
+  } catch { toast('Erro de conexão', 'error'); }
 }
 
 // ===== INIT =====
