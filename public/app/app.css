@@ -48,13 +48,13 @@
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-html, body { height: 100%; overflow-x: hidden; overscroll-behavior: none; }
+html, body { height: 100%; overflow-x: hidden; }
 body {
   font-family: var(--font-body);
   color: var(--texto);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
-  overscroll-behavior: none;
+  overscroll-behavior-x: none;
   background-color: #E8DCC0;
   background-image:
     linear-gradient(180deg, rgba(255,250,240,0.72) 0%, rgba(248,243,232,0.60) 40%, rgba(240,232,215,0.55) 100%),
@@ -629,10 +629,44 @@ body.teclado-aberto .bottom-nav {
   scroll-behavior: smooth;
   justify-content: flex-end;
   -webkit-overflow-scrolling: touch;
+  /* Contém o gesto de overscroll dentro da área de mensagens — não propaga pro body */
+  overscroll-behavior: contain;
+  position: relative;
 }
 .chat-msgs.cheio { justify-content: flex-start; }
 .chat-msgs::-webkit-scrollbar { width: 3px; }
 .chat-msgs::-webkit-scrollbar-thumb { background: rgba(200,146,42,0.2); border-radius: 2px; }
+
+/* Botão de refresh no header do chat */
+.chat-refresh-btn {
+  flex-shrink: 0; width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-full); border: none; background: transparent;
+  cursor: pointer; color: var(--ouro);
+  transition: background 0.15s, transform 0.4s;
+}
+.chat-refresh-btn:hover { background: var(--ouro-pelicula); }
+.chat-refresh-btn svg { width: 18px; height: 18px; }
+.chat-refresh-btn.atualizando { animation: girarRefresh 0.6s linear infinite; }
+@keyframes girarRefresh { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* Indicador "puxe pra atualizar" — aparece NO TOPO da área de mensagens */
+.chat-pull-indicator {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 0; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; color: var(--ouro);
+  font-family: var(--font-display); letter-spacing: 0.08em; text-transform: uppercase;
+  background: rgba(200,146,42,0.08);
+  transition: height 0.18s ease;
+  pointer-events: none;
+}
+.chat-pull-indicator.armado { height: 36px; }
+.chat-pull-indicator.atualizando { height: 36px; }
+.chat-pull-indicator .girando svg {
+  width: 14px; height: 14px; margin-right: 0.4rem;
+  animation: girarRefresh 0.6s linear infinite;
+}
 
 /* Bolhas */
 .msg-wrap {
