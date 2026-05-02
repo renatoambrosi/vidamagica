@@ -243,27 +243,61 @@
       <div class="usuario-detalhe" id="usuario-detalhe"></div>
       <button class="btn-trocar" onclick="trocarUsuario()">Não sou eu →</button>
     </div>
-    <div id="bloco-titulo-novo"><p class="titulo">Bem-vinda <em>de volta</em></p><p class="subtitulo">Entre com seu WhatsApp ou e-mail.</p><div class="divisor"></div></div>
-    <div id="bloco-titulo-lembrado" style="display:none"><p class="subtitulo" style="margin-bottom:1.25rem">Digite sua senha para continuar.</p></div>
+    <div id="bloco-titulo-novo"><p class="titulo">Bem-vinda <em>de volta</em></p><p class="subtitulo">Receba um link de acesso direto pelo seu WhatsApp.</p><div class="divisor"></div></div>
+    <div id="bloco-titulo-lembrado" style="display:none"><p class="subtitulo" style="margin-bottom:1.25rem">Receba um link de acesso direto pelo seu WhatsApp.</p></div>
     <div class="msg erro" id="erro-login"></div>
-    <div class="campo" id="campo-id">
-      <label>WhatsApp ou e-mail</label>
-      <div class="input-wrap"><input id="input-id" type="text" placeholder="(11) 99999-9999 ou seu@email.com" autocomplete="username" autocapitalize="none"></div>
-    </div>
-    <div class="campo">
-      <label>Senha</label>
-      <div class="input-wrap">
-        <input id="input-senha" type="password" placeholder="Sua senha" autocomplete="current-password" class="has-eye">
-        <button class="eye-btn" onclick="toggleOlho('input-senha','eye-senha')" type="button"><svg id="eye-senha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+
+    <!-- ── Modo MAGIC LINK (padrão) ────────────────────────────────── -->
+    <div id="modo-magic">
+      <div class="campo" id="campo-id-magic">
+        <label>WhatsApp</label>
+        <div class="input-wrap"><input id="input-tel-magic" type="tel" inputmode="numeric" placeholder="(__) _____-____" autocomplete="tel" maxlength="20"></div>
       </div>
-      <div class="esqueci-wrap"><button class="btn-esqueci" onclick="irTela('t-esqueci')">Esqueci minha senha</button></div>
+
+      <button class="btn-cta" id="btn-magic" onclick="solicitarMagicLink()">
+        <span>Receber link pelo WhatsApp</span>
+        <span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </button>
+
+      <button class="btn-toggle-modo" onclick="alternarModoLogin('senha')" type="button" style="background:none;border:none;color:var(--muted);font-family:var(--font-b);font-size:.78rem;text-decoration:underline;text-underline-offset:3px;padding:.85rem 0 .2rem;cursor:pointer;width:100%;text-align:center;transition:color .2s">▼ Entrar com número e senha</button>
     </div>
-    <div class="toggle-row">
-      <div class="toggle-texts"><div class="t1">Lembrar neste dispositivo</div><div class="t2">Fica logada mesmo ao fechar o app</div></div>
-      <label class="toggle-sw"><input type="checkbox" id="toggle-lembrar" checked><span class="toggle-slider"></span></label>
+
+    <!-- ── Modo SENHA (drop-down) ───────────────────────────────────── -->
+    <div id="modo-senha" style="display:none">
+      <div class="campo" id="campo-id">
+        <label>WhatsApp</label>
+        <div class="input-wrap"><input id="input-id" type="tel" inputmode="numeric" placeholder="(__) _____-____" autocomplete="tel" maxlength="20"></div>
+      </div>
+      <div class="campo">
+        <label>Senha</label>
+        <div class="input-wrap">
+          <input id="input-senha" type="password" placeholder="Sua senha" autocomplete="current-password" class="has-eye">
+          <button class="eye-btn" onclick="toggleOlho('input-senha','eye-senha')" type="button"><svg id="eye-senha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+        <div class="esqueci-wrap"><button class="btn-esqueci" onclick="irTela('t-esqueci')" type="button">Esqueci minha senha</button></div>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-texts"><div class="t1">Lembrar neste dispositivo</div><div class="t2">Fica logada mesmo ao fechar o app</div></div>
+        <label class="toggle-sw"><input type="checkbox" id="toggle-lembrar" checked><span class="toggle-slider"></span></label>
+      </div>
+      <button class="btn-cta" id="btn-login" onclick="fazerLogin()"><span>Entrar</span><span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span></button>
+      <button class="btn-toggle-modo" onclick="alternarModoLogin('magic')" type="button" style="background:none;border:none;color:var(--muted);font-family:var(--font-b);font-size:.78rem;text-decoration:underline;text-underline-offset:3px;padding:.85rem 0 .2rem;cursor:pointer;width:100%;text-align:center;transition:color .2s">▲ Voltar pro link via WhatsApp</button>
     </div>
-    <button class="btn-cta" id="btn-login" onclick="fazerLogin()"><span>Entrar</span><span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span></button>
-    <div class="card-foot">Primeira vez aqui? <button onclick="irTela('t-cad-1')">Criar conta grátis</button></div>
+
+    <!-- ── Tela "magic link enviado" ──────────────────────────────── -->
+    <div id="modo-magic-enviado" style="display:none;text-align:center;padding:1.5rem 0 .5rem">
+      <div style="width:64px;height:64px;border-radius:50%;background:rgba(200,146,42,0.12);border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;margin-bottom:1.1rem">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--gold-light)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+      </div>
+      <p style="font-family:var(--font-h);font-size:1.05rem;color:var(--gold-light);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:0 0 .8rem">Pronto!</p>
+      <p style="font-family:var(--font-b);font-size:.88rem;color:var(--pearl);line-height:1.6;margin:0 0 .4rem;opacity:.9">Em instantes você receberá um link de acesso <strong style="color:var(--gold-light)">pelo WhatsApp</strong>.</p>
+      <p style="font-family:var(--font-b);font-size:.75rem;color:var(--muted);margin:1rem 0 0;line-height:1.5">Toque no link pra entrar direto. O link expira em 10 minutos.<br>Verifique também o WhatsApp Business.</p>
+      <button class="btn-toggle-modo" onclick="resetarModoMagic()" type="button" style="background:none;border:none;color:var(--muted);font-family:var(--font-b);font-size:.78rem;text-decoration:underline;text-underline-offset:3px;padding:1.5rem 0 .2rem;cursor:pointer;width:100%;text-align:center">← Voltar</button>
+    </div>
+
+    <div class="card-foot" id="card-foot-criar">Primeira vez aqui? <button onclick="irTela('t-cad-1')">Criar conta grátis</button></div>
   </div>
 
   <!-- ESQUECI -->
@@ -379,6 +413,40 @@
     <p class="titulo">Conta <em>criada!</em></p>
     <p class="subtitulo">Seja bem-vinda à Vida Mágica.<br>Entrando na sua área…</p>
     <div style="display:flex;justify-content:center;padding:1.25rem 0;"><div class="spin" style="width:24px;height:24px;border-color:rgba(200,146,42,.3);border-top-color:var(--gold);"></div></div>
+  </div>
+
+  <!-- COMPLETAR CADASTRO (vinda de magic link de boas-vindas) -->
+  <div class="tela" id="t-completar">
+    <div class="perfil-icon">✨</div>
+    <p class="titulo">Falta só <em>completar</em></p>
+    <p class="subtitulo">Pra finalizar seu acesso, complete os dados que faltam.</p>
+    <div class="divisor"></div>
+    <div class="msg erro" id="erro-completar"></div>
+
+    <div class="campo">
+      <label>Nome completo</label>
+      <div class="input-wrap"><input id="cc-nome" type="text" placeholder="Seu nome completo" autocomplete="name"></div>
+    </div>
+    <div class="campo">
+      <label>E-mail</label>
+      <div class="input-wrap"><input id="cc-email" type="email" placeholder="seu@email.com" autocomplete="email" autocapitalize="none"></div>
+    </div>
+    <div class="campo">
+      <label>WhatsApp</label>
+      <div class="input-wrap"><input id="cc-tel" type="tel" readonly style="opacity:.7;cursor:not-allowed"></div>
+    </div>
+    <div class="campo">
+      <label>Crie sua senha <span style="font-weight:400;color:var(--muted);font-size:.78rem">(mínimo 6 caracteres)</span></label>
+      <div class="input-wrap">
+        <input id="cc-senha" type="password" placeholder="Sua nova senha" autocomplete="new-password" class="has-eye">
+        <button class="eye-btn" onclick="toggleOlho('cc-senha','eye-cc')" type="button"><svg id="eye-cc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+    </div>
+
+    <button class="btn-cta" id="btn-completar" onclick="salvarCompletarCadastro()">
+      <span>Continuar</span>
+      <span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+    </button>
   </div>
 
 </div></div><!-- /card /page -->
@@ -547,6 +615,175 @@ function mostrarOverlay(nome){
   setTimeout(()=>{ window.location.replace('/app'); }, 1400);
 }
 
+// ── MASCARA TELEFONE BRASIL nos inputs novos ─────────────────────────────────
+const _paisBR = PAISES[0]; // {ddi:'55', mask:'(##) #####-####', max:11, ...}
+function aplicarMascaraBR(inp){
+  if (!inp) return;
+  inp.addEventListener('input', () => mascaraTel(inp, _paisBR));
+}
+aplicarMascaraBR(document.getElementById('input-tel-magic'));
+aplicarMascaraBR(document.getElementById('input-id'));
+
+// ── ALTERNAR MODOS LOGIN (magic ↔ senha) ─────────────────────────────────────
+function alternarModoLogin(modo){
+  limparMsg('erro-login');
+  const elMagic       = document.getElementById('modo-magic');
+  const elSenha       = document.getElementById('modo-senha');
+  const elEnviado     = document.getElementById('modo-magic-enviado');
+  const elFootCriar   = document.getElementById('card-foot-criar');
+  if (modo === 'senha'){
+    elMagic.style.display    = 'none';
+    elEnviado.style.display  = 'none';
+    elSenha.style.display    = '';
+    elFootCriar.style.display= 'none';
+    setTimeout(() => document.getElementById('input-id')?.focus(), 50);
+  } else {
+    elSenha.style.display    = 'none';
+    elEnviado.style.display  = 'none';
+    elMagic.style.display    = '';
+    elFootCriar.style.display= '';
+    setTimeout(() => document.getElementById('input-tel-magic')?.focus(), 50);
+  }
+}
+
+function resetarModoMagic(){
+  document.getElementById('modo-magic-enviado').style.display = 'none';
+  document.getElementById('modo-magic').style.display = '';
+  document.getElementById('input-tel-magic').value = '';
+  limparMsg('erro-login');
+}
+
+// ── SOLICITAR MAGIC LINK ─────────────────────────────────────────────────────
+document.getElementById('input-tel-magic').addEventListener('keydown', e => {
+  if (e.key === 'Enter') solicitarMagicLink();
+});
+
+async function solicitarMagicLink(){
+  limparMsg('erro-login');
+  const tel = (document.getElementById('input-tel-magic').value||'').trim();
+  if (!tel){
+    mostrarErro('erro-login','Informe seu WhatsApp.');
+    document.getElementById('input-tel-magic').focus();
+    return;
+  }
+  setLoad('btn-magic','Enviando…');
+  try {
+    const r = await fetch(`${API}/api/auth/solicitar-otp`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ telefone: tel }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok){
+      // Esconde form, mostra confirmação
+      document.getElementById('modo-magic').style.display = 'none';
+      document.getElementById('modo-magic-enviado').style.display = '';
+    } else if (d.code === 'CONTA_NAO_EXISTE'){
+      // Conta não existe — orienta criar conta
+      mostrarErro('erro-login', 'Não encontramos sua conta. Toque em "Criar conta grátis" abaixo.');
+    } else {
+      mostrarErro('erro-login', d.error || 'Erro ao solicitar link.');
+    }
+  } catch {
+    mostrarErro('erro-login','Falha de conexão. Tente novamente.');
+  } finally {
+    resetBtn('btn-magic','Receber link pelo WhatsApp');
+  }
+}
+
+// ── DETECÇÃO DE MAGIC LINK NA URL (?magic=xxx) ───────────────────────────────
+// Quando aluna toca o link no WhatsApp, cai aqui com ?magic=token na URL.
+// Trocamos pra POST /api/auth/login-magic, que retorna sessão completa.
+(async function processarMagicLinkNaURL(){
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const magicToken = params.get('magic');
+    const resetToken = params.get('token');  // já existe — tela de redefinir senha
+    if (resetToken && !magicToken){
+      // mantém comportamento existente (reset senha)
+      return;
+    }
+    if (!magicToken) return;
+
+    // Mostra overlay de "validando" enquanto chama o backend
+    document.getElementById('overlay-msg').textContent = 'Validando seu acesso…';
+    document.getElementById('overlay').classList.add('show');
+
+    const r = await fetch(`${API}/api/auth/login-magic`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ token: magicToken }),
+    });
+    const d = await r.json().catch(() => ({}));
+
+    if (!r.ok){
+      // Esconde overlay, volta pra tela de login com erro
+      document.getElementById('overlay').classList.remove('show');
+      // Limpa o magic da URL pra aluna não ficar presa
+      window.history.replaceState({}, '', '/auth');
+      setTimeout(() => mostrarErro('erro-login', d.error || 'Link inválido ou expirado. Solicite outro.'), 100);
+      return;
+    }
+
+    // Login OK. Salva sessão (magic link sempre marca "lembrar=true" no dispositivo)
+    VmSession.salvar(d, true);
+
+    if (d.cadastroIncompleto){
+      // Vai pra tela de completar cadastro ANTES do app
+      document.getElementById('overlay').classList.remove('show');
+      irTelaCompletarCadastro(d.usuario);
+      return;
+    }
+
+    // Cadastro completo → entra no app
+    document.getElementById('overlay-msg').textContent = d.usuario?.nome
+      ? `Olá, ${d.usuario.nome.split(' ')[0]}! Entrando…`
+      : 'Entrando…';
+    setTimeout(() => window.location.replace('/app'), 800);
+  } catch (err) {
+    console.error('processar magic link:', err);
+    document.getElementById('overlay').classList.remove('show');
+  }
+})();
+
+// ── COMPLETAR CADASTRO (chamada quando login-magic retorna cadastroIncompleto) ───
+function irTelaCompletarCadastro(usuario){
+  // Pré-preenche o que já tem
+  document.getElementById('cc-nome').value     = usuario?.nome     || '';
+  document.getElementById('cc-email').value    = usuario?.email    || '';
+  document.getElementById('cc-tel').value      = usuario?.telefone_formatado || '';
+  irTela('t-completar');
+}
+
+async function salvarCompletarCadastro(){
+  limparMsg('erro-completar');
+  const nome  = (document.getElementById('cc-nome').value||'').trim();
+  const email = (document.getElementById('cc-email').value||'').trim();
+  const senha = document.getElementById('cc-senha').value;
+
+  if (!nome)  { mostrarErro('erro-completar','Informe seu nome.'); return; }
+  if (!email) { mostrarErro('erro-completar','Informe seu e-mail.'); return; }
+  if (!senha || senha.length < 6) { mostrarErro('erro-completar','Senha deve ter ao menos 6 caracteres.'); return; }
+
+  setLoad('btn-completar','Salvando…');
+  try {
+    const r = await fetch(`${API}/api/auth/perfil`, {
+      method:'PUT',
+      headers:{
+        'Content-Type':'application/json',
+        Authorization: `Bearer ${VmSession.getAccess()}`,
+      },
+      body: JSON.stringify({ nome, email, senha }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok){
+      throw new Error(d.error || 'Erro ao salvar dados.');
+    }
+    mostrarOverlay(nome);
+  } catch (err) {
+    mostrarErro('erro-completar', err.message || 'Erro ao salvar.');
+    resetBtn('btn-completar','Continuar');
+  }
+}
+
 // ── LOGIN ────────────────────────────────────────────────────────────────────
 document.getElementById('input-senha').addEventListener('keydown', e=>{ if(e.key==='Enter') fazerLogin(); });
 
@@ -557,9 +794,8 @@ async function fazerLogin(){
   const lembrar = document.getElementById('toggle-lembrar').checked;
 
   if (!identificador){
-    // Mostra campo se estava oculto
     document.getElementById('campo-id').style.display='block';
-    mostrarErro('erro-login','Informe seu WhatsApp ou e-mail.');
+    mostrarErro('erro-login','Informe seu WhatsApp.');
     document.getElementById('input-id').focus(); return;
   }
   if (!senha){ mostrarErro('erro-login','Digite sua senha.'); document.getElementById('input-senha').focus(); return; }
