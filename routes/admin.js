@@ -331,6 +331,62 @@ router.get('/usuarios/:id', async (req, res) => {
 });
 
 // ════════════════════════════════════════════════════════════
+// 8.5. USUÁRIOS — EDITAR (nome e email)
+// Telefone não entra aqui — aluna troca pelo app dela.
+// Email é UNIQUE em outras contas: bloqueia se duplicado.
+// ════════════════════════════════════════════════════════════
+
+router.put('/usuarios/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nome, email } = req.body || {};
+
+    // Aceita "limpar" um campo passando string vazia → vira null
+    const nomeNorm  = typeof nome  === 'string' ? (nome.trim()  || null) : undefined;
+    const emailNorm = typeof email === 'string' ? (email.trim().toLowerCase() || null) : undefined;
+
+    if (nomeNorm === undefined && emailNorm === undefined) {
+      return res.status(400).json({ error: 'Nada pra atualizar' });
+    }
+
+    // Conferir que o usuário existe
+    const u = await poolCore.query(`SELECT id, email FROM usuarios WHERE id=$1`, [id]);
+    if (!u.rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    // Se está mudando email, checar duplicata em OUTRA conta
+    if (emailNorm !== undefined && emailNorm) {
+      const dup = await poolCore.query(
+        `SELECT id FROM usuarios WHERE LOWER(email) = $1 AND id <> $2 LIMIT 1`,
+        [emailNorm, id]
+      );
+      if (dup.rows.length) {
+        return res.status(409).json({ error: 'E-mail já cadastrado em outra conta' });
+      }
+    }
+
+    // Monta UPDATE dinâmico só com os campos enviados
+    const sets = [];
+    const params = [];
+    if (nomeNorm  !== undefined) { params.push(nomeNorm);  sets.push(`nome=$${params.length}`); }
+    if (emailNorm !== undefined) { params.push(emailNorm); sets.push(`email=$${params.length}`); }
+    params.push(id);
+
+    const r = await poolCore.query(
+      `UPDATE usuarios SET ${sets.join(', ')}, atualizado_em=NOW()
+        WHERE id=$${params.length}
+        RETURNING id, nome, email, telefone, telefone_formatado,
+                  email_verificado, foto_url, origem_cadastro,
+                  criado_em, atualizado_em`,
+      params
+    );
+    res.json({ success: true, usuario: r.rows[0] });
+  } catch (err) {
+    console.error('❌ /usuarios/:id PUT:', err.message);
+    res.status(500).json({ error: 'Erro ao atualizar usuário' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
 // 9. USUÁRIOS — REVOGAR TODAS AS SESSÕES (forçar logout)
 // ════════════════════════════════════════════════════════════
 
