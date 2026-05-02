@@ -840,17 +840,44 @@ document.getElementById('reply-fechar')?.addEventListener('click', () => {
 
 let _refreshLock = false;
 
+// Recarrega o chat SILENCIOSAMENTE (sem apagar a tela).
+// Usado tanto pelo botão ↻ quanto pelo pull-to-refresh.
+// Mostra o MESMO indicador (círculo dourado girando no topo).
 async function recarregarChatAtual() {
   if (_refreshLock) return;
   if (!chatConv) return;
   _refreshLock = true;
-  const btn = document.getElementById('btn-chat-refresh');
-  if (btn) btn.classList.add('atualizando');
+
+  // Aciona a animação do pull (mesma usada quando puxa)
+  const indic = document.getElementById('chat-pull-indicator');
+  if (indic) {
+    indic.classList.remove('puxando', 'armado');
+    indic.classList.add('atualizando');
+  }
+
   try {
-    await carregarConversaCanal(chatConv.tipo);
+    const r = await fetch(`${API}/api/chat/conversa?tipo=${chatConv.tipo}`, { headers: authHeader() });
+    if (!r.ok) throw new Error();
+    const dados = await r.json();
+    chatConv = dados.conversa;
+    mensagensAtuais = dados.mensagens || [];
+
+    // Re-renderiza só a área de mensagens — sem apagar o restante da tela
+    const msgsEl = document.getElementById('chat-msgs');
+    if (msgsEl) {
+      // Preserva o indicador (que está dentro de chat-msgs)
+      const indicEl = indic;
+      msgsEl.innerHTML = '';
+      if (indicEl) msgsEl.appendChild(indicEl);
+      mensagensAtuais.forEach(msg => msgsEl.appendChild(renderMensagem(msg)));
+      scrollChat();
+    }
+    atualizarBannerPlano(chatConv);
+  } catch (err) {
+    console.error('[recarregarChatAtual]', err);
   } finally {
+    if (indic) indic.classList.remove('atualizando');
     _refreshLock = false;
-    if (btn) btn.classList.remove('atualizando');
   }
 }
 
