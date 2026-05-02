@@ -365,9 +365,57 @@ async function historicoSementes(usuario_id) {
   return r.rows;
 }
 
+// ── ARQUIVAR / APAGAR CONTA ──────────────────────────────
+// Princípio: aluna NUNCA apaga de verdade. Pedido dela = arquiva.
+// Apenas admin tem o botão "Apagar permanentemente" (DELETE em cascata).
+
+async function arquivarUsuario(id, { por = 'admin', motivo = null } = {}) {
+  // Marca arquivada=TRUE. Revoga todas as sessões pra forçar logout em tudo.
+  // Mantém todos os dados intactos pra auditoria e possível desarquivação.
+  await poolCore.query(
+    `UPDATE usuarios
+        SET arquivada=TRUE,
+            arquivada_em=NOW(),
+            arquivada_por=$2,
+            arquivada_motivo=$3,
+            atualizado_em=NOW()
+      WHERE id=$1`,
+    [id, por, motivo]
+  );
+  await poolCore.query(
+    `UPDATE sessoes SET revogada=TRUE WHERE usuario_id=$1 AND revogada=FALSE`,
+    [id]
+  );
+}
+
+async function desarquivarUsuario(id) {
+  await poolCore.query(
+    `UPDATE usuarios
+        SET arquivada=FALSE,
+            arquivada_em=NULL,
+            arquivada_por=NULL,
+            arquivada_motivo=NULL,
+            atualizado_em=NOW()
+      WHERE id=$1`,
+    [id]
+  );
+}
+
+async function apagarUsuarioPermanente(id) {
+  // DELETE em cascata — sessões, dispositivos, telefones_historicos, OTPs
+  // todos têm ON DELETE CASCADE em usuario_id, então saem junto.
+  // Linha de membros/pagamentos antigos PERMANECE (são bancos diferentes,
+  // sem FK física entre eles). Histórico financeiro fica preservado.
+  const r = await poolCore.query(`DELETE FROM usuarios WHERE id=$1 RETURNING id`, [id]);
+  return r.rowCount > 0;
+}
+
 module.exports = {
   buscarUsuarioPorTelefone,
   buscarUsuarioPorTelefoneComOrigem,
+  arquivarUsuario,
+  desarquivarUsuario,
+  apagarUsuarioPermanente,
   buscarUsuarioPorId,
   criarOuAtualizarUsuario,
   atualizarUsuario,
