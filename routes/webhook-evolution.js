@@ -1,0 +1,198 @@
+/* ============================================================
+   VIDA MÁGICA — routes/webhook-evolution.js
+   Webhook entrante: WhatsApp → Evolution → este endpoint.
+
+   Único cenário tratado: aluna toca "Solicite entrar pelo seu
+   Whatsapp" no /auth, abre wa.me com texto contendo um token
+   VMxxxxx, manda o zap. O webhook recebe, valida o token contra
+   o telefone de origem, e enfileira o magic link de volta.
+
+   Qualquer outra mensagem entrante (sem token, ou com token de
+   outro telefone) é IGNORADA. Sistema fica calado pra ela —
+   conversa humana fica entre a aluna e a equipe Su no celular.
+
+   Banco: poolCore (acesso_solicitacoes, usuarios, otp_tokens)
+   ============================================================ */
+
+const express = require('express');
+const router = express.Router();
+const { formatarTelefone } = require('../core/utils');
+const {
+  detectarTokenNaMensagem,
+  marcarSolicitacaoUsada,
+  buscarUsuarioPorTelefone,
+  criarMagicToken,
+} = require('../core/usuarios');
+const { enfileirarAtendimento } = require('../core/gateway');
+
+const APP_URL = process.env.APP_URL || 'https://www.vidamagica.com.br';
+
+/**
+ * Extrai o número do remetente do payload do Evolution.
+ * Formato típico do Evolution v2: data.key.remoteJid = '5562999111222@s.whatsapp.net'
+ */
+function extrairTelefone(body) {
+  try {
+    const data = body?.data || body;
+    const remoteJid = data?.key?.remoteJid
+      || data?.message?.key?.remoteJid
+      || data?.from
+      || body?.from;
+    if (!remoteJid) return null;
+    // Strip "@s.whatsapp.net", "@c.us", etc.
+    const num = String(remoteJid).split('@')[0].replace(/\D/g, '');
+    return num || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * Extrai o texto da mensagem do payload Evolution.
+ * Cobre: conversation, extendedTextMessage, imageMessage caption, etc.
+ */
+function extrairTexto(body) {
+  try {
+    const data = body?.data || body;
+    const msg = data?.message || data?.messages?.[0]?.message || {};
+    return (
+      msg.conversation
+      || msg.extendedTextMessage?.text
+      || msg.imageMessage?.caption
+      || msg.videoMessage?.caption
+      || msg.documentMessage?.caption
+      || data?.text
+      || body?.text
+      || ''
+    );
+  } catch (_) {
+    return '';
+  }
+}
+
+/**
+ * Detecta se a mensagem é "fromMe" (enviada por nós, não pela aluna).
+ * Importante: Evolution pode mandar todos os eventos, inclusive os nossos.
+ */
+function ehMensagemNossa(body) {
+  try {
+    const data = body?.data || body;
+    return data?.key?.fromMe === true || data?.fromMe === true;
+  } catch (_) {
+    return false;
+  }
+}
+
+router.post('/evolution', async (req, res) => {
+  // RESPONDE 200 IMEDIATAMENTE pra Evolution não dar timeout.
+  // Processamento real acontece em background.
+  res.status(200).json({ received: true });
+
+  // Validação opcional de token (configure EVOLUTION_WEBHOOK_TOKEN no Railway
+  // E o mesmo header customizado no painel da Evolution se quiser proteger)
+  const tokenEsperado = process.env.EVOLUTION_WEBHOOK_TOKEN;
+  if (tokenEsperado) {
+    const tokenRecebido = req.headers['x-evolution-token']
+                       || req.headers['authorization']?.replace(/^Bearer\s+/i, '')
+                       || req.query?.token;
+    if (tokenRecebido !== tokenEsperado) {
+      console.warn('[webhook-evolution] token inválido, ignorando');
+      return;
+    }
+  }
+
+  try {
+    const body = req.body || {};
+
+    // Ignora eventos que não são mensagem entrante
+    const evento = body.event || body.type || '';
+    if (evento && !/message/i.test(evento)) {
+      return;
+    }
+
+    // Ignora mensagens enviadas POR NÓS (fromMe=true)
+    if (ehMensagemNossa(body)) return;
+
+    const telefoneOrigem = extrairTelefone(body);
+    const texto = extrairTexto(body);
+
+    if (!telefoneOrigem || !texto) {
+      console.log('[webhook-evolution] payload sem telefone ou texto, ignorado');
+      return;
+    }
+
+    console.log(`[webhook-evolution] mensagem de ${telefoneOrigem}: ${texto.slice(0, 80)}`);
+
+    // ── Procurar token na mensagem ──────────────────────────
+    const sol = await detectarTokenNaMensagem(texto);
+    if (!sol) {
+      // Mensagem sem token válido = conversa humana, sistema fica calado
+      console.log('[webhook-evolution] sem token válido — ignorando (conversa humana)');
+      return;
+    }
+
+    // ── Validar telefone bate ───────────────────────────────
+    // Token foi gerado pra um telefone específico (digitado no /auth).
+    // Origem do zap PRECISA bater. Se não bater, ignora silenciosamente.
+    const telefoneCanonico = formatarTelefone(telefoneOrigem);
+    if (telefoneCanonico !== sol.telefone) {
+      console.warn(`[webhook-evolution] token ${sol.token} foi gerado pra ${sol.telefone}, mas zap veio de ${telefoneCanonico} — ignorado`);
+      return;
+    }
+
+    // ── Marcar token como usado ─────────────────────────────
+    // Antes de qualquer fila, pra garantir que não responde 2x se o webhook
+    // for chamado novamente pelo mesmo evento.
+    await marcarSolicitacaoUsada(sol.token);
+
+    // ── Decidir cenário ─────────────────────────────────────
+    const usuario = await buscarUsuarioPorTelefone(telefoneCanonico);
+
+    if (!usuario) {
+      // Conta não existe — manda mensagem de boas-vindas com link pra cadastro
+      console.log(`[webhook-evolution] sem cadastro — enviando primeiro_contato_sem_cadastro`);
+      const linkCadastro = `${APP_URL}/cadastro`;
+      await enfileirarAtendimento({
+        telefone: telefoneCanonico,
+        tipo: 'reativo',
+        origem: 'webhook-evolution-sem-cadastro',
+        nome: '',
+        mensagens: [
+          { template: 'primeiro_contato_sem_cadastro', variaveis: {} },
+          { texto: linkCadastro },
+        ],
+      });
+      return;
+    }
+
+    // Decide entre magic_login (cadastro completo) ou magic_boas_vindas (incompleto)
+    const cadastroIncompleto = !usuario.nome || !usuario.email || !usuario.senha_hash;
+    const tipoMagic    = cadastroIncompleto ? 'magic_boas_vindas'     : 'magic_login';
+    const templateMsg1 = cadastroIncompleto ? 'magic_boas_vindas_msg1' : 'magic_login_msg1';
+
+    const magicToken = await criarMagicToken(telefoneCanonico, tipoMagic, 10);
+    const magicUrl = `${APP_URL}/auth?magic=${magicToken}`;
+    const primeiroNome = (usuario.nome || '').split(' ')[0] || '';
+
+    await enfileirarAtendimento({
+      telefone: telefoneCanonico,
+      tipo: 'reativo',
+      origem: 'webhook-evolution-magic',
+      nome: primeiroNome,
+      mensagens: [
+        { template: templateMsg1, variaveis: { nome: primeiroNome } },
+        { texto: magicUrl },
+      ],
+    });
+
+    // Atualiza solicitação com o magic token gerado (pro frontend saber)
+    await marcarSolicitacaoUsada(sol.token, magicToken);
+
+    console.log(`[webhook-evolution] ✅ magic link enfileirado pra ${primeiroNome || telefoneCanonico} (${tipoMagic})`);
+
+  } catch (err) {
+    console.error('❌ [webhook-evolution]:', err);
+  }
+});
+
+module.exports = router;
