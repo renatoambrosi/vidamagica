@@ -232,7 +232,7 @@ select option { background: #1a1205; }
     <span class="nav-icon">📲</span> Gateway WA
   </div>
   <div class="nav-item" id="nav-usuarios" onclick="goTab('usuarios', this)">
-    <span class="nav-icon">👤</span> Usuárias
+    <span class="nav-icon">👤</span> Usuários
   </div>
 
   <div class="sidebar-section-label" style="margin-top:0.5rem">Em breve</div>
@@ -501,7 +501,7 @@ select option { background: #1a1205; }
       <div class="wz-section">
         <div class="wz-section-header">
           <div>
-            <div class="wz-section-title">👤 Usuárias</div>
+            <div class="wz-section-title">👤 Usuários</div>
             <div class="wz-section-sub">Busque por nome, e-mail ou telefone</div>
           </div>
           <button class="btn btn-ghost btn-sm" onclick="carregarUsuarios()">↺ Atualizar</button>
@@ -509,14 +509,14 @@ select option { background: #1a1205; }
         <div style="margin-bottom:0.85rem">
           <input type="text" id="us-busca" class="field-input" placeholder="Buscar por nome, e-mail ou telefone..." oninput="filtrarUsuariosDebounce()">
         </div>
-        <div id="us-lista"><div class="loading">Carregando usuárias...</div></div>
+        <div id="us-lista"><div class="loading">Carregando usuários...</div></div>
       </div>
 
       <!-- Modal de detalhe -->
       <div id="us-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto">
         <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);max-width:780px;width:100%;padding:1.5rem;color:var(--text-light)">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-            <h3 id="us-modal-titulo" style="margin:0;font-family:var(--font-display);color:var(--color-gold-light)">Usuária</h3>
+            <h3 id="us-modal-titulo" style="margin:0;font-family:var(--font-display);color:var(--color-gold-light)">Usuário</h3>
             <button class="btn btn-ghost btn-sm" onclick="fecharModalUsuario()">✕ Fechar</button>
           </div>
           <div id="us-modal-body"><div class="loading">Carregando...</div></div>
@@ -548,7 +548,7 @@ const tabMeta = {
   depoimentos: { title: 'Depoimentos',         sub: 'Frases exibidas no ticker do site' },
   feed:        { title: 'Feed do App',          sub: 'Conteúdo publicado no app — vídeos, textos, imagens e links' },
   whatsapp:    { title: 'Gateway WhatsApp',    sub: 'Cooldowns, categorias, fila ao vivo e templates' },
-  usuarios:    { title: 'Usuárias',             sub: 'Cadastros, telefones, sessões e dispositivos' },
+  usuarios:    { title: 'Usuários',             sub: 'Cadastros, telefones, sessões e dispositivos' },
 };
 
 let wzCarregado = false;
@@ -1122,7 +1122,7 @@ let usuariosBuscaTimer = null;
 
 async function carregarUsuarios(q='') {
   const c = document.getElementById('us-lista');
-  c.innerHTML = '<div class="loading">Carregando usuárias...</div>';
+  c.innerHTML = '<div class="loading">Carregando usuários...</div>';
   try {
     const url = `${API}/api/admin/usuarios${q?('?q='+encodeURIComponent(q)):''}`;
     const r = await fetch(url, { headers:{'Authorization':authHeader()} });
@@ -1178,7 +1178,7 @@ async function abrirDetalheUsuario(id) {
       : '<p style="color:var(--text-muted);font-size:0.78rem">Nenhuma sessão ativa.</p>';
 
     const dispsHtml = d.dispositivos.length
-      ? d.dispositivos.map(disp=>`<div style="padding:0.45rem 0.65rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.3rem;background:var(--bg-input);font-size:0.78rem;${disp.ativo?'':'opacity:0.55'}"><div><strong>${escHtml(disp.nome_amigavel||'?')}</strong> (${disp.tipo}) ${disp.ativo?'':' — inativo'}</div><div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.15rem">Última atividade: ${dataFmt(disp.ultima_atividade_em)}${disp.ip_ultimo?(' · '+disp.ip_ultimo):''}</div></div>`).join('')
+      ? d.dispositivos.map(disp=>`<div style="padding:0.45rem 0.65rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.3rem;background:var(--bg-input);font-size:0.78rem;${disp.ativo?'':'opacity:0.55'}"><div><strong>${escHtml(disp.nome_amigavel||'?')}</strong> (${disp.tipo}) ${disp.ativo?'':' — inativo'}</div><div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.15rem">Último acesso: ${dataFmt(disp.ultimo_acesso)}${disp.ip_primeiro_acesso?(' · primeiro IP '+disp.ip_primeiro_acesso):''}</div></div>`).join('')
       : '<p style="color:var(--text-muted);font-size:0.78rem">Nenhum dispositivo registrado.</p>';
 
     const telsHtml = d.telefones.length
