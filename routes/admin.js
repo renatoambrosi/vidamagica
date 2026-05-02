@@ -18,6 +18,9 @@ const { autenticarPainel } = require('../middleware/autenticar');
 const {
   invalidarConfigCache, invalidarCategoriasCache,
 } = require('../core/gateway');
+const {
+  arquivarUsuario, desarquivarUsuario, apagarUsuarioPermanente,
+} = require('../core/usuarios');
 
 // ── Middleware: só admin pode usar tudo aqui (escopo='admin')
 router.use(autenticarPainel('admin'));
@@ -268,6 +271,7 @@ router.get('/usuarios', async (req, res) => {
     const r = await poolCore.query(
       `SELECT id, nome, email, telefone, telefone_formatado,
               email_verificado, foto_url, origem_cadastro,
+              arquivada, arquivada_em, arquivada_por,
               criado_em, atualizado_em
          FROM usuarios
         WHERE ${where}
@@ -292,6 +296,7 @@ router.get('/usuarios/:id', async (req, res) => {
     const u = await poolCore.query(
       `SELECT id, nome, email, telefone, telefone_formatado,
               email_verificado, foto_url, origem_cadastro,
+              arquivada, arquivada_em, arquivada_por, arquivada_motivo,
               criado_em, atualizado_em
          FROM usuarios WHERE id=$1`, [id]);
     if (!u.rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
@@ -429,6 +434,68 @@ router.post('/usuarios/:id/telefones/:telId/desvincular', async (req, res) => {
   } catch (err) {
     console.error('❌ /telefones/desvincular:', err.message);
     res.status(500).json({ error: 'Erro ao desvincular' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 11. USUÁRIOS — ARQUIVAR (soft delete, reversível)
+// Marca arquivada=TRUE + revoga sessões. Dados permanecem.
+// ════════════════════════════════════════════════════════════
+
+router.post('/usuarios/:id/arquivar', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { motivo } = req.body || {};
+    const u = await poolCore.query(`SELECT id, arquivada FROM usuarios WHERE id=$1`, [id]);
+    if (!u.rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
+    if (u.rows[0].arquivada) return res.status(400).json({ error: 'Conta já está arquivada' });
+
+    await arquivarUsuario(id, { por: 'admin', motivo: motivo || null });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ /usuarios/arquivar:', err.message);
+    res.status(500).json({ error: 'Erro ao arquivar' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 12. USUÁRIOS — DESARQUIVAR
+// ════════════════════════════════════════════════════════════
+
+router.post('/usuarios/:id/desarquivar', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const u = await poolCore.query(`SELECT id, arquivada FROM usuarios WHERE id=$1`, [id]);
+    if (!u.rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
+    if (!u.rows[0].arquivada) return res.status(400).json({ error: 'Conta já está ativa' });
+
+    await desarquivarUsuario(id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ /usuarios/desarquivar:', err.message);
+    res.status(500).json({ error: 'Erro ao desarquivar' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 13. USUÁRIOS — APAGAR PERMANENTEMENTE (DELETE em cascata)
+// Operação irreversível. Cabe ao frontend confirmar 2x antes.
+// ════════════════════════════════════════════════════════════
+
+router.delete('/usuarios/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const u = await poolCore.query(`SELECT id, nome, telefone FROM usuarios WHERE id=$1`, [id]);
+    if (!u.rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    const apagado = await apagarUsuarioPermanente(id);
+    if (!apagado) return res.status(500).json({ error: 'Falha ao apagar' });
+
+    console.warn(`⚠️ [admin] CONTA APAGADA PERMANENTEMENTE: ${u.rows[0].nome || '(sem nome)'} / ${u.rows[0].telefone}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ /usuarios DELETE:', err.message);
+    res.status(500).json({ error: 'Erro ao apagar' });
   }
 });
 
