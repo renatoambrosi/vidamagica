@@ -1224,3 +1224,83 @@ body.teclado-aberto .bottom-nav {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ── Modal de notificações ── */
+.notif-modal {
+  position: fixed; inset: 0; z-index: 9999;
+  display: none;
+  align-items: center; justify-content: center;
+  padding: 1.5rem;
+}
+.notif-modal[aria-hidden="false"] { display: flex; }
+.notif-modal-overlay {
+  position: absolute; inset: 0;
+  background: rgba(30, 22, 12, 0.55);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  animation: notifFadeIn 0.25s ease;
+}
+.notif-modal-card {
+  position: relative;
+  max-width: 360px; width: 100%;
+  background: linear-gradient(180deg, #FFFAF0 0%, #F8EFD8 100%);
+  border: 1px solid rgba(200,146,42,0.22);
+  border-radius: 22px;
+  padding: 2rem 1.6rem 1.5rem;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(60, 40, 10, 0.32);
+  animation: notifPop 0.3s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes notifFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes notifPop    { from { opacity: 0; transform: scale(0.88) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+.notif-modal-icone {
+  width: 64px; height: 64px;
+  margin: 0 auto 1rem;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #C8922A 0%, #E0AE45 100%);
+  border-radius: 50%;
+  box-shadow: 0 6px 20px rgba(200,146,42,0.42);
+}
+.notif-modal-icone svg { width: 30px; height: 30px; stroke: #FFFAF0; }
+
+.notif-modal-titulo {
+  margin: 0 0 0.7rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: #3A2D14;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.notif-modal-texto {
+  margin: 0 0 1.6rem;
+  font-size: 0.92rem;
+  color: var(--texto);
+  line-height: 1.55;
+  font-family: var(--font-body);
+}
+.notif-modal-acoes {
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+.notif-modal-btn {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  -webkit-appearance: none; appearance: none;
+  transition: transform 0.12s, opacity 0.15s;
+}
+.notif-modal-btn:active { transform: scale(0.97); }
+.notif-modal-btn.primario {
+  background: linear-gradient(135deg, #C8922A 0%, #B07F1F 100%);
+  color: #FFFAF0;
+  box-shadow: 0 4px 14px rgba(200,146,42,0.35);
+}
+.notif-modal-btn.secundario {
+  background: transparent;
+  color: var(--texto-mute);
+  font-size: 0.85rem;
+}
