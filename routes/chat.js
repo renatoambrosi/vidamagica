@@ -203,11 +203,13 @@ routerAluna.get('/conversa', async (req, res) => {
       [conv.id]
     );
 
-    // Marca msgs da Suellen como lidas (aluna abriu o chat)
+    // REGRA: aluna LENDO (abrindo a conversa) marca as mensagens do atendimento
+    // como lidas. O ✓✓ azul aparece pra Suellen/suporte em TEMPO REAL via WebSocket.
+    // (Outro lado é diferente: atendimento só marca lida ao RESPONDER — ver POST.)
     const lidas = await poolMensagens.query(
       `UPDATE chat_mensagens SET lida=TRUE, lida_em=NOW()
-       WHERE conversa_id=$1 AND remetente='suellen' AND lida=FALSE
-       RETURNING id`,
+        WHERE conversa_id=$1 AND remetente IN ('suellen','suporte') AND lida=FALSE
+       RETURNING id, remetente, lida_em`,
       [conv.id]
     );
     await poolMensagens.query(
@@ -215,12 +217,12 @@ routerAluna.get('/conversa', async (req, res) => {
       [conv.id]
     );
 
+    // Emite WebSocket pro painel de atendimento (Suellen + suporte usam o mesmo painel).
+    // O frontend filtra pela conversa_id e atualiza visual em tempo real.
     if (lidas.rows.length > 0) {
-      emitirParaSuellen('mensagens_lidas', {
-        conversa_id: conv.id,
-        ids: lidas.rows.map(x => x.id),
-        por: 'aluna',
-      });
+      const lidaEm = lidas.rows[0].lida_em;
+      const ids = lidas.rows.map(r => r.id);
+      emitirParaSuellen('mensagens_lidas', { conversa_id: conv.id, ids, lida_em: lidaEm, por: 'aluna' });
     }
 
     res.json({
@@ -296,20 +298,36 @@ routerAluna.post('/mensagem', async (req, res) => {
     );
     const msg = r.rows[0];
 
+    // REGRA: aluna RESPONDEU → marca todas as msgs anteriores do atendimento como lidas.
+    // (Isso é o que faz aparecer ✓✓ azul pro lado de quem mandou — Suellen ou suporte.)
+    const lidas = await poolMensagens.query(
+      `UPDATE chat_mensagens SET lida=TRUE, lida_em=NOW()
+       WHERE conversa_id=$1 AND remetente='suellen' AND lida=FALSE
+       RETURNING id`,
+      [conv.id]
+    );
+    const lidasIds = lidas.rows.map(x => x.id);
+
     await poolMensagens.query(
       `UPDATE chat_conversas SET ultima_mensagem_em=NOW(), ultima_preview=$1,
-         nao_lidas_suellen=nao_lidas_suellen+1, atualizado_em=NOW()
+         nao_lidas_suellen=nao_lidas_suellen+1, nao_lidas_aluna=0, atualizado_em=NOW()
        WHERE id=$2`,
       [preview, conv.id]
     );
 
-    emitirParaSuellen('nova_mensagem', {
+    // Eventos WS — UM ÚNICO EVENTO ATÔMICO pra evitar dessincronia visual.
+    // (Antes eram 2 eventos separados — 'mensagens_lidas' e 'nova_mensagem' — e o
+    //  frontend renderizava em frames diferentes, fazendo o ✓✓ azul aparecer DEPOIS
+    //  da mensagem nova. Agora vai tudo num só.)
+    emitirParaSuellen('resposta_aluna_e_lidas', {
       conversa_id:   conv.id,
       conversa_tipo: tipoChat,
       usuario_id:    req.usuario.sub,
       nome:          req.usuario.nome,
       plano_chat:    conv.plano_chat,
       mensagem:      msg,
+      lidas_ids:     lidasIds,           // pintar ✓✓ azul nessas mensagens
+      lidas_por:     'aluna',
       preview,
       tempo: 'agora',
     });
@@ -334,6 +352,36 @@ routerAluna.post('/mensagem', async (req, res) => {
     });
   } catch (err) {
     console.error('[ChatAluna] POST mensagem:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/chat/marcar-lidas  body: { tipo_chat }
+// Disparado quando aluna está com chat aberto e recebe msg nova via WS — marca
+// como lida instantaneamente (sem precisar fechar/reabrir o chat).
+routerAluna.post('/marcar-lidas', async (req, res) => {
+  try {
+    const tipo = (req.body?.tipo_chat === 'suporte') ? 'suporte' : 'suellen';
+    const conv = await getOuCriarConversa(req.usuario.sub, tipo);
+
+    const lidas = await poolMensagens.query(
+      `UPDATE chat_mensagens SET lida=TRUE, lida_em=NOW()
+        WHERE conversa_id=$1 AND remetente IN ('suellen','suporte') AND lida=FALSE
+       RETURNING id, lida_em`,
+      [conv.id]
+    );
+    await poolMensagens.query(
+      `UPDATE chat_conversas SET nao_lidas_aluna=0 WHERE id=$1`, [conv.id]
+    );
+
+    if (lidas.rows.length > 0) {
+      const lidaEm = lidas.rows[0].lida_em;
+      const ids = lidas.rows.map(r => r.id);
+      emitirParaSuellen('mensagens_lidas', { conversa_id: conv.id, ids, lida_em: lidaEm, por: 'aluna' });
+    }
+    res.json({ success: true, marcadas: lidas.rows.length });
+  } catch (err) {
+    console.error('[ChatAluna] /marcar-lidas:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -652,14 +700,19 @@ routerAtendimento.post('/mensagem', async (req, res) => {
       updateParams
     );
 
-    // 5. Eventos WS
-    emitirParaAluna(conv.usuario_id, 'nova_mensagem', { mensagem: msg, conversa_id });
+    // 5. Eventos WS — UM ÚNICO EVENTO ATÔMICO por destinatário.
+    //    Evita dessincronia visual: ✓✓ azul + msg nova chegam juntos no mesmo
+    //    payload, frontend processa numa única atualização de DOM.
+    emitirParaAluna(conv.usuario_id, 'resposta_atendimento_e_lidas', {
+      conversa_id,
+      mensagem:  msg,
+      lidas_ids: lidasIds,            // pintar ✓✓ azul nessas msgs (das aluna)
+      lidas_por: 'atendimento',
+    });
+    // Eco pro próprio painel (atualiza UI da Suellen / suporte que estão na conv)
     if (lidasIds.length > 0) {
-      emitirParaAluna(conv.usuario_id, 'mensagens_lidas', {
-        conversa_id, ids: lidasIds, por: 'suellen',
-      });
       emitirParaSuellen('mensagens_lidas', {
-        conversa_id, ids: lidasIds, por: 'suellen',
+        conversa_id, ids: lidasIds, por: ident,
       });
     }
 
