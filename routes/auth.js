@@ -20,6 +20,7 @@ const {
   buscarUsuarioPorTelefone, buscarUsuarioPorId, criarOuAtualizarUsuario, atualizarUsuario,
   criarOTP, validarOTP, limparOTPsExpirados,
   criarMagicToken, validarMagicToken,
+  criarSolicitacaoAcesso, buscarSolicitacaoPorToken,
   upsertDispositivo, listarDispositivosUsuario, revogarDispositivo,
   criarSessao, buscarSessaoPorRefreshToken, renovarSessao,
   revogarSessao, revogarTodasSessoesUsuario,
@@ -376,6 +377,87 @@ router.post('/login-magic', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ /login-magic:', err.message);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// ──────────────────────────────────────────────────────────
+// 3.6. PREPARAR ACESSO (botão "Solicite entrar pelo seu Whatsapp")
+// Gera token de 5min, retorna {token, wa_url, mensagem_pre}
+// Aluna toca → abre wa.me com texto contendo o token → manda zap
+// Webhook do Evolution recebe → valida token + telefone → enfileira magic link
+// ──────────────────────────────────────────────────────────
+
+const NUMERO_COMUNIDADE = process.env.WA_COMUNIDADE_NUMERO || '5562999884411';
+
+router.post('/preparar-acesso', async (req, res) => {
+  try {
+    const { telefone } = req.body;
+    if (!telefone) return res.status(400).json({ error: 'Telefone obrigatório' });
+
+    const tel = formatarTelefone(telefone);
+    if (!tel || tel.length < 12 || tel.length > 14) {
+      return res.status(400).json({ error: 'Telefone inválido' });
+    }
+
+    // Rate limit por telefone (impede abuse)
+    if (!checarRate(`prep-acesso:${tel}`, 5, 60000)) {
+      return res.status(429).json({ error: 'Muitas tentativas. Aguarde 1 minuto.' });
+    }
+
+    const sol = await criarSolicitacaoAcesso(tel, 5);
+
+    const mensagemPre =
+      `Quero entrar no Vida Mágica\n` +
+      `Solicitação de Magic Link · ${sol.token}`;
+
+    const waUrl = `https://wa.me/${NUMERO_COMUNIDADE}?text=${encodeURIComponent(mensagemPre)}`;
+
+    res.json({
+      success: true,
+      token: sol.token,
+      wa_url: waUrl,
+      expira_em: sol.expira_em,
+      ttl_segundos: 300,
+    });
+  } catch (err) {
+    console.error('❌ /preparar-acesso:', err.message);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// ──────────────────────────────────────────────────────────
+// 3.7. AGUARDANDO (polling do frontend)
+// Frontend chama a cada 2s pra saber se o webhook já recebeu o zap dela.
+// Status:
+//   'aguardando' → token existe, ainda não usado, dentro do prazo
+//   'enviado'    → token foi usado, magic link já foi mandado pra ela
+//   'expirado'   → token venceu sem ser usado
+//   'invalido'   → token não existe (sumiu ou nunca foi criado)
+// ──────────────────────────────────────────────────────────
+
+router.get('/aguardando/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    if (!token) return res.status(400).json({ error: 'Token obrigatório' });
+
+    const sol = await buscarSolicitacaoPorToken(token);
+    if (!sol) return res.json({ status: 'invalido' });
+
+    if (sol.usado) {
+      return res.json({
+        status: 'enviado',
+        webhook_recebido_em: sol.webhook_recebido_em,
+      });
+    }
+
+    if (new Date(sol.expira_em) <= new Date()) {
+      return res.json({ status: 'expirado' });
+    }
+
+    res.json({ status: 'aguardando' });
+  } catch (err) {
+    console.error('❌ /aguardando:', err.message);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
