@@ -1227,14 +1227,27 @@ async function abrirDetalheUsuario(id) {
       : '<p style="color:var(--text-muted);font-size:0.78rem">Nenhum telefone histórico.</p>';
 
     document.getElementById('us-modal-body').innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;margin-bottom:1rem">
-        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Nome</label><div style="margin-top:0.2rem">${escHtml(d.usuario.nome||'—')}</div></div>
-        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">E-mail</label><div style="margin-top:0.2rem">${escHtml(d.usuario.email||'—')} ${d.usuario.email_verificado?'<span style="color:#7DD87E;font-size:0.7rem">✓</span>':''}</div></div>
-        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Telefone principal</label><div style="margin-top:0.2rem">${d.usuario.telefone_formatado||d.usuario.telefone||'—'}</div></div>
-        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Origem do cadastro</label><div style="margin-top:0.2rem">${d.usuario.origem_cadastro||'—'}</div></div>
-        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Cadastro</label><div style="margin-top:0.2rem;font-size:0.8rem">${dataFmt(d.usuario.criado_em)}</div></div>
-        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Última atualização</label><div style="margin-top:0.2rem;font-size:0.8rem">${dataFmt(d.usuario.atualizado_em)}</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;margin-bottom:0.8rem">
+        <div>
+          <label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Nome</label>
+          <input id="us-edit-nome" type="text" value="${escHtml(d.usuario.nome||'')}" placeholder="Sem nome" style="width:100%;margin-top:0.25rem;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.7rem;color:var(--text-light);font-family:inherit;font-size:0.85rem;outline:none">
+        </div>
+        <div>
+          <label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">E-mail ${d.usuario.email_verificado?'<span style="color:#7DD87E;font-size:0.7rem;margin-left:0.2rem">verificado ✓</span>':''}</label>
+          <input id="us-edit-email" type="email" value="${escHtml(d.usuario.email||'')}" placeholder="Sem e-mail" style="width:100%;margin-top:0.25rem;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.7rem;color:var(--text-light);font-family:inherit;font-size:0.85rem;outline:none">
+        </div>
+        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Telefone principal</label><div style="margin-top:0.45rem;font-size:0.85rem">${d.usuario.telefone_formatado||d.usuario.telefone||'—'}</div></div>
+        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Origem do cadastro</label><div style="margin-top:0.45rem;font-size:0.85rem">${d.usuario.origem_cadastro||'—'}</div></div>
+        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Cadastro</label><div style="margin-top:0.45rem;font-size:0.8rem">${dataFmt(d.usuario.criado_em)}</div></div>
+        <div><label style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em">Última atualização</label><div style="margin-top:0.45rem;font-size:0.8rem">${dataFmt(d.usuario.atualizado_em)}</div></div>
       </div>
+
+      <div style="display:flex;gap:0.5rem;margin-bottom:0.4rem;align-items:center">
+        <button class="btn btn-primary btn-sm" onclick="salvarEdicaoUsuario('${id}')" id="btn-salvar-us">💾 Salvar alterações</button>
+        <span id="us-edit-feedback" style="font-size:0.75rem;color:var(--text-muted)"></span>
+      </div>
+
+      <p style="font-size:0.7rem;color:var(--text-muted);margin:0 0 0.3rem">O telefone só pode ser trocado pela própria usuária no app dela.</p>
 
       <div style="margin-top:1.2rem"><h4 style="font-family:var(--font-display);color:var(--color-gold-light);margin:0 0 0.5rem;font-size:0.95rem">📞 Telefones (${d.telefones.length})</h4>${telsHtml}</div>
 
@@ -1247,6 +1260,39 @@ async function abrirDetalheUsuario(id) {
       </div>`;
   } catch (e) {
     document.getElementById('us-modal-body').innerHTML = `<p style="color:#F09090">Erro: ${e.message}</p>`;
+  }
+}
+
+async function salvarEdicaoUsuario(id) {
+  const nome  = (document.getElementById('us-edit-nome').value  || '').trim();
+  const email = (document.getElementById('us-edit-email').value || '').trim();
+  const btn = document.getElementById('btn-salvar-us');
+  const fb  = document.getElementById('us-edit-feedback');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  fb.textContent = '';
+  try {
+    const r = await fetch(`${API}/api/admin/usuarios/${id}`, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body:JSON.stringify({ nome, email }),
+    });
+    const d = await r.json();
+    if (r.ok) {
+      toast('✓ Alterações salvas');
+      // Atualiza a lista por trás (sem fechar o modal)
+      carregarUsuarios(document.getElementById('us-busca').value.trim());
+      fb.textContent = 'Salvo às ' + new Date().toLocaleTimeString('pt-BR');
+      fb.style.color = '#7DD87E';
+    } else {
+      // Mensagem específica pra duplicata, pra qualquer outro caso usa msg do backend
+      fb.textContent = '✕ ' + (d.error || 'Erro ao salvar');
+      fb.style.color = '#F09090';
+    }
+  } catch (_) {
+    fb.textContent = '✕ Erro de conexão';
+    fb.style.color = '#F09090';
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Salvar alterações';
   }
 }
 
