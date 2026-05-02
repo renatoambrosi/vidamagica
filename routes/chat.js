@@ -203,6 +203,23 @@ routerAluna.get('/conversa', async (req, res) => {
       [conv.id]
     );
 
+    // Reações de todas as mensagens dessa conversa, agregadas por mensagem
+    const reacoesQ = await poolMensagens.query(
+      `SELECT mensagem_id, emoji, autor_tipo, autor_id
+         FROM chat_reacoes WHERE conversa_id=$1`,
+      [conv.id]
+    );
+    const reacoesPorMsg = {};
+    for (const r of reacoesQ.rows) {
+      if (!reacoesPorMsg[r.mensagem_id]) reacoesPorMsg[r.mensagem_id] = {};
+      if (!reacoesPorMsg[r.mensagem_id][r.emoji]) {
+        reacoesPorMsg[r.mensagem_id][r.emoji] = { count: 0, autores: [] };
+      }
+      reacoesPorMsg[r.mensagem_id][r.emoji].count++;
+      reacoesPorMsg[r.mensagem_id][r.emoji].autores.push({ tipo: r.autor_tipo, id: r.autor_id });
+    }
+    msgs.rows.forEach(m => { m.reacoes = reacoesPorMsg[m.id] || {}; });
+
     // REGRA: aluna LENDO (abrindo a conversa) marca as mensagens do atendimento
     // como lidas. O ✓✓ azul aparece pra Suellen/suporte em TEMPO REAL via WebSocket.
     // (Outro lado é diferente: atendimento só marca lida ao RESPONDER — ver POST.)
@@ -601,6 +618,23 @@ routerAtendimento.get('/conversa/:id', async (req, res) => {
       [req.params.id]
     );
 
+    // Reações agregadas por mensagem
+    const reacoesQ = await poolMensagens.query(
+      `SELECT mensagem_id, emoji, autor_tipo, autor_id
+         FROM chat_reacoes WHERE conversa_id=$1`,
+      [req.params.id]
+    );
+    const reacoesPorMsg = {};
+    for (const r of reacoesQ.rows) {
+      if (!reacoesPorMsg[r.mensagem_id]) reacoesPorMsg[r.mensagem_id] = {};
+      if (!reacoesPorMsg[r.mensagem_id][r.emoji]) {
+        reacoesPorMsg[r.mensagem_id][r.emoji] = { count: 0, autores: [] };
+      }
+      reacoesPorMsg[r.mensagem_id][r.emoji].count++;
+      reacoesPorMsg[r.mensagem_id][r.emoji].autores.push({ tipo: r.autor_tipo, id: r.autor_id });
+    }
+    msgs.rows.forEach(m => { m.reacoes = reacoesPorMsg[m.id] || {}; });
+
     const pacotes = await poolMensagens.query(
       `SELECT * FROM chat_pacotes WHERE usuario_id=$1 ORDER BY ativado_em DESC`,
       [conv.usuario_id]
@@ -910,8 +944,113 @@ routerAtendimento.post('/push-subscribe', async (req, res) => {
 });
 
 // ════════════════════════════════════════════════════════════
-// EXPORTS
+// REAÇÕES DE MENSAGEM (modelo Slack: várias por pessoa permitidas)
 // ════════════════════════════════════════════════════════════
+
+// Toggle reação: se já existe, remove; se não, adiciona.
+// Retorna o estado final agregado da mensagem (todas as reações dela).
+async function toggleReacao({ mensagemId, autorTipo, autorId, emoji }) {
+  const msg = await poolMensagens.query(
+    `SELECT m.id, m.conversa_id, m.usuario_id, c.tipo AS conv_tipo
+       FROM chat_mensagens m
+       JOIN chat_conversas c ON c.id = m.conversa_id
+      WHERE m.id=$1`, [mensagemId]
+  );
+  if (!msg.rows.length) throw new Error('Mensagem não encontrada');
+  const conversa_id = msg.rows[0].conversa_id;
+  const aluna_id = msg.rows[0].usuario_id;
+
+  // Verifica se a reação já existe (autor_id NULL pra atendimento)
+  const idMatch = autorTipo === 'aluna' ? `autor_id=$3` : `autor_id IS NULL`;
+  const params = autorTipo === 'aluna'
+    ? [mensagemId, autorTipo, autorId, emoji]
+    : [mensagemId, autorTipo, emoji];
+  const emojiParamIdx = autorTipo === 'aluna' ? '$4' : '$3';
+
+  const existe = await poolMensagens.query(
+    `SELECT id FROM chat_reacoes
+      WHERE mensagem_id=$1 AND autor_tipo=$2 AND ${idMatch} AND emoji=${emojiParamIdx}`,
+    params
+  );
+
+  let acao;
+  if (existe.rows.length) {
+    await poolMensagens.query(`DELETE FROM chat_reacoes WHERE id=$1`, [existe.rows[0].id]);
+    acao = 'removida';
+  } else {
+    await poolMensagens.query(
+      `INSERT INTO chat_reacoes (mensagem_id, conversa_id, autor_tipo, autor_id, emoji)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [mensagemId, conversa_id, autorTipo, autorTipo === 'aluna' ? autorId : null, emoji]
+    );
+    acao = 'adicionada';
+  }
+
+  // Estado agregado: { emoji: { count, autores: [{tipo, id}] } }
+  const todas = await poolMensagens.query(
+    `SELECT emoji, autor_tipo, autor_id FROM chat_reacoes WHERE mensagem_id=$1`,
+    [mensagemId]
+  );
+  const agregado = {};
+  for (const r of todas.rows) {
+    if (!agregado[r.emoji]) agregado[r.emoji] = { count: 0, autores: [] };
+    agregado[r.emoji].count++;
+    agregado[r.emoji].autores.push({ tipo: r.autor_tipo, id: r.autor_id });
+  }
+
+  // Emite WS pros 2 lados em tempo real
+  const payload = {
+    conversa_id,
+    mensagem_id: mensagemId,
+    emoji,
+    acao,
+    autor_tipo: autorTipo,
+    reacoes: agregado,
+  };
+  emitirParaAluna(aluna_id, 'reacao_atualizada', payload);
+  emitirParaSuellen('reacao_atualizada', payload);
+
+  return { acao, reacoes: agregado };
+}
+
+// POST /api/chat/reacao  body: { mensagem_id, emoji }   (aluna)
+routerAluna.post('/reacao', async (req, res) => {
+  const { mensagem_id, emoji } = req.body || {};
+  if (!mensagem_id || !emoji) return res.status(400).json({ error: 'mensagem_id e emoji obrigatórios' });
+  try {
+    const r = await toggleReacao({
+      mensagemId: parseInt(mensagem_id, 10),
+      autorTipo: 'aluna',
+      autorId: req.usuario.sub,
+      emoji,
+    });
+    res.json({ success: true, ...r });
+  } catch (err) {
+    console.error('[ChatAluna] /reacao:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/atendimento/reacao  body: { mensagem_id, emoji, identidade }
+routerAtendimento.post('/reacao', async (req, res) => {
+  const { mensagem_id, emoji, identidade } = req.body || {};
+  if (!mensagem_id || !emoji) return res.status(400).json({ error: 'mensagem_id e emoji obrigatórios' });
+  const ident = (identidade === 'equipe') ? 'equipe' : 'suellen';
+  try {
+    const r = await toggleReacao({
+      mensagemId: parseInt(mensagem_id, 10),
+      autorTipo: ident,
+      autorId: null,
+      emoji,
+    });
+    res.json({ success: true, ...r });
+  } catch (err) {
+    console.error('[ChatAtend] /reacao:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 
 module.exports = {
   routerAluna,
