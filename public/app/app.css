@@ -897,36 +897,95 @@ body.teclado-aberto .bottom-nav {
 .msg-imagem img { width: 100%; display: block; }
 .msg-data-sep { align-self: center; text-align: center; margin: 0.75rem 0; font-family: var(--font-display); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--texto-fraco); }
 
-/* Context menu */
+/* ── Context menu novo: barra de emojis + ações ── */
 .msg-ctx-menu {
   position: fixed; z-index: 200;
-  background: var(--vidro-forte);
-  border: 1px solid var(--vidro-borda-hi);
-  border-radius: var(--radius-md);
-  padding: 0.3rem 0;
-  box-shadow: var(--sombra-forte);
-  min-width: 160px;
+  background: rgba(255, 250, 240, 0.92);
+  border: 1px solid rgba(200,146,42,0.18);
+  border-radius: 18px;
+  padding: 0;
+  box-shadow: 0 12px 36px rgba(60, 40, 10, 0.22);
   display: none;
-  backdrop-filter: blur(20px);
+  overflow: hidden;
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  animation: ctxMenuPop 0.18s ease-out;
 }
 .msg-ctx-menu.visivel { display: block; }
-.msg-ctx-item {
-  display: flex; align-items: center; gap: 0.6rem;
-  padding: 0.55rem 0.95rem;
-  font-size: 0.82rem;
+@keyframes ctxMenuPop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+
+.msg-ctx-emojis {
+  display: flex; align-items: center; gap: 0.15rem;
+  padding: 0.35rem 0.4rem;
+  border-bottom: 1px solid rgba(200,146,42,0.12);
+}
+.msg-ctx-emoji {
+  width: 38px; height: 38px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: transparent; outline: none;
+  font-size: 1.3rem;
+  border-radius: 50%;
+  cursor: pointer; padding: 0;
+  transition: transform 0.12s ease, background 0.12s;
+  -webkit-appearance: none; appearance: none;
+}
+.msg-ctx-emoji:active { transform: scale(0.85); background: rgba(200,146,42,0.18); }
+.msg-ctx-emoji-mais {
+  font-size: 1.1rem !important;
+  font-weight: 600;
+  color: var(--ouro);
+  background: rgba(200,146,42,0.12);
+}
+
+.msg-ctx-acoes { display: flex; }
+.msg-ctx-acao {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  gap: 0.45rem;
+  padding: 0.7rem 0.5rem;
+  font-size: 0.85rem; font-family: var(--font-ui);
   color: var(--texto);
+  border: none; background: transparent; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+}
+.msg-ctx-acao:active { background: rgba(200,146,42,0.10); }
+.msg-ctx-acao + .msg-ctx-acao { border-left: 1px solid rgba(200,146,42,0.10); }
+.msg-ctx-acao svg { width: 17px; height: 17px; stroke: var(--ouro); }
+
+/* ── Reações abaixo da bolha ── */
+.msg-reacoes {
+  display: flex; flex-wrap: wrap; gap: 0.25rem;
+  margin-top: 0.2rem;
+  padding: 0 0.35rem;
+}
+.msg-wrap.aluna .msg-reacoes { justify-content: flex-end; }
+.msg-reacao-chip {
+  display: inline-flex; align-items: center; gap: 0.2rem;
+  padding: 0.18rem 0.45rem;
+  background: rgba(255, 250, 240, 0.85);
+  border: 1px solid rgba(200,146,42,0.22);
+  border-radius: 999px;
+  font-size: 0.85rem; line-height: 1;
   cursor: pointer;
-  font-family: var(--font-ui);
-  user-select: none;
-  -webkit-user-select: none;
+  user-select: none; -webkit-user-select: none;
+  transition: transform 0.12s, background 0.12s;
 }
-.msg-ctx-item:hover { background: rgba(200,146,42,0.12); }
-.msg-ctx-item svg {
-  width: 16px; height: 16px;
-  stroke: var(--texto-mute);
-  fill: none; stroke-width: 1.8;
-  stroke-linecap: round; stroke-linejoin: round;
+.msg-reacao-chip:active { transform: scale(0.92); background: rgba(200,146,42,0.18); }
+.msg-reacao-chip .cnt {
+  font-size: 0.7rem; color: var(--texto-mute);
+  font-weight: 600; font-family: var(--font-ui);
 }
+
+/* ── Escala automática quando msg é só emoji ── */
+.msg-bolha-emoji {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0.1rem 0.2rem !important;
+}
+.msg-bolha-emoji::before, .msg-bolha-emoji::after { display: none !important; }
+.msg-bolha-emoji-big   { font-size: 3.4rem; line-height: 1.1; }
+.msg-bolha-emoji-med   { font-size: 2.1rem; line-height: 1.15; }
+.msg-bolha-emoji-sm    { font-size: 1.5rem; line-height: 1.2; }
 
 /* Reply bar */
 .reply-bar {
