@@ -459,7 +459,7 @@ router.put('/perfil', autenticar, async (req, res) => {
     if (nome) campos.nome = nome.trim();
     if (email) campos.email = email.trim().toLowerCase();
     if (senha) {
-      if (senha.length < 8) return res.status(400).json({ error: 'Senha mínima: 8 caracteres' });
+      if (senha.length < 6) return res.status(400).json({ error: 'Senha mínima: 6 caracteres' });
       campos.senha_hash = await bcrypt.hash(senha, 12);
     }
 
