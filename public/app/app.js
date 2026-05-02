@@ -952,12 +952,19 @@ function conectarChatWs() {
       // Processa as 2 coisas no mesmo tick de JS pra evitar dessincronia visual.
       if (data.evento === 'resposta_atendimento_e_lidas') {
         const convId = data.conversa_id;
+        console.log('[CHECK-DEBUG] resposta_atendimento_e_lidas chegou', {
+          chatConv_id: chatConv?.id,
+          conv_id_evento: convId,
+          lidas_ids: data.lidas_ids,
+          batem: chatConv && convId === chatConv.id,
+        });
         // 1º — pinta ✓✓ dourado nas mensagens antigas (que viraram lidas)
         if (chatConv && convId === chatConv.id && Array.isArray(data.lidas_ids)) {
           data.lidas_ids.forEach(id => {
             const msg = mensagensAtuais.find(m => m.id === id);
-            if (msg) { msg.lida = true; msg.entregue = true; }
             const checkEl = document.querySelector(`.msg-checks[data-msg-id="${id}"]`);
+            console.log('[CHECK-DEBUG] tentando marcar', { id, msg_achada: !!msg, checkEl_achado: !!checkEl });
+            if (msg) { msg.lida = true; msg.entregue = true; }
             if (checkEl) {
               checkEl.classList.remove('enviada', 'entregue');
               checkEl.classList.add('lida');
