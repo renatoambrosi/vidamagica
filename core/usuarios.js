@@ -370,11 +370,11 @@ async function historicoSementes(usuario_id) {
 // Apenas admin tem o botão "Apagar permanentemente" (DELETE em cascata).
 
 async function arquivarUsuario(id, { por = 'admin', motivo = null } = {}) {
-  // Marca arquivada=TRUE. Revoga todas as sessões pra forçar logout em tudo.
-  // Mantém todos os dados intactos pra auditoria e possível desarquivação.
+  // Marca arquivada=TRUE + status='arquivada'. Revoga todas as sessões.
   await poolCore.query(
     `UPDATE usuarios
         SET arquivada=TRUE,
+            status='arquivada',
             arquivada_em=NOW(),
             arquivada_por=$2,
             arquivada_motivo=$3,
@@ -389,9 +389,11 @@ async function arquivarUsuario(id, { por = 'admin', motivo = null } = {}) {
 }
 
 async function desarquivarUsuario(id) {
+  // Volta pra 'ativa' se já tinha telefone_validado_em, senão 'incompleta'
   await poolCore.query(
     `UPDATE usuarios
         SET arquivada=FALSE,
+            status=CASE WHEN telefone_validado_em IS NOT NULL THEN 'ativa' ELSE 'incompleta' END,
             arquivada_em=NULL,
             arquivada_por=NULL,
             arquivada_motivo=NULL,
@@ -410,12 +412,67 @@ async function apagarUsuarioPermanente(id) {
   return r.rowCount > 0;
 }
 
+// ── ATIVAÇÃO DE CONTA ─────────────────────────────────────
+// Conta nasce 'incompleta' por várias origens (Kiwify webhook, manual admin,
+// teste, cadastro_direto). Vira 'ativa' SOMENTE quando aluna prova ter o
+// telefone na mão — tocando magic link OU mandando zap pelo /auth.
+//
+// Login senha de conta 'incompleta' é REJEITADO (quem nunca validou telefone
+// não pode entrar — segurança contra abuso de cadastros falsos).
+async function marcarComoAtiva(id) {
+  await poolCore.query(
+    `UPDATE usuarios
+        SET status='ativa',
+            telefone_validado_em=COALESCE(telefone_validado_em, NOW()),
+            atualizado_em=NOW()
+      WHERE id=$1 AND status<>'arquivada'`,
+    [id]
+  );
+}
+
+// ── TROCA DE TELEFONE PRINCIPAL ──────────────────────────
+// Move o atual pra telefones_historicos.ativo=TRUE (preserva histórico)
+// e instala o novo em usuarios.telefone / telefone_formatado.
+// Sem validação de duplicata — admin tem controle total. Aluna que faz
+// pelo app dela passa por validação via magic no número novo.
+async function trocarTelefonePrincipal(usuarioId, novoTelefone, novoTelefoneFormatado) {
+  const u = await poolCore.query(
+    `SELECT telefone, telefone_formatado FROM usuarios WHERE id=$1`, [usuarioId]);
+  if (!u.rows.length) throw new Error('Usuário não encontrado');
+
+  const tel_atual_raw = u.rows[0].telefone;
+  const tel_atual_fmt = u.rows[0].telefone_formatado;
+
+  // Se é igual, não faz nada
+  if (tel_atual_raw === novoTelefone) return;
+
+  // 1. Move atual pra histórico (se ainda não está lá)
+  if (tel_atual_raw) {
+    await poolCore.query(
+      `INSERT INTO telefones_historicos (usuario_id, telefone, telefone_formatado, origem, ativo)
+       VALUES ($1, $2, $3, 'admin_trocou', TRUE)
+       ON CONFLICT DO NOTHING`,
+      [usuarioId, tel_atual_raw, tel_atual_fmt]
+    );
+  }
+
+  // 2. Atualiza usuario com o novo
+  await poolCore.query(
+    `UPDATE usuarios
+        SET telefone=$1, telefone_formatado=$2, atualizado_em=NOW()
+      WHERE id=$3`,
+    [novoTelefone, novoTelefoneFormatado || novoTelefone, usuarioId]
+  );
+}
+
 module.exports = {
   buscarUsuarioPorTelefone,
   buscarUsuarioPorTelefoneComOrigem,
   arquivarUsuario,
   desarquivarUsuario,
   apagarUsuarioPermanente,
+  marcarComoAtiva,
+  trocarTelefonePrincipal,
   buscarUsuarioPorId,
   criarOuAtualizarUsuario,
   atualizarUsuario,
