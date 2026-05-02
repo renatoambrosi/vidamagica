@@ -111,6 +111,35 @@ async function initCore() {
     await c.query(`UPDATE usuarios SET email=NULL WHERE email IS NOT NULL AND TRIM(email)=''`);
     await c.query(`UPDATE usuarios SET cpf=NULL WHERE cpf IS NOT NULL AND TRIM(cpf)=''`);
 
+    // Limpar DUPLICATAS REAIS antes de criar índice único.
+    // Mantém a conta mais RECENTE de cada grupo, deleta as antigas.
+    // (regra: criação mais nova = a que tem dados mais completos do trabalho atual)
+    const dupEmails = await c.query(`
+      SELECT LOWER(email) AS email_norm, ARRAY_AGG(id ORDER BY criado_em DESC) AS ids
+        FROM usuarios
+       WHERE email IS NOT NULL
+       GROUP BY LOWER(email)
+      HAVING COUNT(*) > 1
+    `);
+    for (const row of dupEmails.rows) {
+      const [manter, ...apagar] = row.ids;
+      console.warn(`⚠ Email duplicado "${row.email_norm}" — mantém ${manter}, apaga ${apagar.length} antiga(s)`);
+      await c.query(`DELETE FROM usuarios WHERE id = ANY($1::uuid[])`, [apagar]);
+    }
+
+    const dupCpfs = await c.query(`
+      SELECT cpf, ARRAY_AGG(id ORDER BY criado_em DESC) AS ids
+        FROM usuarios
+       WHERE cpf IS NOT NULL
+       GROUP BY cpf
+      HAVING COUNT(*) > 1
+    `);
+    for (const row of dupCpfs.rows) {
+      const [manter, ...apagar] = row.ids;
+      console.warn(`⚠ CPF duplicado "${row.cpf}" — mantém ${manter}, apaga ${apagar.length} antiga(s)`);
+      await c.query(`DELETE FROM usuarios WHERE id = ANY($1::uuid[])`, [apagar]);
+    }
+
     // Índice único em CPF (parcial — permite vários NULLs, bloqueia duplicata real)
     await c.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_cpf_unique ON usuarios(cpf) WHERE cpf IS NOT NULL`);
     // Índice único em email (parcial — mesmo motivo)
