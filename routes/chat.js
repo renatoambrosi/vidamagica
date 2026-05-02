@@ -296,7 +296,18 @@ routerAluna.post('/mensagem', async (req, res) => {
       [conv.id, req.usuario.sub, tipo, conteudo || null, url || null, reply_to_id || null,
        replyDenorm.conteudo, replyDenorm.remetente, replyDenorm.identidade]
     );
-    const msg = r.rows[0];
+    let msg = r.rows[0];
+
+    // ✓✓ ENTREGUE: se atendimento está com WS conectado, marca entregue na hora.
+    const atendimentoOnline = wsClients.has('suellen');
+    if (atendimentoOnline) {
+      const upd = await poolMensagens.query(
+        `UPDATE chat_mensagens SET entregue=TRUE, entregue_em=NOW()
+          WHERE id=$1 RETURNING entregue, entregue_em`,
+        [msg.id]
+      );
+      msg = { ...msg, ...upd.rows[0] };
+    }
 
     // REGRA: aluna RESPONDEU → marca todas as msgs anteriores do atendimento como lidas.
     // (Isso é o que faz aparecer ✓✓ azul pro lado de quem mandou — Suellen ou suporte.)
@@ -674,7 +685,18 @@ routerAtendimento.post('/mensagem', async (req, res) => {
       [conversa_id, conv.usuario_id, ident, tipo, conteudo || null, url || null, reply_to_id || null,
        replyDenorm.conteudo, replyDenorm.remetente, replyDenorm.identidade]
     );
-    const msg = r.rows[0];
+    let msg = r.rows[0];
+
+    // ✓✓ ENTREGUE: se aluna está com WS conectado, marca entregue na hora.
+    const alunaOnline = wsClients.has(`aluna:${conv.usuario_id}`);
+    if (alunaOnline) {
+      const upd = await poolMensagens.query(
+        `UPDATE chat_mensagens SET entregue=TRUE, entregue_em=NOW()
+          WHERE id=$1 RETURNING entregue, entregue_em`,
+        [msg.id]
+      );
+      msg = { ...msg, ...upd.rows[0] };
+    }
 
     const preview = conteudo ? conteudo.substring(0, 80)
                   : (tipo === 'imagem' ? '📷 Imagem' : '🎤 Áudio');
