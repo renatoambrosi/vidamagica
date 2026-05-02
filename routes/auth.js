@@ -19,11 +19,12 @@ const { poolCore } = require('../db');
 const {
   buscarUsuarioPorTelefone, buscarUsuarioPorId, criarOuAtualizarUsuario, atualizarUsuario,
   criarOTP, validarOTP, limparOTPsExpirados,
+  criarMagicToken, validarMagicToken,
   upsertDispositivo, listarDispositivosUsuario, revogarDispositivo,
   criarSessao, buscarSessaoPorRefreshToken, renovarSessao,
   revogarSessao, revogarTodasSessoesUsuario,
 } = require('../core/usuarios');
-const { enviarTexto: enviarWhatsAppDireto } = require('../core/whatsapp');
+const { enfileirarAtendimento } = require('../core/gateway');
 const { gerarAccessToken, autenticar } = require('../middleware/autenticar');
 
 // ── HELPERS ───────────────────────────────────────────────
@@ -60,22 +61,6 @@ function nomearDispositivo(ua = '') {
 
 function getIP(req) {
   return req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip;
-}
-
-async function enviarOTPWhatsApp(telefone, codigo, nome) {
-  if (process.env.NODE_ENV !== 'production') {
-    console.log(`[DEV] OTP para ${telefone}: ${codigo}`);
-  }
-  const saudacao = nome ? `Olá, ${nome.split(' ')[0]}!` : 'Olá!';
-  const mensagem = `${saudacao} 🔐\n\nSeu código de acesso ao *Vida Mágica* é:\n\n*${codigo}*\n\nVálido por 10 minutos. Não compartilhe com ninguém.\n\n— Vida Mágica`;
-  try {
-    await enviarWhatsAppDireto(telefone, mensagem);
-    console.log(`✅ OTP enviado para ${telefone}`);
-    return true;
-  } catch (err) {
-    console.error(`❌ Erro ao enviar OTP:`, err.message);
-    return false;
-  }
 }
 
 async function enviarOTPEmail(email, codigo, nome) {
@@ -191,17 +176,51 @@ router.post('/solicitar-otp', async (req, res) => {
     if (!telefone) return res.status(400).json({ error: 'Telefone obrigatório' });
 
     const tel = formatarTelefone(telefone);
-    if (!checarRate(`otp:${tel}`, 3, 60000)) {
+    if (!checarRate(`magic:${tel}`, 3, 60000)) {
       return res.status(429).json({ error: 'Muitas tentativas. Aguarde 1 minuto.' });
     }
 
-    const usuario = await criarOuAtualizarUsuario({ telefone: tel, telefone_formatado: tel });
-    const codigo = gerarOTP();
-    await criarOTP(tel, codigo, 'whatsapp', 10);
-    await enviarOTPWhatsApp(tel, codigo, usuario.nome);
+    // Busca usuário (NÃO cria se não existir — frontend mostra "criar conta")
+    const usuario = await buscarUsuarioPorTelefone(tel);
+    if (!usuario) {
+      return res.status(404).json({
+        error: 'Não encontramos sua conta com esse telefone.',
+        code: 'CONTA_NAO_EXISTE',
+      });
+    }
+
+    // Decide template: primeiro acesso (boas-vindas) vs login normal
+    // Critério: se usuário existe mas ainda não tem nome+email+senha = primeiro acesso
+    // (cadastro veio incompleto de Kiwify/teste e ela ainda não completou)
+    const cadastroIncompleto = !usuario.nome || !usuario.email || !usuario.senha_hash;
+    const tipoMagic = cadastroIncompleto ? 'magic_boas_vindas' : 'magic_login';
+    const templateMsg1 = cadastroIncompleto ? 'magic_boas_vindas_msg1' : 'magic_login_msg1';
+
+    // Gera token de magic link (válido 10 min)
+    const token = await criarMagicToken(tel, tipoMagic, 10);
+    const baseUrl = process.env.APP_URL || 'https://www.vidamagica.com.br';
+    const link = `${baseUrl}/auth?magic=${token}`;
+    const primeiroNome = (usuario.nome || '').split(' ')[0] || '';
+
+    // Enfileira no gateway: 2 mensagens (saudação + link cru)
+    await enfileirarAtendimento({
+      telefone: tel,
+      tipo: 'reativo',
+      origem: 'auth-magic-link',
+      nome: primeiroNome,
+      mensagens: [
+        { template: templateMsg1, variaveis: { nome: primeiroNome } },
+        { texto: link },
+      ],
+    });
+
     limparOTPsExpirados().catch(() => {});
 
-    res.json({ success: true, message: 'Código enviado via WhatsApp' });
+    res.json({
+      success: true,
+      message: 'Link de acesso enviado pelo WhatsApp',
+      cadastroIncompleto,
+    });
   } catch (err) {
     console.error('❌ /solicitar-otp:', err.message);
     res.status(500).json({ error: 'Erro interno' });
@@ -291,6 +310,72 @@ router.post('/verificar-otp', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ /verificar-otp:', err.message);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// ──────────────────────────────────────────────────────────
+// 3.5. LOGIN VIA MAGIC LINK
+// Aluna toca o link que recebeu no zap → cai em /auth?magic=xxx
+// Frontend chama este endpoint passando { token, device_fingerprint }
+// ──────────────────────────────────────────────────────────
+
+router.post('/login-magic', async (req, res) => {
+  try {
+    const { token, device_fingerprint } = req.body;
+    if (!token) return res.status(400).json({ error: 'Token obrigatório' });
+
+    const registro = await validarMagicToken(token, ['magic_login', 'magic_boas_vindas']);
+    if (!registro) {
+      return res.status(401).json({
+        error: 'Link inválido, já usado ou expirado.',
+        code: 'TOKEN_INVALIDO',
+      });
+    }
+
+    const tel = registro.telefone;
+    const usuario = await buscarUsuarioPorTelefone(tel);
+    if (!usuario) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    const ua = req.headers['user-agent'] || '';
+    const tipo = detectarTipo(ua);
+    const nome_amigavel = nomearDispositivo(ua);
+    const device_id = device_fingerprint?.device_id || uuidv4();
+    const ip = getIP(req);
+
+    const dispositivo = await upsertDispositivo({
+      usuario_id: usuario.id, tipo, device_id,
+      fingerprint: device_fingerprint || { ua: ua.substring(0, 200) },
+      nome_amigavel, ip,
+    });
+
+    const access_token = gerarAccessToken(usuario);
+    const refresh_token = uuidv4();
+
+    await criarSessao({
+      usuario_id: usuario.id,
+      device_id: dispositivo.id,
+      refresh_token, ip,
+      user_agent: ua.substring(0, 500),
+      diasExpiracao: 30,
+    });
+
+    // Sinaliza pro frontend se cadastro ainda está incompleto (precisa completar)
+    const cadastroIncompleto = !usuario.nome || !usuario.email || !usuario.senha_hash;
+    console.log(`✅ Magic link login: ${tel} | ${tipo} | ${nome_amigavel} | incompleto: ${cadastroIncompleto}`);
+
+    res.json({
+      success: true,
+      access_token,
+      refresh_token,
+      expires_in: 900,
+      usuario: resUsuario(usuario),
+      dispositivo: { tipo, nome: nome_amigavel },
+      cadastroIncompleto,
+      tipo_login: registro.tipo,  // 'magic_login' ou 'magic_boas_vindas'
+    });
+  } catch (err) {
+    console.error('❌ /login-magic:', err.message);
     res.status(500).json({ error: 'Erro interno' });
   }
 });
@@ -496,13 +581,22 @@ router.post('/esqueci-senha', async (req, res) => {
 
     const baseUrl = process.env.APP_URL || 'https://www.vidamagica.com.br';
     const link = `${baseUrl}/auth?token=${resetToken}`;
-    const nome = usuario.nome ? usuario.nome.split(' ')[0] : 'Olá';
-    const mensagem = `${nome}! 🔐\n\nVocê solicitou a redefinição de senha do *Vida Mágica*.\n\nClique no link para criar uma nova senha:\n\n${link}\n\n_Válido por 30 minutos. Se não foi você, ignore._\n\n— Vida Mágica`;
+    const primeiroNome = usuario.nome ? usuario.nome.split(' ')[0] : '';
 
+    // Enfileira no gateway: 2 mensagens (saudação via template + link cru)
     try {
-      await enviarWhatsAppDireto(usuario.telefone_formatado, mensagem);
+      await enfileirarAtendimento({
+        telefone: usuario.telefone_formatado,
+        tipo: 'reativo',
+        origem: 'auth-reset-senha',
+        nome: primeiroNome,
+        mensagens: [
+          { template: 'reset_senha_msg1', variaveis: { nome: primeiroNome } },
+          { texto: link },
+        ],
+      });
     } catch (e) {
-      console.error('❌ Erro ao enviar reset:', e.message);
+      console.error('❌ Erro ao enfileirar reset:', e.message);
     }
 
     res.json({ success: true });
