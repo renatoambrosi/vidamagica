@@ -105,6 +105,12 @@ async function initCore() {
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS cpf VARCHAR(14)`);
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS data_nascimento DATE`);
 
+    // Antes de criar índices únicos, normalizar strings vazias pra NULL.
+    // Cadastros antigos gravavam email='' quando vazio — isso quebra o índice
+    // porque o WHERE email IS NOT NULL não filtra string vazia.
+    await c.query(`UPDATE usuarios SET email=NULL WHERE email IS NOT NULL AND TRIM(email)=''`);
+    await c.query(`UPDATE usuarios SET cpf=NULL WHERE cpf IS NOT NULL AND TRIM(cpf)=''`);
+
     // Índice único em CPF (parcial — permite vários NULLs, bloqueia duplicata real)
     await c.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_cpf_unique ON usuarios(cpf) WHERE cpf IS NOT NULL`);
     // Índice único em email (parcial — mesmo motivo)
