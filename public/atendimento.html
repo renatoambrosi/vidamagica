@@ -575,6 +575,9 @@ ul, ol { list-style: none; }
   overflow-y: auto;
   padding: 0.75rem 0.95rem;
   display: flex; flex-direction: column; gap: 0.4rem;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
 }
 .chat-msgs::-webkit-scrollbar { width: 4px; }
 .chat-msgs::-webkit-scrollbar-thumb { background: var(--vidro-borda); border-radius: 2px; }
@@ -754,36 +757,130 @@ ul, ol { list-style: none; }
   filter: drop-shadow(0 0 3px rgba(200,146,42,0.5));
 }
 
+/* ── Context menu novo: barra de emojis + ações ── */
 .msg-ctx-menu {
   position: fixed; z-index: 200;
-  background: var(--vidro-forte);
-  border: 1px solid var(--vidro-borda-hi);
-  border-radius: var(--r-md);
-  padding: 0.3rem 0;
-  box-shadow: var(--sombra-forte);
-  min-width: 160px;
+  background: rgba(255, 250, 240, 0.92);
+  border: 1px solid rgba(200,146,42,0.18);
+  border-radius: 18px;
+  padding: 0;
+  box-shadow: 0 12px 36px rgba(60, 40, 10, 0.22);
   display: none;
-  backdrop-filter: blur(20px);
-  animation: ctx-fade 0.15s ease;
+  overflow: hidden;
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  animation: ctx-fade 0.18s ease-out;
 }
 .msg-ctx-menu.visivel { display: block; }
-@keyframes ctx-fade { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
-.msg-ctx-item {
-  display: flex; align-items: center; gap: 0.6rem;
-  padding: 0.55rem 0.95rem;
-  font-size: 0.82rem;
+@keyframes ctx-fade { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+
+.msg-ctx-emojis {
+  display: flex; align-items: center; gap: 0.15rem;
+  padding: 0.35rem 0.4rem;
+  border-bottom: 1px solid rgba(200,146,42,0.12);
+}
+.msg-ctx-emoji {
+  width: 38px; height: 38px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: transparent; outline: none;
+  font-size: 1.3rem; border-radius: 50%;
+  cursor: pointer; padding: 0;
+  transition: transform 0.12s ease, background 0.12s;
+  -webkit-appearance: none; appearance: none;
+}
+.msg-ctx-emoji:active { transform: scale(0.85); background: rgba(200,146,42,0.18); }
+.msg-ctx-emoji-mais {
+  font-size: 1.1rem !important; font-weight: 600;
+  color: var(--ouro); background: rgba(200,146,42,0.12);
+}
+.msg-ctx-acoes { display: flex; }
+.msg-ctx-acao {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  gap: 0.45rem;
+  padding: 0.7rem 0.5rem;
+  font-size: 0.85rem; font-family: var(--font-ui);
   color: var(--texto);
+  border: none; background: transparent; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+}
+.msg-ctx-acao:active { background: rgba(200,146,42,0.10); }
+.msg-ctx-acao + .msg-ctx-acao { border-left: 1px solid rgba(200,146,42,0.10); }
+.msg-ctx-acao svg { width: 17px; height: 17px; stroke: var(--ouro); }
+
+/* Reações abaixo da bolha */
+.msg-reacoes {
+  display: flex; flex-wrap: wrap; gap: 0.25rem;
+  margin-top: 0.2rem; padding: 0 0.35rem;
+}
+.msg-wrap.suellen .msg-reacoes { justify-content: flex-end; }
+.msg-reacao-chip {
+  display: inline-flex; align-items: center; gap: 0.2rem;
+  padding: 0.18rem 0.45rem;
+  background: rgba(255, 250, 240, 0.85);
+  border: 1px solid rgba(200,146,42,0.22);
+  border-radius: 999px;
+  font-size: 0.85rem; line-height: 1;
   cursor: pointer;
-  transition: background 0.12s;
-  font-family: var(--font-ui);
+  user-select: none; -webkit-user-select: none;
+  transition: transform 0.12s, background 0.12s;
 }
-.msg-ctx-item:hover { background: var(--ouro-pelicula); }
-.msg-ctx-item svg {
-  width: 16px; height: 16px;
-  stroke: var(--texto-mute);
-  fill: none; stroke-width: 1.8;
-  stroke-linecap: round; stroke-linejoin: round;
+.msg-reacao-chip:active { transform: scale(0.92); background: rgba(200,146,42,0.18); }
+.msg-reacao-chip .cnt {
+  font-size: 0.7rem; color: var(--texto-mute);
+  font-weight: 600; font-family: var(--font-ui);
 }
+
+/* Escala automática quando msg é só emoji */
+.msg-bolha-emoji {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0.1rem 0.2rem !important;
+}
+.msg-bolha-emoji::before, .msg-bolha-emoji::after { display: none !important; }
+.msg-bolha-emoji-big   { font-size: 3.4rem; line-height: 1.1; }
+.msg-bolha-emoji-med   { font-size: 2.1rem; line-height: 1.15; }
+.msg-bolha-emoji-sm    { font-size: 1.5rem; line-height: 1.2; }
+
+/* Pull-to-refresh indicator (igual app aluna) */
+.chat-pull-indicator {
+  flex-shrink: 0;
+  height: 0; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent;
+  pointer-events: none;
+  transition: height 0.18s ease;
+}
+.chat-pull-indicator-circle {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--ouro);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(200,146,42,0.35);
+  transform: scale(0) rotate(0deg);
+  transition: transform 0.18s ease;
+}
+.chat-pull-indicator-circle svg {
+  width: 18px; height: 18px;
+  stroke: white; fill: none;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.chat-pull-indicator.puxando { height: 48px; }
+.chat-pull-indicator.puxando .chat-pull-indicator-circle {
+  transform: scale(1) rotate(0deg);
+}
+.chat-pull-indicator.armado { height: 48px; }
+.chat-pull-indicator.armado .chat-pull-indicator-circle {
+  transform: scale(1.1) rotate(360deg);
+  box-shadow: 0 4px 16px rgba(200,146,42,0.55);
+}
+.chat-pull-indicator.atualizando { height: 48px; }
+.chat-pull-indicator.atualizando .chat-pull-indicator-circle {
+  transform: scale(1);
+  animation: girarRefresh 0.7s linear infinite;
+}
+@keyframes girarRefresh { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+#btn-chat-refresh.atualizando { animation: girarRefresh 0.6s linear infinite; }
 
 .reply-bar {
   display: none;
@@ -1436,15 +1533,28 @@ ul, ol { list-style: none; }
 </div>
 
 <div id="msg-ctx-menu" class="msg-ctx-menu">
-  <div class="msg-ctx-item" id="ctx-responder">
-    <svg viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
-    Responder
+  <div class="msg-ctx-emojis" id="msg-ctx-emojis">
+    <button type="button" class="msg-ctx-emoji" data-emoji="🤩">🤩</button>
+    <button type="button" class="msg-ctx-emoji" data-emoji="🎉">🎉</button>
+    <button type="button" class="msg-ctx-emoji" data-emoji="👏🏻">👏🏻</button>
+    <button type="button" class="msg-ctx-emoji" data-emoji="🙌🏻">🙌🏻</button>
+    <button type="button" class="msg-ctx-emoji" data-emoji="💛">💛</button>
+    <button type="button" class="msg-ctx-emoji" data-emoji="⚡">⚡</button>
+    <button type="button" class="msg-ctx-emoji msg-ctx-emoji-mais" id="msg-ctx-emoji-mais" aria-label="Mais emojis">+</button>
   </div>
-  <div class="msg-ctx-item" id="ctx-copiar">
-    <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-    Copiar texto
+  <div class="msg-ctx-acoes">
+    <button type="button" class="msg-ctx-acao" id="ctx-responder">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+      <span>Responder</span>
+    </button>
+    <button type="button" class="msg-ctx-acao" id="ctx-copiar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      <span>Copiar</span>
+    </button>
   </div>
 </div>
+<input type="text" id="msg-ctx-emoji-picker" inputmode="text" enterkeyhint="done"
+       style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0" aria-hidden="true">
 
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal-box">
@@ -1924,6 +2034,12 @@ function renderChat() {
         </div>
       </div>
       <div class="chat-header-acoes">
+        <button class="header-btn" id="btn-chat-refresh" title="Atualizar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+        </button>
         <button class="header-btn" id="btn-favoritar" title="${c.favoritada?'Desfavoritar':'Favoritar'}">
           <svg viewBox="0 0 24 24" fill="${c.favoritada?'var(--ouro)':'none'}" stroke="${c.favoritada?'var(--ouro)':'currentColor'}">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
@@ -2086,22 +2202,71 @@ function criarBolha(msg) {
     const bolha = document.createElement('div');
     bolha.className = 'msg-bolha';
     if (!isAluna && msg.identidade === 'equipe') bolha.classList.add('identidade-equipe');
+    // Escala automática se for só emoji
+    const analise = analisarConteudoEmoji(msg.conteudo);
+    if (analise.soEmojis && !msg.reply_to_conteudo) {
+      let escala = 'med';
+      if (analise.qtd === 1) escala = 'big';
+      else if (analise.qtd <= 3) escala = 'med';
+      else escala = 'sm';
+      bolha.classList.add('msg-bolha-emoji', `msg-bolha-emoji-${escala}`);
+    }
     bolha.innerHTML = contHtml + esc(msg.conteudo || '');
     setupCtxMenu(bolha, msg);
     wrap.appendChild(bolha);
   }
+
+  // Reações abaixo da bolha
+  const reacoesEl = renderReacoesEl(msg.reacoes);
+  if (reacoesEl) wrap.appendChild(reacoesEl);
 
   const footer = document.createElement('div');
   footer.className = 'msg-footer';
   footer.innerHTML = `<span class="msg-hora">${hora(msg.criado_em)}</span>`;
   if (!isAluna) {
     const checks = document.createElement('span');
-    checks.className = `msg-checks ${msg.lida ? 'lida' : 'entregue'}`;
+    let estado = 'enviada';
+    if (msg.lida) estado = 'lida';
+    else if (msg.entregue) estado = 'entregue';
+    checks.className = `msg-checks ${estado}`;
     checks.dataset.msgId = msg.id;
     checks.innerHTML = checkSvg();
     footer.appendChild(checks);
   }
   wrap.appendChild(footer);
+  return wrap;
+}
+
+// Detecta se a string é só emojis (zero letras/números) e quantos clusters tem
+function analisarConteudoEmoji(texto) {
+  if (!texto) return { soEmojis: false, qtd: 0 };
+  const t = texto.trim();
+  if (!t) return { soEmojis: false, qtd: 0 };
+  if (/[\p{L}\p{N}]/u.test(t)) return { soEmojis: false, qtd: 0 };
+  let qtd = 0;
+  if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+    const seg = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+    for (const _ of seg.segment(t)) qtd++;
+  } else {
+    const sem = t.replace(/\s+/g, '');
+    qtd = Array.from(sem).length;
+  }
+  return { soEmojis: qtd > 0 && qtd <= 6, qtd };
+}
+
+// Cria os chips de reação sob a bolha
+function renderReacoesEl(reacoes) {
+  if (!reacoes || !Object.keys(reacoes).length) return null;
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-reacoes';
+  for (const emoji of Object.keys(reacoes)) {
+    const r = reacoes[emoji];
+    const chip = document.createElement('span');
+    chip.className = 'msg-reacao-chip';
+    chip.dataset.emoji = emoji;
+    chip.innerHTML = `<span class="emoji">${emoji}</span>${r.count > 1 ? `<span class="cnt">${r.count}</span>` : ''}`;
+    wrap.appendChild(chip);
+  }
   return wrap;
 }
 
@@ -2256,6 +2421,63 @@ document.getElementById('ctx-copiar').addEventListener('click', () => {
   if (ctxMsgAtual?.conteudo) {
     navigator.clipboard.writeText(ctxMsgAtual.conteudo).then(() => toast('Copiado'));
   }
+  document.getElementById('msg-ctx-menu')?.classList.remove('visivel');
+});
+
+// ── REAÇÕES ──
+async function reagirNaMsg(emoji) {
+  if (!ctxMsgAtual || !emoji) return;
+  const msgId = ctxMsgAtual.id;
+  document.getElementById('msg-ctx-menu')?.classList.remove('visivel');
+  try {
+    await fetch(`${API}/api/atendimento/chat/reacao`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ mensagem_id: msgId, emoji, identidade }),
+    });
+    // O retorno via WebSocket atualiza a UI.
+  } catch (err) { console.error('[reagir]', err); }
+}
+
+document.querySelectorAll('#msg-ctx-emojis .msg-ctx-emoji[data-emoji]').forEach(btn => {
+  btn.addEventListener('click', () => reagirNaMsg(btn.dataset.emoji));
+});
+
+const _pickerInput = document.getElementById('msg-ctx-emoji-picker');
+document.getElementById('msg-ctx-emoji-mais')?.addEventListener('click', () => {
+  if (!_pickerInput) return;
+  _pickerInput.value = '';
+  _pickerInput.focus();
+});
+_pickerInput?.addEventListener('input', () => {
+  const v = _pickerInput.value.trim();
+  if (!v) return;
+  let primeiro = v;
+  if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+    const seg = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+    for (const s of seg.segment(v)) { primeiro = s.segment; break; }
+  } else {
+    primeiro = Array.from(v)[0] || v;
+  }
+  _pickerInput.value = '';
+  _pickerInput.blur();
+  reagirNaMsg(primeiro);
+});
+
+// Toggle clicando no chip já existente
+document.addEventListener('click', (e) => {
+  const chip = e.target.closest('.msg-reacao-chip');
+  if (!chip) return;
+  const wrap = chip.closest('.msg-wrap');
+  if (!wrap) return;
+  const msgId = parseInt(wrap.dataset.id, 10);
+  const emoji = chip.dataset.emoji;
+  if (!msgId || !emoji) return;
+  fetch(`${API}/api/atendimento/chat/reacao`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({ mensagem_id: msgId, emoji, identidade }),
+  }).catch(err => console.error('[toggle reacao]', err));
 });
 
 async function enviarTexto() {
@@ -2592,13 +2814,29 @@ function conectarWs() {
         if (convAtual && data.conversa_id === convAtual.id) {
           (data.ids || []).forEach(id => {
             const msg = mensagens.find(m => m.id === id);
-            if (msg) msg.lida = true;
+            if (msg) { msg.lida = true; msg.entregue = true; }
             const checkEl = document.querySelector(`.msg-checks[data-msg-id="${id}"]`);
             if (checkEl) {
-              checkEl.className = 'msg-checks lida';
-              checkEl.innerHTML = checkSvg();
+              checkEl.classList.remove('enviada', 'entregue');
+              checkEl.classList.add('lida');
             }
           });
+        }
+      }
+      if (data.evento === 'reacao_atualizada') {
+        if (convAtual && data.conversa_id === convAtual.id) {
+          const msg = mensagens.find(m => m.id === data.mensagem_id);
+          if (msg) msg.reacoes = data.reacoes;
+          const wrap = document.querySelector(`.msg-wrap[data-id="${data.mensagem_id}"]`);
+          if (wrap) {
+            const antigo = wrap.querySelector('.msg-reacoes');
+            if (antigo) antigo.remove();
+            const novo = renderReacoesEl(data.reacoes);
+            if (novo) {
+              const footer = wrap.querySelector('.msg-footer');
+              if (footer) wrap.insertBefore(novo, footer); else wrap.appendChild(novo);
+            }
+          }
         }
       }
     } catch (err) { console.error('[WS]', err); }
@@ -2766,6 +3004,143 @@ async function iniciar() {
     setTimeout(() => document.getElementById('login-tel').focus(), 200);
   }
 })();
+
+// ════════════════════════════════════════════════════════════
+// REFRESH DO CHAT (botão ↻ + pull-to-refresh + visibilitychange)
+// ════════════════════════════════════════════════════════════
+
+let _refreshLockA = false;
+
+function getOuCriarPullIndicator() {
+  let indic = document.getElementById('chat-pull-indicator');
+  if (indic) return indic;
+  const msgsEl = document.getElementById('chat-msgs');
+  if (!msgsEl || !msgsEl.parentNode) return null;
+  indic = document.createElement('div');
+  indic.className = 'chat-pull-indicator';
+  indic.id = 'chat-pull-indicator';
+  indic.innerHTML = `
+    <span class="chat-pull-indicator-circle">
+      <svg viewBox="0 0 24 24">
+        <polyline points="23 4 23 10 17 10"/>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+      </svg>
+    </span>`;
+  msgsEl.parentNode.insertBefore(indic, msgsEl);
+  return indic;
+}
+
+// origem: 'botao' | 'pull' | 'push'
+async function recarregarChatAtual(origem = 'botao') {
+  if (_refreshLockA) return;
+  if (!convAtual || !convAtual.id) return;
+  _refreshLockA = true;
+
+  const indic = getOuCriarPullIndicator();
+  const btn = document.getElementById('btn-chat-refresh');
+  const t0 = Date.now();
+  const TEMPO_MIN = 700;
+
+  if (indic) {
+    indic.classList.remove('puxando', 'armado');
+    indic.classList.add('atualizando');
+  }
+  if (origem === 'botao' && btn) btn.classList.add('atualizando');
+
+  try {
+    const r = await fetch(`${API}/api/atendimento/chat/conversa/${convAtual.id}`, { headers: authHeader() });
+    if (!r.ok) throw new Error();
+    const dados = await r.json();
+    convAtual = { ...dados.conversa, pacotes: dados.pacotes };
+    mensagens = dados.mensagens || [];
+    renderMensagens();
+  } catch (err) {
+    console.error('[recarregarChatAtual]', err);
+  } finally {
+    const elapsed = Date.now() - t0;
+    if (elapsed < TEMPO_MIN) await new Promise(r => setTimeout(r, TEMPO_MIN - elapsed));
+    if (indic) indic.classList.remove('atualizando');
+    if (btn) btn.classList.remove('atualizando');
+    _refreshLockA = false;
+  }
+}
+
+// Listener delegado — funciona mesmo quando o botão é re-renderizado
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#btn-chat-refresh')) {
+    recarregarChatAtual('botao');
+  }
+});
+
+// Pull-to-refresh — só na área de mensagens
+(function setupPullToRefreshAtend() {
+  document.addEventListener('touchstart', (e) => {
+    const msgsEl = document.getElementById('chat-msgs');
+    if (!msgsEl || !e.target.closest('#chat-msgs')) return;
+    if (msgsEl.scrollTop > 0) { msgsEl._pulling = false; return; }
+    msgsEl._startY = e.touches[0].clientY;
+    msgsEl._pulling = true;
+    msgsEl._armed = false;
+    const indic = getOuCriarPullIndicator();
+    if (indic) {
+      indic.classList.remove('puxando', 'armado', 'atualizando');
+      const circle = indic.querySelector('.chat-pull-indicator-circle');
+      if (circle) circle.style.transform = '';
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (e) => {
+    const msgsEl = document.getElementById('chat-msgs');
+    if (!msgsEl || !msgsEl._pulling) return;
+    const diff = e.touches[0].clientY - msgsEl._startY;
+    if (diff <= 0) return;
+    const indic = getOuCriarPullIndicator();
+    if (!indic) return;
+    const circle = indic.querySelector('.chat-pull-indicator-circle');
+    indic.classList.add('puxando');
+    const LIMITE_ARMAR = 70;
+    const ratio = Math.min(diff / LIMITE_ARMAR, 1);
+    const rot = ratio * 360;
+    const scale = 0.4 + (0.6 * ratio);
+    if (diff < LIMITE_ARMAR) {
+      if (circle) circle.style.transform = `scale(${scale}) rotate(${rot}deg)`;
+      if (msgsEl._armed) {
+        msgsEl._armed = false;
+        indic.classList.remove('armado');
+      }
+    } else {
+      if (circle) circle.style.transform = '';
+      if (!msgsEl._armed) {
+        msgsEl._armed = true;
+        indic.classList.add('armado');
+      }
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', async () => {
+    const msgsEl = document.getElementById('chat-msgs');
+    if (!msgsEl || !msgsEl._pulling) return;
+    msgsEl._pulling = false;
+    const indic = document.getElementById('chat-pull-indicator');
+    const circle = indic?.querySelector('.chat-pull-indicator-circle');
+    if (msgsEl._armed) {
+      if (circle) circle.style.transform = '';
+      indic?.classList.remove('armado', 'puxando');
+      await recarregarChatAtual('pull');
+    } else {
+      indic?.classList.remove('puxando');
+      if (circle) circle.style.transform = '';
+    }
+  });
+})();
+
+// Volta o foco pra aba/janela com chat aberto → reconecta WS + push refresh
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  if (typeof conectarWs === 'function') conectarWs();
+  if (!convAtual) return;
+  recarregarChatAtual('push');
+});
 </script>
 </body>
 </html>
