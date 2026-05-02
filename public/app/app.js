@@ -1537,4 +1537,124 @@ function setupVisualViewport() {
   conectarChatWs();
   carregarResumoChats();
   setInterval(carregarResumoChats, 30000);
+
+  // Registra service worker e checa se deve mostrar modal de notificação
+  registrarServiceWorker();
+  setTimeout(checarMostrarModalNotif, 2500);
 })();
+
+// ════════════════════════════════════════════════════════════
+// PUSH NOTIFICATIONS DA ALUNA
+// ════════════════════════════════════════════════════════════
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+async function registrarServiceWorker() {
+  if (!('serviceWorker' in navigator)) return null;
+  try {
+    const reg = await navigator.serviceWorker.register('/sw-app.js', { scope: '/' });
+    return reg;
+  } catch (err) {
+    console.warn('[SW] Falha:', err);
+    return null;
+  }
+}
+
+async function checarMostrarModalNotif() {
+  // Não mostra se navegador não suporta
+  if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  // Já está permitido? Garante que tem subscription registrada no servidor
+  if (Notification.permission === 'granted') {
+    garantirSubscriptionRegistrada().catch(() => {});
+    return;
+  }
+  // Já foi recusado pelo browser? Não pergunta
+  if (Notification.permission === 'denied') return;
+
+  // Consulta backend pra saber se mostra o modal (cooldown de 7 dias se "agora não")
+  try {
+    const r = await fetch(`${API}/api/chat/notif-status`, { headers: authHeader() });
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.mostrar_modal) abrirModalNotif();
+  } catch (_) {}
+}
+
+function abrirModalNotif() {
+  const modal = document.getElementById('notif-modal');
+  if (!modal) return;
+  modal.setAttribute('aria-hidden', 'false');
+}
+
+function fecharModalNotif() {
+  const modal = document.getElementById('notif-modal');
+  if (!modal) return;
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+async function garantirSubscriptionRegistrada() {
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    const keyResp = await fetch(`${API}/api/chat/vapid-public-key`);
+    const { key } = await keyResp.json();
+    if (!key) return;
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(key),
+    });
+  }
+  await fetch(`${API}/api/chat/push-subscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeader() },
+    body: JSON.stringify({
+      endpoint: sub.endpoint,
+      keys: sub.toJSON().keys,
+      userAgent: navigator.userAgent,
+    }),
+  });
+}
+
+document.getElementById('notif-modal-permitir')?.addEventListener('click', async () => {
+  const btn = document.getElementById('notif-modal-permitir');
+  btn.disabled = true;
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') {
+      await garantirSubscriptionRegistrada();
+      toast('✓ Notificações ativadas');
+      fecharModalNotif();
+    } else {
+      // browser recusou — registra status e fecha
+      await fetch(`${API}/api/chat/notif-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify({ status: 'recusada' }),
+      });
+      fecharModalNotif();
+    }
+  } catch (err) {
+    console.error('[notif permit]', err);
+    toast('Erro ao ativar', 'err');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('notif-modal-agora-nao')?.addEventListener('click', async () => {
+  try {
+    await fetch(`${API}/api/chat/notif-status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ status: 'agora_nao' }),
+    });
+  } catch (_) {}
+  fecharModalNotif();
+});
