@@ -243,19 +243,19 @@
       <div class="usuario-detalhe" id="usuario-detalhe"></div>
       <button class="btn-trocar" onclick="trocarUsuario()">Não sou eu →</button>
     </div>
-    <div id="bloco-titulo-novo"><p class="titulo">Bem-vinda <em>de volta</em></p><p class="subtitulo">Receba um link de acesso direto pelo seu WhatsApp.</p><div class="divisor"></div></div>
-    <div id="bloco-titulo-lembrado" style="display:none"><p class="subtitulo" style="margin-bottom:1.25rem">Receba um link de acesso direto pelo seu WhatsApp.</p></div>
+    <div id="bloco-titulo-novo"><p class="titulo">Bem-vinda <em>de volta</em></p><p class="subtitulo">Sua entrada no Vida Mágica acontece pelo seu WhatsApp.</p><div class="divisor"></div></div>
+    <div id="bloco-titulo-lembrado" style="display:none"><p class="subtitulo" style="margin-bottom:1.25rem">Sua entrada no Vida Mágica acontece pelo seu WhatsApp.</p></div>
     <div class="msg erro" id="erro-login"></div>
 
     <!-- ── Modo MAGIC LINK (padrão) ────────────────────────────────── -->
     <div id="modo-magic">
       <div class="campo" id="campo-id-magic">
-        <label>WhatsApp</label>
+        <label>Seu WhatsApp</label>
         <div class="input-wrap"><input id="input-tel-magic" type="tel" inputmode="numeric" placeholder="(__) _____-____" autocomplete="tel" maxlength="20"></div>
       </div>
 
-      <button class="btn-cta" id="btn-magic" onclick="solicitarMagicLink()">
-        <span>Receber link pelo WhatsApp</span>
+      <button class="btn-cta" id="btn-magic" onclick="solicitarAcesso()">
+        <span>Solicite entrar pelo seu Whatsapp</span>
         <span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
       </button>
 
@@ -284,21 +284,52 @@
       <button class="btn-toggle-modo" onclick="alternarModoLogin('magic')" type="button" style="background:none;border:none;color:var(--muted);font-family:var(--font-b);font-size:.78rem;text-decoration:underline;text-underline-offset:3px;padding:.85rem 0 .2rem;cursor:pointer;width:100%;text-align:center;transition:color .2s">▲ Voltar pro link via WhatsApp</button>
     </div>
 
-    <!-- ── Tela "magic link enviado" ──────────────────────────────── -->
-    <div id="modo-magic-enviado" style="display:none;text-align:center;padding:1.5rem 0 .5rem">
-      <div style="width:64px;height:64px;border-radius:50%;background:rgba(200,146,42,0.12);border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;margin-bottom:1.1rem">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--gold-light)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+    <!-- ── Estado: AGUARDANDO (token gerado, esperando aluna mandar zap) ── -->
+    <div id="modo-aguardando" style="display:none;text-align:center;padding:1.5rem 0 .5rem">
+      <div style="width:64px;height:64px;border-radius:50%;background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.28);display:inline-flex;align-items:center;justify-content:center;margin-bottom:1.1rem;animation:pulse-wa 2s ease-in-out infinite">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#7DD87E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
         </svg>
       </div>
-      <p style="font-family:var(--font-h);font-size:1.05rem;color:var(--gold-light);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:0 0 .8rem">Pronto!</p>
-      <p style="font-family:var(--font-b);font-size:.88rem;color:var(--pearl);line-height:1.6;margin:0 0 .4rem;opacity:.9">Em instantes você receberá um link de acesso <strong style="color:var(--gold-light)">pelo WhatsApp</strong>.</p>
-      <p style="font-family:var(--font-b);font-size:.75rem;color:var(--muted);margin:1rem 0 0;line-height:1.5">Toque no link pra entrar direto. O link expira em 10 minutos.<br>Verifique também o WhatsApp Business.</p>
+      <p style="font-family:var(--font-h);font-size:1.05rem;color:#7DD87E;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:0 0 .8rem">Te esperamos no WhatsApp</p>
+      <p style="font-family:var(--font-b);font-size:.88rem;color:var(--pearl);line-height:1.6;margin:0 0 .4rem;opacity:.9">Abrimos uma conversa pra você no WhatsApp. <br>Toque <strong style="color:#7DD87E">Enviar</strong> lá pra começar.</p>
+      <p style="font-family:var(--font-b);font-size:.75rem;color:var(--muted);margin:1rem 0 0;line-height:1.5">Assim que recebermos sua mensagem, te respondemos por aqui.</p>
+      <p id="aguardando-timer" style="font-family:var(--font-b);font-size:.7rem;color:var(--muted);margin:.7rem 0 0;letter-spacing:0.04em"></p>
       <button class="btn-toggle-modo" onclick="resetarModoMagic()" type="button" style="background:none;border:none;color:var(--muted);font-family:var(--font-b);font-size:.78rem;text-decoration:underline;text-underline-offset:3px;padding:1.5rem 0 .2rem;cursor:pointer;width:100%;text-align:center">← Voltar</button>
+    </div>
+
+    <!-- ── Estado: ENVIADO (webhook recebeu o zap, animação de entrada) ── -->
+    <div id="modo-enviado" style="display:none;text-align:center;padding:1.5rem 0 .5rem">
+      <div style="width:80px;height:80px;border-radius:50%;background:radial-gradient(circle, rgba(232,201,122,0.25) 0%, rgba(200,146,42,0.05) 70%);border:1px solid var(--gold);display:inline-flex;align-items:center;justify-content:center;margin-bottom:1.2rem;animation:glow-gold 1.4s ease-in-out infinite">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--gold-light)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <p style="font-family:var(--font-h);font-size:1.15rem;color:var(--gold-light);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 .9rem">Recebemos sua mensagem ✨</p>
+      <p style="font-family:var(--font-b);font-size:.9rem;color:var(--pearl);line-height:1.65;margin:0;opacity:.92">Em instantes você recebe seu Magic Link no WhatsApp. <br>Toque no caminho que vai chegar pra entrar.</p>
+    </div>
+
+    <!-- ── Estado: EXPIRADO ────────────────────────────────────────── -->
+    <div id="modo-expirado" style="display:none;text-align:center;padding:1.5rem 0 .5rem">
+      <p style="font-family:var(--font-h);font-size:1rem;color:var(--gold-light);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:0 0 .8rem">Tempo esgotado</p>
+      <p style="font-family:var(--font-b);font-size:.88rem;color:var(--pearl);line-height:1.6;margin:0 0 1.3rem;opacity:.9">Não recebemos sua mensagem nos últimos 5 minutos. <br>Tente novamente quando quiser.</p>
+      <button class="btn-cta" onclick="resetarModoMagic()" type="button"><span>Tentar de novo</span><span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span></button>
     </div>
 
     <div class="card-foot" id="card-foot-criar">Primeira vez aqui? <button onclick="irTela('t-cad-1')">Criar conta grátis</button></div>
   </div>
+
+  <!-- Animações inline (anim já existem com outros nomes; estas são novas) -->
+  <style>
+    @keyframes pulse-wa {
+      0%,100% { transform: scale(1); opacity: 1; }
+      50%     { transform: scale(1.06); opacity: 0.9; }
+    }
+    @keyframes glow-gold {
+      0%,100% { box-shadow: 0 0 20px rgba(200,146,42,0.35), 0 0 40px rgba(200,146,42,0.18); }
+      50%     { box-shadow: 0 0 32px rgba(232,201,122,0.55), 0 0 60px rgba(200,146,42,0.32); }
+    }
+  </style>
 
   <!-- ESQUECI -->
   <div class="tela" id="t-esqueci">
@@ -627,19 +658,26 @@ aplicarMascaraBR(document.getElementById('input-id'));
 // ── ALTERNAR MODOS LOGIN (magic ↔ senha) ─────────────────────────────────────
 function alternarModoLogin(modo){
   limparMsg('erro-login');
+  // Para qualquer polling em andamento ao trocar de modo
+  if (window._aguardandoTimer)  { clearInterval(window._aguardandoTimer);  window._aguardandoTimer  = null; }
+  if (window._aguardandoTicker) { clearInterval(window._aguardandoTicker); window._aguardandoTicker = null; }
   const elMagic       = document.getElementById('modo-magic');
   const elSenha       = document.getElementById('modo-senha');
-  const elEnviado     = document.getElementById('modo-magic-enviado');
+  const elAguardando  = document.getElementById('modo-aguardando');
+  const elEnviado     = document.getElementById('modo-enviado');
+  const elExpirado    = document.getElementById('modo-expirado');
   const elFootCriar   = document.getElementById('card-foot-criar');
+  // Esconde TUDO antes de mostrar o modo certo
+  elMagic.style.display = 'none';
+  elAguardando.style.display = 'none';
+  elEnviado.style.display = 'none';
+  elExpirado.style.display = 'none';
+  elSenha.style.display = 'none';
   if (modo === 'senha'){
-    elMagic.style.display    = 'none';
-    elEnviado.style.display  = 'none';
     elSenha.style.display    = '';
     elFootCriar.style.display= 'none';
     setTimeout(() => document.getElementById('input-id')?.focus(), 50);
   } else {
-    elSenha.style.display    = 'none';
-    elEnviado.style.display  = 'none';
     elMagic.style.display    = '';
     elFootCriar.style.display= '';
     setTimeout(() => document.getElementById('input-tel-magic')?.focus(), 50);
@@ -647,18 +685,33 @@ function alternarModoLogin(modo){
 }
 
 function resetarModoMagic(){
-  document.getElementById('modo-magic-enviado').style.display = 'none';
+  // Para qualquer polling em andamento
+  if (window._aguardandoTimer)  { clearInterval(window._aguardandoTimer);  window._aguardandoTimer  = null; }
+  if (window._aguardandoTicker) { clearInterval(window._aguardandoTicker); window._aguardandoTicker = null; }
+  // Volta pra tela inicial do magic link
+  document.getElementById('modo-aguardando').style.display = 'none';
+  document.getElementById('modo-enviado').style.display = 'none';
+  document.getElementById('modo-expirado').style.display = 'none';
   document.getElementById('modo-magic').style.display = '';
   document.getElementById('input-tel-magic').value = '';
+  document.getElementById('card-foot-criar').style.display = '';
   limparMsg('erro-login');
 }
 
-// ── SOLICITAR MAGIC LINK ─────────────────────────────────────────────────────
+// ── SOLICITAR ACESSO (botão "Solicite entrar pelo seu Whatsapp") ─────────────
+// Fluxo:
+//  1. Frontend chama POST /api/auth/preparar-acesso → recebe {token, wa_url}
+//  2. Abre wa.me em nova aba (texto pré-preenchido com o token)
+//  3. Mostra tela "modo-aguardando" e começa polling em /aguardando/:token
+//  4. Polling roda a cada 2s. Quando webhook receber o zap e marcar usado=true,
+//     polling detecta → toca animação de entrada → recolhe a tela em ~3s.
+//  5. Aluna recebe link no WhatsApp e toca pra entrar. (Esse caminho é tratado
+//     pela IIFE processarMagicLinkNaURL que já existe — ?magic=xxx)
 document.getElementById('input-tel-magic').addEventListener('keydown', e => {
-  if (e.key === 'Enter') solicitarMagicLink();
+  if (e.key === 'Enter') solicitarAcesso();
 });
 
-async function solicitarMagicLink(){
+async function solicitarAcesso(){
   limparMsg('erro-login');
   const tel = (document.getElementById('input-tel-magic').value||'').trim();
   if (!tel){
@@ -666,28 +719,83 @@ async function solicitarMagicLink(){
     document.getElementById('input-tel-magic').focus();
     return;
   }
-  setLoad('btn-magic','Enviando…');
+  setLoad('btn-magic','Preparando…');
   try {
-    const r = await fetch(`${API}/api/auth/solicitar-otp`, {
+    const r = await fetch(`${API}/api/auth/preparar-acesso`, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ telefone: tel }),
     });
     const d = await r.json().catch(() => ({}));
-    if (r.ok){
-      // Esconde form, mostra confirmação
-      document.getElementById('modo-magic').style.display = 'none';
-      document.getElementById('modo-magic-enviado').style.display = '';
-    } else if (d.code === 'CONTA_NAO_EXISTE'){
-      // Conta não existe — orienta criar conta
-      mostrarErro('erro-login', 'Não encontramos sua conta. Toque em "Criar conta grátis" abaixo.');
-    } else {
-      mostrarErro('erro-login', d.error || 'Erro ao solicitar link.');
+    if (!r.ok) {
+      mostrarErro('erro-login', d.error || 'Não conseguimos preparar seu acesso. Tente novamente.');
+      return;
     }
-  } catch {
+
+    // Abre WhatsApp em nova aba (deixa o foco voltar pra esta aba se a aluna fechar)
+    window.open(d.wa_url, '_blank');
+
+    // Troca pro estado "aguardando"
+    document.getElementById('modo-magic').style.display = 'none';
+    document.getElementById('card-foot-criar').style.display = 'none';
+    document.getElementById('modo-aguardando').style.display = '';
+
+    // Inicia polling + ticker de tempo
+    iniciarPollingAguardando(d.token, d.ttl_segundos || 300);
+
+  } catch (err) {
     mostrarErro('erro-login','Falha de conexão. Tente novamente.');
   } finally {
-    resetBtn('btn-magic','Receber link pelo WhatsApp');
+    resetBtn('btn-magic','Solicite entrar pelo seu Whatsapp');
   }
+}
+
+function iniciarPollingAguardando(token, ttlSegundos){
+  // Limpa qualquer polling anterior
+  if (window._aguardandoTimer)  clearInterval(window._aguardandoTimer);
+  if (window._aguardandoTicker) clearInterval(window._aguardandoTicker);
+
+  let segundosRestantes = ttlSegundos;
+  const elTimer = document.getElementById('aguardando-timer');
+  const fmtTimer = (s) => {
+    const m = Math.floor(s/60), sec = s%60;
+    return `Tempo restante: ${m}:${String(sec).padStart(2,'0')}`;
+  };
+  elTimer.textContent = fmtTimer(segundosRestantes);
+
+  // Ticker visual a cada 1s
+  window._aguardandoTicker = setInterval(() => {
+    segundosRestantes--;
+    if (segundosRestantes <= 0) {
+      clearInterval(window._aguardandoTicker);
+      elTimer.textContent = '';
+      return;
+    }
+    elTimer.textContent = fmtTimer(segundosRestantes);
+  }, 1000);
+
+  // Polling a cada 2s no backend
+  window._aguardandoTimer = setInterval(async () => {
+    try {
+      const r = await fetch(`${API}/api/auth/aguardando/${encodeURIComponent(token)}`);
+      const d = await r.json().catch(() => ({}));
+
+      if (d.status === 'enviado') {
+        // ✨ Webhook recebeu o zap — animação de entrada
+        clearInterval(window._aguardandoTimer);  window._aguardandoTimer = null;
+        clearInterval(window._aguardandoTicker); window._aguardandoTicker = null;
+        document.getElementById('modo-aguardando').style.display = 'none';
+        document.getElementById('modo-enviado').style.display = '';
+      } else if (d.status === 'expirado' || d.status === 'invalido') {
+        clearInterval(window._aguardandoTimer);  window._aguardandoTimer = null;
+        clearInterval(window._aguardandoTicker); window._aguardandoTicker = null;
+        document.getElementById('modo-aguardando').style.display = 'none';
+        document.getElementById('modo-expirado').style.display = '';
+      }
+      // se 'aguardando', continua polling
+    } catch (_) {
+      // Erro de rede — continua tentando
+    }
+  }, 2000);
 }
 
 // ── DETECÇÃO DE MAGIC LINK NA URL (?magic=xxx) ───────────────────────────────
