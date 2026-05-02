@@ -1087,12 +1087,53 @@ async function carregarTemplates() {
 function renderTemplates() {
   const c = document.getElementById('templates-container');
   if (!templatesData.length) { c.innerHTML = '<p style="color:var(--text-muted);font-size:0.78rem">Nenhum template cadastrado.</p>'; return; }
-  c.innerHTML = templatesData.map(t => `
-    <div class="tpl-card">
-      <div class="tpl-chave">${t.chave}</div>
-      <div class="tpl-titulo">${escHtml(t.titulo||'')}</div>
-      <textarea class="tpl-textarea" data-chave="${t.chave}">${escHtml(t.texto||'')}</textarea>
-    </div>`).join('');
+
+  // Categorias com label e emoji
+  const META = {
+    acesso:     { label: 'Acesso e segurança',   emoji: '🔐', sub: 'Magic links, reset de senha, primeiro contato' },
+    cobranca:   { label: 'Cobranças do Clube',    emoji: '💰', sub: 'Mensagens de renovação e atraso' },
+    pos_venda:  { label: 'Pós-venda',              emoji: '🛒', sub: 'Boas-vindas após compra na Kiwify' },
+    convites:   { label: 'Convites',               emoji: '🎁', sub: 'Sessão de Diagnóstico e similares' },
+    otp_painel: { label: 'OTP do painel interno', emoji: '🛡️', sub: 'Códigos de acesso pra você e Suellen' },
+    outros:     { label: 'Outros',                 emoji: '📄', sub: '' },
+  };
+
+  // Agrupa por categoria
+  const grupos = {};
+  templatesData.forEach(t => {
+    const cat = t.categoria || 'outros';
+    if (!grupos[cat]) grupos[cat] = [];
+    grupos[cat].push(t);
+  });
+
+  // Ordem fixa de exibição das categorias
+  const ordem = ['acesso', 'cobranca', 'pos_venda', 'convites', 'otp_painel', 'outros'];
+
+  const html = ordem
+    .filter(cat => grupos[cat] && grupos[cat].length)
+    .map(cat => {
+      const m = META[cat] || META.outros;
+      const cards = grupos[cat].map(t => `
+        <div class="tpl-card">
+          <div class="tpl-chave">${t.chave}</div>
+          <div class="tpl-titulo">${escHtml(t.titulo||'')}</div>
+          <textarea class="tpl-textarea" data-chave="${t.chave}">${escHtml(t.texto||'')}</textarea>
+        </div>`).join('');
+      return `
+        <div style="margin-bottom:1.5rem">
+          <div style="display:flex;align-items:baseline;gap:0.55rem;padding:0.65rem 0;border-bottom:1px solid var(--border);margin-bottom:0.85rem">
+            <span style="font-size:1.05rem">${m.emoji}</span>
+            <div>
+              <div style="font-family:var(--font-display);font-weight:700;font-size:0.92rem;color:var(--color-gold-light);text-transform:uppercase;letter-spacing:0.04em">${m.label}</div>
+              ${m.sub?`<div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.1rem">${m.sub}</div>`:''}
+            </div>
+            <div style="margin-left:auto;font-size:0.7rem;color:var(--text-muted);font-family:monospace">${grupos[cat].length} template${grupos[cat].length>1?'s':''}</div>
+          </div>
+          ${cards}
+        </div>`;
+    }).join('');
+
+  c.innerHTML = html;
 }
 
 async function salvarTemplates() {
