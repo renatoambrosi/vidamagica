@@ -20,7 +20,11 @@ const {
 } = require('../core/gateway');
 const {
   arquivarUsuario, desarquivarUsuario, apagarUsuarioPermanente,
+  trocarTelefonePrincipal, marcarComoAtiva,
+  criarMagicToken,
 } = require('../core/usuarios');
+const { enfileirarAtendimento } = require('../core/gateway');
+const { formatarTelefone } = require('../core/utils');
 
 // ── Middleware: só admin pode usar tudo aqui (escopo='admin')
 router.use(autenticarPainel('admin'));
@@ -271,7 +275,8 @@ router.get('/usuarios', async (req, res) => {
     const r = await poolCore.query(
       `SELECT id, nome, email, telefone, telefone_formatado,
               email_verificado, foto_url, origem_cadastro,
-              arquivada, arquivada_em, arquivada_por,
+              status, arquivada, arquivada_em, arquivada_por,
+              telefone_validado_em,
               criado_em, atualizado_em
          FROM usuarios
         WHERE ${where}
@@ -296,7 +301,8 @@ router.get('/usuarios/:id', async (req, res) => {
     const u = await poolCore.query(
       `SELECT id, nome, email, telefone, telefone_formatado,
               email_verificado, foto_url, origem_cadastro,
-              arquivada, arquivada_em, arquivada_por, arquivada_motivo,
+              status, arquivada, arquivada_em, arquivada_por, arquivada_motivo,
+              telefone_validado_em, senha_hash IS NOT NULL AS tem_senha,
               criado_em, atualizado_em
          FROM usuarios WHERE id=$1`, [id]);
     if (!u.rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
@@ -336,58 +342,157 @@ router.get('/usuarios/:id', async (req, res) => {
 });
 
 // ════════════════════════════════════════════════════════════
-// 8.5. USUÁRIOS — EDITAR (nome e email)
-// Telefone não entra aqui — aluna troca pelo app dela.
-// Email é UNIQUE em outras contas: bloqueia se duplicado.
+// 8.5. USUÁRIOS — EDITAR (nome, email, telefone, status, origem)
+// Admin tem controle total — sem trava de duplicata, sem validação.
+// Trocar telefone move o atual pra telefones_historicos.ativo=TRUE.
 // ════════════════════════════════════════════════════════════
 
 router.put('/usuarios/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { nome, email } = req.body || {};
+    const { nome, email, telefone, status, origem_cadastro } = req.body || {};
 
-    // Aceita "limpar" um campo passando string vazia → vira null
-    const nomeNorm  = typeof nome  === 'string' ? (nome.trim()  || null) : undefined;
-    const emailNorm = typeof email === 'string' ? (email.trim().toLowerCase() || null) : undefined;
-
-    if (nomeNorm === undefined && emailNorm === undefined) {
-      return res.status(400).json({ error: 'Nada pra atualizar' });
-    }
-
-    // Conferir que o usuário existe
-    const u = await poolCore.query(`SELECT id, email FROM usuarios WHERE id=$1`, [id]);
+    // Conferir que existe
+    const u = await poolCore.query(`SELECT * FROM usuarios WHERE id=$1`, [id]);
     if (!u.rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
 
-    // Se está mudando email, checar duplicata em OUTRA conta
-    if (emailNorm !== undefined && emailNorm) {
-      const dup = await poolCore.query(
-        `SELECT id FROM usuarios WHERE LOWER(email) = $1 AND id <> $2 LIMIT 1`,
-        [emailNorm, id]
-      );
-      if (dup.rows.length) {
-        return res.status(409).json({ error: 'E-mail já cadastrado em outra conta' });
+    // ── Trocar telefone? ──
+    if (typeof telefone === 'string' && telefone.trim()) {
+      const telNovo = formatarTelefone(telefone);
+      if (telNovo && telNovo !== u.rows[0].telefone) {
+        await trocarTelefonePrincipal(id, telNovo, telNovo);
       }
     }
 
-    // Monta UPDATE dinâmico só com os campos enviados
+    // ── Atualizar outros campos ──
     const sets = [];
     const params = [];
-    if (nomeNorm  !== undefined) { params.push(nomeNorm);  sets.push(`nome=$${params.length}`); }
-    if (emailNorm !== undefined) { params.push(emailNorm); sets.push(`email=$${params.length}`); }
-    params.push(id);
+    if (typeof nome === 'string') {
+      params.push(nome.trim() || null); sets.push(`nome=$${params.length}`);
+    }
+    if (typeof email === 'string') {
+      params.push(email.trim().toLowerCase() || null); sets.push(`email=$${params.length}`);
+    }
+    if (typeof status === 'string' && ['incompleta','ativa','arquivada'].includes(status)) {
+      params.push(status); sets.push(`status=$${params.length}`);
+      // sincroniza arquivada boolean
+      if (status === 'arquivada') sets.push(`arquivada=TRUE, arquivada_em=COALESCE(arquivada_em, NOW())`);
+      if (status !== 'arquivada') sets.push(`arquivada=FALSE`);
+      // se virou ativa, registra telefone_validado_em
+      if (status === 'ativa') sets.push(`telefone_validado_em=COALESCE(telefone_validado_em, NOW())`);
+    }
+    if (typeof origem_cadastro === 'string') {
+      params.push(origem_cadastro.trim() || null); sets.push(`origem_cadastro=$${params.length}`);
+    }
 
+    if (sets.length) {
+      params.push(id);
+      await poolCore.query(
+        `UPDATE usuarios SET ${sets.join(', ')}, atualizado_em=NOW() WHERE id=$${params.length}`,
+        params
+      );
+    }
+
+    // Retorna usuario atualizado
     const r = await poolCore.query(
-      `UPDATE usuarios SET ${sets.join(', ')}, atualizado_em=NOW()
-        WHERE id=$${params.length}
-        RETURNING id, nome, email, telefone, telefone_formatado,
-                  email_verificado, foto_url, origem_cadastro,
-                  criado_em, atualizado_em`,
-      params
-    );
+      `SELECT id, nome, email, telefone, telefone_formatado,
+              email_verificado, foto_url, origem_cadastro,
+              status, arquivada, telefone_validado_em,
+              criado_em, atualizado_em
+         FROM usuarios WHERE id=$1`, [id]);
     res.json({ success: true, usuario: r.rows[0] });
   } catch (err) {
     console.error('❌ /usuarios/:id PUT:', err.message);
     res.status(500).json({ error: 'Erro ao atualizar usuário' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 8.6. USUÁRIOS — CRIAR (admin manual, sem validação)
+// Admin pode passar só telefone — resto preenche depois.
+// Conta nasce 'incompleta' (default) — vira 'ativa' quando aluna usar magic.
+// ════════════════════════════════════════════════════════════
+
+router.post('/usuarios', async (req, res) => {
+  try {
+    const { telefone, nome, email, origem_cadastro } = req.body || {};
+    if (!telefone || !String(telefone).trim()) {
+      return res.status(400).json({ error: 'Telefone é o único campo obrigatório' });
+    }
+
+    const tel = formatarTelefone(telefone);
+    const r = await poolCore.query(
+      `INSERT INTO usuarios (telefone, telefone_formatado, nome, email, origem_cadastro, status)
+       VALUES ($1, $2, $3, $4, $5, 'incompleta')
+       ON CONFLICT (telefone) DO UPDATE SET
+         nome=COALESCE(EXCLUDED.nome, usuarios.nome),
+         email=COALESCE(EXCLUDED.email, usuarios.email),
+         atualizado_em=NOW()
+       RETURNING id, nome, email, telefone, telefone_formatado, status, origem_cadastro, criado_em`,
+      [tel, tel, (nome||'').trim() || null, (email||'').trim().toLowerCase() || null, origem_cadastro || 'manual_admin']
+    );
+    res.json({ success: true, usuario: r.rows[0] });
+  } catch (err) {
+    console.error('❌ /usuarios POST:', err.message);
+    res.status(500).json({ error: 'Erro ao criar usuário' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 8.7. USUÁRIOS — ENVIAR MAGIC LINK AGORA
+// Gera magic_boas_vindas (10min) e enfileira no gateway.
+// Quando aluna tocar, login-magic ativa a conta automaticamente.
+// ════════════════════════════════════════════════════════════
+
+router.post('/usuarios/:id/enviar-magic', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const u = await poolCore.query(`SELECT id, nome, telefone_formatado, status FROM usuarios WHERE id=$1`, [id]);
+    if (!u.rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
+    if (u.rows[0].status === 'arquivada') {
+      return res.status(400).json({ error: 'Conta arquivada — desarquive primeiro' });
+    }
+
+    const tel = u.rows[0].telefone_formatado;
+    const primeiroNome = (u.rows[0].nome || '').split(' ')[0] || '';
+
+    const magicToken = await criarMagicToken(tel, 'magic_boas_vindas', 10);
+    const APP_URL = process.env.APP_URL || 'https://www.vidamagica.com.br';
+    const magicUrl = `${APP_URL}/auth?magic=${magicToken}`;
+
+    await enfileirarAtendimento({
+      telefone: tel,
+      tipo: 'reativo',
+      origem: 'admin-manual-magic',
+      nome: primeiroNome,
+      mensagens: [
+        { template: 'magic_boas_vindas_msg1', variaveis: { nome: primeiroNome } },
+        { texto: magicUrl },
+      ],
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ /usuarios/:id/enviar-magic:', err.message);
+    res.status(500).json({ error: 'Erro ao enviar magic link' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 8.8. USUÁRIOS — RESETAR SENHA (limpa senha_hash)
+// Próximo login só vai funcionar via magic link.
+// ════════════════════════════════════════════════════════════
+
+router.post('/usuarios/:id/resetar-senha', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const r = await poolCore.query(
+      `UPDATE usuarios SET senha_hash=NULL, atualizado_em=NOW() WHERE id=$1 RETURNING id`, [id]);
+    if (!r.rowCount) return res.status(404).json({ error: 'Usuário não encontrado' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ /usuarios/:id/resetar-senha:', err.message);
+    res.status(500).json({ error: 'Erro ao resetar senha' });
   }
 });
 
