@@ -580,7 +580,11 @@ function renderMensagem(msg) {
   footer.innerHTML = `<span class="msg-hora">${horaFmt(msg.criado_em)}</span>`;
   if (isAluna) {
     const checks = document.createElement('span');
-    checks.className = `msg-checks ${msg.lida ? 'lida' : 'entregue'}`;
+    // 3 estados: 'enviada' (✓), 'entregue' (✓✓ cinza), 'lida' (✓✓ azul)
+    let estado = 'enviada';
+    if (msg.lida) estado = 'lida';
+    else if (msg.entregue) estado = 'entregue';
+    checks.className = `msg-checks ${estado}`;
     checks.dataset.msgId = msg.id;
     checks.innerHTML = checkSvg();
     footer.appendChild(checks);
@@ -666,7 +670,10 @@ function criarBolhaAudio(msg) {
   footer.innerHTML = `<span class="msg-hora">${horaFmt(msg.criado_em)}</span>`;
   if (isAluna) {
     const checks = document.createElement('span');
-    checks.className = `msg-checks ${msg.lida ? 'lida' : 'entregue'}`;
+    let estado = 'enviada';
+    if (msg.lida) estado = 'lida';
+    else if (msg.entregue) estado = 'entregue';
+    checks.className = `msg-checks ${estado}`;
     checks.dataset.msgId = msg.id;
     checks.innerHTML = checkSvg();
     footer.appendChild(checks);
