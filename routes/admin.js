@@ -296,10 +296,10 @@ router.get('/usuarios/:id', async (req, res) => {
 
     const disps = await poolCore.query(
       `SELECT id, tipo, device_id, nome_amigavel, ativo,
-              ultima_atividade_em, ip_ultimo, criado_em
+              ultimo_acesso, ip_primeiro_acesso, criado_em
          FROM dispositivos
         WHERE usuario_id=$1
-     ORDER BY ultima_atividade_em DESC NULLS LAST LIMIT 20`, [id]);
+     ORDER BY ultimo_acesso DESC NULLS LAST LIMIT 20`, [id]);
 
     const tels = await poolCore.query(
       `SELECT id, telefone, telefone_formatado, origem, ativo,
@@ -328,7 +328,7 @@ router.post('/usuarios/:id/logout-tudo', async (req, res) => {
   try {
     const { id } = req.params;
     const r = await poolCore.query(
-      `UPDATE sessoes SET revogada=TRUE, revogada_em=NOW()
+      `UPDATE sessoes SET revogada=TRUE
         WHERE usuario_id=$1 AND revogada=FALSE
        RETURNING id`, [id]);
     res.json({ success: true, sessoes_revogadas: r.rowCount });
