@@ -22,6 +22,8 @@ const {
   arquivarUsuario, desarquivarUsuario, apagarUsuarioPermanente,
   trocarTelefonePrincipal, marcarComoAtiva,
   criarMagicToken,
+  normalizarCpf, validarCpf, verificarDuplicidade,
+  listarEnderecos, criarEndereco, atualizarEndereco, deletarEndereco,
 } = require('../core/usuarios');
 const { enfileirarAtendimento } = require('../core/gateway');
 const { formatarTelefone } = require('../core/utils');
@@ -275,6 +277,7 @@ router.get('/usuarios', async (req, res) => {
     const r = await poolCore.query(
       `SELECT id, nome, email, telefone, telefone_formatado,
               email_verificado, foto_url, origem_cadastro,
+              cpf, data_nascimento,
               status, arquivada, arquivada_em, arquivada_por,
               telefone_validado_em,
               criado_em, atualizado_em
@@ -301,6 +304,7 @@ router.get('/usuarios/:id', async (req, res) => {
     const u = await poolCore.query(
       `SELECT id, nome, email, telefone, telefone_formatado,
               email_verificado, foto_url, origem_cadastro,
+              cpf, data_nascimento,
               status, arquivada, arquivada_em, arquivada_por, arquivada_motivo,
               telefone_validado_em, senha_hash IS NOT NULL AS tem_senha,
               criado_em, atualizado_em
@@ -329,11 +333,14 @@ router.get('/usuarios/:id', async (req, res) => {
         WHERE usuario_id=$1
      ORDER BY ativo DESC, vinculado_em DESC`, [id]);
 
+    const enderecos = await listarEnderecos(id);
+
     res.json({
       usuario: u.rows[0],
       sessoes: ses.rows,
       dispositivos: disps.rows,
       telefones: tels.rows,
+      enderecos,
     });
   } catch (err) {
     console.error('❌ /usuarios/:id:', err.message);
@@ -350,18 +357,52 @@ router.get('/usuarios/:id', async (req, res) => {
 router.put('/usuarios/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { nome, email, telefone, status, origem_cadastro } = req.body || {};
+    const { nome, email, telefone, cpf, data_nascimento, status, origem_cadastro } = req.body || {};
 
     // Conferir que existe
     const u = await poolCore.query(`SELECT * FROM usuarios WHERE id=$1`, [id]);
     if (!u.rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
 
-    // ── Trocar telefone? ──
-    if (typeof telefone === 'string' && telefone.trim()) {
-      const telNovo = formatarTelefone(telefone);
-      if (telNovo && telNovo !== u.rows[0].telefone) {
-        await trocarTelefonePrincipal(id, telNovo, telNovo);
+    // ── Validar CPF (formato) ──
+    let cpfNorm = undefined;
+    if (typeof cpf === 'string') {
+      if (!cpf.trim()) {
+        cpfNorm = null;
+      } else {
+        cpfNorm = normalizarCpf(cpf);
+        if (!validarCpf(cpfNorm)) {
+          return res.status(400).json({ error: 'CPF inválido', code: 'CPF_INVALIDO' });
+        }
       }
+    }
+
+    // ── Validar duplicidade (telefone, email, cpf) em OUTRAS contas ──
+    const telCanonico = (typeof telefone === 'string' && telefone.trim())
+      ? formatarTelefone(telefone) : null;
+    const dup = await verificarDuplicidade({
+      usuarioIdAtual: id,
+      telefone: (telCanonico && telCanonico !== u.rows[0].telefone) ? telCanonico : null,
+      email: typeof email === 'string' && email.trim() ? email.trim() : null,
+      cpf: cpfNorm,
+    });
+    if (dup) {
+      const labels = {
+        telefone:           'Telefone já cadastrado em outra conta',
+        telefone_historico: 'Telefone já vinculado ao histórico de outra conta',
+        email:              'E-mail já cadastrado em outra conta',
+        cpf:                'CPF já cadastrado em outra conta',
+      };
+      return res.status(409).json({
+        error: labels[dup.campo] || 'Identificador já em uso',
+        campo: dup.campo,
+        conflito: dup.conflito,
+        code: 'DUPLICATA',
+      });
+    }
+
+    // ── Tudo validado: trocar telefone (se mudou) ──
+    if (telCanonico && telCanonico !== u.rows[0].telefone) {
+      await trocarTelefonePrincipal(id, telCanonico, telCanonico);
     }
 
     // ── Atualizar outros campos ──
@@ -373,12 +414,16 @@ router.put('/usuarios/:id', async (req, res) => {
     if (typeof email === 'string') {
       params.push(email.trim().toLowerCase() || null); sets.push(`email=$${params.length}`);
     }
+    if (cpfNorm !== undefined) {
+      params.push(cpfNorm); sets.push(`cpf=$${params.length}`);
+    }
+    if (typeof data_nascimento === 'string') {
+      params.push(data_nascimento.trim() || null); sets.push(`data_nascimento=$${params.length}`);
+    }
     if (typeof status === 'string' && ['incompleta','ativa','arquivada'].includes(status)) {
       params.push(status); sets.push(`status=$${params.length}`);
-      // sincroniza arquivada boolean
       if (status === 'arquivada') sets.push(`arquivada=TRUE, arquivada_em=COALESCE(arquivada_em, NOW())`);
       if (status !== 'arquivada') sets.push(`arquivada=FALSE`);
-      // se virou ativa, registra telefone_validado_em
       if (status === 'ativa') sets.push(`telefone_validado_em=COALESCE(telefone_validado_em, NOW())`);
     }
     if (typeof origem_cadastro === 'string') {
@@ -393,10 +438,10 @@ router.put('/usuarios/:id', async (req, res) => {
       );
     }
 
-    // Retorna usuario atualizado
     const r = await poolCore.query(
       `SELECT id, nome, email, telefone, telefone_formatado,
               email_verificado, foto_url, origem_cadastro,
+              cpf, data_nascimento,
               status, arquivada, telefone_validado_em,
               criado_em, atualizado_em
          FROM usuarios WHERE id=$1`, [id]);
@@ -408,32 +453,72 @@ router.put('/usuarios/:id', async (req, res) => {
 });
 
 // ════════════════════════════════════════════════════════════
-// 8.6. USUÁRIOS — CRIAR (admin manual, sem validação)
-// Admin pode passar só telefone — resto preenche depois.
-// Conta nasce 'incompleta' (default) — vira 'ativa' quando aluna usar magic.
+// 8.6. USUÁRIOS — CRIAR (admin manual)
+// Telefone obrigatório. Validação bloqueante de duplicata em
+// telefone, email e CPF (em outras contas).
+// Conta nasce 'incompleta' — vira 'ativa' quando aluna validar via magic.
 // ════════════════════════════════════════════════════════════
 
 router.post('/usuarios', async (req, res) => {
   try {
-    const { telefone, nome, email, origem_cadastro } = req.body || {};
+    const { telefone, nome, email, cpf, data_nascimento, origem_cadastro } = req.body || {};
     if (!telefone || !String(telefone).trim()) {
-      return res.status(400).json({ error: 'Telefone é o único campo obrigatório' });
+      return res.status(400).json({ error: 'Telefone é obrigatório' });
     }
 
     const tel = formatarTelefone(telefone);
+    const emailNorm = (email||'').trim().toLowerCase() || null;
+
+    // Validar CPF (formato) se foi passado
+    let cpfNorm = null;
+    if (cpf && String(cpf).trim()) {
+      cpfNorm = normalizarCpf(cpf);
+      if (!validarCpf(cpfNorm)) {
+        return res.status(400).json({ error: 'CPF inválido', code: 'CPF_INVALIDO' });
+      }
+    }
+
+    // Validar duplicidade
+    const dup = await verificarDuplicidade({
+      telefone: tel,
+      email: emailNorm,
+      cpf: cpfNorm,
+    });
+    if (dup) {
+      const labels = {
+        telefone:           'Telefone já cadastrado em outra conta',
+        telefone_historico: 'Telefone já vinculado ao histórico de outra conta',
+        email:              'E-mail já cadastrado em outra conta',
+        cpf:                'CPF já cadastrado em outra conta',
+      };
+      return res.status(409).json({
+        error: labels[dup.campo] || 'Identificador já em uso',
+        campo: dup.campo,
+        conflito: dup.conflito,
+        code: 'DUPLICATA',
+      });
+    }
+
     const r = await poolCore.query(
-      `INSERT INTO usuarios (telefone, telefone_formatado, nome, email, origem_cadastro, status)
-       VALUES ($1, $2, $3, $4, $5, 'incompleta')
-       ON CONFLICT (telefone) DO UPDATE SET
-         nome=COALESCE(EXCLUDED.nome, usuarios.nome),
-         email=COALESCE(EXCLUDED.email, usuarios.email),
-         atualizado_em=NOW()
-       RETURNING id, nome, email, telefone, telefone_formatado, status, origem_cadastro, criado_em`,
-      [tel, tel, (nome||'').trim() || null, (email||'').trim().toLowerCase() || null, origem_cadastro || 'manual_admin']
+      `INSERT INTO usuarios
+        (telefone, telefone_formatado, nome, email, cpf, data_nascimento, origem_cadastro, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'incompleta')
+       RETURNING id, nome, email, telefone, telefone_formatado, cpf, data_nascimento,
+                 status, origem_cadastro, criado_em`,
+      [tel, tel,
+       (nome||'').trim() || null,
+       emailNorm,
+       cpfNorm,
+       (data_nascimento||'').trim() || null,
+       origem_cadastro || 'manual_admin']
     );
     res.json({ success: true, usuario: r.rows[0] });
   } catch (err) {
     console.error('❌ /usuarios POST:', err.message);
+    // Backup: se algum índice único pegou no banco (race condition), retorna 409
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Identificador duplicado', code: 'DUPLICATA' });
+    }
     res.status(500).json({ error: 'Erro ao criar usuário' });
   }
 });
@@ -601,6 +686,48 @@ router.delete('/usuarios/:id', async (req, res) => {
   } catch (err) {
     console.error('❌ /usuarios DELETE:', err.message);
     res.status(500).json({ error: 'Erro ao apagar' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 14. USUÁRIOS — ENDEREÇOS (CRUD)
+// 1 aluna pode ter VÁRIOS endereços. Sem validação de duplicata.
+// ════════════════════════════════════════════════════════════
+
+router.post('/usuarios/:id/enderecos', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const u = await poolCore.query(`SELECT id FROM usuarios WHERE id=$1`, [id]);
+    if (!u.rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
+    const endereco = await criarEndereco(id, req.body || {});
+    res.json({ success: true, endereco });
+  } catch (err) {
+    console.error('❌ /enderecos POST:', err.message);
+    res.status(500).json({ error: 'Erro ao criar endereço' });
+  }
+});
+
+router.put('/usuarios/:id/enderecos/:enderecoId', async (req, res) => {
+  try {
+    const { id, enderecoId } = req.params;
+    const endereco = await atualizarEndereco(parseInt(enderecoId, 10), id, req.body || {});
+    if (!endereco) return res.status(404).json({ error: 'Endereço não encontrado' });
+    res.json({ success: true, endereco });
+  } catch (err) {
+    console.error('❌ /enderecos PUT:', err.message);
+    res.status(500).json({ error: 'Erro ao atualizar endereço' });
+  }
+});
+
+router.delete('/usuarios/:id/enderecos/:enderecoId', async (req, res) => {
+  try {
+    const { id, enderecoId } = req.params;
+    const ok = await deletarEndereco(parseInt(enderecoId, 10), id);
+    if (!ok) return res.status(404).json({ error: 'Endereço não encontrado' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ /enderecos DELETE:', err.message);
+    res.status(500).json({ error: 'Erro ao deletar endereço' });
   }
 });
 
