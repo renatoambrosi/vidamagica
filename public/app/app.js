@@ -840,20 +840,44 @@ document.getElementById('reply-fechar')?.addEventListener('click', () => {
 
 let _refreshLock = false;
 
-// Recarrega o chat SILENCIOSAMENTE (sem apagar a tela).
-// Usado tanto pelo botão ↻ quanto pelo pull-to-refresh.
-// Mostra o MESMO indicador (círculo dourado girando no topo).
-async function recarregarChatAtual() {
+// Garante que o indicador de pull existe dentro do #chat-msgs (idempotente).
+function getOuCriarPullIndicator() {
+  let indic = document.getElementById('chat-pull-indicator');
+  if (indic) return indic;
+  const msgsEl = document.getElementById('chat-msgs');
+  if (!msgsEl) return null;
+  indic = document.createElement('div');
+  indic.className = 'chat-pull-indicator';
+  indic.id = 'chat-pull-indicator';
+  indic.innerHTML = `
+    <span class="chat-pull-indicator-circle">
+      <svg viewBox="0 0 24 24">
+        <polyline points="23 4 23 10 17 10"/>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+      </svg>
+    </span>`;
+  msgsEl.appendChild(indic);
+  return indic;
+}
+
+// origem: 'botao' | 'pull' | 'push'
+//   'botao' → botão ↻ gira + indicador na tela
+//   'pull'  → só indicador (já está girando porque foi puxado)
+//   'push'  → só indicador (atualização automática via WS/visibility)
+async function recarregarChatAtual(origem = 'botao') {
   if (_refreshLock) return;
   if (!chatConv) return;
   _refreshLock = true;
 
-  // Aciona a animação do pull (mesma usada quando puxa)
-  const indic = document.getElementById('chat-pull-indicator');
+  const indic = getOuCriarPullIndicator();
+  const btn = document.getElementById('btn-chat-refresh');
+
   if (indic) {
     indic.classList.remove('puxando', 'armado');
     indic.classList.add('atualizando');
   }
+  // Botão gira SÓ quando origem='botao'
+  if (origem === 'botao' && btn) btn.classList.add('atualizando');
 
   try {
     const r = await fetch(`${API}/api/chat/conversa?tipo=${chatConv.tipo}`, { headers: authHeader() });
@@ -862,13 +886,12 @@ async function recarregarChatAtual() {
     chatConv = dados.conversa;
     mensagensAtuais = dados.mensagens || [];
 
-    // Re-renderiza só a área de mensagens — sem apagar o restante da tela
     const msgsEl = document.getElementById('chat-msgs');
     if (msgsEl) {
-      // Preserva o indicador (que está dentro de chat-msgs)
-      const indicEl = indic;
-      msgsEl.innerHTML = '';
-      if (indicEl) msgsEl.appendChild(indicEl);
+      // Limpa apenas as bolhas (mantém o indicador no topo)
+      Array.from(msgsEl.children).forEach(child => {
+        if (child.id !== 'chat-pull-indicator') msgsEl.removeChild(child);
+      });
       mensagensAtuais.forEach(msg => msgsEl.appendChild(renderMensagem(msg)));
       scrollChat();
     }
@@ -877,11 +900,17 @@ async function recarregarChatAtual() {
     console.error('[recarregarChatAtual]', err);
   } finally {
     if (indic) indic.classList.remove('atualizando');
+    if (btn) btn.classList.remove('atualizando');
     _refreshLock = false;
   }
 }
 
-document.getElementById('btn-chat-refresh')?.addEventListener('click', recarregarChatAtual);
+// Listener delegado — funciona mesmo se o botão for re-renderizado depois
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#btn-chat-refresh')) {
+    recarregarChatAtual('botao');
+  }
+});
 
 // Pull-to-refresh — só na área de mensagens, sem afetar o resto da tela.
 // O indicador é um botão circular dourado que aparece NO TOPO da #chat-msgs,
@@ -953,7 +982,7 @@ document.getElementById('btn-chat-refresh')?.addEventListener('click', recarrega
       circle.style.transform = ''; // CSS de .atualizando assume
       indic.classList.remove('armado', 'puxando');
       indic.classList.add('atualizando');
-      await recarregarChatAtual();
+      await recarregarChatAtual('pull');
       indic.classList.remove('atualizando');
     } else {
       // Não armou: recolhe sem atualizar
@@ -986,7 +1015,7 @@ document.addEventListener('visibilitychange', () => {
   conectarChatWs();
   if (!chatConv) return;
   if (!document.querySelector('.nav-tab[data-view="chat"]')?.classList.contains('active')) return;
-  recarregarChatAtual();
+  recarregarChatAtual('push');
 });
 
 function conectarChatWs() {
