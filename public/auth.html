@@ -458,36 +458,38 @@
 
   <!-- COMPLETAR CADASTRO (vinda de magic link de boas-vindas) -->
   <div class="tela" id="t-completar">
-    <div class="perfil-icon">✨</div>
-    <p class="titulo">Falta só <em>completar</em></p>
-    <p class="subtitulo">Pra finalizar seu acesso, complete os dados que faltam.</p>
+    <div class="perfil-icon" style="font-size:1.6rem;background:radial-gradient(circle,rgba(232,201,122,0.25) 0%,rgba(200,146,42,0.05) 70%);border:1px solid var(--gold);width:64px;height:64px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:1rem">🌟</div>
+    <p class="titulo">Bem-vinda ao <em>Vida Mágica</em></p>
+    <p class="subtitulo" style="line-height:1.6">Antes de te levar pra dentro, precisamos só te conhecer um pouquinho.<br><span style="color:var(--gold-light);font-weight:600">Esta tela aparece só esta vez.</span></p>
     <div class="divisor"></div>
     <div class="msg erro" id="erro-completar"></div>
 
     <div class="campo">
-      <label>Nome completo</label>
+      <label>Como podemos te chamar?</label>
       <div class="input-wrap"><input id="cc-nome" type="text" placeholder="Seu nome completo" autocomplete="name"></div>
     </div>
     <div class="campo">
-      <label>E-mail</label>
+      <label>Seu melhor e-mail</label>
       <div class="input-wrap"><input id="cc-email" type="email" placeholder="seu@email.com" autocomplete="email" autocapitalize="none"></div>
     </div>
     <div class="campo">
-      <label>WhatsApp</label>
+      <label>Seu WhatsApp <span style="font-weight:400;color:var(--muted);font-size:.72rem">(já validado ✓)</span></label>
       <div class="input-wrap"><input id="cc-tel" type="tel" readonly style="opacity:.7;cursor:not-allowed"></div>
     </div>
     <div class="campo">
-      <label>Crie sua senha <span style="font-weight:400;color:var(--muted);font-size:.78rem">(mínimo 6 caracteres)</span></label>
+      <label>Crie uma senha <span style="font-weight:400;color:var(--muted);font-size:.78rem">(mínimo 6 caracteres)</span></label>
       <div class="input-wrap">
-        <input id="cc-senha" type="password" placeholder="Sua nova senha" autocomplete="new-password" class="has-eye">
+        <input id="cc-senha" type="password" placeholder="Pra entrar de novo quando quiser" autocomplete="new-password" class="has-eye">
         <button class="eye-btn" onclick="toggleOlho('cc-senha','eye-cc')" type="button"><svg id="eye-cc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
       </div>
     </div>
 
     <button class="btn-cta" id="btn-completar" onclick="salvarCompletarCadastro()">
-      <span>Continuar</span>
+      <span>Entrar no Vida Mágica</span>
       <span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
     </button>
+
+    <p style="font-family:var(--font-b);font-size:.7rem;color:var(--muted);text-align:center;margin:1rem 0 0;line-height:1.55;letter-spacing:0.02em">Seus dados ficam guardados pra você não precisar fazer isso de novo.</p>
   </div>
 
 </div></div><!-- /card /page -->
