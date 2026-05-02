@@ -129,6 +129,77 @@ async function validarMagicToken(token, tiposPermitidos) {
   return r.rows[0];  // tem .telefone e .tipo
 }
 
+// ── ACESSO_SOLICITACOES ──────────────────────────────────
+// Token de 5min gerado pelo botão "Solicite entrar pelo seu Whatsapp"
+// no /auth. Aluna toca → recebe wa.me com texto contendo o token.
+// Quando webhook recebe zap dela, valida o token contra o telefone de origem.
+
+function gerarTokenSolicitacao() {
+  // 5 chars alfanuméricos (excluindo 0, O, I, 1 pra evitar confusão visual)
+  const alfabeto = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (let i = 0; i < 5; i++) s += alfabeto[crypto.randomInt(alfabeto.length)];
+  return 'VM' + s;
+}
+
+async function criarSolicitacaoAcesso(telefone, ttlMin = 5) {
+  // Limpa tokens expirados de todos os usuários (housekeeping a cada chamada)
+  await poolCore.query(`DELETE FROM acesso_solicitacoes WHERE expira_em < NOW()`);
+
+  // Tenta gerar token único (raríssimo colidir, mas blindando)
+  for (let tentativa = 0; tentativa < 5; tentativa++) {
+    const token = gerarTokenSolicitacao();
+    try {
+      const r = await poolCore.query(
+        `INSERT INTO acesso_solicitacoes (token, telefone, expira_em)
+         VALUES ($1, $2, NOW() + $3::interval)
+         RETURNING token, criado_em, expira_em`,
+        [token, telefone, `${ttlMin} minutes`]
+      );
+      return r.rows[0];
+    } catch (err) {
+      if (err.code !== '23505') throw err;  // se não for duplicate key, propaga
+    }
+  }
+  throw new Error('falha ao gerar token único após 5 tentativas');
+}
+
+async function buscarSolicitacaoPorToken(token) {
+  const r = await poolCore.query(
+    `SELECT * FROM acesso_solicitacoes WHERE token=$1`, [token]);
+  return r.rows[0] || null;
+}
+
+async function marcarSolicitacaoUsada(token, magicToken = null) {
+  await poolCore.query(
+    `UPDATE acesso_solicitacoes
+        SET usado=TRUE, usado_em=NOW(),
+            webhook_recebido_em=NOW(),
+            magic_token=COALESCE($2, magic_token)
+      WHERE token=$1`,
+    [token, magicToken]
+  );
+}
+
+async function deletarSolicitacao(token) {
+  await poolCore.query(`DELETE FROM acesso_solicitacoes WHERE token=$1`, [token]);
+}
+
+// Procura QUALQUER token VM válido na string de mensagem recebida via webhook
+async function detectarTokenNaMensagem(texto) {
+  if (!texto || typeof texto !== 'string') return null;
+  const matches = texto.toUpperCase().match(/VM[A-Z2-9]{5}/g);
+  if (!matches || !matches.length) return null;
+  // Pode ter mais de um token na string — testa todos, devolve o primeiro válido
+  for (const t of matches) {
+    const sol = await buscarSolicitacaoPorToken(t);
+    if (sol && !sol.usado && new Date(sol.expira_em) > new Date()) {
+      return sol;
+    }
+  }
+  return null;
+}
+
 // ── DISPOSITIVOS ──────────────────────────────────────────
 
 async function upsertDispositivo({ usuario_id, tipo, device_id, fingerprint, nome_amigavel, ip }) {
@@ -253,6 +324,11 @@ module.exports = {
   limparOTPsExpirados,
   criarMagicToken,
   validarMagicToken,
+  criarSolicitacaoAcesso,
+  buscarSolicitacaoPorToken,
+  marcarSolicitacaoUsada,
+  deletarSolicitacao,
+  detectarTokenNaMensagem,
   upsertDispositivo,
   buscarDispositivoAtivo,
   listarDispositivosUsuario,
