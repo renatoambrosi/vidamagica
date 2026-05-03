@@ -142,7 +142,8 @@
     .nav-drop-icon { font-size: .9rem; width: 16px; text-align: center; flex-shrink: 0; }
 
     /* ═══ TICKER — IDÊNTICO AO INDEX.HTML
-       Apenas .q e strong adotam a cor azul do produto. */
+       Mesmas regras do index, mesma especificidade, sem !important.
+       Único delta: .q e strong usam cor azul do produto (--sub-bright). */
     .ticker-wrap {
       position: fixed;
       top: 52px; left: 0; right: 0;
@@ -168,22 +169,19 @@
       0%   { transform: translateX(0); }
       100% { transform: translateX(-50%); }
     }
-    .ticker-wrap .ticker-track .ticker-item {
-      display: inline-flex !important;
+
+    .ticker-item {
+      display: inline-flex;
       align-items: center;
       gap: 0.35rem;
-      font-size: 0.73rem !important;
-      line-height: 1.4 !important;
-      font-weight: 400 !important;
-      color: rgba(245,240,232,0.58) !important;
+      font-size: 0.73rem;
+      color: rgba(245,240,232,0.58);
       flex-shrink: 0;
-      font-family: var(--font-body) !important;
-      text-transform: none !important;
-      letter-spacing: normal !important;
+      font-family: var(--font-body);
     }
     /* Acento azul do produto (substitui o dourado do index) */
-    .ticker-wrap .ticker-track .ticker-item .q     { color: var(--sub-bright) !important; font-size: inherit !important; font-weight: 400 !important; }
-    .ticker-wrap .ticker-track .ticker-item strong { color: var(--sub-bright) !important; font-weight: 600 !important; font-size: inherit !important; }
+    .ticker-item .q     { color: var(--sub-bright); }
+    .ticker-item strong { color: var(--sub-bright); font-weight: 600; }
 
     /* SCROLL PROGRESS */
     .scroll-progress { position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: 2px; background: linear-gradient(90deg, var(--sub-bright), var(--sub-light), var(--gold-light)); transform-origin: 0 0; transform: scaleX(0); transition: transform 0.05s linear; box-shadow: 0 0 12px var(--sub-glow); }
@@ -394,7 +392,7 @@
       section { padding: 4rem 1.25rem; }
       .hero { padding: 2rem 1.25rem 3rem; }
       .hero-logo-wrap { max-width: 360px; margin-bottom: 2rem; }
-      .ticker-wrap .ticker-track .ticker-item { font-size: 0.7rem; }
+      .ticker-item { font-size: 0.7rem; }
       .selo { font-size: 0.72rem; padding: 0.45rem 0.95rem; }
       .btn-cta { font-size: 0.85rem; padding: 0.95rem 1.6rem; }
       .dep-card { width: 280px; }
@@ -772,7 +770,7 @@
         const doubled = [...depoimentos, ...depoimentos];
         tickerTrack.innerHTML = doubled.map(d => {
           const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
-          return `<span class="ticker-item"><span class="q">"</span>${d.texto}<span class="q">"</span> — <strong>${autor}</strong></span>`;
+          return `<span class="ticker-item"><span class="q">"</span>"${d.texto}" — <strong>${autor}</strong><span class="q">"</span></span>`;
         }).join('');
       }
 
