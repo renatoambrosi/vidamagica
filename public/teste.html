@@ -14,12 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
 
   <style>
-    /* ═══════════════════════════════════════════════════════════
-       DESIGN SYSTEM — TESTE DO SUBCONSCIENTE
-       Paleta nova: azul profundo do subconsciente + perolado + acento dourado Vida Mágica
-       ═══════════════════════════════════════════════════════════ */
     :root {
-      /* Azul subconsciente — paleta principal */
       --sub-deep:      #051929;
       --sub-night:     #0a2d44;
       --sub-deep-2:    #0a4866;
@@ -28,23 +23,15 @@
       --sub-bright:    #5cc2f0;
       --sub-glow:      rgba(43,165,232,0.55);
       --sub-glow-soft: rgba(43,165,232,0.18);
-
-      /* Perolado — destaques e textos */
       --pearl:         #F5F0E8;
       --pearl-dim:     rgba(245,240,232,0.78);
       --pearl-mute:    rgba(245,240,232,0.55);
       --pearl-faint:   rgba(245,240,232,0.32);
-
-      /* Dourado Vida Mágica — acento secundário (link entre marca-mãe e produto) */
       --gold:          #C8922A;
       --gold-light:    #E8C97A;
       --gold-bright:   #F4D998;
-
-      /* Tipografia */
       --font-display: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
       --font-body:    'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-
-      /* Layout */
       --r-md: 14px;
       --r-lg: 20px;
       --r-full: 9999px;
@@ -54,1074 +41,250 @@
 
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
-    body {
-      font-family: var(--font-body);
-      background: var(--sub-deep);
-      color: var(--pearl);
-      min-height: 100vh;
-      overflow-x: hidden;
-      line-height: 1.65;
-    }
+    body { font-family: var(--font-body); background: var(--sub-deep); color: var(--pearl); min-height: 100vh; overflow-x: hidden; line-height: 1.65; }
     body.locked { overflow: hidden; }
     button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
     a { color: inherit; text-decoration: none; }
     img { max-width: 100%; display: block; }
 
-    /* ═══════════════════════════════════════════════════════════
-       LOADING SCREEN
-       ═══════════════════════════════════════════════════════════ */
-    .loader {
-      position: fixed; inset: 0; z-index: 10000;
-      background: radial-gradient(ellipse at center, var(--sub-deep-2) 0%, var(--sub-deep) 70%);
-      display: flex; align-items: center; justify-content: center;
-      transition: opacity 0.7s ease, visibility 0.7s ease;
-    }
+    /* LOADING */
+    .loader { position: fixed; inset: 0; z-index: 10000; background: radial-gradient(ellipse at center, var(--sub-deep-2) 0%, var(--sub-deep) 70%); display: flex; align-items: center; justify-content: center; transition: opacity 0.7s ease, visibility 0.7s ease; }
     .loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-    .loader-inner {
-      text-align: center;
-      animation: loaderIn 0.8s ease;
-    }
+    .loader-inner { text-align: center; animation: loaderIn 0.8s ease; }
     @keyframes loaderIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    .loader-orb {
-      width: 88px; height: 88px;
-      margin: 0 auto 1.5rem;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, var(--sub-bright), var(--sub-mid) 50%, var(--sub-night));
-      box-shadow:
-        0 0 32px var(--sub-glow),
-        0 0 80px rgba(43,165,232,0.25),
-        inset 0 0 24px rgba(255,255,255,0.18);
-      animation: loaderPulse 1.6s ease-in-out infinite;
-      position: relative;
-    }
-    .loader-orb::after {
-      content: '';
-      position: absolute; inset: -4px;
-      border-radius: 50%;
-      border: 1px solid rgba(92,194,240,0.4);
-      animation: loaderRing 1.6s ease-in-out infinite;
-    }
-    @keyframes loaderPulse {
-      0%, 100% { transform: scale(1); }
-      50%      { transform: scale(1.08); }
-    }
-    @keyframes loaderRing {
-      0%   { transform: scale(1); opacity: 0.6; }
-      100% { transform: scale(1.6); opacity: 0; }
-    }
-    .loader-text {
-      font-family: var(--font-display);
-      font-size: 0.78rem;
-      font-weight: 600;
-      letter-spacing: 0.32em;
-      text-transform: uppercase;
-      color: var(--pearl-dim);
-      animation: loaderTextFade 1.6s ease-in-out infinite;
-    }
-    @keyframes loaderTextFade {
-      0%, 100% { opacity: 0.5; }
-      50%      { opacity: 1; }
-    }
+    .loader-orb { width: 88px; height: 88px; margin: 0 auto 1.5rem; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--sub-bright), var(--sub-mid) 50%, var(--sub-night)); box-shadow: 0 0 32px var(--sub-glow), 0 0 80px rgba(43,165,232,0.25), inset 0 0 24px rgba(255,255,255,0.18); animation: loaderPulse 1.6s ease-in-out infinite; position: relative; }
+    .loader-orb::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 1px solid rgba(92,194,240,0.4); animation: loaderRing 1.6s ease-in-out infinite; }
+    @keyframes loaderPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+    @keyframes loaderRing { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.6); opacity: 0; } }
+    .loader-text { font-family: var(--font-display); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; color: var(--pearl-dim); animation: loaderTextFade 1.6s ease-in-out infinite; }
+    @keyframes loaderTextFade { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
-    /* ═══════════════════════════════════════════════════════════
-       NAVBAR — IDÊNTICA AO INDEX.HTML DO VIDA MÁGICA
-       Não adaptar ao tema do produto. É a moldura institucional.
-       ═══════════════════════════════════════════════════════════ */
-    .navbar {
-      position: fixed; top: 0; left: 0; right: 0;
-      z-index: 100;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0.6rem 1.25rem;
-      background: rgba(13,8,0,0.92);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(200,146,42,0.12);
-      height: 52px;
-      transition: transform 0.3s ease;
-    }
+    /* ═══ NAVBAR — IDÊNTICA AO INDEX.HTML ═══
+       Moldura institucional Vida Mágica. Não adaptar ao tema do produto. */
+    .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 1.25rem; background: rgba(13,8,0,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(200,146,42,0.12); height: 52px; transition: transform 0.3s ease; }
+    .navbar.hidden { transform: translateY(-100%); }
     .navbar-logo { height: 32px; width: auto; }
     .navbar-actions { display: flex; align-items: center; gap: 0.5rem; }
-    .btn-login {
-      font-family: var(--font-body);
-      font-size: 0.78rem; font-weight: 600;
-      color: var(--gold);
-      background: none;
-      border: 1px solid rgba(200,146,42,0.4);
-      border-radius: var(--r-full);
-      padding: 0.38rem 1rem;
-      letter-spacing: 0.05em;
-      transition: all 0.2s;
-    }
+    .btn-login { font-family: var(--font-body); font-size: 0.78rem; font-weight: 600; color: var(--gold); background: none; border: 1px solid rgba(200,146,42,0.4); border-radius: var(--r-full); padding: 0.38rem 1rem; cursor: pointer; transition: all 0.2s; text-decoration: none; letter-spacing: 0.05em; }
     .btn-login:hover { background: rgba(200,146,42,0.1); border-color: var(--gold); }
-    .btn-cadastro-nav {
-      font-family: var(--font-body);
-      font-size: 0.78rem; font-weight: 700;
-      color: #1A1205;
-      background: var(--gold);
-      border: none;
-      border-radius: var(--r-full);
-      padding: 0.42rem 1.1rem;
-      letter-spacing: 0.04em;
-      transition: all 0.2s;
-    }
+    .btn-cadastro-nav { font-family: var(--font-body); font-size: 0.78rem; font-weight: 700; color: #1A1205; background: var(--gold); border: none; border-radius: var(--r-full); padding: 0.42rem 1.1rem; cursor: pointer; transition: all 0.2s; text-decoration: none; letter-spacing: 0.04em; }
     .btn-cadastro-nav:hover { background: #A17523; }
+    .nav-avatar-wrap { position: relative; }
+    .nav-avatar-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(200,146,42,.5); background: rgba(200,146,42,.12); cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0; transition: border-color .2s, box-shadow .2s; }
+    .nav-avatar-btn:hover { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(200,146,42,.15); }
+    .nav-avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .nav-avatar-iniciais { font-family: var(--font-display); font-size: .72rem; font-weight: 800; color: var(--gold-light); letter-spacing: .05em; text-transform: uppercase; pointer-events: none; }
+    .nav-drop { position: absolute; top: calc(100% + 10px); right: 0; min-width: 200px; background: rgba(13,8,0,.97); border: 1px solid rgba(200,146,42,.25); border-radius: 14px; box-shadow: 0 16px 48px rgba(0,0,0,.6); backdrop-filter: blur(20px); overflow: hidden; opacity: 0; transform: translateY(-6px) scale(.97); pointer-events: none; transition: opacity .2s, transform .2s; z-index: 300; }
+    .nav-drop.aberto { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+    .nav-drop-header { padding: .9rem 1.1rem .7rem; border-bottom: 1px solid rgba(200,146,42,.12); }
+    .nav-drop-nome { font-family: var(--font-display); font-size: .78rem; font-weight: 800; color: var(--gold-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nav-drop-sub { font-size: .67rem; color: rgba(245,240,232,.35); margin-top: 2px; }
+    .nav-drop-item { display: flex; align-items: center; gap: .65rem; padding: .65rem 1.1rem; font-size: .8rem; font-weight: 500; color: rgba(245,240,232,.7); cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: background .15s, color .15s; text-decoration: none; }
+    .nav-drop-item:hover { background: rgba(200,146,42,.08); color: var(--gold-light); }
+    .nav-drop-item.danger { color: rgba(240,100,100,.75); }
+    .nav-drop-item.danger:hover { background: rgba(200,60,60,.08); color: #f09090; }
+    .nav-drop-sep { height: 1px; background: rgba(200,146,42,.1); margin: .2rem 0; }
+    .nav-drop-icon { font-size: .9rem; width: 16px; text-align: center; flex-shrink: 0; }
 
-    /* ═══════════════════════════════════════════════════════════
-       TICKER — IDÊNTICO AO INDEX.HTML DO VIDA MÁGICA
-       Esconde JUNTO com a navbar quando rola pra baixo.
-       ═══════════════════════════════════════════════════════════ */
-    .ticker-wrap {
-      position: fixed; top: 52px; left: 0; right: 0;
-      z-index: 99;
-      overflow: hidden;
-      padding: 0.5rem 0;
-      background: rgba(20,14,2,0.95);
-      backdrop-filter: blur(8px);
-      border-bottom: 1px solid rgba(200,146,42,0.12);
-      transition: transform 0.3s ease;
-    }
-    /* Quando navbar esconde, ticker some junto */
-    .navbar.hidden          { transform: translateY(-100%); }
+    /* ═══ TICKER — mesmo layout do index.html
+       Só a cor dos acentos (.q e strong) adota o azul do produto. */
+    .ticker-wrap { position: fixed; top: 52px; left: 0; right: 0; z-index: 99; overflow: hidden; padding: 0.5rem 0; background: rgba(20,14,2,0.95); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(200,146,42,0.12); transition: transform 0.3s ease; }
     .navbar.hidden + .ticker-wrap,
-    .ticker-wrap.hidden     { transform: translateY(calc(-100% - 52px)); }
+    .ticker-wrap.hidden { transform: translateY(calc(-100% - 52px)); }
+    .ticker-track { display: flex; gap: 3.5rem; animation: ticker 22s linear infinite; white-space: nowrap; }
+    @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    .ticker-item { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.73rem; color: rgba(245,240,232,0.58); flex-shrink: 0; font-family: var(--font-body); }
+    .ticker-item .q    { color: var(--sub-bright); }
+    .ticker-item strong { color: var(--sub-bright); font-weight: 600; }
 
-    .ticker-track {
-      display: flex; gap: 3.5rem;
-      animation: tickerSlide 22s linear infinite;
-      white-space: nowrap;
-      will-change: transform;
-    }
-    @keyframes tickerSlide {
-      0%   { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
-    .ticker-item {
-      display: inline-flex; align-items: center; gap: 0.35rem;
-      font-size: 0.73rem;
-      color: rgba(245,240,232,0.58);
-      flex-shrink: 0;
-    }
-    .ticker-item .q { color: var(--gold); }
-    .ticker-item strong { color: var(--gold-light); font-weight: 600; }
+    /* SCROLL PROGRESS */
+    .scroll-progress { position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: 2px; background: linear-gradient(90deg, var(--sub-bright), var(--sub-light), var(--gold-light)); transform-origin: 0 0; transform: scaleX(0); transition: transform 0.05s linear; box-shadow: 0 0 12px var(--sub-glow); }
 
-    /* ═══════════════════════════════════════════════════════════
-       SCROLL PROGRESS
-       ═══════════════════════════════════════════════════════════ */
-    .scroll-progress {
-      position: fixed; top: 0; left: 0; right: 0;
-      z-index: 200;
-      height: 2px;
-      background: linear-gradient(90deg, var(--sub-bright), var(--sub-light), var(--gold-light));
-      transform-origin: 0 0;
-      transform: scaleX(0);
-      transition: transform 0.05s linear;
-      box-shadow: 0 0 12px var(--sub-glow);
-    }
-
-    /* ═══════════════════════════════════════════════════════════
-       BACKGROUND — profundo, com gradientes orgânicos
-       ═══════════════════════════════════════════════════════════ */
-    .bg-base {
-      position: fixed; inset: 0; z-index: -3;
-      background:
-        radial-gradient(ellipse 80% 60% at 30% 0%, rgba(26,111,142,0.4) 0%, transparent 50%),
-        radial-gradient(ellipse 60% 50% at 80% 30%, rgba(43,165,232,0.18) 0%, transparent 50%),
-        radial-gradient(ellipse 70% 50% at 20% 80%, rgba(10,72,102,0.5) 0%, transparent 50%),
-        linear-gradient(180deg, var(--sub-deep) 0%, var(--sub-night) 50%, var(--sub-deep) 100%);
-    }
-    /* Orbes flutuantes */
+    /* BACKGROUND */
+    .bg-base { position: fixed; inset: 0; z-index: -3; background: radial-gradient(ellipse 80% 60% at 30% 0%, rgba(26,111,142,0.4) 0%, transparent 50%), radial-gradient(ellipse 60% 50% at 80% 30%, rgba(43,165,232,0.18) 0%, transparent 50%), radial-gradient(ellipse 70% 50% at 20% 80%, rgba(10,72,102,0.5) 0%, transparent 50%), linear-gradient(180deg, var(--sub-deep) 0%, var(--sub-night) 50%, var(--sub-deep) 100%); }
     .orbs { position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; }
-    .orb {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(70px);
-      opacity: 0.5;
-      animation: orbFloat 14s ease-in-out infinite;
-      will-change: transform;
-    }
-    .orb-1 {
-      width: 380px; height: 380px;
-      top: 8%; right: -80px;
-      background: radial-gradient(circle, var(--sub-light), transparent 60%);
-      animation-delay: 0s;
-    }
-    .orb-2 {
-      width: 460px; height: 460px;
-      bottom: 12%; left: -120px;
-      background: radial-gradient(circle, var(--sub-mid), transparent 60%);
-      animation-delay: -5s;
-    }
-    .orb-3 {
-      width: 280px; height: 280px;
-      top: 50%; left: 50%;
-      background: radial-gradient(circle, var(--gold), transparent 60%);
-      opacity: 0.18;
-      animation-delay: -8s;
-    }
-    @keyframes orbFloat {
-      0%, 100% { transform: translate(0, 0) scale(1); }
-      33%      { transform: translate(40px, -30px) scale(1.05); }
-      66%      { transform: translate(-30px, 40px) scale(0.95); }
-    }
-
-    /* Estrelas/partículas perolas — herdam o brilho do logo */
+    .orb { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.5; animation: orbFloat 14s ease-in-out infinite; will-change: transform; }
+    .orb-1 { width: 380px; height: 380px; top: 8%; right: -80px; background: radial-gradient(circle, var(--sub-light), transparent 60%); animation-delay: 0s; }
+    .orb-2 { width: 460px; height: 460px; bottom: 12%; left: -120px; background: radial-gradient(circle, var(--sub-mid), transparent 60%); animation-delay: -5s; }
+    .orb-3 { width: 280px; height: 280px; top: 50%; left: 50%; background: radial-gradient(circle, var(--gold), transparent 60%); opacity: 0.18; animation-delay: -8s; }
+    @keyframes orbFloat { 0%, 100% { transform: translate(0,0) scale(1); } 33% { transform: translate(40px,-30px) scale(1.05); } 66% { transform: translate(-30px,40px) scale(0.95); } }
     .stars { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
-    .star {
-      position: absolute;
-      background: var(--pearl);
-      border-radius: 50%;
-      animation: starTwinkle linear infinite;
-      will-change: transform, opacity;
-    }
-    @keyframes starTwinkle {
-      0%   { transform: translateY(110vh) scale(0); opacity: 0; }
-      10%  { opacity: 0.9; transform: scale(1); }
-      90%  { opacity: 0.6; }
-      100% { transform: translateY(-10vh) scale(1.4); opacity: 0; }
-    }
+    .star { position: absolute; background: var(--pearl); border-radius: 50%; animation: starTwinkle linear infinite; will-change: transform, opacity; }
+    @keyframes starTwinkle { 0% { transform: translateY(110vh) scale(0); opacity: 0; } 10% { opacity: 0.9; transform: scale(1); } 90% { opacity: 0.6; } 100% { transform: translateY(-10vh) scale(1.4); opacity: 0; } }
 
-    /* ═══════════════════════════════════════════════════════════
-       LAYOUT
-       ═══════════════════════════════════════════════════════════ */
+    /* LAYOUT */
     main { position: relative; z-index: 2; padding-top: calc(52px + 36px); }
     section { padding: 5rem 1.5rem; position: relative; }
     .container { max-width: 960px; margin: 0 auto; width: 100%; }
     .container-narrow { max-width: 680px; margin: 0 auto; width: 100%; }
 
-    /* ═══════════════════════════════════════════════════════════
-       REVEAL ON SCROLL (substitui AOS — leve e nativo)
-       ═══════════════════════════════════════════════════════════ */
+    /* ═══ REVEAL ON SCROLL — corrigido
+       - rootMargin '-80px' → só dispara quando o elemento já está VISÍVEL
+       - threshold 0.08 → 8% visível já basta
+       - transition 0.7s com easing natural (não agressivo)
+       - stagger máx 100ms entre irmãos (não acumulativo) */
     [data-reveal] {
       opacity: 0;
-      transform: translateY(30px);
-      transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+      transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+      will-change: opacity, transform;
     }
-    [data-reveal="left"]  { transform: translateX(-40px); }
-    [data-reveal="right"] { transform: translateX(40px); }
-    [data-reveal="zoom"]  { transform: scale(0.92); }
-    [data-reveal].in {
-      opacity: 1;
-      transform: translate(0,0) scale(1);
-    }
+    [data-reveal="left"]  { transform: translateX(-32px); }
+    [data-reveal="right"] { transform: translateX(32px); }
+    [data-reveal="zoom"]  { transform: scale(0.94) translateY(16px); }
+    [data-reveal].in { opacity: 1; transform: translate(0,0) scale(1); }
 
-    /* ═══════════════════════════════════════════════════════════
-       HERO — fundo inspirado na imagem oficial do logo
-       (turquesa profundo + bokeh azul desfocado)
-       ═══════════════════════════════════════════════════════════ */
-    .hero {
-      min-height: calc(100vh - 88px);
-      display: flex; flex-direction: column;
-      justify-content: center; align-items: center;
-      text-align: center;
-      padding: 3rem 1.5rem 4rem;
-      position: relative;
-      overflow: hidden;
-    }
-    /* Fundo do hero: gradiente turquesa idêntico à imagem oficial */
-    .hero::before {
-      content: '';
-      position: absolute; inset: 0;
-      background:
-        radial-gradient(ellipse 50% 35% at 18% 22%, rgba(30,143,170,0.55) 0%, transparent 60%),
-        radial-gradient(ellipse 35% 28% at 78% 18%, rgba(43,165,200,0.42) 0%, transparent 65%),
-        radial-gradient(ellipse 40% 30% at 88% 70%, rgba(20,110,135,0.5) 0%, transparent 60%),
-        radial-gradient(ellipse 45% 32% at 12% 78%, rgba(15,95,120,0.5) 0%, transparent 65%),
-        radial-gradient(ellipse 30% 22% at 50% 50%, rgba(45,170,200,0.32) 0%, transparent 70%),
-        linear-gradient(160deg, #093a4f 0%, #0a4866 35%, #062c3e 70%, #03192a 100%);
-      z-index: -1;
-    }
-    /* Bokeh extra — pontos desfocados que simulam a textura da imagem */
-    .hero::after {
-      content: '';
-      position: absolute; inset: 0;
-      background:
-        radial-gradient(circle 80px at 25% 25%, rgba(92,194,240,0.18) 0%, transparent 70%),
-        radial-gradient(circle 60px at 75% 30%, rgba(92,194,240,0.14) 0%, transparent 70%),
-        radial-gradient(circle 100px at 85% 75%, rgba(92,194,240,0.12) 0%, transparent 70%),
-        radial-gradient(circle 70px at 15% 80%, rgba(92,194,240,0.16) 0%, transparent 70%),
-        radial-gradient(circle 50px at 60% 85%, rgba(92,194,240,0.15) 0%, transparent 70%),
-        radial-gradient(circle 90px at 45% 15%, rgba(92,194,240,0.10) 0%, transparent 70%);
-      filter: blur(2px);
-      z-index: -1;
-      animation: heroBokeh 18s ease-in-out infinite alternate;
-    }
-    @keyframes heroBokeh {
-      from { transform: scale(1) translate(0, 0); }
-      to   { transform: scale(1.08) translate(-10px, 8px); }
-    }
-
-    /* ═══════════════════════════════════════════════════════════
-       LOGO OFICIAL DO TESTE NO HERO
-       Imagem real (testedosub.jpg) — sem inventar nada em CSS
-       ═══════════════════════════════════════════════════════════ */
-    .hero-logo-wrap {
-      position: relative;
-      width: 100%;
-      max-width: 520px;
-      margin: 0 auto 2.5rem;
-      animation: logoEntry 1.6s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
-    }
-    @keyframes logoEntry {
-      0%   { opacity: 0; transform: translateY(30px) scale(0.95); filter: blur(12px); }
-      100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
-    }
-    .hero-logo {
-      width: 100%; height: auto;
-      display: block;
-      filter: drop-shadow(0 0 40px rgba(43,165,232,0.35));
-      animation: logoBreath 5s ease-in-out infinite;
-    }
-    @keyframes logoBreath {
-      0%, 100% { filter: drop-shadow(0 0 30px rgba(43,165,232,0.3)); }
-      50%      { filter: drop-shadow(0 0 50px rgba(43,165,232,0.55)); }
-    }
-
-    .hero-eyebrow {
-      font-family: var(--font-display);
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.32em;
-      text-transform: uppercase;
-      color: var(--sub-bright);
-      margin-bottom: 1.25rem;
-    }
-    .hero h1 {
-      font-family: var(--font-display);
-      font-size: clamp(2rem, 6vw, 3.4rem);
-      font-weight: 900;
-      line-height: 1.1;
-      text-transform: uppercase;
-      letter-spacing: -0.015em;
-      color: var(--pearl);
-      margin-bottom: 1.5rem;
-      max-width: 820px;
-    }
-    .hero h1 .glow {
-      background: linear-gradient(120deg, var(--sub-bright) 0%, var(--gold-light) 50%, var(--sub-bright) 100%);
-      background-size: 200% 100%;
-      -webkit-background-clip: text;
-              background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: glowShift 5s ease-in-out infinite;
-    }
-    @keyframes glowShift {
-      0%, 100% { background-position: 0% 50%; }
-      50%      { background-position: 100% 50%; }
-    }
-    .hero-sub {
-      font-size: 1.05rem;
-      color: var(--pearl-dim);
-      max-width: 600px;
-      margin: 0 auto 2rem;
-      line-height: 1.75;
-    }
-
-    /* Selos de credibilidade */
-    .selos {
-      display: flex; flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.7rem;
-      margin-bottom: 2.5rem;
-      max-width: 700px;
-    }
-    .selo {
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      padding: 0.55rem 1.1rem;
-      background: rgba(245,240,232,0.05);
-      border: 1px solid rgba(43,165,232,0.25);
-      border-radius: var(--r-full);
-      font-size: 0.78rem;
-      color: var(--pearl-dim);
-      backdrop-filter: blur(8px);
-    }
+    /* HERO */
+    .hero { min-height: calc(100vh - 88px); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 3rem 1.5rem 4rem; position: relative; overflow: hidden; }
+    .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 50% 35% at 18% 22%, rgba(30,143,170,0.55) 0%, transparent 60%), radial-gradient(ellipse 35% 28% at 78% 18%, rgba(43,165,200,0.42) 0%, transparent 65%), radial-gradient(ellipse 40% 30% at 88% 70%, rgba(20,110,135,0.5) 0%, transparent 60%), radial-gradient(ellipse 45% 32% at 12% 78%, rgba(15,95,120,0.5) 0%, transparent 65%), linear-gradient(160deg, #093a4f 0%, #0a4866 35%, #062c3e 70%, #03192a 100%); z-index: -1; }
+    .hero::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle 80px at 25% 25%, rgba(92,194,240,0.18) 0%, transparent 70%), radial-gradient(circle 60px at 75% 30%, rgba(92,194,240,0.14) 0%, transparent 70%), radial-gradient(circle 100px at 85% 75%, rgba(92,194,240,0.12) 0%, transparent 70%), radial-gradient(circle 70px at 15% 80%, rgba(92,194,240,0.16) 0%, transparent 70%); filter: blur(2px); z-index: -1; animation: heroBokeh 18s ease-in-out infinite alternate; }
+    @keyframes heroBokeh { from { transform: scale(1) translate(0,0); } to { transform: scale(1.08) translate(-10px,8px); } }
+    .hero-logo-wrap { position: relative; width: 100%; max-width: 520px; margin: 0 auto 2.5rem; animation: logoEntry 1.6s cubic-bezier(0.22,1,0.36,1) 0.3s both; }
+    @keyframes logoEntry { 0% { opacity: 0; transform: translateY(30px) scale(0.95); filter: blur(12px); } 100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
+    .hero-logo { width: 100%; height: auto; display: block; filter: drop-shadow(0 0 40px rgba(43,165,232,0.35)); animation: logoBreath 5s ease-in-out infinite; }
+    @keyframes logoBreath { 0%, 100% { filter: drop-shadow(0 0 30px rgba(43,165,232,0.3)); } 50% { filter: drop-shadow(0 0 50px rgba(43,165,232,0.55)); } }
+    .hero-eyebrow { font-family: var(--font-display); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.32em; text-transform: uppercase; color: var(--sub-bright); margin-bottom: 1.25rem; }
+    .hero h1 { font-family: var(--font-display); font-size: clamp(2rem,6vw,3.4rem); font-weight: 900; line-height: 1.1; text-transform: uppercase; letter-spacing: -0.015em; color: var(--pearl); margin-bottom: 1.5rem; max-width: 820px; }
+    .hero h1 .glow { background: linear-gradient(120deg, var(--sub-bright) 0%, var(--gold-light) 50%, var(--sub-bright) 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: glowShift 5s ease-in-out infinite; }
+    @keyframes glowShift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+    .hero-sub { font-size: 1.05rem; color: var(--pearl-dim); max-width: 600px; margin: 0 auto 2rem; line-height: 1.75; }
+    .selos { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.7rem; margin-bottom: 2.5rem; max-width: 700px; }
+    .selo { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.55rem 1.1rem; background: rgba(245,240,232,0.05); border: 1px solid rgba(43,165,232,0.25); border-radius: var(--r-full); font-size: 0.78rem; color: var(--pearl-dim); backdrop-filter: blur(8px); }
     .selo i { color: var(--sub-bright); font-size: 0.85rem; }
-
-    /* CTA Primário — pulse glow */
-    .btn-cta {
-      display: inline-flex; align-items: center; gap: 0.65rem;
-      font-family: var(--font-display);
-      font-size: 0.92rem;
-      font-weight: 800;
-      color: var(--sub-deep);
-      background: linear-gradient(135deg, var(--sub-bright) 0%, var(--sub-light) 100%);
-      border-radius: var(--r-full);
-      padding: 1.05rem 2.1rem;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      box-shadow: 0 8px 32px rgba(43,165,232,0.45), 0 0 0 1px rgba(245,240,232,0.18) inset;
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s;
-      animation: ctaPulse 2.4s ease-in-out infinite;
-    }
-    @keyframes ctaPulse {
-      0%, 100% { box-shadow: 0 8px 32px rgba(43,165,232,0.45), 0 0 0 1px rgba(245,240,232,0.18) inset; }
-      50%      { box-shadow: 0 12px 48px rgba(43,165,232,0.7),  0 0 0 1px rgba(245,240,232,0.3) inset; }
-    }
+    .btn-cta { display: inline-flex; align-items: center; gap: 0.65rem; font-family: var(--font-display); font-size: 0.92rem; font-weight: 800; color: var(--sub-deep); background: linear-gradient(135deg, var(--sub-bright) 0%, var(--sub-light) 100%); border-radius: var(--r-full); padding: 1.05rem 2.1rem; letter-spacing: 0.04em; text-transform: uppercase; box-shadow: 0 8px 32px rgba(43,165,232,0.45), 0 0 0 1px rgba(245,240,232,0.18) inset; position: relative; overflow: hidden; transition: transform 0.25s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s; animation: ctaPulse 2.4s ease-in-out infinite; }
+    @keyframes ctaPulse { 0%, 100% { box-shadow: 0 8px 32px rgba(43,165,232,0.45), 0 0 0 1px rgba(245,240,232,0.18) inset; } 50% { box-shadow: 0 12px 48px rgba(43,165,232,0.7), 0 0 0 1px rgba(245,240,232,0.3) inset; } }
     .btn-cta:hover { transform: translateY(-2px); }
-    .btn-cta::before {
-      content: '';
-      position: absolute; top: 0; left: -100%;
-      width: 100%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
-      transition: left 0.6s;
-    }
+    .btn-cta::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent); transition: left 0.6s; }
     .btn-cta:hover::before { left: 100%; }
-    .btn-cta-sub {
-      font-size: 0.78rem;
-      color: var(--pearl-mute);
-      margin-top: 0.95rem;
-      letter-spacing: 0.04em;
-    }
-    .price-tag {
-      display: inline-block;
-      color: var(--pearl);
-      font-weight: 700;
-      letter-spacing: 0.03em;
-    }
-    .price-big {
-      display: block;
-      font-family: var(--font-display);
-      font-size: clamp(2.2rem, 6vw, 3rem);
-      font-weight: 900;
-      color: var(--pearl);
-      line-height: 1;
-      margin: 1.2rem 0 0.4rem;
-      letter-spacing: -0.02em;
-    }
-    .price-big .currency {
-      font-size: 0.55em;
-      vertical-align: super;
-      color: var(--sub-bright);
-      margin-right: 0.15em;
-      font-weight: 700;
-    }
-    .price-big .cents {
-      font-size: 0.5em;
-      vertical-align: super;
-      color: var(--pearl-dim);
-      margin-left: 0.1em;
-      font-weight: 700;
-    }
-    .price-caption {
-      font-size: 0.78rem;
-      color: var(--pearl-mute);
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      margin-bottom: 1.5rem;
-    }
-    /* Skeleton enquanto carrega o preço */
-    .price-loading {
-      display: inline-block;
-      min-width: 60px;
-      height: 0.9em;
-      background: linear-gradient(90deg, rgba(245,240,232,0.05) 0%, rgba(245,240,232,0.15) 50%, rgba(245,240,232,0.05) 100%);
-      background-size: 200% 100%;
-      border-radius: 3px;
-      vertical-align: middle;
-      animation: priceShimmer 1.4s ease-in-out infinite;
-    }
-    @keyframes priceShimmer {
-      0%, 100% { background-position: 200% 50%; }
-      50%      { background-position: -200% 50%; }
-    }
-
-    /* Scroll hint */
-    .scroll-hint {
-      margin-top: 3rem;
-      display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
-      color: var(--pearl-faint);
-      font-size: 0.7rem;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      animation: hintBounce 2.2s ease-in-out infinite;
-    }
+    .btn-cta-sub { font-size: 0.78rem; color: var(--pearl-mute); margin-top: 0.95rem; letter-spacing: 0.04em; }
+    .price-tag { display: inline-block; color: var(--pearl); font-weight: 700; letter-spacing: 0.03em; }
+    .price-big { display: block; font-family: var(--font-display); font-size: clamp(2.2rem,6vw,3rem); font-weight: 900; color: var(--pearl); line-height: 1; margin: 1.2rem 0 0.4rem; letter-spacing: -0.02em; }
+    .price-big .currency { font-size: 0.55em; vertical-align: super; color: var(--sub-bright); margin-right: 0.15em; font-weight: 700; }
+    .price-big .cents    { font-size: 0.5em; vertical-align: super; color: var(--pearl-dim); margin-left: 0.1em; font-weight: 700; }
+    .price-caption { font-size: 0.78rem; color: var(--pearl-mute); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 1.5rem; }
+    .price-loading { display: inline-block; min-width: 60px; height: 0.9em; background: linear-gradient(90deg, rgba(245,240,232,0.05) 0%, rgba(245,240,232,0.15) 50%, rgba(245,240,232,0.05) 100%); background-size: 200% 100%; border-radius: 3px; vertical-align: middle; animation: priceShimmer 1.4s ease-in-out infinite; }
+    @keyframes priceShimmer { 0%, 100% { background-position: 200% 50%; } 50% { background-position: -200% 50%; } }
+    .scroll-hint { margin-top: 3rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; color: var(--pearl-faint); font-size: 0.7rem; letter-spacing: 0.22em; text-transform: uppercase; animation: hintBounce 2.2s ease-in-out infinite; }
     .scroll-hint svg { width: 16px; height: 16px; stroke: var(--sub-bright); }
-    @keyframes hintBounce {
-      0%, 100% { transform: translateY(0);  opacity: 0.5; }
-      50%      { transform: translateY(8px); opacity: 1; }
-    }
+    @keyframes hintBounce { 0%, 100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(8px); opacity: 1; } }
 
-    /* ═══════════════════════════════════════════════════════════
-       SECTION HEADERS
-       ═══════════════════════════════════════════════════════════ */
-    .section-eyebrow {
-      display: block;
-      font-family: var(--font-display);
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.28em;
-      text-transform: uppercase;
-      color: var(--sub-bright);
-      margin-bottom: 0.85rem;
-      text-align: center;
-    }
-    .section-title {
-      font-family: var(--font-display);
-      font-size: clamp(1.75rem, 4.5vw, 2.5rem);
-      font-weight: 800;
-      line-height: 1.18;
-      color: var(--pearl);
-      text-align: center;
-      margin-bottom: 1rem;
-      letter-spacing: -0.012em;
-    }
-    .section-title .glow {
-      background: linear-gradient(120deg, var(--sub-bright), var(--gold-light));
-      -webkit-background-clip: text; background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .section-lead {
-      font-size: 1rem;
-      color: var(--pearl-dim);
-      text-align: center;
-      max-width: 620px;
-      margin: 0 auto 2.5rem;
-      line-height: 1.75;
-    }
+    /* SECTION HEADERS */
+    .section-eyebrow { display: block; font-family: var(--font-display); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.28em; text-transform: uppercase; color: var(--sub-bright); margin-bottom: 0.85rem; text-align: center; }
+    .section-title { font-family: var(--font-display); font-size: clamp(1.75rem,4.5vw,2.5rem); font-weight: 800; line-height: 1.18; color: var(--pearl); text-align: center; margin-bottom: 1rem; letter-spacing: -0.012em; }
+    .section-title .glow { background: linear-gradient(120deg, var(--sub-bright), var(--gold-light)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .section-lead { font-size: 1rem; color: var(--pearl-dim); text-align: center; max-width: 620px; margin: 0 auto 2.5rem; line-height: 1.75; }
 
-    /* ═══════════════════════════════════════════════════════════
-       BLOCO DOR — você se reconhece?
-       ═══════════════════════════════════════════════════════════ */
-    .dor-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 0.85rem;
-      margin: 2rem 0 3rem;
-    }
-    .dor-card {
-      background: rgba(10,72,102,0.35);
-      border: 1px solid rgba(43,165,232,0.2);
-      border-radius: var(--r-md);
-      padding: 1.4rem 1.2rem;
-      text-align: center;
-      transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s, background 0.3s;
-      backdrop-filter: blur(6px);
-      cursor: default;
-    }
-    .dor-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--sub-light);
-      background: rgba(10,72,102,0.55);
-    }
-    .dor-emoji {
-      font-size: 2rem;
-      margin-bottom: 0.7rem;
-      filter: drop-shadow(0 0 14px rgba(43,165,232,0.4));
-    }
-    .dor-texto {
-      font-style: italic;
-      color: var(--pearl-dim);
-      font-size: 0.94rem;
-      line-height: 1.55;
-    }
-
-    .reveal-box {
-      background: linear-gradient(135deg, rgba(43,165,232,0.18) 0%, rgba(10,72,102,0.4) 100%);
-      border: 1px solid rgba(92,194,240,0.35);
-      border-radius: var(--r-lg);
-      padding: 2rem 1.75rem;
-      text-align: center;
-      margin: 2rem auto;
-      max-width: 640px;
-      backdrop-filter: blur(10px);
-      box-shadow: var(--shadow-glow);
-    }
-    .reveal-box-icon {
-      width: 56px; height: 56px;
-      margin: 0 auto 1.2rem;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, var(--sub-bright), var(--sub-mid));
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 0 24px var(--sub-glow);
-    }
+    /* DOR */
+    .dor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 0.85rem; margin: 2rem 0 3rem; }
+    .dor-card { background: rgba(10,72,102,0.35); border: 1px solid rgba(43,165,232,0.2); border-radius: var(--r-md); padding: 1.4rem 1.2rem; text-align: center; transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), border-color 0.3s, background 0.3s; backdrop-filter: blur(6px); }
+    .dor-card:hover { transform: translateY(-4px); border-color: var(--sub-light); background: rgba(10,72,102,0.55); }
+    .dor-emoji { font-size: 2rem; margin-bottom: 0.7rem; filter: drop-shadow(0 0 14px rgba(43,165,232,0.4)); }
+    .dor-texto { font-style: italic; color: var(--pearl-dim); font-size: 0.94rem; line-height: 1.55; }
+    .reveal-box { background: linear-gradient(135deg, rgba(43,165,232,0.18) 0%, rgba(10,72,102,0.4) 100%); border: 1px solid rgba(92,194,240,0.35); border-radius: var(--r-lg); padding: 2rem 1.75rem; text-align: center; margin: 2rem auto; max-width: 640px; backdrop-filter: blur(10px); box-shadow: var(--shadow-glow); }
+    .reveal-box-icon { width: 56px; height: 56px; margin: 0 auto 1.2rem; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--sub-bright), var(--sub-mid)); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 24px var(--sub-glow); }
     .reveal-box-icon i { color: var(--pearl); font-size: 1.4rem; }
-    .reveal-box h3 {
-      font-family: var(--font-display);
-      font-size: 1.18rem;
-      font-weight: 700;
-      color: var(--pearl);
-      margin-bottom: 0.7rem;
-      line-height: 1.45;
-    }
-    .reveal-box p {
-      color: var(--pearl-dim);
-      font-size: 0.96rem;
-      line-height: 1.65;
-    }
+    .reveal-box h3 { font-family: var(--font-display); font-size: 1.18rem; font-weight: 700; color: var(--pearl); margin-bottom: 0.7rem; line-height: 1.45; }
+    .reveal-box p  { color: var(--pearl-dim); font-size: 0.96rem; line-height: 1.65; }
 
-    /* ═══════════════════════════════════════════════════════════
-       SOBRE O TESTE — citação + 3 pilares
-       ═══════════════════════════════════════════════════════════ */
-    .quote-box {
-      border-left: 3px solid var(--sub-bright);
-      padding: 1.3rem 1.6rem;
-      margin: 2rem auto;
-      max-width: 660px;
-      background: rgba(10,72,102,0.3);
-      border-radius: 0 var(--r-md) var(--r-md) 0;
-      box-shadow: -4px 0 24px var(--sub-glow-soft);
-    }
-    .quote-text {
-      font-style: italic;
-      font-size: 1.08rem;
-      color: var(--pearl);
-      line-height: 1.7;
-      margin-bottom: 0.85rem;
-    }
-    .quote-author {
-      font-family: var(--font-display);
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: var(--sub-bright);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .pillars {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1.25rem;
-      margin: 2.5rem 0;
-    }
-    .pillar {
-      background: rgba(10,72,102,0.35);
-      border: 1px solid rgba(43,165,232,0.2);
-      border-radius: var(--r-md);
-      padding: 1.75rem 1.35rem;
-      text-align: center;
-      transition: transform 0.3s, border-color 0.3s;
-      backdrop-filter: blur(6px);
-    }
-    .pillar:hover {
-      transform: translateY(-4px);
-      border-color: var(--sub-light);
-    }
-    .pillar-icon {
-      width: 56px; height: 56px;
-      margin: 0 auto 1.1rem;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, var(--sub-bright), var(--sub-mid) 60%, var(--sub-deep-2));
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 0 20px var(--sub-glow-soft);
-    }
+    /* SOBRE */
+    .quote-box { border-left: 3px solid var(--sub-bright); padding: 1.3rem 1.6rem; margin: 2rem auto; max-width: 660px; background: rgba(10,72,102,0.3); border-radius: 0 var(--r-md) var(--r-md) 0; box-shadow: -4px 0 24px var(--sub-glow-soft); }
+    .quote-text { font-style: italic; font-size: 1.08rem; color: var(--pearl); line-height: 1.7; margin-bottom: 0.85rem; }
+    .quote-author { font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; color: var(--sub-bright); letter-spacing: 0.08em; text-transform: uppercase; }
+    .pillars { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 1.25rem; margin: 2.5rem 0; }
+    .pillar { background: rgba(10,72,102,0.35); border: 1px solid rgba(43,165,232,0.2); border-radius: var(--r-md); padding: 1.75rem 1.35rem; text-align: center; transition: transform 0.3s, border-color 0.3s; backdrop-filter: blur(6px); }
+    .pillar:hover { transform: translateY(-4px); border-color: var(--sub-light); }
+    .pillar-icon { width: 56px; height: 56px; margin: 0 auto 1.1rem; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--sub-bright), var(--sub-mid) 60%, var(--sub-deep-2)); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px var(--sub-glow-soft); }
     .pillar-icon i { color: var(--pearl); font-size: 1.35rem; }
-    .pillar h4 {
-      font-family: var(--font-display);
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--pearl);
-      margin-bottom: 0.55rem;
-      letter-spacing: 0.01em;
-    }
-    .pillar p {
-      font-size: 0.88rem;
-      color: var(--pearl-dim);
-      line-height: 1.6;
-    }
+    .pillar h4 { font-family: var(--font-display); font-size: 1rem; font-weight: 700; color: var(--pearl); margin-bottom: 0.55rem; }
+    .pillar p  { font-size: 0.88rem; color: var(--pearl-dim); line-height: 1.6; }
 
-    /* ═══════════════════════════════════════════════════════════
-       VÍDEO
-       ═══════════════════════════════════════════════════════════ */
+    /* VÍDEO */
     .video-section { background: rgba(5,25,41,0.4); }
-    .video-wrap {
-      max-width: 800px;
-      margin: 0 auto;
-      aspect-ratio: 16/9;
-      border-radius: var(--r-md);
-      overflow: hidden;
-      border: 1px solid rgba(43,165,232,0.3);
-      box-shadow: var(--shadow-card), 0 0 60px var(--sub-glow-soft);
-      background: #000;
-      position: relative;
-    }
+    .video-wrap { max-width: 800px; margin: 0 auto; aspect-ratio: 16/9; border-radius: var(--r-md); overflow: hidden; border: 1px solid rgba(43,165,232,0.3); box-shadow: var(--shadow-card), 0 0 60px var(--sub-glow-soft); background: #000; position: relative; }
     .video-wrap iframe { width: 100%; height: 100%; border: none; }
-    .video-placeholder {
-      position: absolute; inset: 0;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 0.85rem;
-      background: radial-gradient(circle at center, var(--sub-night), var(--sub-deep));
-      color: var(--pearl-mute);
-      font-size: 0.85rem;
-    }
+    .video-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.85rem; background: radial-gradient(circle at center, var(--sub-night), var(--sub-deep)); color: var(--pearl-mute); font-size: 0.85rem; }
     .video-placeholder i { font-size: 3rem; color: var(--sub-bright); opacity: 0.7; }
 
-    /* ═══════════════════════════════════════════════════════════
-       DEPOIMENTOS — carrossel infinito
-       ═══════════════════════════════════════════════════════════ */
+    /* DEPOIMENTOS */
     .dep-section { background: rgba(5,25,41,0.3); }
-    .dep-carousel {
-      overflow: hidden;
-      mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%);
-      -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%);
-      margin: 0 -1.5rem;
-    }
-    .dep-track {
-      display: flex; gap: 1.25rem;
-      padding: 1.5rem 1.5rem;
-      animation: depScroll 42s linear infinite;
-      width: max-content;
-    }
-    @keyframes depScroll {
-      0%   { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
-    .dep-card {
-      flex-shrink: 0;
-      width: 320px;
-      background:
-        linear-gradient(rgba(10,72,102,0.55), rgba(10,72,102,0.55)) padding-box,
-        linear-gradient(135deg, var(--sub-bright), var(--sub-light)) border-box;
-      border: 1px solid transparent;
-      border-radius: var(--r-md);
-      padding: 1.5rem 1.4rem;
-      display: flex; flex-direction: column;
-      gap: 0.85rem;
-      box-shadow: 0 12px 28px rgba(5,25,41,0.4);
-    }
-    .dep-quote-icon {
-      font-size: 1.4rem;
-      color: var(--sub-bright);
-      line-height: 1;
-    }
-    .dep-texto {
-      font-style: italic;
-      color: var(--pearl);
-      font-size: 0.96rem;
-      line-height: 1.65;
-      flex: 1;
-    }
-    .dep-autor {
-      font-family: var(--font-display);
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: var(--sub-bright);
-      letter-spacing: 0.04em;
-      padding-top: 0.85rem;
-      border-top: 1px solid rgba(43,165,232,0.2);
-    }
+    .dep-carousel { overflow: hidden; mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%); -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%); margin: 0 -1.5rem; }
+    .dep-track { display: flex; gap: 1.25rem; padding: 1.5rem 1.5rem; animation: depScroll 42s linear infinite; width: max-content; }
+    @keyframes depScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    .dep-card { flex-shrink: 0; width: 320px; background: linear-gradient(rgba(10,72,102,0.55),rgba(10,72,102,0.55)) padding-box, linear-gradient(135deg,var(--sub-bright),var(--sub-light)) border-box; border: 1px solid transparent; border-radius: var(--r-md); padding: 1.5rem 1.4rem; display: flex; flex-direction: column; gap: 0.85rem; box-shadow: 0 12px 28px rgba(5,25,41,0.4); }
+    .dep-quote-icon { font-size: 1.4rem; color: var(--sub-bright); }
+    .dep-texto      { font-style: italic; color: var(--pearl); font-size: 0.96rem; line-height: 1.65; flex: 1; }
+    .dep-autor      { font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; color: var(--sub-bright); letter-spacing: 0.04em; padding-top: 0.85rem; border-top: 1px solid rgba(43,165,232,0.2); }
 
-    /* ═══════════════════════════════════════════════════════════
-       CRIADORES
-       ═══════════════════════════════════════════════════════════ */
+    /* CRIADORES */
     .criadores-section { text-align: center; }
-    .criadores-foto {
-      width: 220px; height: 220px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin: 0 auto 2rem;
-      border: 2px solid rgba(43,165,232,0.45);
-      box-shadow: 0 0 36px var(--sub-glow);
-    }
-    .criadores-texto {
-      max-width: 660px; margin: 0 auto;
-      color: var(--pearl-dim);
-      font-size: 1rem;
-      line-height: 1.8;
-    }
+    .criadores-foto { width: 220px; height: 220px; border-radius: 50%; object-fit: cover; margin: 0 auto 2rem; border: 2px solid rgba(43,165,232,0.45); box-shadow: 0 0 36px var(--sub-glow); }
+    .criadores-texto { max-width: 660px; margin: 0 auto; color: var(--pearl-dim); font-size: 1rem; line-height: 1.8; }
     .criadores-texto p { margin-bottom: 1.1rem; }
-    .criadores-texto p strong {
-      color: var(--gold-light);
-      font-weight: 700;
-    }
+    .criadores-texto p strong { color: var(--gold-light); font-weight: 700; }
 
-    /* ═══════════════════════════════════════════════════════════
-       3 PASSOS
-       ═══════════════════════════════════════════════════════════ */
-    .passos {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1.5rem;
-      margin: 3rem 0;
-    }
-    .passo {
-      background: rgba(10,72,102,0.35);
-      border: 1px solid rgba(43,165,232,0.2);
-      border-radius: var(--r-md);
-      padding: 2rem 1.4rem 1.7rem;
-      text-align: center;
-      position: relative;
-      backdrop-filter: blur(6px);
-      transition: transform 0.3s, border-color 0.3s;
-    }
+    /* PASSOS */
+    .passos { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 1.5rem; margin: 3rem 0; }
+    .passo { background: rgba(10,72,102,0.35); border: 1px solid rgba(43,165,232,0.2); border-radius: var(--r-md); padding: 2rem 1.4rem 1.7rem; text-align: center; position: relative; backdrop-filter: blur(6px); transition: transform 0.3s, border-color 0.3s; }
     .passo:hover { transform: translateY(-4px); border-color: var(--sub-light); }
-    .passo-num {
-      position: absolute;
-      top: -22px; left: 50%;
-      transform: translateX(-50%);
-      width: 48px; height: 48px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, var(--sub-bright), var(--sub-mid));
-      color: var(--pearl);
-      font-family: var(--font-display);
-      font-weight: 900;
-      font-size: 1.2rem;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 6px 24px var(--sub-glow);
-      animation: passoNumPulse 2.5s ease-in-out infinite;
-    }
-    @keyframes passoNumPulse {
-      0%, 100% { box-shadow: 0 6px 24px var(--sub-glow); }
-      50%      { box-shadow: 0 8px 32px rgba(43,165,232,0.7), 0 0 40px rgba(92,194,240,0.4); }
-    }
-    .passo h4 {
-      font-family: var(--font-display);
-      font-size: 1.02rem;
-      font-weight: 700;
-      color: var(--pearl);
-      margin: 0.85rem 0 0.55rem;
-    }
-    .passo p {
-      font-size: 0.9rem;
-      color: var(--pearl-dim);
-      line-height: 1.6;
-    }
-
-    .badges-row {
-      display: flex; flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.85rem;
-      margin: 2.5rem 0 1rem;
-    }
-    .badge-info {
-      display: inline-flex; align-items: center; gap: 0.55rem;
-      padding: 0.6rem 1.1rem;
-      background: rgba(245,240,232,0.04);
-      border: 1px solid rgba(43,165,232,0.22);
-      border-radius: var(--r-full);
-      font-size: 0.82rem;
-      color: var(--pearl-dim);
-      backdrop-filter: blur(6px);
-    }
+    .passo-num { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); width: 48px; height: 48px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--sub-bright), var(--sub-mid)); color: var(--pearl); font-family: var(--font-display); font-weight: 900; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 24px var(--sub-glow); animation: passoNumPulse 2.5s ease-in-out infinite; }
+    @keyframes passoNumPulse { 0%, 100% { box-shadow: 0 6px 24px var(--sub-glow); } 50% { box-shadow: 0 8px 32px rgba(43,165,232,0.7), 0 0 40px rgba(92,194,240,0.4); } }
+    .passo h4 { font-family: var(--font-display); font-size: 1.02rem; font-weight: 700; color: var(--pearl); margin: 0.85rem 0 0.55rem; }
+    .passo p  { font-size: 0.9rem; color: var(--pearl-dim); line-height: 1.6; }
+    .badges-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.85rem; margin: 2.5rem 0 1rem; }
+    .badge-info { display: inline-flex; align-items: center; gap: 0.55rem; padding: 0.6rem 1.1rem; background: rgba(245,240,232,0.04); border: 1px solid rgba(43,165,232,0.22); border-radius: var(--r-full); font-size: 0.82rem; color: var(--pearl-dim); backdrop-filter: blur(6px); }
     .badge-info i { color: var(--sub-bright); }
 
-    /* ═══════════════════════════════════════════════════════════
-       FAQ
-       ═══════════════════════════════════════════════════════════ */
+    /* FAQ */
     .faq-section { background: rgba(5,25,41,0.3); }
     .faq-list { max-width: 720px; margin: 0 auto; }
-    .faq-item {
-      border-bottom: 1px solid rgba(43,165,232,0.15);
-      transition: background 0.2s;
-    }
-    .faq-q {
-      width: 100%;
-      padding: 1.3rem 0.5rem;
-      display: flex; justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-      font-family: var(--font-display);
-      font-size: 0.96rem;
-      font-weight: 600;
-      color: var(--pearl);
-      text-align: left;
-      transition: color 0.2s;
-    }
+    .faq-item { border-bottom: 1px solid rgba(43,165,232,0.15); }
+    .faq-q { width: 100%; padding: 1.3rem 0.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-family: var(--font-display); font-size: 0.96rem; font-weight: 600; color: var(--pearl); text-align: left; transition: color 0.2s; }
     .faq-q:hover { color: var(--sub-bright); }
-    .faq-q .icon {
-      width: 28px; height: 28px;
-      flex-shrink: 0;
-      border-radius: 50%;
-      background: rgba(43,165,232,0.12);
-      display: flex; align-items: center; justify-content: center;
-      color: var(--sub-bright);
-      transition: transform 0.3s, background 0.3s;
-    }
-    .faq-item.open .faq-q .icon {
-      transform: rotate(45deg);
-      background: rgba(43,165,232,0.25);
-    }
-    .faq-a {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1), padding 0.3s;
-      color: var(--pearl-dim);
-      font-size: 0.94rem;
-      line-height: 1.75;
-    }
-    .faq-item.open .faq-a {
-      max-height: 500px;
-      padding: 0 0.5rem 1.3rem;
-    }
+    .faq-q .icon { width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; background: rgba(43,165,232,0.12); display: flex; align-items: center; justify-content: center; color: var(--sub-bright); transition: transform 0.3s, background 0.3s; }
+    .faq-item.open .faq-q .icon { transform: rotate(45deg); background: rgba(43,165,232,0.25); }
+    .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.22,1,0.36,1), padding 0.3s; color: var(--pearl-dim); font-size: 0.94rem; line-height: 1.75; }
+    .faq-item.open .faq-a { max-height: 500px; padding: 0 0.5rem 1.3rem; }
 
-    /* ═══════════════════════════════════════════════════════════
-       CTA FINAL
-       ═══════════════════════════════════════════════════════════ */
-    .cta-final {
-      background: linear-gradient(180deg, rgba(5,25,41,0.5) 0%, rgba(43,165,232,0.18) 100%);
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-    .cta-final::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse 60% 50% at 50% 100%, rgba(43,165,232,0.3), transparent);
-      pointer-events: none;
-    }
-    .cta-final-box {
-      max-width: 660px; margin: 0 auto;
-      padding: 1rem;
-      position: relative;
-    }
-    .cta-final-pre {
-      font-size: 1.05rem;
-      color: var(--pearl-dim);
-      margin-bottom: 1.5rem;
-      line-height: 1.75;
-    }
+    /* CTA FINAL */
+    .cta-final { background: linear-gradient(180deg, rgba(5,25,41,0.5) 0%, rgba(43,165,232,0.18) 100%); text-align: center; position: relative; overflow: hidden; }
+    .cta-final::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 50% at 50% 100%, rgba(43,165,232,0.3), transparent); pointer-events: none; }
+    .cta-final-box { max-width: 660px; margin: 0 auto; padding: 1rem; position: relative; }
+    .cta-final-pre { font-size: 1.05rem; color: var(--pearl-dim); margin-bottom: 1.5rem; line-height: 1.75; }
     .cta-final-pre strong { color: var(--sub-bright); font-weight: 700; }
-    .cta-checks {
-      display: flex; flex-direction: column;
-      gap: 0.65rem;
-      margin: 2rem auto;
-      max-width: 380px;
-      text-align: left;
-    }
-    .cta-check {
-      display: flex; align-items: center; gap: 0.75rem;
-      font-size: 0.92rem;
-      color: var(--pearl);
-    }
-    .cta-check i {
-      color: var(--sub-bright);
-      width: 20px;
-      font-size: 1rem;
-    }
+    .cta-checks { display: flex; flex-direction: column; gap: 0.65rem; margin: 2rem auto; max-width: 380px; text-align: left; }
+    .cta-check { display: flex; align-items: center; gap: 0.75rem; font-size: 0.92rem; color: var(--pearl); }
+    .cta-check i { color: var(--sub-bright); width: 20px; font-size: 1rem; }
 
-    /* ═══════════════════════════════════════════════════════════
-       FOOTER
-       ═══════════════════════════════════════════════════════════ */
-    footer {
-      padding: 3rem 1.5rem 2rem;
-      text-align: center;
-      background: var(--sub-deep);
-      border-top: 1px solid rgba(43,165,232,0.18);
-    }
-    .footer-logo {
-      height: 26px;
-      margin: 0 auto 1.1rem;
-      opacity: 0.7;
-    }
-    .footer-text {
-      font-size: 0.78rem;
-      color: var(--pearl-mute);
-      line-height: 1.7;
-    }
+    /* ═══ FOOTER — IDÊNTICO AO INDEX.HTML ═══ */
+    footer { padding: 2.5rem 1.5rem 2rem; text-align: center; background: #080500; border-top: 1px solid rgba(43,165,232,0.18); }
+    .footer-logo { height: 26px; margin: 0 auto 1.1rem; opacity: 0.7; }
+    .footer-text { font-size: 0.72rem; color: rgba(245,240,232,0.28); letter-spacing: 0.06em; line-height: 1.7; }
     .footer-text a { color: var(--gold-light); }
     .footer-text a:hover { text-decoration: underline; }
 
-    /* ═══════════════════════════════════════════════════════════
-       BACK TO TOP
-       ═══════════════════════════════════════════════════════════ */
-    .back-top {
-      position: fixed;
-      bottom: 1.5rem; right: 1.5rem;
-      z-index: 80;
-      width: 44px; height: 44px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--sub-bright), var(--sub-light));
-      color: var(--sub-deep);
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; transform: translateY(20px) scale(0.8);
-      pointer-events: none;
-      transition: all 0.3s;
-      box-shadow: 0 8px 24px var(--sub-glow);
-    }
+    /* BACK TO TOP */
+    .back-top { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 80; width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--sub-bright), var(--sub-light)); color: var(--sub-deep); display: flex; align-items: center; justify-content: center; opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.3s; box-shadow: 0 8px 24px var(--sub-glow); }
     .back-top.visible { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
     .back-top:hover { transform: translateY(-3px) scale(1.05); }
 
-    /* ═══════════════════════════════════════════════════════════
-       RIPPLE
-       ═══════════════════════════════════════════════════════════ */
-    .ripple {
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.4);
-      transform: scale(0);
-      animation: rippleAnim 0.6s ease-out;
-      pointer-events: none;
-    }
-    @keyframes rippleAnim {
-      to { transform: scale(2.5); opacity: 0; }
-    }
+    /* RIPPLE */
+    .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.4); transform: scale(0); animation: rippleAnim 0.6s ease-out; pointer-events: none; }
+    @keyframes rippleAnim { to { transform: scale(2.5); opacity: 0; } }
 
-    /* ═══════════════════════════════════════════════════════════
-       OVERLAY PLACEHOLDER (enquanto execução do teste não existe)
-       Quando o teste real ficar pronto, este bloco pode ficar
-       ou ser removido sem afetar a LP.
-       ═══════════════════════════════════════════════════════════ */
-    #overlay-iniciar {
-      position: fixed; inset: 0;
-      z-index: 9999;
-      display: flex; align-items: center; justify-content: center;
-      padding: 1.5rem;
-      animation: ovIn 0.25s ease;
-    }
+    /* OVERLAY */
+    #overlay-iniciar { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1.5rem; animation: ovIn 0.25s ease; }
     @keyframes ovIn { from { opacity: 0; } to { opacity: 1; } }
-    .overlay-iniciar-bg {
-      position: absolute; inset: 0;
-      background: rgba(5,25,41,0.85);
-      backdrop-filter: blur(8px);
-    }
-    .overlay-iniciar-card {
-      position: relative;
-      max-width: 420px;
-      width: 100%;
-      background:
-        linear-gradient(rgba(10,72,102,0.92), rgba(10,45,68,0.92)) padding-box,
-        linear-gradient(135deg, var(--sub-bright), var(--sub-light)) border-box;
-      border: 1px solid transparent;
-      border-radius: var(--r-lg);
-      padding: 2rem 1.75rem;
-      text-align: center;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 0 80px var(--sub-glow-soft);
-      animation: ovCardIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-    @keyframes ovCardIn {
-      from { opacity: 0; transform: translateY(20px) scale(0.95); }
-      to   { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    .overlay-iniciar-icon {
-      width: 64px; height: 64px;
-      margin: 0 auto 1.25rem;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, var(--sub-bright), var(--sub-mid));
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 0 32px var(--sub-glow);
-    }
+    .overlay-iniciar-bg { position: absolute; inset: 0; background: rgba(5,25,41,0.85); backdrop-filter: blur(8px); }
+    .overlay-iniciar-card { position: relative; max-width: 420px; width: 100%; background: linear-gradient(rgba(10,72,102,0.92),rgba(10,45,68,0.92)) padding-box, linear-gradient(135deg,var(--sub-bright),var(--sub-light)) border-box; border: 1px solid transparent; border-radius: var(--r-lg); padding: 2rem 1.75rem; text-align: center; box-shadow: 0 24px 64px rgba(0,0,0,0.5),0 0 80px var(--sub-glow-soft); animation: ovCardIn 0.45s cubic-bezier(0.22,1,0.36,1); }
+    @keyframes ovCardIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .overlay-iniciar-icon { width: 64px; height: 64px; margin: 0 auto 1.25rem; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--sub-bright), var(--sub-mid)); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 32px var(--sub-glow); }
     .overlay-iniciar-icon i { color: var(--pearl); font-size: 1.6rem; }
-    .overlay-iniciar-card h3 {
-      font-family: var(--font-display);
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: var(--pearl);
-      margin-bottom: 0.7rem;
-    }
-    .overlay-iniciar-card p {
-      color: var(--pearl-dim);
-      font-size: 0.95rem;
-      line-height: 1.65;
-      margin-bottom: 1.5rem;
-    }
-    .overlay-iniciar-card button {
-      font-family: var(--font-display);
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: var(--sub-deep);
-      background: linear-gradient(135deg, var(--sub-bright), var(--sub-light));
-      border-radius: var(--r-full);
-      padding: 0.75rem 1.75rem;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      transition: transform 0.2s;
-    }
+    .overlay-iniciar-card h3 { font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; color: var(--pearl); margin-bottom: 0.7rem; }
+    .overlay-iniciar-card p  { color: var(--pearl-dim); font-size: 0.95rem; line-height: 1.65; margin-bottom: 1.5rem; }
+    .overlay-iniciar-card button { font-family: var(--font-display); font-size: 0.82rem; font-weight: 700; color: var(--sub-deep); background: linear-gradient(135deg,var(--sub-bright),var(--sub-light)); border-radius: var(--r-full); padding: 0.75rem 1.75rem; letter-spacing: 0.04em; text-transform: uppercase; transition: transform 0.2s; }
     .overlay-iniciar-card button:hover { transform: translateY(-2px); }
 
-    /* ═══════════════════════════════════════════════════════════
-       RESPONSIVO
-       ═══════════════════════════════════════════════════════════ */
+    /* RESPONSIVO */
     @media (max-width: 640px) {
       section { padding: 4rem 1.25rem; }
       .hero { padding: 2rem 1.25rem 3rem; }
@@ -1132,15 +295,13 @@
       .dep-card { width: 280px; }
       .criadores-foto { width: 180px; height: 180px; }
       .navbar-actions .btn-login { display: none; }
+      .btn-cadastro-nav { display: none; }
     }
-    @media (max-width: 380px) {
-      .hero-logo-wrap { max-width: 300px; }
-    }
+    @media (max-width: 380px) { .hero-logo-wrap { max-width: 300px; } }
   </style>
 </head>
 <body class="locked">
 
-  <!-- ═══════════════ LOADING ═══════════════ -->
   <div class="loader" id="loader">
     <div class="loader-inner">
       <div class="loader-orb"></div>
@@ -1148,10 +309,8 @@
     </div>
   </div>
 
-  <!-- SCROLL PROGRESS -->
   <div class="scroll-progress" id="scroll-progress"></div>
 
-  <!-- BACKGROUND -->
   <div class="bg-base"></div>
   <div class="orbs">
     <div class="orb orb-1"></div>
@@ -1160,353 +319,184 @@
   </div>
   <div class="stars" id="stars"></div>
 
-  <!-- NAVBAR -->
+  <!-- NAVBAR — IDÊNTICA AO INDEX.HTML -->
   <nav class="navbar" id="navbar">
     <a href="/"><img src="/assets/logo-horizontal.png" alt="Vida Mágica" class="navbar-logo" onerror="this.style.display='none'"></a>
-    <div class="navbar-actions">
-      <a href="/auth" class="btn-login">Entrar</a>
-      <a href="/cadastro" class="btn-cadastro-nav">Criar conta</a>
-    </div>
+    <div class="navbar-actions" id="navbar-actions"></div>
   </nav>
 
-  <!-- TICKER (filtra por tag teste_subconsciente) -->
-  <div class="ticker-wrap">
+  <!-- TICKER — tag: teste_subconsciente -->
+  <div class="ticker-wrap" id="ticker-wrap">
     <div class="ticker-track" id="ticker-track"></div>
   </div>
 
   <main>
 
-    <!-- ═══════════════ HERO ═══════════════ -->
     <section class="hero">
       <div class="hero-logo-wrap">
-        <img src="/assets/teste-subconsciente-logo.jpg" alt="Teste do Subconsciente" class="hero-logo">
+        <img src="/assets/products/teste-subconsciente.png" alt="Teste do Subconsciente" class="hero-logo" onerror="this.src='/assets/teste-subconsciente-logo.jpg'">
       </div>
-
       <p class="hero-eyebrow" data-reveal>O primeiro passo da sua jornada</p>
       <h1 data-reveal>Descubra o que sua <span class="glow">mente esconde</span> de você</h1>
-      <p class="hero-sub" data-reveal>
-        Em 15 perguntas baseadas em lógica comportamental e ciência cognitiva, o teste revela qual padrão invisível do seu subconsciente está dirigindo sua vida — em silêncio, há anos.
-      </p>
-
+      <p class="hero-sub" data-reveal>Em 15 perguntas baseadas em lógica comportamental e ciência cognitiva, o teste revela qual padrão invisível do seu subconsciente está dirigindo sua vida — em silêncio, há anos.</p>
       <div class="selos" data-reveal>
         <span class="selo"><i class="fas fa-brain"></i> Lógica comportamental</span>
         <span class="selo"><i class="fas fa-bolt"></i> Resultado imediato</span>
         <span class="selo"><i class="fas fa-heart"></i> Autoconhecimento profundo</span>
       </div>
-
       <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-hero" data-reveal>
-        <i class="fas fa-arrow-right"></i>
-        Começar o teste
+        <i class="fas fa-arrow-right"></i> Começar o teste
       </a>
       <p class="btn-cta-sub" data-reveal>15 perguntas · 7 minutos · <span class="price-tag" data-preco-inline><span class="price-loading"></span></span></p>
-
       <div class="scroll-hint">
         Role para entender
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
       </div>
     </section>
 
-    <!-- ═══════════════ DOR ═══════════════ -->
     <section id="sobre">
       <div class="container">
         <span class="section-eyebrow" data-reveal>Você se reconhece?</span>
         <h2 class="section-title" data-reveal>Algumas verdades que <span class="glow">ninguém te conta</span></h2>
-        <p class="section-lead" data-reveal>
-          A diferença entre quem prospera e quem fica travado não está no talento, na sorte ou nas circunstâncias — está nos padrões mentais inconscientes que dirigem cada decisão sua. Você já se sentiu assim?
-        </p>
-
+        <p class="section-lead" data-reveal>A diferença entre quem prospera e quem fica travado não está no talento, na sorte ou nas circunstâncias — está nos padrões mentais inconscientes que dirigem cada decisão sua.</p>
         <div class="dor-grid">
-          <div class="dor-card" data-reveal>
-            <div class="dor-emoji">😰</div>
-            <p class="dor-texto">"Tenho medo do que vão pensar de mim."</p>
-          </div>
-          <div class="dor-card" data-reveal>
-            <div class="dor-emoji">😓</div>
-            <p class="dor-texto">"Eu me cobro demais, mesmo sabendo que não preciso."</p>
-          </div>
-          <div class="dor-card" data-reveal>
-            <div class="dor-emoji">😔</div>
-            <p class="dor-texto">"Eu me esforço tanto, mas não saio do lugar."</p>
-          </div>
-          <div class="dor-card" data-reveal>
-            <div class="dor-emoji">🤯</div>
-            <p class="dor-texto">"Minha cabeça não desliga nunca."</p>
-          </div>
-          <div class="dor-card" data-reveal>
-            <div class="dor-emoji">😨</div>
-            <p class="dor-texto">"Tenho medo de não dar conta."</p>
-          </div>
-          <div class="dor-card" data-reveal>
-            <div class="dor-emoji">🔒</div>
-            <p class="dor-texto">"Sinto que tem algo me travando, mas não sei o quê."</p>
-          </div>
+          <div class="dor-card" data-reveal><div class="dor-emoji">😰</div><p class="dor-texto">"Tenho medo do que vão pensar de mim."</p></div>
+          <div class="dor-card" data-reveal><div class="dor-emoji">😓</div><p class="dor-texto">"Eu me cobro demais, mesmo sabendo que não preciso."</p></div>
+          <div class="dor-card" data-reveal><div class="dor-emoji">😔</div><p class="dor-texto">"Eu me esforço tanto, mas não saio do lugar."</p></div>
+          <div class="dor-card" data-reveal><div class="dor-emoji">🤯</div><p class="dor-texto">"Minha cabeça não desliga nunca."</p></div>
+          <div class="dor-card" data-reveal><div class="dor-emoji">😨</div><p class="dor-texto">"Tenho medo de não dar conta."</p></div>
+          <div class="dor-card" data-reveal><div class="dor-emoji">🔒</div><p class="dor-texto">"Sinto que tem algo me travando, mas não sei o quê."</p></div>
         </div>
-
         <div class="reveal-box" data-reveal="zoom">
           <div class="reveal-box-icon"><i class="fas fa-eye"></i></div>
           <h3>O Teste do Subconsciente revela qual desses padrões está dirigindo sua vida</h3>
           <p>Em apenas 15 perguntas, você descobre qual energia mental está bloqueando sua prosperidade — e recebe orientações específicas pra transformar essa limitação em crescimento.</p>
         </div>
-
         <div style="text-align:center" data-reveal>
-          <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-meio-1">
-            <i class="fas fa-arrow-right"></i>
-            Descobrir meu padrão agora
-          </a>
+          <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-meio-1"><i class="fas fa-arrow-right"></i> Descobrir meu padrão agora</a>
         </div>
       </div>
     </section>
 
-    <!-- ═══════════════ O QUE É ═══════════════ -->
     <section>
       <div class="container">
         <span class="section-eyebrow" data-reveal>O que é</span>
         <h2 class="section-title" data-reveal>Teste do <span class="glow">Subconsciente</span></h2>
-
         <div class="quote-box" data-reveal="left">
           <p class="quote-text">"Prosperidade não é só sobre dinheiro. Prosperidade é ter e sentir plenitude por completo. É ter sucesso em todas as áreas, é crescer em tudo e sempre."</p>
           <p class="quote-author">— Suellen Seragi</p>
         </div>
-
-        <p class="section-lead" data-reveal style="margin-bottom:1.25rem">
-          Você já parou pra pensar que <strong style="color:var(--sub-bright)">padrões do subconsciente podem travar sua vida inteira</strong> sem você notar? Esse teste revela exatamente quais são esses padrões e como eles se manifestam no seu dia a dia.
-        </p>
-        <p class="section-lead" data-reveal>
-          Todos nós carregamos crenças mentais que moldam nossos resultados. Algumas nos impulsionam. Outras, <em>invisíveis</em>, nos travam — em silêncio, há anos.
-        </p>
-
+        <p class="section-lead" data-reveal style="margin-bottom:1.25rem">Você já parou pra pensar que <strong style="color:var(--sub-bright)">padrões do subconsciente podem travar sua vida inteira</strong> sem você notar? Esse teste revela exatamente quais são esses padrões.</p>
+        <p class="section-lead" data-reveal>Todos nós carregamos crenças mentais que moldam nossos resultados. Algumas nos impulsionam. Outras, <em>invisíveis</em>, nos travam — em silêncio, há anos.</p>
         <div class="pillars">
-          <div class="pillar" data-reveal>
-            <div class="pillar-icon"><i class="fas fa-microscope"></i></div>
-            <h4>Baseado em ciência</h4>
-            <p>15 perguntas estruturadas em lógica comportamental e ciência cognitiva.</p>
-          </div>
-          <div class="pillar" data-reveal>
-            <div class="pillar-icon"><i class="fas fa-eye"></i></div>
-            <h4>Revelação clara</h4>
-            <p>Identifica qual energia está bloqueando sua prosperidade e como ela se manifesta.</p>
-          </div>
-          <div class="pillar" data-reveal>
-            <div class="pillar-icon"><i class="fas fa-compass"></i></div>
-            <h4>Direção concreta</h4>
-            <p>Descobre padrões invisíveis que fazem você se sabotar — e o caminho pra destravar.</p>
-          </div>
+          <div class="pillar" data-reveal><div class="pillar-icon"><i class="fas fa-microscope"></i></div><h4>Baseado em ciência</h4><p>15 perguntas estruturadas em lógica comportamental e ciência cognitiva.</p></div>
+          <div class="pillar" data-reveal><div class="pillar-icon"><i class="fas fa-eye"></i></div><h4>Revelação clara</h4><p>Identifica qual energia está bloqueando sua prosperidade e como ela se manifesta.</p></div>
+          <div class="pillar" data-reveal><div class="pillar-icon"><i class="fas fa-compass"></i></div><h4>Direção concreta</h4><p>Descobre padrões invisíveis que fazem você se sabotar — e o caminho pra destravar.</p></div>
         </div>
-
         <div style="text-align:center;margin-top:2rem" data-reveal>
-          <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-meio-2">
-            Fazer o teste agora
-          </a>
+          <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-meio-2">Fazer o teste agora</a>
         </div>
       </div>
     </section>
 
-    <!-- ═══════════════ VÍDEO ═══════════════ -->
     <section class="video-section">
       <div class="container">
         <span class="section-eyebrow" data-reveal>Recado da Suellen</span>
         <h2 class="section-title" data-reveal>Como o teste <span class="glow">funciona</span></h2>
         <p class="section-lead" data-reveal>Assista ao recado direto da Suellen explicando como o teste foi construído e o que você vai descobrir no resultado.</p>
-
         <div class="video-wrap" data-reveal="zoom">
           <div class="video-placeholder">
             <i class="fas fa-play-circle"></i>
             <span>Vídeo em breve</span>
           </div>
-          <!-- Quando tiver URL: <iframe src="https://www.youtube.com/embed/VIDEO_ID" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe> -->
         </div>
-
         <div style="text-align:center;margin-top:2.5rem" data-reveal>
-          <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-video">
-            Quero meu resultado
-          </a>
+          <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-video">Quero meu resultado</a>
         </div>
       </div>
     </section>
 
-    <!-- ═══════════════ DEPOIMENTOS ═══════════════ -->
     <section class="dep-section">
       <div class="container">
         <span class="section-eyebrow" data-reveal>Quem já fez</span>
         <h2 class="section-title" data-reveal>Relatos reais de <span class="glow">descobertas</span></h2>
         <p class="section-lead" data-reveal>Veja o que pessoas como você descobriram sobre si mesmas.</p>
       </div>
-
       <div class="dep-carousel">
         <div class="dep-track" id="dep-track"></div>
       </div>
-
       <div class="container" style="text-align:center;margin-top:2rem" data-reveal>
-        <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-dep">
-          Quero descobrir o meu
-        </a>
+        <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-dep">Quero descobrir o meu</a>
       </div>
     </section>
 
-    <!-- ═══════════════ CRIADORES ═══════════════ -->
     <section class="criadores-section">
       <div class="container-narrow">
         <span class="section-eyebrow" data-reveal>Quem criou</span>
         <h2 class="section-title" data-reveal>Renato &amp; <span class="glow">Suellen Seragi</span></h2>
-
-        <img src="/assets/criadores.jpg" alt="Renato e Suellen Seragi" class="criadores-foto" data-reveal="zoom" onerror="this.style.display='none'">
-
+        <img src="/assets/casal-creators.jpeg" alt="Renato e Suellen Seragi" class="criadores-foto" data-reveal="zoom" onerror="this.style.display='none'">
         <div class="criadores-texto" data-reveal>
           <p>Renato e Suellen são casados há 21 anos e pais de quatro filhos. Se uniram muito jovens e, desde o início da caminhada juntos, sempre tiveram um propósito em comum: <strong>conectar pessoas com Deus</strong>.</p>
-
           <p>Começaram trabalhando com jovens na igreja, depois com casais, e ao longo dos anos perceberam um padrão que se repetia em quase todas as histórias: os conflitos externos geralmente têm origem interna — em crenças, traumas, inseguranças e repetições inconscientes.</p>
-
           <p>Aprofundando nos estudos, certificaram na teoria o que já haviam comprovado na prática. Foi a partir dessa percepção que mergulharam em uma jornada profunda no digital, impactando centenas de milhares de pessoas.</p>
-
-          <p><strong>O Teste do Subconsciente nasceu dessa trajetória.</strong> Eles identificaram que a falta de consciência sobre essas travas internas era o principal fator de sabotagem na vida das pessoas — nos relacionamentos, na carreira, nas finanças e principalmente na saúde emocional.</p>
+          <p><strong>O Teste do Subconsciente nasceu dessa trajetória.</strong> Eles identificaram que a falta de consciência sobre essas travas internas era o principal fator de sabotagem na vida das pessoas.</p>
         </div>
       </div>
     </section>
 
-    <!-- ═══════════════ COMO FUNCIONA ═══════════════ -->
     <section>
       <div class="container">
         <span class="section-eyebrow" data-reveal>Como funciona</span>
         <h2 class="section-title" data-reveal>Um processo <span class="glow">simples e profundo</span></h2>
         <p class="section-lead" data-reveal>Em 3 passos, você sai do automático e entra na consciência.</p>
-
         <div class="passos">
-          <div class="passo" data-reveal>
-            <div class="passo-num">1</div>
-            <h4>15 perguntas estratégicas</h4>
-            <p>Situações reais do dia a dia que revelam padrões comportamentais mapeados pela ciência cognitiva.</p>
-          </div>
-          <div class="passo" data-reveal>
-            <div class="passo-num">2</div>
-            <h4>Análise instantânea</h4>
-            <p>Suas respostas são processadas para identificar a energia dominante que dirige sua vida hoje.</p>
-          </div>
-          <div class="passo" data-reveal>
-            <div class="passo-num">3</div>
-            <h4>Resultado personalizado</h4>
-            <p>Você recebe na hora qual energia está bloqueando sua prosperidade e como ela se manifesta em você.</p>
-          </div>
+          <div class="passo" data-reveal><div class="passo-num">1</div><h4>15 perguntas estratégicas</h4><p>Situações reais do dia a dia que revelam padrões comportamentais mapeados pela ciência cognitiva.</p></div>
+          <div class="passo" data-reveal><div class="passo-num">2</div><h4>Análise instantânea</h4><p>Suas respostas são processadas para identificar a energia dominante que dirige sua vida hoje.</p></div>
+          <div class="passo" data-reveal><div class="passo-num">3</div><h4>Resultado personalizado</h4><p>Você recebe na hora qual energia está bloqueando sua prosperidade e como ela se manifesta em você.</p></div>
         </div>
-
         <div class="badges-row" data-reveal>
           <span class="badge-info"><i class="fas fa-bolt"></i> Resultado imediato</span>
           <span class="badge-info"><i class="fas fa-envelope"></i> Enviado por e-mail</span>
           <span class="badge-info"><i class="fas fa-shield-halved"></i> 100% seguro</span>
         </div>
-
         <div style="text-align:center;margin-top:2rem" data-reveal>
-          <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-passos">
-            Começar agora
-          </a>
+          <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-passos">Começar agora</a>
         </div>
       </div>
     </section>
 
-    <!-- ═══════════════ FAQ ═══════════════ -->
     <section class="faq-section">
       <div class="container-narrow">
         <span class="section-eyebrow" data-reveal>Dúvidas</span>
         <h2 class="section-title" data-reveal>Perguntas <span class="glow">frequentes</span></h2>
-
         <div class="faq-list" data-reveal>
-          <div class="faq-item">
-            <button class="faq-q">
-              Sou evangélica, o teste está de acordo com minha fé?
-              <span class="icon"><i class="fas fa-plus"></i></span>
-            </button>
-            <div class="faq-a">
-              <p>Sim. Ele não contradiz a fé — pelo contrário, foi criado sob a luz dos princípios do Grande Livro (a Bíblia) e te ajuda a remover bloqueios pra viver tudo o que Deus deseja pra você.</p>
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <button class="faq-q">
-              Não acredito nesse tipo de teste. Por que faria?
-              <span class="icon"><i class="fas fa-plus"></i></span>
-            </button>
-            <div class="faq-a">
-              <p>Porque ele não é baseado em achismos, e sim em comportamentos reais do dia a dia que revelam crenças limitantes já estudadas pela ciência cognitiva. Coisas como se sabotar quando tudo vai bem, evitar tomar decisões, sentir culpa ao ganhar dinheiro ou ter dificuldade em se valorizar — tudo isso são sinais de padrões mentais inconscientes.</p>
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <button class="faq-q">
-              É só mais um teste de internet?
-              <span class="icon"><i class="fas fa-plus"></i></span>
-            </button>
-            <div class="faq-a">
-              <p>Não. Foi criado com base em lógica comportamental e ciência cognitiva, e não para entretenimento. O objetivo não é te rotular, e sim revelar o padrão invisível que pode estar travando sua vida nas áreas mais importantes.</p>
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <button class="faq-q">
-              Por que ele é pago?
-              <span class="icon"><i class="fas fa-plus"></i></span>
-            </button>
-            <div class="faq-a">
-              <p>Porque não é genérico nem automático. Você recebe um resultado personalizado, com explicações estruturadas em métodos de autoconhecimento, ciência cognitiva e experiência prática com milhares de pessoas.</p>
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <button class="faq-q">
-              Como recebo o resultado?
-              <span class="icon"><i class="fas fa-plus"></i></span>
-            </button>
-            <div class="faq-a">
-              <p>Logo após finalizar e pagar, você é levada à página de resultado. Também recebe seu resultado por e-mail, com uma análise clara sobre qual energia está bloqueando sua prosperidade — e como ela se manifesta no seu dia a dia.</p>
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <button class="faq-q">
-              Vou conseguir mudar só com o teste?
-              <span class="icon"><i class="fas fa-plus"></i></span>
-            </button>
-            <div class="faq-a">
-              <p>O teste não resolve tudo sozinho — é o primeiro passo. Mas ao identificar com clareza o que está te travando hoje, você ganha consciência e direção. Isso por si só já transforma como você se enxerga e toma decisões.</p>
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <button class="faq-q">
-              E se eu não tiver dinheiro pra fazer o teste?
-              <span class="icon"><i class="fas fa-plus"></i></span>
-            </button>
-            <div class="faq-a">
-              <p>Talvez sua trava esteja justamente em não se permitir investir em você. Esse teste te mostra exatamente isso — investir um valor pequeno em você mesma pode destravar muito mais do que ele custa.</p>
-            </div>
-          </div>
+          <div class="faq-item"><button class="faq-q">Sou evangélica, o teste está de acordo com minha fé?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Sim. Ele não contradiz a fé — pelo contrário, foi criado sob a luz dos princípios da Bíblia e te ajuda a remover bloqueios pra viver tudo o que Deus deseja pra você.</p></div></div>
+          <div class="faq-item"><button class="faq-q">Não acredito nesse tipo de teste. Por que faria?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Porque ele não é baseado em achismos, e sim em comportamentos reais do dia a dia que revelam crenças limitantes já estudadas pela ciência cognitiva.</p></div></div>
+          <div class="faq-item"><button class="faq-q">É só mais um teste de internet?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Não. Foi criado com base em lógica comportamental e ciência cognitiva, e não para entretenimento. O objetivo não é te rotular, e sim revelar o padrão invisível que pode estar travando sua vida.</p></div></div>
+          <div class="faq-item"><button class="faq-q">Por que ele é pago?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Porque não é genérico nem automático. Você recebe um resultado personalizado, com explicações estruturadas em métodos de autoconhecimento e ciência cognitiva.</p></div></div>
+          <div class="faq-item"><button class="faq-q">Como recebo o resultado?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Logo após finalizar e pagar, você é levada à página de resultado. Também recebe seu resultado por e-mail, com uma análise clara sobre qual energia está bloqueando sua prosperidade.</p></div></div>
+          <div class="faq-item"><button class="faq-q">Vou conseguir mudar só com o teste?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>O teste não resolve tudo sozinho — é o primeiro passo. Mas ao identificar com clareza o que está te travando hoje, você ganha consciência e direção.</p></div></div>
+          <div class="faq-item"><button class="faq-q">E se eu não tiver dinheiro pra fazer o teste?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Talvez sua trava esteja justamente em não se permitir investir em você. Esse teste te mostra exatamente isso.</p></div></div>
         </div>
       </div>
     </section>
 
-    <!-- ═══════════════ CTA FINAL ═══════════════ -->
     <section class="cta-final">
       <div class="cta-final-box">
         <span class="section-eyebrow" data-reveal>Está pronta?</span>
         <h2 class="section-title" data-reveal>Descobrir o que <span class="glow">te impede</span> de prosperar</h2>
-        <p class="cta-final-pre" data-reveal>
-          Em 7 minutos, você sai do escuro e ganha clareza sobre o padrão invisível que dirige suas decisões há anos. <strong>Esse é o ponto de partida.</strong>
-        </p>
-
+        <p class="cta-final-pre" data-reveal>Em 7 minutos, você sai do escuro e ganha clareza sobre o padrão invisível que dirige suas decisões há anos. <strong>Esse é o ponto de partida.</strong></p>
         <div class="cta-checks" data-reveal>
           <div class="cta-check"><i class="fas fa-check"></i> Resultado imediato no final do teste</div>
           <div class="cta-check"><i class="fas fa-check"></i> Análise enviada também por e-mail</div>
           <div class="cta-check"><i class="fas fa-check"></i> Baseado em ciência cognitiva</div>
           <div class="cta-check"><i class="fas fa-check"></i> Pagamento 100% seguro</div>
         </div>
-
         <div data-reveal="zoom">
           <span class="price-big" data-preco-grande><span class="price-loading" style="width:140px;height:2.5rem"></span></span>
           <p class="price-caption">Pagamento único · sem mensalidade</p>
-
           <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-final" style="font-size:1rem;padding:1.2rem 2.4rem">
-            <i class="fas fa-arrow-right"></i>
-            Fazer o teste agora
+            <i class="fas fa-arrow-right"></i> Fazer o teste agora
           </a>
         </div>
         <p class="btn-cta-sub" data-reveal>Resultado revelado em ~7 minutos</p>
@@ -1515,16 +505,12 @@
 
   </main>
 
-  <!-- RODAPÉ -->
+  <!-- FOOTER — IDÊNTICO AO INDEX.HTML -->
   <footer>
     <img src="/assets/logo-horizontal.png" alt="Vida Mágica" class="footer-logo" onerror="this.style.display='none'">
-    <p class="footer-text">
-      Renato &amp; Suellen Seragi · Vida Mágica · 2025<br>
-      Suporte: <a href="https://instagram.com/suellenseragi" target="_blank" rel="noopener">@suellenseragi</a>
-    </p>
+    <p class="footer-text">Renato &amp; Suellen Seragi · Vida Mágica · 2025</p>
   </footer>
 
-  <!-- BACK TO TOP -->
   <button class="back-top" id="back-top" aria-label="Voltar ao topo">
     <i class="fas fa-arrow-up"></i>
   </button>
@@ -1533,7 +519,7 @@
     const API_BASE = window.location.origin;
     const TAG_LP   = 'teste_subconsciente';
 
-    /* ═══════════════ LOADING ═══════════════ */
+    /* LOADING */
     window.addEventListener('load', () => {
       setTimeout(() => {
         document.getElementById('loader').classList.add('hidden');
@@ -1541,7 +527,7 @@
       }, 1400);
     });
 
-    /* ═══════════════ STARS / PARTICLES ═══════════════ */
+    /* STARS */
     (function() {
       const el = document.getElementById('stars');
       if (!el) return;
@@ -1549,302 +535,282 @@
       for (let i = 0; i < QTD; i++) {
         const p = document.createElement('div');
         p.className = 'star';
-        const size  = Math.random() * 3 + 1.2;
-        const dur   = Math.random() * 14 + 14;
-        const delay = Math.random() * dur;
-        const left  = Math.random() * 100;
-        const opa   = Math.random() * 0.4 + 0.5;
-        p.style.cssText = `
-          width:${size}px; height:${size}px;
-          left:${left}%;
-          opacity: ${opa};
-          box-shadow: 0 0 ${size*3}px rgba(245,240,232,0.7);
-          animation-duration: ${dur}s;
-          animation-delay: -${delay}s;
-        `;
+        const size = Math.random() * 3 + 1.2;
+        const dur  = Math.random() * 14 + 14;
+        p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;opacity:${Math.random()*0.4+0.5};box-shadow:0 0 ${size*3}px rgba(245,240,232,0.7);animation-duration:${dur}s;animation-delay:-${Math.random()*dur}s;`;
         el.appendChild(p);
       }
     })();
 
-    /* ═══════════════ TICKER + DEPOIMENTOS (filtrados por tag) ═══════════════ */
-    (async function() {
-      let depoimentos = [];
+    /* NAVBAR AUTH — idêntico ao index.html */
+    window.VmSession = window.VmSession || (function(){
+      const K='vm_s',P='vm_lembrar',U='vm_u';
+      function salvar(d,l){const p=l!==undefined?l:getLembrar();localStorage.setItem(P,p?'1':'0');const s=p?localStorage:sessionStorage,o=p?sessionStorage:localStorage;o.removeItem(K);s.setItem(K,JSON.stringify(d));if(p&&d.usuario?.nome){localStorage.setItem(U,JSON.stringify({nome:d.usuario.nome,email:d.usuario.email||null,telefone_formatado:d.usuario.telefone_formatado||null,foto_url:d.usuario.foto_url||null}));}else if(!p){localStorage.removeItem(U);}}
+      function carregar(){try{const r=localStorage.getItem(K)||sessionStorage.getItem(K);return r?JSON.parse(r):null;}catch{return null;}}
+      function destruir(){localStorage.removeItem(K);sessionStorage.removeItem(K);}
+      function getAccess(){return carregar()?.access_token||null;}
+      function getRefresh(){return carregar()?.refresh_token||null;}
+      function getLembrar(){return localStorage.getItem(P)!=='0';}
+      function getUsuarioLembrado(){try{return JSON.parse(localStorage.getItem(U)||'null');}catch{return null;}}
+      function limparUsuarioLembrado(){localStorage.removeItem(U);}
+      return{salvar,carregar,destruir,getAccess,getRefresh,getLembrar,getUsuarioLembrado,limparUsuarioLembrado};
+    })();
 
-      const urls = [
-        `${API_BASE}/api/depoimentos?tag=${TAG_LP}`,
-        `${API_BASE}/api/depoimentos`,
-      ];
-      for (const url of urls) {
-        try {
-          const r = await fetch(url, { headers: {'Accept':'application/json'} });
-          if (r.ok) {
-            const data = await r.json();
-            if (Array.isArray(data) && data.length) { depoimentos = data; break; }
+    (async function navbarAuth(){
+      const actions = document.getElementById('navbar-actions');
+      if (!actions) return;
+
+      function renderBotoes(){
+        actions.innerHTML = `<a href="/auth?intencional" class="btn-login">Entrar</a><a href="/auth?cadastro" class="btn-cadastro-nav">Criar conta</a>`;
+      }
+
+      function renderAvatar(usuario){
+        const iniciais = (usuario.nome||'?').split(' ').slice(0,2).map(p=>p[0]).join('').toUpperCase();
+        const fotoHtml = usuario.foto_url
+          ? `<img src="${usuario.foto_url}" alt="${usuario.nome}" class="nav-avatar-img">`
+          : `<span class="nav-avatar-iniciais">${iniciais}</span>`;
+        actions.innerHTML = `
+          <div class="nav-avatar-wrap" id="nav-avatar-wrap">
+            <button class="nav-avatar-btn" onclick="toggleNavDrop()" aria-label="Menu">${fotoHtml}</button>
+            <div class="nav-drop" id="nav-drop">
+              <div class="nav-drop-header">
+                <div class="nav-drop-nome">${usuario.nome||'Minha conta'}</div>
+                <div class="nav-drop-sub">${usuario.email||usuario.telefone_formatado||''}</div>
+              </div>
+              <a href="/app" class="nav-drop-item"><span class="nav-drop-icon">🌱</span> Minha área</a>
+              <div class="nav-drop-sep"></div>
+              <button class="nav-drop-item danger" onclick="navLogout()"><span class="nav-drop-icon">🚪</span> Sair</button>
+            </div>
+          </div>`;
+        document.addEventListener('click', function(e){
+          const wrap = document.getElementById('nav-avatar-wrap');
+          if (wrap && !wrap.contains(e.target)) document.getElementById('nav-drop')?.classList.remove('aberto');
+        });
+      }
+
+      window.toggleNavDrop = function(){ document.getElementById('nav-drop')?.classList.toggle('aberto'); };
+      window.navLogout = async function(){
+        try{ await fetch(`${API_BASE}/api/auth/logout`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:VmSession.getRefresh()})}); }catch{}
+        VmSession.destruir(); renderBotoes();
+      };
+
+      const access = VmSession.getAccess();
+      if (!access){ renderBotoes(); return; }
+      try{
+        const r = await fetch(`${API_BASE}/api/auth/me`,{headers:{Authorization:`Bearer ${access}`}});
+        if (r.ok){ renderAvatar(await r.json()); return; }
+      }catch{}
+      const refresh = VmSession.getRefresh();
+      if (refresh){
+        try{
+          const r2 = await fetch(`${API_BASE}/api/auth/renovar`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refresh})});
+          if (r2.ok){
+            const d = await r2.json();
+            VmSession.salvar(d, VmSession.getLembrar());
+            const r3 = await fetch(`${API_BASE}/api/auth/me`,{headers:{Authorization:`Bearer ${d.access_token}`}});
+            if (r3.ok){ renderAvatar(await r3.json()); return; }
           }
-        } catch (_) {}
+        }catch{}
+      }
+      VmSession.destruir(); renderBotoes();
+    })();
+
+    /* TICKER + DEPOIMENTOS */
+    (async function(){
+      let deps = [];
+      let shuffleAtivo = false;
+      try{
+        const [r1, r2] = await Promise.allSettled([
+          fetch(`${API_BASE}/api/depoimentos?tag=${TAG_LP}`,{headers:{'Accept':'application/json'}}),
+          fetch(`${API_BASE}/api/config`,{headers:{'Accept':'application/json'}}),
+        ]);
+        if(r1.status==='fulfilled'&&r1.value.ok){ const d=await r1.value.json(); if(Array.isArray(d)&&d.length) deps=d; }
+        if(!deps.length){
+          const r3 = await fetch(`${API_BASE}/api/depoimentos`,{headers:{'Accept':'application/json'}});
+          if(r3.ok){const d=await r3.json();if(Array.isArray(d)&&d.length)deps=d;}
+        }
+        if(r2.status==='fulfilled'&&r2.value.ok){const cfg=await r2.value.json();shuffleAtivo=cfg.shuffle_depoimentos||false;}
+      }catch(_){}
+
+      if(shuffleAtivo){
+        const a=[...deps];
+        for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+        deps=a;
       }
 
-      if (!depoimentos.length) {
-        depoimentos = [
-          { nome: 'Camila S.', cidade: '', texto: 'Uau, fiquei sem palavras. Ler o resultado do teste me desarmou por dentro. Me senti vista e não julgada.' },
-          { nome: 'Fernanda M.', cidade: '', texto: 'Foi certeiro! Meu marido fez também — ele ficou de cara com o quanto o resultado bateu com a realidade dele.' },
-          { nome: 'Juliana R.', cidade: '', texto: 'Deu nível 1 de prosperidade. Tudo a ver com o que estou passando. Li várias vezes pra acreditar.' },
-          { nome: 'Patrícia L.', cidade: '', texto: 'Fiz o teste, foi incrível. Emocionei, chorei, mas era exatamente tudo o que eu precisava ouvir.' },
-          { nome: 'Renata C.', cidade: '', texto: 'Que benção é esse teste?! Realmente me identifiquei muito com o resultado. Até chorei refletindo sobre tudo.' },
-          { nome: 'Beatriz A.', cidade: '', texto: 'Tomei coragem e fiz. Falou tanto comigo que hoje comprei o curso que ele me recomendou.' },
-          { nome: 'Marina P.', cidade: '', texto: 'Acabei de fazer e foi certeiro. 40% de energia de desordem — fez todo sentido.' },
-        ];
-      }
+      if(!deps.length) deps=[
+        {nome:'Camila S.',cidade:'',texto:'Fiquei sem palavras. Ler o resultado do teste me desarmou por dentro. Me senti vista e não julgada.'},
+        {nome:'Fernanda M.',cidade:'',texto:'Foi certeiro! Meu marido fez também — ele ficou de cara com o quanto o resultado bateu com a realidade dele.'},
+        {nome:'Juliana R.',cidade:'',texto:'Deu nível 1 de prosperidade. Tudo a ver com o que estou passando. Li várias vezes pra acreditar.'},
+        {nome:'Patrícia L.',cidade:'',texto:'Fiz o teste, foi incrível. Emocionei, chorei, mas era exatamente tudo o que eu precisava ouvir.'},
+        {nome:'Renata C.',cidade:'',texto:'Que benção é esse teste?! Realmente me identifiquei muito com o resultado. Até chorei refletindo.'},
+        {nome:'Beatriz A.',cidade:'',texto:'Tomei coragem e fiz. Falou tanto comigo que hoje comprei o curso que ele me recomendou.'},
+        {nome:'Marina P.',cidade:'',texto:'Acabei de fazer e foi certeiro. 40% de energia de desordem — fez todo sentido.'},
+      ];
 
-      // Ticker
-      const tickerTrack = document.getElementById('ticker-track');
-      if (tickerTrack) {
-        const doubled = [...depoimentos, ...depoimentos];
-        tickerTrack.innerHTML = doubled.map(d => {
-          const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
-          return `<span class="ticker-item"><span class="q">"</span>${d.texto}<span class="q">"</span> — <strong>${autor}</strong></span>`;
+      const ticker = document.getElementById('ticker-track');
+      if(ticker){
+        const d2=[...deps,...deps];
+        ticker.innerHTML=d2.map(d=>{
+          const a=d.cidade?`${d.nome}, ${d.cidade}`:d.nome;
+          return `<span class="ticker-item"><span class="q">"</span>${d.texto}<span class="q">"</span> — <strong>${a}</strong></span>`;
         }).join('');
       }
 
-      // Carrossel grande
       const depTrack = document.getElementById('dep-track');
-      if (depTrack) {
-        const doubled = [...depoimentos, ...depoimentos];
-        depTrack.innerHTML = doubled.map(d => {
-          const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
-          return `<div class="dep-card"><div class="dep-quote-icon"><i class="fas fa-quote-left"></i></div><p class="dep-texto">${d.texto}</p><div class="dep-autor">— ${autor}</div></div>`;
+      if(depTrack){
+        const d2=[...deps,...deps];
+        depTrack.innerHTML=d2.map(d=>{
+          const a=d.cidade?`${d.nome}, ${d.cidade}`:d.nome;
+          return `<div class="dep-card"><div class="dep-quote-icon"><i class="fas fa-quote-left"></i></div><p class="dep-texto">${d.texto}</p><div class="dep-autor">— ${a}</div></div>`;
         }).join('');
       }
     })();
 
-    /* ═══════════════ REVEAL ON SCROLL ═══════════════ */
-    (function() {
-      const obs = new IntersectionObserver((entries) => {
-        entries.forEach(e => {
-          if (e.isIntersecting) {
+    /* ═══ REVEAL ON SCROLL — corrigido
+       rootMargin '-80px': só dispara quando o elemento já está 80px
+       dentro da viewport, não adiantado.
+       threshold 0.08: 8% visível já basta.
+       Stagger suave: 100ms entre irmãos diretos com data-reveal. */
+    (function(){
+      const obs = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+          if(e.isIntersecting){
             e.target.classList.add('in');
             obs.unobserve(e.target);
           }
         });
-      }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+      },{threshold:0.08, rootMargin:'0px 0px -80px 0px'});
 
-      document.querySelectorAll('[data-reveal]').forEach((el, i) => {
-        // Stagger leve — irmãos diretos do mesmo pai recebem delay incremental
-        const idx = Array.from(el.parentNode.children).indexOf(el);
-        if (idx >= 0 && idx < 6) el.style.transitionDelay = (idx * 80) + 'ms';
+      document.querySelectorAll('[data-reveal]').forEach((el)=>{
+        const siblings = Array.from(el.parentNode.children).filter(c=>c.hasAttribute('data-reveal'));
+        const idx = siblings.indexOf(el);
+        if(idx>0 && idx<5) el.style.transitionDelay=(idx*100)+'ms';
         obs.observe(el);
       });
     })();
 
-    /* ═══════════════ SCROLL PROGRESS + NAVBAR + TICKER HIDE ═══════════════ */
-    (function() {
-      const bar = document.getElementById('scroll-progress');
-      const nav = document.getElementById('navbar');
-      const ticker = document.querySelector('.ticker-wrap');
+    /* ═══ SCROLL: fluido com requestAnimationFrame
+       Navbar esconde ao descer (após 200px), reaparece ao subir.
+       Sem throttle manual — rAF garante sem jank. */
+    (function(){
+      const bar     = document.getElementById('scroll-progress');
+      const nav     = document.getElementById('navbar');
+      const tw      = document.getElementById('ticker-wrap');
       const backTop = document.getElementById('back-top');
-      let lastY = 0;
+      let lastY = 0, ticking = false;
 
-      window.addEventListener('scroll', () => {
+      function update(){
         const h = document.documentElement.scrollHeight - window.innerHeight;
         const y = window.scrollY;
-        const pct = h > 0 ? y / h : 0;
-        bar.style.transform = `scaleX(${pct})`;
+        bar.style.transform = `scaleX(${h>0?y/h:0})`;
+        if(y>200 && y>lastY){ nav.classList.add('hidden'); tw.classList.add('hidden'); }
+        else{ nav.classList.remove('hidden'); tw.classList.remove('hidden'); }
+        lastY=y;
+        backTop.classList.toggle('visible', y>600);
+        ticking=false;
+      }
 
-        // Navbar + ticker autohide juntos
-        if (y > 200 && y > lastY) {
-          nav.classList.add('hidden');
-          ticker.classList.add('hidden');
-        } else {
-          nav.classList.remove('hidden');
-          ticker.classList.remove('hidden');
-        }
-        lastY = y;
+      window.addEventListener('scroll',()=>{
+        if(!ticking){ ticking=true; requestAnimationFrame(update); }
+      },{passive:true});
 
-        // Back to top
-        if (y > 600) backTop.classList.add('visible');
-        else backTop.classList.remove('visible');
-      }, { passive: true });
-
-      backTop.addEventListener('click', () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
+      backTop.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
     })();
 
-    /* ═══════════════ FAQ ACCORDION ═══════════════ */
-    document.querySelectorAll('.faq-q').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const item = btn.closest('.faq-item');
-        const aberto = item.classList.contains('open');
-        document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
-        if (!aberto) item.classList.add('open');
+    /* FAQ */
+    document.querySelectorAll('.faq-q').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const item=btn.closest('.faq-item');
+        const aberto=item.classList.contains('open');
+        document.querySelectorAll('.faq-item.open').forEach(i=>i.classList.remove('open'));
+        if(!aberto) item.classList.add('open');
       });
     });
 
-    /* ═══════════════ RIPPLE NO CTA ═══════════════ */
-    document.querySelectorAll('.btn-cta').forEach(btn => {
-      btn.style.position = 'relative';
-      btn.style.overflow = 'hidden';
-      btn.addEventListener('click', (e) => {
-        const rect = btn.getBoundingClientRect();
-        const size = Math.max(rect.width, rect.height);
-        const r = document.createElement('span');
-        r.className = 'ripple';
-        r.style.width = r.style.height = size + 'px';
-        r.style.left = (e.clientX - rect.left - size/2) + 'px';
-        r.style.top  = (e.clientY - rect.top  - size/2) + 'px';
+    /* RIPPLE */
+    document.querySelectorAll('.btn-cta').forEach(btn=>{
+      btn.style.position='relative'; btn.style.overflow='hidden';
+      btn.addEventListener('click',(e)=>{
+        const rect=btn.getBoundingClientRect();
+        const size=Math.max(rect.width,rect.height);
+        const r=document.createElement('span');
+        r.className='ripple';
+        r.style.cssText=`width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
         btn.appendChild(r);
-        setTimeout(() => r.remove(), 600);
+        setTimeout(()=>r.remove(),600);
       });
     });
 
-    /* ═══════════════ PARALLAX SUTIL DOS ORBES (mouse) ═══════════════ */
-    (function() {
-      if (window.matchMedia('(hover: none)').matches) return; // pula em mobile
-      const orbs = document.querySelectorAll('.orb');
-      window.addEventListener('mousemove', (e) => {
-        const x = (e.clientX / window.innerWidth - 0.5) * 2;
-        const y = (e.clientY / window.innerHeight - 0.5) * 2;
-        orbs.forEach((o, i) => {
-          const sp = (i + 1) * 8;
-          o.style.transform = `translate(${x * sp}px, ${y * sp}px)`;
+    /* PARALLAX ORBES */
+    (function(){
+      if(window.matchMedia('(hover: none)').matches) return;
+      const orbs=document.querySelectorAll('.orb');
+      let rafId;
+      window.addEventListener('mousemove',(e)=>{
+        cancelAnimationFrame(rafId);
+        rafId=requestAnimationFrame(()=>{
+          const x=(e.clientX/window.innerWidth-0.5)*2;
+          const y=(e.clientY/window.innerHeight-0.5)*2;
+          orbs.forEach((o,i)=>{const sp=(i+1)*8;o.style.transform=`translate(${x*sp}px,${y*sp}px)`;});
         });
       });
     })();
 
-    /* ═══════════════ PREÇO (fonte: /api/precos — admin) ═══════════════ */
-    /* REGRA: preço NUNCA é hardcoded. Sempre vem de /api/precos.        */
-    /* Painel admin /admin/precos é a fonte única da verdade.            */
-    (async function() {
-      const PRODUTO_KEY = 'teste_subconsciente';
-
-      function formatarReal(valor) {
-        // valor vem como "19,00" — separa reais e centavos
-        const limpo = String(valor).trim();
-        const [reais, centavos] = limpo.includes(',')
-          ? limpo.split(',')
-          : [limpo, '00'];
-        return { reais: reais.replace('.', ''), centavos: (centavos || '00').padEnd(2, '0').slice(0, 2) };
-      }
-
-      function renderInline(reais, centavos) {
-        // Pra usar inline em texto: "R$ 19"
-        return `R$ ${reais}${centavos !== '00' ? ',' + centavos : ''}`;
-      }
-
-      function renderBig(reais, centavos) {
-        // Pra preço grande do CTA final: R$ 19 ,00
-        return `<span class="currency">R$</span>${reais}<span class="cents">${centavos}</span>`;
-      }
-
-      try {
-        const r = await fetch(`${API_BASE}/api/precos`, { headers: {'Accept':'application/json'} });
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        const data = await r.json();
-        const produto = data && data[PRODUTO_KEY];
-
-        if (!produto) {
-          console.warn(`[precos] chave "${PRODUTO_KEY}" não encontrada em /api/precos`);
-          // Esconde os elementos de preço se a chave não existir (evita esqueleto eterno)
-          document.querySelectorAll('[data-preco-inline], [data-preco-grande]').forEach(el => {
-            el.style.display = 'none';
-          });
-          return;
-        }
-
-        // O endpoint enriquece com `exibir_avista` (calcula promo se ativa)
-        const valorBruto = produto.exibir_avista || produto.preco_avista || produto.preco_padrao;
-        if (!valorBruto) {
-          console.warn(`[precos] produto "${PRODUTO_KEY}" sem preço_avista`);
-          return;
-        }
-
-        const { reais, centavos } = formatarReal(valorBruto);
-
-        // Inline (subtexto do hero)
-        document.querySelectorAll('[data-preco-inline]').forEach(el => {
-          el.innerHTML = renderInline(reais, centavos);
-        });
-        // Grande (CTA final)
-        document.querySelectorAll('[data-preco-grande]').forEach(el => {
-          el.innerHTML = renderBig(reais, centavos);
-        });
-      } catch (err) {
-        console.error('[precos] erro ao buscar /api/precos:', err);
-        // Em caso de erro, esconde os placeholders pra não ficar shimmer eterno
-        document.querySelectorAll('[data-preco-inline], [data-preco-grande]').forEach(el => {
-          el.style.display = 'none';
-        });
+    /* PREÇO — fonte única: /api/precos. Nunca hardcoded. */
+    (async function(){
+      const KEY='teste_subconsciente';
+      function fmt(v){const s=String(v).trim();const[r,c]=s.includes(',')?s.split(','):[s,'00'];return{reais:r.replace('.',''),centavos:(c||'00').padEnd(2,'0').slice(0,2)};}
+      try{
+        const res=await fetch(`${API_BASE}/api/precos`,{headers:{'Accept':'application/json'}});
+        if(!res.ok) throw new Error();
+        const data=await res.json();
+        const p=data&&data[KEY];
+        if(!p){document.querySelectorAll('[data-preco-inline],[data-preco-grande]').forEach(el=>el.style.display='none');return;}
+        const v=p.exibir_avista||p.preco_avista||p.preco_padrao;
+        if(!v) return;
+        const{reais,centavos}=fmt(v);
+        document.querySelectorAll('[data-preco-inline]').forEach(el=>{el.innerHTML=`R$ ${reais}${centavos!=='00'?','+centavos:''}`;});
+        document.querySelectorAll('[data-preco-grande]').forEach(el=>{el.innerHTML=`<span class="currency">R$</span>${reais}<span class="cents">${centavos}</span>`;});
+      }catch{
+        document.querySelectorAll('[data-preco-inline],[data-preco-grande]').forEach(el=>el.style.display='none');
       }
     })();
 
-    /* ═══════════════ INICIAR O TESTE (placeholder) ═══════════════ */
-    /* Quando a execução do teste estiver pronta, trocar o conteúdo */
-    /* desta função por: esconder LP + montar/exibir o teste em     */
-    /* tela cheia (mesma página, sem navegação).                     */
-    (function() {
-      function iniciarTeste(e) {
-        if (e) e.preventDefault();
-
-        // PLACEHOLDER — remover quando a execução do teste estiver pronta
-        // ──────────────────────────────────────────────────────────────
-        // Mostra um overlay temporário avisando que o teste está vindo.
-        let ov = document.getElementById('overlay-iniciar');
-        if (!ov) {
-          ov = document.createElement('div');
-          ov.id = 'overlay-iniciar';
-          ov.innerHTML = `
-            <div class="overlay-iniciar-bg" onclick="document.getElementById('overlay-iniciar').remove()"></div>
-            <div class="overlay-iniciar-card">
-              <div class="overlay-iniciar-icon">
-                <i class="fas fa-hourglass-half"></i>
-              </div>
-              <h3>Teste em construção</h3>
-              <p>A execução do teste está sendo finalizada. Em breve você poderá começar direto daqui — sem sair desta página.</p>
-              <button onclick="document.getElementById('overlay-iniciar').remove()">Voltar</button>
-            </div>
-          `;
+    /* INICIAR TESTE (placeholder) */
+    (function(){
+      function iniciarTeste(e){
+        if(e) e.preventDefault();
+        let ov=document.getElementById('overlay-iniciar');
+        if(!ov){
+          ov=document.createElement('div');ov.id='overlay-iniciar';
+          ov.innerHTML=`<div class="overlay-iniciar-bg" onclick="document.getElementById('overlay-iniciar').remove()"></div><div class="overlay-iniciar-card"><div class="overlay-iniciar-icon"><i class="fas fa-hourglass-half"></i></div><h3>Teste em construção</h3><p>A execução do teste está sendo finalizada. Em breve você poderá começar direto daqui.</p><button onclick="document.getElementById('overlay-iniciar').remove()">Voltar</button></div>`;
           document.body.appendChild(ov);
         }
-        // ──────────────────────────────────────────────────────────────
       }
-
-      document.querySelectorAll('[data-iniciar-teste]').forEach(el => {
-        el.addEventListener('click', iniciarTeste);
-      });
-
-      // Expor pra console (debug)
-      window.iniciarTeste = iniciarTeste;
+      document.querySelectorAll('[data-iniciar-teste]').forEach(el=>el.addEventListener('click',iniciarTeste));
+      window.iniciarTeste=iniciarTeste;
     })();
 
-    /* ═══════════════ UTMs nos CTAs ═══════════════ */
-    (function() {
-      const params = new URLSearchParams(window.location.search);
-      const utms = {
-        utm_source:   params.get('utm_source')   || sessionStorage.getItem('utm_source')   || 'lp_teste_subconsciente',
-        utm_medium:   params.get('utm_medium')   || sessionStorage.getItem('utm_medium')   || 'organic',
-        utm_campaign: params.get('utm_campaign') || sessionStorage.getItem('utm_campaign') || '',
+    /* UTMs */
+    (function(){
+      const p=new URLSearchParams(window.location.search);
+      const utms={
+        utm_source:  p.get('utm_source')  ||sessionStorage.getItem('utm_source')  ||'lp_teste_subconsciente',
+        utm_medium:  p.get('utm_medium')  ||sessionStorage.getItem('utm_medium')  ||'organic',
+        utm_campaign:p.get('utm_campaign')||sessionStorage.getItem('utm_campaign')||'',
       };
-      sessionStorage.setItem('utm_source',   utms.utm_source);
-      sessionStorage.setItem('utm_medium',   utms.utm_medium);
-      sessionStorage.setItem('utm_campaign', utms.utm_campaign);
-
-      function addUtms(el, campaign) {
-        if (!el || !el.href) return;
-        try {
-          const url = new URL(el.href, window.location.origin);
-          if (utms.utm_source) url.searchParams.set('utm_source', utms.utm_source);
-          if (utms.utm_medium) url.searchParams.set('utm_medium', utms.utm_medium);
-          url.searchParams.set('utm_campaign', campaign);
-          el.href = url.toString();
-        } catch (_) {}
-      }
-      addUtms(document.getElementById('cta-hero'),   'lp-hero');
-      addUtms(document.getElementById('cta-meio-1'), 'lp-dor');
-      addUtms(document.getElementById('cta-meio-2'), 'lp-sobre');
-      addUtms(document.getElementById('cta-video'),  'lp-video');
-      addUtms(document.getElementById('cta-dep'),    'lp-depoimentos');
-      addUtms(document.getElementById('cta-passos'), 'lp-passos');
-      addUtms(document.getElementById('cta-final'),  'lp-final');
+      sessionStorage.setItem('utm_source',utms.utm_source);
+      sessionStorage.setItem('utm_medium',utms.utm_medium);
+      sessionStorage.setItem('utm_campaign',utms.utm_campaign);
+      function addUtms(el,c){if(!el||!el.href)return;try{const u=new URL(el.href,window.location.origin);if(utms.utm_source)u.searchParams.set('utm_source',utms.utm_source);if(utms.utm_medium)u.searchParams.set('utm_medium',utms.utm_medium);u.searchParams.set('utm_campaign',c);el.href=u.toString();}catch{}}
+      addUtms(document.getElementById('cta-hero'),  'lp-hero');
+      addUtms(document.getElementById('cta-meio-1'),'lp-dor');
+      addUtms(document.getElementById('cta-meio-2'),'lp-sobre');
+      addUtms(document.getElementById('cta-video'), 'lp-video');
+      addUtms(document.getElementById('cta-dep'),   'lp-depoimentos');
+      addUtms(document.getElementById('cta-passos'),'lp-passos');
+      addUtms(document.getElementById('cta-final'), 'lp-final');
     })();
   </script>
 </body>
