@@ -1568,23 +1568,33 @@ async function registrarServiceWorker() {
 }
 
 async function checarMostrarModalNotif() {
+  console.log('[notif-modal] checando...');
   // Não mostra se navegador não suporta
-  if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if (!('Notification' in window)) { console.log('[notif-modal] Notification não suportado'); return; }
+  if (!('serviceWorker' in navigator)) { console.log('[notif-modal] SW não suportado'); return; }
+  if (!('PushManager' in window)) { console.log('[notif-modal] PushManager não suportado'); return; }
+  console.log('[notif-modal] Notification.permission =', Notification.permission);
   // Já está permitido? Garante que tem subscription registrada no servidor
   if (Notification.permission === 'granted') {
-    garantirSubscriptionRegistrada().catch(() => {});
+    garantirSubscriptionRegistrada().catch(err => console.error('[notif sub]', err));
     return;
   }
   // Já foi recusado pelo browser? Não pergunta
-  if (Notification.permission === 'denied') return;
+  if (Notification.permission === 'denied') { console.log('[notif-modal] denied — não mostra'); return; }
 
   // Consulta backend pra saber se mostra o modal (cooldown de 7 dias se "agora não")
   try {
     const r = await fetch(`${API}/api/chat/notif-status`, { headers: authHeader() });
-    if (!r.ok) return;
+    if (!r.ok) { console.warn('[notif-modal] /notif-status falhou:', r.status); return; }
     const d = await r.json();
-    if (d.mostrar_modal) abrirModalNotif();
-  } catch (_) {}
+    console.log('[notif-modal] backend:', d);
+    if (d.mostrar_modal) {
+      console.log('[notif-modal] abrindo modal');
+      abrirModalNotif();
+    } else {
+      console.log('[notif-modal] não deve mostrar');
+    }
+  } catch (err) { console.error('[notif-modal] erro:', err); }
 }
 
 function abrirModalNotif() {
