@@ -169,21 +169,21 @@
       100% { transform: translateX(-50%); }
     }
     .ticker-wrap .ticker-track .ticker-item {
-      display: inline-flex;
+      display: inline-flex !important;
       align-items: center;
       gap: 0.35rem;
-      font-size: 0.73rem;
-      line-height: 1.4;
-      font-weight: 400;
-      color: rgba(245,240,232,0.58);
+      font-size: 0.73rem !important;
+      line-height: 1.4 !important;
+      font-weight: 400 !important;
+      color: rgba(245,240,232,0.58) !important;
       flex-shrink: 0;
-      font-family: var(--font-body);
-      text-transform: none;
-      letter-spacing: normal;
+      font-family: var(--font-body) !important;
+      text-transform: none !important;
+      letter-spacing: normal !important;
     }
     /* Acento azul do produto (substitui o dourado do index) */
-    .ticker-wrap .ticker-track .ticker-item .q     { color: var(--sub-bright); font-size: inherit; font-weight: 400; }
-    .ticker-wrap .ticker-track .ticker-item strong { color: var(--sub-bright); font-weight: 600; font-size: inherit; }
+    .ticker-wrap .ticker-track .ticker-item .q     { color: var(--sub-bright) !important; font-size: inherit !important; font-weight: 400 !important; }
+    .ticker-wrap .ticker-track .ticker-item strong { color: var(--sub-bright) !important; font-weight: 600 !important; font-size: inherit !important; }
 
     /* SCROLL PROGRESS */
     .scroll-progress { position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: 2px; background: linear-gradient(90deg, var(--sub-bright), var(--sub-light), var(--gold-light)); transform-origin: 0 0; transform: scaleX(0); transition: transform 0.05s linear; box-shadow: 0 0 12px var(--sub-glow); }
@@ -220,6 +220,19 @@
     [data-reveal="right"] { transform: translateX(28px); }
     [data-reveal="zoom"]  { transform: scale(0.95); }
     [data-reveal].in { opacity: 1; transform: none; }
+
+    /* Cards do bloco "Algumas verdades" — entrada uniforme,
+       todos sobem juntos. Sem deslocamento lateral, sem stagger. */
+    .dor-card[data-reveal] {
+      opacity: 0;
+      transform: translateY(16px) !important;
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+      transition-delay: 0ms !important;
+    }
+    .dor-card[data-reveal].in {
+      opacity: 1;
+      transform: translateY(0) !important;
+    }
 
     /* HERO */
     .hero { min-height: calc(100vh - 88px); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 3rem 1.5rem 4rem; position: relative; overflow: hidden; }
@@ -789,6 +802,11 @@
       },{ threshold: 0.15, rootMargin: '0px' });
 
       document.querySelectorAll('[data-reveal]').forEach((el)=>{
+        // Cards do .dor-grid entram todos juntos, sem stagger
+        if(el.classList.contains('dor-card')) {
+          obs.observe(el);
+          return;
+        }
         // Stagger sutil (máx 80ms × 4) — só em irmãos diretos com data-reveal
         const siblings = Array.from(el.parentNode.children).filter(c=>c.hasAttribute('data-reveal'));
         const idx = siblings.indexOf(el);
