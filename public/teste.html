@@ -168,18 +168,22 @@
       0%   { transform: translateX(0); }
       100% { transform: translateX(-50%); }
     }
-    .ticker-item {
+    .ticker-wrap .ticker-track .ticker-item {
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
       font-size: 0.73rem;
+      line-height: 1.4;
+      font-weight: 400;
       color: rgba(245,240,232,0.58);
       flex-shrink: 0;
       font-family: var(--font-body);
+      text-transform: none;
+      letter-spacing: normal;
     }
     /* Acento azul do produto (substitui o dourado do index) */
-    .ticker-item .q     { color: var(--sub-bright); }
-    .ticker-item strong { color: var(--sub-bright); font-weight: 600; }
+    .ticker-wrap .ticker-track .ticker-item .q     { color: var(--sub-bright); font-size: inherit; font-weight: 400; }
+    .ticker-wrap .ticker-track .ticker-item strong { color: var(--sub-bright); font-weight: 600; font-size: inherit; }
 
     /* SCROLL PROGRESS */
     .scroll-progress { position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: 2px; background: linear-gradient(90deg, var(--sub-bright), var(--sub-light), var(--gold-light)); transform-origin: 0 0; transform: scaleX(0); transition: transform 0.05s linear; box-shadow: 0 0 12px var(--sub-glow); }
@@ -377,7 +381,7 @@
       section { padding: 4rem 1.25rem; }
       .hero { padding: 2rem 1.25rem 3rem; }
       .hero-logo-wrap { max-width: 360px; margin-bottom: 2rem; }
-      .ticker-item { font-size: 0.7rem; }
+      .ticker-wrap .ticker-track .ticker-item { font-size: 0.7rem; }
       .selo { font-size: 0.72rem; padding: 0.45rem 0.95rem; }
       .btn-cta { font-size: 0.85rem; padding: 0.95rem 1.6rem; }
       .dep-card { width: 280px; }
