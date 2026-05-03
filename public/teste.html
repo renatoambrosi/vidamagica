@@ -30,6 +30,7 @@
       --gold:          #C8922A;
       --gold-light:    #E8C97A;
       --gold-bright:   #F4D998;
+      --color-brown-dark: #1A1205;
       --font-display: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
       --font-body:    'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       --r-md: 14px;
@@ -39,9 +40,21 @@
       --shadow-card: 0 12px 36px rgba(5,25,41,0.45);
     }
 
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
-    body { font-family: var(--font-body); background: var(--sub-deep); color: var(--pearl); min-height: 100vh; overflow-x: hidden; line-height: 1.65; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    body {
+      font-family: var(--font-body);
+      background: var(--sub-deep);
+      color: var(--pearl);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.65;
+      position: relative;
+    }
     body.locked { overflow: hidden; }
     button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
     a { color: inherit; text-decoration: none; }
@@ -59,16 +72,58 @@
     .loader-text { font-family: var(--font-display); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; color: var(--pearl-dim); animation: loaderTextFade 1.6s ease-in-out infinite; }
     @keyframes loaderTextFade { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
-    /* ═══ NAVBAR — IDÊNTICA AO INDEX.HTML ═══
-       Moldura institucional Vida Mágica. Não adaptar ao tema do produto. */
-    .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 1.25rem; background: rgba(13,8,0,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(200,146,42,0.12); height: 52px; transition: transform 0.3s ease; }
+    /* ═══ NAVBAR — IDÊNTICA AO INDEX.HTML ═══ */
+    .navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 1.25rem;
+      background: rgba(13,8,0,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(200,146,42,0.12);
+      height: 52px;
+      transition: transform 0.3s ease;
+    }
     .navbar.hidden { transform: translateY(-100%); }
     .navbar-logo { height: 32px; width: auto; }
     .navbar-actions { display: flex; align-items: center; gap: 0.5rem; }
-    .btn-login { font-family: var(--font-body); font-size: 0.78rem; font-weight: 600; color: var(--gold); background: none; border: 1px solid rgba(200,146,42,0.4); border-radius: var(--r-full); padding: 0.38rem 1rem; cursor: pointer; transition: all 0.2s; text-decoration: none; letter-spacing: 0.05em; }
+
+    .btn-login {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--gold);
+      background: none;
+      border: 1px solid rgba(200,146,42,0.4);
+      border-radius: var(--r-full);
+      padding: 0.38rem 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      letter-spacing: 0.05em;
+    }
     .btn-login:hover { background: rgba(200,146,42,0.1); border-color: var(--gold); }
-    .btn-cadastro-nav { font-family: var(--font-body); font-size: 0.78rem; font-weight: 700; color: #1A1205; background: var(--gold); border: none; border-radius: var(--r-full); padding: 0.42rem 1.1rem; cursor: pointer; transition: all 0.2s; text-decoration: none; letter-spacing: 0.04em; }
+    .btn-cadastro-nav {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--color-brown-dark);
+      background: var(--gold);
+      border: none;
+      border-radius: var(--r-full);
+      padding: 0.42rem 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      letter-spacing: 0.04em;
+    }
     .btn-cadastro-nav:hover { background: #A17523; }
+
+    /* AVATAR NAVBAR — idêntico ao index.html */
     .nav-avatar-wrap { position: relative; }
     .nav-avatar-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(200,146,42,.5); background: rgba(200,146,42,.12); cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0; transition: border-color .2s, box-shadow .2s; }
     .nav-avatar-btn:hover { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(200,146,42,.15); }
@@ -86,15 +141,44 @@
     .nav-drop-sep { height: 1px; background: rgba(200,146,42,.1); margin: .2rem 0; }
     .nav-drop-icon { font-size: .9rem; width: 16px; text-align: center; flex-shrink: 0; }
 
-    /* ═══ TICKER — mesmo layout do index.html
-       Só a cor dos acentos (.q e strong) adota o azul do produto. */
-    .ticker-wrap { position: fixed; top: 52px; left: 0; right: 0; z-index: 99; overflow: hidden; padding: 0.5rem 0; background: rgba(20,14,2,0.95); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(200,146,42,0.12); transition: transform 0.3s ease; }
+    /* ═══ TICKER — IDÊNTICO AO INDEX.HTML
+       Apenas .q e strong adotam a cor azul do produto. */
+    .ticker-wrap {
+      position: fixed;
+      top: 52px; left: 0; right: 0;
+      z-index: 99;
+      overflow: hidden;
+      padding: 0.5rem 0;
+      background: rgba(20,14,2,0.95);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(200,146,42,0.12);
+      transition: transform 0.3s ease;
+    }
     .navbar.hidden + .ticker-wrap,
     .ticker-wrap.hidden { transform: translateY(calc(-100% - 52px)); }
-    .ticker-track { display: flex; gap: 3.5rem; animation: ticker 22s linear infinite; white-space: nowrap; }
-    @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-    .ticker-item { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.73rem; color: rgba(245,240,232,0.58); flex-shrink: 0; font-family: var(--font-body); }
-    .ticker-item .q    { color: var(--sub-bright); }
+
+    .ticker-track {
+      display: flex;
+      gap: 3.5rem;
+      animation: ticker 22s linear infinite;
+      white-space: nowrap;
+    }
+    @keyframes ticker {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .ticker-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.73rem;
+      color: rgba(245,240,232,0.58);
+      flex-shrink: 0;
+      font-family: var(--font-body);
+    }
+    /* Acento azul do produto (substitui o dourado do index) */
+    .ticker-item .q     { color: var(--sub-bright); }
     .ticker-item strong { color: var(--sub-bright); font-weight: 600; }
 
     /* SCROLL PROGRESS */
@@ -118,21 +202,20 @@
     .container { max-width: 960px; margin: 0 auto; width: 100%; }
     .container-narrow { max-width: 680px; margin: 0 auto; width: 100%; }
 
-    /* ═══ REVEAL ON SCROLL — corrigido
-       - rootMargin '-80px' → só dispara quando o elemento já está VISÍVEL
-       - threshold 0.08 → 8% visível já basta
-       - transition 0.7s com easing natural (não agressivo)
-       - stagger máx 100ms entre irmãos (não acumulativo) */
+    /* ═══ REVEAL ON SCROLL — calmo e fluido
+       rootMargin 0 + threshold 0.15: o elemento precisa estar
+       15% visível pra disparar — sem adiantar nada.
+       Transição de 0.65s com easing natural (ease-out). */
     [data-reveal] {
       opacity: 0;
-      transform: translateY(24px);
-      transition: opacity 0.7s ease, transform 0.7s ease;
+      transform: translateY(20px);
+      transition: opacity 0.65s ease-out, transform 0.65s ease-out;
       will-change: opacity, transform;
     }
-    [data-reveal="left"]  { transform: translateX(-32px); }
-    [data-reveal="right"] { transform: translateX(32px); }
-    [data-reveal="zoom"]  { transform: scale(0.94) translateY(16px); }
-    [data-reveal].in { opacity: 1; transform: translate(0,0) scale(1); }
+    [data-reveal="left"]  { transform: translateX(-28px); }
+    [data-reveal="right"] { transform: translateX(28px); }
+    [data-reveal="zoom"]  { transform: scale(0.95); }
+    [data-reveal].in { opacity: 1; transform: none; }
 
     /* HERO */
     .hero { min-height: calc(100vh - 88px); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 3rem 1.5rem 4rem; position: relative; overflow: hidden; }
@@ -256,11 +339,16 @@
     .cta-check i { color: var(--sub-bright); width: 20px; font-size: 1rem; }
 
     /* ═══ FOOTER — IDÊNTICO AO INDEX.HTML ═══ */
-    footer { padding: 2.5rem 1.5rem 2rem; text-align: center; background: #080500; border-top: 1px solid rgba(43,165,232,0.18); }
-    .footer-logo { height: 26px; margin: 0 auto 1.1rem; opacity: 0.7; }
-    .footer-text { font-size: 0.72rem; color: rgba(245,240,232,0.28); letter-spacing: 0.06em; line-height: 1.7; }
-    .footer-text a { color: var(--gold-light); }
-    .footer-text a:hover { text-decoration: underline; }
+    footer {
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      background: #080500;
+    }
+    .footer-text {
+      font-size: 0.72rem;
+      color: rgba(245,240,232,0.28);
+      letter-spacing: 0.06em;
+    }
 
     /* BACK TO TOP */
     .back-top { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 80; width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--sub-bright), var(--sub-light)); color: var(--sub-deep); display: flex; align-items: center; justify-content: center; opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.3s; box-shadow: 0 8px 24px var(--sub-glow); }
@@ -294,8 +382,7 @@
       .btn-cta { font-size: 0.85rem; padding: 0.95rem 1.6rem; }
       .dep-card { width: 280px; }
       .criadores-foto { width: 180px; height: 180px; }
-      .navbar-actions .btn-login { display: none; }
-      .btn-cadastro-nav { display: none; }
+      .navbar-actions .btn-cadastro-nav { display: none; }
     }
     @media (max-width: 380px) { .hero-logo-wrap { max-width: 300px; } }
   </style>
@@ -325,7 +412,7 @@
     <div class="navbar-actions" id="navbar-actions"></div>
   </nav>
 
-  <!-- TICKER — tag: teste_subconsciente -->
+  <!-- TICKER — IDÊNTICO AO INDEX.HTML (cor azul do produto) -->
   <div class="ticker-wrap" id="ticker-wrap">
     <div class="ticker-track" id="ticker-track"></div>
   </div>
@@ -507,7 +594,6 @@
 
   <!-- FOOTER — IDÊNTICO AO INDEX.HTML -->
   <footer>
-    <img src="/assets/logo-horizontal.png" alt="Vida Mágica" class="footer-logo" onerror="this.style.display='none'">
     <p class="footer-text">Renato &amp; Suellen Seragi · Vida Mágica · 2025</p>
   </footer>
 
@@ -615,63 +701,79 @@
       VmSession.destruir(); renderBotoes();
     })();
 
-    /* TICKER + DEPOIMENTOS */
+    /* ═══ TICKER + DEPOIMENTOS — IDÊNTICO AO INDEX.HTML
+       Filtra por tag teste_subconsciente. Fallback geral.
+       Mesma string template do index, sem aspas duplicadas. */
     (async function(){
-      let deps = [];
+      let depoimentos = [];
       let shuffleAtivo = false;
+
       try{
-        const [r1, r2] = await Promise.allSettled([
-          fetch(`${API_BASE}/api/depoimentos?tag=${TAG_LP}`,{headers:{'Accept':'application/json'}}),
-          fetch(`${API_BASE}/api/config`,{headers:{'Accept':'application/json'}}),
-        ]);
-        if(r1.status==='fulfilled'&&r1.value.ok){ const d=await r1.value.json(); if(Array.isArray(d)&&d.length) deps=d; }
-        if(!deps.length){
-          const r3 = await fetch(`${API_BASE}/api/depoimentos`,{headers:{'Accept':'application/json'}});
-          if(r3.ok){const d=await r3.json();if(Array.isArray(d)&&d.length)deps=d;}
+        // Tenta filtro por tag primeiro
+        const r1 = await fetch(`${API_BASE}/api/depoimentos?tag=${TAG_LP}`,{headers:{'Accept':'application/json'},mode:'cors'});
+        if (r1.ok) {
+          const d = await r1.json();
+          if (Array.isArray(d) && d.length) depoimentos = d;
         }
-        if(r2.status==='fulfilled'&&r2.value.ok){const cfg=await r2.value.json();shuffleAtivo=cfg.shuffle_depoimentos||false;}
+        // Se não veio nada com tag, busca geral
+        if (!depoimentos.length) {
+          const r2 = await fetch(`${API_BASE}/api/depoimentos`,{headers:{'Accept':'application/json'},mode:'cors'});
+          if (r2.ok) {
+            const d = await r2.json();
+            if (Array.isArray(d) && d.length) depoimentos = d;
+          }
+        }
+        // Config (shuffle)
+        const r3 = await fetch(`${API_BASE}/api/config`,{headers:{'Accept':'application/json'},mode:'cors'});
+        if (r3.ok) {
+          const cfg = await r3.json();
+          shuffleAtivo = cfg.shuffle_depoimentos || false;
+        }
       }catch(_){}
 
-      if(shuffleAtivo){
-        const a=[...deps];
-        for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
-        deps=a;
+      if (shuffleAtivo) {
+        const a = [...depoimentos];
+        for (let i=a.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+        depoimentos = a;
       }
 
-      if(!deps.length) deps=[
-        {nome:'Camila S.',cidade:'',texto:'Fiquei sem palavras. Ler o resultado do teste me desarmou por dentro. Me senti vista e não julgada.'},
-        {nome:'Fernanda M.',cidade:'',texto:'Foi certeiro! Meu marido fez também — ele ficou de cara com o quanto o resultado bateu com a realidade dele.'},
-        {nome:'Juliana R.',cidade:'',texto:'Deu nível 1 de prosperidade. Tudo a ver com o que estou passando. Li várias vezes pra acreditar.'},
-        {nome:'Patrícia L.',cidade:'',texto:'Fiz o teste, foi incrível. Emocionei, chorei, mas era exatamente tudo o que eu precisava ouvir.'},
-        {nome:'Renata C.',cidade:'',texto:'Que benção é esse teste?! Realmente me identifiquei muito com o resultado. Até chorei refletindo.'},
-        {nome:'Beatriz A.',cidade:'',texto:'Tomei coragem e fiz. Falou tanto comigo que hoje comprei o curso que ele me recomendou.'},
-        {nome:'Marina P.',cidade:'',texto:'Acabei de fazer e foi certeiro. 40% de energia de desordem — fez todo sentido.'},
-      ];
+      if (!Array.isArray(depoimentos) || depoimentos.length === 0) {
+        depoimentos = [
+          { nome: 'Camila S.', cidade: '', texto: 'Fiquei sem palavras. Ler o resultado do teste me desarmou por dentro. Me senti vista e não julgada.' },
+          { nome: 'Fernanda M.', cidade: '', texto: 'Foi certeiro! Meu marido fez também — ele ficou de cara com o quanto o resultado bateu com a realidade dele.' },
+          { nome: 'Juliana R.', cidade: '', texto: 'Deu nível 1 de prosperidade. Tudo a ver com o que estou passando. Li várias vezes pra acreditar.' },
+          { nome: 'Patrícia L.', cidade: '', texto: 'Fiz o teste, foi incrível. Emocionei, chorei, mas era exatamente tudo o que eu precisava ouvir.' },
+          { nome: 'Renata C.', cidade: '', texto: 'Que benção é esse teste?! Realmente me identifiquei muito com o resultado. Até chorei refletindo.' },
+          { nome: 'Beatriz A.', cidade: '', texto: 'Tomei coragem e fiz. Falou tanto comigo que hoje comprei o curso que ele me recomendou.' },
+          { nome: 'Marina P.', cidade: '', texto: 'Acabei de fazer e foi certeiro. 40% de energia de desordem — fez todo sentido.' },
+        ];
+      }
 
-      const ticker = document.getElementById('ticker-track');
-      if(ticker){
-        const d2=[...deps,...deps];
-        ticker.innerHTML=d2.map(d=>{
-          const a=d.cidade?`${d.nome}, ${d.cidade}`:d.nome;
-          return `<span class="ticker-item"><span class="q">"</span>${d.texto}<span class="q">"</span> — <strong>${a}</strong></span>`;
+      // TICKER — string template IDÊNTICA ao index.html
+      const tickerTrack = document.getElementById('ticker-track');
+      if (tickerTrack) {
+        const doubled = [...depoimentos, ...depoimentos];
+        tickerTrack.innerHTML = doubled.map(d => {
+          const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
+          return `<span class="ticker-item"><span class="q">"</span>${d.texto}<span class="q">"</span> — <strong>${autor}</strong></span>`;
         }).join('');
       }
 
+      // CARROSSEL grande
       const depTrack = document.getElementById('dep-track');
-      if(depTrack){
-        const d2=[...deps,...deps];
-        depTrack.innerHTML=d2.map(d=>{
-          const a=d.cidade?`${d.nome}, ${d.cidade}`:d.nome;
-          return `<div class="dep-card"><div class="dep-quote-icon"><i class="fas fa-quote-left"></i></div><p class="dep-texto">${d.texto}</p><div class="dep-autor">— ${a}</div></div>`;
+      if (depTrack) {
+        const doubled = [...depoimentos, ...depoimentos];
+        depTrack.innerHTML = doubled.map(d => {
+          const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
+          return `<div class="dep-card"><div class="dep-quote-icon"><i class="fas fa-quote-left"></i></div><p class="dep-texto">${d.texto}</p><div class="dep-autor">— ${autor}</div></div>`;
         }).join('');
       }
     })();
 
-    /* ═══ REVEAL ON SCROLL — corrigido
-       rootMargin '-80px': só dispara quando o elemento já está 80px
-       dentro da viewport, não adiantado.
-       threshold 0.08: 8% visível já basta.
-       Stagger suave: 100ms entre irmãos diretos com data-reveal. */
+    /* ═══ REVEAL ON SCROLL — calmo e fluido
+       rootMargin: '0px' → sem antecipar
+       threshold: 0.15  → 15% do elemento já visível pra disparar
+       Easing: ease-out, duração 0.65s — natural, não agressivo. */
     (function(){
       const obs = new IntersectionObserver((entries)=>{
         entries.forEach(e=>{
@@ -680,19 +782,18 @@
             obs.unobserve(e.target);
           }
         });
-      },{threshold:0.08, rootMargin:'0px 0px -80px 0px'});
+      },{ threshold: 0.15, rootMargin: '0px' });
 
       document.querySelectorAll('[data-reveal]').forEach((el)=>{
+        // Stagger sutil (máx 80ms × 4) — só em irmãos diretos com data-reveal
         const siblings = Array.from(el.parentNode.children).filter(c=>c.hasAttribute('data-reveal'));
         const idx = siblings.indexOf(el);
-        if(idx>0 && idx<5) el.style.transitionDelay=(idx*100)+'ms';
+        if(idx > 0 && idx < 5) el.style.transitionDelay = (idx * 80) + 'ms';
         obs.observe(el);
       });
     })();
 
-    /* ═══ SCROLL: fluido com requestAnimationFrame
-       Navbar esconde ao descer (após 200px), reaparece ao subir.
-       Sem throttle manual — rAF garante sem jank. */
+    /* ═══ SCROLL: progress + navbar/ticker hide + back-top ═══ */
     (function(){
       const bar     = document.getElementById('scroll-progress');
       const nav     = document.getElementById('navbar');
@@ -703,19 +804,24 @@
       function update(){
         const h = document.documentElement.scrollHeight - window.innerHeight;
         const y = window.scrollY;
-        bar.style.transform = `scaleX(${h>0?y/h:0})`;
-        if(y>200 && y>lastY){ nav.classList.add('hidden'); tw.classList.add('hidden'); }
-        else{ nav.classList.remove('hidden'); tw.classList.remove('hidden'); }
-        lastY=y;
-        backTop.classList.toggle('visible', y>600);
-        ticking=false;
+        bar.style.transform = `scaleX(${h>0 ? y/h : 0})`;
+        if (y > 200 && y > lastY) {
+          nav.classList.add('hidden');
+          tw.classList.add('hidden');
+        } else {
+          nav.classList.remove('hidden');
+          tw.classList.remove('hidden');
+        }
+        lastY = y;
+        backTop.classList.toggle('visible', y > 600);
+        ticking = false;
       }
 
-      window.addEventListener('scroll',()=>{
-        if(!ticking){ ticking=true; requestAnimationFrame(update); }
-      },{passive:true});
+      window.addEventListener('scroll', () => {
+        if (!ticking) { ticking = true; requestAnimationFrame(update); }
+      }, { passive: true });
 
-      backTop.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+      backTop.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
     })();
 
     /* FAQ */
