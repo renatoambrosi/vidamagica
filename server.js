@@ -241,6 +241,21 @@ server.listen(PORT, async () => {
   `);
   try {
     await initDb();
+
+    // Seed idempotente dos preços — garante que produtos novos
+    // adicionados em routes/seed.js (PRECOS_INICIAIS) entrem no banco
+    // automaticamente no próximo deploy. Não sobrescreve nada que o
+    // admin já tenha editado.
+    try {
+      const { seedPrecos } = require('./routes/seed');
+      if (typeof seedPrecos === 'function') {
+        await seedPrecos();
+      }
+    } catch (err) {
+      console.error('⚠️ Seed de preços não rodou:', err.message);
+      // Não derruba o servidor — o seed é um nice-to-have, não bloqueante
+    }
+
     // Liga o worker do gateway de WhatsApp DEPOIS dos bancos estarem prontos
     const gateway = require('./core/gateway');
     gateway.iniciarWorker();
