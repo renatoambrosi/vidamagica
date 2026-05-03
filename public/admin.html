@@ -1,3 +1,4 @@
+================================================
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -777,6 +778,7 @@ async function vmVerificarOtp() {
 let dadosPrecos = {};
 const IMGS = {
   teste_prosperidade: '/assets/products/teste-prosperidade.png',
+  teste_subconsciente:'/assets/products/teste-subconsciente.png',
   guia_pratico:       '/assets/products/guia-pratico.png',
   atal_maneira_livro: '/assets/products/atal-maneira-livro.png',
   ouro_reprogramacao: '/assets/products/ouro-reprogramacao.png',
@@ -800,7 +802,7 @@ function buildComunidade(key,p){const pO=calcDesc(p.preco_ouro,p.preco_ouro_prom
 function togglePromo(key,ativo){document.getElementById(`promo-${key}`)?.classList.toggle('visible',ativo);if(!ativo)document.getElementById(`desc-promo-${key}`)?.classList.remove('visible');else recalc(key);}
 function recalc(key){const card=document.querySelector(`.card[data-key="${key}"]`);const p=dadosPrecos[key];if(!card||!p)return;if(p.tipo==='comunidade'){['ouro','magico'].forEach(pl=>{const de=getVal(card,`preco_${pl}`),por=getVal(card,`preco_${pl}_promo`);const chk=card.querySelector(`[data-field="mostrar_promo_${pl}"]`);const el=document.getElementById(`desc-${pl}-${key}`),ep=document.getElementById(`pct-${pl}-${key}`);if(el&&ep){const pct=chk?.checked?calcDesc(de,por):null;if(pct){ep.textContent=pct+'% off';el.classList.add('visible');}else el.classList.remove('visible');}});return;}const pad=getVal(card,'preco_padrao'),pro=getVal(card,'preco_promo'),alu=getVal(card,'preco_alunos');const chk=card.querySelector('[data-field="mostrar_promo"]');const sub=document.getElementById(`sub-${key}`);if(sub)sub.textContent=`De R$ ${pad} por R$ ${pro}`;const elP=document.getElementById(`desc-promo-${key}`),epP=document.getElementById(`pct-promo-${key}`);if(elP&&epP&&chk?.checked){const pct=calcDesc(pad,pro);epP.textContent=pct?pct+'% off':'—';elP.classList.toggle('visible',!!pct);}const elA=document.getElementById(`desc-alunos-${key}`),epA=document.getElementById(`pct-alunos-${key}`);if(elA&&epA&&alu){const pct=calcDesc(pad,alu);epA.textContent=pct?pct+'% off':'—';elA.classList.toggle('visible',!!pct);}}
 function coletarPrecos(){const res=JSON.parse(JSON.stringify(dadosPrecos));document.querySelectorAll('.card[data-key]').forEach(card=>{const key=card.dataset.key;card.querySelectorAll('[data-field]').forEach(inp=>{res[key][inp.dataset.field]=inp.type==='checkbox'?inp.checked:inp.value.trim();});});return res;}
-const ORDEM_PRODUTOS=['clube_vida_magica','teste_prosperidade','vencendo_medo','magica_fluir','guia_pratico','atal_maneira_livro','ouro_reprogramacao','lda_biblica','atal_maneira_curso'];
+const ORDEM_PRODUTOS=['clube_vida_magica','teste_prosperidade','teste_subconsciente','vencendo_medo','magica_fluir','guia_pratico','atal_maneira_livro','ouro_reprogramacao','lda_biblica','atal_maneira_curso'];
 async function carregarPrecos(){try{const r=await fetch(`${API}/api/admin/precos`,{headers:{'Authorization':authHeader()}});if(!r.ok)throw new Error();dadosPrecos=await r.json();const ordenado=ORDEM_PRODUTOS.filter(k=>dadosPrecos[k]).map(k=>[k,dadosPrecos[k]]);Object.entries(dadosPrecos).forEach(([k,v])=>{if(!ORDEM_PRODUTOS.includes(k))ordenado.push([k,v]);});document.getElementById('precos-container').innerHTML=ordenado.map(([k,p])=>buildPreco(k,p)).join('');}catch{document.getElementById('precos-container').innerHTML='<div class="loading">Erro ao carregar. Verifique a autenticação.</div>';}}
 async function salvarPrecos(){const btn=document.getElementById('btn-save-precos');btn.disabled=true;btn.textContent='Salvando...';try{const payload=coletarPrecos();const r=await fetch(`${API}/api/admin/precos`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':authHeader()},body:JSON.stringify(payload)});if(!r.ok)throw new Error();dadosPrecos=payload;toast('✓ Preços salvos com sucesso');document.getElementById('precos-status').textContent=`Salvo às ${new Date().toLocaleTimeString('pt-BR')}`;}catch{toast('✗ Erro ao salvar preços','error');}finally{btn.disabled=false;btn.textContent='Salvar Preços';}}
 
@@ -1756,3 +1758,7 @@ carregarDeps();
 </script>
 </body>
 </html>
+
+
+
+================================================
