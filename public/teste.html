@@ -153,10 +153,8 @@
       z-index: 99;
       overflow: hidden;
       padding: 0.5rem 0;
-      background: rgba(5, 25, 41, 0.95);  /* fundo: --sub-deep com 95% opacidade */
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border-bottom: 1px solid rgba(43, 165, 232, 0.15);  /* borda azul */
+      background: var(--sub-deep);  /* opaco — bloqueia stars/orbs por trás */
+      border-bottom: 1px solid rgba(43, 165, 232, 0.15);
       transition: transform 0.3s ease;
     }
     .navbar.hidden + .ticker-wrap,
@@ -177,18 +175,15 @@
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
-      font-size: 12px;  /* px em vez de rem para escapar do auto-resize do iOS */
-      line-height: 1.4;
-      font-weight: 400;
+      font-size: 0.73rem;
+      line-height: 1.2;  /* trava line-height para não herdar 1.65 do body */
       color: rgba(92, 194, 240, 0.55);
       flex-shrink: 0;
       font-family: var(--font-body);
-      -webkit-text-size-adjust: 100%;
-      text-size-adjust: 100%;
     }
     /* Aspas e nome em destaque — azul brilhante do produto */
-    .ticker-item .q     { color: var(--sub-bright); font-size: 12px; }
-    .ticker-item strong { color: var(--sub-bright); font-weight: 600; font-size: 12px; }
+    .ticker-item .q     { color: var(--sub-bright); }
+    .ticker-item strong { color: var(--sub-bright); font-weight: 600; }
 
     /* SCROLL PROGRESS */
     .scroll-progress { position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: 2px; background: linear-gradient(90deg, var(--sub-bright), var(--sub-light), var(--gold-light)); transform-origin: 0 0; transform: scaleX(0); transition: transform 0.05s linear; box-shadow: 0 0 12px var(--sub-glow); }
@@ -399,18 +394,7 @@
       section { padding: 4rem 1.25rem; }
       .hero { padding: 2rem 1.25rem 3rem; }
       .hero-logo-wrap { max-width: 360px; margin-bottom: 2rem; }
-      /* Ticker mobile — px, não rem, para travar tamanho contra iOS */
-      .ticker-wrap .ticker-track .ticker-item,
-      .ticker-wrap .ticker-track .ticker-item .q,
-      .ticker-wrap .ticker-track .ticker-item strong {
-        font-size: 11px;
-        line-height: 1.4;
-        font-weight: 400;
-        font-family: var(--font-body);
-        text-transform: none;
-        letter-spacing: normal;
-      }
-      .ticker-wrap .ticker-track .ticker-item strong { font-weight: 600; }
+      .ticker-item { font-size: 0.7rem; }
       .selo { font-size: 0.72rem; padding: 0.45rem 0.95rem; }
       .btn-cta { font-size: 0.85rem; padding: 0.95rem 1.6rem; }
       .dep-card { width: 280px; }
