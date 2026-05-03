@@ -1,7 +1,6 @@
 /* ============================================================
    VIDA MÁGICA — routes/seed.js
-   Popula preços iniciais (executar uma vez).
-   Banco: poolComunicacao.
+   Seed inicial dos preços. Idempotente — não sobrescreve.
 
    Endpoint: POST /api/admin/seed (idempotente — não sobrescreve)
    ============================================================ */
@@ -24,6 +23,13 @@ const PRECOS_INICIAIS = {
   },
   teste_prosperidade: {
     nome: "Teste de Prosperidade",
+    tipo: "promo",
+    mostrar_promo: false,
+    preco_padrao: "19,00",
+    preco_promo: "9,00"
+  },
+  teste_subconsciente: {
+    nome: "Teste do Subconsciente",
     tipo: "promo",
     mostrar_promo: false,
     preco_padrao: "19,00",
@@ -119,27 +125,49 @@ const PRECOS_INICIAIS = {
   }
 };
 
-router.post('/admin/seed', autenticarPainel('admin'), async (req, res) => {
+/* ============================================================
+   Função interna — usada também pelo boot do server.js.
+   Idempotente: só insere chaves que ainda não existem.
+   Não sobrescreve nada que o admin já editou.
+   ============================================================ */
+async function seedPrecos() {
   const client = await poolComunicacao.connect();
   try {
     await client.query('BEGIN');
+    let inseridos = 0;
     for (const [key, valor] of Object.entries(PRECOS_INICIAIS)) {
-      await client.query(`
+      const r = await client.query(`
         INSERT INTO precos (key, dados, atualizado_em)
         VALUES ($1, $2, NOW())
         ON CONFLICT (key) DO NOTHING
       `, [key, JSON.stringify(valor)]);
+      if (r.rowCount > 0) inseridos++;
     }
     await client.query('COMMIT');
-    console.log('✅ Seed de preços concluído');
-    res.json({ success: true, message: `${Object.keys(PRECOS_INICIAIS).length} preços inseridos` });
+    if (inseridos > 0) {
+      console.log(`✅ Seed de preços: ${inseridos} chave(s) nova(s) inserida(s)`);
+    }
+    return inseridos;
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('❌ Erro no seed:', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('❌ Erro no seed de preços:', err.message);
+    throw err;
   } finally {
     client.release();
+  }
+}
+
+router.post('/admin/seed', autenticarPainel('admin'), async (req, res) => {
+  try {
+    const inseridos = await seedPrecos();
+    res.json({
+      success: true,
+      message: `${inseridos} chave(s) nova(s) inserida(s). Existentes não foram alteradas.`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
 module.exports = router;
+module.exports.seedPrecos = seedPrecos;
