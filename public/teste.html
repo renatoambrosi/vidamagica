@@ -150,10 +150,10 @@
       z-index: 99;
       overflow: hidden;
       padding: 0.5rem 0;
-      background: rgba(20,14,2,0.95);
+      background: rgba(5, 25, 41, 0.95);  /* fundo: --sub-deep com 95% opacidade */
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
-      border-bottom: 1px solid rgba(200,146,42,0.12);
+      border-bottom: 1px solid rgba(43, 165, 232, 0.15);  /* borda azul */
       transition: transform 0.3s ease;
     }
     .navbar.hidden + .ticker-wrap,
@@ -175,11 +175,11 @@
       align-items: center;
       gap: 0.35rem;
       font-size: 0.73rem;
-      color: rgba(245,240,232,0.58);
+      color: rgba(92, 194, 240, 0.55);  /* texto base: azul opaco do produto */
       flex-shrink: 0;
       font-family: var(--font-body);
     }
-    /* Acento azul do produto (substitui o dourado do index) */
+    /* Aspas e nome em destaque — azul brilhante do produto */
     .ticker-item .q     { color: var(--sub-bright); }
     .ticker-item strong { color: var(--sub-bright); font-weight: 600; }
 
@@ -392,7 +392,17 @@
       section { padding: 4rem 1.25rem; }
       .hero { padding: 2rem 1.25rem 3rem; }
       .hero-logo-wrap { max-width: 360px; margin-bottom: 2rem; }
-      .ticker-item { font-size: 0.7rem; }
+      /* Ticker mobile — força tamanho/peso/family contra qualquer herança */
+      .ticker-wrap .ticker-track .ticker-item {
+        font-size: 0.7rem;
+        line-height: 1.4;
+        font-weight: 400;
+        font-family: var(--font-body);
+        text-transform: none;
+        letter-spacing: normal;
+      }
+      .ticker-wrap .ticker-track .ticker-item .q,
+      .ticker-wrap .ticker-track .ticker-item strong { font-size: inherit; }
       .selo { font-size: 0.72rem; padding: 0.45rem 0.95rem; }
       .btn-cta { font-size: 0.85rem; padding: 0.95rem 1.6rem; }
       .dep-card { width: 280px; }
