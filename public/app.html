@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#E8DCC0">
+  <title>Vida Mágica</title>
+  <link rel="icon" href="/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/app/app.css">
+</head>
+<body>
+
+  <div id="particulas" class="particulas"></div>
+
+  <!-- TOPO (esconde quando o chat está ativo) -->
+  <header class="topo" id="topo">
+    <div class="topo-logo">
+      <img src="/assets/logo-horizontal.png" alt="Vida Mágica" onerror="this.style.display='none'">
+    </div>
+    <div class="topo-direita">
+      <button class="topo-btn" id="btn-sementes" aria-label="Sementes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22V12"/>
+          <path d="M12 12C12 12 7 11 5 7c-1.5-3 0-6 3-6 2 0 3.5 1.5 4 5 .5-3.5 2-5 4-5 3 0 4.5 3 3 6-2 4-7 5-7 5z"/>
+        </svg>
+        <span class="topo-badge" id="badge-sementes">0</span>
+      </button>
+      <button class="topo-btn" id="btn-avisos" aria-label="Avisos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <span class="topo-ponto" id="ponto-avisos"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- VIEWS -->
+  <main class="views" id="views">
+
+    <!-- HOME -->
+    <section class="view active" id="view-home">
+      <div class="saudacao">
+        <p class="saudacao-eyebrow">Bem-vinda de volta</p>
+        <h1 class="saudacao-nome" id="saudacao-nome">Sua jornada</h1>
+        <div class="saudacao-divisor"></div>
+        <p class="saudacao-frase">A vida começa quando a mente desperta.</p>
+      </div>
+
+      <div class="tesouro-wrap" id="tesouro-wrap">
+        <button class="tesouro-btn" id="tesouro-btn" aria-label="Tesouro da Su">
+          <div class="tesouro-glow"></div>
+          <div class="tesouro-bau">
+            <svg class="bau-svg" viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <ellipse cx="60" cy="86" rx="36" ry="4" fill="rgba(0,0,0,0.18)"/>
+              <rect x="8" y="42" width="104" height="44" rx="6" fill="url(#bauGrad)"/>
+              <rect x="8" y="56" width="104" height="8" fill="rgba(0,0,0,0.12)"/>
+              <g class="bau-tampa" style="transform-origin:60px 42px">
+                <path d="M8 42 Q8 16 60 16 Q112 16 112 42 Z" fill="url(#tampaGrad)"/>
+                <rect x="8" y="36" width="104" height="7" fill="rgba(0,0,0,0.1)" rx="2"/>
+                <circle cx="28" cy="42" r="4" fill="#C8922A"/>
+                <circle cx="92" cy="42" r="4" fill="#C8922A"/>
+              </g>
+              <rect x="50" y="58" width="20" height="14" rx="3" fill="#C8922A"/>
+              <rect x="54" y="52" width="12" height="10" rx="6" fill="none" stroke="#C8922A" stroke-width="3"/>
+              <circle cx="20" cy="50" r="3" fill="rgba(255,220,120,0.4)"/>
+              <circle cx="100" cy="50" r="3" fill="rgba(255,220,120,0.4)"/>
+              <circle cx="20" cy="72" r="3" fill="rgba(255,220,120,0.4)"/>
+              <circle cx="100" cy="72" r="3" fill="rgba(255,220,120,0.4)"/>
+              <g class="bau-brilhos" id="bau-brilhos">
+                <line x1="60" y1="2" x2="60" y2="10" stroke="#F4D060" stroke-width="2" stroke-linecap="round"/>
+                <line x1="88" y1="8" x2="84" y2="14" stroke="#F4D060" stroke-width="2" stroke-linecap="round"/>
+                <line x1="32" y1="8" x2="36" y2="14" stroke="#F4D060" stroke-width="2" stroke-linecap="round"/>
+                <line x1="104" y1="22" x2="98" y2="25" stroke="#F4D060" stroke-width="2" stroke-linecap="round"/>
+                <line x1="16" y1="22" x2="22" y2="25" stroke="#F4D060" stroke-width="2" stroke-linecap="round"/>
+              </g>
+              <defs>
+                <linearGradient id="bauGrad" x1="8" y1="42" x2="112" y2="86" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#8B6520"/>
+                  <stop offset="100%" stop-color="#5C3F0A"/>
+                </linearGradient>
+                <linearGradient id="tampaGrad" x1="8" y1="16" x2="112" y2="42" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#C8922A"/>
+                  <stop offset="100%" stop-color="#8B6520"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <div class="tesouro-info">
+            <span class="tesouro-label" id="tesouro-label">Tesouro da Su</span>
+            <span class="tesouro-sub" id="tesouro-sub">Toque para resgatar</span>
+          </div>
+        </button>
+      </div>
+
+      <section class="feed" id="feed">
+        <div class="feed-carrossel-wrap" id="feed-carrossel-wrap" style="display:none">
+          <div class="feed-carrossel" id="feed-carrossel"></div>
+          <div class="feed-dots" id="feed-dots"></div>
+        </div>
+        <div class="feed-lista" id="feed-lista"></div>
+      </section>
+
+      <section class="trilha">
+        <div class="trilha-header">
+          <span class="trilha-eyebrow">Fase 1 · Despertando</span>
+          <h2 class="trilha-titulo">Sua trilha</h2>
+          <p class="trilha-sub">Avance uma atividade por vez.</p>
+        </div>
+        <ol class="trilha-lista">
+          <li class="trilha-item trilha-ativo">
+            <div class="trilha-num">1</div>
+            <div class="trilha-card">
+              <div class="trilha-eyebrow-card">Diagnóstico</div>
+              <h3 class="trilha-card-titulo">Teste de Prosperidade</h3>
+              <p class="trilha-card-desc">Descubra em 15 perguntas o padrão mental que bloqueia sua prosperidade.</p>
+              <div class="trilha-meta"><span>15 perguntas</span><span>~7 min</span></div>
+              <button class="trilha-btn">Começar →</button>
+            </div>
+          </li>
+          <li class="trilha-item trilha-bloqueado">
+            <div class="trilha-num">2</div>
+            <div class="trilha-card">
+              <div class="trilha-eyebrow-card">Sessão</div>
+              <h3 class="trilha-card-titulo">Diagnóstico do Teste</h3>
+              <p class="trilha-card-desc">Sessão guiada para entender em profundidade o seu resultado.</p>
+              <div class="trilha-meta"><span>~25 min</span></div>
+              <button class="trilha-btn" disabled>🔒 Conclua a etapa anterior</button>
+            </div>
+          </li>
+          <li class="trilha-item trilha-bloqueado">
+            <div class="trilha-num">3</div>
+            <div class="trilha-card">
+              <div class="trilha-eyebrow-card">E-book</div>
+              <h3 class="trilha-card-titulo">Despertando a Prosperidade Bíblica</h3>
+              <p class="trilha-card-desc">Leitura para entender as travas espirituais que impedem a abundância.</p>
+              <div class="trilha-meta"><span>~2 horas</span></div>
+              <button class="trilha-btn" disabled>🔒 Etapa bloqueada</button>
+            </div>
+          </li>
+        </ol>
+      </section>
+      <footer class="rodape"><p>Vida Mágica · Renato &amp; Suellen Seragi</p></footer>
+    </section>
+
+    <!-- PRODUTOS -->
+    <section class="view" id="view-produtos">
+      <div class="view-topo">
+        <h2 class="view-titulo">Meus Produtos</h2>
+        <p class="view-sub">Cursos e conteúdos adquiridos</p>
+      </div>
+      <div class="produtos-lista" id="produtos-lista">
+        <div class="empty-state">
+          <div class="empty-icon">📦</div>
+          <p class="empty-titulo">Nenhum produto ainda</p>
+          <p class="empty-sub">Seus cursos e produtos comprados aparecem aqui.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHAT -->
+    <section class="view" id="view-chat">
+
+      <!-- Tela 1: escolha de canal -->
+      <div id="chat-escolha-tela" class="chat-escolha">
+        <p class="chat-escolha-titulo">Com quem você quer conversar?</p>
+
+        <button class="chat-canal-card principal" data-canal="suellen" type="button">
+          <div class="chat-canal-avatar">
+            <img src="/assets/avatar-suellen.jpg" alt="Suellen Seragi" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=&quot;color:#A17523;font-weight:700;font-size:1.2rem&quot;>S</span>'">
+          </div>
+          <div class="chat-canal-info">
+            <p class="chat-canal-titulo">Falar com a Suellen Seragi</p>
+            <p class="chat-canal-desc">Acolhimento, dúvidas pessoais e jornada</p>
+            <p class="chat-canal-preview" id="canal-suellen-preview"></p>
+          </div>
+          <span class="chat-canal-badge" id="canal-suellen-badge" style="display:none">0</span>
+        </button>
+
+        <button class="chat-canal-card" data-canal="suporte" type="button">
+          <div class="chat-canal-avatar">
+            <img src="/assets/logo-equipe.png" alt="Equipe Vida Mágica" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=&quot;color:#5F5E5A;font-weight:700;font-size:1.2rem&quot;>?</span>'">
+          </div>
+          <div class="chat-canal-info">
+            <p class="chat-canal-titulo">Dúvidas e suporte</p>
+            <p class="chat-canal-desc">Pagamento, conta e dificuldades técnicas</p>
+            <p class="chat-canal-preview" id="canal-suporte-preview"></p>
+          </div>
+          <span class="chat-canal-badge" id="canal-suporte-badge" style="display:none">0</span>
+        </button>
+      </div>
+
+      <!-- Tela 2: conversa -->
+      <div id="chat-conversa-tela" style="display:none;flex-direction:column;flex:1;min-height:0;">
+
+        <div class="chat-canal-header">
+          <button class="chat-back-escolha" id="btn-back-escolha" type="button" aria-label="Voltar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
+          <div class="chat-canal-header-avatar">
+            <img id="chat-canal-header-img" src="/assets/avatar-suellen.jpg" alt="" onerror="this.style.display='none'">
+          </div>
+          <div class="chat-canal-header-info">
+            <div class="chat-canal-header-nome" id="chat-canal-header-nome">Suellen Seragi</div>
+            <div class="chat-canal-header-status" id="chat-canal-header-status">Atendimento</div>
+          </div>
+          <button class="chat-refresh-btn" id="btn-chat-refresh" type="button" aria-label="Atualizar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="chat-abas">
+          <button class="chat-aba ativa" data-aba="suellen" type="button">
+            <span class="aba-avatar">
+              <img src="/assets/avatar-suellen.jpg" onerror="this.style.display='none';this.parentElement.innerHTML='S'">
+            </span>
+            Suellen Seragi
+            <span class="aba-badge" id="aba-suellen-badge" style="display:none">0</span>
+          </button>
+          <button class="chat-aba" data-aba="suporte" type="button">
+            <span class="aba-avatar">
+              <img src="/assets/logo-equipe.png" onerror="this.style.display='none';this.parentElement.innerHTML='?'">
+            </span>
+            Suporte
+            <span class="aba-badge" id="aba-suporte-badge" style="display:none">0</span>
+          </button>
+        </div>
+
+        <div class="plano-banner tier-free" id="plano-banner">
+          <div class="plano-banner-icone"></div>
+          <div class="plano-banner-texto">
+            <p class="plano-banner-titulo" id="plano-banner-titulo">PLANO FREE</p>
+            <p class="plano-banner-desc" id="plano-banner-desc">Tempo de resposta indeterminado</p>
+          </div>
+          <button class="plano-banner-acao" id="plano-banner-acao" type="button">Assinar Vida Mágica</button>
+        </div>
+
+        <div class="chat-loading" id="chat-loading">
+          <div class="chat-loading-dots"><span></span><span></span><span></span></div>
+        </div>
+
+        <div class="chat-msgs" id="chat-msgs" style="display:none"></div>
+
+        <div class="reply-bar" id="reply-bar" style="display:none">
+          <div class="reply-bar-pipe"></div>
+          <div class="reply-bar-corpo">
+            <div class="reply-bar-autor" id="reply-autor"></div>
+            <div class="reply-bar-texto" id="reply-texto"></div>
+          </div>
+          <button class="reply-bar-x" id="reply-fechar" type="button">✕</button>
+        </div>
+
+        <div class="chat-input-wrap" id="chat-input-wrap" style="display:none">
+          <div class="chat-input-row" id="chat-input-row-normal">
+            <button class="chat-anexo-btn" id="chat-anexo-btn" aria-label="Anexar" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
+            <div class="chat-input-container">
+              <textarea
+                class="chat-input"
+                id="chat-input"
+                placeholder="Escreva sua mensagem..."
+                rows="1"
+                autocomplete="off"
+                autocorrect="on"
+                autocapitalize="sentences"
+                spellcheck="true"
+                inputmode="text"
+                enterkeyhint="send"
+                aria-autocomplete="none"></textarea>
+            </div>
+            <button class="chat-audio-btn" id="chat-audio-btn" aria-label="Gravar áudio" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            </button>
+            <button class="chat-send-btn" id="chat-send-btn" aria-label="Enviar" style="display:none" type="button">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="chat-input-row chat-rec-row" id="chat-rec-row" style="display:none">
+            <button class="chat-rec-cancel" id="chat-rec-cancel" aria-label="Cancelar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+            <div class="chat-rec-visualizer">
+              <div class="chat-rec-dot"></div>
+              <canvas class="chat-rec-wave" id="chat-rec-wave" height="36"></canvas>
+              <span class="chat-rec-timer" id="chat-rec-timer">0:00</span>
+            </div>
+            <button class="chat-rec-send" id="chat-rec-send" aria-label="Enviar áudio">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/>
+              </svg>
+            </button>
+          </div>
+
+          <input type="file" id="chat-file-input" accept="image/*" style="display:none">
+        </div>
+      </div>
+    </section>
+
+    <!-- PERFIL -->
+    <section class="view" id="view-perfil">
+      <div class="perfil-hero" id="perfil-hero">
+        <div class="perfil-avatar" id="perfil-avatar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <h2 class="perfil-nome" id="perfil-nome">—</h2>
+        <div class="perfil-plano" id="perfil-plano">Comunidade Vida Mágica</div>
+        <div class="perfil-sementes-row">
+          <span>🌱</span>
+          <span class="perfil-sementes-num" id="perfil-sementes">0</span>
+          <span class="perfil-sementes-label">sementes</span>
+        </div>
+      </div>
+      <ul class="perfil-menu">
+        <li class="perfil-item" id="menu-testes">
+          <span class="perfil-item-icone">📊</span>
+          <div class="perfil-item-info">
+            <span class="perfil-item-titulo">Meus Testes de Prosperidade</span>
+            <span class="perfil-item-sub">Veja seu histórico e resultados</span>
+          </div>
+          <span class="perfil-item-arrow">›</span>
+        </li>
+        <li class="perfil-item">
+          <span class="perfil-item-icone">🔐</span>
+          <div class="perfil-item-info">
+            <span class="perfil-item-titulo">Segurança</span>
+            <span class="perfil-item-sub">Senha e dispositivos</span>
+          </div>
+          <span class="perfil-item-arrow">›</span>
+        </li>
+        <li class="perfil-item">
+          <span class="perfil-item-icone">💳</span>
+          <div class="perfil-item-info">
+            <span class="perfil-item-titulo">Plano e Assinatura</span>
+            <span class="perfil-item-sub">Gerencie sua comunidade</span>
+          </div>
+          <span class="perfil-item-arrow">›</span>
+        </li>
+        <li class="perfil-item perfil-item-danger" id="menu-logout">
+          <span class="perfil-item-icone">→</span>
+          <div class="perfil-item-info"><span class="perfil-item-titulo">Sair</span></div>
+        </li>
+      </ul>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="nav-tab active" data-view="home" aria-label="Início">
+      <div class="nav-tab-icon">
+        <svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <span class="nav-tab-label">Início</span>
+    </button>
+    <button class="nav-tab" data-view="produtos" aria-label="Produtos">
+      <div class="nav-tab-icon">
+        <svg viewBox="0 0 24 24" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      </div>
+      <span class="nav-tab-label">Produtos</span>
+    </button>
+    <button class="nav-tab" data-view="chat" aria-label="Fale com a Su" id="nav-chat">
+      <div class="nav-tab-icon">
+        <svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="nav-chat-badge" id="nav-chat-badge" style="display:none"></span>
+      </div>
+      <span class="nav-tab-label">Fale com a Su</span>
+    </button>
+    <button class="nav-tab" data-view="perfil" aria-label="Perfil">
+      <div class="nav-tab-icon">
+        <svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <span class="nav-tab-label">Perfil</span>
+    </button>
+  </nav>
+
+  <!-- Context menu -->
+  <div id="msg-ctx-menu" class="msg-ctx-menu">
+    <div class="msg-ctx-emojis" id="msg-ctx-emojis">
+      <button type="button" class="msg-ctx-emoji" data-emoji="🤩">🤩</button>
+      <button type="button" class="msg-ctx-emoji" data-emoji="🎉">🎉</button>
+      <button type="button" class="msg-ctx-emoji" data-emoji="👏🏻">👏🏻</button>
+      <button type="button" class="msg-ctx-emoji" data-emoji="🙌🏻">🙌🏻</button>
+      <button type="button" class="msg-ctx-emoji" data-emoji="💛">💛</button>
+      <button type="button" class="msg-ctx-emoji" data-emoji="⚡">⚡</button>
+      <button type="button" class="msg-ctx-emoji msg-ctx-emoji-mais" id="msg-ctx-emoji-mais" aria-label="Mais emojis">+</button>
+    </div>
+    <div class="msg-ctx-acoes">
+      <button type="button" class="msg-ctx-acao" id="ctx-responder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+        <span>Responder</span>
+      </button>
+      <button type="button" class="msg-ctx-acao" id="ctx-copiar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span>Copiar</span>
+      </button>
+    </div>
+  </div>
+  <!-- input invisível pra abrir teclado de emoji nativo -->
+  <input type="text" id="msg-ctx-emoji-picker" inputmode="text" enterkeyhint="done"
+         style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0" aria-hidden="true">
+
+  <!-- MODAIS -->
+  <div class="modal" id="modal-tesouro" aria-hidden="true">
+    <div class="modal-overlay" data-close></div>
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-tesouro-conteudo" id="modal-tesouro-conteudo"></div>
+      <button class="modal-tesouro-resgatar" id="modal-tesouro-resgatar">🌱 Resgatar Tesouro</button>
+    </div>
+  </div>
+
+  <div class="modal modal-player" id="modal-player" aria-hidden="true">
+    <div class="modal-overlay" data-close></div>
+    <div class="modal-sheet modal-sheet-player">
+      <div class="modal-handle"></div>
+      <header class="modal-header">
+        <button class="modal-fechar" data-close>✕</button>
+        <h3 class="modal-header-titulo" id="player-titulo"></h3>
+      </header>
+      <div class="player-wrap">
+        <div class="player-ratio">
+          <iframe id="player-iframe" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+      </div>
+      <div class="player-info">
+        <p class="player-sub" id="player-sub"></p>
+        <p class="player-corpo" id="player-corpo"></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-avisos" aria-hidden="true">
+    <div class="modal-overlay" data-close></div>
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <header class="modal-header">
+        <h3 class="modal-header-titulo">Avisos</h3>
+        <button class="modal-fechar" data-close>✕</button>
+      </header>
+      <div class="modal-corpo" id="avisos-corpo"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-testes" aria-hidden="true">
+    <div class="modal-overlay" data-close></div>
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <header class="modal-header">
+        <h3 class="modal-header-titulo">Meus Testes</h3>
+        <button class="modal-fechar" data-close>✕</button>
+      </header>
+      <div class="modal-corpo" id="testes-corpo">
+        <div class="loading-inline">Carregando...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-mic" aria-hidden="true">
+    <div class="modal-overlay" data-close></div>
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div style="padding:1.5rem 1.5rem 0.5rem;text-align:center">
+        <div style="font-size:2.5rem;margin-bottom:0.75rem">🎤</div>
+        <h3 style="font-family:var(--font-display);font-size:1rem;font-weight:800;color:var(--texto);margin-bottom:0.5rem">Permissão de microfone</h3>
+        <p style="font-size:0.84rem;color:var(--texto-suave);line-height:1.6;margin-bottom:1.25rem">O app vai pedir acesso ao microfone para você gravar mensagens de voz. Toque em <strong>Permitir</strong> quando aparecer.</p>
+        <button id="modal-mic-ok" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,var(--ouro-fundo),var(--ouro));color:white;border-radius:var(--radius-md);font-family:var(--font-display);font-size:0.85rem;font-weight:800;border:none;cursor:pointer;margin-bottom:0.75rem">Entendido, continuar</button>
+        <button data-close style="width:100%;padding:0.6rem;background:transparent;color:var(--texto-mute);font-family:var(--font-display);font-size:0.75rem;font-weight:600;border:none;cursor:pointer">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script type="module" src="/app/app.js"></script>
+</body>
+</html>
