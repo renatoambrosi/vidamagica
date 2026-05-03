@@ -44,9 +44,6 @@
     html {
       scroll-behavior: smooth;
       -webkit-font-smoothing: antialiased;
-      -webkit-text-size-adjust: 100%;
-      -moz-text-size-adjust: 100%;
-      text-size-adjust: 100%;
       overflow-x: hidden;
     }
     body {
@@ -144,21 +141,18 @@
     .nav-drop-sep { height: 1px; background: rgba(200,146,42,.1); margin: .2rem 0; }
     .nav-drop-icon { font-size: .9rem; width: 16px; text-align: center; flex-shrink: 0; }
 
-    /* ═══ TICKER — IDÊNTICO AO INDEX.HTML
-       Mesmas regras do index, mesma especificidade, sem !important.
-       Único delta: .q e strong usam cor azul do produto (--sub-bright). */
+    /* ═══ TICKER — CÓPIA EXATA DO INDEX.HTML
+       Único delta: cor de .q e strong → azul do produto. */
     .ticker-wrap {
       position: fixed;
       top: 52px; left: 0; right: 0;
       z-index: 99;
       overflow: hidden;
       padding: 0.5rem 0;
-      background: var(--sub-deep);  /* opaco — bloqueia stars/orbs por trás */
-      border-bottom: 1px solid rgba(43, 165, 232, 0.15);
-      transition: transform 0.3s ease;
+      background: rgba(20,14,2,0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(200,146,42,0.12);
     }
-    .navbar.hidden + .ticker-wrap,
-    .ticker-wrap.hidden { transform: translateY(calc(-100% - 52px)); }
 
     .ticker-track {
       display: flex;
@@ -166,6 +160,7 @@
       animation: ticker 22s linear infinite;
       white-space: nowrap;
     }
+
     @keyframes ticker {
       0%   { transform: translateX(0); }
       100% { transform: translateX(-50%); }
@@ -176,13 +171,11 @@
       align-items: center;
       gap: 0.35rem;
       font-size: 0.73rem;
-      line-height: 1.2;  /* trava line-height para não herdar 1.65 do body */
-      color: rgba(92, 194, 240, 0.55);
+      color: rgba(245,240,232,0.58);
       flex-shrink: 0;
       font-family: var(--font-body);
     }
-    /* Aspas e nome em destaque — azul brilhante do produto */
-    .ticker-item .q     { color: var(--sub-bright); }
+    .ticker-item .q { color: var(--sub-bright); }
     .ticker-item strong { color: var(--sub-bright); font-weight: 600; }
 
     /* SCROLL PROGRESS */
@@ -394,7 +387,6 @@
       section { padding: 4rem 1.25rem; }
       .hero { padding: 2rem 1.25rem 3rem; }
       .hero-logo-wrap { max-width: 360px; margin-bottom: 2rem; }
-      .ticker-item { font-size: 0.7rem; }
       .selo { font-size: 0.72rem; padding: 0.45rem 0.95rem; }
       .btn-cta { font-size: 0.85rem; padding: 0.95rem 1.6rem; }
       .dep-card { width: 280px; }
@@ -429,8 +421,8 @@
     <div class="navbar-actions" id="navbar-actions"></div>
   </nav>
 
-  <!-- TICKER — IDÊNTICO AO INDEX.HTML (cor azul do produto) -->
-  <div class="ticker-wrap" id="ticker-wrap">
+  <!-- TICKER -->
+  <div class="ticker-wrap">
     <div class="ticker-track" id="ticker-track"></div>
   </div>
 
@@ -815,11 +807,11 @@
       });
     })();
 
-    /* ═══ SCROLL: progress + navbar/ticker hide + back-top ═══ */
+    /* ═══ SCROLL: progress + navbar hide + back-top
+       (ticker fica fixo no topo — comportamento do index) ═══ */
     (function(){
       const bar     = document.getElementById('scroll-progress');
       const nav     = document.getElementById('navbar');
-      const tw      = document.getElementById('ticker-wrap');
       const backTop = document.getElementById('back-top');
       let lastY = 0, ticking = false;
 
@@ -829,10 +821,8 @@
         bar.style.transform = `scaleX(${h>0 ? y/h : 0})`;
         if (y > 200 && y > lastY) {
           nav.classList.add('hidden');
-          tw.classList.add('hidden');
         } else {
           nav.classList.remove('hidden');
-          tw.classList.remove('hidden');
         }
         lastY = y;
         backTop.classList.toggle('visible', y > 600);
