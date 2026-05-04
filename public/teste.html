@@ -46,6 +46,7 @@
       -webkit-font-smoothing: antialiased;
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
+      overscroll-behavior-y: none;
     }
     body {
       font-family: var(--font-body);
@@ -297,15 +298,66 @@
     .video-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.85rem; background: radial-gradient(circle at center, var(--sub-night), var(--sub-deep)); color: var(--pearl-mute); font-size: 0.85rem; }
     .video-placeholder i { font-size: 3rem; color: var(--sub-bright); opacity: 0.7; }
 
-    /* DEPOIMENTOS */
+    /* DEPOIMENTOS — padrão idêntico ao index, paleta azul */
     .dep-section { background: rgba(5,25,41,0.3); }
-    .dep-carousel { overflow: hidden; mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%); -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%); margin: 0 -1.5rem; }
-    .dep-track { display: flex; gap: 1.25rem; padding: 1.5rem 1.5rem; animation: depScroll 42s linear infinite; width: max-content; min-height: 220px; }
+    .dep-carousel {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 2.5rem;
+      padding: 1rem 0;
+    }
+    .dep-track {
+      display: flex;
+      gap: 1.25rem;
+      animation: depScroll 30s linear infinite;
+      will-change: transform;
+    }
     @keyframes depScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-    .dep-card { flex-shrink: 0; width: 320px; background: linear-gradient(rgba(10,72,102,0.55),rgba(10,72,102,0.55)) padding-box, linear-gradient(135deg,var(--sub-bright),var(--sub-light)) border-box; border: 1px solid transparent; border-radius: var(--r-md); padding: 1.5rem 1.4rem; display: flex; flex-direction: column; gap: 0.85rem; box-shadow: 0 12px 28px rgba(5,25,41,0.4); }
-    .dep-quote-icon { font-size: 1.4rem; color: var(--sub-bright); }
-    .dep-texto      { font-style: italic; color: var(--pearl); font-size: 0.96rem; line-height: 1.65; flex: 1; }
-    .dep-autor      { font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; color: var(--sub-bright); letter-spacing: 0.04em; padding-top: 0.85rem; border-top: 1px solid rgba(43,165,232,0.2); }
+    .dep-carousel:hover .dep-track { animation-play-state: paused; }
+
+    .dep-card {
+      flex: 0 0 320px;
+      background: rgba(5,25,41,0.7);
+      border: 1px solid rgba(43,165,232,0.2);
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-align: left;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+    }
+    .dep-card::before {
+      content: '"';
+      position: absolute;
+      top: -10px; left: 15px;
+      font-family: Georgia, serif;
+      font-size: 4rem;
+      color: var(--sub-bright);
+      opacity: 0.2;
+      line-height: 1;
+    }
+    .dep-card:hover {
+      border-color: var(--sub-bright);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(43,165,232,0.3);
+    }
+    .dep-texto {
+      font-size: 0.88rem;
+      line-height: 1.65;
+      color: rgba(245,240,232,0.8);
+      margin-bottom: 1rem;
+      position: relative;
+      z-index: 1;
+    }
+    .dep-autor {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--sub-bright);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .dep-autor::before { content: '—'; color: var(--sub-bright); }
 
     /* CRIADORES */
     .criadores-section { text-align: center; }
@@ -388,7 +440,7 @@
       .hero-logo-wrap { max-width: 360px; margin-bottom: 2rem; }
       .selo { font-size: 0.72rem; padding: 0.45rem 0.95rem; }
       .btn-cta { font-size: 0.85rem; padding: 0.95rem 1.6rem; }
-      .dep-card { width: 280px; }
+      .dep-card { flex: 0 0 280px; }
       .criadores-foto { width: 180px; height: 180px; }
       .navbar-actions .btn-cadastro-nav { display: none; }
     }
@@ -772,7 +824,7 @@
         const doubled = [...depoimentos, ...depoimentos];
         depTrack.innerHTML = doubled.map(d => {
           const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
-          return `<div class="dep-card"><div class="dep-quote-icon"><i class="fas fa-quote-left"></i></div><p class="dep-texto">${d.texto}</p><div class="dep-autor">— ${autor}</div></div>`;
+          return `<div class="dep-card"><p class="dep-texto">${d.texto}</p><div class="dep-autor">${autor}</div></div>`;
         }).join('');
       }
     })();
