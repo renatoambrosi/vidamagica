@@ -427,17 +427,13 @@
     .modal-iniciar-bg { position: fixed; inset: 0; background: linear-gradient(135deg, rgba(5,25,41,0.96), rgba(10,45,68,0.96)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
     .modal-iniciar-content { position: relative; min-height: 100%; display: flex; flex-direction: column; padding: 1.5rem 1.25rem 3rem; max-width: 560px; margin: 0 auto; }
     .modal-iniciar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-    .modal-iniciar-logo { display: flex; align-items: center; gap: 0.6rem; }
-    .modal-iniciar-logo i { color: var(--sub-bright); font-size: 1.3rem; filter: drop-shadow(0 0 8px var(--sub-glow)); }
-    .modal-iniciar-logo span { font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; color: var(--pearl); letter-spacing: 0.04em; text-transform: uppercase; }
+    .modal-iniciar-logo-img { height: 32px; width: auto; }
     .modal-iniciar-close { background: rgba(245,240,232,0.08); border: 1px solid rgba(245,240,232,0.15); color: var(--pearl); width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; font-size: 1rem; }
     .modal-iniciar-close:hover { background: rgba(245,240,232,0.15); transform: rotate(90deg); }
 
     .modal-iniciar-body { animation: modalCardIn 0.5s cubic-bezier(0.22,1,0.36,1); }
     @keyframes modalCardIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-    .modal-iniciar-icon { width: 64px; height: 64px; margin: 0 auto 1.25rem; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--sub-bright), var(--sub-mid)); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 32px var(--sub-glow); }
-    .modal-iniciar-icon i { color: var(--pearl); font-size: 1.6rem; }
-    .modal-iniciar-titulo { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; color: var(--pearl); text-align: center; margin-bottom: 0.6rem; line-height: 1.3; }
+    .modal-iniciar-titulo { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--pearl); text-align: center; margin-bottom: 0.6rem; line-height: 1.3; margin-top: 0.5rem; }
     .modal-iniciar-subtitulo { color: var(--pearl-dim); font-size: 0.95rem; line-height: 1.6; text-align: center; margin-bottom: 1.75rem; }
     .modal-video-wrap { width: 100%; aspect-ratio: 16/9; border-radius: var(--r-md); overflow: hidden; border: 1px solid rgba(43,165,232,0.3); box-shadow: 0 0 40px var(--sub-glow-soft); background: #000; position: relative; margin-bottom: 1.75rem; display: flex; align-items: center; justify-content: center; color: rgba(43,165,232,0.7); }
     .modal-video-wrap i { font-size: 2.5rem; }
@@ -457,9 +453,18 @@
     .modal-form-aviso.is-visivel { display: flex; }
     .modal-form-aviso i { font-size: 0.75rem; }
 
-    .modal-form-disclaimer { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.85rem 1rem; background: rgba(43,165,232,0.08); border: 1px solid rgba(43,165,232,0.18); border-radius: var(--r-md); margin: 1.25rem 0 1.5rem; }
-    .modal-form-disclaimer i { color: var(--sub-bright); font-size: 0.95rem; flex-shrink: 0; margin-top: 0.15rem; }
-    .modal-form-disclaimer p { color: var(--pearl-dim); font-size: 0.85rem; line-height: 1.5; margin: 0; }
+    /* Checkbox custom */
+    .modal-form-checkbox { display: flex; align-items: flex-start; gap: 0.7rem; margin: 1.5rem 0; cursor: pointer; user-select: none; }
+    .modal-form-checkbox input { position: absolute; opacity: 0; pointer-events: none; }
+    .modal-form-checkbox-mark { flex-shrink: 0; width: 22px; height: 22px; border: 1.5px solid rgba(43,165,232,0.4); border-radius: 6px; background: rgba(5,25,41,0.6); display: flex; align-items: center; justify-content: center; transition: all 0.2s; margin-top: 1px; }
+    .modal-form-checkbox-mark i { color: var(--sub-deep); font-size: 0.75rem; opacity: 0; transform: scale(0.5); transition: all 0.2s; }
+    .modal-form-checkbox input:checked ~ .modal-form-checkbox-mark { background: linear-gradient(135deg, var(--sub-bright), var(--sub-light)); border-color: var(--sub-bright); box-shadow: 0 0 12px rgba(43,165,232,0.4); }
+    .modal-form-checkbox input:checked ~ .modal-form-checkbox-mark i { opacity: 1; transform: scale(1); }
+    .modal-form-checkbox:hover .modal-form-checkbox-mark { border-color: var(--sub-bright); }
+    .modal-form-checkbox-texto { color: var(--pearl-dim); font-size: 0.88rem; line-height: 1.5; }
+    .modal-form-checkbox-texto a { color: var(--sub-bright); text-decoration: underline; text-underline-offset: 2px; }
+    .modal-form-checkbox-texto a:hover { color: var(--sub-light); }
+    .modal-form-checkbox.is-erro .modal-form-checkbox-mark { border-color: #e57373; box-shadow: 0 0 0 3px rgba(229,115,115,0.15); }
 
     .modal-form-submit { width: 100%; font-family: var(--font-display); font-size: 0.9rem; font-weight: 700; color: var(--sub-deep); background: linear-gradient(135deg, var(--sub-bright), var(--sub-light)); border: none; border-radius: var(--r-full); padding: 1.1rem 1.75rem; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; transition: all 0.25s; box-shadow: 0 8px 24px rgba(43,165,232,0.3), 0 0 40px var(--sub-glow-soft); display: flex; align-items: center; justify-content: center; gap: 0.6rem; }
     .modal-form-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(43,165,232,0.4), 0 0 60px var(--sub-glow); }
@@ -474,9 +479,11 @@
 
     @media (max-width: 480px) {
       .modal-iniciar-content { padding: 1rem 1rem 2.5rem; }
-      .modal-iniciar-titulo { font-size: 1.2rem; }
+      .modal-iniciar-titulo { font-size: 1.25rem; }
       .modal-iniciar-subtitulo { font-size: 0.9rem; }
+      .modal-iniciar-logo-img { height: 26px; }
       .modal-form-input { font-size: 16px; /* evita zoom no iOS */ }
+      .modal-form-checkbox-texto { font-size: 0.82rem; }
     }
 
     /* RESPONSIVO */
@@ -979,19 +986,15 @@
       // ── Cria o HTML do modal e injeta no body ──
       const modalHTML = `
         <div id="modal-iniciar" role="dialog" aria-modal="true" aria-labelledby="modal-iniciar-titulo">
-          <div class="modal-iniciar-bg" data-close-modal></div>
+          <div class="modal-iniciar-bg"></div>
           <div class="modal-iniciar-content">
             <div class="modal-iniciar-header">
-              <div class="modal-iniciar-logo">
-                <i class="fas fa-star"></i>
-                <span>Vida Mágica</span>
-              </div>
+              <img src="/assets/logo-horizontal.png" alt="Vida Mágica" class="modal-iniciar-logo-img">
               <button type="button" class="modal-iniciar-close" data-close-modal aria-label="Fechar">
                 <i class="fas fa-times"></i>
               </button>
             </div>
             <div class="modal-iniciar-body">
-              <div class="modal-iniciar-icon"><i class="fas fa-brain"></i></div>
               <h2 id="modal-iniciar-titulo" class="modal-iniciar-titulo">Vamos começar seu teste</h2>
               <p class="modal-iniciar-subtitulo">Pra começar, me diz seu nome e seu WhatsApp. Em 7 minutos você descobre qual padrão está dirigindo sua vida.</p>
 
@@ -1033,10 +1036,13 @@
                   <div class="modal-form-erro" id="erro-nome">Digite seu nome (mínimo 2 letras).</div>
                 </div>
 
-                <div class="modal-form-disclaimer">
-                  <i class="fas fa-shield-alt"></i>
-                  <p>Você vai receber o resultado completo no WhatsApp depois de finalizar o teste. Seus dados ficam protegidos e não compartilhamos com ninguém.</p>
-                </div>
+                <label class="modal-form-checkbox" for="campo-aceite">
+                  <input type="checkbox" id="campo-aceite" required>
+                  <span class="modal-form-checkbox-mark"><i class="fas fa-check"></i></span>
+                  <span class="modal-form-checkbox-texto">
+                    Concordo com os <a href="/termos" target="_blank" rel="noopener">termos de uso</a> e autorizo receber o resultado do teste em meu WhatsApp.
+                  </span>
+                </label>
 
                 <button type="submit" class="modal-form-submit" id="btn-comecar" disabled>
                   <span class="spinner"></span>
@@ -1059,6 +1065,8 @@
       const form       = document.getElementById('form-iniciar-teste');
       const inputNome  = document.getElementById('campo-nome');
       const inputTel   = document.getElementById('campo-telefone');
+      const inputAceite = document.getElementById('campo-aceite');
+      const labelAceite = document.querySelector('.modal-form-checkbox');
       const erroNome   = document.getElementById('erro-nome');
       const erroTel    = document.getElementById('erro-telefone');
       const avisoEnc   = document.getElementById('aviso-encontrou');
@@ -1087,7 +1095,7 @@
         return d.length === 10 || d.length === 11;
       }
       function atualizarBotao(){
-        btnEnviar.disabled = !(nomeValido() && telefoneValido());
+        btnEnviar.disabled = !(nomeValido() && telefoneValido() && inputAceite.checked);
       }
 
       // ── Abrir / fechar ──
@@ -1158,6 +1166,12 @@
         atualizarBotao();
       });
 
+      // ── Aceite (checkbox): validação ──
+      inputAceite.addEventListener('change', () => {
+        labelAceite.classList.remove('is-erro');
+        atualizarBotao();
+      });
+
       // ── Submit ──
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1172,6 +1186,10 @@
         if (!nomeValido()) {
           inputNome.classList.add('is-erro');
           erroNome.classList.add('is-visivel');
+          temErro = true;
+        }
+        if (!inputAceite.checked) {
+          labelAceite.classList.add('is-erro');
           temErro = true;
         }
         if (temErro) return;
