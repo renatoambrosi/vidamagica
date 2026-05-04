@@ -420,18 +420,64 @@
     .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.4); transform: scale(0); animation: rippleAnim 0.6s ease-out; pointer-events: none; }
     @keyframes rippleAnim { to { transform: scale(2.5); opacity: 0; } }
 
-    /* OVERLAY */
-    #overlay-iniciar { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1.5rem; animation: ovIn 0.25s ease; }
-    @keyframes ovIn { from { opacity: 0; } to { opacity: 1; } }
-    .overlay-iniciar-bg { position: absolute; inset: 0; background: rgba(5,25,41,0.85); backdrop-filter: blur(8px); }
-    .overlay-iniciar-card { position: relative; max-width: 420px; width: 100%; background: linear-gradient(rgba(10,72,102,0.92),rgba(10,45,68,0.92)) padding-box, linear-gradient(135deg,var(--sub-bright),var(--sub-light)) border-box; border: 1px solid transparent; border-radius: var(--r-lg); padding: 2rem 1.75rem; text-align: center; box-shadow: 0 24px 64px rgba(0,0,0,0.5),0 0 80px var(--sub-glow-soft); animation: ovCardIn 0.45s cubic-bezier(0.22,1,0.36,1); }
-    @keyframes ovCardIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
-    .overlay-iniciar-icon { width: 64px; height: 64px; margin: 0 auto 1.25rem; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--sub-bright), var(--sub-mid)); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 32px var(--sub-glow); }
-    .overlay-iniciar-icon i { color: var(--pearl); font-size: 1.6rem; }
-    .overlay-iniciar-card h3 { font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; color: var(--pearl); margin-bottom: 0.7rem; }
-    .overlay-iniciar-card p  { color: var(--pearl-dim); font-size: 0.95rem; line-height: 1.65; margin-bottom: 1.5rem; }
-    .overlay-iniciar-card button { font-family: var(--font-display); font-size: 0.82rem; font-weight: 700; color: var(--sub-deep); background: linear-gradient(135deg,var(--sub-bright),var(--sub-light)); border-radius: var(--r-full); padding: 0.75rem 1.75rem; letter-spacing: 0.04em; text-transform: uppercase; transition: transform 0.2s; }
-    .overlay-iniciar-card button:hover { transform: translateY(-2px); }
+    /* MODAL DE INÍCIO DO TESTE — full-screen */
+    #modal-iniciar { position: fixed; inset: 0; z-index: 9999; display: none; animation: modalIn 0.3s ease; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    #modal-iniciar.is-open { display: block; }
+    @keyframes modalIn { from { opacity: 0; } to { opacity: 1; } }
+    .modal-iniciar-bg { position: fixed; inset: 0; background: linear-gradient(135deg, rgba(5,25,41,0.96), rgba(10,45,68,0.96)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    .modal-iniciar-content { position: relative; min-height: 100%; display: flex; flex-direction: column; padding: 1.5rem 1.25rem 3rem; max-width: 560px; margin: 0 auto; }
+    .modal-iniciar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .modal-iniciar-logo { display: flex; align-items: center; gap: 0.6rem; }
+    .modal-iniciar-logo i { color: var(--sub-bright); font-size: 1.3rem; filter: drop-shadow(0 0 8px var(--sub-glow)); }
+    .modal-iniciar-logo span { font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; color: var(--pearl); letter-spacing: 0.04em; text-transform: uppercase; }
+    .modal-iniciar-close { background: rgba(245,240,232,0.08); border: 1px solid rgba(245,240,232,0.15); color: var(--pearl); width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; font-size: 1rem; }
+    .modal-iniciar-close:hover { background: rgba(245,240,232,0.15); transform: rotate(90deg); }
+
+    .modal-iniciar-body { animation: modalCardIn 0.5s cubic-bezier(0.22,1,0.36,1); }
+    @keyframes modalCardIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .modal-iniciar-icon { width: 64px; height: 64px; margin: 0 auto 1.25rem; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--sub-bright), var(--sub-mid)); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 32px var(--sub-glow); }
+    .modal-iniciar-icon i { color: var(--pearl); font-size: 1.6rem; }
+    .modal-iniciar-titulo { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; color: var(--pearl); text-align: center; margin-bottom: 0.6rem; line-height: 1.3; }
+    .modal-iniciar-subtitulo { color: var(--pearl-dim); font-size: 0.95rem; line-height: 1.6; text-align: center; margin-bottom: 1.75rem; }
+    .modal-video-wrap { width: 100%; aspect-ratio: 16/9; border-radius: var(--r-md); overflow: hidden; border: 1px solid rgba(43,165,232,0.3); box-shadow: 0 0 40px var(--sub-glow-soft); background: #000; position: relative; margin-bottom: 1.75rem; display: flex; align-items: center; justify-content: center; color: rgba(43,165,232,0.7); }
+    .modal-video-wrap i { font-size: 2.5rem; }
+    .modal-video-placeholder { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+    .modal-video-placeholder span { font-size: 0.85rem; color: rgba(245,240,232,0.5); }
+
+    .modal-form-grupo { margin-bottom: 1.1rem; }
+    .modal-form-label { display: block; font-family: var(--font-display); font-size: 0.78rem; font-weight: 600; color: var(--sub-bright); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 0.45rem; }
+    .modal-form-input { width: 100%; padding: 0.95rem 1.1rem; background: rgba(5,25,41,0.6); border: 1px solid rgba(43,165,232,0.25); border-radius: var(--r-md); color: var(--pearl); font-size: 1rem; font-family: var(--font-body); transition: all 0.2s; -webkit-appearance: none; appearance: none; }
+    .modal-form-input:focus { outline: none; border-color: var(--sub-bright); box-shadow: 0 0 0 3px rgba(43,165,232,0.15); background: rgba(5,25,41,0.8); }
+    .modal-form-input::placeholder { color: rgba(245,240,232,0.35); }
+    .modal-form-input:disabled { opacity: 0.6; cursor: not-allowed; }
+    .modal-form-input.is-erro { border-color: #e57373; box-shadow: 0 0 0 3px rgba(229,115,115,0.15); }
+    .modal-form-erro { display: none; color: #e57373; font-size: 0.82rem; margin-top: 0.35rem; }
+    .modal-form-erro.is-visivel { display: block; }
+    .modal-form-aviso { display: none; color: var(--sub-bright); font-size: 0.82rem; margin-top: 0.35rem; align-items: center; gap: 0.35rem; }
+    .modal-form-aviso.is-visivel { display: flex; }
+    .modal-form-aviso i { font-size: 0.75rem; }
+
+    .modal-form-disclaimer { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.85rem 1rem; background: rgba(43,165,232,0.08); border: 1px solid rgba(43,165,232,0.18); border-radius: var(--r-md); margin: 1.25rem 0 1.5rem; }
+    .modal-form-disclaimer i { color: var(--sub-bright); font-size: 0.95rem; flex-shrink: 0; margin-top: 0.15rem; }
+    .modal-form-disclaimer p { color: var(--pearl-dim); font-size: 0.85rem; line-height: 1.5; margin: 0; }
+
+    .modal-form-submit { width: 100%; font-family: var(--font-display); font-size: 0.9rem; font-weight: 700; color: var(--sub-deep); background: linear-gradient(135deg, var(--sub-bright), var(--sub-light)); border: none; border-radius: var(--r-full); padding: 1.1rem 1.75rem; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; transition: all 0.25s; box-shadow: 0 8px 24px rgba(43,165,232,0.3), 0 0 40px var(--sub-glow-soft); display: flex; align-items: center; justify-content: center; gap: 0.6rem; }
+    .modal-form-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(43,165,232,0.4), 0 0 60px var(--sub-glow); }
+    .modal-form-submit:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .modal-form-submit i { font-size: 0.85rem; }
+    .modal-form-submit .spinner { display: none; width: 16px; height: 16px; border: 2px solid rgba(0,0,0,0.2); border-top-color: var(--sub-deep); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .modal-form-submit.is-loading .spinner { display: inline-block; }
+    .modal-form-submit.is-loading .submit-text, .modal-form-submit.is-loading .submit-icon { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    body.modal-aberto { overflow: hidden; }
+
+    @media (max-width: 480px) {
+      .modal-iniciar-content { padding: 1rem 1rem 2.5rem; }
+      .modal-iniciar-titulo { font-size: 1.2rem; }
+      .modal-iniciar-subtitulo { font-size: 0.9rem; }
+      .modal-form-input { font-size: 16px; /* evita zoom no iOS */ }
+    }
 
     /* RESPONSIVO */
     @media (max-width: 640px) {
@@ -928,19 +974,252 @@
       }
     })();
 
-    /* INICIAR TESTE (placeholder) */
+    /* MODAL DE INÍCIO DO TESTE */
     (function(){
-      function iniciarTeste(e){
-        if(e) e.preventDefault();
-        let ov=document.getElementById('overlay-iniciar');
-        if(!ov){
-          ov=document.createElement('div');ov.id='overlay-iniciar';
-          ov.innerHTML=`<div class="overlay-iniciar-bg" onclick="document.getElementById('overlay-iniciar').remove()"></div><div class="overlay-iniciar-card"><div class="overlay-iniciar-icon"><i class="fas fa-hourglass-half"></i></div><h3>Teste em construção</h3><p>A execução do teste está sendo finalizada. Em breve você poderá começar direto daqui.</p><button onclick="document.getElementById('overlay-iniciar').remove()">Voltar</button></div>`;
-          document.body.appendChild(ov);
-        }
+      // ── Cria o HTML do modal e injeta no body ──
+      const modalHTML = `
+        <div id="modal-iniciar" role="dialog" aria-modal="true" aria-labelledby="modal-iniciar-titulo">
+          <div class="modal-iniciar-bg" data-close-modal></div>
+          <div class="modal-iniciar-content">
+            <div class="modal-iniciar-header">
+              <div class="modal-iniciar-logo">
+                <i class="fas fa-star"></i>
+                <span>Vida Mágica</span>
+              </div>
+              <button type="button" class="modal-iniciar-close" data-close-modal aria-label="Fechar">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="modal-iniciar-body">
+              <div class="modal-iniciar-icon"><i class="fas fa-brain"></i></div>
+              <h2 id="modal-iniciar-titulo" class="modal-iniciar-titulo">Vamos começar seu teste</h2>
+              <p class="modal-iniciar-subtitulo">Pra começar, me diz seu nome e seu WhatsApp. Em 7 minutos você descobre qual padrão está dirigindo sua vida.</p>
+
+              <div class="modal-video-wrap">
+                <div class="modal-video-placeholder">
+                  <i class="fas fa-play-circle"></i>
+                  <span>Vídeo de instruções em breve</span>
+                </div>
+              </div>
+
+              <form id="form-iniciar-teste" novalidate>
+                <div class="modal-form-grupo">
+                  <label class="modal-form-label" for="campo-telefone">Seu WhatsApp</label>
+                  <input
+                    type="tel"
+                    id="campo-telefone"
+                    class="modal-form-input"
+                    placeholder="(00) 00000-0000"
+                    inputmode="numeric"
+                    autocomplete="tel"
+                    maxlength="16"
+                    required
+                  />
+                  <div class="modal-form-erro" id="erro-telefone">Digite um número de WhatsApp válido com DDD.</div>
+                  <div class="modal-form-aviso" id="aviso-encontrou"><i class="fas fa-check-circle"></i> <span>Que bom te ver de novo!</span></div>
+                </div>
+
+                <div class="modal-form-grupo">
+                  <label class="modal-form-label" for="campo-nome">Seu nome</label>
+                  <input
+                    type="text"
+                    id="campo-nome"
+                    class="modal-form-input"
+                    placeholder="Seu primeiro nome"
+                    autocomplete="given-name"
+                    maxlength="100"
+                    required
+                  />
+                  <div class="modal-form-erro" id="erro-nome">Digite seu nome (mínimo 2 letras).</div>
+                </div>
+
+                <div class="modal-form-disclaimer">
+                  <i class="fas fa-shield-alt"></i>
+                  <p>Você vai receber o resultado completo no WhatsApp depois de finalizar o teste. Seus dados ficam protegidos e não compartilhamos com ninguém.</p>
+                </div>
+
+                <button type="submit" class="modal-form-submit" id="btn-comecar" disabled>
+                  <span class="spinner"></span>
+                  <span class="submit-text">Começar agora</span>
+                  <i class="fas fa-arrow-right submit-icon"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Injeta no body
+      const wrap = document.createElement('div');
+      wrap.innerHTML = modalHTML;
+      document.body.appendChild(wrap.firstElementChild);
+
+      // ── Referências DOM ──
+      const modal      = document.getElementById('modal-iniciar');
+      const form       = document.getElementById('form-iniciar-teste');
+      const inputNome  = document.getElementById('campo-nome');
+      const inputTel   = document.getElementById('campo-telefone');
+      const erroNome   = document.getElementById('erro-nome');
+      const erroTel    = document.getElementById('erro-telefone');
+      const avisoEnc   = document.getElementById('aviso-encontrou');
+      const btnEnviar  = document.getElementById('btn-comecar');
+
+      // ── Máscara de telefone (DD) DDDDD-DDDD ──
+      function formatarTel(valor){
+        const num = (valor || '').replace(/\D/g, '').slice(0, 11);
+        if (num.length === 0) return '';
+        if (num.length <= 2)  return `(${num}`;
+        if (num.length <= 6)  return `(${num.slice(0,2)}) ${num.slice(2)}`;
+        if (num.length <= 10) return `(${num.slice(0,2)}) ${num.slice(2,6)}-${num.slice(6)}`;
+        return `(${num.slice(0,2)}) ${num.slice(2,7)}-${num.slice(7)}`;
       }
-      document.querySelectorAll('[data-iniciar-teste]').forEach(el=>el.addEventListener('click',iniciarTeste));
-      window.iniciarTeste=iniciarTeste;
+
+      function telDigitos(){
+        return inputTel.value.replace(/\D/g, '');
+      }
+
+      // ── Validações ──
+      function nomeValido(){
+        return inputNome.value.trim().length >= 2;
+      }
+      function telefoneValido(){
+        const d = telDigitos();
+        return d.length === 10 || d.length === 11;
+      }
+      function atualizarBotao(){
+        btnEnviar.disabled = !(nomeValido() && telefoneValido());
+      }
+
+      // ── Abrir / fechar ──
+      function abrirModal(e){
+        if (e) e.preventDefault();
+        modal.classList.add('is-open');
+        document.body.classList.add('modal-aberto');
+        // Foca no telefone (primeiro campo, dispara busca de auto-preenchimento)
+        setTimeout(() => inputTel.focus(), 100);
+      }
+      function fecharModal(){
+        modal.classList.remove('is-open');
+        document.body.classList.remove('modal-aberto');
+      }
+
+      // ── Listeners de abertura ──
+      document.querySelectorAll('[data-iniciar-teste]').forEach(el => {
+        el.addEventListener('click', abrirModal);
+      });
+      window.iniciarTeste = abrirModal;
+
+      // ── Listeners de fechamento ──
+      modal.querySelectorAll('[data-close-modal]').forEach(el => {
+        el.addEventListener('click', fecharModal);
+      });
+      // ESC fecha
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('is-open')) {
+          fecharModal();
+        }
+      });
+
+      // ── Telefone: máscara + validação + auto-preenchimento ──
+      inputTel.addEventListener('input', () => {
+        inputTel.value = formatarTel(inputTel.value);
+        inputTel.classList.remove('is-erro');
+        erroTel.classList.remove('is-visivel');
+        atualizarBotao();
+      });
+
+      inputTel.addEventListener('blur', async () => {
+        if (!telefoneValido()) return;
+        try {
+          const r = await fetch('/api/teste/buscar-usuario', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ telefone: telDigitos() }),
+          });
+          const data = await r.json();
+          if (data && data.encontrado && data.nome && !inputNome.value.trim()) {
+            inputNome.value = data.nome;
+            // Mostra aviso amigável só na primeira vez
+            const primeiroNome = data.nome.split(' ')[0];
+            avisoEnc.querySelector('span').textContent = `Que bom te ver de novo, ${primeiroNome}!`;
+            avisoEnc.classList.add('is-visivel');
+            atualizarBotao();
+          }
+        } catch (err) {
+          // Silencioso — busca é só conveniência
+          console.warn('Não foi possível buscar usuário:', err);
+        }
+      });
+
+      // ── Nome: validação ──
+      inputNome.addEventListener('input', () => {
+        inputNome.classList.remove('is-erro');
+        erroNome.classList.remove('is-visivel');
+        atualizarBotao();
+      });
+
+      // ── Submit ──
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Validação client-side
+        let temErro = false;
+        if (!telefoneValido()) {
+          inputTel.classList.add('is-erro');
+          erroTel.classList.add('is-visivel');
+          temErro = true;
+        }
+        if (!nomeValido()) {
+          inputNome.classList.add('is-erro');
+          erroNome.classList.add('is-visivel');
+          temErro = true;
+        }
+        if (temErro) return;
+
+        // Captura UTMs persistidas (foram salvas no bloco abaixo)
+        const utms = {
+          utm_source:   sessionStorage.getItem('utm_source')   || 'lp_teste_subconsciente',
+          utm_medium:   sessionStorage.getItem('utm_medium')   || 'organic',
+          utm_campaign: sessionStorage.getItem('utm_campaign') || '',
+        };
+
+        btnEnviar.classList.add('is-loading');
+        btnEnviar.disabled = true;
+
+        try {
+          const r = await fetch('/api/teste/iniciar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              nome: inputNome.value.trim(),
+              telefone: telDigitos(),
+              ...utms,
+            }),
+          });
+          const data = await r.json();
+
+          if (!r.ok || !data.ok) {
+            throw new Error(data.erro || 'Erro ao iniciar o teste');
+          }
+
+          // Persiste IDs pra próxima etapa (tela das 15 perguntas)
+          sessionStorage.setItem('teste_lead_id', data.lead_id);
+          sessionStorage.setItem('teste_usuario_id', data.usuario_id);
+
+          // PRÓXIMA ETAPA: redirecionar pra /teste/perguntas (a construir)
+          // Por enquanto: log + alerta e fecha modal.
+          console.log('[teste/iniciar] sucesso', data);
+          alert('Tudo certo! A tela das perguntas será criada na próxima etapa.');
+          fecharModal();
+        } catch (err) {
+          console.error('[teste/iniciar] erro:', err);
+          erroTel.textContent = 'Algo deu errado. Tente novamente em alguns segundos.';
+          erroTel.classList.add('is-visivel');
+        } finally {
+          btnEnviar.classList.remove('is-loading');
+          atualizarBotao();
+        }
+      });
     })();
 
     /* UTMs */
