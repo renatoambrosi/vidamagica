@@ -88,9 +88,7 @@
       -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid rgba(200,146,42,0.12);
       height: 52px;
-      transition: transform 0.3s ease;
     }
-    .navbar.hidden { transform: translateY(-100%); }
     .navbar-logo { height: 32px; width: auto; }
     .navbar-actions { display: flex; align-items: center; gap: 0.5rem; }
 
@@ -807,23 +805,17 @@
       });
     })();
 
-    /* ═══ SCROLL: progress + navbar hide + back-top ═══ */
+    /* ═══ SCROLL: progress + back-top
+       (navbar fica fixa eternamente — comportamento do index) ═══ */
     (function(){
       const bar     = document.getElementById('scroll-progress');
-      const nav     = document.getElementById('navbar');
       const backTop = document.getElementById('back-top');
-      let lastY = 0, ticking = false;
+      let ticking = false;
 
       function update(){
         const h = document.documentElement.scrollHeight - window.innerHeight;
         const y = window.scrollY;
         bar.style.transform = `scaleX(${h>0 ? y/h : 0})`;
-        if (y > 200 && y > lastY) {
-          nav.classList.add('hidden');
-        } else {
-          nav.classList.remove('hidden');
-        }
-        lastY = y;
         backTop.classList.toggle('visible', y > 600);
         ticking = false;
       }
