@@ -101,6 +101,11 @@ app.get('/teste', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'teste.html'));
 });
 
+// ── ROTA AMIGÁVEL: /termos serve termos.html ───────────────
+app.get('/termos', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'termos.html'));
+});
+
 // ── ROTA AMIGÁVEL: /app e /app/* (exceto arquivos estáticos) → app.html ──
 // Permite /app/dashboard, /app/perfil etc. — sem .html
 // Exclui /app/app.css, /app/app.js, /app/scene.js, /app/assets/*
