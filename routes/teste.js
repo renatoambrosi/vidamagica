@@ -184,13 +184,31 @@ router.get('/progresso', async (req, res) => {
     if (!Number.isInteger(versaoId)) return res.status(400).json({ ok: false, erro: 'versao_id ausente' });
 
     const r = await poolTeste.query(
-      `SELECT pergunta_ordem, perfil
+      `SELECT pergunta_ordem, perfil, respondido_em
          FROM teste_respostas
         WHERE lead_id=$1 AND versao_id=$2
         ORDER BY pergunta_ordem`,
       [leadId, versaoId]
     );
-    return res.json({ ok: true, respostas: r.rows, total: 15 });
+
+    // Data/hora da primeira resposta (= quando o teste começou)
+    let iniciadoEm = null;
+    if (r.rows.length > 0) {
+      const minR = await poolTeste.query(
+        `SELECT MIN(respondido_em) AS m
+           FROM teste_respostas
+          WHERE lead_id=$1 AND versao_id=$2`,
+        [leadId, versaoId]
+      );
+      iniciadoEm = minR.rows[0].m;
+    }
+
+    return res.json({
+      ok: true,
+      respostas: r.rows.map(x => ({ pergunta_ordem: x.pergunta_ordem, perfil: x.perfil })),
+      iniciado_em: iniciadoEm,
+      total: 15,
+    });
   } catch (err) {
     console.error('[teste/progresso] erro:', err);
     return res.status(500).json({ ok: false, erro: 'erro interno' });
@@ -275,6 +293,15 @@ router.post('/responder', async (req, res) => {
        ON CONFLICT (lead_id, versao_id, pergunta_ordem)
        DO UPDATE SET perfil=EXCLUDED.perfil, respondido_em=NOW()`,
       [lead_id, versaoIdNum, ordemNum, perfil]
+    );
+
+    // Se ela voltou e mudou uma resposta intermediária (ex: pergunta 4),
+    // as respostas posteriores (5 em diante) eram da rodada antiga.
+    // Apaga elas pra forçar a aluna a refazer dali pra frente.
+    await poolTeste.query(
+      `DELETE FROM teste_respostas
+        WHERE lead_id=$1 AND versao_id=$2 AND pergunta_ordem > $3`,
+      [lead_id, versaoIdNum, ordemNum]
     );
 
     const cnt = await poolTeste.query(
