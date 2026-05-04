@@ -21,8 +21,8 @@ const express = require('express');
 const router = express.Router();
 
 const { poolCore, poolTeste } = require('../db');
-const { formatarTelefone } = require('../utils');
-const { buscarUsuarioPorIdentificador } = require('../usuarios');
+const { formatarTelefone } = require('../core/utils');
+const { buscarUsuarioPorIdentificador } = require('../core/usuarios');
 
 // ── Validações simples ──────────────────────────────────────
 
