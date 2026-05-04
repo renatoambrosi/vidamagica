@@ -197,6 +197,37 @@ router.get('/progresso', async (req, res) => {
   }
 });
 
+// ── POST /api/teste/reiniciar ───────────────────────────────
+// Body: { lead_id, versao_id }
+// Apaga todas as respostas em progresso desse lead nessa versão.
+// Usado quando a aluna escolhe "começar de novo" tendo um teste já iniciado.
+router.post('/reiniciar', async (req, res) => {
+  try {
+    const { lead_id, versao_id } = req.body || {};
+    if (!lead_id || typeof lead_id !== 'string') {
+      return res.status(400).json({ ok: false, erro: 'lead_id inválido' });
+    }
+    const versaoIdNum = parseInt(versao_id, 10);
+    if (!Number.isInteger(versaoIdNum)) {
+      return res.status(400).json({ ok: false, erro: 'versao_id inválido' });
+    }
+
+    const versaoAtiva = await pegarVersaoAtiva();
+    if (!versaoAtiva || versaoAtiva.id !== versaoIdNum) {
+      return res.status(409).json({ ok: false, erro: 'versao_alterada' });
+    }
+
+    const r = await poolTeste.query(
+      `DELETE FROM teste_respostas WHERE lead_id=$1 AND versao_id=$2 RETURNING id`,
+      [lead_id, versaoIdNum]
+    );
+    return res.json({ ok: true, apagadas: r.rowCount });
+  } catch (err) {
+    console.error('[teste/reiniciar] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
 // ── POST /api/teste/responder ───────────────────────────────
 router.post('/responder', async (req, res) => {
   try {
