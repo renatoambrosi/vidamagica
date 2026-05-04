@@ -486,6 +486,15 @@
     .modal-tela.is-ativa { display: block; }
     @keyframes telaIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
+    /* ─── Tela "Retomar ou recomeçar" ─── */
+    .retomar-icone { width: 64px; height: 64px; border-radius: 50%; background: rgba(43,165,232,0.18); border: 1px solid rgba(43,165,232,0.4); color: var(--sub-bright); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; margin: 0.5rem auto 1.5rem; box-shadow: 0 0 32px var(--sub-glow-soft); }
+    .retomar-acoes { display: flex; flex-direction: column; gap: 0.7rem; margin: 1.5rem 0 1rem; }
+    .retomar-btn-continuar { width: 100%; }
+    .retomar-btn-recomecar { width: 100%; padding: 1rem 1.5rem; background: transparent; border: 1px solid rgba(245,240,232,0.25); color: var(--pearl-dim); border-radius: var(--r-md); font-family: var(--font-display); font-size: 0.92rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+    .retomar-btn-recomecar:hover { background: rgba(245,240,232,0.06); border-color: rgba(245,240,232,0.4); color: var(--pearl); }
+    .retomar-btn-recomecar:disabled { opacity: 0.5; cursor: wait; }
+    .retomar-aviso { text-align: center; font-size: 0.78rem; color: rgba(245,240,232,0.55); margin-top: 0.5rem; }
+
     /* ─── Tela de Perguntas (Quiz) ─── */
     .quiz-progresso { margin-bottom: 2rem; padding-top: 0.5rem; }
     .quiz-progresso-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; font-family: var(--font-display); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
@@ -1143,6 +1152,24 @@
               </form>
               </div>
 
+              <!-- ──────────── TELA 1.5: Retomar ou recomeçar ──────────── -->
+              <div class="modal-tela modal-tela-retomar" data-tela="retomar">
+                <div class="retomar-icone"><i class="fas fa-bookmark"></i></div>
+                <h2 class="modal-iniciar-titulo">Você já começou esse teste</h2>
+                <p class="modal-iniciar-subtitulo" id="retomar-info">
+                  Você parou na pergunta <strong id="retomar-num">—</strong> de 15 (<span id="retomar-perc">—</span>).
+                </p>
+                <div class="retomar-acoes">
+                  <button type="button" class="btn-cta retomar-btn-continuar" id="btn-retomar-continuar">
+                    Continuar de onde parei
+                  </button>
+                  <button type="button" class="retomar-btn-recomecar" id="btn-retomar-recomecar">
+                    Começar do zero
+                  </button>
+                </div>
+                <p class="retomar-aviso">Suas respostas anteriores serão apagadas se você começar de novo.</p>
+              </div>
+
               <!-- ──────────── TELA 2: Perguntas (1 por vez) ──────────── -->
               <div class="modal-tela modal-tela-perguntas" data-tela="perguntas">
                 <div class="quiz-progresso">
@@ -1353,9 +1380,8 @@
           sessionStorage.setItem('teste_lead_id', data.lead_id);
           sessionStorage.setItem('teste_usuario_id', data.usuario_id);
 
-          // Avança para a tela do quiz
-          await Quiz.iniciar(data.lead_id);
-          trocarTela('perguntas');
+          // Decide entre ir direto pro quiz OU mostrar tela "retomar"
+          await iniciarFluxoTeste(data.lead_id);
         } catch (err) {
           console.error('[teste/iniciar] erro:', err);
           erroTel.textContent = 'Algo deu errado. Tente novamente em alguns segundos.';
@@ -1365,6 +1391,97 @@
           atualizarBotao();
         }
       });
+
+      // ── Decide se mostra tela de "retomar" ou vai direto pra pergunta 1 ──
+      async function iniciarFluxoTeste(leadId) {
+        try {
+          // 1. Carrega perguntas (precisa do versao_id)
+          const respPerg = await fetch('/api/teste/perguntas').then(r => r.json());
+          if (!respPerg.ok || !Array.isArray(respPerg.perguntas)) {
+            throw new Error('Falha ao carregar perguntas');
+          }
+          const versaoId = respPerg.versao_id;
+          sessionStorage.setItem('teste_versao_id', versaoId);
+
+          // 2. Carrega progresso da MESMA versão
+          let respondidas = 0;
+          try {
+            const respProg = await fetch(
+              '/api/teste/progresso?lead_id=' + encodeURIComponent(leadId) +
+              '&versao_id=' + encodeURIComponent(versaoId)
+            ).then(r => r.json());
+            if (respProg && respProg.ok && Array.isArray(respProg.respostas)) {
+              respondidas = respProg.respostas.length;
+            }
+          } catch {}
+
+          // 3. Tem progresso? Mostra escolha. Não tem? Vai direto pro quiz.
+          if (respondidas > 0 && respondidas < 15) {
+            mostrarTelaRetomar(leadId, versaoId, respondidas, respPerg);
+          } else {
+            // Nada feito (ou tudo feito — caso raro): segue direto
+            await Quiz.iniciar(leadId, respPerg);
+            trocarTela('perguntas');
+          }
+        } catch (err) {
+          console.error('[iniciarFluxoTeste] erro:', err);
+          erroTel.textContent = 'Algo deu errado. Tente novamente em alguns segundos.';
+          erroTel.classList.add('is-visivel');
+        }
+      }
+
+      function mostrarTelaRetomar(leadId, versaoId, respondidas, perguntasResp) {
+        const proxima = respondidas + 1;
+        const perc = Math.round((respondidas / 15) * 100);
+        document.getElementById('retomar-num').textContent = proxima;
+        document.getElementById('retomar-perc').textContent = perc + '%';
+        trocarTela('retomar');
+
+        const btnContinuar = document.getElementById('btn-retomar-continuar');
+        const btnRecomecar = document.getElementById('btn-retomar-recomecar');
+
+        btnContinuar.onclick = async () => {
+          btnContinuar.disabled = true;
+          try {
+            await Quiz.iniciar(leadId, perguntasResp);
+            trocarTela('perguntas');
+          } catch (e) {
+            console.error('[continuar]', e);
+            alert('Não foi possível continuar. Tente novamente.');
+            btnContinuar.disabled = false;
+          }
+        };
+
+        btnRecomecar.onclick = async () => {
+          if (!confirm('Tem certeza? Suas respostas anteriores serão apagadas.')) return;
+          btnRecomecar.disabled = true;
+          btnRecomecar.textContent = 'Apagando…';
+          try {
+            const r = await fetch('/api/teste/reiniciar', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ lead_id: leadId, versao_id: versaoId }),
+            });
+            const d = await r.json();
+            if (r.status === 409 && d && d.erro === 'versao_alterada') {
+              // Versão mudou no meio. Recarrega tudo do zero.
+              alert('Atualizamos o teste. Vamos começar do início.');
+              const novoResp = await fetch('/api/teste/perguntas').then(rr => rr.json());
+              await Quiz.iniciar(leadId, novoResp);
+              trocarTela('perguntas');
+              return;
+            }
+            if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+            await Quiz.iniciar(leadId, perguntasResp);
+            trocarTela('perguntas');
+          } catch (e) {
+            console.error('[recomecar]', e);
+            alert('Não foi possível recomeçar. Tente novamente.');
+            btnRecomecar.disabled = false;
+            btnRecomecar.textContent = 'Começar do zero';
+          }
+        };
+      }
 
       // ── Sistema de troca de telas dentro do modal ──
       function trocarTela(nome) {
@@ -1394,13 +1511,16 @@
         const elAlts      = document.getElementById('quiz-alternativas');
         const elBtnVoltar = document.getElementById('quiz-btn-voltar');
 
-        async function iniciar(novoLeadId) {
+        async function iniciar(novoLeadId, respPergPreCarregado) {
           leadId = novoLeadId;
           elPergTexto.textContent = 'Carregando…';
           elAlts.innerHTML = '';
 
-          // 1. Carrega perguntas (precisa vir antes pra ter o versao_id)
-          const respPerg = await fetch('/api/teste/perguntas').then(r => r.json());
+          // 1. Perguntas: usa o que veio pré-carregado (do iniciarFluxoTeste) ou busca
+          let respPerg = respPergPreCarregado;
+          if (!respPerg) {
+            respPerg = await fetch('/api/teste/perguntas').then(r => r.json());
+          }
           if (!respPerg.ok || !Array.isArray(respPerg.perguntas)) {
             throw new Error('Não foi possível carregar as perguntas');
           }
@@ -1408,7 +1528,7 @@
           versaoId = respPerg.versao_id;
           sessionStorage.setItem('teste_versao_id', versaoId);
 
-          // 2. Progresso da MESMA versão
+          // 2. Progresso da MESMA versão (sempre busca, pode ter sido apagado em /reiniciar)
           let respProg = { ok: true, respostas: [] };
           try {
             respProg = await fetch(
