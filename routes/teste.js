@@ -23,6 +23,7 @@ const router = express.Router();
 const { poolCore, poolTeste } = require('../db');
 const { formatarTelefone } = require('../core/utils');
 const { buscarUsuarioPorIdentificador } = require('../core/usuarios');
+const { calcularPerfil, PERFIS_VALIDOS } = require('../core/teste-conteudo');
 
 // ── Validações simples ──────────────────────────────────────
 
@@ -176,6 +177,222 @@ router.post('/iniciar', async (req, res) => {
     });
   } catch (err) {
     console.error('[teste/iniciar] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ── GET /api/teste/perguntas ────────────────────────────────
+// Devolve as 15 perguntas + 5 alternativas cada, na ordem.
+// Frontend usa pra renderizar uma de cada vez.
+// Não devolve o perfil de cada alternativa — isso é segredo do backend.
+
+router.get('/perguntas', async (req, res) => {
+  try {
+    const r = await poolTeste.query(
+      `SELECT p.ordem, p.pergunta,
+              a.perfil, a.texto, a.ordem_alternativa
+         FROM teste_perguntas p
+         JOIN teste_alternativas a ON a.pergunta_ordem = p.ordem
+        WHERE p.ativo = TRUE
+        ORDER BY p.ordem, a.ordem_alternativa`
+    );
+
+    // Agrupa em { ordem, pergunta, alternativas: [{ id, texto }] }
+    // O "id" é o perfil — frontend devolve isso de volta no /responder.
+    // Não revelamos nada extra, mas o nome do perfil é só uma string opaca pro frontend.
+    const map = new Map();
+    for (const row of r.rows) {
+      if (!map.has(row.ordem)) {
+        map.set(row.ordem, {
+          ordem: row.ordem,
+          pergunta: row.pergunta,
+          alternativas: [],
+        });
+      }
+      map.get(row.ordem).alternativas.push({
+        id: row.perfil,         // chave que volta no /responder
+        texto: row.texto,
+      });
+    }
+
+    const perguntas = Array.from(map.values()).sort((a, b) => a.ordem - b.ordem);
+    return res.json({ ok: true, perguntas });
+  } catch (err) {
+    console.error('[teste/perguntas] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ── GET /api/teste/progresso ────────────────────────────────
+// Body via query string: ?lead_id=...
+// Devolve as respostas que a aluna já deu, pra ela continuar de onde parou.
+//
+// Retorno: { ok, respostas: [{pergunta_ordem, perfil}, ...], total: 15 }
+
+router.get('/progresso', async (req, res) => {
+  try {
+    const leadId = (req.query.lead_id || '').toString().trim();
+    if (!leadId) return res.status(400).json({ ok: false, erro: 'lead_id ausente' });
+
+    const r = await poolTeste.query(
+      `SELECT pergunta_ordem, perfil
+         FROM teste_respostas
+        WHERE lead_id = $1
+        ORDER BY pergunta_ordem`,
+      [leadId]
+    );
+
+    return res.json({
+      ok: true,
+      respostas: r.rows,
+      total: 15,
+    });
+  } catch (err) {
+    console.error('[teste/progresso] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ── POST /api/teste/responder ───────────────────────────────
+// Body: { lead_id, pergunta_ordem (1-15), perfil ('medo'|'desordem'|...) }
+//
+// Salva/atualiza a resposta. Se for a 15ª e completou tudo,
+// calcula o perfil dominante e cria/atualiza linha em `testes`.
+//
+// Retorno parcial:    { ok, completo: false, respondidas: 7 }
+// Retorno completo:   { ok, completo: true, teste_id, perfil_dominante,
+//                       percentual_prosperidade, contagem, percentuais }
+
+router.post('/responder', async (req, res) => {
+  try {
+    const { lead_id, pergunta_ordem, perfil } = req.body || {};
+
+    // ── Validação ──
+    if (!lead_id || typeof lead_id !== 'string') {
+      return res.status(400).json({ ok: false, erro: 'lead_id inválido' });
+    }
+    const ordemNum = parseInt(pergunta_ordem, 10);
+    if (!Number.isInteger(ordemNum) || ordemNum < 1 || ordemNum > 15) {
+      return res.status(400).json({ ok: false, erro: 'pergunta_ordem inválida' });
+    }
+    if (!PERFIS_VALIDOS.includes(perfil)) {
+      return res.status(400).json({ ok: false, erro: 'perfil inválido' });
+    }
+
+    // ── Confirma que o lead existe e pega dados pra cruzar ──
+    const leadRows = await poolTeste.query(
+      `SELECT id, telefone_canonico, usuario_id FROM teste_leads WHERE id = $1`,
+      [lead_id]
+    );
+    if (!leadRows.rows[0]) {
+      return res.status(404).json({ ok: false, erro: 'lead não encontrado' });
+    }
+    const lead = leadRows.rows[0];
+
+    // ── Confirma que o par (pergunta, perfil) existe nas alternativas ──
+    // Defesa contra payload inventado pelo frontend.
+    const alt = await poolTeste.query(
+      `SELECT 1 FROM teste_alternativas WHERE pergunta_ordem=$1 AND perfil=$2`,
+      [ordemNum, perfil]
+    );
+    if (!alt.rows[0]) {
+      return res.status(400).json({ ok: false, erro: 'alternativa inexistente' });
+    }
+
+    // ── Salva/atualiza a resposta (idempotente: pode reclicar) ──
+    await poolTeste.query(
+      `INSERT INTO teste_respostas (lead_id, pergunta_ordem, perfil)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (lead_id, pergunta_ordem)
+       DO UPDATE SET perfil = EXCLUDED.perfil, respondido_em = NOW()`,
+      [lead_id, ordemNum, perfil]
+    );
+
+    // ── Quantas já foram respondidas? ──
+    const cnt = await poolTeste.query(
+      `SELECT pergunta_ordem, perfil FROM teste_respostas
+        WHERE lead_id=$1 ORDER BY pergunta_ordem`,
+      [lead_id]
+    );
+    const respondidas = cnt.rows.length;
+
+    // ── Se ainda não completou: retorna parcial e termina ──
+    if (respondidas < 15) {
+      return res.json({
+        ok: true,
+        completo: false,
+        respondidas,
+        total: 15,
+      });
+    }
+
+    // ── COMPLETOU: calcula perfil e cria/atualiza linha em `testes` ──
+    const respostasArr = cnt.rows.map(r => ({
+      pergunta_ordem: r.pergunta_ordem,
+      perfil: r.perfil,
+    }));
+
+    const resultado = calcularPerfil(respostasArr);
+
+    // Verifica se já existe um teste pra esse lead (caso refaça)
+    const testeExistente = await poolTeste.query(
+      `SELECT id FROM testes WHERE lead_id=$1 ORDER BY feito_em DESC LIMIT 1`,
+      [lead_id]
+    );
+
+    let testeId;
+    if (testeExistente.rows[0]) {
+      testeId = testeExistente.rows[0].id;
+      await poolTeste.query(
+        `UPDATE testes
+            SET respostas=$1, contagem=$2, percentuais=$3,
+                perfil_dominante=$4, percentual_prosperidade=$5, nivel_prosperidade=$6,
+                feito_em=NOW()
+          WHERE id=$7`,
+        [
+          JSON.stringify(respostasArr),
+          JSON.stringify(resultado.contagem),
+          JSON.stringify(resultado.percentuais),
+          resultado.perfil_dominante,
+          resultado.percentual_prosperidade,
+          resultado.nivel_prosperidade,
+          testeId,
+        ]
+      );
+    } else {
+      const r = await poolTeste.query(
+        `INSERT INTO testes
+           (usuario_id, lead_id, telefone_canonico, respostas,
+            contagem, percentuais,
+            perfil_dominante, percentual_prosperidade, nivel_prosperidade)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id`,
+        [
+          lead.usuario_id,
+          lead_id,
+          lead.telefone_canonico,
+          JSON.stringify(respostasArr),
+          JSON.stringify(resultado.contagem),
+          JSON.stringify(resultado.percentuais),
+          resultado.perfil_dominante,
+          resultado.percentual_prosperidade,
+          resultado.nivel_prosperidade,
+        ]
+      );
+      testeId = r.rows[0].id;
+    }
+
+    return res.json({
+      ok: true,
+      completo: true,
+      teste_id: testeId,
+      perfil_dominante: resultado.perfil_dominante,
+      percentual_prosperidade: resultado.percentual_prosperidade,
+      contagem: resultado.contagem,
+      percentuais: resultado.percentuais,
+    });
+  } catch (err) {
+    console.error('[teste/responder] erro:', err);
     return res.status(500).json({ ok: false, erro: 'erro interno' });
   }
 });
