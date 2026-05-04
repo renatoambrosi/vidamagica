@@ -478,6 +478,80 @@
 
     body.modal-aberto { overflow: hidden; }
 
+    /* ─── Sistema de telas dentro do modal (captura → perguntas → finalizado) ─── */
+    .modal-tela { display: none; animation: telaIn 0.4s cubic-bezier(0.22,1,0.36,1); }
+    .modal-tela.is-ativa { display: block; }
+    @keyframes telaIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+    /* ─── Tela de Perguntas (Quiz) ─── */
+    .quiz-progresso { margin-bottom: 2rem; padding-top: 0.5rem; }
+    .quiz-progresso-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; font-family: var(--font-display); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+    .quiz-progresso-info > span:first-child { color: var(--pearl); }
+    .quiz-progresso-info > span:last-child { color: var(--sub-bright); }
+    .quiz-progresso-barra { height: 6px; background: rgba(43,165,232,0.12); border-radius: 999px; overflow: hidden; }
+    .quiz-progresso-fill { height: 100%; background: linear-gradient(90deg, var(--sub-bright), var(--sub-light)); border-radius: 999px; box-shadow: 0 0 12px var(--sub-glow); transition: width 0.4s cubic-bezier(0.22,1,0.36,1); width: 0%; }
+
+    .quiz-pergunta-wrap { animation: perguntaIn 0.45s cubic-bezier(0.22,1,0.36,1); }
+    .quiz-pergunta-wrap.is-saindo { animation: perguntaOut 0.25s ease forwards; }
+    @keyframes perguntaIn  { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes perguntaOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-8px); } }
+
+    .quiz-pergunta { font-family: var(--font-display); font-size: 1.35rem; font-weight: 700; color: var(--pearl); line-height: 1.35; text-align: center; margin: 0 0 1.75rem; }
+
+    .quiz-alternativas { display: flex; flex-direction: column; gap: 0.7rem; }
+    .quiz-alt {
+      width: 100%;
+      text-align: left;
+      padding: 1.1rem 1.25rem;
+      background: rgba(5,25,41,0.5);
+      border: 1.5px solid rgba(43,165,232,0.22);
+      border-radius: var(--r-md);
+      color: var(--pearl);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+    .quiz-alt:hover { background: rgba(43,165,232,0.12); border-color: var(--sub-bright); transform: translateX(2px); }
+    .quiz-alt-bullet {
+      flex-shrink: 0;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(43,165,232,0.4);
+      background: transparent;
+      transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .quiz-alt-bullet i { color: var(--sub-deep); font-size: 0.7rem; opacity: 0; transform: scale(0.5); transition: all 0.2s; }
+    .quiz-alt:hover .quiz-alt-bullet { border-color: var(--sub-bright); }
+    .quiz-alt.is-selecionada { background: linear-gradient(135deg, rgba(43,165,232,0.2), rgba(43,165,232,0.1)); border-color: var(--sub-bright); box-shadow: 0 0 20px var(--sub-glow-soft); }
+    .quiz-alt.is-selecionada .quiz-alt-bullet { background: linear-gradient(135deg, var(--sub-bright), var(--sub-light)); border-color: var(--sub-bright); }
+    .quiz-alt.is-selecionada .quiz-alt-bullet i { opacity: 1; transform: scale(1); }
+    .quiz-alt-texto { flex: 1; }
+    .quiz-alt:disabled { cursor: wait; opacity: 0.6; }
+
+    .quiz-rodape { margin-top: 1.5rem; display: flex; justify-content: flex-start; }
+    .quiz-voltar {
+      background: transparent;
+      border: 1px solid rgba(245,240,232,0.18);
+      color: var(--pearl-dim);
+      padding: 0.65rem 1.2rem;
+      border-radius: var(--r-full);
+      font-size: 0.85rem;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 0.45rem;
+    }
+    .quiz-voltar:hover:not(:disabled) { background: rgba(245,240,232,0.06); color: var(--pearl); border-color: rgba(245,240,232,0.3); }
+    .quiz-voltar:disabled { opacity: 0.3; cursor: not-allowed; }
+    .quiz-voltar i { font-size: 0.75rem; }
+
     @media (max-width: 480px) {
       .modal-iniciar-content { padding: 1rem 1rem 2.5rem; }
       .modal-iniciar-titulo { font-size: 1.25rem; }
@@ -486,6 +560,8 @@
       .modal-iniciar-logo-teste { max-width: 220px; margin-bottom: 1.25rem; }
       .modal-form-input { font-size: 16px; /* evita zoom no iOS */ }
       .modal-form-checkbox-texto { font-size: 0.82rem; }
+      .quiz-pergunta { font-size: 1.1rem; }
+      .quiz-alt { padding: 0.95rem 1.05rem; font-size: 0.9rem; }
     }
 
     /* RESPONSIVO */
@@ -997,6 +1073,8 @@
               </button>
             </div>
             <div class="modal-iniciar-body">
+              <!-- ──────────── TELA 1: Captura (nome, telefone, aceite) ──────────── -->
+              <div class="modal-tela modal-tela-captura is-ativa" data-tela="captura">
               <img src="/assets/logo-teste-pura.png" alt="Teste do Subconsciente" class="modal-iniciar-logo-teste">
               <h2 id="modal-iniciar-titulo" class="modal-iniciar-titulo">Descubra quais energias que estão travando seu subconsciente.</h2>
               <p class="modal-iniciar-subtitulo">Você já parou pra pensar que padrões mentais podem travar a sua vida? O Teste do Subconsciente revela exatamente quais são esses padrões e como eles se manifestam no seu dia a dia. Por apenas R$ 19,00 → você recebe por WhatsApp o seu resultado personalizado logo após o pagamento. Assista as instruções abaixo antes de começar:</p>
@@ -1053,6 +1131,44 @@
                   <i class="fas fa-arrow-right submit-icon"></i>
                 </button>
               </form>
+              </div>
+
+              <!-- ──────────── TELA 2: Perguntas (1 por vez) ──────────── -->
+              <div class="modal-tela modal-tela-perguntas" data-tela="perguntas">
+                <div class="quiz-progresso">
+                  <div class="quiz-progresso-info">
+                    <span id="quiz-contador">1 de 15</span>
+                    <span id="quiz-percentual">7%</span>
+                  </div>
+                  <div class="quiz-progresso-barra">
+                    <div class="quiz-progresso-fill" id="quiz-progresso-fill"></div>
+                  </div>
+                </div>
+
+                <div class="quiz-pergunta-wrap" id="quiz-pergunta-wrap">
+                  <h2 class="quiz-pergunta" id="quiz-pergunta-texto">Carregando…</h2>
+                  <div class="quiz-alternativas" id="quiz-alternativas">
+                    <!-- alternativas inseridas dinamicamente -->
+                  </div>
+                </div>
+
+                <div class="quiz-rodape">
+                  <button type="button" class="quiz-voltar" id="quiz-btn-voltar">
+                    <i class="fas fa-arrow-left"></i> Voltar
+                  </button>
+                </div>
+              </div>
+
+              <!-- ──────────── TELA 3: Finalizado (paywall — próxima etapa) ──────────── -->
+              <div class="modal-tela modal-tela-finalizado" data-tela="finalizado">
+                <div class="modal-iniciar-icon"><i class="fas fa-check"></i></div>
+                <h2 class="modal-iniciar-titulo">Tudo pronto!</h2>
+                <p class="modal-iniciar-subtitulo">Você terminou o teste. Em instantes vamos liberar o pagamento pra você acessar seu resultado completo.</p>
+                <p style="text-align:center;color:rgba(245,240,232,0.5);font-size:0.85rem;margin-top:1rem;">
+                  <i class="fas fa-tools" style="margin-right:0.4rem;"></i>
+                  Tela de pagamento em construção
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -1227,11 +1343,9 @@
           sessionStorage.setItem('teste_lead_id', data.lead_id);
           sessionStorage.setItem('teste_usuario_id', data.usuario_id);
 
-          // PRÓXIMA ETAPA: redirecionar pra /teste/perguntas (a construir)
-          // Por enquanto: log + alerta e fecha modal.
-          console.log('[teste/iniciar] sucesso', data);
-          alert('Tudo certo! A tela das perguntas será criada na próxima etapa.');
-          fecharModal();
+          // Avança para a tela do quiz
+          await Quiz.iniciar(data.lead_id);
+          trocarTela('perguntas');
         } catch (err) {
           console.error('[teste/iniciar] erro:', err);
           erroTel.textContent = 'Algo deu errado. Tente novamente em alguns segundos.';
@@ -1241,6 +1355,176 @@
           atualizarBotao();
         }
       });
+
+      // ── Sistema de troca de telas dentro do modal ──
+      function trocarTela(nome) {
+        modal.querySelectorAll('.modal-tela').forEach(t => t.classList.remove('is-ativa'));
+        const alvo = modal.querySelector('[data-tela="' + nome + '"]');
+        if (alvo) alvo.classList.add('is-ativa');
+        // Volta scroll do modal pro topo
+        modal.scrollTop = 0;
+      }
+      window._testeTrocarTela = trocarTela; // exposto pro Quiz
+
+      // ── Quiz: 15 perguntas, 1 por vez, salva a cada clique ──
+      const Quiz = (function(){
+        let perguntas = [];           // [{ ordem, pergunta, alternativas: [{id, texto}] }]
+        let respostasDadas = {};      // { 1: 'medo', 2: 'prosperidade', ... }
+        let indiceAtual = 0;          // 0..14
+        let leadId = null;
+        let bloqueado = false;        // evita cliques múltiplos durante salvamento
+
+        // DOM refs
+        const elContador  = document.getElementById('quiz-contador');
+        const elPercentual = document.getElementById('quiz-percentual');
+        const elFill      = document.getElementById('quiz-progresso-fill');
+        const elPergWrap  = document.getElementById('quiz-pergunta-wrap');
+        const elPergTexto = document.getElementById('quiz-pergunta-texto');
+        const elAlts      = document.getElementById('quiz-alternativas');
+        const elBtnVoltar = document.getElementById('quiz-btn-voltar');
+
+        async function iniciar(novoLeadId) {
+          leadId = novoLeadId;
+          elPergTexto.textContent = 'Carregando…';
+          elAlts.innerHTML = '';
+
+          // Carrega perguntas + progresso em paralelo
+          const [respPerg, respProg] = await Promise.all([
+            fetch('/api/teste/perguntas').then(r => r.json()),
+            fetch('/api/teste/progresso?lead_id=' + encodeURIComponent(leadId)).then(r => r.json()).catch(() => ({ ok: true, respostas: [] })),
+          ]);
+
+          if (!respPerg.ok || !Array.isArray(respPerg.perguntas)) {
+            throw new Error('Não foi possível carregar as perguntas');
+          }
+          perguntas = respPerg.perguntas;
+
+          respostasDadas = {};
+          if (respProg && respProg.ok && Array.isArray(respProg.respostas)) {
+            for (const r of respProg.respostas) {
+              respostasDadas[r.pergunta_ordem] = r.perfil;
+            }
+          }
+
+          // Decide onde começar: primeira não respondida, ou 0 se nenhuma
+          indiceAtual = 0;
+          for (let i = 0; i < perguntas.length; i++) {
+            if (!respostasDadas[perguntas[i].ordem]) {
+              indiceAtual = i;
+              break;
+            }
+            if (i === perguntas.length - 1) indiceAtual = i; // todas respondidas: fica na última
+          }
+
+          renderizar();
+        }
+
+        function renderizar() {
+          const p = perguntas[indiceAtual];
+          if (!p) return;
+
+          const numero = indiceAtual + 1;
+          const total = perguntas.length;
+          const percent = Math.round((numero / total) * 100);
+
+          elContador.textContent = numero + ' de ' + total;
+          elPercentual.textContent = percent + '%';
+          elFill.style.width = percent + '%';
+
+          // Re-anima a entrada
+          elPergWrap.classList.remove('is-saindo');
+          // Força reflow pra reanimar
+          void elPergWrap.offsetWidth;
+          elPergWrap.style.animation = 'none';
+          void elPergWrap.offsetWidth;
+          elPergWrap.style.animation = '';
+
+          elPergTexto.textContent = p.pergunta;
+
+          const respostaAtual = respostasDadas[p.ordem] || null;
+          elAlts.innerHTML = '';
+          for (const alt of p.alternativas) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'quiz-alt';
+            if (respostaAtual === alt.id) btn.classList.add('is-selecionada');
+            btn.dataset.altId = alt.id;
+            btn.innerHTML =
+              '<span class="quiz-alt-bullet"><i class="fas fa-check"></i></span>' +
+              '<span class="quiz-alt-texto"></span>';
+            btn.querySelector('.quiz-alt-texto').textContent = alt.texto;
+            btn.addEventListener('click', () => clicarAlternativa(alt.id, btn));
+            elAlts.appendChild(btn);
+          }
+
+          // Botão voltar
+          elBtnVoltar.disabled = indiceAtual === 0;
+        }
+
+        async function clicarAlternativa(perfil, btnEl) {
+          if (bloqueado) return;
+          bloqueado = true;
+
+          const p = perguntas[indiceAtual];
+
+          // Destaque visual instantâneo
+          elAlts.querySelectorAll('.quiz-alt').forEach(b => b.classList.remove('is-selecionada'));
+          btnEl.classList.add('is-selecionada');
+          elAlts.querySelectorAll('.quiz-alt').forEach(b => b.disabled = true);
+
+          // Salva localmente
+          respostasDadas[p.ordem] = perfil;
+
+          try {
+            const r = await fetch('/api/teste/responder', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                lead_id: leadId,
+                pergunta_ordem: p.ordem,
+                perfil: perfil,
+              }),
+            });
+            const data = await r.json();
+            if (!r.ok || !data.ok) {
+              throw new Error(data.erro || 'Erro ao salvar resposta');
+            }
+
+            // Pequeno delay pra ver o destaque
+            await new Promise(res => setTimeout(res, 300));
+
+            if (data.completo) {
+              // Persiste resultado pra próxima etapa
+              sessionStorage.setItem('teste_id', data.teste_id);
+              sessionStorage.setItem('teste_perfil', data.perfil_dominante);
+              window._testeTrocarTela('finalizado');
+            } else {
+              // Avança
+              if (indiceAtual < perguntas.length - 1) {
+                indiceAtual++;
+                renderizar();
+              }
+            }
+          } catch (err) {
+            console.error('[quiz] erro ao responder:', err);
+            // Reabilita pra tentar de novo
+            elAlts.querySelectorAll('.quiz-alt').forEach(b => b.disabled = false);
+            btnEl.classList.remove('is-selecionada');
+            delete respostasDadas[p.ordem];
+            alert('Não foi possível salvar sua resposta. Tente clicar de novo.');
+          } finally {
+            bloqueado = false;
+          }
+        }
+
+        elBtnVoltar.addEventListener('click', () => {
+          if (bloqueado || indiceAtual === 0) return;
+          indiceAtual--;
+          renderizar();
+        });
+
+        return { iniciar };
+      })();
     })();
 
     /* UTMs */
