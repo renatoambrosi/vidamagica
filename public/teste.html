@@ -1372,6 +1372,7 @@
         let respostasDadas = {};      // { 1: 'medo', 2: 'prosperidade', ... }
         let indiceAtual = 0;          // 0..14
         let leadId = null;
+        let versaoId = null;
         let bloqueado = false;        // evita cliques múltiplos durante salvamento
 
         // DOM refs
@@ -1388,16 +1389,23 @@
           elPergTexto.textContent = 'Carregando…';
           elAlts.innerHTML = '';
 
-          // Carrega perguntas + progresso em paralelo
-          const [respPerg, respProg] = await Promise.all([
-            fetch('/api/teste/perguntas').then(r => r.json()),
-            fetch('/api/teste/progresso?lead_id=' + encodeURIComponent(leadId)).then(r => r.json()).catch(() => ({ ok: true, respostas: [] })),
-          ]);
-
+          // 1. Carrega perguntas (precisa vir antes pra ter o versao_id)
+          const respPerg = await fetch('/api/teste/perguntas').then(r => r.json());
           if (!respPerg.ok || !Array.isArray(respPerg.perguntas)) {
             throw new Error('Não foi possível carregar as perguntas');
           }
           perguntas = respPerg.perguntas;
+          versaoId = respPerg.versao_id;
+          sessionStorage.setItem('teste_versao_id', versaoId);
+
+          // 2. Progresso da MESMA versão
+          let respProg = { ok: true, respostas: [] };
+          try {
+            respProg = await fetch(
+              '/api/teste/progresso?lead_id=' + encodeURIComponent(leadId) +
+              '&versao_id=' + encodeURIComponent(versaoId)
+            ).then(r => r.json());
+          } catch {}
 
           respostasDadas = {};
           if (respProg && respProg.ok && Array.isArray(respProg.respostas)) {
@@ -1406,14 +1414,14 @@
             }
           }
 
-          // Decide onde começar: primeira não respondida, ou 0 se nenhuma
+          // Decide onde começar: primeira não respondida
           indiceAtual = 0;
           for (let i = 0; i < perguntas.length; i++) {
             if (!respostasDadas[perguntas[i].ordem]) {
               indiceAtual = i;
               break;
             }
-            if (i === perguntas.length - 1) indiceAtual = i; // todas respondidas: fica na última
+            if (i === perguntas.length - 1) indiceAtual = i;
           }
 
           renderizar();
@@ -1481,11 +1489,20 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 lead_id: leadId,
+                versao_id: versaoId,
                 pergunta_ordem: p.ordem,
                 perfil: perfil,
               }),
             });
             const data = await r.json();
+
+            // Versão mudou no meio do teste? Reinicia.
+            if (r.status === 409 && data && data.erro === 'versao_alterada') {
+              alert('Atualizamos o teste. Vamos recomeçar do início.');
+              await Quiz.iniciar(leadId);
+              return;
+            }
+
             if (!r.ok || !data.ok) {
               throw new Error(data.erro || 'Erro ao salvar resposta');
             }
@@ -1499,7 +1516,6 @@
               sessionStorage.setItem('teste_perfil', data.perfil_dominante);
               window._testeTrocarTela('finalizado');
             } else {
-              // Avança
               if (indiceAtual < perguntas.length - 1) {
                 indiceAtual++;
                 renderizar();
@@ -1507,7 +1523,6 @@
             }
           } catch (err) {
             console.error('[quiz] erro ao responder:', err);
-            // Reabilita pra tentar de novo
             elAlts.querySelectorAll('.quiz-alt').forEach(b => b.disabled = false);
             btnEl.classList.remove('is-selecionada');
             delete respostasDadas[p.ordem];
