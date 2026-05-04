@@ -532,6 +532,66 @@ async function initTeste() {
     await c.query(`CREATE INDEX IF NOT EXISTS idx_testes_usuario ON testes(usuario_id)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_testes_lead ON testes(lead_id)`);
 
+    // Catálogo de perguntas e alternativas (fonte da verdade do teste).
+    // 15 perguntas × 5 alternativas = 75 linhas em teste_alternativas.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS teste_perguntas (
+        id SERIAL PRIMARY KEY,
+        ordem INTEGER UNIQUE NOT NULL,
+        pergunta TEXT NOT NULL,
+        ativo BOOLEAN DEFAULT TRUE,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS teste_alternativas (
+        id SERIAL PRIMARY KEY,
+        pergunta_ordem INTEGER NOT NULL,
+        perfil VARCHAR(50) NOT NULL,
+        texto TEXT NOT NULL,
+        ordem_alternativa INTEGER NOT NULL,
+        UNIQUE (pergunta_ordem, perfil),
+        FOREIGN KEY (pergunta_ordem) REFERENCES teste_perguntas(ordem) ON DELETE CASCADE
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_alt_pergunta ON teste_alternativas(pergunta_ordem)`);
+
+    // Respostas individuais salvas a cada clique (progresso).
+    // Permite a aluna fechar a aba e voltar de onde parou.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS teste_respostas (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        lead_id UUID NOT NULL REFERENCES teste_leads(id) ON DELETE CASCADE,
+        pergunta_ordem INTEGER NOT NULL,
+        perfil VARCHAR(50) NOT NULL,
+        respondido_em TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (lead_id, pergunta_ordem)
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_resp_lead ON teste_respostas(lead_id)`);
+
+    // ── Seed das perguntas ──
+    // Sempre roda: insere se não existe, atualiza texto se mudou.
+    // Assim editar teste-conteudo.js + redeploy = perguntas atualizadas.
+    const { PERGUNTAS } = require('./core/teste-conteudo');
+    for (const p of PERGUNTAS) {
+      await c.query(
+        `INSERT INTO teste_perguntas (ordem, pergunta) VALUES ($1, $2)
+         ON CONFLICT (ordem) DO UPDATE SET pergunta=EXCLUDED.pergunta, atualizado_em=NOW()`,
+        [p.ordem, p.pergunta]
+      );
+      for (let i = 0; i < p.alternativas.length; i++) {
+        const a = p.alternativas[i];
+        await c.query(
+          `INSERT INTO teste_alternativas (pergunta_ordem, perfil, texto, ordem_alternativa)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (pergunta_ordem, perfil) DO UPDATE SET texto=EXCLUDED.texto, ordem_alternativa=EXCLUDED.ordem_alternativa`,
+          [p.ordem, a.perfil, a.texto, i + 1]
+        );
+      }
+    }
+
     console.log('✅ Banco Teste iniciado');
   } finally {
     c.release();
