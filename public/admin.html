@@ -235,6 +235,11 @@ select option { background: #1a1205; }
     <span class="nav-icon">👤</span> Usuários
   </div>
 
+  <div class="sidebar-section-label" style="margin-top:0.5rem">Teste do Subconsciente</div>
+  <div class="nav-item" id="nav-teste" onclick="goTab('teste', this)">
+    <span class="nav-icon">🧠</span> Versões
+  </div>
+
   <div class="sidebar-section-label" style="margin-top:0.5rem">Em breve</div>
   <div class="nav-item disabled"><span class="nav-icon">👥</span> Membros do Clube <span class="nav-tag">—</span></div>
   <div class="nav-item disabled"><span class="nav-icon">📊</span> Métricas <span class="nav-tag">—</span></div>
@@ -579,8 +584,112 @@ select option { background: #1a1205; }
       </div>
     </div>
 
+    <!-- ════════════════════ TESTE DO SUBCONSCIENTE ════════════════════ -->
+    <div class="tab-panel" id="tab-teste">
+      <!-- Lista de versões -->
+      <div id="teste-tela-lista">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:0.75rem">
+          <p style="color:var(--text-muted);font-size:0.85rem;margin:0;max-width:680px;line-height:1.5">
+            Cada versão é um snapshot do teste. Edição só pode ser feita em rascunhos.
+            <strong style="color:#FFD57A">Publicar uma versão apaga todos os testes inacabados</strong> (testes concluídos ficam preservados na versão que foram feitos).
+          </p>
+          <button class="btn btn-primary" onclick="testeAdmin.abrirCriar()">+ Criar nova versão</button>
+        </div>
+
+        <div id="teste-versoes-lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1rem">
+          <div style="color:var(--text-muted);padding:2rem;text-align:center">Carregando…</div>
+        </div>
+      </div>
+
+      <!-- Editor de uma versão -->
+      <div id="teste-tela-editor" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.75rem">
+          <div>
+            <button class="btn btn-ghost" onclick="testeAdmin.voltarLista()">← Voltar</button>
+            <span id="teste-editor-nome" style="margin-left:1rem;font-weight:600;font-size:1.05rem"></span>
+            <span id="teste-editor-status-badge" style="margin-left:0.5rem"></span>
+          </div>
+          <div id="teste-editor-acoes"></div>
+        </div>
+
+        <div id="teste-editor-perfis-legenda" style="margin-bottom:1.25rem;padding:0.85rem 1rem;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;display:flex;flex-wrap:wrap;gap:0.6rem;align-items:center">
+          <span style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Energias:</span>
+        </div>
+
+        <div id="teste-editor-perguntas"></div>
+
+        <div id="teste-editor-erro" style="display:none;margin-top:1rem;padding:0.85rem 1rem;background:rgba(229,115,115,0.12);border:1px solid rgba(229,115,115,0.3);border-radius:8px;color:#F09090;font-size:0.85rem"></div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
+
+<!-- Modal: Criar nova versão -->
+<div id="modal-criar-versao" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:1.5rem">
+  <div style="background:var(--surface,#1a1206);border:1px solid var(--border);border-radius:14px;max-width:440px;width:100%;padding:1.75rem">
+    <h3 style="margin:0 0 0.5rem;font-size:1.15rem;color:var(--text-primary,#f5f0e8)">Criar nova versão</h3>
+    <p style="color:var(--text-muted);font-size:0.85rem;margin:0 0 1.25rem;line-height:1.5">Vai clonar a versão ativa atual como rascunho. Você pode editar antes de publicar.</p>
+    <label class="field-label">Nome da versão</label>
+    <input type="text" id="campo-nova-versao-nome" class="field-input" placeholder="Ex: v1.1, v2.0, teste-fevereiro" maxlength="50" autocomplete="off">
+    <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.4rem">Letras, números, pontos, hífen e underscore. Precisa ser único.</p>
+    <div id="modal-criar-versao-erro" style="display:none;margin-top:0.75rem;font-size:0.8rem;color:#F09090"></div>
+    <div style="display:flex;gap:0.5rem;margin-top:1.25rem">
+      <button class="btn btn-primary" onclick="testeAdmin.confirmarCriar()" id="btn-confirmar-criar">Criar</button>
+      <button class="btn btn-ghost" onclick="testeAdmin.fecharCriar()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmar publicar -->
+<div id="modal-publicar-versao" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:1.5rem">
+  <div style="background:var(--surface,#1a1206);border:1px solid var(--border);border-radius:14px;max-width:480px;width:100%;padding:1.75rem">
+    <h3 style="margin:0 0 0.5rem;font-size:1.15rem;color:#FFD57A">⚠ Publicar versão</h3>
+    <p style="color:var(--text-primary,#f5f0e8);font-size:0.9rem;margin:0 0 1rem;line-height:1.55">
+      Você vai publicar <strong id="modal-pub-nome"></strong> como ativa.
+    </p>
+    <p style="color:var(--text-muted);font-size:0.82rem;margin:0 0 1rem;line-height:1.55">
+      • Versão ativa atual será arquivada.<br>
+      • <strong style="color:#F09090">Todos os testes inacabados serão apagados</strong>. Quem estava respondendo vai recomeçar do zero.<br>
+      • Testes concluídos permanecem intactos na versão em que foram feitos.
+    </p>
+    <div id="modal-pub-erro" style="display:none;margin-top:0.5rem;font-size:0.8rem;color:#F09090"></div>
+    <div style="display:flex;gap:0.5rem;margin-top:1.25rem">
+      <button class="btn btn-primary" onclick="testeAdmin.confirmarPublicar()" id="btn-confirmar-pub">Publicar</button>
+      <button class="btn btn-ghost" onclick="testeAdmin.fecharPublicar()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* ── Versões: card ── */
+  .versao-card { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.2rem; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 0.55rem; }
+  .versao-card:hover { background: rgba(255,255,255,0.06); border-color: rgba(248,220,150,0.4); transform: translateY(-1px); }
+  .versao-card-header { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+  .versao-card-nome { font-weight: 700; font-size: 1.05rem; color: var(--text-primary, #f5f0e8); }
+  .versao-card-meta { font-size: 0.78rem; color: var(--text-muted); display: flex; gap: 0.85rem; flex-wrap: wrap; }
+  .versao-status-badge { padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+  .versao-status-rascunho   { background: rgba(248,220,150,0.18); color: #FFD57A; }
+  .versao-status-ativa      { background: rgba(46,213,115,0.18);  color: #2ED573; }
+  .versao-status-arquivada  { background: rgba(245,240,232,0.1);  color: var(--text-muted); }
+
+  /* ── Editor: pergunta ── */
+  .ed-pergunta-card { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.2rem; margin-bottom: 1rem; }
+  .ed-pergunta-numero { display: inline-block; padding: 0.18rem 0.6rem; background: rgba(43,165,232,0.18); color: #2ba5e8; border-radius: 999px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; margin-bottom: 0.6rem; }
+  .ed-pergunta-input { width: 100%; padding: 0.7rem 0.9rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary, #f5f0e8); font-size: 0.95rem; line-height: 1.4; resize: vertical; min-height: 60px; font-family: inherit; }
+  .ed-pergunta-input:focus { outline: none; border-color: #FFD57A; }
+  .ed-pergunta-input:disabled { opacity: 0.65; cursor: default; }
+
+  .ed-alts-titulo { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin: 0.95rem 0 0.5rem; }
+  .ed-alt-row { display: flex; align-items: flex-start; gap: 0.6rem; margin-bottom: 0.5rem; }
+  .ed-alt-letra { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: rgba(0,0,0,0.4); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.78rem; color: var(--text-muted); margin-top: 0.35rem; }
+  .ed-alt-input { flex: 1; padding: 0.6rem 0.85rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary, #f5f0e8); font-size: 0.88rem; line-height: 1.4; min-height: 44px; resize: vertical; font-family: inherit; }
+  .ed-alt-input:focus { outline: none; border-color: #FFD57A; }
+  .ed-alt-input:disabled { opacity: 0.65; cursor: default; }
+  .ed-alt-perfil { flex-shrink: 0; padding: 0.3rem 0.7rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; align-self: center; min-width: 110px; text-align: center; color: #fff; }
+
+  .perfil-legenda-pill { padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; color: #fff; letter-spacing: 0.03em; }
+</style>
 
 <script>
 // ===== PARTÍCULAS =====
@@ -604,6 +713,7 @@ const tabMeta = {
   feed:        { title: 'Feed do App',          sub: 'Conteúdo publicado no app — vídeos, textos, imagens e links' },
   whatsapp:    { title: 'Gateway WhatsApp',    sub: 'Cooldowns, categorias, fila ao vivo e templates' },
   usuarios:    { title: 'Usuários',             sub: 'Cadastros, telefones, sessões e dispositivos' },
+  teste:       { title: 'Teste do Subconsciente', sub: 'Versões do questionário — perguntas, alternativas e publicação' },
 };
 
 let wzCarregado = false;
@@ -637,6 +747,7 @@ function goTab(id, el) {
   }
   if (id === 'feed' && !feedCarregado) { feedCarregado = true; carregarFeedAdmin(); }
   if (id === 'usuarios' && !usuariosCarregado) { usuariosCarregado = true; carregarUsuarios(); }
+  if (id === 'teste') { testeAdmin.carregar(); }
 }
 
 function toast(msg, tipo = 'success') {
@@ -1750,6 +1861,312 @@ async function deletarEndereco(userId, enderecoId) {
     else toast(d.error||'Erro','error');
   } catch { toast('Erro de conexão','error'); }
 }
+
+// ===== TESTE DO SUBCONSCIENTE =====
+const testeAdmin = (function(){
+  let versoesCache = [];
+  let editandoVersao = null;     // versão sendo exibida no editor
+  let perguntasEdit = [];         // estrutura editável atual
+
+  function fmtData(s) {
+    if (!s) return '—';
+    try { return new Date(s).toLocaleDateString('pt-BR'); } catch { return s; }
+  }
+  function escapeText(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+  }
+  function statusBadge(status) {
+    const cls = 'versao-status-' + status;
+    const lbl = { rascunho: 'Rascunho', ativa: 'Ativa', arquivada: 'Arquivada' }[status] || status;
+    return '<span class="versao-status-badge ' + cls + '">' + lbl + '</span>';
+  }
+
+  async function carregarLista() {
+    const wrap = document.getElementById('teste-versoes-lista');
+    wrap.innerHTML = '<div style="color:var(--text-muted);padding:2rem;text-align:center">Carregando…</div>';
+    try {
+      const r = await fetch('/api/admin/teste/versoes', { headers: { Authorization: authHeader() } });
+      if (r.status === 401) { vmMostrarLogin(); return; }
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.erro || 'Erro');
+      versoesCache = d.versoes || [];
+      renderLista();
+    } catch (e) {
+      wrap.innerHTML = '<div style="color:#F09090;padding:2rem;text-align:center">Erro ao carregar: ' + escapeText(e.message) + '</div>';
+    }
+  }
+
+  function renderLista() {
+    const wrap = document.getElementById('teste-versoes-lista');
+    if (!versoesCache.length) {
+      wrap.innerHTML = '<div style="color:var(--text-muted);padding:2rem;text-align:center;grid-column:1/-1">Nenhuma versão criada ainda.</div>';
+      return;
+    }
+    wrap.innerHTML = versoesCache.map(v => {
+      const dataInfo = v.status === 'ativa'
+        ? 'Publicada: ' + fmtData(v.publicado_em)
+        : v.status === 'arquivada'
+          ? 'Arquivada: ' + fmtData(v.arquivado_em)
+          : 'Criada: ' + fmtData(v.criado_em);
+      return (
+        '<div class="versao-card" onclick="testeAdmin.abrirEditor(' + v.id + ')">' +
+          '<div class="versao-card-header">' +
+            '<span class="versao-card-nome">' + escapeText(v.nome) + '</span>' +
+            statusBadge(v.status) +
+          '</div>' +
+          '<div class="versao-card-meta">' +
+            '<span>📝 ' + (v.qtd_perguntas || 0) + ' perguntas</span>' +
+            '<span>✓ ' + (v.qtd_testes || 0) + ' testes feitos</span>' +
+          '</div>' +
+          '<div style="font-size:0.74rem;color:var(--text-muted)">' + dataInfo + '</div>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  // ── Modal: criar nova versão ──
+  function abrirCriar() {
+    document.getElementById('campo-nova-versao-nome').value = sugerirProximoNome();
+    document.getElementById('modal-criar-versao-erro').style.display = 'none';
+    const m = document.getElementById('modal-criar-versao');
+    m.style.display = 'flex';
+    setTimeout(() => document.getElementById('campo-nova-versao-nome').focus(), 50);
+  }
+  function fecharCriar() {
+    document.getElementById('modal-criar-versao').style.display = 'none';
+  }
+  function sugerirProximoNome() {
+    // Acha a maior versão tipo "vX.Y" e sugere bumpar Y
+    const re = /^v(\d+)\.(\d+)$/i;
+    let melhor = null;
+    for (const v of versoesCache) {
+      const m = re.exec(v.nome);
+      if (m) {
+        const maj = parseInt(m[1], 10), min = parseInt(m[2], 10);
+        if (!melhor || maj > melhor.maj || (maj === melhor.maj && min > melhor.min)) {
+          melhor = { maj, min };
+        }
+      }
+    }
+    if (melhor) return 'v' + melhor.maj + '.' + (melhor.min + 1);
+    return 'v1.1';
+  }
+  async function confirmarCriar() {
+    const nome = document.getElementById('campo-nova-versao-nome').value.trim();
+    const erro = document.getElementById('modal-criar-versao-erro');
+    const btn = document.getElementById('btn-confirmar-criar');
+    if (!nome) {
+      erro.textContent = 'Digite um nome.';
+      erro.style.display = 'block';
+      return;
+    }
+    btn.disabled = true;
+    erro.style.display = 'none';
+    try {
+      const r = await fetch('/api/admin/teste/versoes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader() },
+        body: JSON.stringify({ nome }),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+      fecharCriar();
+      toast('✓ Rascunho ' + nome + ' criado');
+      await carregarLista();
+      abrirEditor(d.versao_id);
+    } catch (e) {
+      erro.textContent = e.message;
+      erro.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ── Editor ──
+  async function abrirEditor(versaoId) {
+    document.getElementById('teste-tela-lista').style.display = 'none';
+    document.getElementById('teste-tela-editor').style.display = 'block';
+    document.getElementById('teste-editor-perguntas').innerHTML = '<div style="color:var(--text-muted);padding:2rem;text-align:center">Carregando…</div>';
+    document.getElementById('teste-editor-erro').style.display = 'none';
+    try {
+      const r = await fetch('/api/admin/teste/versoes/' + versaoId, { headers: { Authorization: authHeader() } });
+      if (r.status === 401) { vmMostrarLogin(); return; }
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.erro || 'Erro');
+      editandoVersao = d.versao;
+      perguntasEdit = d.perguntas || [];
+      renderEditor(d.perfis);
+    } catch (e) {
+      document.getElementById('teste-editor-perguntas').innerHTML = '<div style="color:#F09090;padding:2rem;text-align:center">Erro: ' + escapeText(e.message) + '</div>';
+    }
+  }
+  function voltarLista() {
+    document.getElementById('teste-tela-editor').style.display = 'none';
+    document.getElementById('teste-tela-lista').style.display = 'block';
+    editandoVersao = null;
+    carregarLista();
+  }
+
+  function renderEditor(perfis) {
+    document.getElementById('teste-editor-nome').textContent = editandoVersao.nome;
+    document.getElementById('teste-editor-status-badge').innerHTML = statusBadge(editandoVersao.status);
+    const editavel = editandoVersao.status === 'rascunho';
+
+    // Legenda de perfis
+    const leg = document.getElementById('teste-editor-perfis-legenda');
+    leg.innerHTML = '<span style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Energias:</span>' +
+      perfis.map(p => '<span class="perfil-legenda-pill" style="background:' + p.cor + '">' + escapeText(p.label) + '</span>').join('');
+
+    // Ações
+    const acoes = document.getElementById('teste-editor-acoes');
+    if (editavel) {
+      acoes.innerHTML =
+        '<button class="btn btn-primary" onclick="testeAdmin.salvar()" id="btn-ed-salvar">💾 Salvar</button>' +
+        '<button class="btn" style="background:#2ED573;color:#000;margin-left:0.5rem" onclick="testeAdmin.abrirPublicar()">▶ Publicar</button>' +
+        '<button class="btn btn-ghost" style="color:#F09090;margin-left:0.5rem" onclick="testeAdmin.apagar()">Apagar</button>';
+    } else {
+      acoes.innerHTML = '<span style="color:var(--text-muted);font-size:0.82rem">Somente leitura — versões ' + editandoVersao.status + 's não podem ser editadas</span>';
+    }
+
+    // Perguntas
+    const wrap = document.getElementById('teste-editor-perguntas');
+    wrap.innerHTML = perguntasEdit.map((p, idx) => {
+      const altsHtml = p.alternativas.map((a, i) => {
+        const letra = String.fromCharCode(65 + i); // A, B, C, D, E
+        return (
+          '<div class="ed-alt-row">' +
+            '<div class="ed-alt-letra">' + letra + '</div>' +
+            '<textarea class="ed-alt-input" data-pidx="' + idx + '" data-aidx="' + i + '" rows="2" ' +
+              (editavel ? '' : 'disabled') + ' oninput="testeAdmin.onAltInput(event)">' +
+              escapeText(a.texto) + '</textarea>' +
+            '<div class="ed-alt-perfil" style="background:' + a.perfil_cor + '">(' + escapeText(a.perfil_label) + ')</div>' +
+          '</div>'
+        );
+      }).join('');
+
+      return (
+        '<div class="ed-pergunta-card">' +
+          '<div class="ed-pergunta-numero">Pergunta ' + p.ordem + '</div>' +
+          '<textarea class="ed-pergunta-input" data-pidx="' + idx + '" data-tipo="pergunta" rows="2" ' +
+            (editavel ? '' : 'disabled') + ' oninput="testeAdmin.onPergInput(event)">' +
+            escapeText(p.pergunta) + '</textarea>' +
+          '<div class="ed-alts-titulo">5 Alternativas (ordem A-E embaralhada — visível pra aluna)</div>' +
+          altsHtml +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function onPergInput(e) {
+    const idx = parseInt(e.target.dataset.pidx, 10);
+    if (perguntasEdit[idx]) perguntasEdit[idx].pergunta = e.target.value;
+  }
+  function onAltInput(e) {
+    const pidx = parseInt(e.target.dataset.pidx, 10);
+    const aidx = parseInt(e.target.dataset.aidx, 10);
+    if (perguntasEdit[pidx] && perguntasEdit[pidx].alternativas[aidx]) {
+      perguntasEdit[pidx].alternativas[aidx].texto = e.target.value;
+    }
+  }
+
+  async function salvar() {
+    if (!editandoVersao || editandoVersao.status !== 'rascunho') return;
+    const btn = document.getElementById('btn-ed-salvar');
+    const erro = document.getElementById('teste-editor-erro');
+    erro.style.display = 'none';
+    btn.disabled = true; btn.textContent = '⏳ Salvando…';
+
+    // Monta payload no formato esperado pelo backend
+    const perguntas = perguntasEdit.map(p => ({
+      ordem: p.ordem,
+      pergunta: p.pergunta,
+      alternativas: p.alternativas.map(a => ({
+        perfil: a.perfil,
+        texto: a.texto,
+        ordem_exibicao: a.ordem_exibicao,
+      })),
+    }));
+
+    try {
+      const r = await fetch('/api/admin/teste/versoes/' + editandoVersao.id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader() },
+        body: JSON.stringify({ perguntas }),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+      toast('✓ Salvo');
+    } catch (e) {
+      erro.textContent = e.message;
+      erro.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = '💾 Salvar';
+    }
+  }
+
+  async function apagar() {
+    if (!editandoVersao || editandoVersao.status !== 'rascunho') return;
+    if (!confirm('Apagar o rascunho ' + editandoVersao.nome + '? Não pode desfazer.')) return;
+    try {
+      const r = await fetch('/api/admin/teste/versoes/' + editandoVersao.id, {
+        method: 'DELETE',
+        headers: { Authorization: authHeader() },
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+      toast('✓ Rascunho apagado');
+      voltarLista();
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  }
+
+  // ── Publicar ──
+  function abrirPublicar() {
+    if (!editandoVersao || editandoVersao.status !== 'rascunho') return;
+    document.getElementById('modal-pub-nome').textContent = editandoVersao.nome;
+    document.getElementById('modal-pub-erro').style.display = 'none';
+    document.getElementById('modal-publicar-versao').style.display = 'flex';
+  }
+  function fecharPublicar() {
+    document.getElementById('modal-publicar-versao').style.display = 'none';
+  }
+  async function confirmarPublicar() {
+    if (!editandoVersao) return;
+    const btn = document.getElementById('btn-confirmar-pub');
+    const erro = document.getElementById('modal-pub-erro');
+    erro.style.display = 'none';
+    btn.disabled = true;
+    try {
+      // Salva antes (caso tenha edição não-salva)
+      await salvar();
+      const r = await fetch('/api/admin/teste/versoes/' + editandoVersao.id + '/publicar', {
+        method: 'POST',
+        headers: { Authorization: authHeader() },
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+      fecharPublicar();
+      toast('✓ Versão publicada (' + d.respostas_apagadas + ' inacabados apagados)');
+      voltarLista();
+    } catch (e) {
+      erro.textContent = e.message;
+      erro.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  return {
+    carregar: carregarLista,
+    abrirCriar, fecharCriar, confirmarCriar,
+    abrirEditor, voltarLista,
+    onPergInput, onAltInput,
+    salvar, apagar,
+    abrirPublicar, fecharPublicar, confirmarPublicar,
+  };
+})();
 
 // ===== INIT =====
 carregarPrecos();
