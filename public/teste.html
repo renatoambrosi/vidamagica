@@ -426,9 +426,11 @@
     @keyframes modalIn { from { opacity: 0; } to { opacity: 1; } }
     .modal-iniciar-bg { position: fixed; inset: 0; background: linear-gradient(135deg, rgba(5,25,41,0.96), rgba(10,45,68,0.96)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
     .modal-iniciar-content { position: relative; min-height: 100%; display: flex; flex-direction: column; padding: 1.5rem 1.25rem 3rem; max-width: 560px; margin: 0 auto; }
-    .modal-iniciar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-    .modal-iniciar-logo-img { height: 32px; width: auto; }
-    .modal-iniciar-close { background: rgba(245,240,232,0.08); border: 1px solid rgba(245,240,232,0.15); color: var(--pearl); width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; font-size: 1rem; }
+    .modal-iniciar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; gap: 0.75rem; }
+    .modal-iniciar-marca { display: flex; align-items: center; gap: 0.65rem; min-width: 0; }
+    .modal-iniciar-logo-img { height: 36px; width: auto; flex-shrink: 0; filter: drop-shadow(0 0 12px var(--sub-glow-soft)); }
+    .modal-iniciar-marca-texto { font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--pearl); letter-spacing: 0.01em; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .modal-iniciar-close { background: rgba(245,240,232,0.08); border: 1px solid rgba(245,240,232,0.15); color: var(--pearl); width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; font-size: 1rem; flex-shrink: 0; }
     .modal-iniciar-close:hover { background: rgba(245,240,232,0.15); transform: rotate(90deg); }
 
     .modal-iniciar-body { animation: modalCardIn 0.5s cubic-bezier(0.22,1,0.36,1); }
@@ -556,7 +558,8 @@
       .modal-iniciar-content { padding: 1rem 1rem 2.5rem; }
       .modal-iniciar-titulo { font-size: 1.25rem; }
       .modal-iniciar-subtitulo { font-size: 0.9rem; }
-      .modal-iniciar-logo-img { height: 26px; }
+      .modal-iniciar-logo-img { height: 30px; }
+      .modal-iniciar-marca-texto { font-size: 0.85rem; }
       .modal-iniciar-logo-teste { max-width: 220px; margin-bottom: 1.25rem; }
       .modal-form-input { font-size: 16px; /* evita zoom no iOS */ }
       .modal-form-checkbox-texto { font-size: 0.82rem; }
@@ -1067,7 +1070,10 @@
           <div class="modal-iniciar-bg"></div>
           <div class="modal-iniciar-content">
             <div class="modal-iniciar-header">
-              <img src="/assets/logo-horizontal.png" alt="Vida Mágica" class="modal-iniciar-logo-img">
+              <div class="modal-iniciar-marca">
+                <img src="/assets/logo-teste-pura.png" alt="Teste do Subconsciente" class="modal-iniciar-logo-img">
+                <span class="modal-iniciar-marca-texto">Teste do Subconsciente</span>
+              </div>
               <button type="button" class="modal-iniciar-close" data-close-modal aria-label="Fechar">
                 <i class="fas fa-times"></i>
               </button>
