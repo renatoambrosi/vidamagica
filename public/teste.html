@@ -54,7 +54,8 @@
       min-height: 100vh;
       overflow-x: hidden;
     }
-    body.locked { overflow: hidden; }
+    /* body.locked removido — quebrava position:fixed do ticker no iOS Safari.
+       O loader é position:fixed full-screen, então não precisa travar scroll. */
     /* line-height e position relative aplicados em main, não no body —
        senão quebra position:fixed do ticker no iOS Safari */
     button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
@@ -396,7 +397,7 @@
     @media (max-width: 380px) { .hero-logo-wrap { max-width: 300px; } }
   </style>
 </head>
-<body class="locked">
+<body>
 
   <div class="loader" id="loader">
     <div class="loader-inner">
@@ -618,7 +619,6 @@
     window.addEventListener('load', () => {
       setTimeout(() => {
         document.getElementById('loader').classList.add('hidden');
-        document.body.classList.remove('locked');
       }, 1400);
     });
 
