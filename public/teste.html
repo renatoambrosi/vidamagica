@@ -141,8 +141,7 @@
     .nav-drop-sep { height: 1px; background: rgba(200,146,42,.1); margin: .2rem 0; }
     .nav-drop-icon { font-size: .9rem; width: 16px; text-align: center; flex-shrink: 0; }
 
-    /* ═══ TICKER — CÓPIA EXATA DO INDEX.HTML
-       Único delta: cor de .q e strong → azul do produto. */
+    /* ===== TICKER ===== */
     .ticker-wrap {
       position: fixed;
       top: 52px; left: 0; right: 0;
@@ -171,7 +170,6 @@
       align-items: center;
       gap: 0.35rem;
       font-size: 0.73rem;
-      line-height: 1.2;
       color: rgba(245,240,232,0.58);
       flex-shrink: 0;
       font-family: var(--font-body);
@@ -808,8 +806,7 @@
       });
     })();
 
-    /* ═══ SCROLL: progress + navbar hide + back-top
-       (ticker fica fixo no topo — comportamento do index) ═══ */
+    /* ═══ SCROLL: progress + navbar hide + back-top ═══ */
     (function(){
       const bar     = document.getElementById('scroll-progress');
       const nav     = document.getElementById('navbar');
