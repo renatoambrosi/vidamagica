@@ -13,7 +13,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { poolCore, poolComunicacao } = require('../db');
+const { poolCore, poolComunicacao, poolTeste } = require('../db');
 const { autenticarPainel } = require('../middleware/autenticar');
 const {
   invalidarConfigCache, invalidarCategoriasCache,
@@ -27,6 +27,7 @@ const {
 } = require('../core/usuarios');
 const { enfileirarAtendimento } = require('../core/gateway');
 const { formatarTelefone } = require('../core/utils');
+const { PERFIS_VALIDOS, PERFIS_LABELS, PERFIS_CORES } = require('../core/teste-conteudo');
 
 // ── Middleware: só admin pode usar tudo aqui (escopo='admin')
 router.use(autenticarPainel('admin'));
@@ -728,6 +729,322 @@ router.delete('/usuarios/:id/enderecos/:enderecoId', async (req, res) => {
   } catch (err) {
     console.error('❌ /enderecos DELETE:', err.message);
     res.status(500).json({ error: 'Erro ao deletar endereço' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// TESTE DO SUBCONSCIENTE — gestão de versões
+// Banco: poolTeste
+// Endpoints (prefixo: /api/admin/teste):
+//   GET    /teste/versoes              → lista versões
+//   POST   /teste/versoes              → cria rascunho clonando ativa
+//   GET    /teste/versoes/:id          → detalhes (perguntas + alternativas)
+//   PUT    /teste/versoes/:id          → salva edições do rascunho
+//   POST   /teste/versoes/:id/publicar → publica rascunho (atômico)
+//   DELETE /teste/versoes/:id          → apaga rascunho
+//
+// Regras:
+//   - só rascunhos podem ser editados ou apagados
+//   - estrutura é fixa: 15 perguntas × 5 perfis (medo/desordem/sobrevivencia/validacao/prosperidade)
+//   - perfil de cada alternativa é IMUTÁVEL — admin só edita texto
+//   - publicar: arquiva ativa atual, promove rascunho, apaga teste_respostas órfãos
+// ════════════════════════════════════════════════════════════
+
+function _validarNomeVersao(nome) {
+  if (!nome || typeof nome !== 'string') return null;
+  const limpo = nome.trim();
+  if (limpo.length < 1 || limpo.length > 50) return null;
+  if (!/^[a-zA-Z0-9._-]+$/.test(limpo)) return null;
+  return limpo;
+}
+
+// ── GET /teste/versoes ──────────────────────────────────────
+router.get('/teste/versoes', async (req, res) => {
+  try {
+    const r = await poolTeste.query(
+      `SELECT v.id, v.nome, v.status, v.criado_em, v.publicado_em, v.arquivado_em,
+              (SELECT COUNT(*)::int FROM teste_perguntas p WHERE p.versao_id=v.id) AS qtd_perguntas,
+              (SELECT COUNT(*)::int FROM testes t WHERE t.versao_id=v.id) AS qtd_testes
+         FROM teste_versoes v
+        ORDER BY
+          CASE v.status WHEN 'rascunho' THEN 0 WHEN 'ativa' THEN 1 ELSE 2 END,
+          v.criado_em DESC`
+    );
+    return res.json({ ok: true, versoes: r.rows });
+  } catch (err) {
+    console.error('[admin/teste/versoes] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ── POST /teste/versoes ─────────────────────────────────────
+router.post('/teste/versoes', async (req, res) => {
+  const c = await poolTeste.connect();
+  try {
+    const { nome } = req.body || {};
+    const nomeLimpo = _validarNomeVersao(nome);
+    if (!nomeLimpo) {
+      return res.status(400).json({ ok: false, erro: 'Nome inválido (use letras, números, pontos, hífen ou underscore)' });
+    }
+
+    const dup = await c.query(`SELECT id FROM teste_versoes WHERE nome=$1`, [nomeLimpo]);
+    if (dup.rows[0]) {
+      return res.status(409).json({ ok: false, erro: 'Já existe uma versão com esse nome' });
+    }
+
+    const ativa = await c.query(`SELECT id FROM teste_versoes WHERE status='ativa' LIMIT 1`);
+    if (!ativa.rows[0]) {
+      return res.status(503).json({ ok: false, erro: 'Sem versão ativa para clonar' });
+    }
+    const ativaId = ativa.rows[0].id;
+
+    await c.query('BEGIN');
+    const nova = await c.query(
+      `INSERT INTO teste_versoes (nome, status) VALUES ($1, 'rascunho') RETURNING id`,
+      [nomeLimpo]
+    );
+    const novaId = nova.rows[0].id;
+
+    await c.query(
+      `INSERT INTO teste_perguntas (versao_id, ordem, pergunta)
+       SELECT $1, ordem, pergunta FROM teste_perguntas WHERE versao_id=$2`,
+      [novaId, ativaId]
+    );
+    await c.query(
+      `INSERT INTO teste_alternativas (versao_id, pergunta_ordem, perfil, texto, ordem_exibicao)
+       SELECT $1, pergunta_ordem, perfil, texto, ordem_exibicao
+         FROM teste_alternativas WHERE versao_id=$2`,
+      [novaId, ativaId]
+    );
+    await c.query('COMMIT');
+
+    return res.json({ ok: true, versao_id: novaId, nome: nomeLimpo });
+  } catch (err) {
+    await c.query('ROLLBACK').catch(() => {});
+    console.error('[admin/teste/versoes POST] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  } finally {
+    c.release();
+  }
+});
+
+// ── GET /teste/versoes/:id ──────────────────────────────────
+router.get('/teste/versoes/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id)) return res.status(400).json({ ok: false, erro: 'id inválido' });
+
+    const v = await poolTeste.query(`SELECT * FROM teste_versoes WHERE id=$1`, [id]);
+    if (!v.rows[0]) return res.status(404).json({ ok: false, erro: 'versão não encontrada' });
+
+    const r = await poolTeste.query(
+      `SELECT p.ordem, p.pergunta,
+              a.perfil, a.texto, a.ordem_exibicao
+         FROM teste_perguntas p
+         LEFT JOIN teste_alternativas a
+           ON a.versao_id = p.versao_id AND a.pergunta_ordem = p.ordem
+        WHERE p.versao_id = $1
+        ORDER BY p.ordem, a.ordem_exibicao`,
+      [id]
+    );
+
+    const map = new Map();
+    for (const row of r.rows) {
+      if (!map.has(row.ordem)) {
+        map.set(row.ordem, { ordem: row.ordem, pergunta: row.pergunta, alternativas: [] });
+      }
+      if (row.perfil) {
+        map.get(row.ordem).alternativas.push({
+          perfil: row.perfil,
+          perfil_label: PERFIS_LABELS[row.perfil] || row.perfil,
+          perfil_cor: PERFIS_CORES[row.perfil] || '#888',
+          texto: row.texto,
+          ordem_exibicao: row.ordem_exibicao,
+        });
+      }
+    }
+
+    const perguntas = Array.from(map.values()).sort((a, b) => a.ordem - b.ordem);
+
+    return res.json({
+      ok: true,
+      versao: v.rows[0],
+      perguntas,
+      perfis: PERFIS_VALIDOS.map(p => ({
+        slug: p,
+        label: PERFIS_LABELS[p],
+        cor: PERFIS_CORES[p],
+      })),
+    });
+  } catch (err) {
+    console.error('[admin/teste/versoes/:id] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ── PUT /teste/versoes/:id ──────────────────────────────────
+router.put('/teste/versoes/:id', async (req, res) => {
+  const c = await poolTeste.connect();
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id)) return res.status(400).json({ ok: false, erro: 'id inválido' });
+
+    const v = await c.query(`SELECT id, status FROM teste_versoes WHERE id=$1`, [id]);
+    if (!v.rows[0]) return res.status(404).json({ ok: false, erro: 'versão não encontrada' });
+    if (v.rows[0].status !== 'rascunho') {
+      return res.status(403).json({ ok: false, erro: 'só rascunhos podem ser editados' });
+    }
+
+    const { perguntas } = req.body || {};
+    if (!Array.isArray(perguntas) || perguntas.length !== 15) {
+      return res.status(400).json({ ok: false, erro: 'precisa de 15 perguntas' });
+    }
+
+    // Validação completa antes de mexer no banco
+    for (const p of perguntas) {
+      if (!Number.isInteger(p.ordem) || p.ordem < 1 || p.ordem > 15) {
+        return res.status(400).json({ ok: false, erro: 'pergunta com ordem inválida' });
+      }
+      if (typeof p.pergunta !== 'string' || p.pergunta.trim().length < 5) {
+        return res.status(400).json({ ok: false, erro: 'pergunta ' + p.ordem + ': texto muito curto' });
+      }
+      if (!Array.isArray(p.alternativas) || p.alternativas.length !== 5) {
+        return res.status(400).json({ ok: false, erro: 'pergunta ' + p.ordem + ': precisa de 5 alternativas' });
+      }
+      const perfisVistos = new Set();
+      const ordensVistas = new Set();
+      for (const a of p.alternativas) {
+        if (!PERFIS_VALIDOS.includes(a.perfil)) {
+          return res.status(400).json({ ok: false, erro: 'pergunta ' + p.ordem + ': perfil inválido' });
+        }
+        if (perfisVistos.has(a.perfil)) {
+          return res.status(400).json({ ok: false, erro: 'pergunta ' + p.ordem + ': perfil ' + a.perfil + ' duplicado' });
+        }
+        perfisVistos.add(a.perfil);
+        if (typeof a.texto !== 'string' || a.texto.trim().length < 2) {
+          return res.status(400).json({ ok: false, erro: 'pergunta ' + p.ordem + ': alternativa com texto curto demais' });
+        }
+        const ord = parseInt(a.ordem_exibicao, 10);
+        if (!Number.isInteger(ord) || ord < 1 || ord > 5) {
+          return res.status(400).json({ ok: false, erro: 'pergunta ' + p.ordem + ': ordem_exibicao inválida' });
+        }
+        if (ordensVistas.has(ord)) {
+          return res.status(400).json({ ok: false, erro: 'pergunta ' + p.ordem + ': ordem_exibicao ' + ord + ' duplicada' });
+        }
+        ordensVistas.add(ord);
+      }
+      if (perfisVistos.size !== 5) {
+        return res.status(400).json({ ok: false, erro: 'pergunta ' + p.ordem + ': precisa ter os 5 perfis' });
+      }
+    }
+    const ordensP = new Set(perguntas.map(p => p.ordem));
+    for (let i = 1; i <= 15; i++) {
+      if (!ordensP.has(i)) {
+        return res.status(400).json({ ok: false, erro: 'falta pergunta de ordem ' + i });
+      }
+    }
+
+    await c.query('BEGIN');
+    await c.query(`DELETE FROM teste_alternativas WHERE versao_id=$1`, [id]);
+    await c.query(`DELETE FROM teste_perguntas WHERE versao_id=$1`, [id]);
+
+    for (const p of perguntas) {
+      await c.query(
+        `INSERT INTO teste_perguntas (versao_id, ordem, pergunta) VALUES ($1, $2, $3)`,
+        [id, p.ordem, p.pergunta.trim()]
+      );
+      for (const a of p.alternativas) {
+        await c.query(
+          `INSERT INTO teste_alternativas
+              (versao_id, pergunta_ordem, perfil, texto, ordem_exibicao)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [id, p.ordem, a.perfil, a.texto.trim(), a.ordem_exibicao]
+        );
+      }
+    }
+    await c.query('COMMIT');
+
+    return res.json({ ok: true });
+  } catch (err) {
+    await c.query('ROLLBACK').catch(() => {});
+    console.error('[admin/teste/versoes/:id PUT] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  } finally {
+    c.release();
+  }
+});
+
+// ── POST /teste/versoes/:id/publicar ────────────────────────
+router.post('/teste/versoes/:id/publicar', async (req, res) => {
+  const c = await poolTeste.connect();
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id)) return res.status(400).json({ ok: false, erro: 'id inválido' });
+
+    const v = await c.query(`SELECT id, status FROM teste_versoes WHERE id=$1`, [id]);
+    if (!v.rows[0]) return res.status(404).json({ ok: false, erro: 'versão não encontrada' });
+    if (v.rows[0].status !== 'rascunho') {
+      return res.status(400).json({ ok: false, erro: 'só rascunhos podem ser publicados' });
+    }
+
+    const conf = await c.query(
+      `SELECT
+         (SELECT COUNT(*)::int FROM teste_perguntas WHERE versao_id=$1) AS p,
+         (SELECT COUNT(*)::int FROM teste_alternativas WHERE versao_id=$1) AS a`,
+      [id]
+    );
+    if (conf.rows[0].p !== 15 || conf.rows[0].a !== 75) {
+      return res.status(400).json({
+        ok: false,
+        erro: 'estrutura incompleta: ' + conf.rows[0].p + ' perguntas e ' + conf.rows[0].a + ' alternativas (esperado: 15 e 75)',
+      });
+    }
+
+    await c.query('BEGIN');
+    await c.query(
+      `UPDATE teste_versoes
+          SET status='arquivada', arquivado_em=NOW()
+        WHERE status='ativa'`
+    );
+    await c.query(
+      `UPDATE teste_versoes
+          SET status='ativa', publicado_em=NOW()
+        WHERE id=$1`,
+      [id]
+    );
+    const apagadas = await c.query(`DELETE FROM teste_respostas RETURNING id`);
+    await c.query('COMMIT');
+
+    return res.json({
+      ok: true,
+      respostas_apagadas: apagadas.rowCount,
+    });
+  } catch (err) {
+    await c.query('ROLLBACK').catch(() => {});
+    console.error('[admin/teste/versoes/:id/publicar] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  } finally {
+    c.release();
+  }
+});
+
+// ── DELETE /teste/versoes/:id ───────────────────────────────
+router.delete('/teste/versoes/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id)) return res.status(400).json({ ok: false, erro: 'id inválido' });
+
+    const v = await poolTeste.query(`SELECT status FROM teste_versoes WHERE id=$1`, [id]);
+    if (!v.rows[0]) return res.status(404).json({ ok: false, erro: 'versão não encontrada' });
+    if (v.rows[0].status !== 'rascunho') {
+      return res.status(403).json({ ok: false, erro: 'só rascunhos podem ser apagados' });
+    }
+
+    await poolTeste.query(`DELETE FROM teste_versoes WHERE id=$1`, [id]);
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[admin/teste/versoes/:id DELETE] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
   }
 });
 
