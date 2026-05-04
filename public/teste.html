@@ -300,7 +300,7 @@
     /* DEPOIMENTOS */
     .dep-section { background: rgba(5,25,41,0.3); }
     .dep-carousel { overflow: hidden; mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%); -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%); margin: 0 -1.5rem; }
-    .dep-track { display: flex; gap: 1.25rem; padding: 1.5rem 1.5rem; animation: depScroll 42s linear infinite; width: max-content; }
+    .dep-track { display: flex; gap: 1.25rem; padding: 1.5rem 1.5rem; animation: depScroll 42s linear infinite; width: max-content; min-height: 220px; }
     @keyframes depScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
     .dep-card { flex-shrink: 0; width: 320px; background: linear-gradient(rgba(10,72,102,0.55),rgba(10,72,102,0.55)) padding-box, linear-gradient(135deg,var(--sub-bright),var(--sub-light)) border-box; border: 1px solid transparent; border-radius: var(--r-md); padding: 1.5rem 1.4rem; display: flex; flex-direction: column; gap: 0.85rem; box-shadow: 0 12px 28px rgba(5,25,41,0.4); }
     .dep-quote-icon { font-size: 1.4rem; color: var(--sub-bright); }
@@ -449,6 +449,23 @@
       </div>
     </section>
 
+    <section class="video-section">
+      <div class="container">
+        <span class="section-eyebrow" data-reveal>Recado da Suellen</span>
+        <h2 class="section-title" data-reveal>Como o teste <span class="glow">funciona</span></h2>
+        <p class="section-lead" data-reveal>Assista ao recado direto da Suellen explicando como o teste foi construído e o que você vai descobrir no resultado.</p>
+        <div class="video-wrap" data-reveal="zoom">
+          <div class="video-placeholder">
+            <i class="fas fa-play-circle"></i>
+            <span>Vídeo em breve</span>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:2.5rem" data-reveal>
+          <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-video">Quero meu resultado</a>
+        </div>
+      </div>
+    </section>
+
     <section id="sobre">
       <div class="container">
         <span class="section-eyebrow" data-reveal>Você se reconhece?</span>
@@ -490,23 +507,6 @@
         </div>
         <div style="text-align:center;margin-top:2rem" data-reveal>
           <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-meio-2">Fazer o teste agora</a>
-        </div>
-      </div>
-    </section>
-
-    <section class="video-section">
-      <div class="container">
-        <span class="section-eyebrow" data-reveal>Recado da Suellen</span>
-        <h2 class="section-title" data-reveal>Como o teste <span class="glow">funciona</span></h2>
-        <p class="section-lead" data-reveal>Assista ao recado direto da Suellen explicando como o teste foi construído e o que você vai descobrir no resultado.</p>
-        <div class="video-wrap" data-reveal="zoom">
-          <div class="video-placeholder">
-            <i class="fas fa-play-circle"></i>
-            <span>Vídeo em breve</span>
-          </div>
-        </div>
-        <div style="text-align:center;margin-top:2.5rem" data-reveal>
-          <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-video">Quero meu resultado</a>
         </div>
       </div>
     </section>
