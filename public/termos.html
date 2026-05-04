@@ -17,46 +17,104 @@
       line-height: 1.65;
     }
     .container { max-width: 760px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
-    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3rem; }
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3rem; flex-wrap: wrap; gap: 1rem; }
     .logo-img { height: 32px; width: auto; }
     .voltar { color: var(--pearl-dim, rgba(245,240,232,0.7)); text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.4rem; transition: color 0.2s; }
     .voltar:hover { color: var(--sub-bright, #2ba5e8); }
     h1 { font-family: var(--font-display, 'Playfair Display', serif); font-size: 2rem; font-weight: 700; color: var(--pearl, #f5f0e8); margin-bottom: 1.5rem; line-height: 1.2; }
     h2 { font-family: var(--font-display, 'Playfair Display', serif); font-size: 1.25rem; font-weight: 600; color: var(--sub-bright, #2ba5e8); margin: 2.5rem 0 1rem; }
     p { color: var(--pearl-dim, rgba(245,240,232,0.78)); margin-bottom: 1rem; font-size: 0.98rem; }
+    ul { color: var(--pearl-dim, rgba(245,240,232,0.78)); margin: 0 0 1rem 1.4rem; }
+    ul li { margin-bottom: 0.4rem; }
     .placeholder-box { background: rgba(43,165,232,0.08); border: 1px solid rgba(43,165,232,0.2); border-radius: 12px; padding: 1.5rem; margin: 2rem 0; }
     .placeholder-box p { color: var(--pearl, #f5f0e8); margin: 0; }
-    .placeholder-box i { color: var(--sub-bright, #2ba5e8); margin-right: 0.5rem; }
     .meta { color: rgba(245,240,232,0.5); font-size: 0.85rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid rgba(245,240,232,0.1); }
     a { color: var(--sub-bright, #2ba5e8); text-decoration: underline; text-underline-offset: 2px; }
+    .indice { background: rgba(255,255,255,0.04); border: 1px solid rgba(245,240,232,0.1); border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 2rem; }
+    .indice ol { margin: 0.5rem 0 0 1.4rem; color: var(--pearl-dim); }
+    .indice ol li { margin-bottom: 0.3rem; }
+    .indice ol li a { color: var(--sub-bright); }
+    @media (max-width: 480px) { .container { padding: 2rem 1.25rem 4rem; } h1 { font-size: 1.6rem; } }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
       <img src="/assets/logo-horizontal.png" alt="Vida Mágica" class="logo-img">
-      <a href="/teste" class="voltar">← Voltar</a>
+      <a href="/" class="voltar">← Voltar ao site</a>
     </div>
 
     <h1>Termos de Uso</h1>
+    <p style="color:var(--pearl, #f5f0e8);font-size:1rem">
+      Bem-vinda à <strong>Comunidade Vida Mágica</strong>. Este documento reúne as condições de uso de todos os nossos produtos: site, app, comunidade, testes, conteúdos e comunicações por WhatsApp.
+    </p>
 
     <div class="placeholder-box">
-      <p><strong>📝 Página em construção.</strong> O texto completo dos termos jurídicos será publicado em breve.</p>
+      <p><strong>📝 Versão preliminar.</strong> Este texto está sendo revisado pela nossa equipe jurídica. As regras essenciais de uso e privacidade já estão descritas abaixo. Versão completa em breve.</p>
     </div>
 
-    <h2>Sobre o Teste do Subconsciente</h2>
-    <p>O Teste do Subconsciente é uma ferramenta de autoconhecimento desenvolvida pela Comunidade Vida Mágica. Ao realizar o teste, você concorda em fornecer dados básicos (nome e WhatsApp) para receber o resultado personalizado.</p>
+    <div class="indice">
+      <strong style="color:var(--pearl);font-size:0.95rem">Índice</strong>
+      <ol>
+        <li><a href="#sobre">Sobre a Vida Mágica</a></li>
+        <li><a href="#cadastro">Cadastro e Acesso</a></li>
+        <li><a href="#teste">Teste do Subconsciente</a></li>
+        <li><a href="#pagamentos">Pagamentos</a></li>
+        <li><a href="#comunidade">Comunidade e Conteúdos</a></li>
+        <li><a href="#whatsapp">Comunicações por WhatsApp</a></li>
+        <li><a href="#privacidade">Privacidade e Dados</a></li>
+        <li><a href="#cancelamento">Cancelamento e Reembolso</a></li>
+        <li><a href="#contato">Contato</a></li>
+      </ol>
+    </div>
 
-    <h2>Uso dos Dados</h2>
-    <p>Os dados informados são utilizados exclusivamente para enviar o resultado do teste e comunicações relacionadas à Comunidade Vida Mágica. Não compartilhamos seus dados com terceiros.</p>
+    <h2 id="sobre">1. Sobre a Vida Mágica</h2>
+    <p>A Vida Mágica é uma plataforma de autoconhecimento, transformação e desenvolvimento pessoal. Oferecemos testes, conteúdos, comunidade e acompanhamento.</p>
 
-    <h2>Recebimento por WhatsApp</h2>
-    <p>Ao concordar com os termos, você autoriza o envio do resultado e comunicações pelo número de WhatsApp informado. Você pode pedir o cancelamento das comunicações a qualquer momento.</p>
+    <h2 id="cadastro">2. Cadastro e Acesso</h2>
+    <p>Para utilizar nossos produtos, é necessário fornecer informações verdadeiras (nome, WhatsApp e, dependendo do produto, e-mail e CPF). Você é responsável por manter esses dados atualizados e por toda atividade realizada na sua conta.</p>
+    <p>O acesso à área logada é feito por link mágico (magic link) enviado pelo seu WhatsApp cadastrado.</p>
 
-    <h2>Contato</h2>
-    <p>Para dúvidas, entre em contato pelo WhatsApp da Comunidade ou pelo nosso canal de suporte.</p>
+    <h2 id="teste">3. Teste do Subconsciente</h2>
+    <p>O Teste do Subconsciente é uma ferramenta de autoconhecimento de uso pessoal. Os resultados são gerados a partir das suas respostas e enviados por WhatsApp após a confirmação do pagamento.</p>
+    <ul>
+      <li>O resultado tem caráter reflexivo e <strong>não substitui</strong> avaliação psicológica, médica ou terapêutica profissional.</li>
+      <li>Você pode refazer o teste quando quiser; cada teste pago gera um novo resultado.</li>
+      <li>Conteúdos relacionados ao teste podem ser oferecidos junto ao resultado.</li>
+    </ul>
 
-    <p class="meta">Última atualização: em breve · Comunidade Vida Mágica</p>
+    <h2 id="pagamentos">4. Pagamentos</h2>
+    <p>Pagamentos são processados por gateways de pagamento parceiros. Não armazenamos dados de cartão de crédito. Após a confirmação do pagamento, o acesso é liberado automaticamente.</p>
+
+    <h2 id="comunidade">5. Comunidade e Conteúdos</h2>
+    <p>Os conteúdos disponibilizados (vídeos, textos, áudios, lives, e materiais da comunidade) são protegidos por direitos autorais. Você pode acessá-los para uso pessoal, mas <strong>não pode</strong> redistribuir, reproduzir comercialmente ou ceder seu acesso a terceiros.</p>
+
+    <h2 id="whatsapp">6. Comunicações por WhatsApp</h2>
+    <p>Ao informar seu WhatsApp, você autoriza o recebimento de:</p>
+    <ul>
+      <li>Resultado do teste e materiais relacionados</li>
+      <li>Atualizações da Comunidade Vida Mágica</li>
+      <li>Avisos sobre conteúdos novos, lives e ofertas</li>
+      <li>Suporte e respostas a dúvidas</li>
+    </ul>
+    <p>Você pode pedir para cancelar essas comunicações a qualquer momento — basta responder "SAIR" em qualquer mensagem ou entrar em contato pelos nossos canais.</p>
+
+    <h2 id="privacidade">7. Privacidade e Dados (LGPD)</h2>
+    <p>Tratamos seus dados conforme a Lei Geral de Proteção de Dados (Lei 13.709/2018):</p>
+    <ul>
+      <li>Coletamos apenas o necessário para entregar o serviço</li>
+      <li>Não compartilhamos seus dados com terceiros para fins comerciais</li>
+      <li>Você pode pedir acesso, correção ou exclusão dos seus dados a qualquer momento</li>
+      <li>Adotamos medidas técnicas para proteger suas informações</li>
+    </ul>
+
+    <h2 id="cancelamento">8. Cancelamento e Reembolso</h2>
+    <p>Conforme o Código de Defesa do Consumidor, compras feitas pelo site têm direito a reembolso integral em até 7 dias após a compra (arrependimento). Para solicitar, entre em contato pelo nosso suporte.</p>
+
+    <h2 id="contato">9. Contato</h2>
+    <p>Dúvidas, solicitações ou reclamações podem ser enviadas pelo WhatsApp da Comunidade ou pelos canais oficiais da Vida Mágica.</p>
+
+    <p class="meta">Última atualização: maio/2026 · Comunidade Vida Mágica</p>
   </div>
 </body>
 </html>
