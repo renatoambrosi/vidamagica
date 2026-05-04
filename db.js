@@ -475,7 +475,7 @@ async function initCore() {
 async function initTeste() {
   const c = await poolTeste.connect();
   try {
-    // Catálogo dos 6 perfis
+    // Catálogo dos 6 perfis (continua existindo, agora com 'sobrevivencia')
     await c.query(`
       CREATE TABLE IF NOT EXISTS teste_perfis (
         id SERIAL PRIMARY KEY,
@@ -509,12 +509,86 @@ async function initTeste() {
     await c.query(`CREATE INDEX IF NOT EXISTS idx_teste_leads_tel ON teste_leads(telefone_canonico)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_teste_leads_usuario ON teste_leads(usuario_id)`);
 
-    // Respostas do teste — uma linha por teste feito
+    // ── VERSIONAMENTO ─────────────────────────────────────
+    // Cada versão é um snapshot imutável depois de publicada.
+    // Status:
+    //   - rascunho:  em edição, ainda não foi para alunas
+    //   - ativa:     a versão atual em produção (só uma de cada vez)
+    //   - arquivada: foi ativa um dia, hoje é histórico
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS teste_versoes (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(50) UNIQUE NOT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'rascunho'
+          CHECK (status IN ('rascunho','ativa','arquivada')),
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        publicado_em TIMESTAMPTZ,
+        arquivado_em TIMESTAMPTZ
+      )
+    `);
+    // Garante no máximo 1 versão ativa por vez
+    await c.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS uniq_versao_ativa
+        ON teste_versoes (status) WHERE status = 'ativa'
+    `);
+
+    // Catálogo de perguntas (por versão)
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS teste_perguntas (
+        id SERIAL PRIMARY KEY,
+        versao_id INTEGER NOT NULL REFERENCES teste_versoes(id) ON DELETE CASCADE,
+        ordem INTEGER NOT NULL,
+        pergunta TEXT NOT NULL,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (versao_id, ordem)
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_perg_versao ON teste_perguntas(versao_id)`);
+
+    // Alternativas (por versão).
+    // perfil = qual energia essa alternativa pontua (lógica interna).
+    // ordem_exibicao = posição A-E que a aluna vê (embaralhada, fixa por versão).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS teste_alternativas (
+        id SERIAL PRIMARY KEY,
+        versao_id INTEGER NOT NULL REFERENCES teste_versoes(id) ON DELETE CASCADE,
+        pergunta_ordem INTEGER NOT NULL,
+        perfil VARCHAR(50) NOT NULL,
+        texto TEXT NOT NULL,
+        ordem_exibicao INTEGER NOT NULL,
+        UNIQUE (versao_id, pergunta_ordem, perfil),
+        UNIQUE (versao_id, pergunta_ordem, ordem_exibicao)
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_alt_versao ON teste_alternativas(versao_id)`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_alt_pergunta ON teste_alternativas(versao_id, pergunta_ordem)`);
+
+    // Respostas em progresso. Toda resposta carrega a versão.
+    // TTL: limpeza diária remove leads sem teste finalizado e sem atividade > 7 dias.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS teste_respostas (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        lead_id UUID NOT NULL REFERENCES teste_leads(id) ON DELETE CASCADE,
+        versao_id INTEGER NOT NULL REFERENCES teste_versoes(id) ON DELETE CASCADE,
+        pergunta_ordem INTEGER NOT NULL,
+        perfil VARCHAR(50) NOT NULL,
+        respondido_em TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (lead_id, versao_id, pergunta_ordem)
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_resp_lead ON teste_respostas(lead_id)`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_resp_versao ON teste_respostas(versao_id)`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_resp_data ON teste_respostas(respondido_em)`);
+
+    // Respostas FINALIZADAS — uma linha por teste concluído.
+    // versao_id é IMUTÁVEL: o teste fica congelado na versão em que foi feito.
     await c.query(`
       CREATE TABLE IF NOT EXISTS testes (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         usuario_id UUID,
         lead_id UUID REFERENCES teste_leads(id) ON DELETE SET NULL,
+        versao_id INTEGER REFERENCES teste_versoes(id) ON DELETE RESTRICT,
         telefone_canonico VARCHAR(30) NOT NULL,
         respostas JSONB NOT NULL,
         contagem JSONB,
@@ -531,66 +605,85 @@ async function initTeste() {
     await c.query(`CREATE INDEX IF NOT EXISTS idx_testes_telefone ON testes(telefone_canonico)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_testes_usuario ON testes(usuario_id)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_testes_lead ON testes(lead_id)`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_testes_versao ON testes(versao_id)`);
 
-    // Catálogo de perguntas e alternativas (fonte da verdade do teste).
-    // 15 perguntas × 5 alternativas = 75 linhas em teste_alternativas.
+    // ── MIGRAÇÃO RETROCOMPATÍVEL ─────────────────────────
+    // Se já existem colunas antigas sem versao_id (ambientes que rodaram a versão anterior),
+    // adiciona a coluna vazia. Cleanup posterior fica a cargo do admin.
     await c.query(`
-      CREATE TABLE IF NOT EXISTS teste_perguntas (
-        id SERIAL PRIMARY KEY,
-        ordem INTEGER UNIQUE NOT NULL,
-        pergunta TEXT NOT NULL,
-        ativo BOOLEAN DEFAULT TRUE,
-        criado_em TIMESTAMPTZ DEFAULT NOW(),
-        atualizado_em TIMESTAMPTZ DEFAULT NOW()
-      )
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                        WHERE table_name='teste_perguntas' AND column_name='versao_id') THEN
+          ALTER TABLE teste_perguntas ADD COLUMN versao_id INTEGER REFERENCES teste_versoes(id) ON DELETE CASCADE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                        WHERE table_name='teste_alternativas' AND column_name='versao_id') THEN
+          ALTER TABLE teste_alternativas ADD COLUMN versao_id INTEGER REFERENCES teste_versoes(id) ON DELETE CASCADE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                        WHERE table_name='teste_alternativas' AND column_name='ordem_exibicao') THEN
+          ALTER TABLE teste_alternativas ADD COLUMN ordem_exibicao INTEGER;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                        WHERE table_name='teste_respostas' AND column_name='versao_id') THEN
+          ALTER TABLE teste_respostas ADD COLUMN versao_id INTEGER REFERENCES teste_versoes(id) ON DELETE CASCADE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                        WHERE table_name='testes' AND column_name='versao_id') THEN
+          ALTER TABLE testes ADD COLUMN versao_id INTEGER REFERENCES teste_versoes(id) ON DELETE RESTRICT;
+        END IF;
+      END$$;
     `);
-    await c.query(`
-      CREATE TABLE IF NOT EXISTS teste_alternativas (
-        id SERIAL PRIMARY KEY,
-        pergunta_ordem INTEGER NOT NULL,
-        perfil VARCHAR(50) NOT NULL,
-        texto TEXT NOT NULL,
-        ordem_alternativa INTEGER NOT NULL,
-        UNIQUE (pergunta_ordem, perfil),
-        FOREIGN KEY (pergunta_ordem) REFERENCES teste_perguntas(ordem) ON DELETE CASCADE
-      )
-    `);
-    await c.query(`CREATE INDEX IF NOT EXISTS idx_alt_pergunta ON teste_alternativas(pergunta_ordem)`);
 
-    // Respostas individuais salvas a cada clique (progresso).
-    // Permite a aluna fechar a aba e voltar de onde parou.
-    await c.query(`
-      CREATE TABLE IF NOT EXISTS teste_respostas (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        lead_id UUID NOT NULL REFERENCES teste_leads(id) ON DELETE CASCADE,
-        pergunta_ordem INTEGER NOT NULL,
-        perfil VARCHAR(50) NOT NULL,
-        respondido_em TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE (lead_id, pergunta_ordem)
-      )
-    `);
-    await c.query(`CREATE INDEX IF NOT EXISTS idx_resp_lead ON teste_respostas(lead_id)`);
+    // Renomeia 'autossuficiencia' → 'sobrevivencia' em registros antigos (se houver)
+    await c.query(`UPDATE teste_alternativas SET perfil='sobrevivencia' WHERE perfil='autossuficiencia'`);
+    await c.query(`UPDATE teste_respostas SET perfil='sobrevivencia' WHERE perfil='autossuficiencia'`);
 
-    // ── Seed das perguntas ──
-    // Sempre roda: insere se não existe, atualiza texto se mudou.
-    // Assim editar teste-conteudo.js + redeploy = perguntas atualizadas.
-    const { PERGUNTAS } = require('./core/teste-conteudo');
-    for (const p of PERGUNTAS) {
-      await c.query(
-        `INSERT INTO teste_perguntas (ordem, pergunta) VALUES ($1, $2)
-         ON CONFLICT (ordem) DO UPDATE SET pergunta=EXCLUDED.pergunta, atualizado_em=NOW()`,
-        [p.ordem, p.pergunta]
+    // ── SEED inicial: cria versão v1.0 se ainda não há nenhuma ──
+    const versoesExistentes = await c.query(`SELECT COUNT(*)::int AS n FROM teste_versoes`);
+    if (versoesExistentes.rows[0].n === 0) {
+      const { PERGUNTAS } = require('./core/teste-conteudo');
+
+      const v = await c.query(
+        `INSERT INTO teste_versoes (nome, status, publicado_em)
+         VALUES ('v1.0', 'ativa', NOW())
+         RETURNING id`
       );
-      for (let i = 0; i < p.alternativas.length; i++) {
-        const a = p.alternativas[i];
+      const versaoId = v.rows[0].id;
+
+      for (const p of PERGUNTAS) {
         await c.query(
-          `INSERT INTO teste_alternativas (pergunta_ordem, perfil, texto, ordem_alternativa)
-           VALUES ($1, $2, $3, $4)
-           ON CONFLICT (pergunta_ordem, perfil) DO UPDATE SET texto=EXCLUDED.texto, ordem_alternativa=EXCLUDED.ordem_alternativa`,
-          [p.ordem, a.perfil, a.texto, i + 1]
+          `INSERT INTO teste_perguntas (versao_id, ordem, pergunta) VALUES ($1, $2, $3)`,
+          [versaoId, p.ordem, p.pergunta]
         );
+        // p.alternativas já vem na ordem A-E que a aluna deve ver
+        for (let i = 0; i < p.alternativas.length; i++) {
+          const a = p.alternativas[i];
+          await c.query(
+            `INSERT INTO teste_alternativas
+              (versao_id, pergunta_ordem, perfil, texto, ordem_exibicao)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [versaoId, p.ordem, a.perfil, a.texto, i + 1]
+          );
+        }
       }
+      console.log('✅ Versão inicial v1.0 do teste criada (' + PERGUNTAS.length + ' perguntas)');
     }
+
+    // ── Limpeza de inacabados antigos (>7 dias) ──
+    // Apaga teste_respostas de leads que não têm teste finalizado
+    // e cuja última atividade foi há mais de 7 dias.
+    await c.query(`
+      DELETE FROM teste_respostas
+       WHERE lead_id IN (
+         SELECT r.lead_id FROM teste_respostas r
+          LEFT JOIN testes t ON t.lead_id = r.lead_id
+          WHERE t.id IS NULL
+          GROUP BY r.lead_id
+         HAVING MAX(r.respondido_em) < NOW() - INTERVAL '7 days'
+       )
+    `);
 
     console.log('✅ Banco Teste iniciado');
   } finally {
