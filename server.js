@@ -126,7 +126,7 @@ app.use('/api',               require('./routes/seed'));
 app.use('/api/chat',              chat.routerAluna);
 app.use('/api/atendimento/chat',  chat.routerAtendimento);
 app.use('/api/upload',        require('./routes/upload'));
-app.use('/api/teste',         require('./routes/teste'));            // Modal de início + lead do teste do subconsciente
+app.use('/api/teste',         require('./routes/teste'));            // Teste do Subconsciente (lado da aluna)
 
 // ── ESTÁTICOS ──────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
