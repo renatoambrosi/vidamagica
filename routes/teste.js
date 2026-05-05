@@ -374,6 +374,31 @@ router.post('/responder', async (req, res) => {
       testeId = r.rows[0].id;
     }
 
+    // ── Sincroniza usuarios.perfil_teste e .percentual_prosperidade ──
+    // Se o teste tem usuario_id (aluna logada ou lead já vinculado), atualiza
+    // o cache no banco Core pra Suellen ver no chat.
+    // OBS: usuarios.perfil_teste guarda o slug bruto (medo, prosperidade) — não nv1/nv2/nv3.
+    // Pra desempenho/clareza no chat, mantemos a versão "bruta" sem nível.
+    if (lead.usuario_id) {
+      try {
+        // Extrai a versão "bruta" do perfil (sem _nv1/2/3)
+        const perfilBruto = (resultado.perfil_dominante || '').startsWith('prosperidade')
+          ? 'prosperidade'
+          : resultado.perfil_dominante;
+        await poolCore.query(
+          `UPDATE usuarios
+              SET perfil_teste = $1,
+                  percentual_prosperidade = $2,
+                  atualizado_em = NOW()
+            WHERE id = $3`,
+          [perfilBruto, resultado.percentual_prosperidade, lead.usuario_id]
+        );
+      } catch (e) {
+        console.warn('[teste/responder] falha ao atualizar usuarios.perfil_teste:', e.message);
+        // não bloqueia — o registro do teste já foi salvo
+      }
+    }
+
     return res.json({
       ok: true,
       completo: true,
@@ -449,6 +474,44 @@ router.get('/resultado/:teste_id', async (req, res) => {
       if (cR.rows[0]) textoCompartilhar = cR.rows[0].dados.texto || '';
     } catch {}
 
+    // ── Jornada do método ──
+    // Busca a jornada que o perfil dominante dispara, com os passos.
+    // OBS: como esse endpoint é público (acessível via link),
+    // só mostramos a JORNADA + os títulos dos passos. Não calculamos
+    // "comprado/não comprado" aqui — esse status é privado e só aparece
+    // no /app, autenticado.
+    let jornadaInfo = null;
+    try {
+      const mapR = await poolComunicacao.query(
+        `SELECT j.slug, j.numero, j.nome_exibicao, j.subtitulo, j.cor,
+                jp.ordem, jp.produto_slug, jp.titulo_passo, jp.descricao_passo
+           FROM jornadas_perfis_map m
+           JOIN jornadas_metodo j ON j.slug = m.jornada_slug
+           LEFT JOIN jornadas_passos jp ON jp.jornada_slug = j.slug
+          WHERE m.perfil_slug = $1
+          ORDER BY jp.ordem`,
+        [resultado.perfil_dominante]
+      );
+      if (mapR.rows[0]) {
+        const primeira = mapR.rows[0];
+        jornadaInfo = {
+          slug: primeira.slug,
+          numero: primeira.numero,
+          nome_exibicao: primeira.nome_exibicao,
+          subtitulo: primeira.subtitulo,
+          cor: primeira.cor,
+          passos: mapR.rows.filter(r => r.ordem != null).map(r => ({
+            ordem: r.ordem,
+            titulo: r.titulo_passo,
+            descricao: r.descricao_passo,
+            produto_slug: r.produto_slug,
+          })),
+        };
+      }
+    } catch (e) {
+      console.warn('[teste/resultado] erro ao montar jornada:', e.message);
+    }
+
     return res.json({
       ok: true,
       teste: {
@@ -467,6 +530,8 @@ router.get('/resultado/:teste_id', async (req, res) => {
       conteudo: conteudoPerfil,                                 // tudo de teste_perfis_conteudo
       // Livros do Passo 2
       livros: livrosRecomendados,
+      // Jornada do método (genérica, pública)
+      jornada: jornadaInfo,
       // Texto pro botão de compartilhar
       compartilhar_texto: textoCompartilhar,
     });
