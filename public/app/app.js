@@ -1559,6 +1559,86 @@ function hidratarHome(ctx) {
 
   // ── Banner de teste em andamento ──
   renderBannerTesteEmAndamento(ctx);
+
+  // ── Aba Materiais ──
+  renderMateriais(ctx);
+}
+
+// ── HIDRATAÇÃO DA ABA MATERIAIS ─────────────────────────────
+function renderMateriais(ctx) {
+  const wrap = document.getElementById('produtos-lista');
+  if (!wrap) return;
+
+  const blocos = [];
+
+  // ── 1. Bloco de testes (concluídos + em andamento) ──
+  if (ctx.teste_em_andamento) {
+    const tea = ctx.teste_em_andamento;
+    blocos.push(
+      '<div class="material-card" style="background:linear-gradient(135deg,rgba(248,220,150,0.12),rgba(43,165,232,0.05));border:1px solid rgba(248,220,150,0.3);border-radius:12px;padding:1rem 1.1rem;margin-bottom:0.85rem;cursor:pointer" onclick="window.location.href=\'/teste\'">' +
+        '<div style="font-size:0.7rem;color:var(--ouro-fundo,#C8922A);letter-spacing:0.06em;text-transform:uppercase;font-weight:700;margin-bottom:0.25rem">Em andamento</div>' +
+        '<div style="font-family:var(--font-display,Montserrat);font-weight:700;font-size:0.95rem;color:var(--texto,#fff);margin-bottom:0.4rem">Continuar teste do Subconsciente</div>' +
+        '<div style="font-size:0.78rem;color:var(--texto-suave)">Pergunta ' + tea.respondidas + ' de ' + tea.total + ' respondidas</div>' +
+      '</div>'
+    );
+  }
+
+  if (Array.isArray(ctx.todos_testes) && ctx.todos_testes.length > 0) {
+    ctx.todos_testes.forEach(t => {
+      const data = t.feito_em ? new Date(t.feito_em).toLocaleDateString('pt-BR') : '—';
+      const isMaisRecente = ctx.teste_atual && t.id === ctx.teste_atual.id;
+      const pago = isMaisRecente ? ctx.teste_atual.pago : false;
+      const perfilNome = isMaisRecente ? (ctx.teste_atual.nome_exibicao || t.perfil_dominante) : (t.perfil_dominante || '—');
+      const acaoHtml = pago
+        ? '<a href="/resultado/' + t.id + '" target="_blank" style="display:inline-block;padding:0.5rem 0.9rem;background:linear-gradient(135deg,var(--ouro,#F8DC96),var(--ouro-fundo,#C8922A));color:#051929;border-radius:8px;font-family:var(--font-display,Montserrat);font-size:0.78rem;font-weight:700;text-decoration:none">Ver resultado →</a>'
+        : '<div style="padding:0.5rem 0.9rem;background:rgba(245,240,232,0.08);border:1px solid rgba(245,240,232,0.15);color:var(--texto-suave);border-radius:8px;font-family:var(--font-display,Montserrat);font-size:0.78rem;font-weight:600;display:inline-block">🔒 Aguardando liberação</div>';
+      blocos.push(
+        '<div class="material-card" style="background:rgba(255,255,255,0.04);border:1px solid rgba(245,240,232,0.1);border-radius:12px;padding:1rem 1.1rem;margin-bottom:0.85rem">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.5rem">' +
+            '<div>' +
+              '<div style="font-size:0.7rem;color:var(--ouro-fundo,#C8922A);letter-spacing:0.06em;text-transform:uppercase;font-weight:700;margin-bottom:0.2rem">Teste do Subconsciente</div>' +
+              '<div style="font-family:var(--font-display,Montserrat);font-weight:700;font-size:0.95rem;color:var(--texto,#fff)">Energia da ' + escHtml(perfilNome) + '</div>' +
+            '</div>' +
+            '<div style="font-size:0.7rem;color:var(--texto-suave);text-align:right">' + data + '</div>' +
+          '</div>' +
+          acaoHtml +
+        '</div>'
+      );
+    });
+  }
+
+  // ── 2. Bloco de produtos comprados ──
+  if (Array.isArray(ctx.comprados) && ctx.comprados.length > 0) {
+    // filtra teste-subconsciente porque ele já apareceu na seção de testes
+    const compradosOutros = ctx.comprados.filter(c => c.produto_slug !== 'teste-subconsciente');
+    if (compradosOutros.length > 0) {
+      blocos.push(
+        '<div style="font-size:0.72rem;color:var(--texto-suave);text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin:1.5rem 0 0.65rem">Adquiridos</div>'
+      );
+      compradosOutros.forEach(c => {
+        blocos.push(
+          '<div class="material-card" style="background:rgba(255,255,255,0.04);border:1px solid rgba(245,240,232,0.1);border-radius:12px;padding:1rem 1.1rem;margin-bottom:0.65rem">' +
+            '<div style="font-size:0.7rem;color:#2ED573;letter-spacing:0.06em;text-transform:uppercase;font-weight:700;margin-bottom:0.2rem">✓ Liberado</div>' +
+            '<div style="font-family:var(--font-display,Montserrat);font-weight:700;font-size:0.92rem;color:var(--texto,#fff)">' + escHtml(c.produto_nome || c.produto_slug) + '</div>' +
+            (c.observacao ? '<div style="font-size:0.72rem;color:var(--texto-suave);margin-top:0.25rem">' + escHtml(c.observacao) + '</div>' : '') +
+          '</div>'
+        );
+      });
+    }
+  }
+
+  // Vazio total
+  if (blocos.length === 0) {
+    wrap.innerHTML =
+      '<div class="empty-state">' +
+        '<div class="empty-icon">📦</div>' +
+        '<p class="empty-titulo">Nada por aqui ainda</p>' +
+        '<p class="empty-sub">Quando começar sua jornada, seus testes e cursos aparecem aqui.</p>' +
+      '</div>';
+    return;
+  }
+
+  wrap.innerHTML = blocos.join('');
 }
 
 // ── BANNER "Continuar teste" no topo da Home ────────────────
