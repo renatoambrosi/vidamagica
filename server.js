@@ -133,6 +133,7 @@ app.use('/api/chat',              chat.routerAluna);
 app.use('/api/atendimento/chat',  chat.routerAtendimento);
 app.use('/api/upload',        require('./routes/upload'));
 app.use('/api/teste',         require('./routes/teste'));            // Teste do Subconsciente (lado da aluna)
+app.use('/api/app',           require('./routes/app'));              // Contexto unificado pro /app (Home, Materiais, Chat)
 
 // ── ESTÁTICOS ──────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
