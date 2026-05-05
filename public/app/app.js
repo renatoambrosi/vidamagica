@@ -1521,6 +1521,168 @@ function setupVisualViewport() {
   vv.addEventListener('scroll', update);
 }
 
+// ── CONTEXTO DO APP ─────────────────────────────────────────
+// Fonte única de dados pra todas as telas do app.
+// Estrutura completa documentada em routes/app.js (GET /contexto).
+let contextoApp = null;
+
+async function carregarContexto() {
+  try {
+    const r = await fetch(`${API}/api/app/contexto`, { headers: authHeader() });
+    if (!r.ok) return null;
+    const d = await r.json();
+    if (!d.ok) return null;
+    contextoApp = d;
+    return d;
+  } catch (err) {
+    console.warn('[contexto] erro:', err.message);
+    return null;
+  }
+}
+
+// ── HIDRATAÇÃO DA HOME COM CONTEXTO ─────────────────────────
+function hidratarHome(ctx) {
+  if (!ctx) return;
+
+  // ── Saudação ──
+  const elNome = document.getElementById('saudacao-nome');
+  if (elNome) {
+    elNome.textContent = `Olá, ${ctx.aluna.primeiro_nome}`;
+  }
+
+  // ── Badge sementes ──
+  const badge = document.getElementById('badge-sementes');
+  if (badge) badge.textContent = ctx.aluna.sementes || 0;
+
+  // ── Trilha (substitui a trilha hardcoded) ──
+  renderTrilhaJornada(ctx);
+
+  // ── Banner de teste em andamento ──
+  renderBannerTesteEmAndamento(ctx);
+}
+
+// ── BANNER "Continuar teste" no topo da Home ────────────────
+function renderBannerTesteEmAndamento(ctx) {
+  const existente = document.getElementById('banner-continuar-teste');
+  if (existente) existente.remove();
+
+  if (!ctx.teste_em_andamento) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'banner-continuar-teste';
+  banner.style.cssText =
+    'background:linear-gradient(135deg,rgba(248,220,150,0.12),rgba(43,165,232,0.08));' +
+    'border:1px solid rgba(248,220,150,0.3);border-radius:12px;' +
+    'padding:0.85rem 1rem;margin:0 1rem 1rem;display:flex;justify-content:space-between;' +
+    'align-items:center;gap:0.65rem;cursor:pointer';
+  banner.innerHTML =
+    '<div style="flex:1;min-width:0">' +
+      '<div style="font-size:0.7rem;color:var(--ouro-fundo,#C8922A);letter-spacing:0.06em;text-transform:uppercase;font-weight:700;margin-bottom:0.2rem">Teste em andamento</div>' +
+      '<div style="font-size:0.85rem;color:var(--texto,#fff);font-weight:600">Você parou na pergunta ' + ctx.teste_em_andamento.respondidas + ' de ' + ctx.teste_em_andamento.total + '</div>' +
+    '</div>' +
+    '<div style="font-size:1.4rem;color:var(--ouro-fundo,#C8922A)">▸</div>';
+  banner.addEventListener('click', () => { window.location.href = '/teste'; });
+
+  // Insere no topo do view-home, logo após a saudação
+  const home = document.getElementById('view-home');
+  const saudacao = home?.querySelector('.saudacao');
+  if (saudacao && saudacao.nextSibling) {
+    saudacao.parentNode.insertBefore(banner, saudacao.nextSibling);
+  } else if (home) {
+    home.insertBefore(banner, home.firstChild);
+  }
+}
+
+// ── TRILHA DA JORNADA (substitui trilha hardcoded) ──────────
+function renderTrilhaJornada(ctx) {
+  const trilha = document.querySelector('.trilha');
+  if (!trilha) return;
+
+  // Caso 1: aluna não fez teste → propõe começar
+  if (!ctx.teste_atual) {
+    trilha.innerHTML =
+      '<div class="trilha-header">' +
+        '<span class="trilha-eyebrow">Sua jornada começa aqui</span>' +
+        '<h2 class="trilha-titulo">Faça o Teste do Subconsciente</h2>' +
+        '<p class="trilha-sub">Em 15 perguntas você descobre qual padrão mental trava sua prosperidade — e qual caminho é o seu.</p>' +
+      '</div>' +
+      '<ol class="trilha-lista">' +
+        '<li class="trilha-item trilha-ativo">' +
+          '<div class="trilha-num">1</div>' +
+          '<div class="trilha-card">' +
+            '<div class="trilha-eyebrow-card">Diagnóstico</div>' +
+            '<h3 class="trilha-card-titulo">Teste do Subconsciente</h3>' +
+            '<p class="trilha-card-desc">Descubra em 15 perguntas o padrão mental que bloqueia sua prosperidade.</p>' +
+            '<div class="trilha-meta"><span>15 perguntas</span><span>~7 min</span></div>' +
+            '<button class="trilha-btn" onclick="window.location.href=\'/teste\'">Começar →</button>' +
+          '</div>' +
+        '</li>' +
+      '</ol>';
+    return;
+  }
+
+  // Caso 2: aluna tem teste mas não tem jornada (não deveria acontecer)
+  if (!ctx.jornada_atual) {
+    trilha.innerHTML =
+      '<div class="trilha-header">' +
+        '<h2 class="trilha-titulo">Sua trilha</h2>' +
+        '<p class="trilha-sub">Aguardando próximos passos.</p>' +
+      '</div>';
+    return;
+  }
+
+  // Caso 3: jornada ativa — renderiza barra + passos
+  const j = ctx.jornada_atual;
+  const cor = j.cor || '#C8922A';
+  const passosHtml = j.passos.map((p, idx) => {
+    const num = idx + 1;
+    let classe = 'trilha-bloqueado';
+    let btnHtml = '<button class="trilha-btn" disabled>🔒 Em breve</button>';
+    if (p.comprado) {
+      classe = '';
+      btnHtml = '<button class="trilha-btn" disabled style="opacity:0.7">✓ Concluído</button>';
+    } else if (p.eh_proximo) {
+      classe = 'trilha-ativo';
+      const link = p.produto_link_checkout || '#';
+      btnHtml = '<a class="trilha-btn" href="' + link + '" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:inline-block">Quero esse passo →</a>';
+    }
+    return (
+      '<li class="trilha-item ' + classe + '">' +
+        '<div class="trilha-num">' + num + '</div>' +
+        '<div class="trilha-card">' +
+          '<div class="trilha-eyebrow-card">' + escHtml(p.titulo) + '</div>' +
+          '<h3 class="trilha-card-titulo">' + escHtml(p.produto_nome) + '</h3>' +
+          (p.descricao ? '<p class="trilha-card-desc">' + escHtml(p.descricao) + '</p>' : '') +
+          btnHtml +
+        '</div>' +
+      '</li>'
+    );
+  }).join('');
+
+  trilha.innerHTML =
+    '<div class="trilha-header">' +
+      // ── Barra de progresso da jornada ──
+      '<div class="jornada-barra-wrap" style="margin-bottom:1rem">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:0.4rem">' +
+          '<div>' +
+            '<div style="font-size:0.7rem;color:' + cor + ';letter-spacing:0.08em;text-transform:uppercase;font-weight:800">Jornada ' + j.numero + '</div>' +
+            '<div style="font-family:var(--font-display,Montserrat);font-size:1.1rem;color:var(--texto,#fff);font-weight:700;line-height:1.1">' + escHtml(j.nome_exibicao) + '</div>' +
+            (j.subtitulo ? '<div style="font-size:0.78rem;color:var(--texto-suave);margin-top:0.15rem">' + escHtml(j.subtitulo) + '</div>' : '') +
+          '</div>' +
+          '<div style="text-align:right">' +
+            '<div style="font-family:var(--font-display,Montserrat);font-weight:800;font-size:1.05rem;color:' + cor + '">' + j.progresso.passos_concluidos + '/' + j.progresso.passos_totais + '</div>' +
+            '<div style="font-size:0.7rem;color:var(--texto-suave)">' + j.progresso.percentual + '%</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="height:7px;background:rgba(245,240,232,0.08);border-radius:4px;overflow:hidden">' +
+          '<div style="height:100%;background:linear-gradient(90deg,' + cor + ',' + cor + 'cc);width:' + j.progresso.percentual + '%;transition:width 0.6s ease"></div>' +
+        '</div>' +
+      '</div>' +
+      '<h2 class="trilha-titulo" style="margin-top:0.5rem">Seu caminho</h2>' +
+    '</div>' +
+    '<ol class="trilha-lista">' + passosHtml + '</ol>';
+}
+
 // ── INIT ──
 (async function init() {
   criarParticulas();
@@ -1532,6 +1694,12 @@ function setupVisualViewport() {
   if (!usuario) return;
 
   hidratarUI(usuario);
+
+  // Carrega o contexto unificado (aluna + teste + jornada + comprados)
+  // e hidrata a Home com base nele.
+  const ctx = await carregarContexto();
+  if (ctx) hidratarHome(ctx);
+
   carregarFeed();
   carregarTesouro();
   conectarChatWs();
