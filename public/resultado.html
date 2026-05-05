@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Resultado Teste de Prosperidade — Vida Mágica</title>
+  <link rel="stylesheet" href="/colors_and_type.css">
+  <link rel="icon" href="/assets/favicon.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ─── Base ─── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: var(--font-body, 'Inter', sans-serif);
+      background: linear-gradient(180deg, #051929 0%, #0a2d44 100%);
+      color: var(--pearl, #f5f0e8);
+      min-height: 100vh;
+      line-height: 1.65;
+    }
+    .container { max-width: 760px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+
+    /* ─── Header (logo + voltar) ─── */
+    .topo {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem;
+    }
+    .topo-marca {
+      display: flex; align-items: center; gap: 0.7rem; min-width: 0;
+    }
+    .topo-logo { height: 32px; width: auto; flex-shrink: 0; }
+    .topo-divisor {
+      width: 1px; height: 22px;
+      background: rgba(245,240,232,0.25);
+      flex-shrink: 0;
+    }
+    .topo-produto {
+      font-family: var(--font-display);
+      font-size: 0.9rem; font-weight: 500;
+      color: var(--pearl-dim, rgba(245,240,232,0.7));
+      letter-spacing: 0.01em;
+    }
+
+    /* ─── Loading state ─── */
+    .loading {
+      text-align: center; padding: 4rem 1rem;
+      color: var(--pearl-dim, rgba(245,240,232,0.7));
+    }
+    .loading i { font-size: 2rem; color: var(--sub-bright, #2ba5e8); margin-bottom: 1rem; }
+
+    /* ─── Erro ─── */
+    .erro-box {
+      background: rgba(229,115,115,0.12);
+      border: 1px solid rgba(229,115,115,0.3);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      color: #F09090;
+      margin: 2rem 0;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       BLOCO 1 — Imagem + Título
+       ═══════════════════════════════════════════════════ */
+    .b1-imagem-wrap {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .b1-imagem {
+      max-width: 280px; width: 100%; height: auto;
+      filter: drop-shadow(0 0 32px var(--sub-glow-soft, rgba(43,165,232,0.3)));
+    }
+    .b1-titulo {
+      font-family: var(--font-display, 'Playfair Display', serif);
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: var(--pearl, #f5f0e8);
+      text-align: center;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       BLOCO 2 — Saudação + Energia Predominante
+       ═══════════════════════════════════════════════════ */
+    .b2-wrap {
+      text-align: center;
+      margin: 2rem 0 2.5rem;
+    }
+    .b2-nome {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      color: var(--pearl);
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+    }
+    .b2-frase {
+      color: var(--pearl-dim);
+      font-size: 0.95rem;
+      margin-bottom: 0.75rem;
+    }
+    .b2-energia {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--gold, #f8dc96);
+      letter-spacing: 0.01em;
+      text-shadow: 0 0 24px rgba(248,220,150,0.4);
+      line-height: 1.2;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       BLOCO 3 — Lista de 5 energias
+       ═══════════════════════════════════════════════════ */
+    .b3-wrap {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(245,240,232,0.1);
+      border-radius: 14px;
+      padding: 1.5rem 1.5rem 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .b3-titulo {
+      font-size: 0.78rem;
+      color: var(--pearl-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    .b3-energia-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid rgba(245,240,232,0.08);
+    }
+    .b3-energia-row:last-child { border-bottom: none; }
+    .b3-energia-row.is-dominante {
+      background: linear-gradient(90deg, rgba(248,220,150,0.08), transparent);
+      margin: 0 -0.75rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 8px;
+      border-bottom: none;
+    }
+    .b3-energia-label {
+      font-size: 0.95rem;
+      color: var(--pearl);
+      font-weight: 500;
+    }
+    .b3-energia-row.is-dominante .b3-energia-label {
+      color: var(--gold);
+      font-weight: 700;
+    }
+    .b3-energia-perc {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--pearl);
+    }
+    .b3-energia-row.is-dominante .b3-energia-perc {
+      color: var(--gold);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       BLOCO 4 — Compartilhar
+       ═══════════════════════════════════════════════════ */
+    .b4-btn {
+      display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+      width: 100%;
+      padding: 1rem 1.5rem;
+      background: linear-gradient(135deg, #25D366, #1ca54f);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 2.5rem;
+    }
+    .b4-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,211,102,0.3); }
+    .b4-btn i { font-size: 1.2rem; }
+
+    /* ═══════════════════════════════════════════════════
+       BLOCO 5 — Vídeo
+       ═══════════════════════════════════════════════════ */
+    .b5-wrap { margin-bottom: 2rem; }
+    .b5-chamada {
+      text-align: center;
+      color: var(--pearl);
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+      font-style: italic;
+    }
+    .b5-video-container {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%; /* 16:9 */
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+    .b5-video-container iframe,
+    .b5-video-container video {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      border: none;
+    }
+    .b5-video-placeholder {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: rgba(245,240,232,0.5);
+      gap: 0.75rem;
+    }
+    .b5-video-placeholder i { font-size: 3rem; }
+    .b5-video-placeholder span { font-size: 0.85rem; }
+
+    /* ═══════════════════════════════════════════════════
+       BLOCO 6 — Diagnóstico (texto longo)
+       ═══════════════════════════════════════════════════ */
+    .b6-wrap {
+      margin-bottom: 3rem;
+    }
+    .b6-texto {
+      color: var(--pearl);
+      font-size: 1rem;
+      line-height: 1.8;
+    }
+    .b6-texto p { margin-bottom: 1.1rem; }
+    .b6-texto strong { color: var(--gold); font-weight: 600; }
+    .b6-texto em { color: var(--sub-bright, #2ba5e8); font-style: italic; }
+    .b6-texto blockquote {
+      border-left: 3px solid var(--gold);
+      padding: 0.75rem 1.25rem;
+      margin: 1.25rem 0;
+      background: rgba(248,220,150,0.06);
+      font-style: italic;
+      color: var(--pearl-dim);
+      border-radius: 4px;
+    }
+    .b6-texto h2, .b6-texto h3 {
+      font-family: var(--font-display);
+      color: var(--gold);
+      margin: 1.75rem 0 0.85rem;
+      font-weight: 700;
+    }
+    .b6-texto h2 { font-size: 1.4rem; }
+    .b6-texto h3 { font-size: 1.15rem; }
+    .b6-texto ul, .b6-texto ol {
+      margin: 0 0 1.1rem 1.5rem;
+      color: var(--pearl);
+    }
+    .b6-texto ul li, .b6-texto ol li { margin-bottom: 0.4rem; }
+
+    /* ═══════════════════════════════════════════════════
+       BLOCO 7 — Trilha (Conhecer / Despertar / Reprogramação)
+       ═══════════════════════════════════════════════════ */
+    .b7-trilha-titulo {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      color: var(--pearl-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      text-align: center;
+    }
+
+    .passo-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(245,240,232,0.1);
+      border-radius: 14px;
+      padding: 1.5rem 1.5rem 1.25rem;
+      margin-bottom: 1.25rem;
+      position: relative;
+    }
+    .passo-card.is-concluido { border-color: rgba(46,213,115,0.3); }
+    .passo-card.is-proximo {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 1px var(--gold), 0 8px 32px rgba(248,220,150,0.1);
+    }
+
+    .passo-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 1rem; margin-bottom: 0.85rem;
+    }
+    .passo-numero {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--gold);
+    }
+    .passo-card.is-concluido .passo-numero { color: #2ED573; }
+    .passo-status-tag {
+      font-size: 0.7rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .passo-status-tag.concluido {
+      background: rgba(46,213,115,0.18); color: #2ED573;
+    }
+    .passo-status-tag.proximo {
+      background: rgba(248,220,150,0.2); color: var(--gold);
+    }
+    .passo-status-tag.aberto {
+      background: rgba(245,240,232,0.1); color: var(--pearl-dim);
+    }
+
+    .passo-titulo-principal {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--pearl);
+      margin-bottom: 0.85rem;
+    }
+    .passo-texto {
+      color: var(--pearl);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+    .passo-texto p { margin-bottom: 0.75rem; }
+    .passo-texto p:last-child { margin-bottom: 0; }
+    .passo-texto strong { color: var(--gold); font-weight: 600; }
+
+    /* ─── Cards de livros (Passo 2) ─── */
+    .livros-lista {
+      display: flex; flex-direction: column; gap: 1rem;
+      margin-top: 1.25rem;
+    }
+    .livro-card {
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(245,240,232,0.12);
+      border-radius: 12px;
+      padding: 1.1rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    .livro-capa {
+      width: 80px; flex-shrink: 0;
+      aspect-ratio: 2/3;
+      border-radius: 6px;
+      object-fit: cover;
+      background: rgba(245,240,232,0.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .livro-capa-placeholder {
+      width: 80px; flex-shrink: 0;
+      aspect-ratio: 2/3;
+      border-radius: 6px;
+      background: rgba(245,240,232,0.05);
+      border: 1px dashed rgba(245,240,232,0.15);
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(245,240,232,0.3);
+      font-size: 1.2rem;
+    }
+    .livro-info {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; gap: 0.4rem;
+    }
+    .livro-tag {
+      display: inline-block;
+      align-self: flex-start;
+      padding: 0.18rem 0.55rem;
+      border-radius: 4px;
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .livro-titulo {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--pearl);
+      line-height: 1.3;
+    }
+    .livro-evidencia {
+      font-size: 0.78rem;
+      color: var(--pearl-dim);
+      font-style: italic;
+    }
+    .livro-selo {
+      font-size: 0.72rem;
+      color: var(--gold);
+      font-weight: 500;
+    }
+    .livro-rodape {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .livro-preco {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--gold);
+    }
+    .livro-cta {
+      padding: 0.55rem 1rem;
+      background: linear-gradient(135deg, var(--gold), var(--gold-2, #c8923b));
+      color: var(--ink, #051929);
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font-display);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .livro-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(248,220,150,0.3); }
+
+    /* ─── Card do curso (Passo 3) ─── */
+    .curso-card {
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(245,240,232,0.12);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-top: 1.25rem;
+      display: flex;
+      gap: 1.1rem;
+      align-items: flex-start;
+    }
+    .curso-card + .curso-card { margin-top: 0.85rem; }
+    .curso-capa {
+      width: 96px; flex-shrink: 0;
+      aspect-ratio: 1/1;
+      border-radius: 8px;
+      object-fit: cover;
+      background: rgba(245,240,232,0.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .curso-capa-placeholder {
+      width: 96px; flex-shrink: 0;
+      aspect-ratio: 1/1;
+      border-radius: 8px;
+      background: rgba(245,240,232,0.05);
+      border: 1px dashed rgba(245,240,232,0.15);
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(245,240,232,0.3);
+      font-size: 1.4rem;
+    }
+    .curso-info {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; gap: 0.45rem;
+    }
+    .curso-titulo {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--pearl);
+      line-height: 1.3;
+    }
+    .curso-descricao {
+      font-size: 0.85rem;
+      color: var(--pearl-dim);
+      line-height: 1.5;
+    }
+    .curso-rodape {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .curso-preco {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--gold);
+    }
+    .curso-preco.indefinido { color: var(--pearl-dim); font-size: 0.95rem; font-style: italic; }
+    .curso-cta {
+      padding: 0.6rem 1.25rem;
+      background: linear-gradient(135deg, var(--gold), var(--gold-2, #c8923b));
+      color: var(--ink);
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font-display);
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .curso-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(248,220,150,0.3); }
+
+    /* ═══════════════════════════════════════════════════
+       BLOCO 8 — Fechamento
+       ═══════════════════════════════════════════════════ */
+    .b8-wrap {
+      margin-top: 3rem;
+      padding: 1.75rem;
+      background: linear-gradient(135deg, rgba(248,220,150,0.06), rgba(43,165,232,0.04));
+      border: 1px solid rgba(248,220,150,0.15);
+      border-radius: 14px;
+    }
+    .b8-texto {
+      color: var(--pearl);
+      font-size: 1rem;
+      line-height: 1.75;
+      text-align: center;
+      font-style: italic;
+    }
+    .b8-texto p { margin-bottom: 0.85rem; }
+    .b8-texto strong { color: var(--gold); font-weight: 700; font-style: normal; }
+
+    /* ─── Rodapé ─── */
+    .rodape-meta {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(245,240,232,0.1);
+      text-align: center;
+      color: rgba(245,240,232,0.5);
+      font-size: 0.75rem;
+    }
+
+    /* ─── Mobile ─── */
+    @media (max-width: 480px) {
+      .container { padding: 1.5rem 1rem 4rem; }
+      .b1-titulo { font-size: 1.45rem; }
+      .b2-energia { font-size: 1.6rem; }
+      .b6-texto { font-size: 0.95rem; }
+      .b6-texto h2 { font-size: 1.2rem; }
+      .passo-titulo-principal { font-size: 1.2rem; }
+      .livro-card { flex-direction: column; }
+      .livro-capa, .livro-capa-placeholder { width: 100px; align-self: center; }
+      .curso-card { flex-direction: column; }
+      .curso-capa, .curso-capa-placeholder { width: 100px; align-self: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Topo: logo + voltar -->
+  <div class="topo">
+    <div class="topo-marca">
+      <img src="/assets/logo-horizontal.png" alt="Vida Mágica" class="topo-logo">
+      <span class="topo-divisor"></span>
+      <span class="topo-produto">Teste do Subconsciente</span>
+    </div>
+  </div>
+
+  <!-- Estado: carregando -->
+  <div id="loading" class="loading">
+    <i class="fas fa-spinner fa-spin"></i>
+    <p>Preparando seu resultado…</p>
+  </div>
+
+  <!-- Estado: erro -->
+  <div id="erro" class="erro-box" style="display:none">
+    <p id="erro-msg">Não foi possível carregar este resultado.</p>
+  </div>
+
+  <!-- Conteúdo principal (preenchido via JS) -->
+  <div id="conteudo" style="display:none">
+
+    <!-- BLOCO 1 -->
+    <div class="b1-imagem-wrap">
+      <img id="b1-imagem" class="b1-imagem" src="" alt="">
+    </div>
+    <h1 class="b1-titulo">Resultado Teste de Prosperidade</h1>
+
+    <!-- BLOCO 2 -->
+    <div class="b2-wrap">
+      <p class="b2-nome" id="b2-nome">—</p>
+      <p class="b2-frase">A sua energia predominante é:</p>
+      <p class="b2-energia" id="b2-energia">—</p>
+    </div>
+
+    <!-- BLOCO 3 -->
+    <div class="b3-wrap">
+      <div class="b3-titulo">Energias do Subconsciente</div>
+      <div id="b3-lista"></div>
+    </div>
+
+    <!-- BLOCO 4 -->
+    <button class="b4-btn" id="b4-btn">
+      <i class="fab fa-whatsapp"></i>
+      Compartilhar resultado
+    </button>
+
+    <!-- BLOCO 5 -->
+    <div class="b5-wrap">
+      <p class="b5-chamada">Entenda o seu teste com esse vídeo especial que eu preparei para você!</p>
+      <div class="b5-video-container" id="b5-video-container">
+        <div class="b5-video-placeholder">
+          <i class="fas fa-video"></i>
+          <span>Vídeo em breve</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BLOCO 6 -->
+    <div class="b6-wrap">
+      <div class="b6-texto" id="b6-texto"></div>
+    </div>
+
+    <!-- BLOCO 7 -->
+    <div class="b7-trilha">
+      <div class="b7-trilha-titulo">Trilha Conhecer e Despertar</div>
+
+      <!-- Passo 1 -->
+      <div class="passo-card is-concluido">
+        <div class="passo-header">
+          <span class="passo-numero">Passo 1</span>
+          <span class="passo-status-tag concluido">✓ Concluído</span>
+        </div>
+        <div class="passo-titulo-principal">Conhecer</div>
+        <div class="passo-texto" id="passo1-texto"></div>
+      </div>
+
+      <!-- Passo 2 -->
+      <div class="passo-card is-proximo">
+        <div class="passo-header">
+          <span class="passo-numero">Passo 2</span>
+          <span class="passo-status-tag proximo">Seu próximo passo</span>
+        </div>
+        <div class="passo-titulo-principal">Despertar</div>
+        <div class="passo-texto" id="passo2-texto"></div>
+        <div class="livros-lista" id="livros-lista"></div>
+      </div>
+
+      <!-- Passo 3 -->
+      <div class="passo-card">
+        <div class="passo-header">
+          <span class="passo-numero">Passo 3</span>
+          <span class="passo-status-tag aberto">Aberto</span>
+        </div>
+        <div class="passo-titulo-principal">Reprogramação de Base</div>
+        <div class="passo-texto" id="passo3-texto"></div>
+        <div id="cursos-lista"></div>
+      </div>
+    </div>
+
+    <!-- BLOCO 8 -->
+    <div class="b8-wrap">
+      <div class="b8-texto" id="b8-texto"></div>
+    </div>
+
+    <!-- Rodapé meta -->
+    <div class="rodape-meta">
+      <span id="rodape-data">—</span>
+      <span style="margin: 0 0.5rem">·</span>
+      <span id="rodape-versao">—</span>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+(async function() {
+  // ID vem da URL: /resultado/<uuid>
+  const path = window.location.pathname;
+  const match = path.match(/\/resultado\/([a-f0-9-]+)/i);
+  const testeId = match ? match[1] : null;
+
+  const elLoading = document.getElementById('loading');
+  const elErro = document.getElementById('erro');
+  const elErroMsg = document.getElementById('erro-msg');
+  const elConteudo = document.getElementById('conteudo');
+
+  function mostrarErro(msg) {
+    elLoading.style.display = 'none';
+    elErroMsg.textContent = msg;
+    elErro.style.display = 'block';
+  }
+
+  if (!testeId) {
+    mostrarErro('Link inválido.');
+    return;
+  }
+
+  // Buscar dados do resultado
+  let dados;
+  try {
+    const r = await fetch('/api/teste/resultado/' + encodeURIComponent(testeId));
+    if (!r.ok) {
+      if (r.status === 404) {
+        mostrarErro('Resultado não encontrado. Verifique o link.');
+      } else {
+        mostrarErro('Não foi possível carregar este resultado. Tente novamente em alguns instantes.');
+      }
+      return;
+    }
+    dados = await r.json();
+    if (!dados.ok) {
+      mostrarErro(dados.erro || 'Erro ao carregar resultado.');
+      return;
+    }
+  } catch (err) {
+    console.error('[resultado] erro:', err);
+    mostrarErro('Sem conexão. Tente novamente.');
+    return;
+  }
+
+  renderizar(dados);
+  elLoading.style.display = 'none';
+  elConteudo.style.display = 'block';
+
+  // ════════════════════════════════════════════════════
+  function renderizar(d) {
+    // ── BLOCO 1: imagem ──
+    // /assets/resultado-{slug}.png — slug do perfil dominante (medo, prosperidade_nv2, etc)
+    const imgEl = document.getElementById('b1-imagem');
+    imgEl.src = '/assets/resultado-' + d.perfil_dominante + '.png';
+    imgEl.alt = 'Energia ' + (d.conteudo && d.conteudo.nome_exibicao ? d.conteudo.nome_exibicao : '');
+    imgEl.onerror = function() { imgEl.style.display = 'none'; };
+
+    // ── BLOCO 2: nome + energia predominante ──
+    document.getElementById('b2-nome').textContent = d.aluna && d.aluna.nome ? d.aluna.nome : '';
+    const nomeEnergia = (d.conteudo && d.conteudo.nome_exibicao) ? d.conteudo.nome_exibicao : '—';
+    document.getElementById('b2-energia').textContent = 'Energia da ' + nomeEnergia;
+
+    // ── BLOCO 3: lista das 5 energias ──
+    const listaWrap = document.getElementById('b3-lista');
+    listaWrap.innerHTML = d.energias.map(e => {
+      // Marca como dominante se bater com o perfil bruto (prosperidade, medo, etc)
+      const isDominante = (e.slug === d.perfil_dominante_bruto);
+      return (
+        '<div class="b3-energia-row' + (isDominante ? ' is-dominante' : '') + '">' +
+          '<span class="b3-energia-label">Energia da ' + escapeHtml(e.label) + '</span>' +
+          '<span class="b3-energia-perc">' + e.percentual_inteiro + '%</span>' +
+        '</div>'
+      );
+    }).join('');
+
+    // ── BLOCO 4: botão de compartilhar ──
+    document.getElementById('b4-btn').addEventListener('click', () => {
+      const texto = (d.compartilhar_texto || 'Acabei de descobrir minha energia predominante no Teste do Subconsciente da Vida Mágica.') +
+                    '\n\nEnergia da ' + nomeEnergia + '\n\n' + window.location.href;
+      const url = 'https://wa.me/?text=' + encodeURIComponent(texto);
+      window.open(url, '_blank');
+    });
+
+    // ── BLOCO 5: vídeo ──
+    if (d.conteudo && d.conteudo.video_url) {
+      const videoUrl = d.conteudo.video_url.trim();
+      const container = document.getElementById('b5-video-container');
+      const embed = embedDeUrl(videoUrl);
+      if (embed) container.innerHTML = embed;
+    }
+
+    // ── BLOCO 6: diagnóstico ──
+    if (d.conteudo && d.conteudo.texto_diagnostico) {
+      document.getElementById('b6-texto').innerHTML = textoSimplesParaHtml(d.conteudo.texto_diagnostico);
+    }
+
+    // ── BLOCO 7: passos ──
+    if (d.conteudo) {
+      if (d.conteudo.passo1_texto) document.getElementById('passo1-texto').innerHTML = textoSimplesParaHtml(d.conteudo.passo1_texto);
+      if (d.conteudo.passo2_texto) document.getElementById('passo2-texto').innerHTML = textoSimplesParaHtml(d.conteudo.passo2_texto);
+      if (d.conteudo.passo3_texto) document.getElementById('passo3-texto').innerHTML = textoSimplesParaHtml(d.conteudo.passo3_texto);
+    }
+
+    // Livros (Passo 2)
+    const livrosWrap = document.getElementById('livros-lista');
+    if (Array.isArray(d.livros) && d.livros.length > 0) {
+      livrosWrap.innerHTML = d.livros.map(renderLivro).join('');
+    }
+
+    // Cursos (Passo 3) — pode ter 1 ou 2 cards
+    const cursosWrap = document.getElementById('cursos-lista');
+    if (d.conteudo) {
+      const cursos = [];
+      if (d.conteudo.passo3_curso_titulo) {
+        cursos.push({
+          titulo: d.conteudo.passo3_curso_titulo,
+          capa_url: d.conteudo.passo3_curso_capa_url,
+          descricao: d.conteudo.passo3_curso_descricao,
+          preco: d.conteudo.passo3_curso_preco,
+          link: d.conteudo.passo3_curso_link_checkout,
+        });
+      }
+      if (d.conteudo.passo3_curso_titulo_2) {
+        cursos.push({
+          titulo: d.conteudo.passo3_curso_titulo_2,
+          capa_url: d.conteudo.passo3_curso_capa_url_2,
+          descricao: d.conteudo.passo3_curso_descricao_2,
+          preco: d.conteudo.passo3_curso_preco_2,
+          link: d.conteudo.passo3_curso_link_checkout_2,
+        });
+      }
+      cursosWrap.innerHTML = cursos.map(renderCurso).join('');
+    }
+
+    // ── BLOCO 8: fechamento ──
+    if (d.conteudo && d.conteudo.texto_fechamento_final) {
+      document.getElementById('b8-texto').innerHTML = textoSimplesParaHtml(d.conteudo.texto_fechamento_final);
+    }
+
+    // ── Rodapé meta ──
+    if (d.teste) {
+      document.getElementById('rodape-data').textContent = 'Realizado em ' + formatarData(d.teste.feito_em);
+      document.getElementById('rodape-versao').textContent = 'Versão ' + (d.teste.versao_nome || '—');
+    }
+  }
+
+  // ── Helpers ─────────────────────────────────────────────
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  }
+
+  // Converte texto plano em HTML: parágrafos por linha em branco, mantém quebras simples como <br>
+  function textoSimplesParaHtml(texto) {
+    if (!texto) return '';
+    // Se já parece HTML (tem tag), retorna como está
+    if (/<\w+[^>]*>/.test(texto)) return texto;
+    const blocos = texto.trim().split(/\n\s*\n/);
+    return blocos.map(b => '<p>' + escapeHtml(b).replace(/\n/g, '<br>') + '</p>').join('');
+  }
+
+  function formatarData(iso) {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso);
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      return dd + '/' + mm + '/' + yyyy;
+    } catch { return '—'; }
+  }
+
+  function formatarPreco(p) {
+    if (p == null || p === '') return null;
+    const n = parseFloat(p);
+    if (isNaN(n) || n <= 0) return null;
+    return 'R$ ' + n.toFixed(2).replace('.', ',');
+  }
+
+  // YouTube/Vimeo → embed; senão tenta <video>
+  function embedDeUrl(url) {
+    if (!url) return null;
+    const yt = url.match(/(?:youtube\.com\/.*[?&]v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/);
+    if (yt) return '<iframe src="https://www.youtube.com/embed/' + yt[1] + '" allowfullscreen></iframe>';
+    const vimeo = url.match(/vimeo\.com\/(\d+)/);
+    if (vimeo) return '<iframe src="https://player.vimeo.com/video/' + vimeo[1] + '" allowfullscreen></iframe>';
+    if (/\.(mp4|webm|ogg)(\?|$)/i.test(url)) {
+      return '<video controls src="' + escapeHtml(url) + '"></video>';
+    }
+    return null;
+  }
+
+  function renderLivro(l) {
+    const capa = l.capa_url
+      ? '<img class="livro-capa" src="' + escapeHtml(l.capa_url) + '" alt="' + escapeHtml(l.titulo) + '">'
+      : '<div class="livro-capa-placeholder"><i class="fas fa-book"></i></div>';
+    const preco = formatarPreco(l.preco);
+    const cta = l.link_checkout
+      ? '<a href="' + escapeHtml(l.link_checkout) + '" class="livro-cta" target="_blank">Quero este livro</a>'
+      : '<a href="#" class="livro-cta" onclick="alert(\'Em breve\');return false;">Quero este livro</a>';
+    return (
+      '<div class="livro-card">' +
+        capa +
+        '<div class="livro-info">' +
+          '<span class="livro-tag" style="background:' + escapeHtml(l.cor_fundo) + ';color:' + escapeHtml(l.cor_texto) + '">' + escapeHtml(l.tag) + '</span>' +
+          '<div class="livro-titulo">' + escapeHtml(l.titulo) + '</div>' +
+          '<div class="livro-evidencia">' + escapeHtml(l.linha_evidencia) + '</div>' +
+          (l.selo ? '<div class="livro-selo">' + escapeHtml(l.selo) + '</div>' : '') +
+          '<div class="livro-rodape">' +
+            (preco ? '<span class="livro-preco">' + preco + '</span>' : '<span class="livro-preco" style="color:var(--pearl-dim);font-size:0.85rem;font-style:italic">Preço em breve</span>') +
+            cta +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderCurso(c) {
+    const capa = c.capa_url
+      ? '<img class="curso-capa" src="' + escapeHtml(c.capa_url) + '" alt="' + escapeHtml(c.titulo) + '">'
+      : '<div class="curso-capa-placeholder"><i class="fas fa-graduation-cap"></i></div>';
+    const preco = formatarPreco(c.preco);
+    const cta = c.link
+      ? '<a href="' + escapeHtml(c.link) + '" class="curso-cta" target="_blank">Quero este curso</a>'
+      : '<a href="#" class="curso-cta" onclick="alert(\'Em breve\');return false;">Quero este curso</a>';
+    return (
+      '<div class="curso-card">' +
+        capa +
+        '<div class="curso-info">' +
+          '<div class="curso-titulo">' + escapeHtml(c.titulo) + '</div>' +
+          (c.descricao ? '<div class="curso-descricao">' + escapeHtml(c.descricao) + '</div>' : '') +
+          '<div class="curso-rodape">' +
+            (preco ? '<span class="curso-preco">' + preco + '</span>' : '<span class="curso-preco indefinido">Preço em breve</span>') +
+            cta +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+})();
+</script>
+
+</body>
+</html>
