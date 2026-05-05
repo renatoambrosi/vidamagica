@@ -119,6 +119,52 @@ function autenticarPainel(escopoRequerido) {
   };
 }
 
+// ── PAINEL HÍBRIDO — aceita admin OU atendimento ────────
+// Pra endpoints que ambos precisam acessar (ex: produtos da aluna,
+// jornada do método). Valida JWT, role=admin, e escopo é qualquer um
+// dos permitidos.
+function autenticarPainelHibrido(req, res, next) {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token não fornecido' });
+  }
+  const token = auth.slice(7).trim();
+  let payload;
+  try {
+    payload = jwt.verify(token, JWT_SECRET);
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Sessão expirada', code: 'TOKEN_EXPIRED' });
+    }
+    return res.status(401).json({ error: 'Token inválido' });
+  }
+  if (payload.role !== 'admin') {
+    return res.status(403).json({ error: 'Acesso negado' });
+  }
+  // Aceita escopo admin OU atendimento
+  if (payload.escopo !== 'admin' && payload.escopo !== 'atendimento') {
+    return res.status(403).json({ error: 'Escopo incorreto' });
+  }
+  if (!payload.sid) {
+    return res.status(401).json({ error: 'Token inválido (sem sessão)' });
+  }
+  // Valida sessão no banco
+  buscarSessaoAdmin(payload.sid).then(sessao => {
+    if (!sessao) {
+      return res.status(401).json({ error: 'Sessão revogada ou expirada', code: 'SESSION_EXPIRED' });
+    }
+    if (sessao.escopo !== 'admin' && sessao.escopo !== 'atendimento') {
+      return res.status(403).json({ error: 'Escopo incorreto' });
+    }
+    tocarSessaoAdmin(payload.sid).catch(() => {});
+    req.admin = { id: payload.sub, escopo: payload.escopo, sessao_id: payload.sid };
+    next();
+  }).catch(err => {
+    console.error('❌ autenticarPainelHibrido:', err.message);
+    res.status(500).json({ error: 'Erro interno' });
+  });
+}
+
 // ── BASIC AUTH LEGADO (depreciado, mantido pra retrocompatibilidade) ──
 
 function autenticarAdmin(req, res, next) {
@@ -158,6 +204,7 @@ function autenticarAtendimento(req, res, next) {
 module.exports = {
   autenticar,
   autenticarPainel,
+  autenticarPainelHibrido,
   autenticarAdmin,
   autenticarAtendimento,
   gerarAccessToken,
