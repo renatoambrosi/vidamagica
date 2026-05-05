@@ -214,6 +214,60 @@ function montarListaEnergias(resultado) {
   return arr;
 }
 
+// ── Montar a JORNADA do método pra uma aluna ─────────────
+// Recebe:
+//   perfilDominante: 'medo' | 'desordem' | ... | 'prosperidade_nv2' (com subdivisão)
+//   jornadaCfg:      { slug, numero, nome_exibicao, subtitulo, cor, passos: [...] }
+//                    (vem dos joins jornadas_metodo + jornadas_passos)
+//   slugsComprados:  Set ou array com os slugs dos produtos que a aluna já tem
+//
+// Devolve a estrutura pronta pra UI:
+//   {
+//     slug, numero, nome_exibicao, subtitulo, cor,
+//     passos: [{ ordem, titulo, descricao, produto_slug, produto_nome, comprado, eh_proximo, link_checkout? }],
+//     progresso: { passos_concluidos, passos_totais, percentual }
+//   }
+function montarJornada(jornadaCfg, slugsComprados, produtosCadastro) {
+  if (!jornadaCfg) return null;
+  const compradosSet = new Set(Array.isArray(slugsComprados) ? slugsComprados : Array.from(slugsComprados || []));
+  const produtosBySlug = {};
+  for (const p of (produtosCadastro || [])) {
+    produtosBySlug[p.slug] = p;
+  }
+
+  const passos = (jornadaCfg.passos || []).map(p => ({
+    ordem: p.ordem,
+    titulo: p.titulo_passo,
+    descricao: p.descricao_passo,
+    produto_slug: p.produto_slug,
+    produto_nome: produtosBySlug[p.produto_slug]?.nome || p.produto_slug,
+    produto_link_checkout: produtosBySlug[p.produto_slug]?.link_checkout_padrao || null,
+    comprado: compradosSet.has(p.produto_slug),
+    eh_proximo: false,  // marcado abaixo
+  }));
+
+  // O "próximo" é o primeiro NÃO comprado em ordem
+  const idxProximo = passos.findIndex(p => !p.comprado);
+  if (idxProximo >= 0) passos[idxProximo].eh_proximo = true;
+
+  const concluidos = passos.filter(p => p.comprado).length;
+  const total = passos.length;
+
+  return {
+    slug: jornadaCfg.slug,
+    numero: jornadaCfg.numero,
+    nome_exibicao: jornadaCfg.nome_exibicao,
+    subtitulo: jornadaCfg.subtitulo,
+    cor: jornadaCfg.cor,
+    passos,
+    progresso: {
+      passos_concluidos: concluidos,
+      passos_totais: total,
+      percentual: total > 0 ? Math.round((concluidos / total) * 100) : 0,
+    },
+  };
+}
+
 module.exports = {
   PERFIS_BLOQUEADORES,
   PERFIS_VALIDOS,
@@ -223,4 +277,5 @@ module.exports = {
   tagPorPercentual,
   montarLivrosRecomendados,
   montarListaEnergias,
+  montarJornada,
 };
