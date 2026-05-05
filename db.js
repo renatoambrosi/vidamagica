@@ -1205,6 +1205,89 @@ async function initComunicacao() {
       ON CONFLICT (telefone_canonico) DO NOTHING
     `);
 
+    // ── CONTEÚDO DOS RESULTADOS DO TESTE DO SUBCONSCIENTE ──
+    // 7 linhas (1 por perfil dominante possível): 4 energias bloqueadoras + 3 níveis de prosperidade.
+    // Cada linha tem todos os textos/vídeos/produtos da página de resultado da aluna.
+    // Editado pelo painel admin.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS teste_perfis_conteudo (
+        slug VARCHAR(40) PRIMARY KEY,
+        nome_exibicao VARCHAR(100) NOT NULL,
+        video_url TEXT,
+        texto_diagnostico TEXT,
+        passo1_texto TEXT,
+        passo2_texto TEXT,
+        passo3_texto TEXT,
+        passo3_curso_titulo VARCHAR(200),
+        passo3_curso_capa_url TEXT,
+        passo3_curso_descricao TEXT,
+        passo3_curso_preco NUMERIC(10,2),
+        passo3_curso_link_checkout TEXT,
+        passo3_curso_titulo_2 VARCHAR(200),
+        passo3_curso_capa_url_2 TEXT,
+        passo3_curso_descricao_2 TEXT,
+        passo3_curso_preco_2 NUMERIC(10,2),
+        passo3_curso_link_checkout_2 TEXT,
+        texto_fechamento_final TEXT,
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    // Seed inicial — 7 perfis com placeholders. Admin edita pelo painel depois.
+    await c.query(`
+      INSERT INTO teste_perfis_conteudo (slug, nome_exibicao, passo3_curso_titulo) VALUES
+        ('medo',              'Medo',                    'O Ouro da Reprogramação Mental'),
+        ('desordem',          'Desordem',                'O Ouro da Reprogramação Mental'),
+        ('sobrevivencia',     'Sobrevivência',           'Lei da Atração Bíblica'),
+        ('validacao',         'Validação',               'O Ouro da Reprogramação Mental'),
+        ('prosperidade_nv1',  'Prosperidade Nível 1',    'Lei da Atração Bíblica'),
+        ('prosperidade_nv2',  'Prosperidade Nível 2',    'Lei da Atração Bíblica'),
+        ('prosperidade_nv3',  'Prosperidade Nível 3',    'A Tal Maneira (Curso)')
+      ON CONFLICT (slug) DO NOTHING
+    `);
+
+    // Seed do segundo curso pros perfis nv1 e nv2 (que recomendam LDA + Tal Maneira)
+    await c.query(`
+      UPDATE teste_perfis_conteudo
+         SET passo3_curso_titulo_2 = 'A Tal Maneira (Livro)'
+       WHERE slug IN ('prosperidade_nv1','prosperidade_nv2')
+         AND passo3_curso_titulo_2 IS NULL
+    `);
+
+    // ── LIVROS DA SÉRIE CONHECER E DESPERTAR ──
+    // 4 linhas (1 por energia bloqueadora). Aparecem no Passo 2 conforme regras de gatilho.
+    // Editado pelo painel admin.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS teste_livros (
+        slug VARCHAR(50) PRIMARY KEY,
+        energia VARCHAR(40) NOT NULL UNIQUE,
+        titulo VARCHAR(200) NOT NULL,
+        capa_url TEXT,
+        preco NUMERIC(10,2),
+        link_checkout TEXT,
+        selo VARCHAR(200),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    // Seed inicial — 4 livros com placeholders. Admin edita pelo painel.
+    await c.query(`
+      INSERT INTO teste_livros (slug, energia, titulo, preco, selo) VALUES
+        ('vencendo_medo',          'medo',          'Vencendo o Medo',           59.90, '✨ Inclui Aulão ao vivo com a Suellen'),
+        ('vencendo_desordem',      'desordem',      'Vencendo a Desordem',       59.90, '✨ Inclui Aulão ao vivo com a Suellen'),
+        ('vencendo_validacao',     'validacao',     'Vencendo a Validação',      59.90, '✨ Inclui Aulão ao vivo com a Suellen'),
+        ('vencendo_sobrevivencia', 'sobrevivencia', 'Vencendo a Sobrevivência',  59.90, '✨ Inclui Aulão ao vivo com a Suellen')
+      ON CONFLICT (slug) DO NOTHING
+    `);
+
+    // Texto padrão do compartilhamento no WhatsApp (Bloco 4 da página de resultado)
+    await c.query(`
+      INSERT INTO config (chave, dados) VALUES
+        ('resultado_compartilhar_texto',
+         '{"texto":"Acabei de descobrir minha energia predominante no Teste do Subconsciente da Vida Mágica. Faça o seu também:"}'::jsonb)
+      ON CONFLICT (chave) DO NOTHING
+    `);
+
     console.log('✅ Banco Comunicação iniciado');
   } finally {
     c.release();
