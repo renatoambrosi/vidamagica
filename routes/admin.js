@@ -1048,4 +1048,195 @@ router.delete('/teste/versoes/:id', async (req, res) => {
   }
 });
 
+// ════════════════════════════════════════════════════════════
+// CONTEÚDO DOS RESULTADOS DO TESTE — perfis e livros
+// Banco: poolComunicacao
+// Endpoints (prefixo: /api/admin/teste):
+//   GET   /teste/perfis-conteudo            → lista os 7 perfis com nome+slug (visão lista)
+//   GET   /teste/perfis-conteudo/:slug      → detalhe de 1 perfil
+//   PUT   /teste/perfis-conteudo/:slug      → atualiza textos/vídeo/produtos
+//   GET   /teste/livros                     → lista os 4 livros
+//   PUT   /teste/livros/:slug               → atualiza um livro
+// ════════════════════════════════════════════════════════════
+
+// Slugs aceitos (proteção: só edita os 7 perfis canônicos)
+const _SLUGS_PERFIS_VALIDOS = [
+  'medo', 'desordem', 'sobrevivencia', 'validacao',
+  'prosperidade_nv1', 'prosperidade_nv2', 'prosperidade_nv3',
+];
+const _SLUGS_LIVROS_VALIDOS = [
+  'vencendo_medo', 'vencendo_desordem', 'vencendo_validacao', 'vencendo_sobrevivencia',
+];
+
+// ── GET /teste/perfis-conteudo ──────────────────────────────
+router.get('/teste/perfis-conteudo', async (req, res) => {
+  try {
+    const r = await poolComunicacao.query(
+      `SELECT slug, nome_exibicao, atualizado_em,
+              (texto_diagnostico IS NOT NULL AND TRIM(texto_diagnostico) <> '') AS tem_diagnostico,
+              (video_url IS NOT NULL AND TRIM(video_url) <> '') AS tem_video,
+              (passo3_curso_titulo IS NOT NULL) AS tem_passo3
+         FROM teste_perfis_conteudo
+        ORDER BY
+          CASE slug
+            WHEN 'medo'             THEN 1
+            WHEN 'desordem'         THEN 2
+            WHEN 'sobrevivencia'    THEN 3
+            WHEN 'validacao'        THEN 4
+            WHEN 'prosperidade_nv1' THEN 5
+            WHEN 'prosperidade_nv2' THEN 6
+            WHEN 'prosperidade_nv3' THEN 7
+            ELSE 99
+          END`
+    );
+    return res.json({ ok: true, perfis: r.rows });
+  } catch (err) {
+    console.error('[admin/teste/perfis-conteudo] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ── GET /teste/perfis-conteudo/:slug ────────────────────────
+router.get('/teste/perfis-conteudo/:slug', async (req, res) => {
+  try {
+    const slug = req.params.slug;
+    if (!_SLUGS_PERFIS_VALIDOS.includes(slug)) {
+      return res.status(400).json({ ok: false, erro: 'slug inválido' });
+    }
+    const r = await poolComunicacao.query(
+      `SELECT * FROM teste_perfis_conteudo WHERE slug = $1`,
+      [slug]
+    );
+    if (!r.rows[0]) return res.status(404).json({ ok: false, erro: 'perfil não encontrado' });
+    return res.json({ ok: true, perfil: r.rows[0] });
+  } catch (err) {
+    console.error('[admin/teste/perfis-conteudo/:slug] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ── PUT /teste/perfis-conteudo/:slug ────────────────────────
+router.put('/teste/perfis-conteudo/:slug', async (req, res) => {
+  try {
+    const slug = req.params.slug;
+    if (!_SLUGS_PERFIS_VALIDOS.includes(slug)) {
+      return res.status(400).json({ ok: false, erro: 'slug inválido' });
+    }
+
+    // Campos editáveis (slug NÃO é editável)
+    const campos = [
+      'nome_exibicao',
+      'video_url',
+      'texto_diagnostico',
+      'passo1_texto', 'passo2_texto', 'passo3_texto',
+      'passo3_curso_titulo', 'passo3_curso_capa_url', 'passo3_curso_descricao',
+      'passo3_curso_preco', 'passo3_curso_link_checkout',
+      'passo3_curso_titulo_2', 'passo3_curso_capa_url_2', 'passo3_curso_descricao_2',
+      'passo3_curso_preco_2', 'passo3_curso_link_checkout_2',
+      'texto_fechamento_final',
+    ];
+
+    const sets = [];
+    const valores = [];
+    let i = 1;
+    for (const campo of campos) {
+      if (req.body && Object.prototype.hasOwnProperty.call(req.body, campo)) {
+        let valor = req.body[campo];
+        // Strings vazias viram NULL pra preço (campo numérico)
+        if (campo === 'passo3_curso_preco' || campo === 'passo3_curso_preco_2') {
+          if (valor === '' || valor == null) valor = null;
+          else {
+            const n = parseFloat(valor);
+            valor = isNaN(n) ? null : n;
+          }
+        } else if (typeof valor === 'string') {
+          valor = valor.trim() === '' ? null : valor;
+        }
+        sets.push(campo + ' = $' + i);
+        valores.push(valor);
+        i++;
+      }
+    }
+    if (sets.length === 0) {
+      return res.status(400).json({ ok: false, erro: 'nenhum campo enviado' });
+    }
+    sets.push('atualizado_em = NOW()');
+    valores.push(slug);
+
+    const sql = `UPDATE teste_perfis_conteudo SET ${sets.join(', ')} WHERE slug = $${i}`;
+    const r = await poolComunicacao.query(sql, valores);
+    if (r.rowCount === 0) return res.status(404).json({ ok: false, erro: 'perfil não encontrado' });
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[admin/teste/perfis-conteudo/:slug PUT] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ── GET /teste/livros ───────────────────────────────────────
+router.get('/teste/livros', async (req, res) => {
+  try {
+    const r = await poolComunicacao.query(
+      `SELECT * FROM teste_livros
+        ORDER BY
+          CASE energia
+            WHEN 'medo'           THEN 1
+            WHEN 'desordem'       THEN 2
+            WHEN 'sobrevivencia'  THEN 3
+            WHEN 'validacao'      THEN 4
+            ELSE 99
+          END`
+    );
+    return res.json({ ok: true, livros: r.rows });
+  } catch (err) {
+    console.error('[admin/teste/livros] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ── PUT /teste/livros/:slug ─────────────────────────────────
+router.put('/teste/livros/:slug', async (req, res) => {
+  try {
+    const slug = req.params.slug;
+    if (!_SLUGS_LIVROS_VALIDOS.includes(slug)) {
+      return res.status(400).json({ ok: false, erro: 'slug inválido' });
+    }
+
+    const campos = ['titulo', 'capa_url', 'preco', 'link_checkout', 'selo'];
+    const sets = [];
+    const valores = [];
+    let i = 1;
+    for (const campo of campos) {
+      if (req.body && Object.prototype.hasOwnProperty.call(req.body, campo)) {
+        let valor = req.body[campo];
+        if (campo === 'preco') {
+          if (valor === '' || valor == null) valor = null;
+          else {
+            const n = parseFloat(valor);
+            valor = isNaN(n) ? null : n;
+          }
+        } else if (typeof valor === 'string') {
+          valor = valor.trim() === '' ? null : valor;
+        }
+        sets.push(campo + ' = $' + i);
+        valores.push(valor);
+        i++;
+      }
+    }
+    if (sets.length === 0) {
+      return res.status(400).json({ ok: false, erro: 'nenhum campo enviado' });
+    }
+    sets.push('atualizado_em = NOW()');
+    valores.push(slug);
+
+    const sql = `UPDATE teste_livros SET ${sets.join(', ')} WHERE slug = $${i}`;
+    const r = await poolComunicacao.query(sql, valores);
+    if (r.rowCount === 0) return res.status(404).json({ ok: false, erro: 'livro não encontrado' });
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[admin/teste/livros/:slug PUT] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
 module.exports = router;
