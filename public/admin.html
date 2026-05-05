@@ -239,6 +239,12 @@ select option { background: #1a1205; }
   <div class="nav-item" id="nav-teste" onclick="goTab('teste', this)">
     <span class="nav-icon">🧠</span> Versões
   </div>
+  <div class="nav-item" id="nav-teste-perfis" onclick="goTab('teste-perfis', this)">
+    <span class="nav-icon">📜</span> Conteúdo dos Resultados
+  </div>
+  <div class="nav-item" id="nav-teste-livros" onclick="goTab('teste-livros', this)">
+    <span class="nav-icon">📚</span> Livros
+  </div>
 
   <div class="sidebar-section-label" style="margin-top:0.5rem">Em breve</div>
   <div class="nav-item disabled"><span class="nav-icon">👥</span> Membros do Clube <span class="nav-tag">—</span></div>
@@ -622,6 +628,46 @@ select option { background: #1a1205; }
       </div>
     </div>
 
+    <!-- ════════════════════ CONTEÚDO DOS RESULTADOS ════════════════════ -->
+    <div class="tab-panel" id="tab-teste-perfis">
+      <!-- Lista de 7 perfis -->
+      <div id="perfis-tela-lista">
+        <p style="color:var(--text-muted);font-size:0.85rem;margin:0 0 1.5rem;max-width:680px;line-height:1.5">
+          Cada perfil possível tem o conteúdo da página de resultado — textos, vídeo e produtos recomendados. Clique em um perfil para editar.
+        </p>
+        <div id="perfis-lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem">
+          <div style="color:var(--text-muted);padding:2rem;text-align:center">Carregando…</div>
+        </div>
+      </div>
+
+      <!-- Editor de perfil -->
+      <div id="perfis-tela-editor" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;gap:0.75rem;flex-wrap:wrap">
+          <div>
+            <button class="btn btn-ghost" onclick="perfisAdmin.voltarLista()">← Voltar</button>
+            <span id="perfis-editor-nome" style="margin-left:1rem;font-weight:700;font-size:1.1rem"></span>
+          </div>
+          <button class="btn btn-primary" onclick="perfisAdmin.salvar()" id="perfis-btn-salvar">💾 Salvar</button>
+        </div>
+
+        <div id="perfis-editor-form"></div>
+
+        <div id="perfis-editor-feedback" style="display:none;margin-top:1rem;padding:0.85rem 1rem;border-radius:8px;font-size:0.85rem"></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════ LIVROS ════════════════════ -->
+    <div class="tab-panel" id="tab-teste-livros">
+      <p style="color:var(--text-muted);font-size:0.85rem;margin:0 0 1.5rem;max-width:680px;line-height:1.5">
+        Os 4 livros da Série Conhecer e Despertar. Aparecem na página de resultado conforme as energias do teste da aluna. Slug e energia são fixos — você só edita os dados visíveis.
+      </p>
+      <div id="livros-lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1rem">
+        <div style="color:var(--text-muted);padding:2rem;text-align:center">Carregando…</div>
+      </div>
+
+      <div id="livros-feedback" style="display:none;margin-top:1rem;padding:0.85rem 1rem;border-radius:8px;font-size:0.85rem"></div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 
@@ -689,6 +735,35 @@ select option { background: #1a1205; }
   .ed-alt-perfil { flex-shrink: 0; padding: 0.3rem 0.7rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; align-self: center; min-width: 110px; text-align: center; color: #fff; }
 
   .perfil-legenda-pill { padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; color: #fff; letter-spacing: 0.03em; }
+
+  /* ── Cards de perfil (lista) ── */
+  .perfil-card { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.2rem; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 0.5rem; }
+  .perfil-card:hover { background: rgba(255,255,255,0.06); border-color: rgba(248,220,150,0.4); transform: translateY(-1px); }
+  .perfil-card-titulo { font-weight: 700; font-size: 1.05rem; color: var(--text-primary, #f5f0e8); }
+  .perfil-card-slug { font-size: 0.72rem; color: var(--text-muted); font-family: monospace; }
+  .perfil-card-checks { display: flex; gap: 0.55rem; flex-wrap: wrap; margin-top: 0.4rem; }
+  .perfil-card-check { font-size: 0.72rem; padding: 0.18rem 0.55rem; border-radius: 999px; }
+  .perfil-card-check.ok { background: rgba(46,213,115,0.18); color: #2ED573; }
+  .perfil-card-check.faltando { background: rgba(248,220,150,0.15); color: #FFD57A; }
+
+  /* ── Editor de perfil (form) ── */
+  .pf-form-secao { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.2rem; margin-bottom: 1rem; }
+  .pf-form-secao-titulo { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; margin-bottom: 0.85rem; }
+  .pf-campo { margin-bottom: 0.85rem; }
+  .pf-campo:last-child { margin-bottom: 0; }
+  .pf-campo-label { font-size: 0.78rem; color: var(--text-primary); font-weight: 600; margin-bottom: 0.35rem; display: block; }
+  .pf-campo-help { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.3rem; line-height: 1.4; }
+  .pf-input, .pf-textarea { width: 100%; padding: 0.65rem 0.8rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary, #f5f0e8); font-size: 0.9rem; line-height: 1.5; font-family: inherit; }
+  .pf-input:focus, .pf-textarea:focus { outline: none; border-color: #FFD57A; }
+  .pf-textarea { min-height: 90px; resize: vertical; }
+  .pf-textarea.tall { min-height: 220px; }
+  .pf-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  @media (max-width: 600px) { .pf-row-2 { grid-template-columns: 1fr; } }
+
+  /* ── Cards de livros ── */
+  .livro-edit-card { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem; }
+  .livro-edit-titulo { font-weight: 700; font-size: 1rem; color: var(--text-primary); margin-bottom: 0.3rem; }
+  .livro-edit-slug { font-size: 0.7rem; color: var(--text-muted); font-family: monospace; margin-bottom: 1rem; }
 </style>
 
 <script>
@@ -713,7 +788,9 @@ const tabMeta = {
   feed:        { title: 'Feed do App',          sub: 'Conteúdo publicado no app — vídeos, textos, imagens e links' },
   whatsapp:    { title: 'Gateway WhatsApp',    sub: 'Cooldowns, categorias, fila ao vivo e templates' },
   usuarios:    { title: 'Usuários',             sub: 'Cadastros, telefones, sessões e dispositivos' },
-  teste:       { title: 'Teste do Subconsciente', sub: 'Versões do questionário — perguntas, alternativas e publicação' },
+  teste:        { title: 'Teste do Subconsciente', sub: 'Versões do questionário — perguntas, alternativas e publicação' },
+  'teste-perfis': { title: 'Conteúdo dos Resultados', sub: 'Textos, vídeos e produtos exibidos pra cada perfil dominante' },
+  'teste-livros': { title: 'Livros — Série Conhecer e Despertar', sub: '4 livros que aparecem no Passo 2 da página de resultado' },
 };
 
 let wzCarregado = false;
@@ -748,6 +825,8 @@ function goTab(id, el) {
   if (id === 'feed' && !feedCarregado) { feedCarregado = true; carregarFeedAdmin(); }
   if (id === 'usuarios' && !usuariosCarregado) { usuariosCarregado = true; carregarUsuarios(); }
   if (id === 'teste') { testeAdmin.carregar(); }
+  if (id === 'teste-perfis') { perfisAdmin.carregar(); }
+  if (id === 'teste-livros') { livrosAdmin.carregar(); }
 }
 
 function toast(msg, tipo = 'success') {
@@ -2166,6 +2245,328 @@ const testeAdmin = (function(){
     salvar, apagar,
     abrirPublicar, fecharPublicar, confirmarPublicar,
   };
+})();
+
+// ===== TESTE — CONTEÚDO DOS RESULTADOS (PERFIS) =====
+const perfisAdmin = (function(){
+  let listaCache = [];
+  let perfilEditando = null;
+
+  function escapeText(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+  }
+  function fmtData(s) {
+    if (!s) return '—';
+    try { return new Date(s).toLocaleDateString('pt-BR'); } catch { return s; }
+  }
+
+  async function carregarLista() {
+    const wrap = document.getElementById('perfis-lista');
+    wrap.innerHTML = '<div style="color:var(--text-muted);padding:2rem;text-align:center;grid-column:1/-1">Carregando…</div>';
+    try {
+      const r = await fetch('/api/admin/teste/perfis-conteudo', { headers: { Authorization: authHeader() } });
+      if (r.status === 401) { vmMostrarLogin(); return; }
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.erro || 'Erro');
+      listaCache = d.perfis || [];
+      renderLista();
+    } catch (e) {
+      wrap.innerHTML = '<div style="color:#F09090;padding:2rem;text-align:center;grid-column:1/-1">' + escapeText(e.message) + '</div>';
+    }
+  }
+
+  function renderLista() {
+    const wrap = document.getElementById('perfis-lista');
+    if (!listaCache.length) {
+      wrap.innerHTML = '<div style="color:var(--text-muted);padding:2rem;text-align:center;grid-column:1/-1">Nenhum perfil cadastrado.</div>';
+      return;
+    }
+    wrap.innerHTML = listaCache.map(p => {
+      const checks = [];
+      checks.push(p.tem_diagnostico ? '<span class="perfil-card-check ok">✓ Diagnóstico</span>' : '<span class="perfil-card-check faltando">⚠ Sem diagnóstico</span>');
+      checks.push(p.tem_video ? '<span class="perfil-card-check ok">✓ Vídeo</span>' : '<span class="perfil-card-check faltando">⚠ Sem vídeo</span>');
+      checks.push(p.tem_passo3 ? '<span class="perfil-card-check ok">✓ Passo 3</span>' : '<span class="perfil-card-check faltando">⚠ Sem Passo 3</span>');
+      return (
+        '<div class="perfil-card" onclick="perfisAdmin.abrirEditor(\'' + p.slug + '\')">' +
+          '<div class="perfil-card-titulo">' + escapeText(p.nome_exibicao) + '</div>' +
+          '<div class="perfil-card-slug">' + escapeText(p.slug) + '</div>' +
+          '<div class="perfil-card-checks">' + checks.join('') + '</div>' +
+          '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.25rem">Atualizado: ' + fmtData(p.atualizado_em) + '</div>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  async function abrirEditor(slug) {
+    document.getElementById('perfis-tela-lista').style.display = 'none';
+    document.getElementById('perfis-tela-editor').style.display = 'block';
+    document.getElementById('perfis-editor-form').innerHTML = '<div style="color:var(--text-muted);padding:2rem;text-align:center">Carregando…</div>';
+    document.getElementById('perfis-editor-feedback').style.display = 'none';
+    try {
+      const r = await fetch('/api/admin/teste/perfis-conteudo/' + slug, { headers: { Authorization: authHeader() } });
+      if (r.status === 401) { vmMostrarLogin(); return; }
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.erro || 'Erro');
+      perfilEditando = d.perfil;
+      renderForm(d.perfil);
+    } catch (e) {
+      document.getElementById('perfis-editor-form').innerHTML = '<div style="color:#F09090;padding:2rem;text-align:center">' + escapeText(e.message) + '</div>';
+    }
+  }
+
+  function voltarLista() {
+    document.getElementById('perfis-tela-editor').style.display = 'none';
+    document.getElementById('perfis-tela-lista').style.display = 'block';
+    perfilEditando = null;
+    carregarLista();
+  }
+
+  function renderForm(p) {
+    document.getElementById('perfis-editor-nome').textContent = p.nome_exibicao + ' (' + p.slug + ')';
+    const ehProsperidade = (p.slug === 'prosperidade_nv1' || p.slug === 'prosperidade_nv2');
+
+    const html =
+      '<div class="pf-form-secao">' +
+        '<div class="pf-form-secao-titulo">Identificação</div>' +
+        '<div class="pf-campo">' +
+          '<label class="pf-campo-label">Nome de exibição</label>' +
+          '<input type="text" class="pf-input" id="pf-nome_exibicao" value="' + escapeText(p.nome_exibicao || '') + '">' +
+          '<div class="pf-campo-help">Como aparece em "Energia da [...]" no resultado</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="pf-form-secao">' +
+        '<div class="pf-form-secao-titulo">Bloco 5 — Vídeo</div>' +
+        '<div class="pf-campo">' +
+          '<label class="pf-campo-label">URL do vídeo</label>' +
+          '<input type="text" class="pf-input" id="pf-video_url" value="' + escapeText(p.video_url || '') + '" placeholder="YouTube, Vimeo ou link direto .mp4">' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="pf-form-secao">' +
+        '<div class="pf-form-secao-titulo">Bloco 6 — Texto do Diagnóstico</div>' +
+        '<div class="pf-campo">' +
+          '<textarea class="pf-textarea tall" id="pf-texto_diagnostico" placeholder="Texto longo do diagnóstico desse perfil...">' + escapeText(p.texto_diagnostico || '') + '</textarea>' +
+          '<div class="pf-campo-help">Pode usar HTML simples (&lt;p&gt;, &lt;strong&gt;, &lt;blockquote&gt;, &lt;h2&gt;, &lt;ul&gt;) ou texto plano. Linhas em branco viram parágrafos.</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="pf-form-secao">' +
+        '<div class="pf-form-secao-titulo">Bloco 7 — Trilha (textos por passo)</div>' +
+        '<div class="pf-campo">' +
+          '<label class="pf-campo-label">Passo 1 — Conhecer</label>' +
+          '<textarea class="pf-textarea" id="pf-passo1_texto">' + escapeText(p.passo1_texto || '') + '</textarea>' +
+        '</div>' +
+        '<div class="pf-campo">' +
+          '<label class="pf-campo-label">Passo 2 — Despertar</label>' +
+          '<textarea class="pf-textarea" id="pf-passo2_texto">' + escapeText(p.passo2_texto || '') + '</textarea>' +
+        '</div>' +
+        '<div class="pf-campo">' +
+          '<label class="pf-campo-label">Passo 3 — Reprogramação</label>' +
+          '<textarea class="pf-textarea" id="pf-passo3_texto">' + escapeText(p.passo3_texto || '') + '</textarea>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="pf-form-secao">' +
+        '<div class="pf-form-secao-titulo">Passo 3 — Curso recomendado' + (ehProsperidade ? ' (1 de 2)' : '') + '</div>' +
+        '<div class="pf-row-2">' +
+          '<div class="pf-campo">' +
+            '<label class="pf-campo-label">Título</label>' +
+            '<input type="text" class="pf-input" id="pf-passo3_curso_titulo" value="' + escapeText(p.passo3_curso_titulo || '') + '">' +
+          '</div>' +
+          '<div class="pf-campo">' +
+            '<label class="pf-campo-label">URL da capa</label>' +
+            '<input type="text" class="pf-input" id="pf-passo3_curso_capa_url" value="' + escapeText(p.passo3_curso_capa_url || '') + '">' +
+          '</div>' +
+        '</div>' +
+        '<div class="pf-campo">' +
+          '<label class="pf-campo-label">Descrição</label>' +
+          '<textarea class="pf-textarea" id="pf-passo3_curso_descricao">' + escapeText(p.passo3_curso_descricao || '') + '</textarea>' +
+        '</div>' +
+        '<div class="pf-row-2">' +
+          '<div class="pf-campo">' +
+            '<label class="pf-campo-label">Preço (R$) — deixe vazio se ainda não definido</label>' +
+            '<input type="number" step="0.01" min="0" class="pf-input" id="pf-passo3_curso_preco" value="' + (p.passo3_curso_preco || '') + '">' +
+          '</div>' +
+          '<div class="pf-campo">' +
+            '<label class="pf-campo-label">Link do checkout</label>' +
+            '<input type="text" class="pf-input" id="pf-passo3_curso_link_checkout" value="' + escapeText(p.passo3_curso_link_checkout || '') + '">' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      (ehProsperidade ?
+        '<div class="pf-form-secao">' +
+          '<div class="pf-form-secao-titulo">Passo 3 — Curso recomendado (2 de 2)</div>' +
+          '<div class="pf-row-2">' +
+            '<div class="pf-campo">' +
+              '<label class="pf-campo-label">Título</label>' +
+              '<input type="text" class="pf-input" id="pf-passo3_curso_titulo_2" value="' + escapeText(p.passo3_curso_titulo_2 || '') + '">' +
+            '</div>' +
+            '<div class="pf-campo">' +
+              '<label class="pf-campo-label">URL da capa</label>' +
+              '<input type="text" class="pf-input" id="pf-passo3_curso_capa_url_2" value="' + escapeText(p.passo3_curso_capa_url_2 || '') + '">' +
+            '</div>' +
+          '</div>' +
+          '<div class="pf-campo">' +
+            '<label class="pf-campo-label">Descrição</label>' +
+            '<textarea class="pf-textarea" id="pf-passo3_curso_descricao_2">' + escapeText(p.passo3_curso_descricao_2 || '') + '</textarea>' +
+          '</div>' +
+          '<div class="pf-row-2">' +
+            '<div class="pf-campo">' +
+              '<label class="pf-campo-label">Preço (R$)</label>' +
+              '<input type="number" step="0.01" min="0" class="pf-input" id="pf-passo3_curso_preco_2" value="' + (p.passo3_curso_preco_2 || '') + '">' +
+            '</div>' +
+            '<div class="pf-campo">' +
+              '<label class="pf-campo-label">Link do checkout</label>' +
+              '<input type="text" class="pf-input" id="pf-passo3_curso_link_checkout_2" value="' + escapeText(p.passo3_curso_link_checkout_2 || '') + '">' +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      : '') +
+
+      '<div class="pf-form-secao">' +
+        '<div class="pf-form-secao-titulo">Bloco 8 — Texto de Fechamento</div>' +
+        '<div class="pf-campo">' +
+          '<textarea class="pf-textarea" id="pf-texto_fechamento_final">' + escapeText(p.texto_fechamento_final || '') + '</textarea>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById('perfis-editor-form').innerHTML = html;
+  }
+
+  async function salvar() {
+    if (!perfilEditando) return;
+    const btn = document.getElementById('perfis-btn-salvar');
+    const fb = document.getElementById('perfis-editor-feedback');
+    btn.disabled = true; btn.textContent = '⏳ Salvando…';
+    fb.style.display = 'none';
+
+    const campos = [
+      'nome_exibicao', 'video_url', 'texto_diagnostico',
+      'passo1_texto', 'passo2_texto', 'passo3_texto',
+      'passo3_curso_titulo', 'passo3_curso_capa_url', 'passo3_curso_descricao',
+      'passo3_curso_preco', 'passo3_curso_link_checkout',
+      'passo3_curso_titulo_2', 'passo3_curso_capa_url_2', 'passo3_curso_descricao_2',
+      'passo3_curso_preco_2', 'passo3_curso_link_checkout_2',
+      'texto_fechamento_final',
+    ];
+    const body = {};
+    for (const c of campos) {
+      const el = document.getElementById('pf-' + c);
+      if (el) body[c] = el.value;
+    }
+
+    try {
+      const r = await fetch('/api/admin/teste/perfis-conteudo/' + perfilEditando.slug, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader() },
+        body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+      fb.style.cssText += 'background:rgba(46,213,115,0.15);border:1px solid rgba(46,213,115,0.35);color:#2ED573;display:block';
+      fb.textContent = '✓ Salvo';
+      toast('✓ Salvo');
+      setTimeout(() => { fb.style.display = 'none'; }, 2500);
+    } catch (e) {
+      fb.style.cssText += 'background:rgba(229,115,115,0.15);border:1px solid rgba(229,115,115,0.35);color:#F09090;display:block';
+      fb.textContent = e.message;
+    } finally {
+      btn.disabled = false; btn.textContent = '💾 Salvar';
+    }
+  }
+
+  return { carregar: carregarLista, abrirEditor, voltarLista, salvar };
+})();
+
+// ===== TESTE — LIVROS =====
+const livrosAdmin = (function(){
+  function escapeText(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+  }
+
+  async function carregar() {
+    const wrap = document.getElementById('livros-lista');
+    wrap.innerHTML = '<div style="color:var(--text-muted);padding:2rem;text-align:center;grid-column:1/-1">Carregando…</div>';
+    try {
+      const r = await fetch('/api/admin/teste/livros', { headers: { Authorization: authHeader() } });
+      if (r.status === 401) { vmMostrarLogin(); return; }
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.erro || 'Erro');
+      render(d.livros || []);
+    } catch (e) {
+      wrap.innerHTML = '<div style="color:#F09090;padding:2rem;text-align:center;grid-column:1/-1">' + escapeText(e.message) + '</div>';
+    }
+  }
+
+  function render(livros) {
+    const wrap = document.getElementById('livros-lista');
+    if (!livros.length) {
+      wrap.innerHTML = '<div style="color:var(--text-muted);padding:2rem;text-align:center;grid-column:1/-1">Nenhum livro cadastrado.</div>';
+      return;
+    }
+    wrap.innerHTML = livros.map(l => (
+      '<div class="livro-edit-card">' +
+        '<div class="livro-edit-titulo">' + escapeText(l.titulo) + '</div>' +
+        '<div class="livro-edit-slug">' + escapeText(l.slug) + ' · energia: ' + escapeText(l.energia) + '</div>' +
+        '<div class="pf-campo">' +
+          '<label class="pf-campo-label">Título</label>' +
+          '<input type="text" class="pf-input" data-slug="' + escapeText(l.slug) + '" data-campo="titulo" value="' + escapeText(l.titulo || '') + '">' +
+        '</div>' +
+        '<div class="pf-campo">' +
+          '<label class="pf-campo-label">URL da capa</label>' +
+          '<input type="text" class="pf-input" data-slug="' + escapeText(l.slug) + '" data-campo="capa_url" value="' + escapeText(l.capa_url || '') + '">' +
+        '</div>' +
+        '<div class="pf-row-2">' +
+          '<div class="pf-campo">' +
+            '<label class="pf-campo-label">Preço (R$)</label>' +
+            '<input type="number" step="0.01" min="0" class="pf-input" data-slug="' + escapeText(l.slug) + '" data-campo="preco" value="' + (l.preco || '') + '">' +
+          '</div>' +
+          '<div class="pf-campo">' +
+            '<label class="pf-campo-label">Link checkout</label>' +
+            '<input type="text" class="pf-input" data-slug="' + escapeText(l.slug) + '" data-campo="link_checkout" value="' + escapeText(l.link_checkout || '') + '">' +
+          '</div>' +
+        '</div>' +
+        '<div class="pf-campo">' +
+          '<label class="pf-campo-label">Selo</label>' +
+          '<input type="text" class="pf-input" data-slug="' + escapeText(l.slug) + '" data-campo="selo" value="' + escapeText(l.selo || '') + '">' +
+        '</div>' +
+        '<button class="btn btn-primary" onclick="livrosAdmin.salvar(\'' + escapeText(l.slug) + '\', this)" style="margin-top:0.5rem">💾 Salvar este livro</button>' +
+      '</div>'
+    )).join('');
+  }
+
+  async function salvar(slug, btn) {
+    const inputs = document.querySelectorAll('input[data-slug="' + slug + '"]');
+    const body = {};
+    inputs.forEach(el => { body[el.dataset.campo] = el.value; });
+    const fb = document.getElementById('livros-feedback');
+    fb.style.display = 'none';
+    btn.disabled = true;
+    const txtAntes = btn.textContent;
+    btn.textContent = '⏳ Salvando…';
+    try {
+      const r = await fetch('/api/admin/teste/livros/' + slug, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader() },
+        body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+      toast('✓ ' + slug + ' salvo');
+    } catch (e) {
+      fb.style.cssText += 'background:rgba(229,115,115,0.15);border:1px solid rgba(229,115,115,0.35);color:#F09090;display:block';
+      fb.textContent = e.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = txtAntes;
+    }
+  }
+
+  return { carregar, salvar };
 })();
 
 // ===== INIT =====
