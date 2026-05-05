@@ -1546,6 +1546,16 @@ async function abrirDetalheUsuario(id) {
         <div id="us-enderecos-lista">${renderEnderecos(d.enderecos||[], id)}</div>
       </div>
 
+      <!-- BLOCO: PRODUTOS LIBERADOS + JORNADA -->
+      <div style="margin-top:1.2rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 0.5rem">
+          <h4 style="font-family:var(--font-display);color:var(--color-gold-light);margin:0;font-size:0.95rem">🎁 Produtos da aluna</h4>
+          <button class="btn btn-ghost btn-sm" onclick="produtosAluna.abrirLiberar('${id}')">+ Liberar produto</button>
+        </div>
+        <div id="us-produtos-jornada" style="margin-bottom:0.65rem"><div style="color:var(--text-muted);font-size:0.78rem">Carregando jornada…</div></div>
+        <div id="us-produtos-lista"><div style="color:var(--text-muted);font-size:0.78rem">Carregando produtos…</div></div>
+      </div>
+
       <div style="margin-top:1.2rem"><h4 style="font-family:var(--font-display);color:var(--color-gold-light);margin:0 0 0.5rem;font-size:0.95rem">🔐 Sessões ativas (${d.sessoes.length})</h4>${sessoesHtml}</div>
 
       <div style="margin-top:1.2rem"><h4 style="font-family:var(--font-display);color:var(--color-gold-light);margin:0 0 0.5rem;font-size:0.95rem">📱 Dispositivos (${d.dispositivos.length})</h4>${dispsHtml}</div>
@@ -1559,6 +1569,9 @@ async function abrirDetalheUsuario(id) {
         }
         <button class="btn btn-danger btn-sm" onclick="apagarUsuarioPermanente('${id}','${escHtml(d.usuario.nome||d.usuario.telefone||'')}')">💥 Apagar permanentemente</button>
       </div>`;
+
+    // Carrega bloco de produtos + jornada (assíncrono, não bloqueia o resto do modal)
+    produtosAluna.carregar(id);
   } catch (e) {
     document.getElementById('us-modal-body').innerHTML = `<p style="color:#F09090">Erro: ${e.message}</p>`;
   }
@@ -2567,6 +2580,212 @@ const livrosAdmin = (function(){
   }
 
   return { carregar, salvar };
+})();
+
+// ===== PRODUTOS DA ALUNA + JORNADA (no detalhe do usuário) =====
+const produtosAluna = (function(){
+  let produtosCadastro = [];      // cache da lista de produtos cadastrados (pra dropdown)
+  let usuarioAtualId = null;
+
+  function escTxt(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+  }
+  function fmtData(s) {
+    if (!s) return '—';
+    try { return new Date(s).toLocaleDateString('pt-BR'); } catch { return s; }
+  }
+
+  async function carregarCadastro() {
+    if (produtosCadastro.length > 0) return produtosCadastro;
+    try {
+      const r = await fetch(`${API}/api/admin/produtos`, { headers: { Authorization: authHeader() } });
+      const d = await r.json();
+      produtosCadastro = d.produtos || [];
+    } catch {}
+    return produtosCadastro;
+  }
+
+  async function carregar(usuarioId) {
+    usuarioAtualId = usuarioId;
+    await Promise.all([carregarJornada(usuarioId), carregarLista(usuarioId)]);
+  }
+
+  // ── Jornada (resumo do método) ──────────────────────────
+  async function carregarJornada(usuarioId) {
+    const wrap = document.getElementById('us-produtos-jornada');
+    if (!wrap) return;
+    wrap.innerHTML = '<div style="color:var(--text-muted);font-size:0.78rem">Carregando jornada…</div>';
+    try {
+      const r = await fetch(`${API}/api/admin/usuarios/${usuarioId}/jornada`, { headers: { Authorization: authHeader() } });
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.erro || 'Erro');
+
+      if (!d.jornada) {
+        wrap.innerHTML = '<div style="background:rgba(245,240,232,0.04);border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.85rem;font-size:0.78rem;color:var(--text-muted)">' +
+                         (d.motivo || 'Sem jornada definida.') + '</div>';
+        return;
+      }
+
+      const j = d.jornada;
+      const cor = j.cor || '#C8922A';
+      const passosHtml = j.passos.map(p => {
+        const status = p.comprado
+          ? '<span style="color:#7DD87E;font-weight:700">✓</span>'
+          : (p.eh_proximo ? '<span style="color:' + cor + ';font-weight:700">▸</span>' : '<span style="color:var(--text-muted)">○</span>');
+        const proxStyle = p.eh_proximo ? 'background:rgba(248,220,150,0.08)' : '';
+        return '<div style="display:flex;gap:0.55rem;padding:0.4rem 0.5rem;border-radius:6px;font-size:0.78rem;align-items:center;' + proxStyle + '">' +
+          '<span style="width:1rem;text-align:center">' + status + '</span>' +
+          '<span style="flex:1;color:' + (p.comprado ? 'var(--text-light)' : 'var(--text-muted)') + '">' +
+            escTxt(p.titulo) +
+          '</span>' +
+        '</div>';
+      }).join('');
+
+      wrap.innerHTML =
+        '<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:0.85rem">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem">' +
+            '<div>' +
+              '<div style="font-size:0.7rem;color:' + cor + ';letter-spacing:0.06em;text-transform:uppercase;font-weight:700">Jornada ' + j.numero + '</div>' +
+              '<div style="font-family:var(--font-display);font-size:0.95rem;color:var(--text-light);font-weight:700">' + escTxt(j.nome_exibicao) + '</div>' +
+              '<div style="font-size:0.72rem;color:var(--text-muted)">' + escTxt(j.subtitulo || '') + '</div>' +
+            '</div>' +
+            '<div style="text-align:right">' +
+              '<div style="font-family:var(--font-display);font-weight:800;font-size:1.05rem;color:' + cor + '">' + j.progresso.passos_concluidos + '/' + j.progresso.passos_totais + '</div>' +
+              '<div style="font-size:0.7rem;color:var(--text-muted)">' + j.progresso.percentual + '%</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="height:6px;background:rgba(245,240,232,0.06);border-radius:3px;margin-bottom:0.65rem;overflow:hidden">' +
+            '<div style="height:100%;background:' + cor + ';width:' + j.progresso.percentual + '%;transition:width 0.4s"></div>' +
+          '</div>' +
+          passosHtml +
+        '</div>';
+    } catch (e) {
+      wrap.innerHTML = '<div style="color:#F09090;font-size:0.78rem">' + escTxt(e.message) + '</div>';
+    }
+  }
+
+  // ── Lista de produtos liberados ─────────────────────────
+  async function carregarLista(usuarioId) {
+    const wrap = document.getElementById('us-produtos-lista');
+    if (!wrap) return;
+    wrap.innerHTML = '<div style="color:var(--text-muted);font-size:0.78rem">Carregando produtos…</div>';
+    try {
+      const r = await fetch(`${API}/api/admin/usuarios/${usuarioId}/produtos`, { headers: { Authorization: authHeader() } });
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.erro || 'Erro');
+      if (!d.produtos || d.produtos.length === 0) {
+        wrap.innerHTML = '<div style="color:var(--text-muted);font-size:0.78rem;padding:0.5rem 0">Nenhum produto liberado ainda.</div>';
+        return;
+      }
+      wrap.innerHTML = d.produtos.map(p => {
+        const ativo = p.ativo;
+        const tag = p.origem_tipo === 'cortesia' ? '🎁 Cortesia' :
+                    p.origem_tipo === 'manual'   ? '✋ Manual'   :
+                    p.origem_tipo === 'pagamento' ? '💰 Pagamento' :
+                    p.origem_tipo === 'assinatura' ? '🔁 Assinatura' :
+                    p.origem_tipo;
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.45rem 0.65rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.3rem;background:var(--bg-input);font-size:0.78rem;' + (ativo ? '' : 'opacity:0.5') + '">' +
+          '<div>' +
+            '<div><strong>' + escTxt(p.nome) + '</strong> ' + (ativo ? '' : '<span style="color:var(--text-muted);font-size:0.7rem;margin-left:0.3rem">○ revogado</span>') + '</div>' +
+            '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.15rem">' +
+              tag + ' · liberado em ' + fmtData(p.acesso_inicio) +
+              (p.observacao ? (' · ' + escTxt(p.observacao)) : '') +
+            '</div>' +
+          '</div>' +
+          (ativo
+            ? '<button class="btn btn-ghost btn-sm" onclick="produtosAluna.revogar(\'' + usuarioId + '\',\'' + p.id + '\')">Revogar</button>'
+            : '') +
+        '</div>';
+      }).join('');
+    } catch (e) {
+      wrap.innerHTML = '<div style="color:#F09090;font-size:0.78rem">' + escTxt(e.message) + '</div>';
+    }
+  }
+
+  // ── Modal: liberar produto manualmente ──────────────────
+  async function abrirLiberar(usuarioId) {
+    await carregarCadastro();
+    if (!produtosCadastro.length) {
+      alert('Nenhum produto cadastrado. Verifique o seed.');
+      return;
+    }
+    const opcoes = produtosCadastro.map(p =>
+      '<option value="' + escTxt(p.slug) + '">' + escTxt(p.nome) + ' (' + escTxt(p.tipo) + ')</option>'
+    ).join('');
+    const slug = await new Promise(resolve => {
+      // Modal inline simples
+      const modal = document.createElement('div');
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1rem';
+      modal.innerHTML =
+        '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);max-width:480px;width:100%;padding:1.5rem">' +
+          '<h3 style="margin:0 0 1rem;font-family:var(--font-display);color:var(--color-gold-light)">Liberar produto</h3>' +
+          '<div style="display:grid;gap:0.85rem">' +
+            '<div>' +
+              '<label class="field-label">Produto</label>' +
+              '<select id="lib-produto" class="field-input">' + opcoes + '</select>' +
+            '</div>' +
+            '<div>' +
+              '<label class="field-label">Motivo</label>' +
+              '<select id="lib-origem" class="field-input">' +
+                '<option value="manual">Manual (admin)</option>' +
+                '<option value="cortesia">Cortesia</option>' +
+              '</select>' +
+            '</div>' +
+            '<div>' +
+              '<label class="field-label">Observação (opcional)</label>' +
+              '<input id="lib-obs" type="text" class="field-input" placeholder="Ex: liberado durante atendimento">' +
+            '</div>' +
+            '<div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.5rem">' +
+              '<button class="btn btn-ghost btn-sm" id="lib-cancel">Cancelar</button>' +
+              '<button class="btn btn-primary btn-sm" id="lib-ok">Liberar</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(modal);
+      modal.querySelector('#lib-cancel').onclick = () => { document.body.removeChild(modal); resolve(null); };
+      modal.querySelector('#lib-ok').onclick = () => {
+        const slug = modal.querySelector('#lib-produto').value;
+        const origem = modal.querySelector('#lib-origem').value;
+        const obs = modal.querySelector('#lib-obs').value.trim();
+        document.body.removeChild(modal);
+        resolve({ slug, origem, obs });
+      };
+    });
+    if (!slug) return;
+    try {
+      const r = await fetch(`${API}/api/admin/usuarios/${usuarioId}/produtos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader() },
+        body: JSON.stringify({ produto_slug: slug.slug, origem_tipo: slug.origem, observacao: slug.obs }),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+      toast('✓ Produto liberado');
+      await carregar(usuarioId);
+    } catch (e) {
+      alert('Erro ao liberar: ' + e.message);
+    }
+  }
+
+  // ── Revogar ──────────────────────────────────────────────
+  async function revogar(usuarioId, upId) {
+    if (!confirm('Revogar acesso a este produto?')) return;
+    try {
+      const r = await fetch(`${API}/api/admin/usuarios/${usuarioId}/produtos/${upId}`, {
+        method: 'DELETE',
+        headers: { Authorization: authHeader() },
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+      toast('✓ Acesso revogado');
+      await carregar(usuarioId);
+    } catch (e) {
+      alert('Erro ao revogar: ' + e.message);
+    }
+  }
+
+  return { carregar, abrirLiberar, revogar };
 })();
 
 // ===== INIT =====
