@@ -14,10 +14,15 @@
 const express = require('express');
 const router = express.Router();
 
-const { poolCore, poolTeste } = require('../db');
+const { poolCore, poolTeste, poolComunicacao } = require('../db');
 const { formatarTelefone } = require('../core/utils');
 const { buscarUsuarioPorIdentificador } = require('../core/usuarios');
 const { calcularPerfil, PERFIS_VALIDOS } = require('../core/teste-conteudo');
+const {
+  calcularResultado,
+  montarLivrosRecomendados,
+  montarListaEnergias,
+} = require('../core/teste-resultado');
 
 // ── Validações simples ──────────────────────────────────────
 function validarNome(nome) {
@@ -380,6 +385,93 @@ router.post('/responder', async (req, res) => {
     });
   } catch (err) {
     console.error('[teste/responder] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ── GET /api/teste/resultado/:teste_id ──────────────────────
+// Devolve TODO o pacote de dados pra renderizar a página de resultado.
+// Frontend só renderiza, não calcula nada.
+router.get('/resultado/:teste_id', async (req, res) => {
+  try {
+    const testeId = (req.params.teste_id || '').toString().trim();
+    if (!testeId) return res.status(400).json({ ok: false, erro: 'teste_id ausente' });
+
+    // Busca o teste
+    const tRows = await poolTeste.query(
+      `SELECT t.*, v.nome AS versao_nome
+         FROM testes t
+         LEFT JOIN teste_versoes v ON v.id = t.versao_id
+        WHERE t.id = $1`,
+      [testeId]
+    );
+    if (!tRows.rows[0]) return res.status(404).json({ ok: false, erro: 'teste não encontrado' });
+    const teste = tRows.rows[0];
+
+    // Recalcula com a lógica oficial (não confia 100% no que está salvo —
+    // se a regra mudar, novos acessos refletem a regra nova).
+    // teste.respostas vem como JSONB; pode vir como array já parseado.
+    const respostas = Array.isArray(teste.respostas) ? teste.respostas : JSON.parse(teste.respostas || '[]');
+    const resultado = calcularResultado(respostas);
+
+    // Nome da aluna (lead)
+    let nomeAluna = '';
+    if (teste.lead_id) {
+      const lRows = await poolTeste.query(
+        `SELECT nome FROM teste_leads WHERE id=$1`,
+        [teste.lead_id]
+      );
+      if (lRows.rows[0]) nomeAluna = lRows.rows[0].nome || '';
+    }
+
+    // Conteúdo do perfil dominante (Banco Comunicação)
+    const conteudoR = await poolComunicacao.query(
+      `SELECT * FROM teste_perfis_conteudo WHERE slug = $1`,
+      [resultado.perfil_dominante]
+    );
+    const conteudoPerfil = conteudoR.rows[0] || null;
+
+    // Livros cadastrados (Banco Comunicação)
+    const livrosR = await poolComunicacao.query(
+      `SELECT * FROM teste_livros ORDER BY energia`
+    );
+    const livrosRecomendados = montarLivrosRecomendados(livrosR.rows, resultado);
+
+    // Lista das 5 energias (Bloco 3)
+    const energias = montarListaEnergias(resultado);
+
+    // Texto do compartilhamento
+    let textoCompartilhar = '';
+    try {
+      const cR = await poolComunicacao.query(
+        `SELECT dados FROM config WHERE chave = 'resultado_compartilhar_texto'`
+      );
+      if (cR.rows[0]) textoCompartilhar = cR.rows[0].dados.texto || '';
+    } catch {}
+
+    return res.json({
+      ok: true,
+      teste: {
+        id: teste.id,
+        feito_em: teste.feito_em,
+        versao_nome: teste.versao_nome,
+      },
+      aluna: {
+        nome: nomeAluna,
+      },
+      // Cálculo
+      perfil_dominante: resultado.perfil_dominante,            // ex: 'medo' ou 'prosperidade_nv2'
+      perfil_dominante_bruto: resultado.perfil_dominante_bruto, // ex: 'medo' ou 'prosperidade'
+      energias,                                                 // [{slug,label,percentual_inteiro}, ...]
+      // Conteúdo do perfil
+      conteudo: conteudoPerfil,                                 // tudo de teste_perfis_conteudo
+      // Livros do Passo 2
+      livros: livrosRecomendados,
+      // Texto pro botão de compartilhar
+      compartilhar_texto: textoCompartilhar,
+    });
+  } catch (err) {
+    console.error('[teste/resultado] erro:', err);
     return res.status(500).json({ ok: false, erro: 'erro interno' });
   }
 });
