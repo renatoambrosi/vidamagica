@@ -123,6 +123,7 @@ app.get(/^\/app(\/(dashboard|perfil|chat|loja|sementes)?)?$/, (req, res) => {
 app.use('/api/auth',          require('./routes/auth'));
 app.use('/api/painel',        require('./routes/admin-auth'));        // OTP do admin/atendimento
 app.use('/api/admin',         require('./routes/admin'));             // Painel admin (gateway, templates, usuários)
+app.use('/api/painel-aluna',  require('./routes/painel-aluna'));      // Produtos+Jornada da aluna (admin OU atendimento)
 app.use('/webhook',           require('./routes/webhook-evolution')); // Webhook Evolution (zap entrante)
 app.use('/api',               require('./routes/precos'));
 app.use('/api',               require('./routes/depoimentos'));
