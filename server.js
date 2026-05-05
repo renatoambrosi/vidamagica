@@ -106,6 +106,12 @@ app.get('/termos', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'termos.html'));
 });
 
+// ── ROTA AMIGÁVEL: /resultado/:id serve resultado.html ─────
+// O frontend recebe o ID via window.location e busca via /api/teste/resultado/:id
+app.get('/resultado/:id', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'resultado.html'));
+});
+
 // ── ROTA AMIGÁVEL: /app e /app/* (exceto arquivos estáticos) → app.html ──
 // Permite /app/dashboard, /app/perfil etc. — sem .html
 // Exclui /app/app.css, /app/app.js, /app/scene.js, /app/assets/*
