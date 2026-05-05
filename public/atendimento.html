@@ -2675,6 +2675,23 @@ function carregarPainel() {
       </div>` : ''}
     </div>
 
+    <!-- BLOCO: JORNADA DO MÉTODO + PRODUTOS + RECOMENDAÇÕES -->
+    <div class="painel-secao" id="painel-metodo-secao">
+      <div class="painel-secao-titulo">Método da aluna</div>
+      <div id="painel-jornada"><div style="color:var(--texto-mute);font-size:0.78rem;padding:0.5rem 0">Carregando…</div></div>
+    </div>
+    <div class="painel-secao">
+      <div class="painel-secao-titulo" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Produtos liberados</span>
+        <button class="acao-btn" id="btn-liberar-produto" style="padding:0.25rem 0.55rem;font-size:0.7rem;width:auto">+ Liberar</button>
+      </div>
+      <div id="painel-produtos"><div style="color:var(--texto-mute);font-size:0.78rem;padding:0.5rem 0">Carregando…</div></div>
+    </div>
+    <div class="painel-secao" id="painel-recomendacoes-secao" style="display:none">
+      <div class="painel-secao-titulo">Recomendações pra enviar</div>
+      <div id="painel-recomendacoes"></div>
+    </div>
+
     ${tier === 'prioritario' && pacoteAtivo ? `
     <div class="painel-secao">
       <div class="painel-secao-titulo">Atendimento Prioritário</div>
@@ -2728,6 +2745,12 @@ function carregarPainel() {
   scroll.querySelectorAll('.acao-btn').forEach(btn => {
     btn.addEventListener('click', () => acaoAdmin(btn.dataset.acao));
   });
+
+  // Carrega blocos do método (jornada, produtos, recomendações)
+  // Só faz sentido se a aluna tem usuario_id no Core
+  if (convAtual && convAtual.usuario_id && typeof metodoAtendimento !== 'undefined') {
+    metodoAtendimento.carregar(convAtual.usuario_id);
+  }
 }
 
 async function acaoAdmin(acao) {
@@ -3141,6 +3164,312 @@ document.addEventListener('visibilitychange', () => {
   if (!convAtual) return;
   recarregarChatAtual('push');
 });
+// ════════════════════════════════════════════════════════════
+// MÉTODO DA ALUNA NO ATENDIMENTO
+// Carrega jornada + produtos liberados + recomendações no painel lateral
+// quando uma conversa é aberta. Permite a Suellen enviar link de produto
+// recomendado direto no chat com 1 clique.
+// ════════════════════════════════════════════════════════════
+const metodoAtendimento = (function(){
+  let usuarioAtualId = null;
+  let produtosCadastro = [];
+
+  function escTxt(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+  }
+  function fmtData(s) {
+    if (!s) return '—';
+    try { return new Date(s).toLocaleDateString('pt-BR'); } catch { return s; }
+  }
+
+  async function carregarCadastro() {
+    if (produtosCadastro.length > 0) return produtosCadastro;
+    try {
+      const r = await fetch(`${API}/api/admin/produtos`, { headers: authHeader() });
+      const d = await r.json();
+      produtosCadastro = d.produtos || [];
+    } catch {}
+    return produtosCadastro;
+  }
+
+  async function carregar(usuarioId) {
+    usuarioAtualId = usuarioId;
+    if (!usuarioId) {
+      document.getElementById('painel-jornada').innerHTML =
+        '<div style="color:var(--texto-mute);font-size:0.78rem">Aluna sem usuário registrado.</div>';
+      document.getElementById('painel-produtos').innerHTML = '';
+      return;
+    }
+    await Promise.all([carregarJornada(usuarioId), carregarLista(usuarioId)]);
+  }
+
+  // ── Jornada ───────────────────────────────────────────────
+  async function carregarJornada(usuarioId) {
+    const wrap = document.getElementById('painel-jornada');
+    if (!wrap) return;
+    wrap.innerHTML = '<div style="color:var(--texto-mute);font-size:0.78rem;padding:0.4rem 0">Carregando…</div>';
+    try {
+      const r = await fetch(`${API}/api/admin/usuarios/${usuarioId}/jornada`, { headers: authHeader() });
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.erro || 'Erro');
+
+      // Esconde recomendações se não tem jornada
+      const recSecao = document.getElementById('painel-recomendacoes-secao');
+
+      if (!d.jornada) {
+        wrap.innerHTML =
+          '<div style="background:var(--vidro-forte);border:1px solid var(--vidro-borda);border-radius:var(--r-md);padding:0.6rem 0.85rem;font-size:0.78rem;color:var(--texto-mute)">' +
+            escTxt(d.motivo || 'Sem jornada definida.') +
+          '</div>';
+        if (recSecao) recSecao.style.display = 'none';
+        return;
+      }
+
+      const j = d.jornada;
+      const cor = j.cor || '#C8922A';
+      const passosHtml = j.passos.map(p => {
+        const status = p.comprado
+          ? '<span style="color:#2ED573;font-weight:700">✓</span>'
+          : (p.eh_proximo ? '<span style="color:' + cor + ';font-weight:700">▸</span>' : '<span style="color:var(--texto-mute)">○</span>');
+        const proxStyle = p.eh_proximo ? 'background:rgba(248,220,150,0.08)' : '';
+        return '<div style="display:flex;gap:0.55rem;padding:0.35rem 0.4rem;border-radius:6px;font-size:0.74rem;align-items:center;' + proxStyle + '">' +
+          '<span style="width:1rem;text-align:center">' + status + '</span>' +
+          '<span style="flex:1;color:' + (p.comprado ? 'var(--texto)' : 'var(--texto-mute)') + ';line-height:1.3">' +
+            escTxt(p.titulo) +
+          '</span>' +
+        '</div>';
+      }).join('');
+
+      wrap.innerHTML =
+        '<div style="background:var(--vidro-forte);border:1px solid var(--vidro-borda);border-radius:var(--r-md);padding:0.7rem 0.85rem">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.55rem">' +
+            '<div>' +
+              '<div style="font-size:0.65rem;color:' + cor + ';letter-spacing:0.06em;text-transform:uppercase;font-weight:700">Jornada ' + j.numero + '</div>' +
+              '<div style="font-family:var(--fonte-display);font-size:0.9rem;color:var(--texto);font-weight:700">' + escTxt(j.nome_exibicao) + '</div>' +
+              (j.subtitulo ? '<div style="font-size:0.7rem;color:var(--texto-mute)">' + escTxt(j.subtitulo) + '</div>' : '') +
+            '</div>' +
+            '<div style="text-align:right">' +
+              '<div style="font-family:var(--fonte-display);font-weight:800;font-size:0.95rem;color:' + cor + '">' + j.progresso.passos_concluidos + '/' + j.progresso.passos_totais + '</div>' +
+              '<div style="font-size:0.65rem;color:var(--texto-mute)">' + j.progresso.percentual + '%</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="height:5px;background:rgba(245,240,232,0.06);border-radius:3px;margin-bottom:0.55rem;overflow:hidden">' +
+            '<div style="height:100%;background:' + cor + ';width:' + j.progresso.percentual + '%;transition:width 0.4s"></div>' +
+          '</div>' +
+          passosHtml +
+        '</div>';
+
+      // Renderiza recomendações: passos NÃO comprados e que TÊM link de checkout
+      const recomendacoes = j.passos.filter(p => !p.comprado && p.produto_link_checkout);
+      if (recomendacoes.length > 0) {
+        if (recSecao) recSecao.style.display = '';
+        renderRecomendacoes(recomendacoes);
+      } else {
+        if (recSecao) recSecao.style.display = 'none';
+      }
+    } catch (e) {
+      wrap.innerHTML = '<div style="color:#F09090;font-size:0.78rem">' + escTxt(e.message) + '</div>';
+    }
+  }
+
+  // ── Recomendações (cards com botão "Enviar link") ────────
+  function renderRecomendacoes(passos) {
+    const wrap = document.getElementById('painel-recomendacoes');
+    if (!wrap) return;
+    wrap.innerHTML = passos.map((p, idx) => (
+      '<div style="background:var(--vidro);border:1px solid var(--vidro-borda);border-radius:var(--r-md);padding:0.65rem 0.85rem;margin-bottom:0.4rem">' +
+        '<div style="font-size:0.72rem;color:var(--ouro-fundo);text-transform:uppercase;letter-spacing:0.05em;font-weight:700;margin-bottom:0.2rem">Próximo passo</div>' +
+        '<div style="font-family:var(--fonte-display);font-size:0.86rem;color:var(--texto);font-weight:600;margin-bottom:0.55rem;line-height:1.3">' + escTxt(p.produto_nome) + '</div>' +
+        '<div style="display:flex;gap:0.4rem;flex-wrap:wrap">' +
+          '<button class="acao-btn" style="padding:0.35rem 0.7rem;font-size:0.72rem;width:auto;flex:1" data-idx="' + idx + '" data-acao="enviar-link">' +
+            '🔗 Enviar link no chat' +
+          '</button>' +
+          '<button class="acao-btn" style="padding:0.35rem 0.7rem;font-size:0.72rem;width:auto" data-idx="' + idx + '" data-acao="liberar-rapido">' +
+            '🎁 Liberar' +
+          '</button>' +
+        '</div>' +
+      '</div>'
+    )).join('');
+
+    // Listeners
+    wrap.querySelectorAll('button[data-acao]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx, 10);
+        const passo = passos[idx];
+        if (!passo) return;
+        const acao = btn.dataset.acao;
+        if (acao === 'enviar-link') {
+          enviarLinkProduto(passo);
+        } else if (acao === 'liberar-rapido') {
+          liberarRapido(passo);
+        }
+      });
+    });
+  }
+
+  // ── Enviar link no chat (formato B confirmado: Título + link) ──
+  async function enviarLinkProduto(passo) {
+    if (!convAtual) { toast('Abra uma conversa antes', 'err'); return; }
+    const input = document.getElementById('chat-input');
+    if (!input) return;
+    const texto = passo.produto_nome + ':\n' + passo.produto_link_checkout;
+    input.value = texto;
+    // Garante que o botão de enviar esteja visível
+    document.getElementById('btn-enviar')?.classList.add('visivel');
+    // Envia direto
+    if (typeof enviarTexto === 'function') {
+      await enviarTexto();
+    }
+  }
+
+  // ── Liberar rápido (cortesia) ─────────────────────────────
+  async function liberarRapido(passo) {
+    if (!usuarioAtualId) return;
+    if (!confirm('Liberar "' + passo.produto_nome + '" como cortesia?')) return;
+    try {
+      const r = await fetch(`${API}/api/admin/usuarios/${usuarioAtualId}/produtos`, {
+        method: 'POST',
+        headers: { ...authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          produto_slug: passo.produto_slug,
+          origem_tipo: 'cortesia',
+          observacao: 'Liberado durante atendimento',
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+      toast('✓ Produto liberado');
+      await carregar(usuarioAtualId);
+    } catch (e) {
+      toast('Erro: ' + e.message, 'err');
+    }
+  }
+
+  // ── Lista de produtos liberados ───────────────────────────
+  async function carregarLista(usuarioId) {
+    const wrap = document.getElementById('painel-produtos');
+    if (!wrap) return;
+    wrap.innerHTML = '<div style="color:var(--texto-mute);font-size:0.78rem;padding:0.4rem 0">Carregando…</div>';
+    try {
+      const r = await fetch(`${API}/api/admin/usuarios/${usuarioId}/produtos`, { headers: authHeader() });
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.erro || 'Erro');
+      const ativos = (d.produtos || []).filter(p => p.ativo);
+      if (!ativos.length) {
+        wrap.innerHTML = '<div style="color:var(--texto-mute);font-size:0.78rem;padding:0.4rem 0">Nenhum produto liberado.</div>';
+        return;
+      }
+      wrap.innerHTML = ativos.map(p => {
+        const tag = p.origem_tipo === 'cortesia' ? '🎁' :
+                    p.origem_tipo === 'manual'   ? '✋' :
+                    p.origem_tipo === 'pagamento' ? '💰' :
+                    p.origem_tipo === 'assinatura' ? '🔁' : '·';
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0.55rem;border:1px solid var(--vidro-borda);border-radius:6px;margin-bottom:0.3rem;background:var(--vidro);font-size:0.74rem">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="color:var(--texto);font-weight:600">' + tag + ' ' + escTxt(p.nome) + '</div>' +
+            '<div style="font-size:0.68rem;color:var(--texto-mute);margin-top:0.1rem">' + fmtData(p.acesso_inicio) + '</div>' +
+          '</div>' +
+          '<button class="acao-btn" style="padding:0.25rem 0.5rem;font-size:0.68rem;width:auto" onclick="metodoAtendimento.revogar(\'' + p.id + '\')">✕</button>' +
+        '</div>';
+      }).join('');
+    } catch (e) {
+      wrap.innerHTML = '<div style="color:#F09090;font-size:0.78rem">' + escTxt(e.message) + '</div>';
+    }
+  }
+
+  async function revogar(upId) {
+    if (!usuarioAtualId) return;
+    if (!confirm('Revogar acesso a este produto?')) return;
+    try {
+      const r = await fetch(`${API}/api/admin/usuarios/${usuarioAtualId}/produtos/${upId}`, {
+        method: 'DELETE',
+        headers: authHeader(),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+      toast('✓ Revogado');
+      await carregar(usuarioAtualId);
+    } catch (e) {
+      toast('Erro: ' + e.message, 'err');
+    }
+  }
+
+  // ── Modal de liberar (botão "+ Liberar" do header) ───────
+  async function abrirLiberar() {
+    if (!usuarioAtualId) return;
+    await carregarCadastro();
+    if (!produtosCadastro.length) {
+      alert('Nenhum produto cadastrado.');
+      return;
+    }
+    const opcoes = produtosCadastro.map(p =>
+      '<option value="' + escTxt(p.slug) + '">' + escTxt(p.nome) + ' (' + escTxt(p.tipo) + ')</option>'
+    ).join('');
+    const dados = await new Promise(resolve => {
+      const modal = document.createElement('div');
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1rem';
+      modal.innerHTML =
+        '<div style="background:var(--bg);border:1px solid var(--vidro-borda);border-radius:var(--r-lg);max-width:440px;width:100%;padding:1.5rem;color:var(--texto)">' +
+          '<h3 style="margin:0 0 1rem;font-family:var(--fonte-display);color:var(--ouro-fundo)">Liberar produto</h3>' +
+          '<div style="display:grid;gap:0.85rem">' +
+            '<div>' +
+              '<label style="font-size:0.75rem;color:var(--texto-mute);display:block;margin-bottom:0.3rem">Produto</label>' +
+              '<select id="lib-at-prod" style="width:100%;padding:0.55rem;border:1px solid var(--vidro-borda);border-radius:6px;background:var(--vidro);color:var(--texto)">' + opcoes + '</select>' +
+            '</div>' +
+            '<div>' +
+              '<label style="font-size:0.75rem;color:var(--texto-mute);display:block;margin-bottom:0.3rem">Motivo</label>' +
+              '<select id="lib-at-orig" style="width:100%;padding:0.55rem;border:1px solid var(--vidro-borda);border-radius:6px;background:var(--vidro);color:var(--texto)">' +
+                '<option value="cortesia">Cortesia</option>' +
+                '<option value="manual">Manual</option>' +
+              '</select>' +
+            '</div>' +
+            '<div>' +
+              '<label style="font-size:0.75rem;color:var(--texto-mute);display:block;margin-bottom:0.3rem">Observação</label>' +
+              '<input id="lib-at-obs" type="text" style="width:100%;padding:0.55rem;border:1px solid var(--vidro-borda);border-radius:6px;background:var(--vidro);color:var(--texto)" placeholder="Opcional">' +
+            '</div>' +
+            '<div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.5rem">' +
+              '<button class="acao-btn" id="lib-at-cancel" style="width:auto">Cancelar</button>' +
+              '<button class="acao-btn success" id="lib-at-ok" style="width:auto">Liberar</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(modal);
+      modal.querySelector('#lib-at-cancel').onclick = () => { document.body.removeChild(modal); resolve(null); };
+      modal.querySelector('#lib-at-ok').onclick = () => {
+        const slug = modal.querySelector('#lib-at-prod').value;
+        const origem = modal.querySelector('#lib-at-orig').value;
+        const obs = modal.querySelector('#lib-at-obs').value.trim();
+        document.body.removeChild(modal);
+        resolve({ slug, origem, obs });
+      };
+    });
+    if (!dados) return;
+    try {
+      const r = await fetch(`${API}/api/admin/usuarios/${usuarioAtualId}/produtos`, {
+        method: 'POST',
+        headers: { ...authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ produto_slug: dados.slug, origem_tipo: dados.origem, observacao: dados.obs }),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+      toast('✓ Produto liberado');
+      await carregar(usuarioAtualId);
+    } catch (e) {
+      toast('Erro: ' + e.message, 'err');
+    }
+  }
+
+  // Listener do botão + Liberar (no header da seção Produtos)
+  document.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'btn-liberar-produto') {
+      abrirLiberar();
+    }
+  });
+
+  return { carregar, revogar, abrirLiberar };
+})();
+
 </script>
 </body>
 </html>
