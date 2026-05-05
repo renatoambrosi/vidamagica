@@ -3186,7 +3186,7 @@ const metodoAtendimento = (function(){
   async function carregarCadastro() {
     if (produtosCadastro.length > 0) return produtosCadastro;
     try {
-      const r = await fetch(`${API}/api/admin/produtos`, { headers: authHeader() });
+      const r = await fetch(`${API}/api/painel-aluna/produtos`, { headers: authHeader() });
       const d = await r.json();
       produtosCadastro = d.produtos || [];
     } catch {}
@@ -3210,7 +3210,7 @@ const metodoAtendimento = (function(){
     if (!wrap) return;
     wrap.innerHTML = '<div style="color:var(--texto-mute);font-size:0.78rem;padding:0.4rem 0">Carregando…</div>';
     try {
-      const r = await fetch(`${API}/api/admin/usuarios/${usuarioId}/jornada`, { headers: authHeader() });
+      const r = await fetch(`${API}/api/painel-aluna/usuarios/${usuarioId}/jornada`, { headers: authHeader() });
       const d = await r.json();
       if (!d.ok) throw new Error(d.erro || 'Erro');
 
@@ -3328,7 +3328,7 @@ const metodoAtendimento = (function(){
     if (!usuarioAtualId) return;
     if (!confirm('Liberar "' + passo.produto_nome + '" como cortesia?')) return;
     try {
-      const r = await fetch(`${API}/api/admin/usuarios/${usuarioAtualId}/produtos`, {
+      const r = await fetch(`${API}/api/painel-aluna/usuarios/${usuarioAtualId}/produtos`, {
         method: 'POST',
         headers: { ...authHeader(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -3352,7 +3352,7 @@ const metodoAtendimento = (function(){
     if (!wrap) return;
     wrap.innerHTML = '<div style="color:var(--texto-mute);font-size:0.78rem;padding:0.4rem 0">Carregando…</div>';
     try {
-      const r = await fetch(`${API}/api/admin/usuarios/${usuarioId}/produtos`, { headers: authHeader() });
+      const r = await fetch(`${API}/api/painel-aluna/usuarios/${usuarioId}/produtos`, { headers: authHeader() });
       const d = await r.json();
       if (!d.ok) throw new Error(d.erro || 'Erro');
       const ativos = (d.produtos || []).filter(p => p.ativo);
@@ -3382,7 +3382,7 @@ const metodoAtendimento = (function(){
     if (!usuarioAtualId) return;
     if (!confirm('Revogar acesso a este produto?')) return;
     try {
-      const r = await fetch(`${API}/api/admin/usuarios/${usuarioAtualId}/produtos/${upId}`, {
+      const r = await fetch(`${API}/api/painel-aluna/usuarios/${usuarioAtualId}/produtos/${upId}`, {
         method: 'DELETE',
         headers: authHeader(),
       });
@@ -3446,7 +3446,7 @@ const metodoAtendimento = (function(){
     });
     if (!dados) return;
     try {
-      const r = await fetch(`${API}/api/admin/usuarios/${usuarioAtualId}/produtos`, {
+      const r = await fetch(`${API}/api/painel-aluna/usuarios/${usuarioAtualId}/produtos`, {
         method: 'POST',
         headers: { ...authHeader(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ produto_slug: dados.slug, origem_tipo: dados.origem, observacao: dados.obs }),
