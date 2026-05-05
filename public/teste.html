@@ -1206,10 +1206,10 @@
               <div class="modal-tela modal-tela-finalizado" data-tela="finalizado">
                 <div class="modal-iniciar-icon"><i class="fas fa-check"></i></div>
                 <h2 class="modal-iniciar-titulo">Tudo pronto!</h2>
-                <p class="modal-iniciar-subtitulo">Você terminou o teste. Em instantes vamos liberar o pagamento pra você acessar seu resultado completo.</p>
+                <p class="modal-iniciar-subtitulo">Você terminou o teste. Estamos preparando sua jornada personalizada.</p>
                 <p style="text-align:center;color:rgba(245,240,232,0.5);font-size:0.85rem;margin-top:1rem;">
-                  <i class="fas fa-tools" style="margin-right:0.4rem;"></i>
-                  Tela de pagamento em construção
+                  <i class="fas fa-spinner fa-spin" style="margin-right:0.4rem;"></i>
+                  Levando você pra sua área…
                 </p>
               </div>
             </div>
@@ -1679,6 +1679,16 @@
               sessionStorage.setItem('teste_id', data.teste_id);
               sessionStorage.setItem('teste_perfil', data.perfil_dominante);
               window._testeTrocarTela('finalizado');
+
+              // Se a aluna está logada (tem sessão), leva ela pro /app pra ver
+              // a jornada/trilha personalizada. Se for lead anônima, fica na
+              // tela de "Tudo pronto" (placeholder até integrarmos pagamento).
+              try {
+                const temSessao = !!(window.VmSession && window.VmSession.getAccess && window.VmSession.getAccess());
+                if (temSessao) {
+                  setTimeout(() => { window.location.replace('/app'); }, 1800);
+                }
+              } catch {}
             } else {
               if (indiceAtual < perguntas.length - 1) {
                 indiceAtual++;
