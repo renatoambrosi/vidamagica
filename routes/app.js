@@ -185,7 +185,7 @@ router.get('/contexto', autenticar, async (req, res) => {
             [passosR.rows.map(p => p.produto_slug)]
           );
 
-          jornadaAtual = montarJornada(jornadaCfg, slugsComprados, produtosR.rows);
+          jornadaAtual = montarJornada(jornadaCfg, slugsComprados, produtosR.rows, { fezTeste: true });
         }
       } catch (e) {
         console.warn('[contexto] erro ao montar jornada:', e.message);
