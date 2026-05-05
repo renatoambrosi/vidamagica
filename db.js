@@ -464,6 +464,26 @@ async function initCore() {
     `);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_sementes_usuario ON sementes(usuario_id)`);
 
+    // ── SEED dos produtos do método (3 jornadas) ──
+    // Cadastra os produtos canônicos com slug fixo. Admin completa preço/link/descrição depois.
+    // ON CONFLICT (slug) DO NOTHING — idempotente, não sobrescreve dados editados.
+    await c.query(`
+      INSERT INTO produtos (slug, nome, tipo, acesso_modelo, fase, ordem, ativo) VALUES
+        ('teste-subconsciente',         'Teste do Subconsciente',          'teste',      'vitalicio',  'fase1', 1, true),
+        ('livro-vencendo-medo',         'Vencendo o Medo',                 'livro',      'vitalicio',  'fase1', 2, true),
+        ('livro-vencendo-desordem',     'Vencendo a Desordem',             'livro',      'vitalicio',  'fase1', 3, true),
+        ('livro-vencendo-validacao',    'Vencendo a Validação',            'livro',      'vitalicio',  'fase1', 4, true),
+        ('livro-vencendo-sobrevivencia','Vencendo a Sobrevivência',        'livro',      'vitalicio',  'fase1', 5, true),
+        ('curso-ouro-reprogramacao',    'Ouro da Reprogramação Mental',    'curso',      'vitalicio',  'fase1', 6, true),
+        ('guia-pratico-reprogramar',    'Guia Prático para Reprogramar a Mente', 'livro','vitalicio',  'fase2', 7, true),
+        ('guia-bolso-magica-fluir',     'Guia de Bolso Mágica do Fluir',   'livro',      'vitalicio',  'fase2', 8, true),
+        ('livro-tal-maneira',           'A Tal Maneira (Livro)',           'livro',      'vitalicio',  'fase2', 9, true),
+        ('curso-lda-biblica',           'Lei da Atração Bíblica',          'curso',      'vitalicio',  'fase2', 10, true),
+        ('curso-tal-maneira',           'A Tal Maneira (Curso)',           'curso',      'vitalicio',  'fase3', 11, true),
+        ('assinatura-comunidade',       'Comunidade Vida Mágica',          'assinatura', 'recorrente', 'fase1', 12, true)
+      ON CONFLICT (slug) DO NOTHING
+    `);
+
     console.log('✅ Banco Core iniciado');
   } finally {
     c.release();
@@ -1286,6 +1306,112 @@ async function initComunicacao() {
         ('resultado_compartilhar_texto',
          '{"texto":"Acabei de descobrir minha energia predominante no Teste do Subconsciente da Vida Mágica. Faça o seu também:"}'::jsonb)
       ON CONFLICT (chave) DO NOTHING
+    `);
+
+    // ════════════════════════════════════════════════════════
+    // JORNADAS DO MÉTODO (3 jornadas: Subconsciente, Vida Mágica, Transbordar)
+    // ════════════════════════════════════════════════════════
+    // Cada aluna está em UMA jornada por vez. A jornada é determinada pelo perfil
+    // dominante do teste mais recente. O progresso dentro da jornada é determinado
+    // pelas compras (linhas em usuario_produtos).
+
+    // ── Definição das 3 jornadas ──
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS jornadas_metodo (
+        slug VARCHAR(40) PRIMARY KEY,
+        numero INTEGER NOT NULL UNIQUE,
+        nome_exibicao VARCHAR(100) NOT NULL,
+        subtitulo VARCHAR(200),
+        descricao TEXT,
+        cor VARCHAR(20),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`
+      INSERT INTO jornadas_metodo (slug, numero, nome_exibicao, subtitulo, cor) VALUES
+        ('subconsciente', 1, 'Subconsciente', 'Despertando a mente',          '#C8922A'),
+        ('vida_magica',   2, 'Vida Mágica',   'Operando a abundância',       '#2BA5E8'),
+        ('transbordar',   3, 'Transbordar',   'Vivendo no transbordo',       '#F4D060')
+      ON CONFLICT (slug) DO NOTHING
+    `);
+
+    // ── Mapa: perfil dominante → qual jornada a aluna está ──
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS jornadas_perfis_map (
+        perfil_slug VARCHAR(40) PRIMARY KEY,
+        jornada_slug VARCHAR(40) NOT NULL REFERENCES jornadas_metodo(slug)
+      )
+    `);
+    await c.query(`
+      INSERT INTO jornadas_perfis_map (perfil_slug, jornada_slug) VALUES
+        ('medo',              'subconsciente'),
+        ('desordem',          'subconsciente'),
+        ('sobrevivencia',     'subconsciente'),
+        ('validacao',         'subconsciente'),
+        ('prosperidade_nv1',  'vida_magica'),
+        ('prosperidade_nv2',  'vida_magica'),
+        ('prosperidade_nv3',  'transbordar')
+      ON CONFLICT (perfil_slug) DO UPDATE SET jornada_slug = EXCLUDED.jornada_slug
+    `);
+
+    // ── Passos de cada jornada (sequência ordenada de produtos) ──
+    // Cada passo tem um título no contexto do método (ex: "Despertar", "Reprogramar a Base")
+    // e referencia um produto cadastrado na tabela produtos (banco Core) pelo slug.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS jornadas_passos (
+        id SERIAL PRIMARY KEY,
+        jornada_slug VARCHAR(40) NOT NULL REFERENCES jornadas_metodo(slug) ON DELETE CASCADE,
+        ordem INTEGER NOT NULL,
+        produto_slug VARCHAR(80) NOT NULL,
+        titulo_passo VARCHAR(120) NOT NULL,
+        descricao_passo TEXT,
+        atualizado_em TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (jornada_slug, ordem)
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_jornadas_passos_jornada ON jornadas_passos(jornada_slug, ordem)`);
+
+    // Seed dos passos:
+    // JORNADA 1 — Subconsciente
+    //   1: Conhecer        → Teste do Subconsciente
+    //   2: Despertar       → Conhecer e Despertar (4 livros — passo composto, qualquer livro completa parte)
+    //   3: Reprogramar     → Ouro da Reprogramação Mental
+    //   4: Permanecer      → Comunidade Vida Mágica
+    //
+    // Observação importante: o passo "Despertar" da Jornada 1 é representado pelos 4 livros.
+    // Pra simplificar a estrutura tabular, cada livro é um passo separado. A UI agrupa
+    // eles visualmente como "Despertar — Série Conhecer e Despertar" no app.
+
+    await c.query(`
+      INSERT INTO jornadas_passos (jornada_slug, ordem, produto_slug, titulo_passo, descricao_passo) VALUES
+        ('subconsciente', 1, 'teste-subconsciente',          'Conhecer',                'Identifique o padrão que trava sua prosperidade.'),
+        ('subconsciente', 2, 'livro-vencendo-medo',          'Despertar — Vencendo o Medo',           'Liberar a energia transversal que paralisa.'),
+        ('subconsciente', 3, 'livro-vencendo-desordem',      'Despertar — Vencendo a Desordem',       'Trazer ordem ao que está disperso.'),
+        ('subconsciente', 4, 'livro-vencendo-validacao',     'Despertar — Vencendo a Validação',      'Soltar o vício da aprovação externa.'),
+        ('subconsciente', 5, 'livro-vencendo-sobrevivencia', 'Despertar — Vencendo a Sobrevivência',  'Sair do modo de fazer demais na própria força.'),
+        ('subconsciente', 6, 'curso-ouro-reprogramacao',     'Reprogramar a Base',      'Instalar a nova identidade. A ferramenta-chave da Fase 1.'),
+        ('subconsciente', 7, 'assinatura-comunidade',        'Permanecer em Comunidade','Sustentar a transformação no convívio diário.')
+      ON CONFLICT (jornada_slug, ordem) DO NOTHING
+    `);
+
+    // JORNADA 2 — Vida Mágica
+    await c.query(`
+      INSERT INTO jornadas_passos (jornada_slug, ordem, produto_slug, titulo_passo, descricao_passo) VALUES
+        ('vida_magica', 1, 'teste-subconsciente',     'Diagnosticar o nível',                     'Confirmar que sua energia evoluiu para Prosperidade.'),
+        ('vida_magica', 2, 'guia-pratico-reprogramar','Guia Prático para Reprogramar a Mente',    'Operar a reprogramação no dia a dia.'),
+        ('vida_magica', 3, 'guia-bolso-magica-fluir', 'Guia de Bolso Mágica do Fluir',            'Manter o estado de fluir nas pequenas coisas.'),
+        ('vida_magica', 4, 'livro-tal-maneira',       'A Tal Maneira — Livro',                    'Conhecer o método de manifestação bíblica.'),
+        ('vida_magica', 5, 'curso-lda-biblica',       'Lei da Atração Bíblica',                   'Ativar a Lei da Atração à luz da fé.'),
+        ('vida_magica', 6, 'assinatura-comunidade',   'Permanecer em Comunidade',                 'Crescer entre pessoas que vivem o mesmo método.')
+      ON CONFLICT (jornada_slug, ordem) DO NOTHING
+    `);
+
+    // JORNADA 3 — Transbordar
+    await c.query(`
+      INSERT INTO jornadas_passos (jornada_slug, ordem, produto_slug, titulo_passo, descricao_passo) VALUES
+        ('transbordar', 1, 'teste-subconsciente', 'Confirmar o transbordo',  'Atestar o nível mais alto de prosperidade.'),
+        ('transbordar', 2, 'curso-tal-maneira',   'A Tal Maneira — Curso',   'Ferramenta completa pra quem vive no transbordo.')
+      ON CONFLICT (jornada_slug, ordem) DO NOTHING
     `);
 
     console.log('✅ Banco Comunicação iniciado');
