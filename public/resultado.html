@@ -535,6 +535,84 @@
       .curso-card { flex-direction: column; }
       .curso-capa, .curso-capa-placeholder { width: 100px; align-self: center; }
     }
+    /* ═══════════════════════════════════════════════════
+       BLOCO JORNADA — Sua jornada começa aqui
+       ═══════════════════════════════════════════════════ */
+    .bj-wrap {
+      margin-top: 3rem;
+      padding: 1.85rem 1.5rem;
+      background: linear-gradient(180deg, rgba(248,220,150,0.06) 0%, rgba(43,165,232,0.04) 100%);
+      border: 1px solid rgba(248,220,150,0.18);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .bj-eyebrow {
+      font-size: 0.72rem;
+      color: var(--gold, #f8dc96);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 0.4rem;
+    }
+    .bj-titulo {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--pearl);
+      text-align: center;
+      margin-bottom: 0.4rem;
+    }
+    .bj-sub {
+      font-size: 0.95rem;
+      color: var(--pearl-dim);
+      text-align: center;
+      font-style: italic;
+      margin-bottom: 1.5rem;
+    }
+    .bj-passos {
+      display: grid;
+      gap: 0.75rem;
+    }
+    .bj-passo {
+      display: flex;
+      gap: 0.85rem;
+      align-items: flex-start;
+      padding: 0.85rem 1rem;
+      background: rgba(0,0,0,0.2);
+      border: 1px solid rgba(245,240,232,0.08);
+      border-radius: 10px;
+    }
+    .bj-passo-num {
+      width: 28px; height: 28px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: rgba(248,220,150,0.15);
+      color: var(--gold);
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 0.85rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .bj-passo-texto {
+      flex: 1;
+      min-width: 0;
+    }
+    .bj-passo-titulo {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--pearl);
+      line-height: 1.3;
+      margin-bottom: 0.2rem;
+    }
+    .bj-passo-desc {
+      font-size: 0.78rem;
+      color: var(--pearl-dim);
+      line-height: 1.5;
+    }
+
   </style>
 </head>
 <body>
@@ -645,6 +723,14 @@
     <!-- BLOCO 8 -->
     <div class="b8-wrap">
       <div class="b8-texto" id="b8-texto"></div>
+    </div>
+
+    <!-- BLOCO JORNADA - Sua jornada começa aqui -->
+    <div class="bj-wrap" id="bj-wrap" style="display:none">
+      <div class="bj-eyebrow" id="bj-eyebrow">Sua jornada começa aqui</div>
+      <h2 class="bj-titulo" id="bj-titulo">—</h2>
+      <p class="bj-sub" id="bj-sub">—</p>
+      <div class="bj-passos" id="bj-passos"></div>
     </div>
 
     <!-- Rodapé meta -->
@@ -797,6 +883,24 @@
     // ── BLOCO 8: fechamento ──
     if (d.conteudo && d.conteudo.texto_fechamento_final) {
       document.getElementById('b8-texto').innerHTML = textoSimplesParaHtml(d.conteudo.texto_fechamento_final);
+    }
+
+    // ── BLOCO JORNADA: Sua jornada começa aqui ──
+    if (d.jornada && Array.isArray(d.jornada.passos) && d.jornada.passos.length > 0) {
+      const j = d.jornada;
+      document.getElementById('bj-eyebrow').textContent = 'Sua Jornada ' + j.numero + ' começa aqui';
+      document.getElementById('bj-titulo').textContent = j.nome_exibicao;
+      document.getElementById('bj-sub').textContent = j.subtitulo || '';
+      document.getElementById('bj-passos').innerHTML = j.passos.map(p => (
+        '<div class="bj-passo">' +
+          '<div class="bj-passo-num">' + p.ordem + '</div>' +
+          '<div class="bj-passo-texto">' +
+            '<div class="bj-passo-titulo">' + escapeHtml(p.titulo) + '</div>' +
+            (p.descricao ? '<div class="bj-passo-desc">' + escapeHtml(p.descricao) + '</div>' : '') +
+          '</div>' +
+        '</div>'
+      )).join('');
+      document.getElementById('bj-wrap').style.display = '';
     }
 
     // ── Rodapé meta ──
