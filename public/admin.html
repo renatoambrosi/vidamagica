@@ -2599,7 +2599,7 @@ const produtosAluna = (function(){
   async function carregarCadastro() {
     if (produtosCadastro.length > 0) return produtosCadastro;
     try {
-      const r = await fetch(`${API}/api/admin/produtos`, { headers: { Authorization: authHeader() } });
+      const r = await fetch(`${API}/api/painel-aluna/produtos`, { headers: { Authorization: authHeader() } });
       const d = await r.json();
       produtosCadastro = d.produtos || [];
     } catch {}
@@ -2617,7 +2617,7 @@ const produtosAluna = (function(){
     if (!wrap) return;
     wrap.innerHTML = '<div style="color:var(--text-muted);font-size:0.78rem">Carregando jornada…</div>';
     try {
-      const r = await fetch(`${API}/api/admin/usuarios/${usuarioId}/jornada`, { headers: { Authorization: authHeader() } });
+      const r = await fetch(`${API}/api/painel-aluna/usuarios/${usuarioId}/jornada`, { headers: { Authorization: authHeader() } });
       const d = await r.json();
       if (!d.ok) throw new Error(d.erro || 'Erro');
 
@@ -2671,7 +2671,7 @@ const produtosAluna = (function(){
     if (!wrap) return;
     wrap.innerHTML = '<div style="color:var(--text-muted);font-size:0.78rem">Carregando produtos…</div>';
     try {
-      const r = await fetch(`${API}/api/admin/usuarios/${usuarioId}/produtos`, { headers: { Authorization: authHeader() } });
+      const r = await fetch(`${API}/api/painel-aluna/usuarios/${usuarioId}/produtos`, { headers: { Authorization: authHeader() } });
       const d = await r.json();
       if (!d.ok) throw new Error(d.erro || 'Erro');
       if (!d.produtos || d.produtos.length === 0) {
@@ -2754,7 +2754,7 @@ const produtosAluna = (function(){
     });
     if (!slug) return;
     try {
-      const r = await fetch(`${API}/api/admin/usuarios/${usuarioId}/produtos`, {
+      const r = await fetch(`${API}/api/painel-aluna/usuarios/${usuarioId}/produtos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: authHeader() },
         body: JSON.stringify({ produto_slug: slug.slug, origem_tipo: slug.origem, observacao: slug.obs }),
@@ -2772,7 +2772,7 @@ const produtosAluna = (function(){
   async function revogar(usuarioId, upId) {
     if (!confirm('Revogar acesso a este produto?')) return;
     try {
-      const r = await fetch(`${API}/api/admin/usuarios/${usuarioId}/produtos/${upId}`, {
+      const r = await fetch(`${API}/api/painel-aluna/usuarios/${usuarioId}/produtos/${upId}`, {
         method: 'DELETE',
         headers: { Authorization: authHeader() },
       });
