@@ -220,6 +220,10 @@ function montarListaEnergias(resultado) {
 //   jornadaCfg:      { slug, numero, nome_exibicao, subtitulo, cor, passos: [...] }
 //                    (vem dos joins jornadas_metodo + jornadas_passos)
 //   slugsComprados:  Set ou array com os slugs dos produtos que a aluna já tem
+//   opts:            { fezTeste: bool }  — se a aluna já fez o teste, considera
+//                    o passo "teste-subconsciente" como concluído mesmo sem pagamento.
+//                    Pagar serve pra liberar o RESULTADO; fazer já conta como concluir
+//                    o passo "Conhecer" da jornada.
 //
 // Devolve a estrutura pronta pra UI:
 //   {
@@ -227,24 +231,31 @@ function montarListaEnergias(resultado) {
 //     passos: [{ ordem, titulo, descricao, produto_slug, produto_nome, comprado, eh_proximo, link_checkout? }],
 //     progresso: { passos_concluidos, passos_totais, percentual }
 //   }
-function montarJornada(jornadaCfg, slugsComprados, produtosCadastro) {
+function montarJornada(jornadaCfg, slugsComprados, produtosCadastro, opts) {
   if (!jornadaCfg) return null;
+  const fezTeste = !!(opts && opts.fezTeste);
   const compradosSet = new Set(Array.isArray(slugsComprados) ? slugsComprados : Array.from(slugsComprados || []));
   const produtosBySlug = {};
   for (const p of (produtosCadastro || [])) {
     produtosBySlug[p.slug] = p;
   }
 
-  const passos = (jornadaCfg.passos || []).map(p => ({
-    ordem: p.ordem,
-    titulo: p.titulo_passo,
-    descricao: p.descricao_passo,
-    produto_slug: p.produto_slug,
-    produto_nome: produtosBySlug[p.produto_slug]?.nome || p.produto_slug,
-    produto_link_checkout: produtosBySlug[p.produto_slug]?.link_checkout_padrao || null,
-    comprado: compradosSet.has(p.produto_slug),
-    eh_proximo: false,  // marcado abaixo
-  }));
+  const passos = (jornadaCfg.passos || []).map(p => {
+    // Regra especial: teste-subconsciente é "concluído" se a aluna fez o teste,
+    // independente de ter pago. Fazer o teste já cumpre o passo do método.
+    const ehPassoDoTeste = (p.produto_slug === 'teste-subconsciente');
+    const comprado = compradosSet.has(p.produto_slug) || (ehPassoDoTeste && fezTeste);
+    return {
+      ordem: p.ordem,
+      titulo: p.titulo_passo,
+      descricao: p.descricao_passo,
+      produto_slug: p.produto_slug,
+      produto_nome: produtosBySlug[p.produto_slug]?.nome || p.produto_slug,
+      produto_link_checkout: produtosBySlug[p.produto_slug]?.link_checkout_padrao || null,
+      comprado,
+      eh_proximo: false,  // marcado abaixo
+    };
+  });
 
   // O "próximo" é o primeiro NÃO comprado em ordem
   const idxProximo = passos.findIndex(p => !p.comprado);
