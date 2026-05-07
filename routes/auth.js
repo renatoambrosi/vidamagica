@@ -853,11 +853,21 @@ router.get('/me', autenticar, async (req, res) => {
 router.get('/testes', autenticar, async (req, res) => {
   try {
     const { poolTeste } = require('../db');
+
+    // O teste pode ter sido feito ANTES do cadastro (lead anônimo, identificado
+    // só por telefone). Pra cobrir esses casos, busca por usuario_id OU pelo
+    // telefone canônico do usuário logado.
+    const usuario = await buscarUsuarioPorId(req.usuario.sub);
+    const telefone = (usuario && usuario.telefone_canonico) ? usuario.telefone_canonico : null;
+
     const r = await poolTeste.query(
       `SELECT id, perfil_dominante, percentual_prosperidade, nivel_prosperidade,
-              respostas, contagem, percentuais, feito_em
-       FROM testes WHERE usuario_id=$1 ORDER BY feito_em DESC`,
-      [req.usuario.sub]
+              respostas, contagem, percentuais, feito_em, pago
+       FROM testes
+       WHERE usuario_id = $1
+          OR ($2::text IS NOT NULL AND telefone_canonico = $2)
+       ORDER BY feito_em DESC NULLS LAST`,
+      [req.usuario.sub, telefone]
     );
     res.json(r.rows);
   } catch (err) {
