@@ -960,9 +960,15 @@
     const capa = l.capa_url
       ? '<img class="livro-capa" src="' + escapeHtml(l.capa_url) + '" alt="' + escapeHtml(l.titulo) + '">'
       : '<div class="livro-capa-placeholder"><i class="fas fa-book"></i></div>';
-    const preco = formatarPreco(l.preco);
-    const cta = l.link_checkout
-      ? '<a href="' + escapeHtml(l.link_checkout) + '" class="livro-cta" target="_blank">Quero este livro</a>'
+    // Preço: a página de resultado é pública, então mostra o preço padrão.
+    const precoStr = l.preco_padrao || '';
+    const preco = precoStr ? ('R$ ' + precoStr) : null;
+    // Link: a página é pública (lead anônima) — usa link padrão. Aluna logada
+    // que acessar tem o link padrão também (a versão "aluno" só aparece no
+    // painel de atendimento e no /app autenticado).
+    const link = l.link_checkout_padrao || '';
+    const cta = link
+      ? '<a href="' + escapeHtml(link) + '" class="livro-cta" target="_blank" rel="noopener">Quero este livro</a>'
       : '<a href="#" class="livro-cta" onclick="alert(\'Em breve\');return false;">Quero este livro</a>';
     return (
       '<div class="livro-card">' +
