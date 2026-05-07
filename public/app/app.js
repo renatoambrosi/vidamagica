@@ -1797,14 +1797,25 @@ function renderMateriais(ctx) {
   }
 
   // ── 4. Outros produtos (catálogo que não está na jornada nem comprado) ──
+  // Esconde produtos sem link de checkout (sem ação possível) e produtos
+  // legados que não devem aparecer pra aluna (mas continuam canônicos no admin).
   const slugsJornada = new Set(
     (ctx.jornada_atual && Array.isArray(ctx.jornada_atual.passos))
       ? ctx.jornada_atual.passos.map(p => p.produto_slug)
       : []
   );
+  // Slugs que NÃO devem ser visíveis na aba Materiais da aluna,
+  // mesmo continuando cadastrados no admin/preços (canônicos).
+  const SLUGS_LEGADOS_INVISIVEIS = new Set([
+    'teste_prosperidade',  // teste antigo, substituído pelo Teste do Subconsciente
+  ]);
   const outros = Array.isArray(ctx.outros_produtos) ? ctx.outros_produtos : [];
   const outrosFiltrados = outros.filter(p =>
-    !slugsComprados.has(p.slug) && !slugsJornada.has(p.slug) && p.slug !== SLUG_TESTE
+    !slugsComprados.has(p.slug)
+    && !slugsJornada.has(p.slug)
+    && p.slug !== SLUG_TESTE
+    && !SLUGS_LEGADOS_INVISIVEIS.has(p.slug)
+    && !!p.link_checkout_padrao   // sem link de venda, não faz sentido mostrar pra aluna
   );
 
   if (outrosFiltrados.length > 0) {
@@ -1812,15 +1823,11 @@ function renderMateriais(ctx) {
       const capa = p.imagem_url
         ? `<img src="${escHtml(p.imagem_url)}" alt="" class="mat-capa" onerror="this.style.display='none'">`
         : '<div class="mat-capa-placeholder"></div>';
-      const link = p.link_checkout_padrao || '';
-      const btnHtml = link
-        ? `<a href="${escHtml(link)}" target="_blank" rel="noopener" class="mat-card-btn-secundario">Conhecer →</a>`
-        : '';
       return `<div class="mat-card mat-card-h">
         ${capa}
         <div class="mat-card-h-textos">
           <div class="mat-card-titulo">${escHtml(p.nome)}</div>
-          ${btnHtml}
+          <a href="${escHtml(p.link_checkout_padrao)}" target="_blank" rel="noopener" class="mat-card-btn-secundario">Conhecer →</a>
         </div>
       </div>`;
     }).join('');
