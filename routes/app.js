@@ -216,6 +216,26 @@ router.get('/contexto', autenticar, async (req, res) => {
       console.warn('[contexto] erro ao buscar catálogo:', e.message);
     }
 
+    // ── Normalização de slugs antigos (hífen → underscore) ──
+    // Failsafe caso a tabela produtos ainda tenha registros legados com hífen.
+    // Em precos os slugs estão sempre com underscore (canônico).
+    const SLUG_LEGADO_MAP = {
+      'teste-subconsciente':           'teste_subconsciente',
+      'teste-prosperidade':            'teste_prosperidade',
+      'livro-vencendo-medo':           'vencendo_medo',
+      'livro-vencendo-desordem':       'vencendo_desordem',
+      'livro-vencendo-validacao':      'vencendo_validacao',
+      'livro-vencendo-sobrevivencia':  'vencendo_sobrevivencia',
+      'curso-ouro-reprogramacao':      'ouro_reprogramacao',
+      'assinatura-comunidade':         'clube_vida_magica',
+      'guia-pratico-reprogramar':      'guia_pratico',
+      'guia-bolso-magica-fluir':       'magica_fluir',
+      'livro-tal-maneira':             'atal_maneira_livro',
+      'curso-lda-biblica':             'lda_biblica',
+      'curso-tal-maneira':             'atal_maneira_curso',
+    };
+    const normalizarSlug = (slug) => SLUG_LEGADO_MAP[slug] || slug;
+
     // ── Resposta ─────────────────────────────────────────────
     return res.json({
       ok: true,
@@ -240,13 +260,15 @@ router.get('/contexto', autenticar, async (req, res) => {
       })),
       // Enriquece com dados de Preços (fonte da verdade pra imagem/nome).
       // O JOIN com `produtos` na query cobre só campos básicos (slug/tipo);
-      // imagem_url/nome canônicos vêm de precos.
+      // imagem_url/nome canônicos vêm de precos. Slugs legados (com hífen) são
+      // normalizados pra encontrar o produto correto em precos (underscore).
       comprados: comprados.map(c => {
-        const precos = precosBySlugAll[c.slug] || {};
+        const slugCanonico = normalizarSlug(c.slug);
+        const precos = precosBySlugAll[slugCanonico] || {};
         return {
           id: c.id,
-          produto_slug: c.slug,
-          produto_nome: precos.nome || c.nome,            // precos > produtos
+          produto_slug: slugCanonico,
+          produto_nome: precos.nome || c.nome,
           produto_tipo: precos.tipo || c.tipo,
           produto_imagem: precos.imagem_url || c.imagem_url || '',
           origem_tipo: c.origem_tipo,
