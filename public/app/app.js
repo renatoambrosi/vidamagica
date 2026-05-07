@@ -275,6 +275,34 @@ function renderAvisos() {
 }
 
 // ── TESTES ───────────────────────────────────────────────────
+// Mapa de slug do perfil para nome de exibição (igual backend usa)
+const PERFIS_LABELS_FRONT = {
+  medo: 'Medo',
+  desordem: 'Desordem',
+  validacao: 'Validação',
+  sobrevivencia: 'Sobrevivência',
+  prosperidade_nv1: 'Prosperidade Nível 1',
+  prosperidade_nv2: 'Prosperidade Nível 2',
+  prosperidade_nv3: 'Prosperidade Nível 3',
+};
+// Artigo correto pra cada perfil — "Energia DO Medo", "Energia DA Desordem"
+const PERFIS_ARTIGO = {
+  medo: 'do',
+  desordem: 'da',
+  validacao: 'da',
+  sobrevivencia: 'da',
+  prosperidade_nv1: 'da',
+  prosperidade_nv2: 'da',
+  prosperidade_nv3: 'da',
+};
+function nomePerfil(slug) {
+  if (!slug) return '—';
+  return PERFIS_LABELS_FRONT[slug] || (String(slug).charAt(0).toUpperCase() + String(slug).slice(1));
+}
+function artigoPerfil(slug) {
+  return PERFIS_ARTIGO[slug] || 'da';
+}
+
 async function carregarTestes() {
   const corpo = document.getElementById('testes-corpo'); if (!corpo) return;
   corpo.innerHTML = '<div class="loading-inline">Carregando...</div>';
@@ -282,24 +310,43 @@ async function carregarTestes() {
     const r = await fetch(`${API}/api/auth/testes`, { headers: authHeader() });
     if (!r.ok) throw new Error();
     const testes = await r.json();
-    if (!testes.length) { corpo.innerHTML='<div class="loading-inline">Nenhum teste do subconsciente realizado ainda.</div>'; return; }
+    if (!testes.length) {
+      corpo.innerHTML = '<div class="loading-inline">Nenhum teste do subconsciente realizado ainda.</div>';
+      return;
+    }
     corpo.innerHTML = testes.map(t => {
       const dataTxt = t.feito_em
-        ? new Date(t.feito_em).toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' })
+        ? new Date(t.feito_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
         : 'em andamento';
-      const perfil = t.perfil_dominante || '—';
-      const pct = (t.percentual_prosperidade != null) ? t.percentual_prosperidade : '—';
-      const acaoHtml = t.pago && t.feito_em
-        ? `<a href="/resultado/${t.id}" target="_blank" class="teste-item-acao">Ver resultado →</a>`
-        : '';
-      return `<div class="teste-item">
-        <div class="teste-perfil">${escHtml(perfil)}</div>
-        <div class="teste-pct">${pct}<span>%</span></div>
-        <div class="teste-data">${dataTxt}</div>
-        ${acaoHtml}
-      </div>`;
+      const perfilLabel = nomePerfil(t.perfil_dominante);
+      const perfilArt = artigoPerfil(t.perfil_dominante);
+      const pct = (t.percentual_prosperidade != null) ? t.percentual_prosperidade : null;
+
+      // Botão "Ver resultado": só aparece se está pago E tem feito_em
+      const acaoHtml = (t.pago && t.feito_em)
+        ? `<a href="/resultado/${t.id}" target="_blank" class="teste-card-btn">Ver resultado →</a>`
+        : `<div class="teste-card-locked">🔒 Aguardando liberação</div>`;
+
+      return `
+        <div class="teste-card">
+          <div class="teste-card-header">
+            <div class="teste-card-eyebrow">Teste do Subconsciente</div>
+            <div class="teste-card-data">${dataTxt}</div>
+          </div>
+          <div class="teste-card-corpo">
+            <div class="teste-card-perfil">
+              <div class="teste-card-perfil-label">Energia ${perfilArt}</div>
+              <div class="teste-card-perfil-nome">${escHtml(perfilLabel)}</div>
+            </div>
+            ${pct != null ? `<div class="teste-card-pct"><span class="teste-card-pct-num">${pct}</span><span class="teste-card-pct-sym">%</span></div>` : ''}
+          </div>
+          ${acaoHtml}
+        </div>
+      `;
     }).join('');
-  } catch { corpo.innerHTML='<div class="loading-inline">Erro ao carregar.</div>'; }
+  } catch {
+    corpo.innerHTML = '<div class="loading-inline">Erro ao carregar.</div>';
+  }
 }
 
 // ── PERFIL ───────────────────────────────────────────────────
@@ -1648,76 +1695,73 @@ function renderMateriais(ctx) {
 
   const blocos = [];
 
-  // ── 1. Testes (em andamento + concluídos, mais recente em cima) ──
+  // ── 1. Testes (em andamento + feitos, mais recente em cima) ──
+  const blocoTestes = [];
+
   if (ctx.teste_em_andamento) {
     const tea = ctx.teste_em_andamento;
-    blocos.push(
-      '<div class="material-card" style="background:linear-gradient(135deg,rgba(248,220,150,0.12),rgba(43,165,232,0.05));border:1px solid rgba(248,220,150,0.3);border-radius:12px;padding:1rem 1.1rem;margin-bottom:0.85rem;cursor:pointer" onclick="window.location.href=\'/teste\'">' +
-        '<div style="font-size:0.7rem;color:var(--ouro-fundo,#C8922A);letter-spacing:0.06em;text-transform:uppercase;font-weight:700;margin-bottom:0.25rem">Em andamento</div>' +
-        '<div style="font-family:var(--font-display,Montserrat);font-weight:700;font-size:0.95rem;color:var(--texto,#fff);margin-bottom:0.4rem">Continuar Teste do Subconsciente</div>' +
-        '<div style="font-size:0.78rem;color:var(--texto-suave)">Pergunta ' + tea.respondidas + ' de ' + tea.total + ' respondidas</div>' +
-      '</div>'
+    blocoTestes.push(
+      `<div class="mat-card mat-card-andamento" onclick="window.location.href='/teste'">
+        <div class="mat-card-eyebrow mat-card-eyebrow-andamento">Em andamento</div>
+        <div class="mat-card-titulo">Continuar Teste do Subconsciente</div>
+        <div class="mat-card-desc">Pergunta ${tea.respondidas} de ${tea.total} respondidas</div>
+      </div>`
     );
   }
 
   if (Array.isArray(ctx.todos_testes) && ctx.todos_testes.length > 0) {
     ctx.todos_testes.forEach(t => {
-      const data = t.feito_em ? new Date(t.feito_em).toLocaleDateString('pt-BR') : '—';
+      const dataTxt = t.feito_em ? new Date(t.feito_em).toLocaleDateString('pt-BR') : '—';
       const isMaisRecente = ctx.teste_atual && t.id === ctx.teste_atual.id;
       const pago = isMaisRecente ? ctx.teste_atual.pago : false;
-      const perfilNome = isMaisRecente ? (ctx.teste_atual.nome_exibicao || t.perfil_dominante) : (t.perfil_dominante || '—');
+      const perfilLabel = nomePerfil(t.perfil_dominante);
+      const perfilArt = artigoPerfil(t.perfil_dominante);
       const acaoHtml = pago
-        ? '<a href="/resultado/' + t.id + '" target="_blank" style="display:inline-block;padding:0.5rem 0.9rem;background:linear-gradient(135deg,var(--ouro,#F8DC96),var(--ouro-fundo,#C8922A));color:#051929;border-radius:8px;font-family:var(--font-display,Montserrat);font-size:0.78rem;font-weight:700;text-decoration:none">Ver resultado →</a>'
-        : '<div style="padding:0.5rem 0.9rem;background:rgba(245,240,232,0.08);border:1px solid rgba(245,240,232,0.15);color:var(--texto-suave);border-radius:8px;font-family:var(--font-display,Montserrat);font-size:0.78rem;font-weight:600;display:inline-block">🔒 Aguardando liberação</div>';
-      blocos.push(
-        '<div class="material-card" style="background:rgba(255,255,255,0.04);border:1px solid rgba(245,240,232,0.1);border-radius:12px;padding:1rem 1.1rem;margin-bottom:0.85rem">' +
-          '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.5rem">' +
-            '<div>' +
-              '<div style="font-size:0.7rem;color:var(--ouro-fundo,#C8922A);letter-spacing:0.06em;text-transform:uppercase;font-weight:700;margin-bottom:0.2rem">Teste do Subconsciente</div>' +
-              '<div style="font-family:var(--font-display,Montserrat);font-weight:700;font-size:0.95rem;color:var(--texto,#fff)">Energia da ' + escHtml(perfilNome) + '</div>' +
-            '</div>' +
-            '<div style="font-size:0.7rem;color:var(--texto-suave);text-align:right">' + data + '</div>' +
-          '</div>' +
-          acaoHtml +
-        '</div>'
+        ? `<a href="/resultado/${t.id}" target="_blank" class="mat-card-btn">Ver resultado →</a>`
+        : `<div class="mat-card-locked">🔒 Aguardando liberação</div>`;
+      blocoTestes.push(
+        `<div class="mat-card">
+          <div class="mat-card-row">
+            <div class="mat-card-eyebrow">Teste do Subconsciente</div>
+            <div class="mat-card-data">${dataTxt}</div>
+          </div>
+          <div class="mat-card-titulo-grande">Energia ${perfilArt} ${escHtml(perfilLabel)}</div>
+          ${acaoHtml}
+        </div>`
       );
     });
   }
 
-  // Slug do teste do subconsciente — usado pra filtrar dos blocos seguintes
-  // (ele já apareceu em testes feitos quando aplicável)
+  if (blocoTestes.length > 0) {
+    blocos.push('<div class="mat-secao"><div class="mat-secao-titulo">Seus testes</div>' + blocoTestes.join('') + '</div>');
+  }
+
   const SLUG_TESTE = 'teste_subconsciente';
 
-  // ── 2. Bloco de produtos comprados ──
-  // Filtra teste_subconsciente porque ele já apareceu como "teste feito"
+  // ── 2. Adquiridos (produtos comprados, exceto teste que já apareceu) ──
   const compradosOutros = Array.isArray(ctx.comprados)
     ? ctx.comprados.filter(c => c.produto_slug !== SLUG_TESTE)
     : [];
 
   if (compradosOutros.length > 0) {
-    blocos.push(
-      '<div style="font-size:0.72rem;color:var(--texto-suave);text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin:1.5rem 0 0.65rem">Adquiridos</div>'
-    );
-    compradosOutros.forEach(c => {
+    const cards = compradosOutros.map(c => {
       const capa = c.produto_imagem
-        ? '<img src="' + escHtml(c.produto_imagem) + '" alt="" style="width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display=\'none\'">'
-        : '';
-      blocos.push(
-        '<div class="material-card" style="background:rgba(255,255,255,0.04);border:1px solid rgba(245,240,232,0.1);border-radius:12px;padding:0.85rem 1rem;margin-bottom:0.65rem;display:flex;gap:0.75rem;align-items:center">' +
-          capa +
-          '<div style="flex:1;min-width:0">' +
-            '<div style="font-size:0.66rem;color:#2ED573;letter-spacing:0.06em;text-transform:uppercase;font-weight:700;margin-bottom:0.15rem">✓ Liberado</div>' +
-            '<div style="font-family:var(--font-display,Montserrat);font-weight:700;font-size:0.88rem;color:var(--texto,#fff);line-height:1.2">' + escHtml(c.produto_nome || c.produto_slug) + '</div>' +
-            (c.observacao ? '<div style="font-size:0.7rem;color:var(--texto-suave);margin-top:0.2rem">' + escHtml(c.observacao) + '</div>' : '') +
-          '</div>' +
-        '</div>'
-      );
-    });
+        ? `<img src="${escHtml(c.produto_imagem)}" alt="" class="mat-capa" onerror="this.style.display='none'">`
+        : '<div class="mat-capa-placeholder"></div>';
+      return `<div class="mat-card mat-card-h">
+        ${capa}
+        <div class="mat-card-h-textos">
+          <div class="mat-card-eyebrow">Adquirido</div>
+          <div class="mat-card-titulo">${escHtml(c.produto_nome || c.produto_slug)}</div>
+          ${c.observacao ? `<div class="mat-card-desc">${escHtml(c.observacao)}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    blocos.push('<div class="mat-secao"><div class="mat-secao-titulo">Adquiridos</div>' + cards + '</div>');
   }
 
-  // ── 3. Continue sua jornada — passos da jornada que ainda não comprou ──
+  // ── 3. Continue sua jornada — passos da jornada não comprados ──
   const slugsComprados = new Set((ctx.comprados || []).map(c => c.produto_slug));
-  // teste_subconsciente conta como "feito" se a aluna fez o teste
   if (ctx.teste_atual) slugsComprados.add(SLUG_TESTE);
 
   const passosNaoComprados = (ctx.jornada_atual && Array.isArray(ctx.jornada_atual.passos))
@@ -1725,34 +1769,28 @@ function renderMateriais(ctx) {
     : [];
 
   if (passosNaoComprados.length > 0) {
-    blocos.push(
-      '<div style="font-size:0.72rem;color:var(--texto-suave);text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin:1.5rem 0 0.65rem">Continue sua jornada</div>'
-    );
-    passosNaoComprados.forEach(p => {
+    const cards = passosNaoComprados.map(p => {
       const capa = p.produto_imagem
-        ? '<img src="' + escHtml(p.produto_imagem) + '" alt="" style="width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display=\'none\'">'
+        ? `<img src="${escHtml(p.produto_imagem)}" alt="" class="mat-capa" onerror="this.style.display='none'">`
+        : '<div class="mat-capa-placeholder"></div>';
+      const link = p.link_checkout_padrao || '';
+      const btnHtml = link
+        ? `<a href="${escHtml(link)}" target="_blank" rel="noopener" class="mat-card-btn">Quero esse passo →</a>`
         : '';
-      const link = p.link_checkout_padrao || '#';
-      const btnHtml = link === '#'
-        ? ''
-        : '<a href="' + escHtml(link) + '" target="_blank" rel="noopener" style="display:inline-block;padding:0.42rem 0.8rem;background:linear-gradient(135deg,var(--ouro,#F8DC96),var(--ouro-fundo,#C8922A));color:#051929;border-radius:8px;font-family:var(--font-display,Montserrat);font-size:0.72rem;font-weight:700;text-decoration:none;margin-top:0.45rem">Quero esse passo →</a>';
-      blocos.push(
-        '<div class="material-card" style="background:rgba(255,255,255,0.04);border:1px solid rgba(245,240,232,0.1);border-radius:12px;padding:0.85rem 1rem;margin-bottom:0.65rem">' +
-          '<div style="display:flex;gap:0.75rem;align-items:flex-start">' +
-            capa +
-            '<div style="flex:1;min-width:0">' +
-              '<div style="font-size:0.66rem;color:var(--ouro-fundo,#C8922A);letter-spacing:0.06em;text-transform:uppercase;font-weight:700;margin-bottom:0.15rem">' + escHtml(p.titulo) + '</div>' +
-              '<div style="font-family:var(--font-display,Montserrat);font-weight:700;font-size:0.88rem;color:var(--texto,#fff);line-height:1.2">' + escHtml(p.produto_nome) + '</div>' +
-              (p.descricao ? '<div style="font-size:0.7rem;color:var(--texto-suave);margin-top:0.2rem">' + escHtml(p.descricao) + '</div>' : '') +
-              btnHtml +
-            '</div>' +
-          '</div>' +
-        '</div>'
-      );
-    });
+      return `<div class="mat-card mat-card-h">
+        ${capa}
+        <div class="mat-card-h-textos">
+          <div class="mat-card-eyebrow">${escHtml(p.titulo)}</div>
+          <div class="mat-card-titulo">${escHtml(p.produto_nome)}</div>
+          ${p.descricao ? `<div class="mat-card-desc">${escHtml(p.descricao)}</div>` : ''}
+          ${btnHtml}
+        </div>
+      </div>`;
+    }).join('');
+    blocos.push('<div class="mat-secao"><div class="mat-secao-titulo">Continue sua jornada</div>' + cards + '</div>');
   }
 
-  // ── 4. Outros produtos (que NÃO estão na jornada da aluna) ──
+  // ── 4. Outros produtos (catálogo que não está na jornada nem comprado) ──
   const slugsJornada = new Set(
     (ctx.jornada_atual && Array.isArray(ctx.jornada_atual.passos))
       ? ctx.jornada_atual.passos.map(p => p.produto_slug)
@@ -1760,33 +1798,27 @@ function renderMateriais(ctx) {
   );
   const outros = Array.isArray(ctx.outros_produtos) ? ctx.outros_produtos : [];
   const outrosFiltrados = outros.filter(p =>
-    !slugsComprados.has(p.slug) && !slugsJornada.has(p.slug)
+    !slugsComprados.has(p.slug) && !slugsJornada.has(p.slug) && p.slug !== SLUG_TESTE
   );
 
   if (outrosFiltrados.length > 0) {
-    blocos.push(
-      '<div style="font-size:0.72rem;color:var(--texto-suave);text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin:1.5rem 0 0.65rem">Outros produtos</div>'
-    );
-    outrosFiltrados.forEach(p => {
+    const cards = outrosFiltrados.map(p => {
       const capa = p.imagem_url
-        ? '<img src="' + escHtml(p.imagem_url) + '" alt="" style="width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display=\'none\'">'
-        : '';
+        ? `<img src="${escHtml(p.imagem_url)}" alt="" class="mat-capa" onerror="this.style.display='none'">`
+        : '<div class="mat-capa-placeholder"></div>';
       const link = p.link_checkout_padrao || '';
       const btnHtml = link
-        ? '<a href="' + escHtml(link) + '" target="_blank" rel="noopener" style="display:inline-block;padding:0.42rem 0.8rem;background:rgba(245,240,232,0.08);border:1px solid rgba(245,240,232,0.18);color:var(--texto,#fff);border-radius:8px;font-family:var(--font-display,Montserrat);font-size:0.72rem;font-weight:700;text-decoration:none;margin-top:0.45rem">Conhecer →</a>'
+        ? `<a href="${escHtml(link)}" target="_blank" rel="noopener" class="mat-card-btn-secundario">Conhecer →</a>`
         : '';
-      blocos.push(
-        '<div class="material-card" style="background:rgba(255,255,255,0.04);border:1px solid rgba(245,240,232,0.1);border-radius:12px;padding:0.85rem 1rem;margin-bottom:0.65rem">' +
-          '<div style="display:flex;gap:0.75rem;align-items:flex-start">' +
-            capa +
-            '<div style="flex:1;min-width:0">' +
-              '<div style="font-family:var(--font-display,Montserrat);font-weight:700;font-size:0.88rem;color:var(--texto,#fff);line-height:1.2">' + escHtml(p.nome) + '</div>' +
-              btnHtml +
-            '</div>' +
-          '</div>' +
-        '</div>'
-      );
-    });
+      return `<div class="mat-card mat-card-h">
+        ${capa}
+        <div class="mat-card-h-textos">
+          <div class="mat-card-titulo">${escHtml(p.nome)}</div>
+          ${btnHtml}
+        </div>
+      </div>`;
+    }).join('');
+    blocos.push('<div class="mat-secao"><div class="mat-secao-titulo">Para descobrir</div>' + cards + '</div>');
   }
 
   // Vazio total
