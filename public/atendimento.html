@@ -2827,9 +2827,27 @@ function conectarWs() {
       const data = JSON.parse(e.data);
       if (data.evento === 'nova_mensagem') {
         if (convAtual && data.conversa_id === convAtual.id && data.mensagem.remetente === 'aluna') {
+          // Adiciona à lista
           mensagens.push(data.mensagem);
-          document.getElementById('chat-msgs').appendChild(criarBolha(data.mensagem));
-          scrollChat();
+
+          // Mensagem da aluna em chat prioritário consome 1 interação no backend.
+          // Atualiza o estado local pra refletir o novo contador.
+          if (convAtual.plano_chat === 'prioritario' && convAtual.interacoes_restantes != null) {
+            convAtual.interacoes_restantes = Math.max(0, convAtual.interacoes_restantes - 1);
+            // Se zerou, o backend já moveu pra basic — refletir aqui também
+            if (convAtual.interacoes_restantes === 0) {
+              convAtual.plano_chat = 'basic';
+              convAtual.tier = (convAtual.plano_usuario && convAtual.plano_usuario !== 'gratuito') ? 'basic_vm' : 'free';
+              convAtual.interacoes_restantes = null;
+              convAtual.prioritario_expira_em = null;
+            }
+            // Re-renderiza o chat inteiro pra refletir contador novo + nova bolha
+            renderChat();
+          } else {
+            // Chat não-prioritário: só adiciona a bolha sem re-renderizar tudo
+            document.getElementById('chat-msgs').appendChild(criarBolha(data.mensagem));
+            scrollChat();
+          }
         }
         carregarLista();
       }
