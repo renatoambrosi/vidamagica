@@ -414,6 +414,7 @@ async function carregarConversaCanal(canal) {
 // ── Banner ──
 function atualizarBannerPlano(conv) {
   const banner = document.getElementById('plano-banner');
+  const icone = document.getElementById('plano-banner-icone');
   const titulo = document.getElementById('plano-banner-titulo');
   const desc = document.getElementById('plano-banner-desc');
   const btn = document.getElementById('plano-banner-acao');
@@ -425,16 +426,18 @@ function atualizarBannerPlano(conv) {
   const tier = conv.tier || 'free';
 
   // Padrão visual igual ao painel de atendimento da Suellen.
-  // Título curto + descrição com detalhes (interações + data de expiração quando aplicável).
+  // Caixa compacta com ícone + 2 linhas de texto. O botão (regra que já existe)
+  // só aparece nos tiers Free e Basic VM, pra a aluna ter porta de venda.
   if (tier === 'prioritario') {
     banner.classList.add('tier-prioritario');
+    if (icone) icone.textContent = '⏱️';
     titulo.textContent = 'Prioritário · até 24h';
     btn.style.display = 'none';
     atualizarDescPrioritario(conv);
-    // Atualiza a cada 30s (caso passe de 1h pra <1h, o banner ganha alerta visual)
     timerInterval = setInterval(() => atualizarDescPrioritario(conv), 30000);
   } else if (tier === 'basic_vm') {
     banner.classList.add('tier-basic_vm');
+    if (icone) icone.textContent = '💛';
     titulo.textContent = 'Básico Vida Mágica';
     desc.textContent = 'Resposta em até 5 dias';
     btn.style.display = '';
@@ -442,6 +445,7 @@ function atualizarBannerPlano(conv) {
     btn.onclick = acaoAtivarPrioritario;
   } else {
     banner.classList.add('tier-free');
+    if (icone) icone.textContent = '·';
     titulo.textContent = 'Free';
     desc.textContent = 'Resposta em tempo indeterminado';
     btn.style.display = '';
