@@ -531,41 +531,37 @@ body.teclado-aberto .bottom-nav {
   text-align: center;
 }
 
-/* Banner de plano — padrão idêntico ao .sla-banner do atendimento.
-   Caixinha compacta com ícone à esquerda + título sobre descrição.
-   O botão (Assinar/Ativar) fica à direita pra Free e Basic VM. No prioritário
-   o botão some (regra existente em app.js). */
+/* Banner de plano — IDÊNTICO ao .sla-banner do atendimento.
+   Mesmos margin, padding, gap, font-size, border-radius, fontes.
+   Diferença única: este tem um botão à direita (regra de negócio: aluna
+   precisa ter porta de venda; Suellen não precisa). O botão fica fora do
+   bloco de texto, mantendo a caixa do mesmo tamanho. */
 .plano-banner {
   flex-shrink: 0;
   margin: 0.6rem 0.85rem 0;
   padding: 0.55rem 0.85rem;
-  background: var(--vidro);
+  background: rgba(255,250,240,0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--vidro-borda);
   border-radius: 12px;
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
+  display: flex; align-items: center; gap: 0.7rem;
   font-size: 0.74rem;
   font-family: var(--font-ui);
 }
-/* Ícone fica como caractere de texto à esquerda (📡/💛/⏱️ via JS) */
 .plano-banner-icone {
   font-size: 1rem;
   flex-shrink: 0;
-  width: auto;
-  height: auto;
-  border-radius: 0;
+  width: auto; height: auto;
   background: transparent;
-  /* SVG/character ficará aqui via textContent */
+  border-radius: 0;
   line-height: 1;
 }
 .plano-banner-texto { flex: 1; min-width: 0; }
 .plano-banner-titulo {
   font-family: var(--font-display);
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.68rem; font-weight: 800;
+  letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--ouro-fundo);
   margin: 0 0 1px;
   line-height: 1.2;
@@ -579,6 +575,7 @@ body.teclado-aberto .bottom-nav {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Botão de venda (Assinar/Ativar) — só existe no app aluna, regra de negócio */
 .plano-banner-acao {
   flex-shrink: 0;
   background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
@@ -598,16 +595,12 @@ body.teclado-aberto .bottom-nav {
 .plano-banner-acao:hover { transform: scale(1.04); }
 .plano-banner-acao:active { transform: scale(0.96); }
 
-/* Tiers: variações de fundo/borda igual sla-banner do atendimento */
-.plano-banner.tier-free {
-  background: var(--vidro);
-  border-color: var(--vidro-borda);
-}
-.plano-banner.tier-basic_vm {
-  background: rgba(200,146,42,0.05);
+/* Tiers — variações de fundo idênticas ao atendimento */
+.plano-banner.tier-prioritario {
+  background: rgba(200,146,42,0.12);
   border-color: var(--vidro-borda-hi);
 }
-.plano-banner.tier-prioritario {
+.plano-banner.tier-basic_vm {
   background: rgba(200,146,42,0.08);
   border-color: var(--vidro-borda-hi);
 }
