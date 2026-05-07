@@ -464,23 +464,27 @@ async function initCore() {
     `);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_sementes_usuario ON sementes(usuario_id)`);
 
-    // ── SEED dos produtos do método (3 jornadas) ──
-    // Cadastra os produtos canônicos com slug fixo. Admin completa preço/link/descrição depois.
-    // ON CONFLICT (slug) DO NOTHING — idempotente, não sobrescreve dados editados.
+    // ── SEED dos produtos do método ──
+    // Os slugs aqui SÃO OS MESMOS de routes/seed.js (PRECOS_INICIAIS).
+    // A aba Preços é a fonte da verdade pra dados editáveis (preço, link, capa, etc).
+    // Esta tabela existe pra: cruzamento com usuario_produtos (FK por id) e
+    // metadados estruturais (tipo, acesso_modelo, ordem).
+    // ON CONFLICT (slug) DO NOTHING — idempotente.
     await c.query(`
       INSERT INTO produtos (slug, nome, tipo, acesso_modelo, fase, ordem, ativo) VALUES
-        ('teste-subconsciente',         'Teste do Subconsciente',          'teste',      'vitalicio',  'fase1', 1, true),
-        ('livro-vencendo-medo',         'Vencendo o Medo',                 'livro',      'vitalicio',  'fase1', 2, true),
-        ('livro-vencendo-desordem',     'Vencendo a Desordem',             'livro',      'vitalicio',  'fase1', 3, true),
-        ('livro-vencendo-validacao',    'Vencendo a Validação',            'livro',      'vitalicio',  'fase1', 4, true),
-        ('livro-vencendo-sobrevivencia','Vencendo a Sobrevivência',        'livro',      'vitalicio',  'fase1', 5, true),
-        ('curso-ouro-reprogramacao',    'Ouro da Reprogramação Mental',    'curso',      'vitalicio',  'fase1', 6, true),
-        ('guia-pratico-reprogramar',    'Guia Prático para Reprogramar a Mente', 'livro','vitalicio',  'fase2', 7, true),
-        ('guia-bolso-magica-fluir',     'Guia de Bolso Mágica do Fluir',   'livro',      'vitalicio',  'fase2', 8, true),
-        ('livro-tal-maneira',           'A Tal Maneira (Livro)',           'livro',      'vitalicio',  'fase2', 9, true),
-        ('curso-lda-biblica',           'Lei da Atração Bíblica',          'curso',      'vitalicio',  'fase2', 10, true),
-        ('curso-tal-maneira',           'A Tal Maneira (Curso)',           'curso',      'vitalicio',  'fase3', 11, true),
-        ('assinatura-comunidade',       'Comunidade Vida Mágica',          'assinatura', 'recorrente', 'fase1', 12, true)
+        ('clube_vida_magica',      'Clube Vida Mágica',                          'assinatura', 'recorrente', 'fase1', 1, true),
+        ('teste_prosperidade',     'Teste de Prosperidade',                      'teste',      'vitalicio',  'fase1', 2, true),
+        ('teste_subconsciente',    'Teste do Subconsciente',                     'teste',      'vitalicio',  'fase1', 3, true),
+        ('vencendo_medo',          'Vencendo o Medo',                            'livro',      'vitalicio',  'fase1', 4, true),
+        ('vencendo_desordem',      'Vencendo a Desordem',                        'livro',      'vitalicio',  'fase1', 5, true),
+        ('vencendo_validacao',     'Vencendo a Validação',                       'livro',      'vitalicio',  'fase1', 6, true),
+        ('vencendo_sobrevivencia', 'Vencendo a Sobrevivência',                   'livro',      'vitalicio',  'fase1', 7, true),
+        ('magica_fluir',           'Guia de Bolso Mágica do Fluir',              'livro',      'vitalicio',  'fase2', 8, true),
+        ('guia_pratico',           'Guia Prático para Reprogramar a Mente',      'livro',      'vitalicio',  'fase2', 9, true),
+        ('atal_maneira_livro',     'A Tal Maneira (Livro)',                      'livro',      'vitalicio',  'fase2', 10, true),
+        ('ouro_reprogramacao',     'Ouro da Reprogramação Mental',               'curso',      'vitalicio',  'fase1', 11, true),
+        ('lda_biblica',            'Lei da Atração Bíblica',                     'curso',      'vitalicio',  'fase2', 12, true),
+        ('atal_maneira_curso',     'A Tal Maneira (Curso)',                      'curso',      'vitalicio',  'fase3', 13, true)
       ON CONFLICT (slug) DO NOTHING
     `);
 
@@ -1274,14 +1278,15 @@ async function initComunicacao() {
          AND passo3_curso_titulo_2 IS NULL
     `);
 
-    // ── LIVROS DA SÉRIE CONHECER E DESPERTAR ──
-    // 4 linhas (1 por energia bloqueadora). Aparecem no Passo 2 conforme regras de gatilho.
-    // Editado pelo painel admin.
+    // ── (Tabela teste_livros existia em deploys anteriores — agora os 4 livros
+    //     da Série Conhecer e Despertar vivem na aba Preços, slugs:
+    //     vencendo_medo, vencendo_desordem, vencendo_validacao, vencendo_sobrevivencia.
+    //     Mantemos o CREATE pra não quebrar deploys antigos, mas não consultamos mais.) ──
     await c.query(`
       CREATE TABLE IF NOT EXISTS teste_livros (
         slug VARCHAR(50) PRIMARY KEY,
-        energia VARCHAR(40) NOT NULL UNIQUE,
-        titulo VARCHAR(200) NOT NULL,
+        energia VARCHAR(40),
+        titulo VARCHAR(200),
         capa_url TEXT,
         preco NUMERIC(10,2),
         link_checkout TEXT,
@@ -1290,15 +1295,6 @@ async function initComunicacao() {
       )
     `);
 
-    // Seed inicial — 4 livros com placeholders. Admin edita pelo painel.
-    await c.query(`
-      INSERT INTO teste_livros (slug, energia, titulo, preco, selo) VALUES
-        ('vencendo_medo',          'medo',          'Vencendo o Medo',           59.90, '✨ Inclui Aulão ao vivo com a Suellen'),
-        ('vencendo_desordem',      'desordem',      'Vencendo a Desordem',       59.90, '✨ Inclui Aulão ao vivo com a Suellen'),
-        ('vencendo_validacao',     'validacao',     'Vencendo a Validação',      59.90, '✨ Inclui Aulão ao vivo com a Suellen'),
-        ('vencendo_sobrevivencia', 'sobrevivencia', 'Vencendo a Sobrevivência',  59.90, '✨ Inclui Aulão ao vivo com a Suellen')
-      ON CONFLICT (slug) DO NOTHING
-    `);
 
     // Texto padrão do compartilhamento no WhatsApp (Bloco 4 da página de resultado)
     await c.query(`
@@ -1384,34 +1380,62 @@ async function initComunicacao() {
 
     await c.query(`
       INSERT INTO jornadas_passos (jornada_slug, ordem, produto_slug, titulo_passo, descricao_passo) VALUES
-        ('subconsciente', 1, 'teste-subconsciente',          'Conhecer',                'Identifique o padrão que trava sua prosperidade.'),
-        ('subconsciente', 2, 'livro-vencendo-medo',          'Despertar — Vencendo o Medo',           'Liberar a energia transversal que paralisa.'),
-        ('subconsciente', 3, 'livro-vencendo-desordem',      'Despertar — Vencendo a Desordem',       'Trazer ordem ao que está disperso.'),
-        ('subconsciente', 4, 'livro-vencendo-validacao',     'Despertar — Vencendo a Validação',      'Soltar o vício da aprovação externa.'),
-        ('subconsciente', 5, 'livro-vencendo-sobrevivencia', 'Despertar — Vencendo a Sobrevivência',  'Sair do modo de fazer demais na própria força.'),
-        ('subconsciente', 6, 'curso-ouro-reprogramacao',     'Reprogramar a Base',      'Instalar a nova identidade. A ferramenta-chave da Fase 1.'),
-        ('subconsciente', 7, 'assinatura-comunidade',        'Permanecer em Comunidade','Sustentar a transformação no convívio diário.')
+        ('subconsciente', 1, 'teste_subconsciente',     'Conhecer',                              'Identifique o padrão que trava sua prosperidade.'),
+        ('subconsciente', 2, 'vencendo_medo',           'Despertar — Vencendo o Medo',           'Liberar a energia transversal que paralisa.'),
+        ('subconsciente', 3, 'vencendo_desordem',       'Despertar — Vencendo a Desordem',       'Trazer ordem ao que está disperso.'),
+        ('subconsciente', 4, 'vencendo_validacao',      'Despertar — Vencendo a Validação',      'Soltar o vício da aprovação externa.'),
+        ('subconsciente', 5, 'vencendo_sobrevivencia',  'Despertar — Vencendo a Sobrevivência',  'Sair do modo de fazer demais na própria força.'),
+        ('subconsciente', 6, 'ouro_reprogramacao',      'Reprogramar a Base',                    'Instalar a nova identidade. A ferramenta-chave da Fase 1.'),
+        ('subconsciente', 7, 'clube_vida_magica',       'Permanecer em Comunidade',              'Sustentar a transformação no convívio diário.')
       ON CONFLICT (jornada_slug, ordem) DO NOTHING
     `);
 
     // JORNADA 2 — Vida Mágica
     await c.query(`
       INSERT INTO jornadas_passos (jornada_slug, ordem, produto_slug, titulo_passo, descricao_passo) VALUES
-        ('vida_magica', 1, 'teste-subconsciente',     'Diagnosticar o nível',                     'Confirmar que sua energia evoluiu para Prosperidade.'),
-        ('vida_magica', 2, 'guia-pratico-reprogramar','Guia Prático para Reprogramar a Mente',    'Operar a reprogramação no dia a dia.'),
-        ('vida_magica', 3, 'guia-bolso-magica-fluir', 'Guia de Bolso Mágica do Fluir',            'Manter o estado de fluir nas pequenas coisas.'),
-        ('vida_magica', 4, 'livro-tal-maneira',       'A Tal Maneira — Livro',                    'Conhecer o método de manifestação bíblica.'),
-        ('vida_magica', 5, 'curso-lda-biblica',       'Lei da Atração Bíblica',                   'Ativar a Lei da Atração à luz da fé.'),
-        ('vida_magica', 6, 'assinatura-comunidade',   'Permanecer em Comunidade',                 'Crescer entre pessoas que vivem o mesmo método.')
+        ('vida_magica', 1, 'teste_subconsciente',  'Diagnosticar o nível',                     'Confirmar que sua energia evoluiu para Prosperidade.'),
+        ('vida_magica', 2, 'guia_pratico',         'Guia Prático para Reprogramar a Mente',    'Operar a reprogramação no dia a dia.'),
+        ('vida_magica', 3, 'magica_fluir',         'Guia de Bolso Mágica do Fluir',            'Manter o estado de fluir nas pequenas coisas.'),
+        ('vida_magica', 4, 'atal_maneira_livro',   'A Tal Maneira — Livro',                    'Conhecer o método de manifestação bíblica.'),
+        ('vida_magica', 5, 'lda_biblica',          'Lei da Atração Bíblica',                   'Ativar a Lei da Atração à luz da fé.'),
+        ('vida_magica', 6, 'clube_vida_magica',    'Permanecer em Comunidade',                 'Crescer entre pessoas que vivem o mesmo método.')
       ON CONFLICT (jornada_slug, ordem) DO NOTHING
     `);
 
     // JORNADA 3 — Transbordar
     await c.query(`
       INSERT INTO jornadas_passos (jornada_slug, ordem, produto_slug, titulo_passo, descricao_passo) VALUES
-        ('transbordar', 1, 'teste-subconsciente', 'Confirmar o transbordo',  'Atestar o nível mais alto de prosperidade.'),
-        ('transbordar', 2, 'curso-tal-maneira',   'A Tal Maneira — Curso',   'Ferramenta completa pra quem vive no transbordo.')
+        ('transbordar', 1, 'teste_subconsciente',  'Confirmar o transbordo',  'Atestar o nível mais alto de prosperidade.'),
+        ('transbordar', 2, 'atal_maneira_curso',   'A Tal Maneira — Curso',   'Ferramenta completa pra quem vive no transbordo.')
       ON CONFLICT (jornada_slug, ordem) DO NOTHING
+    `);
+
+    // ── Migration de slugs (deploys anteriores usavam slugs com hífen) ──
+    // Atualiza linhas existentes que tinham slugs antigos pra os slugs alinhados com Preços.
+    await c.query(`
+      UPDATE jornadas_passos SET produto_slug = CASE produto_slug
+        WHEN 'teste-subconsciente'           THEN 'teste_subconsciente'
+        WHEN 'livro-vencendo-medo'           THEN 'vencendo_medo'
+        WHEN 'livro-vencendo-desordem'       THEN 'vencendo_desordem'
+        WHEN 'livro-vencendo-validacao'      THEN 'vencendo_validacao'
+        WHEN 'livro-vencendo-sobrevivencia'  THEN 'vencendo_sobrevivencia'
+        WHEN 'curso-ouro-reprogramacao'      THEN 'ouro_reprogramacao'
+        WHEN 'assinatura-comunidade'         THEN 'clube_vida_magica'
+        WHEN 'guia-pratico-reprogramar'      THEN 'guia_pratico'
+        WHEN 'guia-bolso-magica-fluir'       THEN 'magica_fluir'
+        WHEN 'livro-tal-maneira'             THEN 'atal_maneira_livro'
+        WHEN 'curso-lda-biblica'             THEN 'lda_biblica'
+        WHEN 'curso-tal-maneira'             THEN 'atal_maneira_curso'
+        ELSE produto_slug
+      END,
+      atualizado_em = NOW()
+      WHERE produto_slug IN (
+        'teste-subconsciente', 'livro-vencendo-medo', 'livro-vencendo-desordem',
+        'livro-vencendo-validacao', 'livro-vencendo-sobrevivencia',
+        'curso-ouro-reprogramacao', 'assinatura-comunidade',
+        'guia-pratico-reprogramar', 'guia-bolso-magica-fluir',
+        'livro-tal-maneira', 'curso-lda-biblica', 'curso-tal-maneira'
+      )
     `);
 
     console.log('✅ Banco Comunicação iniciado');
