@@ -545,18 +545,20 @@ ul, ol { list-style: none; }
   flex-shrink: 0;
   margin: 0.6rem 0.85rem 0;
   padding: 0.55rem 0.85rem;
-  background: var(--vidro);
+  background: rgba(255,250,240,0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--vidro-borda);
   border-radius: var(--r-md);
   display: flex; align-items: center; gap: 0.7rem;
   font-size: 0.74rem;
 }
 .sla-banner.prioritario {
-  background: rgba(200,146,42,0.08);
+  background: rgba(200,146,42,0.12);
   border-color: var(--vidro-borda-hi);
 }
 .sla-banner.basic-vm {
-  background: rgba(200,146,42,0.05);
+  background: rgba(200,146,42,0.08);
   border-color: var(--vidro-borda-hi);
 }
 .sla-banner .icone { font-size: 1rem; flex-shrink: 0; }
