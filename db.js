@@ -470,6 +470,39 @@ async function initCore() {
     // Esta tabela existe pra: cruzamento com usuario_produtos (FK por id) e
     // metadados estruturais (tipo, acesso_modelo, ordem).
     // ON CONFLICT (slug) DO NOTHING — idempotente.
+
+    // ── Migration de slugs antigos (deploys anteriores usavam slugs com hífen) ──
+    // Se a tabela já foi populada com slugs no formato antigo, atualiza pra os
+    // slugs alinhados com Preços. Isso garante que os JOINs com usuario_produtos
+    // continuem encontrando os produtos certos pelo slug canônico.
+    await c.query(`
+      UPDATE produtos SET slug = CASE slug
+        WHEN 'teste-subconsciente'           THEN 'teste_subconsciente'
+        WHEN 'teste-prosperidade'            THEN 'teste_prosperidade'
+        WHEN 'livro-vencendo-medo'           THEN 'vencendo_medo'
+        WHEN 'livro-vencendo-desordem'       THEN 'vencendo_desordem'
+        WHEN 'livro-vencendo-validacao'      THEN 'vencendo_validacao'
+        WHEN 'livro-vencendo-sobrevivencia'  THEN 'vencendo_sobrevivencia'
+        WHEN 'curso-ouro-reprogramacao'      THEN 'ouro_reprogramacao'
+        WHEN 'assinatura-comunidade'         THEN 'clube_vida_magica'
+        WHEN 'guia-pratico-reprogramar'      THEN 'guia_pratico'
+        WHEN 'guia-bolso-magica-fluir'       THEN 'magica_fluir'
+        WHEN 'livro-tal-maneira'             THEN 'atal_maneira_livro'
+        WHEN 'curso-lda-biblica'             THEN 'lda_biblica'
+        WHEN 'curso-tal-maneira'             THEN 'atal_maneira_curso'
+        ELSE slug
+      END,
+      atualizado_em = NOW()
+      WHERE slug IN (
+        'teste-subconsciente', 'teste-prosperidade',
+        'livro-vencendo-medo', 'livro-vencendo-desordem',
+        'livro-vencendo-validacao', 'livro-vencendo-sobrevivencia',
+        'curso-ouro-reprogramacao', 'assinatura-comunidade',
+        'guia-pratico-reprogramar', 'guia-bolso-magica-fluir',
+        'livro-tal-maneira', 'curso-lda-biblica', 'curso-tal-maneira'
+      )
+    `);
+
     await c.query(`
       INSERT INTO produtos (slug, nome, tipo, acesso_modelo, fase, ordem, ativo) VALUES
         ('clube_vida_magica',      'Clube Vida Mágica',                          'assinatura', 'recorrente', 'fase1', 1, true),
