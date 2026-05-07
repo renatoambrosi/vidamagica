@@ -253,6 +253,8 @@ body.chat-aberto .views {
 
 .view-topo { padding: 1.5rem 1.25rem 0.75rem; }
 .view-titulo { font-family: var(--font-display); font-size: 1.4rem; font-weight: 900; color: var(--texto); margin-bottom: 0.2rem; }
+/* Padding lateral da aba Materiais — antes ficava encostado na borda */
+.produtos-lista { padding: 0 1.25rem 2rem; }
 .view-sub { font-size: 0.82rem; color: var(--texto-suave); font-style: italic; }
 /* ── Aba Materiais — cartões elegantes com seções e hierarquia ──
    Cada bloco (Seus testes / Adquiridos / Continue sua jornada / Para descobrir)
@@ -264,12 +266,20 @@ body.chat-aberto .views {
   font-family: var(--font-display);
   font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ouro-fundo);
-  margin-bottom: 0.7rem;
-  padding-bottom: 0.4rem;
-  border-bottom: 1px solid var(--vidro-borda);
+  margin-bottom: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+/* Linha dourada decorativa após o título da seção */
+.mat-secao-titulo::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--vidro-borda-hi), transparent);
 }
 
 .mat-card {
@@ -415,6 +425,19 @@ body.chat-aberto .views {
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.04em;
+}
+
+/* Linha de ações — usado quando há 2 botões lado a lado (ex: Ver resultado + Fazer novo) */
+.mat-card-acoes {
+  display: flex;
+  gap: 0.55rem;
+  margin-top: 0.7rem;
+  flex-wrap: wrap;
+}
+.mat-card-acoes .mat-card-btn,
+.mat-card-acoes .mat-card-btn-secundario,
+.mat-card-acoes .mat-card-locked {
+  margin-top: 0;
 }
 
 .empty-state { display: flex; flex-direction: column; align-items: center; padding: 3rem 1.5rem; text-align: center; }
