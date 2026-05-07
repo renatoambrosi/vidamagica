@@ -193,6 +193,25 @@ router.get('/contexto', autenticar, async (req, res) => {
       }
     }
 
+    // ── Outros produtos (catálogo completo da aba Preços) ──
+    // O frontend filtra os já comprados e os da jornada, e mostra o resto.
+    let outrosProdutos = [];
+    try {
+      const todosR = await poolComunicacao.query(
+        `SELECT key, dados FROM precos ORDER BY key`
+      );
+      outrosProdutos = todosR.rows.map(r => ({
+        slug: r.key,
+        nome: (r.dados || {}).nome || r.key,
+        imagem_url: (r.dados || {}).imagem_url || '',
+        tipo: (r.dados || {}).tipo || '',
+        link_checkout_padrao: (r.dados || {}).link_checkout_padrao || '',
+        link_checkout_aluno: (r.dados || {}).link_checkout_aluno || '',
+      }));
+    } catch (e) {
+      console.warn('[contexto] erro ao buscar catálogo:', e.message);
+    }
+
     // ── Resposta ─────────────────────────────────────────────
     return res.json({
       ok: true,
@@ -226,6 +245,7 @@ router.get('/contexto', autenticar, async (req, res) => {
         acesso_fim: c.acesso_fim,
         observacao: c.observacao,
       })),
+      outros_produtos: outrosProdutos,
     });
   } catch (err) {
     console.error('[app/contexto] erro:', err);
