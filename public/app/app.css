@@ -531,39 +531,50 @@ body.teclado-aberto .bottom-nav {
   text-align: center;
 }
 
-/* Banner de plano */
+/* Banner de plano — padrão idêntico ao .sla-banner do atendimento.
+   Caixinha compacta com ícone à esquerda + título sobre descrição.
+   O botão (Assinar/Ativar) fica à direita pra Free e Basic VM. No prioritário
+   o botão some (regra existente em app.js). */
 .plano-banner {
+  flex-shrink: 0;
+  margin: 0.6rem 0.85rem 0;
+  padding: 0.55rem 0.85rem;
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
+  border-radius: 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: var(--vidro);
-  border-bottom: 1px solid var(--vidro-borda);
-  flex-shrink: 0;
+  gap: 0.7rem;
+  font-size: 0.74rem;
   font-family: var(--font-ui);
 }
+/* Ícone fica como caractere de texto à esquerda (📡/💛/⏱️ via JS) */
 .plano-banner-icone {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--texto-fraco);
+  font-size: 1rem;
   flex-shrink: 0;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  /* SVG/character ficará aqui via textContent */
+  line-height: 1;
 }
 .plano-banner-texto { flex: 1; min-width: 0; }
 .plano-banner-titulo {
   font-family: var(--font-display);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--texto-mute);
-  margin: 0;
+  color: var(--ouro-fundo);
+  margin: 0 0 1px;
   line-height: 1.2;
 }
 .plano-banner-desc {
-  font-size: 0.7rem;
-  color: var(--texto-mute);
-  margin: 1px 0 0;
-  line-height: 1.2;
+  font-size: 0.72rem;
+  color: var(--texto-suave);
+  margin: 0;
+  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -574,9 +585,9 @@ body.teclado-aberto .bottom-nav {
   color: white;
   border: none;
   border-radius: var(--radius-full);
-  padding: 7px 14px;
+  padding: 6px 12px;
   font-family: var(--font-display);
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -587,28 +598,18 @@ body.teclado-aberto .bottom-nav {
 .plano-banner-acao:hover { transform: scale(1.04); }
 .plano-banner-acao:active { transform: scale(0.96); }
 
-.plano-banner.tier-free { background: rgba(255,250,240,0.7); }
-.plano-banner.tier-free .plano-banner-icone { background: var(--texto-fraco); }
-.plano-banner.tier-free .plano-banner-titulo { color: var(--texto-mute); }
-
-.plano-banner.tier-basic_vm { background: rgba(253,242,220,0.7); }
-.plano-banner.tier-basic_vm .plano-banner-icone { background: var(--ouro); }
-.plano-banner.tier-basic_vm .plano-banner-titulo { color: var(--ouro-fundo); }
-.plano-banner.tier-basic_vm .plano-banner-desc { color: var(--texto-suave); }
-
+/* Tiers: variações de fundo/borda igual sla-banner do atendimento */
+.plano-banner.tier-free {
+  background: var(--vidro);
+  border-color: var(--vidro-borda);
+}
+.plano-banner.tier-basic_vm {
+  background: rgba(200,146,42,0.05);
+  border-color: var(--vidro-borda-hi);
+}
 .plano-banner.tier-prioritario {
-  background: linear-gradient(90deg, #fdf2dc, #f8e3b3);
-  border-bottom-color: var(--vidro-borda-hi);
-}
-.plano-banner.tier-prioritario .plano-banner-icone {
-  background: var(--ouro);
-  box-shadow: 0 0 6px rgba(200,146,42,0.6);
-}
-.plano-banner.tier-prioritario .plano-banner-titulo { color: var(--ouro-fundo); }
-.plano-banner.tier-prioritario .plano-banner-desc {
-  font-family: var(--font-display);
-  font-weight: 700;
-  color: var(--ouro-fundo);
+  background: rgba(200,146,42,0.08);
+  border-color: var(--vidro-borda-hi);
 }
 .plano-banner.tier-prioritario.alerta .plano-banner-desc { color: #B04848; }
 
