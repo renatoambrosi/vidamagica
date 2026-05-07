@@ -554,13 +554,8 @@ body.teclado-aberto .bottom-nav {
   flex-shrink: 0;
   margin: 0.6rem 0.85rem 0;
   padding: 0.55rem 0.85rem;
-  background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 100%);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.5);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.6),
-    0 4px 12px rgba(0,0,0,0.06);
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
   border-radius: 12px;
   display: flex; align-items: center; gap: 0.7rem;
   font-size: 0.74rem;
@@ -612,14 +607,14 @@ body.teclado-aberto .bottom-nav {
 .plano-banner-acao:hover { transform: scale(1.04); }
 .plano-banner-acao:active { transform: scale(0.96); }
 
-/* Tiers — variações sutis mantendo a transparência */
+/* Tiers — mesmas variações do .sla-banner do atendimento */
 .plano-banner.tier-prioritario {
-  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,235,180,0.12) 100%);
-  border-color: rgba(255,255,255,0.55);
+  background: rgba(200,146,42,0.08);
+  border-color: var(--vidro-borda-hi);
 }
 .plano-banner.tier-basic_vm {
-  background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,245,210,0.1) 100%);
-  border-color: rgba(255,255,255,0.5);
+  background: rgba(200,146,42,0.05);
+  border-color: var(--vidro-borda-hi);
 }
 .plano-banner.tier-prioritario.alerta .plano-banner-desc { color: #B04848; }
 
