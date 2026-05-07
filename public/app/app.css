@@ -284,8 +284,9 @@ body.chat-aberto .views {
   /* Usa --kbd-offset (setado por JS via visualViewport) */
   bottom: calc(var(--nav-h) + var(--safe-bottom) + var(--kbd-offset, 0px));
   flex-direction: column;
-  background: rgba(255,250,240,0.6);
-  backdrop-filter: blur(2px);
+  /* Sem background nem blur — o fundo do body (background-theme.jpg) atravessa
+     a área do chat, igual ao painel de atendimento da Suellen.
+     Header, banner e input continuam sólidos/vidro porque têm seu próprio fundo. */
   max-width: var(--content-max);
   margin: 0 auto;
   /* Recolhe a bottom-nav junto quando o teclado abre */
