@@ -359,7 +359,9 @@ function atualizarCardCanal(canal, info) {
 // ── Abrir canal ──
 async function abrirCanal(canal) {
   canalAtivo = canal;
-  document.getElementById('chat-escolha-tela').style.display = 'none';
+  // Tela de escolha continua renderizada POR BAIXO da tela de conversa.
+  // A tela de conversa fica posicionada absoluta com liquid glass — efeito
+  // de modal flutuante sobre os 2 cards de escolha borrados ao fundo.
   document.getElementById('chat-conversa-tela').style.display = 'flex';
 
   const isS = canal === 'suellen';
