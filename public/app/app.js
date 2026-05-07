@@ -282,8 +282,23 @@ async function carregarTestes() {
     const r = await fetch(`${API}/api/auth/testes`, { headers: authHeader() });
     if (!r.ok) throw new Error();
     const testes = await r.json();
-    if (!testes.length) { corpo.innerHTML='<div class="loading-inline">Nenhum teste realizado ainda.</div>'; return; }
-    corpo.innerHTML = testes.map(t=>`<div class="teste-item"><div class="teste-perfil">${t.perfil_dominante}</div><div class="teste-pct">${t.percentual_prosperidade}<span>%</span></div><div class="teste-data">${new Date(t.feito_em).toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}</div></div>`).join('');
+    if (!testes.length) { corpo.innerHTML='<div class="loading-inline">Nenhum teste do subconsciente realizado ainda.</div>'; return; }
+    corpo.innerHTML = testes.map(t => {
+      const dataTxt = t.feito_em
+        ? new Date(t.feito_em).toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' })
+        : 'em andamento';
+      const perfil = t.perfil_dominante || '—';
+      const pct = (t.percentual_prosperidade != null) ? t.percentual_prosperidade : '—';
+      const acaoHtml = t.pago && t.feito_em
+        ? `<a href="/resultado/${t.id}" target="_blank" class="teste-item-acao">Ver resultado →</a>`
+        : '';
+      return `<div class="teste-item">
+        <div class="teste-perfil">${escHtml(perfil)}</div>
+        <div class="teste-pct">${pct}<span>%</span></div>
+        <div class="teste-data">${dataTxt}</div>
+        ${acaoHtml}
+      </div>`;
+    }).join('');
   } catch { corpo.innerHTML='<div class="loading-inline">Erro ao carregar.</div>'; }
 }
 
@@ -1633,13 +1648,13 @@ function renderMateriais(ctx) {
 
   const blocos = [];
 
-  // ── 1. Bloco de testes (concluídos + em andamento) ──
+  // ── 1. Testes (em andamento + concluídos, mais recente em cima) ──
   if (ctx.teste_em_andamento) {
     const tea = ctx.teste_em_andamento;
     blocos.push(
       '<div class="material-card" style="background:linear-gradient(135deg,rgba(248,220,150,0.12),rgba(43,165,232,0.05));border:1px solid rgba(248,220,150,0.3);border-radius:12px;padding:1rem 1.1rem;margin-bottom:0.85rem;cursor:pointer" onclick="window.location.href=\'/teste\'">' +
         '<div style="font-size:0.7rem;color:var(--ouro-fundo,#C8922A);letter-spacing:0.06em;text-transform:uppercase;font-weight:700;margin-bottom:0.25rem">Em andamento</div>' +
-        '<div style="font-family:var(--font-display,Montserrat);font-weight:700;font-size:0.95rem;color:var(--texto,#fff);margin-bottom:0.4rem">Continuar teste do Subconsciente</div>' +
+        '<div style="font-family:var(--font-display,Montserrat);font-weight:700;font-size:0.95rem;color:var(--texto,#fff);margin-bottom:0.4rem">Continuar Teste do Subconsciente</div>' +
         '<div style="font-size:0.78rem;color:var(--texto-suave)">Pergunta ' + tea.respondidas + ' de ' + tea.total + ' respondidas</div>' +
       '</div>'
     );
@@ -1669,24 +1684,109 @@ function renderMateriais(ctx) {
     });
   }
 
+  // Slug do teste do subconsciente — usado pra filtrar dos blocos seguintes
+  // (ele já apareceu em testes feitos quando aplicável)
+  const SLUG_TESTE = 'teste_subconsciente';
+
   // ── 2. Bloco de produtos comprados ──
-  if (Array.isArray(ctx.comprados) && ctx.comprados.length > 0) {
-    // filtra teste-subconsciente porque ele já apareceu na seção de testes
-    const compradosOutros = ctx.comprados.filter(c => c.produto_slug !== 'teste-subconsciente');
-    if (compradosOutros.length > 0) {
+  // Filtra teste_subconsciente porque ele já apareceu como "teste feito"
+  const compradosOutros = Array.isArray(ctx.comprados)
+    ? ctx.comprados.filter(c => c.produto_slug !== SLUG_TESTE)
+    : [];
+
+  if (compradosOutros.length > 0) {
+    blocos.push(
+      '<div style="font-size:0.72rem;color:var(--texto-suave);text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin:1.5rem 0 0.65rem">Adquiridos</div>'
+    );
+    compradosOutros.forEach(c => {
+      const capa = c.produto_imagem
+        ? '<img src="' + escHtml(c.produto_imagem) + '" alt="" style="width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display=\'none\'">'
+        : '';
       blocos.push(
-        '<div style="font-size:0.72rem;color:var(--texto-suave);text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin:1.5rem 0 0.65rem">Adquiridos</div>'
+        '<div class="material-card" style="background:rgba(255,255,255,0.04);border:1px solid rgba(245,240,232,0.1);border-radius:12px;padding:0.85rem 1rem;margin-bottom:0.65rem;display:flex;gap:0.75rem;align-items:center">' +
+          capa +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:0.66rem;color:#2ED573;letter-spacing:0.06em;text-transform:uppercase;font-weight:700;margin-bottom:0.15rem">✓ Liberado</div>' +
+            '<div style="font-family:var(--font-display,Montserrat);font-weight:700;font-size:0.88rem;color:var(--texto,#fff);line-height:1.2">' + escHtml(c.produto_nome || c.produto_slug) + '</div>' +
+            (c.observacao ? '<div style="font-size:0.7rem;color:var(--texto-suave);margin-top:0.2rem">' + escHtml(c.observacao) + '</div>' : '') +
+          '</div>' +
+        '</div>'
       );
-      compradosOutros.forEach(c => {
-        blocos.push(
-          '<div class="material-card" style="background:rgba(255,255,255,0.04);border:1px solid rgba(245,240,232,0.1);border-radius:12px;padding:1rem 1.1rem;margin-bottom:0.65rem">' +
-            '<div style="font-size:0.7rem;color:#2ED573;letter-spacing:0.06em;text-transform:uppercase;font-weight:700;margin-bottom:0.2rem">✓ Liberado</div>' +
-            '<div style="font-family:var(--font-display,Montserrat);font-weight:700;font-size:0.92rem;color:var(--texto,#fff)">' + escHtml(c.produto_nome || c.produto_slug) + '</div>' +
-            (c.observacao ? '<div style="font-size:0.72rem;color:var(--texto-suave);margin-top:0.25rem">' + escHtml(c.observacao) + '</div>' : '') +
-          '</div>'
-        );
-      });
-    }
+    });
+  }
+
+  // ── 3. Continue sua jornada — passos da jornada que ainda não comprou ──
+  const slugsComprados = new Set((ctx.comprados || []).map(c => c.produto_slug));
+  // teste_subconsciente conta como "feito" se a aluna fez o teste
+  if (ctx.teste_atual) slugsComprados.add(SLUG_TESTE);
+
+  const passosNaoComprados = (ctx.jornada_atual && Array.isArray(ctx.jornada_atual.passos))
+    ? ctx.jornada_atual.passos.filter(p => !slugsComprados.has(p.produto_slug))
+    : [];
+
+  if (passosNaoComprados.length > 0) {
+    blocos.push(
+      '<div style="font-size:0.72rem;color:var(--texto-suave);text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin:1.5rem 0 0.65rem">Continue sua jornada</div>'
+    );
+    passosNaoComprados.forEach(p => {
+      const capa = p.produto_imagem
+        ? '<img src="' + escHtml(p.produto_imagem) + '" alt="" style="width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display=\'none\'">'
+        : '';
+      const link = p.link_checkout_padrao || '#';
+      const btnHtml = link === '#'
+        ? ''
+        : '<a href="' + escHtml(link) + '" target="_blank" rel="noopener" style="display:inline-block;padding:0.42rem 0.8rem;background:linear-gradient(135deg,var(--ouro,#F8DC96),var(--ouro-fundo,#C8922A));color:#051929;border-radius:8px;font-family:var(--font-display,Montserrat);font-size:0.72rem;font-weight:700;text-decoration:none;margin-top:0.45rem">Quero esse passo →</a>';
+      blocos.push(
+        '<div class="material-card" style="background:rgba(255,255,255,0.04);border:1px solid rgba(245,240,232,0.1);border-radius:12px;padding:0.85rem 1rem;margin-bottom:0.65rem">' +
+          '<div style="display:flex;gap:0.75rem;align-items:flex-start">' +
+            capa +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="font-size:0.66rem;color:var(--ouro-fundo,#C8922A);letter-spacing:0.06em;text-transform:uppercase;font-weight:700;margin-bottom:0.15rem">' + escHtml(p.titulo) + '</div>' +
+              '<div style="font-family:var(--font-display,Montserrat);font-weight:700;font-size:0.88rem;color:var(--texto,#fff);line-height:1.2">' + escHtml(p.produto_nome) + '</div>' +
+              (p.descricao ? '<div style="font-size:0.7rem;color:var(--texto-suave);margin-top:0.2rem">' + escHtml(p.descricao) + '</div>' : '') +
+              btnHtml +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    });
+  }
+
+  // ── 4. Outros produtos (que NÃO estão na jornada da aluna) ──
+  const slugsJornada = new Set(
+    (ctx.jornada_atual && Array.isArray(ctx.jornada_atual.passos))
+      ? ctx.jornada_atual.passos.map(p => p.produto_slug)
+      : []
+  );
+  const outros = Array.isArray(ctx.outros_produtos) ? ctx.outros_produtos : [];
+  const outrosFiltrados = outros.filter(p =>
+    !slugsComprados.has(p.slug) && !slugsJornada.has(p.slug)
+  );
+
+  if (outrosFiltrados.length > 0) {
+    blocos.push(
+      '<div style="font-size:0.72rem;color:var(--texto-suave);text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin:1.5rem 0 0.65rem">Outros produtos</div>'
+    );
+    outrosFiltrados.forEach(p => {
+      const capa = p.imagem_url
+        ? '<img src="' + escHtml(p.imagem_url) + '" alt="" style="width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0" onerror="this.style.display=\'none\'">'
+        : '';
+      const link = p.link_checkout_padrao || '';
+      const btnHtml = link
+        ? '<a href="' + escHtml(link) + '" target="_blank" rel="noopener" style="display:inline-block;padding:0.42rem 0.8rem;background:rgba(245,240,232,0.08);border:1px solid rgba(245,240,232,0.18);color:var(--texto,#fff);border-radius:8px;font-family:var(--font-display,Montserrat);font-size:0.72rem;font-weight:700;text-decoration:none;margin-top:0.45rem">Conhecer →</a>'
+        : '';
+      blocos.push(
+        '<div class="material-card" style="background:rgba(255,255,255,0.04);border:1px solid rgba(245,240,232,0.1);border-radius:12px;padding:0.85rem 1rem;margin-bottom:0.65rem">' +
+          '<div style="display:flex;gap:0.75rem;align-items:flex-start">' +
+            capa +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="font-family:var(--font-display,Montserrat);font-weight:700;font-size:0.88rem;color:var(--texto,#fff);line-height:1.2">' + escHtml(p.nome) + '</div>' +
+              btnHtml +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    });
   }
 
   // Vazio total
@@ -1788,12 +1888,21 @@ function renderTrilhaJornada(ctx) {
       const link = p.link_checkout_padrao || '#';
       btnHtml = '<a class="trilha-btn" href="' + link + '" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:inline-block">Quero esse passo →</a>';
     }
+    // Capa do produto (60x60) à esquerda; se não tiver imagem, deixa o slot vazio
+    const capa = p.produto_imagem
+      ? '<img class="trilha-capa" src="' + escHtml(p.produto_imagem) + '" alt="" onerror="this.style.display=\'none\'">'
+      : '';
     return (
       '<li class="trilha-item ' + classe + '">' +
         '<div class="trilha-num">' + num + '</div>' +
         '<div class="trilha-card">' +
-          '<div class="trilha-eyebrow-card">' + escHtml(p.titulo) + '</div>' +
-          '<h3 class="trilha-card-titulo">' + escHtml(p.produto_nome) + '</h3>' +
+          '<div class="trilha-card-topo">' +
+            capa +
+            '<div class="trilha-card-textos">' +
+              '<div class="trilha-eyebrow-card">' + escHtml(p.titulo) + '</div>' +
+              '<h3 class="trilha-card-titulo">' + escHtml(p.produto_nome) + '</h3>' +
+            '</div>' +
+          '</div>' +
           (p.descricao ? '<p class="trilha-card-desc">' + escHtml(p.descricao) + '</p>' : '') +
           btnHtml +
         '</div>' +
