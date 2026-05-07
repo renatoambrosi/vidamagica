@@ -1694,10 +1694,84 @@ function renderMateriais(ctx) {
   if (!wrap) return;
 
   const blocos = [];
+  const SLUG_TESTE = 'teste_subconsciente';
+  const SLUG_CLUBE = 'clube_vida_magica';
+  // Slugs de produtos de RECOMPRA / RECORRÊNCIA — sempre visíveis no bloco
+  // "Em destaque" no topo, mesmo se a aluna já comprou. São os únicos do
+  // catálogo que fazem sentido aparecer assim.
+  const SLUGS_RECOMPRA = new Set([SLUG_TESTE, SLUG_CLUBE]);
 
-  // ── 1. Testes (em andamento + feitos, mais recente em cima) ──
+  // Mapa rápido pra achar dados de qualquer produto pelo slug
+  const todosProdutosBySlug = {};
+  (ctx.outros_produtos || []).forEach(p => { todosProdutosBySlug[p.slug] = p; });
+
+  // ── 1. EM DESTAQUE — Teste do Subconsciente + Clube Vida Mágica ──
+  // Sempre visíveis no topo, comprados ou não. Produtos de recompra/recorrência.
+  const destaqueCards = [];
+
+  // Card do TESTE DO SUBCONSCIENTE
+  {
+    const prodTeste = todosProdutosBySlug[SLUG_TESTE] || {};
+    const capa = prodTeste.imagem_url
+      ? `<img src="${escHtml(prodTeste.imagem_url)}" alt="" class="mat-capa-destaque" onerror="this.style.display='none'">`
+      : '<div class="mat-capa-destaque mat-capa-placeholder"></div>';
+    const linkTeste = prodTeste.link_checkout_padrao || '';
+    const jaTemTeste = ctx.teste_atual || (ctx.todos_testes && ctx.todos_testes.length);
+    const cta = jaTemTeste
+      ? `<a href="/teste" class="mat-card-btn">Refazer e ver evolução →</a>`
+      : (linkTeste
+          ? `<a href="${escHtml(linkTeste)}" target="_blank" rel="noopener" class="mat-card-btn">Quero fazer →</a>`
+          : `<a href="/teste" class="mat-card-btn">Fazer agora →</a>`);
+    destaqueCards.push(
+      `<div class="mat-card mat-card-destaque">
+        <div class="mat-card-destaque-topo">
+          ${capa}
+          <div class="mat-card-destaque-textos">
+            <div class="mat-card-eyebrow">Teste do Subconsciente</div>
+            <div class="mat-card-titulo">Descubra o padrão dominante que rege sua mente.</div>
+          </div>
+        </div>
+        <div class="mat-card-desc">Um instrumento de autodiagnóstico que pode ser refeito sempre que sentir necessidade — sua energia muda com o tempo.</div>
+        ${cta}
+      </div>`
+    );
+  }
+
+  // Card do CLUBE VIDA MÁGICA
+  {
+    const prodClube = todosProdutosBySlug[SLUG_CLUBE] || {};
+    const capa = prodClube.imagem_url
+      ? `<img src="${escHtml(prodClube.imagem_url)}" alt="" class="mat-capa-destaque" onerror="this.style.display='none'">`
+      : '<div class="mat-capa-destaque mat-capa-placeholder"></div>';
+    const slugsComprados = new Set((ctx.comprados || []).map(c => c.produto_slug));
+    const jaAssinou = slugsComprados.has(SLUG_CLUBE);
+    const linkClube = prodClube.link_checkout_padrao || '';
+    const cta = jaAssinou
+      ? `<div class="mat-card-locked">✓ Você já é membro</div>`
+      : (linkClube
+          ? `<a href="${escHtml(linkClube)}" target="_blank" rel="noopener" class="mat-card-btn">Quero entrar →</a>`
+          : '');
+    destaqueCards.push(
+      `<div class="mat-card mat-card-destaque">
+        <div class="mat-card-destaque-topo">
+          ${capa}
+          <div class="mat-card-destaque-textos">
+            <div class="mat-card-eyebrow">Comunidade</div>
+            <div class="mat-card-titulo">${escHtml(prodClube.nome || 'Clube Vida Mágica')}</div>
+          </div>
+        </div>
+        <div class="mat-card-desc">Encontros mensais ao vivo, comunidade ativa e suporte direto pra sustentar a transformação no convívio diário.</div>
+        ${cta}
+      </div>`
+    );
+  }
+
+  blocos.push('<div class="mat-secao"><div class="mat-secao-titulo">Em destaque</div>' + destaqueCards.join('') + '</div>');
+
+  // ── 2. SEUS TESTES — carrossel ou lista (preferência salva) ──
   const blocoTestes = [];
 
+  // Banner de teste em andamento (separado)
   if (ctx.teste_em_andamento) {
     const tea = ctx.teste_em_andamento;
     blocoTestes.push(
@@ -1709,44 +1783,69 @@ function renderMateriais(ctx) {
     );
   }
 
-  if (Array.isArray(ctx.todos_testes) && ctx.todos_testes.length > 0) {
-    ctx.todos_testes.forEach(t => {
+  // Lista de testes feitos
+  const testesFeitos = Array.isArray(ctx.todos_testes) ? ctx.todos_testes : [];
+
+  if (testesFeitos.length > 0 || blocoTestes.length > 0) {
+    // Carrossel ou lista? Lê preferência salva
+    const modoSalvo = (() => { try { return localStorage.getItem('vm_testes_modo') || 'carrossel'; } catch { return 'carrossel'; } })();
+
+    // Toggle no header da seção
+    const toggleHtml = testesFeitos.length > 0
+      ? `<div class="mat-secao-toggle">
+          <button class="mat-toggle-btn ${modoSalvo === 'carrossel' ? 'ativo' : ''}" data-modo="carrossel" aria-label="Visualização em carrossel">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="6" height="12" rx="1"/><rect x="11" y="6" width="6" height="12" rx="1"/><rect x="19" y="6" width="2" height="12" rx="1" opacity="0.5"/></svg>
+          </button>
+          <button class="mat-toggle-btn ${modoSalvo === 'lista' ? 'ativo' : ''}" data-modo="lista" aria-label="Visualização em lista">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+        </div>`
+      : '';
+
+    // Cards dos testes feitos (clicar abre o resultado direto)
+    const testesCards = testesFeitos.map(t => {
       const dataTxt = t.feito_em ? new Date(t.feito_em).toLocaleDateString('pt-BR') : '—';
       const isMaisRecente = ctx.teste_atual && t.id === ctx.teste_atual.id;
       const pago = isMaisRecente ? ctx.teste_atual.pago : false;
-      // Botões: Ver resultado (se pago) + Fazer novo. Não revela o perfil aqui —
-      // a aluna precisa clicar pra ver. Reduz fricção e gera curiosidade.
-      const botoesHtml = pago
-        ? `<div class="mat-card-acoes">
-            <a href="/resultado/${t.id}" target="_blank" class="mat-card-btn">Ver resultado →</a>
-            <a href="/teste" class="mat-card-btn-secundario">Fazer novo</a>
-          </div>`
-        : `<div class="mat-card-acoes">
-            <div class="mat-card-locked">🔒 Aguardando liberação</div>
-            <a href="/teste" class="mat-card-btn-secundario">Fazer novo</a>
-          </div>`;
+      const status = pago ? 'pago' : 'bloqueado';
+      const onclick = pago
+        ? `onclick="window.open('/resultado/${t.id}', '_blank')"`
+        : `onclick="alert('Aguardando liberação do resultado.')"`;
+      const statusBadge = pago
+        ? '<div class="teste-mini-status teste-mini-pago">Ver resultado →</div>'
+        : '<div class="teste-mini-status teste-mini-bloqueado">🔒 Liberação pendente</div>';
+      return `<div class="teste-mini-card teste-mini-${status}" ${onclick}>
+        <div class="teste-mini-eyebrow">Teste do Subconsciente</div>
+        <div class="teste-mini-data">${dataTxt}</div>
+        ${statusBadge}
+      </div>`;
+    }).join('');
+
+    // Card final "+ Fazer novo" — sempre como último item, em ambos modos
+    const fazerNovoCard = `<div class="teste-mini-card teste-mini-novo" onclick="window.location.href='/teste'">
+      <div class="teste-mini-novo-icone">+</div>
+      <div class="teste-mini-novo-label">Fazer novo</div>
+    </div>`;
+
+    if (testesFeitos.length > 0) {
       blocoTestes.push(
-        `<div class="mat-card">
-          <div class="mat-card-row">
-            <div class="mat-card-eyebrow">Teste do Subconsciente</div>
-            <div class="mat-card-data">${dataTxt}</div>
-          </div>
-          <div class="mat-card-titulo">Seu padrão dominante está pronto pra ser revelado.</div>
-          ${botoesHtml}
+        `<div class="testes-wrapper testes-modo-${modoSalvo}" id="testes-wrapper">
+          ${testesCards}
+          ${fazerNovoCard}
         </div>`
       );
-    });
+    }
+
+    blocos.push(
+      '<div class="mat-secao"><div class="mat-secao-titulo-row"><div class="mat-secao-titulo">Seus testes</div>' + toggleHtml + '</div>'
+      + blocoTestes.join('')
+      + '</div>'
+    );
   }
 
-  if (blocoTestes.length > 0) {
-    blocos.push('<div class="mat-secao"><div class="mat-secao-titulo">Seus testes</div>' + blocoTestes.join('') + '</div>');
-  }
-
-  const SLUG_TESTE = 'teste_subconsciente';
-
-  // ── 2. Adquiridos (produtos comprados, exceto teste que já apareceu) ──
+  // ── 3. ADQUIRIDOS — produtos comprados, exceto recompra (já em destaque) ──
   const compradosOutros = Array.isArray(ctx.comprados)
-    ? ctx.comprados.filter(c => c.produto_slug !== SLUG_TESTE)
+    ? ctx.comprados.filter(c => !SLUGS_RECOMPRA.has(c.produto_slug))
     : [];
 
   if (compradosOutros.length > 0) {
@@ -1766,12 +1865,12 @@ function renderMateriais(ctx) {
     blocos.push('<div class="mat-secao"><div class="mat-secao-titulo">Adquiridos</div>' + cards + '</div>');
   }
 
-  // ── 3. Continue sua jornada — passos da jornada não comprados ──
+  // ── 4. CONTINUE SUA JORNADA — passos da jornada não comprados ──
   const slugsComprados = new Set((ctx.comprados || []).map(c => c.produto_slug));
   if (ctx.teste_atual) slugsComprados.add(SLUG_TESTE);
 
   const passosNaoComprados = (ctx.jornada_atual && Array.isArray(ctx.jornada_atual.passos))
-    ? ctx.jornada_atual.passos.filter(p => !slugsComprados.has(p.produto_slug))
+    ? ctx.jornada_atual.passos.filter(p => !slugsComprados.has(p.produto_slug) && !SLUGS_RECOMPRA.has(p.produto_slug))
     : [];
 
   if (passosNaoComprados.length > 0) {
@@ -1796,16 +1895,12 @@ function renderMateriais(ctx) {
     blocos.push('<div class="mat-secao"><div class="mat-secao-titulo">Continue sua jornada</div>' + cards + '</div>');
   }
 
-  // ── 4. Outros produtos (catálogo que não está na jornada nem comprado) ──
-  // Esconde produtos sem link de checkout (sem ação possível) e produtos
-  // legados que não devem aparecer pra aluna (mas continuam canônicos no admin).
+  // ── 5. PARA DESCOBRIR — outros do catálogo (sem recompra, sem jornada) ──
   const slugsJornada = new Set(
     (ctx.jornada_atual && Array.isArray(ctx.jornada_atual.passos))
       ? ctx.jornada_atual.passos.map(p => p.produto_slug)
       : []
   );
-  // Slugs que NÃO devem ser visíveis na aba Materiais da aluna,
-  // mesmo continuando cadastrados no admin/preços (canônicos).
   const SLUGS_LEGADOS_INVISIVEIS = new Set([
     'teste_prosperidade',  // teste antigo, substituído pelo Teste do Subconsciente
   ]);
@@ -1813,9 +1908,9 @@ function renderMateriais(ctx) {
   const outrosFiltrados = outros.filter(p =>
     !slugsComprados.has(p.slug)
     && !slugsJornada.has(p.slug)
-    && p.slug !== SLUG_TESTE
+    && !SLUGS_RECOMPRA.has(p.slug)               // recompra está em "Em destaque"
     && !SLUGS_LEGADOS_INVISIVEIS.has(p.slug)
-    && !!p.link_checkout_padrao   // sem link de venda, não faz sentido mostrar pra aluna
+    && !!p.link_checkout_padrao
   );
 
   if (outrosFiltrados.length > 0) {
@@ -1834,18 +1929,22 @@ function renderMateriais(ctx) {
     blocos.push('<div class="mat-secao"><div class="mat-secao-titulo">Para descobrir</div>' + cards + '</div>');
   }
 
-  // Vazio total
-  if (blocos.length === 0) {
-    wrap.innerHTML =
-      '<div class="empty-state">' +
-        '<div class="empty-icon">📦</div>' +
-        '<p class="empty-titulo">Nada por aqui ainda</p>' +
-        '<p class="empty-sub">Quando começar sua jornada, seus testes e cursos aparecem aqui.</p>' +
-      '</div>';
-    return;
-  }
-
   wrap.innerHTML = blocos.join('');
+
+  // Liga o toggle de visualização (carrossel/lista)
+  wrap.querySelectorAll('.mat-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const modo = btn.dataset.modo;
+      try { localStorage.setItem('vm_testes_modo', modo); } catch {}
+      const wrapTestes = document.getElementById('testes-wrapper');
+      if (wrapTestes) {
+        wrapTestes.classList.remove('testes-modo-carrossel', 'testes-modo-lista');
+        wrapTestes.classList.add(`testes-modo-${modo}`);
+      }
+      wrap.querySelectorAll('.mat-toggle-btn').forEach(b => b.classList.remove('ativo'));
+      btn.classList.add('ativo');
+    });
+  });
 }
 
 // ── BANNER "Continuar teste" no topo da Home ────────────────
