@@ -258,9 +258,192 @@ body.chat-aberto .views {
 .view-topo { padding: 1.5rem 1.25rem 0.75rem; }
 .view-titulo { font-family: var(--font-display); font-size: 1.4rem; font-weight: 900; color: var(--texto); margin-bottom: 0.2rem; }
 /* Padding lateral da aba Materiais. O padding-bottom usa as variáveis da
-   bottom-nav (--nav-h + --safe-bottom) + folga, pra o último card não ficar
-   escondido atrás da barra fixa. */
-.produtos-lista { padding: 0 1.25rem calc(var(--nav-h) + var(--safe-bottom) + 1.5rem); }
+   bottom-nav (--nav-h + --safe-bottom) + folga generosa pra dar respiro
+   abaixo do último card e impedir que ele encoste na bottom-nav. */
+.produtos-lista { padding: 0 1.25rem calc(var(--nav-h) + var(--safe-bottom) + 3rem); }
+
+/* ── Linha do título da seção com toggle ao lado direito ── */
+.mat-secao-titulo-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.85rem;
+  gap: 0.7rem;
+}
+.mat-secao-titulo-row .mat-secao-titulo { margin-bottom: 0; flex: 1; }
+.mat-secao-toggle {
+  display: flex;
+  gap: 4px;
+  background: rgba(245,240,232,0.5);
+  border: 1px solid var(--vidro-borda);
+  border-radius: 8px;
+  padding: 3px;
+  flex-shrink: 0;
+}
+.mat-toggle-btn {
+  width: 28px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  color: var(--texto-suave);
+  transition: background 0.15s, color 0.15s;
+}
+.mat-toggle-btn.ativo {
+  background: var(--ouro-fundo);
+  color: white;
+}
+
+/* ════════════════════════════════════════════════
+   BLOCO "EM DESTAQUE" — Teste + Clube no topo
+   Cards full-width, mais imponentes que os comuns.
+   ════════════════════════════════════════════════ */
+.mat-card-destaque {
+  background: linear-gradient(135deg, rgba(248,220,150,0.20), rgba(255,250,240,0.85));
+  border: 1px solid rgba(200,146,42,0.28);
+  padding: 1.1rem 1.15rem;
+  margin-bottom: 0.8rem;
+  position: relative;
+}
+.mat-card-destaque::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--ouro-fundo), transparent);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+.mat-card-destaque-topo {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  margin-bottom: 0.7rem;
+}
+.mat-capa-destaque {
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(200,146,42,0.18);
+}
+.mat-card-destaque-textos { flex: 1; min-width: 0; }
+.mat-card-destaque .mat-card-titulo { font-size: 1rem; line-height: 1.25; }
+.mat-card-destaque .mat-card-desc { margin: 0 0 0.85rem 0; font-size: 0.8rem; line-height: 1.5; }
+
+/* ════════════════════════════════════════════════
+   BLOCO "SEUS TESTES" — carrossel ou lista
+   ════════════════════════════════════════════════ */
+/* Wrapper comum aos dois modos */
+.testes-wrapper { display: flex; gap: 0.65rem; }
+
+/* Modo carrossel: scroll horizontal, snap nos cards */
+.testes-modo-carrossel {
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -1.25rem;
+  padding: 0.25rem 1.25rem;
+  scrollbar-width: none;
+}
+.testes-modo-carrossel::-webkit-scrollbar { display: none; }
+.testes-modo-carrossel .teste-mini-card {
+  flex-shrink: 0;
+  width: 165px;
+  scroll-snap-align: start;
+}
+
+/* Modo lista: cards empilhados, full-width */
+.testes-modo-lista {
+  flex-direction: column;
+}
+.testes-modo-lista .teste-mini-card {
+  width: 100%;
+}
+
+/* Card individual de teste (compartilhado entre modos) */
+.teste-mini-card {
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 0.95rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 110px;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.15s, box-shadow 0.15s;
+}
+.teste-mini-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--vidro-borda-hi);
+  box-shadow: 0 4px 14px rgba(200,146,42,0.12);
+}
+.teste-mini-card:active { transform: scale(0.985); }
+
+.teste-mini-eyebrow {
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ouro-fundo);
+}
+.teste-mini-data {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--texto);
+  line-height: 1.1;
+}
+.teste-mini-status {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.teste-mini-pago { color: var(--ouro-fundo); }
+.teste-mini-bloqueado { color: var(--texto-suave); }
+
+/* Card "+ Fazer novo" — variante visual destacada como ação */
+.teste-mini-novo {
+  background: linear-gradient(135deg, rgba(248,220,150,0.18), rgba(255,250,240,0.6));
+  border: 1px dashed rgba(200,146,42,0.45);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.35rem;
+}
+.teste-mini-novo:hover {
+  border-color: var(--ouro-fundo);
+  border-style: solid;
+}
+.teste-mini-novo-icone {
+  font-size: 1.8rem;
+  font-weight: 300;
+  color: var(--ouro-fundo);
+  line-height: 1;
+}
+.teste-mini-novo-label {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--ouro-fundo);
+}
+.testes-modo-lista .teste-mini-novo {
+  flex-direction: row;
+  min-height: 60px;
+  padding: 0.7rem 1rem;
+}
+.testes-modo-lista .teste-mini-novo-icone {
+  font-size: 1.4rem;
+}
+
 .view-sub { font-size: 0.82rem; color: var(--texto-suave); font-style: italic; }
 /* ── Aba Materiais — cartões elegantes com seções e hierarquia ──
    Cada bloco (Seus testes / Adquiridos / Continue sua jornada / Para descobrir)
@@ -287,6 +470,9 @@ body.chat-aberto .views {
   height: 1px;
   background: linear-gradient(90deg, var(--vidro-borda-hi), transparent);
 }
+/* Quando o título vive dentro de uma row (com toggle ao lado),
+   ele perde o margin/decoração — a row inteira é quem tem o espaço. */
+.mat-secao-titulo-row .mat-secao-titulo::after { display: none; }
 
 .mat-card {
   background: var(--vidro);
