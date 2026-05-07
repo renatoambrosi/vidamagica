@@ -183,13 +183,16 @@ router.get('/usuarios/:id/jornada', async (req, res) => {
     );
     const slugsComprados = new Set(compR.rows.map(r => r.slug));
 
-    const prodR = await poolCore.query(
-      `SELECT slug, nome, link_checkout_padrao, imagem_url
-         FROM produtos WHERE slug = ANY($1::text[])`,
-      [passosR.rows.map(p => p.produto_slug)]
+    // Dados dos produtos da jornada — fonte: tabela `precos`
+    const slugsPassos = passosR.rows.map(p => p.produto_slug);
+    const precosR = await poolComunicacao.query(
+      `SELECT key, dados FROM precos WHERE key = ANY($1::text[])`,
+      [slugsPassos]
     );
+    const precosBySlug = {};
+    precosR.rows.forEach(r => { precosBySlug[r.key] = r.dados || {}; });
 
-    const jornada = montarJornada(jornadaCfg, slugsComprados, prodR.rows, { fezTeste: true });
+    const jornada = montarJornada(jornadaCfg, slugsComprados, precosBySlug, { fezTeste: true });
 
     return res.json({
       ok: true,
