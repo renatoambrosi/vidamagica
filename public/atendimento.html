@@ -543,23 +543,27 @@ ul, ol { list-style: none; }
 
 .sla-banner {
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 5;
   margin: 0.6rem 0.85rem 0;
   padding: 0.55rem 0.85rem;
-  background: rgba(255,250,240,0.55);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid var(--vidro-borda);
+  background: rgba(255,250,240,0.18);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 3px rgba(0,0,0,0.04);
   border-radius: var(--r-md);
   display: flex; align-items: center; gap: 0.7rem;
   font-size: 0.74rem;
 }
 .sla-banner.prioritario {
-  background: rgba(200,146,42,0.12);
-  border-color: var(--vidro-borda-hi);
+  background: rgba(200,146,42,0.18);
+  border-color: rgba(255,255,255,0.4);
 }
 .sla-banner.basic-vm {
-  background: rgba(200,146,42,0.08);
-  border-color: var(--vidro-borda-hi);
+  background: rgba(200,146,42,0.12);
+  border-color: rgba(255,255,255,0.4);
 }
 .sla-banner .icone { font-size: 1rem; flex-shrink: 0; }
 .sla-banner .texto { flex: 1; min-width: 0; }
