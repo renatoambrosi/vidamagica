@@ -1723,7 +1723,7 @@ function renderTrilhaJornada(ctx) {
       btnHtml = '<button class="trilha-btn" disabled style="opacity:0.7">✓ Concluído</button>';
     } else if (p.eh_proximo) {
       classe = 'trilha-ativo';
-      const link = p.produto_link_checkout || '#';
+      const link = p.link_checkout_padrao || '#';
       btnHtml = '<a class="trilha-btn" href="' + link + '" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:inline-block">Quero esse passo →</a>';
     }
     return (
