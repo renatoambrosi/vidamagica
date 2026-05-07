@@ -2863,15 +2863,52 @@ function conectarWs() {
   ws.onmessage = e => {
     try {
       const data = JSON.parse(e.data);
+
+      // ═══ EVENTO PRINCIPAL: aluna mandou mensagem (e marcou as anteriores como lidas) ═══
+      // O backend manda esse evento ATÔMICO (mensagem nova + ids das mensagens lidas
+      // da Suellen num só pacote, pra evitar dessincronia visual).
+      if (data.evento === 'resposta_aluna_e_lidas') {
+        const convId = data.conversa_id;
+
+        // 1. Pinta ✓✓ colorido nas mensagens da Suellen que a aluna leu
+        if (convAtual && convId === convAtual.id && Array.isArray(data.lidas_ids)) {
+          data.lidas_ids.forEach(id => {
+            const msg = mensagens.find(m => m.id === id);
+            if (msg) { msg.lida = true; msg.entregue = true; }
+            const checkEl = document.querySelector(`.msg-checks[data-msg-id="${id}"]`);
+            if (checkEl) {
+              checkEl.classList.remove('enviada', 'entregue');
+              checkEl.classList.add('lida');
+            }
+          });
+        }
+
+        // 2. Adiciona a mensagem nova no chat (se a conversa estiver aberta)
+        if (convAtual && convId === convAtual.id && data.mensagem) {
+          mensagens.push(data.mensagem);
+          document.getElementById('chat-msgs').appendChild(criarBolha(data.mensagem));
+          scrollChat();
+
+          // 3. Mensagem da aluna em chat prioritário consome 1 interação no backend.
+          //    Atualiza contador localmente sem re-renderizar o chat inteiro.
+          if (convAtual.plano_chat === 'prioritario' && convAtual.interacoes_restantes != null) {
+            convAtual.interacoes_restantes = Math.max(0, convAtual.interacoes_restantes - 1);
+            atualizarContadorPrioritarioUI(convAtual);
+          }
+        }
+
+        // 4. Atualiza lista lateral (preview, badge não lida, etc)
+        carregarLista();
+        return;
+      }
+
+      // Compat: caso o backend ainda mande 'nova_mensagem' em algum caminho (template)
       if (data.evento === 'nova_mensagem') {
         if (convAtual && data.conversa_id === convAtual.id && data.mensagem.remetente === 'aluna') {
           mensagens.push(data.mensagem);
           document.getElementById('chat-msgs').appendChild(criarBolha(data.mensagem));
           scrollChat();
 
-          // Mensagem da aluna em chat prioritário consome 1 interação no backend.
-          // Atualiza contador localmente (header + sla-banner + painel lateral)
-          // sem re-renderizar o chat inteiro.
           if (convAtual.plano_chat === 'prioritario' && convAtual.interacoes_restantes != null) {
             convAtual.interacoes_restantes = Math.max(0, convAtual.interacoes_restantes - 1);
             atualizarContadorPrioritarioUI(convAtual);
