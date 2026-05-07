@@ -1714,19 +1714,25 @@ function renderMateriais(ctx) {
       const dataTxt = t.feito_em ? new Date(t.feito_em).toLocaleDateString('pt-BR') : '—';
       const isMaisRecente = ctx.teste_atual && t.id === ctx.teste_atual.id;
       const pago = isMaisRecente ? ctx.teste_atual.pago : false;
-      const perfilLabel = nomePerfil(t.perfil_dominante);
-      const perfilArt = artigoPerfil(t.perfil_dominante);
-      const acaoHtml = pago
-        ? `<a href="/resultado/${t.id}" target="_blank" class="mat-card-btn">Ver resultado →</a>`
-        : `<div class="mat-card-locked">🔒 Aguardando liberação</div>`;
+      // Botões: Ver resultado (se pago) + Fazer novo. Não revela o perfil aqui —
+      // a aluna precisa clicar pra ver. Reduz fricção e gera curiosidade.
+      const botoesHtml = pago
+        ? `<div class="mat-card-acoes">
+            <a href="/resultado/${t.id}" target="_blank" class="mat-card-btn">Ver resultado →</a>
+            <a href="/teste" class="mat-card-btn-secundario">Fazer novo</a>
+          </div>`
+        : `<div class="mat-card-acoes">
+            <div class="mat-card-locked">🔒 Aguardando liberação</div>
+            <a href="/teste" class="mat-card-btn-secundario">Fazer novo</a>
+          </div>`;
       blocoTestes.push(
         `<div class="mat-card">
           <div class="mat-card-row">
             <div class="mat-card-eyebrow">Teste do Subconsciente</div>
             <div class="mat-card-data">${dataTxt}</div>
           </div>
-          <div class="mat-card-titulo-grande">Energia ${perfilArt} ${escHtml(perfilLabel)}</div>
-          ${acaoHtml}
+          <div class="mat-card-titulo">Seu padrão dominante está pronto pra ser revelado.</div>
+          ${botoesHtml}
         </div>`
       );
     });
