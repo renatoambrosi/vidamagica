@@ -308,6 +308,19 @@ body.teclado-aberto .bottom-nav {
   align-items: stretch;
   justify-content: center;
 }
+
+/* Tela de conversa: aparece SOBRE a tela de escolha com liquid glass.
+   A escolha continua renderizada por baixo, borrada — dá sensação de
+   modal flutuante (estética iOS). O #view-chat já é position:fixed,
+   então o absolute aqui se posiciona em relação a ele. */
+#chat-conversa-tela {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: rgba(255,250,240,0.18);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+}
 .chat-escolha-titulo {
   text-align: center;
   font-family: var(--font-body);
