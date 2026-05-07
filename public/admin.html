@@ -950,17 +950,22 @@ async function vmVerificarOtp() {
 // PREÇOS
 // ============================================================
 let dadosPrecos = {};
+// Fallback de imagens caso o admin ainda não tenha preenchido imagem_url
+// na aba Preços. A FONTE DA VERDADE é p.imagem_url (vindo do banco precos).
 const IMGS = {
-  teste_prosperidade: '/assets/products/teste-prosperidade.png',
-  teste_subconsciente:'/assets/products/teste-subconsciente.png',
-  guia_pratico:       '/assets/products/guia-pratico.png',
-  atal_maneira_livro: '/assets/products/atal-maneira-livro.png',
-  ouro_reprogramacao: '/assets/products/ouro-reprogramacao.png',
-  lda_biblica:        '/assets/products/lda-biblica.png',
-  atal_maneira_curso: '/assets/products/atal-maneira-curso.png',
-  vencendo_medo:      '/assets/products/vencendo-medo.png',
-  clube_vida_magica:  '/assets/products/clube-vida-magica.png',
-  magica_fluir:       '/assets/products/magica-fluir.png',
+  clube_vida_magica:      '/assets/products/clube-vida-magica.png',
+  teste_prosperidade:     '/assets/products/teste-prosperidade.png',
+  teste_subconsciente:    '/assets/products/teste-subconsciente.png',
+  vencendo_medo:          '/assets/products/ebook-vencendoomedo.png',
+  vencendo_desordem:      '/assets/products/ebook-vencendoadesordem.png',
+  vencendo_validacao:     '/assets/products/ebook-vencendoavalidacao.png',
+  vencendo_sobrevivencia: '/assets/products/ebook-vencendoasobrevivencia.png',
+  magica_fluir:           '/assets/products/magica-fluir.png',
+  guia_pratico:           '/assets/products/guia-pratico.png',
+  atal_maneira_livro:     '/assets/products/atal-maneira-livro.png',
+  ouro_reprogramacao:     '/assets/products/ouro-reprogramacao.png',
+  lda_biblica:            '/assets/products/lda-biblica.png',
+  atal_maneira_curso:     '/assets/products/atal-maneira-curso.png',
 };
 function calcDesc(de, por) { const a=parseFloat(String(de).replace(',','.')), b=parseFloat(String(por).replace(',','.')); if(!a||!b||b>=a) return null; return Math.round(((a-b)/a)*100); }
 function getVal(card, field) { return card.querySelector(`[data-field="${field}"]`)?.value||''; }
