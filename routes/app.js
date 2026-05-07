@@ -177,15 +177,16 @@ router.get('/contexto', autenticar, async (req, res) => {
           );
           jornadaCfg.passos = passosR.rows;
 
-          // Produtos cadastrados (Core) com link de checkout
-          const produtosR = await poolCore.query(
-            `SELECT slug, nome, link_checkout_padrao, imagem_url
-               FROM produtos
-              WHERE slug = ANY($1::text[])`,
-            [passosR.rows.map(p => p.produto_slug)]
+          // Dados dos produtos da jornada — fonte: tabela `precos` (banco Comunicação)
+          const slugsPassos = passosR.rows.map(p => p.produto_slug);
+          const precosR = await poolComunicacao.query(
+            `SELECT key, dados FROM precos WHERE key = ANY($1::text[])`,
+            [slugsPassos]
           );
+          const precosBySlug = {};
+          precosR.rows.forEach(r => { precosBySlug[r.key] = r.dados || {}; });
 
-          jornadaAtual = montarJornada(jornadaCfg, slugsComprados, produtosR.rows, { fezTeste: true });
+          jornadaAtual = montarJornada(jornadaCfg, slugsComprados, precosBySlug, { fezTeste: true });
         }
       } catch (e) {
         console.warn('[contexto] erro ao montar jornada:', e.message);
