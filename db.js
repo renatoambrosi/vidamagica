@@ -472,36 +472,51 @@ async function initCore() {
     // ON CONFLICT (slug) DO NOTHING — idempotente.
 
     // ── Migration de slugs antigos (deploys anteriores usavam slugs com hífen) ──
-    // Se a tabela já foi populada com slugs no formato antigo, atualiza pra os
-    // slugs alinhados com Preços. Isso garante que os JOINs com usuario_produtos
-    // continuem encontrando os produtos certos pelo slug canônico.
-    await c.query(`
-      UPDATE produtos SET slug = CASE slug
-        WHEN 'teste-subconsciente'           THEN 'teste_subconsciente'
-        WHEN 'teste-prosperidade'            THEN 'teste_prosperidade'
-        WHEN 'livro-vencendo-medo'           THEN 'vencendo_medo'
-        WHEN 'livro-vencendo-desordem'       THEN 'vencendo_desordem'
-        WHEN 'livro-vencendo-validacao'      THEN 'vencendo_validacao'
-        WHEN 'livro-vencendo-sobrevivencia'  THEN 'vencendo_sobrevivencia'
-        WHEN 'curso-ouro-reprogramacao'      THEN 'ouro_reprogramacao'
-        WHEN 'assinatura-comunidade'         THEN 'clube_vida_magica'
-        WHEN 'guia-pratico-reprogramar'      THEN 'guia_pratico'
-        WHEN 'guia-bolso-magica-fluir'       THEN 'magica_fluir'
-        WHEN 'livro-tal-maneira'             THEN 'atal_maneira_livro'
-        WHEN 'curso-lda-biblica'             THEN 'lda_biblica'
-        WHEN 'curso-tal-maneira'             THEN 'atal_maneira_curso'
-        ELSE slug
-      END,
-      atualizado_em = NOW()
-      WHERE slug IN (
-        'teste-subconsciente', 'teste-prosperidade',
-        'livro-vencendo-medo', 'livro-vencendo-desordem',
-        'livro-vencendo-validacao', 'livro-vencendo-sobrevivencia',
-        'curso-ouro-reprogramacao', 'assinatura-comunidade',
-        'guia-pratico-reprogramar', 'guia-bolso-magica-fluir',
-        'livro-tal-maneira', 'curso-lda-biblica', 'curso-tal-maneira'
-      )
-    `);
+    // Se a tabela já tem registros com slug antigo (hífen) E NÃO tem registro
+    // com slug novo (underscore): renomeia o antigo direto.
+    // Se já tem AMBOS (antigo + novo, criados em deploys diferentes): redireciona
+    // os usuario_produtos do antigo pro novo (canônico) e deleta o antigo.
+    // Idempotente — se já tudo migrado, é um no-op.
+    const SLUG_RENAMES = [
+      ['teste-subconsciente',          'teste_subconsciente'],
+      ['teste-prosperidade',           'teste_prosperidade'],
+      ['livro-vencendo-medo',          'vencendo_medo'],
+      ['livro-vencendo-desordem',      'vencendo_desordem'],
+      ['livro-vencendo-validacao',     'vencendo_validacao'],
+      ['livro-vencendo-sobrevivencia', 'vencendo_sobrevivencia'],
+      ['curso-ouro-reprogramacao',     'ouro_reprogramacao'],
+      ['assinatura-comunidade',        'clube_vida_magica'],
+      ['guia-pratico-reprogramar',     'guia_pratico'],
+      ['guia-bolso-magica-fluir',      'magica_fluir'],
+      ['livro-tal-maneira',            'atal_maneira_livro'],
+      ['curso-lda-biblica',            'lda_biblica'],
+      ['curso-tal-maneira',            'atal_maneira_curso'],
+    ];
+    for (const [slugAntigo, slugNovo] of SLUG_RENAMES) {
+      // Pega ids dos dois (se existirem)
+      const r = await c.query(
+        `SELECT slug, id FROM produtos WHERE slug IN ($1, $2)`,
+        [slugAntigo, slugNovo]
+      );
+      const antigo = r.rows.find(x => x.slug === slugAntigo);
+      const novo   = r.rows.find(x => x.slug === slugNovo);
+      if (!antigo) continue;  // nada a fazer
+      if (!novo) {
+        // Só tem o antigo — renomear direto, não conflita
+        await c.query(
+          `UPDATE produtos SET slug = $1, atualizado_em = NOW() WHERE id = $2`,
+          [slugNovo, antigo.id]
+        );
+      } else {
+        // Tem ambos. Redireciona usuario_produtos do antigo pro novo,
+        // depois deleta o antigo.
+        await c.query(
+          `UPDATE usuario_produtos SET produto_id = $1 WHERE produto_id = $2`,
+          [novo.id, antigo.id]
+        );
+        await c.query(`DELETE FROM produtos WHERE id = $1`, [antigo.id]);
+      }
+    }
 
     await c.query(`
       INSERT INTO produtos (slug, nome, tipo, acesso_modelo, fase, ordem, ativo) VALUES
