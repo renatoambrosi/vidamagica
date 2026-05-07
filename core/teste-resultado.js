@@ -147,16 +147,32 @@ function tagPorPercentual(percInteiro) {
 // Ordem de prioridade da tag (pra ordenação)
 const ORDEM_TAG = { 'Urgente': 4, 'Necessário': 3, 'Útil': 2, 'Complemento': 1 };
 
+// Mapa: cada slug em precos → energia que ele resolve.
+// Os 4 livros da Série Conhecer e Despertar.
+const LIVROS_DA_SERIE = [
+  { slug: 'vencendo_medo',          energia: 'medo' },
+  { slug: 'vencendo_desordem',      energia: 'desordem' },
+  { slug: 'vencendo_validacao',     energia: 'validacao' },
+  { slug: 'vencendo_sobrevivencia', energia: 'sobrevivencia' },
+];
+
+const SELO_PADRAO_LIVRO = '✨ Inclui Aulão ao vivo com a Suellen';
+
 // ── Filtrar e ordenar os livros do Passo 2 ────────────────
-// livrosCadastro: array vindo do banco teste_livros (4 linhas)
-// resultado:      saída de calcularResultado()
+// precosBySlug: objeto { 'vencendo_medo': {...dados de precos}, ... }
+//               vindo da tabela `precos` (banco Comunicação).
+// resultado:    saída de calcularResultado()
 // retorna: array de livros já filtrados/ordenados, prontos pra renderizar.
-//          Cada item: { ...dadosDoLivro, tag, cor_fundo, cor_texto, percentual_inteiro,
-//                       linha_evidencia }
-function montarLivrosRecomendados(livrosCadastro, resultado) {
+//          Cada item: {
+//            slug, energia, titulo, capa_url, link_checkout_padrao,
+//            link_checkout_aluno, preco_aluno, preco_padrao, selo,
+//            tag, cor_fundo, cor_texto, percentual_inteiro,
+//            percentual_interno, linha_evidencia
+//          }
+function montarLivrosRecomendados(precosBySlug, resultado) {
   const lista = [];
 
-  for (const livro of livrosCadastro) {
+  for (const livro of LIVROS_DA_SERIE) {
     const energia = livro.energia;
     const percInt = resultado.percentuais_exibicao[energia] || 0;
     const percReal = resultado.percentuais[energia] || 0;
@@ -177,8 +193,19 @@ function montarLivrosRecomendados(livrosCadastro, resultado) {
       linhaEvidencia = percInt + '% de ' + labelEnergia + ' no seu teste';
     }
 
+    // Dados do produto (vêm de precos)
+    const p = (precosBySlug && precosBySlug[livro.slug]) || {};
+
     lista.push({
-      ...livro,
+      slug: livro.slug,
+      energia,
+      titulo: p.nome || livro.slug,
+      capa_url: p.imagem_url || '',
+      link_checkout_padrao: p.link_checkout_padrao || '',
+      link_checkout_aluno: p.link_checkout_aluno || '',
+      preco_padrao: p.preco_padrao || '',
+      preco_aluno: p.preco_alunos || '',
+      selo: SELO_PADRAO_LIVRO,
       tag: tagInfo.tag,
       cor_fundo: tagInfo.cor_fundo,
       cor_texto: tagInfo.cor_texto,
@@ -216,42 +243,50 @@ function montarListaEnergias(resultado) {
 
 // ── Montar a JORNADA do método pra uma aluna ─────────────
 // Recebe:
-//   perfilDominante: 'medo' | 'desordem' | ... | 'prosperidade_nv2' (com subdivisão)
 //   jornadaCfg:      { slug, numero, nome_exibicao, subtitulo, cor, passos: [...] }
-//                    (vem dos joins jornadas_metodo + jornadas_passos)
+//                    passos vêm com { ordem, produto_slug, titulo_passo, descricao_passo }
 //   slugsComprados:  Set ou array com os slugs dos produtos que a aluna já tem
+//   precosBySlug:    objeto { 'vencendo_medo': {...}, 'ouro_reprogramacao': {...}, ... }
+//                    vindo da tabela `precos` (banco Comunicação) — fonte da verdade
+//                    pra nome, capa, preço e link de checkout.
 //   opts:            { fezTeste: bool }  — se a aluna já fez o teste, considera
-//                    o passo "teste-subconsciente" como concluído mesmo sem pagamento.
+//                    o passo "teste_subconsciente" como concluído mesmo sem pagamento.
 //                    Pagar serve pra liberar o RESULTADO; fazer já conta como concluir
 //                    o passo "Conhecer" da jornada.
 //
 // Devolve a estrutura pronta pra UI:
 //   {
 //     slug, numero, nome_exibicao, subtitulo, cor,
-//     passos: [{ ordem, titulo, descricao, produto_slug, produto_nome, comprado, eh_proximo, link_checkout? }],
+//     passos: [{
+//       ordem, titulo, descricao, produto_slug, produto_nome, produto_imagem,
+//       link_checkout_padrao, link_checkout_aluno, preco_padrao, preco_aluno,
+//       comprado, eh_proximo
+//     }],
 //     progresso: { passos_concluidos, passos_totais, percentual }
 //   }
-function montarJornada(jornadaCfg, slugsComprados, produtosCadastro, opts) {
+function montarJornada(jornadaCfg, slugsComprados, precosBySlug, opts) {
   if (!jornadaCfg) return null;
   const fezTeste = !!(opts && opts.fezTeste);
   const compradosSet = new Set(Array.isArray(slugsComprados) ? slugsComprados : Array.from(slugsComprados || []));
-  const produtosBySlug = {};
-  for (const p of (produtosCadastro || [])) {
-    produtosBySlug[p.slug] = p;
-  }
+  const dadosBySlug = precosBySlug || {};
 
   const passos = (jornadaCfg.passos || []).map(p => {
-    // Regra especial: teste-subconsciente é "concluído" se a aluna fez o teste,
+    // Regra especial: teste_subconsciente é "concluído" se a aluna fez o teste,
     // independente de ter pago. Fazer o teste já cumpre o passo do método.
-    const ehPassoDoTeste = (p.produto_slug === 'teste-subconsciente');
+    const ehPassoDoTeste = (p.produto_slug === 'teste_subconsciente');
     const comprado = compradosSet.has(p.produto_slug) || (ehPassoDoTeste && fezTeste);
+    const dadosProd = dadosBySlug[p.produto_slug] || {};
     return {
       ordem: p.ordem,
       titulo: p.titulo_passo,
       descricao: p.descricao_passo,
       produto_slug: p.produto_slug,
-      produto_nome: produtosBySlug[p.produto_slug]?.nome || p.produto_slug,
-      produto_link_checkout: produtosBySlug[p.produto_slug]?.link_checkout_padrao || null,
+      produto_nome: dadosProd.nome || p.produto_slug,
+      produto_imagem: dadosProd.imagem_url || '',
+      link_checkout_padrao: dadosProd.link_checkout_padrao || '',
+      link_checkout_aluno: dadosProd.link_checkout_aluno || '',
+      preco_padrao: dadosProd.preco_padrao || '',
+      preco_aluno: dadosProd.preco_alunos || '',
       comprado,
       eh_proximo: false,  // marcado abaixo
     };
