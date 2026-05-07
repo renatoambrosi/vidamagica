@@ -195,11 +195,15 @@ router.get('/contexto', autenticar, async (req, res) => {
 
     // ── Outros produtos (catálogo completo da aba Preços) ──
     // O frontend filtra os já comprados e os da jornada, e mostra o resto.
+    // Também serve como FONTE DA VERDADE pra enriquecer os comprados com
+    // imagem_url/nome canônicos (que vivem na aba Preços, não na tabela produtos).
     let outrosProdutos = [];
+    const precosBySlugAll = {};  // mapa slug → dados de precos pra enriquecer comprados
     try {
       const todosR = await poolComunicacao.query(
         `SELECT key, dados FROM precos ORDER BY key`
       );
+      todosR.rows.forEach(r => { precosBySlugAll[r.key] = r.dados || {}; });
       outrosProdutos = todosR.rows.map(r => ({
         slug: r.key,
         nome: (r.dados || {}).nome || r.key,
@@ -234,17 +238,23 @@ router.get('/contexto', autenticar, async (req, res) => {
         perfil_dominante: t.perfil_dominante,
         percentual_prosperidade: t.percentual_prosperidade,
       })),
-      comprados: comprados.map(c => ({
-        id: c.id,
-        produto_slug: c.slug,
-        produto_nome: c.nome,
-        produto_tipo: c.tipo,
-        produto_imagem: c.imagem_url,
-        origem_tipo: c.origem_tipo,
-        acesso_inicio: c.acesso_inicio,
-        acesso_fim: c.acesso_fim,
-        observacao: c.observacao,
-      })),
+      // Enriquece com dados de Preços (fonte da verdade pra imagem/nome).
+      // O JOIN com `produtos` na query cobre só campos básicos (slug/tipo);
+      // imagem_url/nome canônicos vêm de precos.
+      comprados: comprados.map(c => {
+        const precos = precosBySlugAll[c.slug] || {};
+        return {
+          id: c.id,
+          produto_slug: c.slug,
+          produto_nome: precos.nome || c.nome,            // precos > produtos
+          produto_tipo: precos.tipo || c.tipo,
+          produto_imagem: precos.imagem_url || c.imagem_url || '',
+          origem_tipo: c.origem_tipo,
+          acesso_inicio: c.acesso_inicio,
+          acesso_fim: c.acesso_fim,
+          observacao: c.observacao,
+        };
+      }),
       outros_produtos: outrosProdutos,
     });
   } catch (err) {
