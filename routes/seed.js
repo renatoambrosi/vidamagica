@@ -11,141 +11,256 @@ const { poolComunicacao } = require('../db');
 const { autenticarPainel } = require('../middleware/autenticar');
 
 const PRECOS_INICIAIS = {
+  // ── COMUNIDADE ──
   clube_vida_magica: {
-    nome: "Clube Vida Mágica",
-    tipo: "comunidade",
+    nome: 'Clube Vida Mágica',
+    tipo: 'comunidade',
+    imagem_url: '',
+    link_checkout_padrao: '',
+    link_checkout_aluno: '',
     mostrar_promo_ouro: false,
-    preco_ouro: "59,90",
-    preco_ouro_promo: "49,90",
+    preco_ouro: '59,90',
+    preco_ouro_promo: '49,90',
     mostrar_promo_magico: false,
-    preco_magico: "89,90",
-    preco_magico_promo: "79,90"
+    preco_magico: '89,90',
+    preco_magico_promo: '79,90'
   },
+  // ── TESTES ──
   teste_prosperidade: {
-    nome: "Teste de Prosperidade",
-    tipo: "promo",
+    nome: 'Teste de Prosperidade',
+    tipo: 'promo',
+    imagem_url: '',
+    link_checkout_padrao: '',
+    link_checkout_aluno: '',
     mostrar_promo: false,
-    preco_padrao: "19,00",
-    preco_promo: "9,00"
+    preco_padrao: '19,00',
+    preco_promo: '9,00'
   },
   teste_subconsciente: {
-    nome: "Teste do Subconsciente",
-    tipo: "promo",
+    nome: 'Teste do Subconsciente',
+    tipo: 'promo',
+    imagem_url: '',
+    link_checkout_padrao: '',
+    link_checkout_aluno: '',
     mostrar_promo: false,
-    preco_padrao: "19,00",
-    preco_promo: "9,00"
+    preco_padrao: '19,00',
+    preco_promo: '9,00'
   },
+  // ── SÉRIE CONHECER E DESPERTAR (4 LIVROS — em sequência) ──
   vencendo_medo: {
-    nome: "E-book Vencendo o Medo",
-    tipo: "curso",
+    nome: 'Vencendo o Medo',
+    tipo: 'curso',
+    imagem_url: '',
+    link_checkout_padrao: '',
+    link_checkout_aluno: '',
     mostrar_promo: false,
-    preco_padrao: "59,90",
+    preco_padrao: '59,90',
     parcelas_qtd: 10,
-    parcelas_valor_padrao: "5,90",
-    preco_promo: "39,90",
-    parcelas_valor_promo: "5,12",
+    parcelas_valor_padrao: '5,90',
+    preco_promo: '39,90',
+    parcelas_valor_promo: '5,12',
     parcelas_qtd_promo: 9,
-    preco_alunos: "59,90",
-    parcelas_valor_alunos: "5,90",
+    preco_alunos: '59,90',
+    parcelas_valor_alunos: '5,90',
     parcelas_qtd_alunos: 10
   },
-  magica_fluir: {
-    nome: "Guia de Bolso Mágica do Fluir",
-    tipo: "curso",
+  vencendo_desordem: {
+    nome: 'Vencendo a Desordem',
+    tipo: 'curso',
+    imagem_url: '',
+    link_checkout_padrao: '',
+    link_checkout_aluno: '',
     mostrar_promo: false,
-    preco_padrao: "20,00",
+    preco_padrao: '59,90',
+    parcelas_qtd: 10,
+    parcelas_valor_padrao: '5,90',
+    preco_promo: '39,90',
+    parcelas_valor_promo: '5,12',
+    parcelas_qtd_promo: 9,
+    preco_alunos: '59,90',
+    parcelas_valor_alunos: '5,90',
+    parcelas_qtd_alunos: 10
+  },
+  vencendo_validacao: {
+    nome: 'Vencendo a Validação',
+    tipo: 'curso',
+    imagem_url: '',
+    link_checkout_padrao: '',
+    link_checkout_aluno: '',
+    mostrar_promo: false,
+    preco_padrao: '59,90',
+    parcelas_qtd: 10,
+    parcelas_valor_padrao: '5,90',
+    preco_promo: '39,90',
+    parcelas_valor_promo: '5,12',
+    parcelas_qtd_promo: 9,
+    preco_alunos: '59,90',
+    parcelas_valor_alunos: '5,90',
+    parcelas_qtd_alunos: 10
+  },
+  vencendo_sobrevivencia: {
+    nome: 'Vencendo a Sobrevivência',
+    tipo: 'curso',
+    imagem_url: '',
+    link_checkout_padrao: '',
+    link_checkout_aluno: '',
+    mostrar_promo: false,
+    preco_padrao: '59,90',
+    parcelas_qtd: 10,
+    parcelas_valor_padrao: '5,90',
+    preco_promo: '39,90',
+    parcelas_valor_promo: '5,12',
+    parcelas_qtd_promo: 9,
+    preco_alunos: '59,90',
+    parcelas_valor_alunos: '5,90',
+    parcelas_qtd_alunos: 10
+  },
+  // ── GUIAS ──
+  magica_fluir: {
+    nome: 'Guia de Bolso Mágica do Fluir',
+    tipo: 'curso',
+    imagem_url: '',
+    link_checkout_padrao: '',
+    link_checkout_aluno: '',
+    mostrar_promo: false,
+    preco_padrao: '20,00',
     parcelas_qtd: 4,
-    parcelas_valor_padrao: "5,20",
-    preco_promo: "10,00",
-    parcelas_valor_promo: "5,80",
+    parcelas_valor_padrao: '5,20',
+    preco_promo: '10,00',
+    parcelas_valor_promo: '5,80',
     parcelas_qtd_promo: 2,
-    preco_alunos: "8,00",
+    preco_alunos: '8,00',
     parcelas_valor_alunos: null,
     parcelas_qtd_alunos: null
   },
   guia_pratico: {
-    nome: "E-Book: Guia Prático para Reprogramar a Mente",
-    tipo: "curso",
+    nome: 'E-Book: Guia Prático para Reprogramar a Mente',
+    tipo: 'curso',
+    imagem_url: '',
+    link_checkout_padrao: '',
+    link_checkout_aluno: '',
     mostrar_promo: false,
-    preco_padrao: "84,11",
+    preco_padrao: '84,11',
     parcelas_qtd: 12,
-    parcelas_valor_padrao: "8,70",
-    preco_promo: "60,00",
-    parcelas_valor_promo: "6,00",
-    preco_alunos: "70,40",
-    parcelas_valor_alunos: "7,28"
+    parcelas_valor_padrao: '8,70',
+    preco_promo: '60,00',
+    parcelas_valor_promo: '6,00',
+    preco_alunos: '70,40',
+    parcelas_valor_alunos: '7,28'
   },
   atal_maneira_livro: {
-    nome: "Livro Digital A Tal Maneira + Audiobook + Aulão",
-    tipo: "curso",
+    nome: 'Livro Digital A Tal Maneira + Audiobook + Aulão',
+    tipo: 'curso',
+    imagem_url: '',
+    link_checkout_padrao: '',
+    link_checkout_aluno: '',
     mostrar_promo: false,
-    preco_padrao: "137,88",
+    preco_padrao: '137,88',
     parcelas_qtd: 12,
-    parcelas_valor_padrao: "14,26",
-    preco_promo: "100,00",
-    parcelas_valor_promo: "10,00",
-    preco_alunos: "121,48",
-    parcelas_valor_alunos: "12,56"
+    parcelas_valor_padrao: '14,26',
+    preco_promo: '100,00',
+    parcelas_valor_promo: '10,00',
+    preco_alunos: '121,48',
+    parcelas_valor_alunos: '12,56'
   },
+  // ── CURSOS DE REPROGRAMAÇÃO ──
   ouro_reprogramacao: {
-    nome: "Curso: O Ouro da Reprogramação Mental",
-    tipo: "curso",
+    nome: 'Curso: O Ouro da Reprogramação Mental',
+    tipo: 'curso',
+    imagem_url: '',
+    link_checkout_padrao: '',
+    link_checkout_aluno: '',
     mostrar_promo: false,
-    preco_padrao: "711,00",
+    preco_padrao: '711,00',
     parcelas_qtd: 12,
-    parcelas_valor_padrao: "52,85",
-    preco_promo: "511,00",
-    parcelas_valor_promo: "52,85",
-    preco_alunos: "411,00",
-    parcelas_valor_alunos: "42,51"
+    parcelas_valor_padrao: '52,85',
+    preco_promo: '511,00',
+    parcelas_valor_promo: '52,85',
+    preco_alunos: '411,00',
+    parcelas_valor_alunos: '42,51'
   },
   lda_biblica: {
-    nome: "Curso: LDA Bíblica",
-    tipo: "curso",
+    nome: 'Curso: LDA Bíblica',
+    tipo: 'curso',
+    imagem_url: '',
+    link_checkout_padrao: '',
+    link_checkout_aluno: '',
     mostrar_promo: false,
-    preco_padrao: "711,00",
+    preco_padrao: '711,00',
     parcelas_qtd: 12,
-    parcelas_valor_padrao: "52,85",
-    preco_promo: "511,00",
-    parcelas_valor_promo: "52,85",
-    preco_alunos: "411,00",
-    parcelas_valor_alunos: "42,51"
+    parcelas_valor_padrao: '52,85',
+    preco_promo: '511,00',
+    parcelas_valor_promo: '52,85',
+    preco_alunos: '411,00',
+    parcelas_valor_alunos: '42,51'
   },
   atal_maneira_curso: {
-    nome: "A Tal Maneira - O Curso Definitivo da Riqueza Bíblica",
-    tipo: "curso",
+    nome: 'A Tal Maneira - O Curso Definitivo da Riqueza Bíblica',
+    tipo: 'curso',
+    imagem_url: '',
+    link_checkout_padrao: '',
+    link_checkout_aluno: '',
     mostrar_promo: false,
-    preco_padrao: "711,00",
+    preco_padrao: '711,00',
     parcelas_qtd: 12,
-    parcelas_valor_padrao: "52,85",
-    preco_promo: "511,00",
-    parcelas_valor_promo: "52,85",
-    preco_alunos: "411,00",
-    parcelas_valor_alunos: "42,51"
+    parcelas_valor_padrao: '52,85',
+    preco_promo: '511,00',
+    parcelas_valor_promo: '52,85',
+    preco_alunos: '411,00',
+    parcelas_valor_alunos: '42,51'
   }
 };
 
 /* ============================================================
    Função interna — usada também pelo boot do server.js.
-   Idempotente: só insere chaves que ainda não existem.
-   Não sobrescreve nada que o admin já editou.
+   Idempotente:
+     - Insere chaves que ainda não existem (sem sobrescrever).
+     - Para chaves existentes, ADICIONA campos novos (imagem_url,
+       link_checkout_padrao, link_checkout_aluno) sem mexer no que
+       o admin já editou (preços, descontos, etc).
    ============================================================ */
 async function seedPrecos() {
   const client = await poolComunicacao.connect();
   try {
     await client.query('BEGIN');
     let inseridos = 0;
+    let migrados = 0;
     for (const [key, valor] of Object.entries(PRECOS_INICIAIS)) {
       const r = await client.query(`
         INSERT INTO precos (key, dados, atualizado_em)
         VALUES ($1, $2, NOW())
         ON CONFLICT (key) DO NOTHING
       `, [key, JSON.stringify(valor)]);
-      if (r.rowCount > 0) inseridos++;
+      if (r.rowCount > 0) {
+        inseridos++;
+      } else {
+        // Já existia — migra campos novos sem sobrescrever editados.
+        // Lê dados atuais, adiciona apenas chaves que não existem ainda.
+        const existR = await client.query(`SELECT dados FROM precos WHERE key = $1`, [key]);
+        if (existR.rows[0]) {
+          const atual = existR.rows[0].dados || {};
+          let mudou = false;
+          for (const [campo, valorPadrao] of Object.entries(valor)) {
+            if (!(campo in atual)) {
+              atual[campo] = valorPadrao;
+              mudou = true;
+            }
+          }
+          if (mudou) {
+            await client.query(`
+              UPDATE precos SET dados = $2, atualizado_em = NOW() WHERE key = $1
+            `, [key, JSON.stringify(atual)]);
+            migrados++;
+          }
+        }
+      }
     }
     await client.query('COMMIT');
     if (inseridos > 0) {
       console.log(`✅ Seed de preços: ${inseridos} chave(s) nova(s) inserida(s)`);
+    }
+    if (migrados > 0) {
+      console.log(`✅ Seed de preços: ${migrados} chave(s) migrada(s) (campos novos adicionados)`);
     }
     return inseridos;
   } catch (err) {
