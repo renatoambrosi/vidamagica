@@ -1989,7 +1989,7 @@ function renderChat() {
         <span class="icone">⏱️</span>
         <div class="texto">
           <div class="titulo">Prioritário · até 24h</div>
-          <div class="desc">${c.interacoes_restantes ?? 0} interações · expira ${expira}</div>
+          <div class="desc" id="sla-banner-desc">${c.interacoes_restantes ?? 0} interações · expira ${expira}</div>
         </div>
       </div>`;
   } else if (tier === 'basic_vm') {
@@ -2030,7 +2030,7 @@ function renderChat() {
         </div>
         <div class="chat-header-status ${statusCls}">
           <span class="status-dot"></span>
-          <span>${statusTxt}</span>
+          <span id="header-status-txt">${statusTxt}</span>
         </div>
       </div>
       <div class="chat-header-acoes">
@@ -2697,10 +2697,10 @@ function carregarPainel() {
       <div class="painel-secao-titulo">Atendimento Prioritário</div>
       <div class="prior-box">
         <div class="prior-box-titulo"><span>⭐</span><span>Pacote ativo</span></div>
-        <div class="prior-row"><span class="prior-label">Interações</span><span class="prior-val">${c.interacoes_restantes ?? '—'} / 30</span></div>
+        <div class="prior-row"><span class="prior-label">Interações</span><span class="prior-val" id="prior-interacoes-val">${c.interacoes_restantes ?? '—'} / 30</span></div>
         <div class="prior-row"><span class="prior-label">Expira em</span><span class="prior-val">${expiraFmt}</span></div>
         <div class="prior-row"><span class="prior-label">Origem</span><span class="prior-val">${esc(pacoteAtivo.origem)}</span></div>
-        <div class="prior-barra-bg"><div class="prior-barra-fill" style="width:${pct}%"></div></div>
+        <div class="prior-barra-bg"><div class="prior-barra-fill" id="prior-barra-fill" style="width:${pct}%"></div></div>
       </div>
     </div>` : ''}
 
@@ -2817,6 +2817,44 @@ document.getElementById('modal-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('modal-ok').click();
 });
 
+// Atualiza os 3 lugares onde o contador de interações aparece, sem re-renderizar
+// o chat inteiro (que perderia bolhas/scroll). Chamado quando chega mensagem
+// da aluna em conversa prioritária.
+function atualizarContadorPrioritarioUI(conv) {
+  const restantes = conv.interacoes_restantes ?? 0;
+
+  // 1. Status no header do chat
+  const elHeader = document.getElementById('header-status-txt');
+  if (elHeader) elHeader.textContent = `⭐ Prioritário · ${restantes} interações`;
+
+  // 2. Banner SLA dentro do chat
+  const elSla = document.getElementById('sla-banner-desc');
+  if (elSla && conv.prioritario_expira_em) {
+    const expira = new Date(conv.prioritario_expira_em).toLocaleString('pt-BR', {
+      day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'
+    });
+    elSla.textContent = `${restantes} interações · expira ${expira}`;
+  }
+
+  // 3. Painel lateral - linha "Interações"
+  const elPainel = document.getElementById('prior-interacoes-val');
+  if (elPainel) elPainel.textContent = `${restantes} / 30`;
+
+  // 4. Barra de progresso visual
+  const elBarra = document.getElementById('prior-barra-fill');
+  if (elBarra) {
+    const pct = Math.round(((30 - restantes) / 30) * 100);
+    elBarra.style.width = pct + '%';
+  }
+
+  // Se zerou, o backend já moveu pra basic — pra refletir mudança de tier
+  // (cor do banner, esconder bloco prioritário, etc) precisamos do render
+  // completo. Recarregamos a conversa do backend pra pegar tier atualizado.
+  if (restantes === 0) {
+    setTimeout(() => { recarregarChatAtual('contador-zerou'); }, 500);
+  }
+}
+
 function conectarWs() {
   if (ws && ws.readyState <= 1) return;
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -2830,6 +2868,14 @@ function conectarWs() {
           mensagens.push(data.mensagem);
           document.getElementById('chat-msgs').appendChild(criarBolha(data.mensagem));
           scrollChat();
+
+          // Mensagem da aluna em chat prioritário consome 1 interação no backend.
+          // Atualiza contador localmente (header + sla-banner + painel lateral)
+          // sem re-renderizar o chat inteiro.
+          if (convAtual.plano_chat === 'prioritario' && convAtual.interacoes_restantes != null) {
+            convAtual.interacoes_restantes = Math.max(0, convAtual.interacoes_restantes - 1);
+            atualizarContadorPrioritarioUI(convAtual);
+          }
         }
         carregarLista();
       }
