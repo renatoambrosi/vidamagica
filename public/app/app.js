@@ -424,54 +424,59 @@ function atualizarBannerPlano(conv) {
   banner.classList.remove('tier-free', 'tier-basic_vm', 'tier-prioritario', 'alerta');
   const tier = conv.tier || 'free';
 
+  // Padrão visual igual ao painel de atendimento da Suellen.
+  // Título curto + descrição com detalhes (interações + data de expiração quando aplicável).
   if (tier === 'prioritario') {
     banner.classList.add('tier-prioritario');
-    titulo.innerHTML = '⭐ PRIORITÁRIO';
+    titulo.textContent = 'Prioritário · até 24h';
     btn.style.display = 'none';
-    atualizarTimerPrioritario(conv);
-    timerInterval = setInterval(() => atualizarTimerPrioritario(conv), 30000);
+    atualizarDescPrioritario(conv);
+    // Atualiza a cada 30s (caso passe de 1h pra <1h, o banner ganha alerta visual)
+    timerInterval = setInterval(() => atualizarDescPrioritario(conv), 30000);
   } else if (tier === 'basic_vm') {
     banner.classList.add('tier-basic_vm');
-    titulo.textContent = 'VIDA MÁGICA';
+    titulo.textContent = 'Básico Vida Mágica';
     desc.textContent = 'Resposta em até 5 dias';
     btn.style.display = '';
     btn.textContent = 'Ativar prioritário';
     btn.onclick = acaoAtivarPrioritario;
   } else {
     banner.classList.add('tier-free');
-    titulo.textContent = 'PLANO FREE';
-    desc.textContent = 'Tempo de resposta indeterminado';
+    titulo.textContent = 'Free';
+    desc.textContent = 'Resposta em tempo indeterminado';
     btn.style.display = '';
     btn.textContent = 'Assinar Vida Mágica';
     btn.onclick = acaoAssinarVM;
   }
 }
 
-function atualizarTimerPrioritario(conv) {
+// Descrição do banner prioritário no formato "X interações · expira DD/MM, HH:MM"
+// Igual ao padrão usado no painel de atendimento.
+function atualizarDescPrioritario(conv) {
   const desc = document.getElementById('plano-banner-desc');
   const banner = document.getElementById('plano-banner');
   if (!desc) return;
-  const interacoes = `${conv.interacoes_restantes ?? 30}/30 interações`;
+  const interacoes = `${conv.interacoes_restantes ?? 0} interações`;
 
   if (!conv.prioritario_expira_em) {
     desc.textContent = interacoes;
     return;
   }
-  const restMs = new Date(conv.prioritario_expira_em).getTime() - Date.now();
+  const expira = new Date(conv.prioritario_expira_em);
+  const restMs = expira.getTime() - Date.now();
   if (restMs <= 0) {
     desc.textContent = `${interacoes} · expirado`;
     banner.classList.add('alerta');
     return;
   }
+  const expiraFmt = expira.toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+  });
+  desc.textContent = `${interacoes} · expira ${expiraFmt}`;
+  // Marca alerta quando falta menos de 1 hora
   const totalMin = Math.floor(restMs / 60000);
-  const horas = Math.floor(totalMin / 60);
-  const min = totalMin % 60;
-  let tempoStr;
-  if (horas > 0) tempoStr = `${horas}h ${min}m`;
-  else if (totalMin > 0) tempoStr = `${totalMin}min`;
-  else tempoStr = 'expirando';
-  desc.textContent = `${interacoes} · ${tempoStr}`;
   if (totalMin < 60) banner.classList.add('alerta');
+  else banner.classList.remove('alerta');
 }
 
 // ── Ações ──
@@ -1348,11 +1353,35 @@ document.getElementById('chat-file-input')?.addEventListener('change', async e =
     });
     if (!up.ok) throw new Error();
     const { url: urlReal } = await up.json();
-    await fetch(`${API}/api/chat/mensagem`, {
+
+    const r = await fetch(`${API}/api/chat/mensagem`, {
       method: 'POST',
       headers: { ...authHeader(), 'Content-Type':'application/json' },
       body: JSON.stringify({ tipo: 'imagem', url: urlReal, tipo_chat: canalAtivo }),
     });
+
+    // Atualiza msgTemp com resposta real (msm padrão do texto/áudio)
+    if (r.ok) {
+      const d = await r.json();
+      if (d.mensagem) {
+        const idx = mensagensAtuais.findIndex(m => m.id === msgTemp.id);
+        if (idx >= 0) mensagensAtuais[idx] = { ...msgTemp, ...d.mensagem };
+        const wrapEl = document.querySelector(`.msg-wrap[data-id="${msgTemp.id}"]`);
+        if (wrapEl) wrapEl.dataset.id = d.mensagem.id;
+        const checkEl = document.querySelector(`.msg-checks[data-msg-id="${msgTemp.id}"]`);
+        if (checkEl) {
+          checkEl.dataset.msgId = d.mensagem.id;
+          checkEl.classList.remove('enviada','entregue','lida');
+          if (d.mensagem.lida)          checkEl.classList.add('lida');
+          else if (d.mensagem.entregue) checkEl.classList.add('entregue');
+          else                          checkEl.classList.add('enviada');
+        }
+      }
+      if (d.conversa) {
+        chatConv = { ...chatConv, ...d.conversa };
+        atualizarBannerPlano(chatConv);
+      }
+    }
   } catch {
     toast('Erro ao enviar imagem', 'err');
   }
@@ -1470,11 +1499,38 @@ async function finalizarGravacao() {
     });
     if (!up.ok) throw new Error();
     const { url, duracao: durReal } = await up.json();
-    await fetch(`${API}/api/chat/mensagem`, {
+
+    const r = await fetch(`${API}/api/chat/mensagem`, {
       method: 'POST',
       headers: { ...authHeader(), 'Content-Type':'application/json' },
       body: JSON.stringify({ tipo: 'audio', url, duracao: durReal || dur, tipo_chat: canalAtivo }),
     });
+
+    // ── Atualiza msgTemp com a resposta do backend ──
+    // Sem isso, o áudio fica eternamente como ✓ (enviada) e os eventos
+    // posteriores (entregue, lida) não acham a bolha porque o id é tmp-*.
+    if (r.ok) {
+      const d = await r.json();
+      if (d.mensagem) {
+        const idx = mensagensAtuais.findIndex(m => m.id === msgTemp.id);
+        if (idx >= 0) mensagensAtuais[idx] = { ...msgTemp, ...d.mensagem };
+        // Troca id temporário pelo real no DOM
+        const wrapEl = document.querySelector(`.msg-wrap[data-id="${msgTemp.id}"]`);
+        if (wrapEl) wrapEl.dataset.id = d.mensagem.id;
+        const checkEl = document.querySelector(`.msg-checks[data-msg-id="${msgTemp.id}"]`);
+        if (checkEl) {
+          checkEl.dataset.msgId = d.mensagem.id;
+          checkEl.classList.remove('enviada','entregue','lida');
+          if (d.mensagem.lida)          checkEl.classList.add('lida');
+          else if (d.mensagem.entregue) checkEl.classList.add('entregue');
+          else                          checkEl.classList.add('enviada');
+        }
+      }
+      if (d.conversa) {
+        chatConv = { ...chatConv, ...d.conversa };
+        atualizarBannerPlano(chatConv);
+      }
+    }
   } catch {
     toast('Erro ao enviar áudio', 'err');
   }
