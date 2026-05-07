@@ -456,11 +456,15 @@ router.get('/resultado/:teste_id', async (req, res) => {
     );
     const conteudoPerfil = conteudoR.rows[0] || null;
 
-    // Livros cadastrados (Banco Comunicação)
+    // Livros do Passo 2 — buscam dados da tabela `precos` (slugs:
+    // vencendo_medo, vencendo_desordem, vencendo_validacao, vencendo_sobrevivencia)
     const livrosR = await poolComunicacao.query(
-      `SELECT * FROM teste_livros ORDER BY energia`
+      `SELECT key, dados FROM precos
+        WHERE key IN ('vencendo_medo','vencendo_desordem','vencendo_validacao','vencendo_sobrevivencia')`
     );
-    const livrosRecomendados = montarLivrosRecomendados(livrosR.rows, resultado);
+    const precosBySlug = {};
+    livrosR.rows.forEach(r => { precosBySlug[r.key] = r.dados || {}; });
+    const livrosRecomendados = montarLivrosRecomendados(precosBySlug, resultado);
 
     // Lista das 5 energias (Bloco 3)
     const energias = montarListaEnergias(resultado);
