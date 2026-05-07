@@ -13,10 +13,10 @@ const { autenticarPainel } = require('../middleware/autenticar');
 const PRECOS_INICIAIS = {
   // ── COMUNIDADE ──
   clube_vida_magica: {
-    nome: 'Clube Vida Mágica',
+    nome: 'Vida Mágica - Comunidade Suellen Seragi',
     tipo: 'comunidade',
-    imagem_url: '',
-    link_checkout_padrao: '',
+    imagem_url: '/assets/products/clube-vida-magica.png',
+    link_checkout_padrao: 'https://pay.kiwify.com.br/4QyFVj2',
     link_checkout_aluno: '',
     mostrar_promo_ouro: false,
     preco_ouro: '59,90',
@@ -29,7 +29,7 @@ const PRECOS_INICIAIS = {
   teste_prosperidade: {
     nome: 'Teste de Prosperidade',
     tipo: 'promo',
-    imagem_url: '',
+    imagem_url: '/assets/products/teste-prosperidade.png',
     link_checkout_padrao: '',
     link_checkout_aluno: '',
     mostrar_promo: false,
@@ -39,7 +39,7 @@ const PRECOS_INICIAIS = {
   teste_subconsciente: {
     nome: 'Teste do Subconsciente',
     tipo: 'promo',
-    imagem_url: '',
+    imagem_url: '/assets/products/teste-subconsciente.png',
     link_checkout_padrao: '',
     link_checkout_aluno: '',
     mostrar_promo: false,
@@ -48,11 +48,11 @@ const PRECOS_INICIAIS = {
   },
   // ── SÉRIE CONHECER E DESPERTAR (4 LIVROS — em sequência) ──
   vencendo_medo: {
-    nome: 'Vencendo o Medo',
+    nome: 'E-Book Vencendo o Medo - Série Conhecer e Despertar',
     tipo: 'curso',
-    imagem_url: '',
-    link_checkout_padrao: '',
-    link_checkout_aluno: '',
+    imagem_url: '/assets/products/ebook-vencendoomedo.png',
+    link_checkout_padrao: 'https://pay.kiwify.com.br/zr8CnoD',
+    link_checkout_aluno: 'https://pay.kiwify.com.br/3Rsvddn',
     mostrar_promo: false,
     preco_padrao: '59,90',
     parcelas_qtd: 10,
@@ -65,9 +65,9 @@ const PRECOS_INICIAIS = {
     parcelas_qtd_alunos: 10
   },
   vencendo_desordem: {
-    nome: 'Vencendo a Desordem',
+    nome: 'E-Book Vencendo a Desordem - Série Conhecer e Despertar',
     tipo: 'curso',
-    imagem_url: '',
+    imagem_url: '/assets/products/ebook-vencendoadesordem.png',
     link_checkout_padrao: '',
     link_checkout_aluno: '',
     mostrar_promo: false,
@@ -82,9 +82,9 @@ const PRECOS_INICIAIS = {
     parcelas_qtd_alunos: 10
   },
   vencendo_validacao: {
-    nome: 'Vencendo a Validação',
+    nome: 'E-Book Vencendo a Validação - Série Conhecer e Despertar',
     tipo: 'curso',
-    imagem_url: '',
+    imagem_url: '/assets/products/ebook-vencendoavalidacao.png',
     link_checkout_padrao: '',
     link_checkout_aluno: '',
     mostrar_promo: false,
@@ -99,9 +99,9 @@ const PRECOS_INICIAIS = {
     parcelas_qtd_alunos: 10
   },
   vencendo_sobrevivencia: {
-    nome: 'Vencendo a Sobrevivência',
+    nome: 'E-Book Vencendo a Sobrevivência - Série Conhecer e Despertar',
     tipo: 'curso',
-    imagem_url: '',
+    imagem_url: '/assets/products/ebook-vencendoasobrevivencia.png',
     link_checkout_padrao: '',
     link_checkout_aluno: '',
     mostrar_promo: false,
@@ -119,7 +119,7 @@ const PRECOS_INICIAIS = {
   magica_fluir: {
     nome: 'Guia de Bolso Mágica do Fluir',
     tipo: 'curso',
-    imagem_url: '',
+    imagem_url: '/assets/products/magica-fluir.png',
     link_checkout_padrao: '',
     link_checkout_aluno: '',
     mostrar_promo: false,
@@ -134,11 +134,11 @@ const PRECOS_INICIAIS = {
     parcelas_qtd_alunos: null
   },
   guia_pratico: {
-    nome: 'E-Book: Guia Prático para Reprogramar a Mente',
+    nome: 'Guia Prático para Reprogramar a Mente',
     tipo: 'curso',
-    imagem_url: '',
-    link_checkout_padrao: '',
-    link_checkout_aluno: '',
+    imagem_url: '/assets/products/guia-pratico.png',
+    link_checkout_padrao: 'https://pay.kiwify.com.br/itNhMPe',
+    link_checkout_aluno: 'https://pay.kiwify.com.br/YG9kuOH',
     mostrar_promo: false,
     preco_padrao: '84,11',
     parcelas_qtd: 12,
@@ -149,11 +149,11 @@ const PRECOS_INICIAIS = {
     parcelas_valor_alunos: '7,28'
   },
   atal_maneira_livro: {
-    nome: 'Livro Digital A Tal Maneira + Audiobook + Aulão',
+    nome: 'Livro Digital A Tal Maneira 3 - Leis para a Riqueza e para a Vida',
     tipo: 'curso',
-    imagem_url: '',
-    link_checkout_padrao: '',
-    link_checkout_aluno: '',
+    imagem_url: '/assets/products/atal-maneira-livro.png',
+    link_checkout_padrao: 'https://pay.kiwify.com.br/IId7xgS',
+    link_checkout_aluno: 'https://pay.kiwify.com.br/fZCFTb6',
     mostrar_promo: false,
     preco_padrao: '137,88',
     parcelas_qtd: 12,
@@ -165,11 +165,11 @@ const PRECOS_INICIAIS = {
   },
   // ── CURSOS DE REPROGRAMAÇÃO ──
   ouro_reprogramacao: {
-    nome: 'Curso: O Ouro da Reprogramação Mental',
+    nome: 'Curso O Ouro da Reprogramação Mental',
     tipo: 'curso',
-    imagem_url: '',
-    link_checkout_padrao: '',
-    link_checkout_aluno: '',
+    imagem_url: '/assets/products/ouro-reprogramacao.png',
+    link_checkout_padrao: 'https://pay.kiwify.com.br/F62VNpy',
+    link_checkout_aluno: 'https://pay.kiwify.com.br/VYTiaCm',
     mostrar_promo: false,
     preco_padrao: '711,00',
     parcelas_qtd: 12,
@@ -180,11 +180,11 @@ const PRECOS_INICIAIS = {
     parcelas_valor_alunos: '42,51'
   },
   lda_biblica: {
-    nome: 'Curso: LDA Bíblica',
+    nome: 'Curso Lei da Atração Bíblica (LDA)',
     tipo: 'curso',
-    imagem_url: '',
-    link_checkout_padrao: '',
-    link_checkout_aluno: '',
+    imagem_url: '/assets/products/lda-biblica.png',
+    link_checkout_padrao: 'https://pay.kiwify.com.br/8BoTzTD',
+    link_checkout_aluno: 'https://pay.kiwify.com.br/k2TZ8cU',
     mostrar_promo: false,
     preco_padrao: '711,00',
     parcelas_qtd: 12,
@@ -195,11 +195,11 @@ const PRECOS_INICIAIS = {
     parcelas_valor_alunos: '42,51'
   },
   atal_maneira_curso: {
-    nome: 'A Tal Maneira - O Curso Definitivo da Riqueza Bíblica',
+    nome: 'Curso A Tal Maneira - O Curso Definitivo da Riqueza Bíblica',
     tipo: 'curso',
-    imagem_url: '',
-    link_checkout_padrao: '',
-    link_checkout_aluno: '',
+    imagem_url: '/assets/products/atal-maneira-curso.png',
+    link_checkout_padrao: 'https://pay.kiwify.com.br/csxtcEQ',
+    link_checkout_aluno: 'https://pay.kiwify.com.br/lT8PPM4',
     mostrar_promo: false,
     preco_padrao: '711,00',
     parcelas_qtd: 12,
@@ -215,9 +215,13 @@ const PRECOS_INICIAIS = {
    Função interna — usada também pelo boot do server.js.
    Idempotente:
      - Insere chaves que ainda não existem (sem sobrescrever).
-     - Para chaves existentes, ADICIONA campos novos (imagem_url,
-       link_checkout_padrao, link_checkout_aluno) sem mexer no que
-       o admin já editou (preços, descontos, etc).
+     - Para chaves existentes:
+       (a) Adiciona campos NOVOS que não existem ainda
+       (b) Preenche campos que existem mas estão VAZIOS (string vazia, null, undefined)
+       (c) Atualiza o NOME pro nome canônico (porque o admin não edita o nome
+           pelo painel hoje — ele é fixo/sistêmico)
+       Campos com valor DIFERENTE de vazio (preço editado, link cadastrado,
+       etc) são PRESERVADOS — admin manda no que ele editou.
    ============================================================ */
 async function seedPrecos() {
   const client = await poolComunicacao.connect();
@@ -225,6 +229,10 @@ async function seedPrecos() {
     await client.query('BEGIN');
     let inseridos = 0;
     let migrados = 0;
+    // Campos que devem ser "preenchidos automaticamente quando vazios"
+    // (não os preços/promo/parcelas que são editados pelo admin)
+    const CAMPOS_AUTO_FILL = ['imagem_url', 'link_checkout_padrao', 'link_checkout_aluno'];
+
     for (const [key, valor] of Object.entries(PRECOS_INICIAIS)) {
       const r = await client.query(`
         INSERT INTO precos (key, dados, atualizado_em)
@@ -234,18 +242,36 @@ async function seedPrecos() {
       if (r.rowCount > 0) {
         inseridos++;
       } else {
-        // Já existia — migra campos novos sem sobrescrever editados.
-        // Lê dados atuais, adiciona apenas chaves que não existem ainda.
+        // Já existia — atualizações conservadoras
         const existR = await client.query(`SELECT dados FROM precos WHERE key = $1`, [key]);
         if (existR.rows[0]) {
           const atual = existR.rows[0].dados || {};
           let mudou = false;
+
+          // (a) e (b): pra cada campo do canônico, se atual está vazio/inexistente
+          //            E o canônico tem valor, preenche.
           for (const [campo, valorPadrao] of Object.entries(valor)) {
+            const valorAtual = atual[campo];
+            const estaVazio = (valorAtual === undefined || valorAtual === null || valorAtual === '');
+            // Auto-fill: links e imagem podem ser preenchidos quando vazios
+            if (CAMPOS_AUTO_FILL.includes(campo) && estaVazio && valorPadrao) {
+              atual[campo] = valorPadrao;
+              mudou = true;
+              continue;
+            }
+            // Campos novos que não existem no JSON: adiciona
             if (!(campo in atual)) {
               atual[campo] = valorPadrao;
               mudou = true;
             }
           }
+
+          // (c): nome sincroniza com o canônico
+          if (atual.nome !== valor.nome) {
+            atual.nome = valor.nome;
+            mudou = true;
+          }
+
           if (mudou) {
             await client.query(`
               UPDATE precos SET dados = $2, atualizado_em = NOW() WHERE key = $1
@@ -260,7 +286,7 @@ async function seedPrecos() {
       console.log(`✅ Seed de preços: ${inseridos} chave(s) nova(s) inserida(s)`);
     }
     if (migrados > 0) {
-      console.log(`✅ Seed de preços: ${migrados} chave(s) migrada(s) (campos novos adicionados)`);
+      console.log(`✅ Seed de preços: ${migrados} chave(s) sincronizada(s) (nome/links/imagem)`);
     }
     return inseridos;
   } catch (err) {
