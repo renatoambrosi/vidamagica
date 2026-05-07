@@ -3261,7 +3261,7 @@ const metodoAtendimento = (function(){
         '</div>';
 
       // Renderiza recomendações: passos NÃO comprados e que TÊM link de checkout
-      const recomendacoes = j.passos.filter(p => !p.comprado && p.produto_link_checkout);
+      const recomendacoes = j.passos.filter(p => !p.comprado && (p.link_checkout_aluno || p.link_checkout_padrao));
       if (recomendacoes.length > 0) {
         if (recSecao) recSecao.style.display = '';
         renderRecomendacoes(recomendacoes);
@@ -3308,12 +3308,15 @@ const metodoAtendimento = (function(){
     });
   }
 
-  // ── Enviar link no chat (formato B confirmado: Título + link) ──
+  // ── Enviar link no chat ──
+  // Suellen oferece o checkout com PREÇO DE ALUNA (mais baixo). Se o link
+  // exclusivo de aluna não estiver cadastrado, cai no padrão.
   async function enviarLinkProduto(passo) {
     if (!convAtual) { toast('Abra uma conversa antes', 'err'); return; }
     const input = document.getElementById('chat-input');
     if (!input) return;
-    const texto = passo.produto_nome + ':\n' + passo.produto_link_checkout;
+    const link = passo.link_checkout_aluno || passo.link_checkout_padrao || '';
+    const texto = passo.produto_nome + ':\n' + link;
     input.value = texto;
     // Garante que o botão de enviar esteja visível
     document.getElementById('btn-enviar')?.classList.add('visivel');
