@@ -1714,3 +1714,200 @@ body.teclado-aberto .bottom-nav {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ════════════════════════════════════════════════════
+   Banner "Seu novo perfil está pronto pra atualizar sua jornada"
+   Aparece na Home quando há teste aguardando ativação.
+   ════════════════════════════════════════════════════ */
+.banner-atualizar-trilha {
+  margin: 1rem 1.25rem;
+  padding: 1rem 1.1rem;
+  background: linear-gradient(135deg, rgba(248,220,150,0.22), rgba(255,250,240,0.85));
+  border: 1px solid rgba(200,146,42,0.4);
+  border-radius: 12px;
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  animation: bannerFadeIn 0.5s ease;
+}
+.banner-atualizar-trilha::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--ouro-fundo), transparent);
+}
+@keyframes bannerFadeIn {
+  0% { opacity: 0; transform: translateY(-8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.banner-atualizar-icone {
+  font-size: 1.4rem;
+  color: var(--ouro-fundo);
+  filter: drop-shadow(0 0 8px rgba(248,220,150,0.5));
+  flex-shrink: 0;
+  animation: bannerIconePulsa 2s ease-in-out infinite;
+}
+@keyframes bannerIconePulsa {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+.banner-atualizar-textos { flex: 1; min-width: 0; }
+.banner-atualizar-titulo {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--texto);
+  line-height: 1.3;
+  margin-bottom: 0.55rem;
+}
+.banner-atualizar-btn {
+  display: inline-block;
+  padding: 0.5rem 0.9rem;
+  background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
+  color: white;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(200,146,42,0.25);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.banner-atualizar-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(200,146,42,0.4); }
+.banner-atualizar-btn:active { transform: scale(0.97); }
+
+/* ════════════════════════════════════════════════════
+   Splash "Criando/Atualizando sua jornada"
+   Mesma identidade visual do resultado.html — partículas
+   douradas explodindo do centro, ícone pulsando, texto.
+   ════════════════════════════════════════════════════ */
+.jornada-splash {
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at center, #0a4866 0%, #051929 60%, #02101a 100%);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  overflow: hidden;
+}
+.jornada-splash.visivel { opacity: 1; }
+.jornada-splash-particulas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.js-particula {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #F8DC96 0%, #C8922A 60%, transparent 100%);
+  box-shadow: 0 0 12px #F8DC96, 0 0 24px rgba(248,220,150,0.6);
+  opacity: 0;
+  animation: jsExp0 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.js-p0 { animation-name: jsExp0; }
+.js-p1 { animation-name: jsExp1; }
+.js-p2 { animation-name: jsExp2; }
+.js-p3 { animation-name: jsExp3; }
+.js-p4 { animation-name: jsExp4; }
+.js-p5 { animation-name: jsExp5; }
+.js-p6 { animation-name: jsExp6; }
+.js-particula:nth-child(7n+1) { animation-delay: 0s; }
+.js-particula:nth-child(7n+2) { animation-delay: 0.08s; }
+.js-particula:nth-child(7n+3) { animation-delay: 0.16s; }
+.js-particula:nth-child(7n+4) { animation-delay: 0.24s; }
+.js-particula:nth-child(7n+5) { animation-delay: 0.4s; }
+.js-particula:nth-child(7n+6) { animation-delay: 0.55s; }
+.js-particula:nth-child(7n+7) { animation-delay: 0.7s; }
+@keyframes jsExp0 { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-50% + 220px), calc(-50% - 30px)) scale(0.4); opacity: 0; } }
+@keyframes jsExp1 { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-50% - 200px), calc(-50% + 80px)) scale(0.3); opacity: 0; } }
+@keyframes jsExp2 { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-50% + 80px), calc(-50% - 240px)) scale(0.3); opacity: 0; } }
+@keyframes jsExp3 { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-50% - 120px), calc(-50% + 220px)) scale(0.4); opacity: 0; } }
+@keyframes jsExp4 { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-50% + 280px), calc(-50% + 140px)) scale(0.3); opacity: 0; } }
+@keyframes jsExp5 { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-50% - 250px), calc(-50% - 180px)) scale(0.4); opacity: 0; } }
+@keyframes jsExp6 { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-50% + 30px), calc(-50% + 280px)) scale(0.3); opacity: 0; } }
+
+.jornada-splash-conteudo {
+  text-align: center;
+  z-index: 1;
+  animation: jsConteudoFade 0.6s ease 0.3s both;
+}
+@keyframes jsConteudoFade {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.jornada-splash-icone {
+  font-size: 3.5rem;
+  color: #F8DC96;
+  filter: drop-shadow(0 0 24px rgba(248,220,150,0.7));
+  margin-bottom: 1rem;
+  animation: jsIconePulsa 1.6s ease-in-out infinite;
+}
+@keyframes jsIconePulsa {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 24px rgba(248,220,150,0.7)); }
+  50% { transform: scale(1.15); filter: drop-shadow(0 0 36px rgba(248,220,150,1)); }
+}
+.jornada-splash-titulo {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.02em;
+}
+.jornada-splash-sub {
+  font-size: 0.95rem;
+  color: rgba(255,255,255,0.8);
+  max-width: 280px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* Selo no card do teste em "Seus testes" — quando esse teste é o
+   que está aguardando ativação da trilha. */
+.teste-mini-card.teste-mini-aguardando-ativacao {
+  border-color: rgba(200,146,42,0.55);
+  background: linear-gradient(135deg, rgba(248,220,150,0.18), var(--vidro));
+  position: relative;
+}
+.teste-mini-selo-atualizar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 0.2rem 0.45rem;
+  background: var(--ouro-fundo);
+  color: white;
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(200,146,42,0.35);
+}
+
+/* Botão de ação dentro de um aviso (ex: "Quero atualizar →" no aviso de
+   atualização de trilha disponível). */
+.aviso-acao {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
+  color: white;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(200,146,42,0.25);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.aviso-acao:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(200,146,42,0.4); }
+.aviso-acao:active { transform: scale(0.97); }
