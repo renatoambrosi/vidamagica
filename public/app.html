@@ -20,13 +20,24 @@
     <div class="topo-logo">
       <img src="/assets/logo-horizontal.png" alt="Vida Mágica" onerror="this.style.display='none'">
     </div>
+
+    <!-- Barra de progresso da jornada (entre logo e ícones) -->
+    <div class="topo-jornada" id="topo-jornada">
+      <div class="topo-jornada-info">
+        <span class="topo-jornada-nome" id="topo-jornada-nome">Sua jornada</span>
+        <span class="topo-jornada-pct" id="topo-jornada-pct">0%</span>
+      </div>
+      <div class="topo-jornada-bar">
+        <div class="topo-jornada-fill" id="topo-jornada-fill" style="width:0%"></div>
+      </div>
+    </div>
+
     <div class="topo-direita">
       <button class="topo-btn" id="btn-sementes" aria-label="Sementes">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 22V12"/>
           <path d="M12 12C12 12 7 11 5 7c-1.5-3 0-6 3-6 2 0 3.5 1.5 4 5 .5-3.5 2-5 4-5 3 0 4.5 3 3 6-2 4-7 5-7 5z"/>
         </svg>
-        <span class="topo-badge" id="badge-sementes">0</span>
       </button>
       <button class="topo-btn" id="btn-avisos" aria-label="Avisos">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -43,13 +54,39 @@
 
     <!-- HOME -->
     <section class="view active" id="view-home">
-      <div class="saudacao">
-        <p class="saudacao-eyebrow">Bem-vinda de volta</p>
-        <h1 class="saudacao-nome" id="saudacao-nome">Sua jornada</h1>
-        <div class="saudacao-divisor"></div>
-        <p class="saudacao-frase">A vida começa quando a mente desperta.</p>
-      </div>
 
+      <!-- FEED full-bleed (encostado no header, lateral a lateral) -->
+      <section class="feed-home" id="feed-home">
+        <div class="feed-home-vazio" id="feed-home-vazio" style="display:none">
+          <p>Nenhum vídeo publicado ainda.</p>
+        </div>
+        <div class="feed-home-destaque" id="feed-home-destaque" style="display:none">
+          <div class="feed-home-thumb-wrap">
+            <img class="feed-home-thumb" id="feed-home-thumb" alt="" loading="lazy">
+            <div class="feed-home-play" id="feed-home-play" aria-label="Assistir">
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+            <button class="feed-home-cadeado" id="feed-home-cadeado" type="button" aria-label="Conteúdo exclusivo" style="display:none">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </button>
+            <button class="feed-home-info" id="feed-home-info" type="button" aria-label="Informação">
+              <span>i</span>
+            </button>
+          </div>
+          <div class="feed-home-meta">
+            <div class="feed-home-titulo" id="feed-home-titulo"></div>
+          </div>
+        </div>
+        <a href="/feed.html" class="feed-home-ver-mais" id="feed-home-ver-mais" style="display:none">
+          <span>Ver mais vídeos</span>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </section>
+
+      <!-- TESOUROS DA SU (Sementes) -->
       <div class="tesouro-wrap" id="tesouro-wrap">
         <button class="tesouro-btn" id="tesouro-btn" aria-label="Tesouro da Su">
           <div class="tesouro-glow"></div>
@@ -96,13 +133,13 @@
         </button>
       </div>
 
-      <section class="feed" id="feed">
-        <div class="feed-carrossel-wrap" id="feed-carrossel-wrap" style="display:none">
-          <div class="feed-carrossel" id="feed-carrossel"></div>
-          <div class="feed-dots" id="feed-dots"></div>
-        </div>
-        <div class="feed-lista" id="feed-lista"></div>
-      </section>
+      <!-- SAUDAÇÃO (depois dos tesouros) -->
+      <div class="saudacao">
+        <p class="saudacao-eyebrow">Bem-vinda de volta</p>
+        <h1 class="saudacao-nome" id="saudacao-nome">Sua jornada</h1>
+        <div class="saudacao-divisor"></div>
+        <p class="saudacao-frase">A vida começa quando a mente desperta.</p>
+      </div>
 
       <section class="trilha">
         <div class="trilha-header">
@@ -115,7 +152,7 @@
             <div class="trilha-num">1</div>
             <div class="trilha-card">
               <div class="trilha-eyebrow-card">Diagnóstico</div>
-              <h3 class="trilha-card-titulo">Teste do Subconsciente</h3>
+              <h3 class="trilha-card-titulo">Teste de Prosperidade</h3>
               <p class="trilha-card-desc">Descubra em 15 perguntas o padrão mental que bloqueia sua prosperidade.</p>
               <div class="trilha-meta"><span>15 perguntas</span><span>~7 min</span></div>
               <button class="trilha-btn">Começar →</button>
@@ -146,17 +183,17 @@
       <footer class="rodape"><p>Vida Mágica · Renato &amp; Suellen Seragi</p></footer>
     </section>
 
-    <!-- MATERIAIS -->
+    <!-- PRODUTOS -->
     <section class="view" id="view-produtos">
       <div class="view-topo">
-        <h2 class="view-titulo">Materiais</h2>
-        <p class="view-sub">Sua jornada e o que você já adquiriu</p>
+        <h2 class="view-titulo">Meus Produtos</h2>
+        <p class="view-sub">Cursos e conteúdos adquiridos</p>
       </div>
       <div class="produtos-lista" id="produtos-lista">
         <div class="empty-state">
           <div class="empty-icon">📦</div>
-          <p class="empty-titulo">Nada por aqui ainda</p>
-          <p class="empty-sub">Quando começar sua jornada, seus testes e cursos aparecem aqui.</p>
+          <p class="empty-titulo">Nenhum produto ainda</p>
+          <p class="empty-sub">Seus cursos e produtos comprados aparecem aqui.</p>
         </div>
       </div>
     </section>
@@ -235,10 +272,10 @@
         </div>
 
         <div class="plano-banner tier-free" id="plano-banner">
-          <div class="plano-banner-icone" id="plano-banner-icone">·</div>
+          <div class="plano-banner-icone"></div>
           <div class="plano-banner-texto">
-            <p class="plano-banner-titulo" id="plano-banner-titulo">Free</p>
-            <p class="plano-banner-desc" id="plano-banner-desc">Resposta em tempo indeterminado</p>
+            <p class="plano-banner-titulo" id="plano-banner-titulo">PLANO FREE</p>
+            <p class="plano-banner-desc" id="plano-banner-desc">Tempo de resposta indeterminado</p>
           </div>
           <button class="plano-banner-acao" id="plano-banner-acao" type="button">Assinar Vida Mágica</button>
         </div>
@@ -338,7 +375,7 @@
         <li class="perfil-item" id="menu-testes">
           <span class="perfil-item-icone">📊</span>
           <div class="perfil-item-info">
-            <span class="perfil-item-titulo">Meus Testes do Subconsciente</span>
+            <span class="perfil-item-titulo">Meus Testes de Prosperidade</span>
             <span class="perfil-item-sub">Veja seu histórico e resultados</span>
           </div>
           <span class="perfil-item-arrow">›</span>
@@ -376,11 +413,11 @@
       </div>
       <span class="nav-tab-label">Início</span>
     </button>
-    <button class="nav-tab" data-view="produtos" aria-label="Materiais">
+    <button class="nav-tab" data-view="produtos" aria-label="Produtos">
       <div class="nav-tab-icon">
         <svg viewBox="0 0 24 24" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
       </div>
-      <span class="nav-tab-label">Materiais</span>
+      <span class="nav-tab-label">Produtos</span>
     </button>
     <button class="nav-tab" data-view="chat" aria-label="Fale com a Su" id="nav-chat">
       <div class="nav-tab-icon">
@@ -470,7 +507,7 @@
     <div class="modal-sheet">
       <div class="modal-handle"></div>
       <header class="modal-header">
-        <h3 class="modal-header-titulo">Meus Testes do Subconsciente</h3>
+        <h3 class="modal-header-titulo">Meus Testes</h3>
         <button class="modal-fechar" data-close>✕</button>
       </header>
       <div class="modal-corpo" id="testes-corpo">
