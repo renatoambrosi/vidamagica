@@ -1,745 +1,1645 @@
-/* ============================================================
-   VIDA MÁGICA — routes/teste.js
-   Endpoints do Teste do Subconsciente (lado da aluna).
-
-   Banco principal: poolTeste.
-   Cruzamento: poolCore (tabela usuarios) — sem JOIN entre bancos.
-
-   Versionamento:
-   - GET /perguntas devolve versao_id; frontend manda de volta no /responder.
-   - Se versão mudou no meio (admin publicou nova), responder retorna
-     409 'versao_alterada' e o frontend reinicia o quiz.
-   ============================================================ */
-
-const express = require('express');
-const router = express.Router();
-
-const { poolCore, poolTeste, poolComunicacao } = require('../db');
-const { formatarTelefone } = require('../core/utils');
-const { buscarUsuarioPorIdentificador } = require('../core/usuarios');
-const { calcularPerfil, PERFIS_VALIDOS } = require('../core/teste-conteudo');
-const {
-  calcularResultado,
-  montarLivrosRecomendados,
-  montarListaEnergias,
-} = require('../core/teste-resultado');
-const { autenticar } = require('../middleware/autenticar');
-
-// ── Validações simples ──────────────────────────────────────
-function validarNome(nome) {
-  if (!nome || typeof nome !== 'string') return null;
-  const limpo = nome.trim().replace(/\s+/g, ' ');
-  if (limpo.length < 2 || limpo.length > 255) return null;
-  return limpo;
-}
-function validarTelefoneCanonico(telCanonico) {
-  if (!telCanonico) return false;
-  return /^55\d{10,11}$/.test(telCanonico);
-}
-function sanitizarUtm(valor) {
-  if (!valor || typeof valor !== 'string') return null;
-  const limpo = valor.trim().slice(0, 100);
-  return limpo || null;
-}
-
-async function pegarVersaoAtiva() {
-  const r = await poolTeste.query(
-    `SELECT id, nome FROM teste_versoes WHERE status='ativa' LIMIT 1`
-  );
-  return r.rows[0] || null;
-}
-
-// ── POST /api/teste/buscar-usuario ──────────────────────────
-router.post('/buscar-usuario', async (req, res) => {
-  try {
-    const { telefone } = req.body || {};
-    const canonico = formatarTelefone(telefone);
-    if (!validarTelefoneCanonico(canonico)) {
-      return res.json({ encontrado: false });
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Resultado Teste de Prosperidade — Vida Mágica</title>
+  <link rel="stylesheet" href="/colors_and_type.css">
+  <link rel="icon" href="/assets/favicon.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ─── Base ─── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: var(--font-body, 'Inter', sans-serif);
+      background: linear-gradient(180deg, #051929 0%, #0a2d44 100%);
+      color: var(--pearl, #f5f0e8);
+      min-height: 100vh;
+      line-height: 1.65;
     }
-    const usuario = await buscarUsuarioPorIdentificador({ telefone: canonico });
-    if (usuario && usuario.nome) {
-      return res.json({ encontrado: true, nome: usuario.nome });
+    .container { max-width: 760px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+
+    /* ─── Header (logo + voltar) ─── */
+    .topo {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem;
+      position: relative;
     }
-    return res.json({ encontrado: false });
-  } catch (err) {
-    console.error('[teste/buscar-usuario] erro:', err);
-    return res.status(500).json({ encontrado: false, erro: 'erro interno' });
+    .topo-marca {
+      display: flex; align-items: center; gap: 0.7rem; min-width: 0;
+    }
+    .topo-logo { height: 32px; width: auto; flex-shrink: 0; }
+    .topo-divisor {
+      width: 1px; height: 22px;
+      background: rgba(245,240,232,0.25);
+      flex-shrink: 0;
+    }
+    .topo-produto {
+      font-family: var(--font-display);
+      font-size: 0.9rem; font-weight: 500;
+      color: var(--pearl-dim, rgba(245,240,232,0.7));
+      letter-spacing: 0.01em;
+    }
+    .topo-fechar {
+      flex-shrink: 0;
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: rgba(245,240,232,0.06);
+      border: 1px solid rgba(245,240,232,0.15);
+      color: var(--pearl-dim, rgba(245,240,232,0.7));
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.12s;
+    }
+    .topo-fechar:hover { background: rgba(245,240,232,0.12); color: var(--pearl, #F5F0E8); border-color: rgba(245,240,232,0.3); }
+    .topo-fechar:active { transform: scale(0.94); }
+    .topo-fechar svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ─── Loading state ─── */
+    .loading {
+      min-height: 60vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 3rem 1.5rem;
+      text-align: center;
+      color: var(--pearl-dim, rgba(245,240,232,0.7));
+    }
+    .loading-anel {
+      position: relative;
+      width: 90px; height: 90px;
+      margin-bottom: 1.5rem;
+    }
+    .loading-anel::before, .loading-anel::after {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: 50%;
+      border: 2px solid transparent;
+    }
+    .loading-anel::before {
+      border-top-color: var(--gold, #C8922A);
+      border-right-color: rgba(200,146,42,0.4);
+      animation: anelGirar 1.4s linear infinite;
+    }
+    .loading-anel::after {
+      inset: 12px;
+      border-top-color: var(--sub-bright, #2ba5e8);
+      border-left-color: rgba(43,165,232,0.4);
+      animation: anelGirar 2.2s linear infinite reverse;
+    }
+    .loading-estrela {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.6rem;
+      color: var(--gold, #C8922A);
+      animation: estrelaPulse 2s ease-in-out infinite;
+      filter: drop-shadow(0 0 8px rgba(200,146,42,0.6));
+    }
+    @keyframes anelGirar { to { transform: rotate(360deg); } }
+    @keyframes estrelaPulse {
+      0%, 100% { opacity: 0.85; transform: translate(-50%,-50%) scale(1); }
+      50% { opacity: 1; transform: translate(-50%,-50%) scale(1.15); }
+    }
+    .loading-texto {
+      font-family: var(--font-display);
+      font-size: 0.85rem; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--pearl-dim, rgba(245,240,232,0.7));
+    }
+    .loading-texto .pontos::after {
+      content: '...';
+      animation: pontosPulse 1.4s steps(4, end) infinite;
+    }
+    @keyframes pontosPulse {
+      0%, 20% { content: ''; }
+      40% { content: '.'; }
+      60% { content: '..'; }
+      80%, 100% { content: '...'; }
+    }
+    .loading i { font-size: 2rem; color: var(--sub-bright, #2ba5e8); margin-bottom: 1rem; } /* legado */
+
+    /* ─── Erro ─── */
+    .erro-box {
+      background: rgba(229,115,115,0.12);
+      border: 1px solid rgba(229,115,115,0.3);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      color: #F09090;
+      margin: 2rem 0;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       BLOCO 1 — Imagem + Título
+       ═══════════════════════════════════════════════════ */
+    .b1-imagem-wrap {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .b1-imagem {
+      max-width: 280px; width: 100%; height: auto;
+      filter: drop-shadow(0 0 32px var(--sub-glow-soft, rgba(43,165,232,0.3)));
+    }
+    .b1-titulo {
+      font-family: var(--font-display, 'Playfair Display', serif);
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: var(--pearl, #f5f0e8);
+      text-align: center;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       BLOCO 2 — Saudação + Energia Predominante
+       ═══════════════════════════════════════════════════ */
+    .b2-wrap {
+      text-align: center;
+      margin: 2rem 0 2.5rem;
+    }
+    .b2-nome {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      color: var(--pearl);
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+    }
+    .b2-frase {
+      color: var(--pearl-dim);
+      font-size: 0.95rem;
+      margin-bottom: 0.75rem;
+    }
+    .b2-energia {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--gold, #f8dc96);
+      letter-spacing: 0.01em;
+      text-shadow: 0 0 24px rgba(248,220,150,0.4);
+      line-height: 1.2;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       BLOCO 3 — Lista de 5 energias
+       ═══════════════════════════════════════════════════ */
+    .b3-wrap {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(245,240,232,0.1);
+      border-radius: 14px;
+      padding: 1.5rem 1.5rem 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .b3-titulo {
+      font-size: 0.78rem;
+      color: var(--pearl-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    .b3-energia-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid rgba(245,240,232,0.08);
+    }
+    .b3-energia-row:last-child { border-bottom: none; }
+    .b3-energia-row.is-dominante {
+      background: linear-gradient(90deg, rgba(248,220,150,0.08), transparent);
+      margin: 0 -0.75rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 8px;
+      border-bottom: none;
+    }
+    .b3-energia-label {
+      font-size: 0.95rem;
+      color: var(--pearl);
+      font-weight: 500;
+    }
+    .b3-energia-row.is-dominante .b3-energia-label {
+      color: var(--gold);
+      font-weight: 700;
+    }
+    .b3-energia-perc {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--pearl);
+    }
+    .b3-energia-row.is-dominante .b3-energia-perc {
+      color: var(--gold);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       BLOCO 4 — Compartilhar
+       ═══════════════════════════════════════════════════ */
+    .b4-btn {
+      display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+      width: 100%;
+      padding: 1rem 1.5rem;
+      background: linear-gradient(135deg, #25D366, #1ca54f);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 2.5rem;
+    }
+    .b4-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,211,102,0.3); }
+    .b4-btn i { font-size: 1.2rem; }
+
+    /* ═══════════════════════════════════════════════════
+       BLOCO 5 — Vídeo
+       ═══════════════════════════════════════════════════ */
+    .b5-wrap { margin-bottom: 2rem; }
+    .b5-chamada {
+      text-align: center;
+      color: var(--pearl);
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+      font-style: italic;
+    }
+    .b5-video-container {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%; /* 16:9 */
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+    .b5-video-container iframe,
+    .b5-video-container video {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      border: none;
+    }
+    .b5-video-placeholder {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: rgba(245,240,232,0.5);
+      gap: 0.75rem;
+    }
+    .b5-video-placeholder i { font-size: 3rem; }
+    .b5-video-placeholder span { font-size: 0.85rem; }
+
+    /* ═══════════════════════════════════════════════════
+       BLOCO 6 — Diagnóstico (texto longo)
+       ═══════════════════════════════════════════════════ */
+    .b6-wrap {
+      margin-bottom: 3rem;
+    }
+    .b6-texto {
+      color: var(--pearl);
+      font-size: 1rem;
+      line-height: 1.8;
+    }
+    .b6-texto p { margin-bottom: 1.1rem; }
+    .b6-texto strong { color: var(--gold); font-weight: 600; }
+    .b6-texto em { color: var(--sub-bright, #2ba5e8); font-style: italic; }
+    .b6-texto blockquote {
+      border-left: 3px solid var(--gold);
+      padding: 0.75rem 1.25rem;
+      margin: 1.25rem 0;
+      background: rgba(248,220,150,0.06);
+      font-style: italic;
+      color: var(--pearl-dim);
+      border-radius: 4px;
+    }
+    .b6-texto h2, .b6-texto h3 {
+      font-family: var(--font-display);
+      color: var(--gold);
+      margin: 1.75rem 0 0.85rem;
+      font-weight: 700;
+    }
+    .b6-texto h2 { font-size: 1.4rem; }
+    .b6-texto h3 { font-size: 1.15rem; }
+    .b6-texto ul, .b6-texto ol {
+      margin: 0 0 1.1rem 1.5rem;
+      color: var(--pearl);
+    }
+    .b6-texto ul li, .b6-texto ol li { margin-bottom: 0.4rem; }
+
+    /* ═══════════════════════════════════════════════════
+       BLOCO 7 — Trilha (Conhecer / Despertar / Reprogramação)
+       ═══════════════════════════════════════════════════ */
+    .b7-trilha-titulo {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      color: var(--pearl-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      text-align: center;
+    }
+
+    .passo-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(245,240,232,0.1);
+      border-radius: 14px;
+      padding: 1.5rem 1.5rem 1.25rem;
+      margin-bottom: 1.25rem;
+      position: relative;
+    }
+    .passo-card.is-concluido { border-color: rgba(46,213,115,0.3); }
+    .passo-card.is-proximo {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 1px var(--gold), 0 8px 32px rgba(248,220,150,0.1);
+    }
+
+    .passo-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 1rem; margin-bottom: 0.85rem;
+    }
+    .passo-numero {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--gold);
+    }
+    .passo-card.is-concluido .passo-numero { color: #2ED573; }
+    .passo-status-tag {
+      font-size: 0.7rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .passo-status-tag.concluido {
+      background: rgba(46,213,115,0.18); color: #2ED573;
+    }
+    .passo-status-tag.proximo {
+      background: rgba(248,220,150,0.2); color: var(--gold);
+    }
+    .passo-status-tag.aberto {
+      background: rgba(245,240,232,0.1); color: var(--pearl-dim);
+    }
+
+    .passo-titulo-principal {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--pearl);
+      margin-bottom: 0.85rem;
+    }
+    .passo-texto {
+      color: var(--pearl);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+    .passo-texto p { margin-bottom: 0.75rem; }
+    .passo-texto p:last-child { margin-bottom: 0; }
+    .passo-texto strong { color: var(--gold); font-weight: 600; }
+
+    /* ─── Cards de livros (Passo 2) ─── */
+    .livros-lista {
+      display: flex; flex-direction: column; gap: 1rem;
+      margin-top: 1.25rem;
+    }
+    .livro-card {
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(245,240,232,0.12);
+      border-radius: 12px;
+      padding: 1.1rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    .livro-capa {
+      width: 80px; flex-shrink: 0;
+      aspect-ratio: 2/3;
+      border-radius: 6px;
+      object-fit: cover;
+      background: rgba(245,240,232,0.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .livro-capa-placeholder {
+      width: 80px; flex-shrink: 0;
+      aspect-ratio: 2/3;
+      border-radius: 6px;
+      background: rgba(245,240,232,0.05);
+      border: 1px dashed rgba(245,240,232,0.15);
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(245,240,232,0.3);
+      font-size: 1.2rem;
+    }
+    .livro-info {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; gap: 0.4rem;
+    }
+    .livro-tag {
+      display: inline-block;
+      align-self: flex-start;
+      padding: 0.18rem 0.55rem;
+      border-radius: 4px;
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .livro-titulo {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--pearl);
+      line-height: 1.3;
+    }
+    .livro-evidencia {
+      font-size: 0.78rem;
+      color: var(--pearl-dim);
+      font-style: italic;
+    }
+    .livro-selo {
+      font-size: 0.72rem;
+      color: var(--gold);
+      font-weight: 500;
+    }
+    .livro-rodape {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .livro-preco {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--gold);
+    }
+    .livro-cta {
+      padding: 0.55rem 1rem;
+      background: linear-gradient(135deg, var(--gold), var(--gold-2, #c8923b));
+      color: var(--ink, #051929);
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font-display);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .livro-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(248,220,150,0.3); }
+
+    /* ─── Card do curso (Passo 3) ─── */
+    .curso-card {
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(245,240,232,0.12);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-top: 1.25rem;
+      display: flex;
+      gap: 1.1rem;
+      align-items: flex-start;
+    }
+    .curso-card + .curso-card { margin-top: 0.85rem; }
+    .curso-capa {
+      width: 96px; flex-shrink: 0;
+      aspect-ratio: 1/1;
+      border-radius: 8px;
+      object-fit: cover;
+      background: rgba(245,240,232,0.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .curso-capa-placeholder {
+      width: 96px; flex-shrink: 0;
+      aspect-ratio: 1/1;
+      border-radius: 8px;
+      background: rgba(245,240,232,0.05);
+      border: 1px dashed rgba(245,240,232,0.15);
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(245,240,232,0.3);
+      font-size: 1.4rem;
+    }
+    .curso-info {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; gap: 0.45rem;
+    }
+    .curso-titulo {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--pearl);
+      line-height: 1.3;
+    }
+    .curso-descricao {
+      font-size: 0.85rem;
+      color: var(--pearl-dim);
+      line-height: 1.5;
+    }
+    .curso-rodape {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .curso-preco {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--gold);
+    }
+    .curso-preco.indefinido { color: var(--pearl-dim); font-size: 0.95rem; font-style: italic; }
+    .curso-cta {
+      padding: 0.6rem 1.25rem;
+      background: linear-gradient(135deg, var(--gold), var(--gold-2, #c8923b));
+      color: var(--ink);
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font-display);
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .curso-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(248,220,150,0.3); }
+
+    /* ═══════════════════════════════════════════════════
+       BLOCO 8 — Fechamento
+       ═══════════════════════════════════════════════════ */
+    .b8-wrap {
+      margin-top: 3rem;
+      padding: 1.75rem;
+      background: linear-gradient(135deg, rgba(248,220,150,0.06), rgba(43,165,232,0.04));
+      border: 1px solid rgba(248,220,150,0.15);
+      border-radius: 14px;
+    }
+    .b8-texto {
+      color: var(--pearl);
+      font-size: 1rem;
+      line-height: 1.75;
+      text-align: center;
+      font-style: italic;
+    }
+    .b8-texto p { margin-bottom: 0.85rem; }
+    .b8-texto strong { color: var(--gold); font-weight: 700; font-style: normal; }
+
+    /* ─── Rodapé ─── */
+    .rodape-meta {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(245,240,232,0.1);
+      text-align: center;
+      color: rgba(245,240,232,0.5);
+      font-size: 0.75rem;
+    }
+
+    /* ─── Mobile ─── */
+    @media (max-width: 480px) {
+      .container { padding: 1.5rem 1rem 4rem; }
+      .b1-titulo { font-size: 1.45rem; }
+      .b2-energia { font-size: 1.6rem; }
+      .b6-texto { font-size: 0.95rem; }
+      .b6-texto h2 { font-size: 1.2rem; }
+      .passo-titulo-principal { font-size: 1.2rem; }
+      .livro-card { flex-direction: column; }
+      .livro-capa, .livro-capa-placeholder { width: 100px; align-self: center; }
+      .curso-card { flex-direction: column; }
+      .curso-capa, .curso-capa-placeholder { width: 100px; align-self: center; }
+    }
+    /* ═══════════════════════════════════════════════════
+       BLOCO JORNADA — Sua jornada começa aqui
+       ═══════════════════════════════════════════════════ */
+    .bj-wrap {
+      margin-top: 3rem;
+      padding: 1.85rem 1.5rem;
+      background: linear-gradient(180deg, rgba(248,220,150,0.06) 0%, rgba(43,165,232,0.04) 100%);
+      border: 1px solid rgba(248,220,150,0.18);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .bj-eyebrow {
+      font-size: 0.72rem;
+      color: var(--gold, #f8dc96);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 0.4rem;
+    }
+    .bj-titulo {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--pearl);
+      text-align: center;
+      margin-bottom: 0.4rem;
+    }
+    .bj-sub {
+      font-size: 0.95rem;
+      color: var(--pearl-dim);
+      text-align: center;
+      font-style: italic;
+      margin-bottom: 1.5rem;
+    }
+    .bj-passos {
+      display: grid;
+      gap: 0.75rem;
+    }
+    .bj-passo {
+      display: flex;
+      gap: 0.85rem;
+      align-items: flex-start;
+      padding: 0.85rem 1rem;
+      background: rgba(0,0,0,0.2);
+      border: 1px solid rgba(245,240,232,0.08);
+      border-radius: 10px;
+    }
+    .bj-passo-num {
+      width: 28px; height: 28px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: rgba(248,220,150,0.15);
+      color: var(--gold);
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 0.85rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .bj-passo-texto {
+      flex: 1;
+      min-width: 0;
+    }
+    .bj-passo-titulo {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--pearl);
+      line-height: 1.3;
+      margin-bottom: 0.2rem;
+    }
+    .bj-passo-desc {
+      font-size: 0.78rem;
+      color: var(--pearl-dim);
+      line-height: 1.5;
+    }
+
+    /* ════════════════════════════════════════════════════
+       Popup "Quer atualizar sua trilha?"
+       ════════════════════════════════════════════════════ */
+    .reteste-overlay {
+      position: fixed; inset: 0;
+      background: rgba(5, 25, 41, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999;
+      padding: 1.25rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .reteste-overlay.visivel { opacity: 1; }
+    .reteste-popup {
+      max-width: 380px;
+      width: 100%;
+      background: linear-gradient(135deg, #0a4866, #051929);
+      border: 1px solid rgba(248, 220, 150, 0.3);
+      border-radius: 16px;
+      padding: 2rem 1.5rem 1.5rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      transform: translateY(20px) scale(0.95);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .reteste-overlay.visivel .reteste-popup { transform: translateY(0) scale(1); }
+    .reteste-popup-icone {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+      filter: drop-shadow(0 0 12px rgba(248,220,150,0.5));
+    }
+    .reteste-popup-titulo {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.65rem;
+      line-height: 1.3;
+    }
+    .reteste-popup-aviso {
+      font-size: 0.86rem;
+      color: rgba(255,255,255,0.75);
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
+    }
+    .reteste-popup-botoes {
+      display: flex;
+      gap: 0.6rem;
+      flex-direction: column;
+    }
+    .reteste-btn {
+      padding: 0.85rem 1rem;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .reteste-btn:active { transform: scale(0.97); }
+    .reteste-btn-primario {
+      background: linear-gradient(135deg, #F8DC96, #C8922A);
+      color: #051929;
+      box-shadow: 0 4px 14px rgba(200,146,42,0.35);
+    }
+    .reteste-btn-primario:hover { box-shadow: 0 6px 18px rgba(200,146,42,0.5); }
+    .reteste-btn-secundario {
+      background: transparent;
+      color: rgba(255,255,255,0.85);
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+    .reteste-btn-secundario:hover { background: rgba(255,255,255,0.06); }
+
+    /* ════════════════════════════════════════════════════
+       Splash "Criando/Atualizando sua jornada"
+       Partículas douradas explodindo do centro.
+       ════════════════════════════════════════════════════ */
+    /* ════════════════════════════════════════════════════
+       Splash de celebração da jornada (criada/atualizada)
+       Tema Vida Mágica (claro/dourado).
+       Fases: 1) Reticências  2) "com sucesso"  3) Barra  4) Botão
+       ════════════════════════════════════════════════════ */
+    .jornada-splash {
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse at center, rgba(255,250,240,0.96) 0%, rgba(248,243,232,0.94) 60%, rgba(240,232,215,0.92) 100%),
+        url('/assets/background-theme.jpg');
+      background-size: cover;
+      background-position: center;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10000;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      overflow: hidden;
+      padding: 1.5rem;
+    }
+    .jornada-splash.visivel { opacity: 1; }
+
+    .jornada-splash-particulas { position: absolute; inset: 0; pointer-events: none; }
+    .js-particula {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #C8922A 0%, #F8DC96 60%, transparent 100%);
+      box-shadow: 0 0 12px rgba(200,146,42,0.7), 0 0 24px rgba(248,220,150,0.4);
+      opacity: 0;
+      animation: jsExp0 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .js-p0 { animation-name: jsExp0; }
+    .js-p1 { animation-name: jsExp1; }
+    .js-p2 { animation-name: jsExp2; }
+    .js-p3 { animation-name: jsExp3; }
+    .js-p4 { animation-name: jsExp4; }
+    .js-p5 { animation-name: jsExp5; }
+    .js-p6 { animation-name: jsExp6; }
+    .js-particula:nth-child(7n+1) { animation-delay: 0s; }
+    .js-particula:nth-child(7n+2) { animation-delay: 0.08s; }
+    .js-particula:nth-child(7n+3) { animation-delay: 0.16s; }
+    .js-particula:nth-child(7n+4) { animation-delay: 0.24s; }
+    .js-particula:nth-child(7n+5) { animation-delay: 0.4s; }
+    .js-particula:nth-child(7n+6) { animation-delay: 0.55s; }
+    .js-particula:nth-child(7n+7) { animation-delay: 0.7s; }
+    @keyframes jsExp0 { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-50% + 220px), calc(-50% - 30px)) scale(0.4); opacity: 0; } }
+    @keyframes jsExp1 { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-50% - 200px), calc(-50% + 80px)) scale(0.3); opacity: 0; } }
+    @keyframes jsExp2 { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-50% + 80px), calc(-50% - 240px)) scale(0.3); opacity: 0; } }
+    @keyframes jsExp3 { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-50% - 120px), calc(-50% + 220px)) scale(0.4); opacity: 0; } }
+    @keyframes jsExp4 { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-50% + 280px), calc(-50% + 140px)) scale(0.3); opacity: 0; } }
+    @keyframes jsExp5 { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-50% - 250px), calc(-50% - 180px)) scale(0.4); opacity: 0; } }
+    @keyframes jsExp6 { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-50% + 30px), calc(-50% + 280px)) scale(0.3); opacity: 0; } }
+
+    .jornada-splash-conteudo {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      max-width: 380px;
+      width: 100%;
+    }
+    .jornada-splash-icone {
+      font-size: 3.2rem;
+      color: #C8922A;
+      filter: drop-shadow(0 0 20px rgba(200,146,42,0.5));
+      margin-bottom: 1.1rem;
+      animation: jsIconePulsa 1.6s ease-in-out infinite;
+    }
+    @keyframes jsIconePulsa {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(200,146,42,0.5)); }
+      50% { transform: scale(1.12); filter: drop-shadow(0 0 32px rgba(200,146,42,0.8)); }
+    }
+    .jornada-splash-titulo {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #051929;
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+      transition: opacity 0.4s ease;
+    }
+    .jornada-splash-titulo .reticencias { display: inline-block; }
+    .jornada-splash-titulo .reticencias span {
+      display: inline-block;
+      animation: pontoPulsa 1.4s infinite;
+    }
+    .jornada-splash-titulo .reticencias span:nth-child(1) { animation-delay: 0s; }
+    .jornada-splash-titulo .reticencias span:nth-child(2) { animation-delay: 0.18s; }
+    .jornada-splash-titulo .reticencias span:nth-child(3) { animation-delay: 0.36s; }
+    @keyframes pontoPulsa {
+      0%, 100% { opacity: 0.25; transform: translateY(0); }
+      40% { opacity: 1; transform: translateY(-3px); }
+    }
+    .jornada-splash-sub {
+      font-size: 0.9rem;
+      color: rgba(5,25,41,0.65);
+      max-width: 280px;
+      margin: 0 auto 1.5rem;
+      line-height: 1.5;
+      transition: opacity 0.4s ease;
+    }
+    .jornada-splash.fase-transicao .jornada-splash-titulo,
+    .jornada-splash.fase-transicao .jornada-splash-sub { opacity: 0; }
+
+    .jornada-splash-progresso {
+      margin-top: 1.5rem;
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: opacity 0.4s ease, max-height 0.5s ease;
+    }
+    .jornada-splash.fase-progresso .jornada-splash-progresso {
+      opacity: 1;
+      max-height: 200px;
+    }
+    .jornada-splash-prog-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.5rem;
+    }
+    .jornada-splash-prog-nome {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #C8922A;
+    }
+    .jornada-splash-prog-passos {
+      font-size: 0.78rem;
+      color: rgba(5,25,41,0.6);
+      font-weight: 600;
+    }
+    .jornada-splash-prog-bar {
+      height: 8px;
+      background: rgba(200,146,42,0.12);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .jornada-splash-prog-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #C8922A, #F8DC96);
+      border-radius: 999px;
+      transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 0 12px rgba(200,146,42,0.45);
+    }
+    .jornada-splash-prog-pct {
+      text-align: right;
+      margin-top: 0.5rem;
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: #C8922A;
+      line-height: 1;
+    }
+    .jornada-splash-prog-pct .pct-num {
+      display: inline-block;
+      min-width: 2.5em;
+      text-align: right;
+    }
+    .jornada-splash-prog-pct .pct-sym {
+      font-size: 1rem;
+      color: rgba(5,25,41,0.6);
+      font-weight: 600;
+      margin-left: 2px;
+    }
+
+    .jornada-splash-botao {
+      margin-top: 1.6rem;
+      display: inline-block;
+      padding: 0.85rem 2rem;
+      background: linear-gradient(135deg, #C8922A, #F8DC96);
+      color: white;
+      border-radius: 999px;
+      font-size: 0.92rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(200,146,42,0.32);
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      transition: opacity 0.5s ease, transform 0.5s ease, box-shadow 0.15s;
+    }
+    .jornada-splash.fase-botao .jornada-splash-botao {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .jornada-splash-botao:hover { box-shadow: 0 6px 22px rgba(200,146,42,0.5); transform: translateY(-1px); }
+    .jornada-splash-botao:active { transform: scale(0.97); }
+
+    /* ═══════════════════════════════════════════════════
+       Animação de entrada — stagger / fade-up
+       Cada bloco entra escalonado quando o conteúdo carrega.
+       Aplicado por JS adicionando .anim-entrada nos blocos.
+       ═══════════════════════════════════════════════════ */
+    .anim-entrada {
+      opacity: 0;
+      transform: translateY(18px);
+      animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      animation-delay: var(--anim-delay, 0s);
+      will-change: transform, opacity;
+    }
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Reduz movimento pra quem prefere */
+    @media (prefers-reduced-motion: reduce) {
+      .anim-entrada { animation: fadeOnly 0.4s ease forwards; transform: none; }
+      @keyframes fadeOnly { to { opacity: 1; } }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       Rodapé — botão voltar pra Home
+       ═══════════════════════════════════════════════════ */
+    .voltar-home-wrap {
+      margin: 3rem 0 1.5rem;
+      display: flex; justify-content: center;
+    }
+    .voltar-home-btn {
+      display: inline-flex; align-items: center; gap: 0.55rem;
+      padding: 0.85rem 1.6rem;
+      background: rgba(245,240,232,0.05);
+      border: 1px solid rgba(245,240,232,0.18);
+      border-radius: 999px;
+      color: var(--pearl-dim, rgba(245,240,232,0.75));
+      font-family: var(--font-display);
+      font-size: 0.82rem; font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.12s;
+    }
+    .voltar-home-btn:hover {
+      background: rgba(245,240,232,0.1);
+      border-color: rgba(245,240,232,0.32);
+      color: var(--pearl, #F5F0E8);
+    }
+    .voltar-home-btn:active { transform: scale(0.97); }
+    .voltar-home-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Topo: logo + botão fechar -->
+  <div class="topo">
+    <div class="topo-marca">
+      <img src="/assets/logo-horizontal.png" alt="Vida Mágica" class="topo-logo">
+      <span class="topo-divisor"></span>
+      <span class="topo-produto">Teste do Subconsciente</span>
+    </div>
+    <button class="topo-fechar" id="topo-fechar" type="button" aria-label="Fechar">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <!-- Estado: carregando (ícone girando + texto pulsante) -->
+  <div id="loading" class="loading">
+    <div class="loading-anel"><span class="loading-estrela">✦</span></div>
+    <div class="loading-texto">Preparando seu resultado<span class="pontos"></span></div>
+  </div>
+
+  <!-- Estado: erro -->
+  <div id="erro" class="erro-box" style="display:none">
+    <p id="erro-msg">Não foi possível carregar este resultado.</p>
+  </div>
+
+  <!-- Conteúdo principal (preenchido via JS) -->
+  <div id="conteudo" style="display:none">
+
+    <!-- BLOCO 1 -->
+    <div class="b1-imagem-wrap">
+      <img id="b1-imagem" class="b1-imagem" src="" alt="">
+    </div>
+    <h1 class="b1-titulo">Resultado Teste de Prosperidade</h1>
+
+    <!-- BLOCO 2 -->
+    <div class="b2-wrap">
+      <p class="b2-nome" id="b2-nome">—</p>
+      <p class="b2-frase">A sua energia predominante é:</p>
+      <p class="b2-energia" id="b2-energia">—</p>
+    </div>
+
+    <!-- BLOCO 3 -->
+    <div class="b3-wrap">
+      <div class="b3-titulo">Energias do Subconsciente</div>
+      <div id="b3-lista"></div>
+    </div>
+
+    <!-- BLOCO 4 -->
+    <button class="b4-btn" id="b4-btn">
+      <i class="fab fa-whatsapp"></i>
+      Compartilhar resultado
+    </button>
+
+    <!-- BLOCO 5 -->
+    <div class="b5-wrap">
+      <p class="b5-chamada">Entenda o seu teste com esse vídeo especial que eu preparei para você!</p>
+      <div class="b5-video-container" id="b5-video-container">
+        <div class="b5-video-placeholder">
+          <i class="fas fa-video"></i>
+          <span>Vídeo em breve</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BLOCO 6 -->
+    <div class="b6-wrap">
+      <div class="b6-texto" id="b6-texto"></div>
+    </div>
+
+    <!-- BLOCO 7 -->
+    <div class="b7-trilha">
+      <div class="b7-trilha-titulo">Trilha Conhecer e Despertar</div>
+
+      <!-- Passo 1 -->
+      <div class="passo-card is-concluido">
+        <div class="passo-header">
+          <span class="passo-numero">Passo 1</span>
+          <span class="passo-status-tag concluido">✓ Concluído</span>
+        </div>
+        <div class="passo-titulo-principal">Conhecer</div>
+        <div class="passo-texto" id="passo1-texto"></div>
+      </div>
+
+      <!-- Passo 2 -->
+      <div class="passo-card is-proximo">
+        <div class="passo-header">
+          <span class="passo-numero">Passo 2</span>
+          <span class="passo-status-tag proximo">Seu próximo passo</span>
+        </div>
+        <div class="passo-titulo-principal">Despertar</div>
+        <div class="passo-texto" id="passo2-texto"></div>
+        <div class="livros-lista" id="livros-lista"></div>
+      </div>
+
+      <!-- Passo 3 -->
+      <div class="passo-card">
+        <div class="passo-header">
+          <span class="passo-numero">Passo 3</span>
+          <span class="passo-status-tag aberto">Aberto</span>
+        </div>
+        <div class="passo-titulo-principal">Reprogramação de Base</div>
+        <div class="passo-texto" id="passo3-texto"></div>
+        <div id="cursos-lista"></div>
+      </div>
+    </div>
+
+    <!-- BLOCO 8 -->
+    <div class="b8-wrap">
+      <div class="b8-texto" id="b8-texto"></div>
+    </div>
+
+    <!-- BLOCO JORNADA - Sua jornada começa aqui -->
+    <div class="bj-wrap" id="bj-wrap" style="display:none">
+      <div class="bj-eyebrow" id="bj-eyebrow">Sua jornada começa aqui</div>
+      <h2 class="bj-titulo" id="bj-titulo">—</h2>
+      <p class="bj-sub" id="bj-sub">—</p>
+      <div class="bj-passos" id="bj-passos"></div>
+    </div>
+
+    <!-- Rodapé meta -->
+    <div class="rodape-meta">
+      <span id="rodape-data">—</span>
+      <span style="margin: 0 0.5rem">·</span>
+      <span id="rodape-versao">—</span>
+    </div>
+
+    <!-- Voltar pra Home (botão final discreto) -->
+    <div class="voltar-home-wrap">
+      <button class="voltar-home-btn" id="voltar-home" type="button">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Voltar pra Home
+      </button>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+(async function() {
+  // ID vem da URL: /resultado/<uuid>
+  const path = window.location.pathname;
+  const match = path.match(/\/resultado\/([a-f0-9-]+)/i);
+  const testeId = match ? match[1] : null;
+
+  const elLoading = document.getElementById('loading');
+  const elErro = document.getElementById('erro');
+  const elErroMsg = document.getElementById('erro-msg');
+  const elConteudo = document.getElementById('conteudo');
+
+  function mostrarErro(msg) {
+    elLoading.style.display = 'none';
+    elErroMsg.textContent = msg;
+    elErro.style.display = 'block';
   }
-});
 
-// ── POST /api/teste/iniciar ─────────────────────────────────
-router.post('/iniciar', async (req, res) => {
-  try {
-    const { nome, telefone, utm_source, utm_medium, utm_campaign } = req.body || {};
-
-    const nomeLimpo = validarNome(nome);
-    if (!nomeLimpo) return res.status(400).json({ ok: false, erro: 'Nome inválido' });
-
-    const telCanonico = formatarTelefone(telefone);
-    if (!validarTelefoneCanonico(telCanonico)) {
-      return res.status(400).json({ ok: false, erro: 'Telefone inválido' });
-    }
-
-    const utms = {
-      source:   sanitizarUtm(utm_source),
-      medium:   sanitizarUtm(utm_medium),
-      campaign: sanitizarUtm(utm_campaign),
-    };
-
-    let usuario = await buscarUsuarioPorIdentificador({ telefone: telCanonico });
-    let usuarioId;
-    if (usuario) {
-      usuarioId = usuario.id;
-      if (!usuario.nome || usuario.nome.trim() === '') {
-        await poolCore.query(
-          `UPDATE usuarios SET nome=$1, atualizado_em=NOW() WHERE id=$2`,
-          [nomeLimpo, usuarioId]
-        );
-      }
-    } else {
-      const r = await poolCore.query(
-        `INSERT INTO usuarios (telefone, telefone_formatado, nome, status, origem_cadastro)
-         VALUES ($1, $1, $2, 'incompleta', 'teste')
-         RETURNING id`,
-        [telCanonico, nomeLimpo]
-      );
-      usuarioId = r.rows[0].id;
-    }
-
-    const leadExistente = await poolTeste.query(
-      `SELECT id FROM teste_leads
-        WHERE usuario_id=$1 OR telefone_canonico=$2
-        ORDER BY criado_em DESC LIMIT 1`,
-      [usuarioId, telCanonico]
-    );
-
-    let leadId;
-    if (leadExistente.rows[0]) {
-      leadId = leadExistente.rows[0].id;
-      await poolTeste.query(
-        `UPDATE teste_leads
-            SET nome=$1, telefone_canonico=$2, usuario_id=$3,
-                utm_source=COALESCE($4, utm_source),
-                utm_medium=COALESCE($5, utm_medium),
-                utm_campaign=COALESCE($6, utm_campaign),
-                atualizado_em=NOW()
-          WHERE id=$7`,
-        [nomeLimpo, telCanonico, usuarioId, utms.source, utms.medium, utms.campaign, leadId]
-      );
-    } else {
-      const r = await poolTeste.query(
-        `INSERT INTO teste_leads (telefone_canonico, nome, usuario_id, utm_source, utm_medium, utm_campaign)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-        [telCanonico, nomeLimpo, usuarioId, utms.source, utms.medium, utms.campaign]
-      );
-      leadId = r.rows[0].id;
-    }
-
-    return res.json({ ok: true, lead_id: leadId, usuario_id: usuarioId });
-  } catch (err) {
-    console.error('[teste/iniciar] erro:', err);
-    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  if (!testeId) {
+    mostrarErro('Link inválido.');
+    return;
   }
-});
 
-// ── GET /api/teste/perguntas ────────────────────────────────
-router.get('/perguntas', async (req, res) => {
+  // Buscar dados do resultado
+  let dados;
   try {
-    const versao = await pegarVersaoAtiva();
-    if (!versao) {
-      return res.status(503).json({ ok: false, erro: 'Sem versão ativa do teste' });
-    }
-    const r = await poolTeste.query(
-      `SELECT p.ordem, p.pergunta,
-              a.perfil, a.texto, a.ordem_exibicao
-         FROM teste_perguntas p
-         JOIN teste_alternativas a
-           ON a.versao_id = p.versao_id
-          AND a.pergunta_ordem = p.ordem
-        WHERE p.versao_id = $1
-        ORDER BY p.ordem, a.ordem_exibicao`,
-      [versao.id]
-    );
-    const map = new Map();
-    for (const row of r.rows) {
-      if (!map.has(row.ordem)) {
-        map.set(row.ordem, { ordem: row.ordem, pergunta: row.pergunta, alternativas: [] });
-      }
-      map.get(row.ordem).alternativas.push({ id: row.perfil, texto: row.texto });
-    }
-    const perguntas = Array.from(map.values()).sort((a, b) => a.ordem - b.ordem);
-    return res.json({
-      ok: true,
-      versao_id: versao.id,
-      versao_nome: versao.nome,
-      perguntas,
-    });
-  } catch (err) {
-    console.error('[teste/perguntas] erro:', err);
-    return res.status(500).json({ ok: false, erro: 'erro interno' });
-  }
-});
-
-// ── GET /api/teste/progresso?lead_id=...&versao_id=... ──────
-router.get('/progresso', async (req, res) => {
-  try {
-    const leadId = (req.query.lead_id || '').toString().trim();
-    const versaoId = parseInt(req.query.versao_id, 10);
-    if (!leadId) return res.status(400).json({ ok: false, erro: 'lead_id ausente' });
-    if (!Number.isInteger(versaoId)) return res.status(400).json({ ok: false, erro: 'versao_id ausente' });
-
-    const r = await poolTeste.query(
-      `SELECT pergunta_ordem, perfil, respondido_em
-         FROM teste_respostas
-        WHERE lead_id=$1 AND versao_id=$2
-        ORDER BY pergunta_ordem`,
-      [leadId, versaoId]
-    );
-
-    // Data/hora da primeira resposta (= quando o teste começou)
-    let iniciadoEm = null;
-    if (r.rows.length > 0) {
-      const minR = await poolTeste.query(
-        `SELECT MIN(respondido_em) AS m
-           FROM teste_respostas
-          WHERE lead_id=$1 AND versao_id=$2`,
-        [leadId, versaoId]
-      );
-      iniciadoEm = minR.rows[0].m;
-    }
-
-    return res.json({
-      ok: true,
-      respostas: r.rows.map(x => ({ pergunta_ordem: x.pergunta_ordem, perfil: x.perfil })),
-      iniciado_em: iniciadoEm,
-      total: 15,
-    });
-  } catch (err) {
-    console.error('[teste/progresso] erro:', err);
-    return res.status(500).json({ ok: false, erro: 'erro interno' });
-  }
-});
-
-// ── POST /api/teste/reiniciar ───────────────────────────────
-// Body: { lead_id, versao_id }
-// Apaga todas as respostas em progresso desse lead nessa versão.
-// Usado quando a aluna escolhe "começar de novo" tendo um teste já iniciado.
-router.post('/reiniciar', async (req, res) => {
-  try {
-    const { lead_id, versao_id } = req.body || {};
-    if (!lead_id || typeof lead_id !== 'string') {
-      return res.status(400).json({ ok: false, erro: 'lead_id inválido' });
-    }
-    const versaoIdNum = parseInt(versao_id, 10);
-    if (!Number.isInteger(versaoIdNum)) {
-      return res.status(400).json({ ok: false, erro: 'versao_id inválido' });
-    }
-
-    const versaoAtiva = await pegarVersaoAtiva();
-    if (!versaoAtiva || versaoAtiva.id !== versaoIdNum) {
-      return res.status(409).json({ ok: false, erro: 'versao_alterada' });
-    }
-
-    const r = await poolTeste.query(
-      `DELETE FROM teste_respostas WHERE lead_id=$1 AND versao_id=$2 RETURNING id`,
-      [lead_id, versaoIdNum]
-    );
-    return res.json({ ok: true, apagadas: r.rowCount });
-  } catch (err) {
-    console.error('[teste/reiniciar] erro:', err);
-    return res.status(500).json({ ok: false, erro: 'erro interno' });
-  }
-});
-
-// ── POST /api/teste/responder ───────────────────────────────
-router.post('/responder', async (req, res) => {
-  try {
-    const { lead_id, versao_id, pergunta_ordem, perfil } = req.body || {};
-
-    if (!lead_id || typeof lead_id !== 'string') {
-      return res.status(400).json({ ok: false, erro: 'lead_id inválido' });
-    }
-    const versaoIdNum = parseInt(versao_id, 10);
-    if (!Number.isInteger(versaoIdNum)) {
-      return res.status(400).json({ ok: false, erro: 'versao_id inválido' });
-    }
-    const ordemNum = parseInt(pergunta_ordem, 10);
-    if (!Number.isInteger(ordemNum) || ordemNum < 1 || ordemNum > 15) {
-      return res.status(400).json({ ok: false, erro: 'pergunta_ordem inválida' });
-    }
-    if (!PERFIS_VALIDOS.includes(perfil)) {
-      return res.status(400).json({ ok: false, erro: 'perfil inválido' });
-    }
-
-    const versaoAtiva = await pegarVersaoAtiva();
-    if (!versaoAtiva || versaoAtiva.id !== versaoIdNum) {
-      return res.status(409).json({ ok: false, erro: 'versao_alterada' });
-    }
-
-    const leadRows = await poolTeste.query(
-      `SELECT id, telefone_canonico, usuario_id FROM teste_leads WHERE id=$1`,
-      [lead_id]
-    );
-    if (!leadRows.rows[0]) return res.status(404).json({ ok: false, erro: 'lead não encontrado' });
-    const lead = leadRows.rows[0];
-
-    const alt = await poolTeste.query(
-      `SELECT 1 FROM teste_alternativas
-        WHERE versao_id=$1 AND pergunta_ordem=$2 AND perfil=$3`,
-      [versaoIdNum, ordemNum, perfil]
-    );
-    if (!alt.rows[0]) {
-      return res.status(400).json({ ok: false, erro: 'alternativa inexistente' });
-    }
-
-    await poolTeste.query(
-      `INSERT INTO teste_respostas (lead_id, versao_id, pergunta_ordem, perfil)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (lead_id, versao_id, pergunta_ordem)
-       DO UPDATE SET perfil=EXCLUDED.perfil, respondido_em=NOW()`,
-      [lead_id, versaoIdNum, ordemNum, perfil]
-    );
-
-    // Se ela voltou e mudou uma resposta intermediária (ex: pergunta 4),
-    // as respostas posteriores (5 em diante) eram da rodada antiga.
-    // Apaga elas pra forçar a aluna a refazer dali pra frente.
-    await poolTeste.query(
-      `DELETE FROM teste_respostas
-        WHERE lead_id=$1 AND versao_id=$2 AND pergunta_ordem > $3`,
-      [lead_id, versaoIdNum, ordemNum]
-    );
-
-    const cnt = await poolTeste.query(
-      `SELECT pergunta_ordem, perfil FROM teste_respostas
-        WHERE lead_id=$1 AND versao_id=$2 ORDER BY pergunta_ordem`,
-      [lead_id, versaoIdNum]
-    );
-    const respondidas = cnt.rows.length;
-
-    if (respondidas < 15) {
-      return res.json({ ok: true, completo: false, respondidas, total: 15 });
-    }
-
-    const respostasArr = cnt.rows.map(r => ({
-      pergunta_ordem: r.pergunta_ordem,
-      perfil: r.perfil,
-    }));
-    const resultado = calcularPerfil(respostasArr);
-
-    // ──────────────────────────────────────────────────────────
-    // REGRA DE PERSISTÊNCIA DO TESTE
-    // ──────────────────────────────────────────────────────────
-    // - Sem teste prévio                       → INSERT linha nova
-    // - Tem teste prévio, NÃO PAGO             → DELETE antigo + INSERT (sobrescreve)
-    // - Tem teste prévio, PAGO                 → INSERT linha nova (preserva histórico)
-    //
-    // Justificativa: testes pagos viram histórico permanente (a aluna pagou,
-    // tem direito ao registro). Testes não pagos podem ser sobrescritos quando
-    // refeitos, evitando lixo no banco.
-    // Aluna pode ter VÁRIOS testes do mesmo lead+versão se todos estão pagos.
-    const testesPrevios = await poolTeste.query(
-      `SELECT id, pago FROM testes
-        WHERE lead_id=$1 AND versao_id=$2
-        ORDER BY feito_em DESC`,
-      [lead_id, versaoIdNum]
-    );
-
-    // Separa: pagos preservar / não pagos deletar
-    const naoPagos = testesPrevios.rows.filter(t => !t.pago);
-    if (naoPagos.length > 0) {
-      const idsPraDeletar = naoPagos.map(t => t.id);
-      await poolTeste.query(
-        `DELETE FROM testes WHERE id = ANY($1::uuid[])`,
-        [idsPraDeletar]
-      );
-    }
-
-    // INSERT sempre — o registro novo nasce não visto.
-    // ⚠️ TEMPORÁRIO ⚠️ — `pago=TRUE` na criação mantém todos os testes
-    // como "pago" enquanto o gateway não está implementado. Isso casa com
-    // o bypass `|| true` em routes/app.js. Quando o webhook do Kiwify
-    // entrar, REMOVER `pago` do INSERT (volta ao default FALSE) — daí
-    // só vira pago via /api/teste/marcar-pago disparado pelo webhook.
-    const insR = await poolTeste.query(
-      `INSERT INTO testes
-         (usuario_id, lead_id, versao_id, telefone_canonico, respostas,
-          contagem, percentuais,
-          perfil_dominante, percentual_prosperidade, nivel_prosperidade,
-          pago)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, TRUE)
-       RETURNING id`,
-      [
-        lead.usuario_id,
-        lead_id,
-        versaoIdNum,
-        lead.telefone_canonico,
-        JSON.stringify(respostasArr),
-        JSON.stringify(resultado.contagem),
-        JSON.stringify(resultado.percentuais),
-        resultado.perfil_dominante,
-        resultado.percentual_prosperidade,
-        resultado.nivel_prosperidade,
-      ]
-    );
-    const testeId = insR.rows[0].id;
-
-    // OBS: O cache usuarios.perfil_teste e .percentual_prosperidade NÃO é
-    // atualizado aqui. A regra é: a jornada/perfil da aluna só muda DEPOIS
-    // que ela clica em "ver resultado" (e marca visto_em). Esse update
-    // acontece em GET /api/teste/resultado/:teste_id.
-    // Justificativa: enquanto a aluna não viu o novo resultado, o app dela
-    // continua funcionando com base no teste anterior (jornada antiga).
-
-    return res.json({
-      ok: true,
-      completo: true,
-      teste_id: testeId,
-      perfil_dominante: resultado.perfil_dominante,
-      percentual_prosperidade: resultado.percentual_prosperidade,
-      contagem: resultado.contagem,
-      percentuais: resultado.percentuais,
-    });
-  } catch (err) {
-    console.error('[teste/responder] erro:', err);
-    return res.status(500).json({ ok: false, erro: 'erro interno' });
-  }
-});
-
-// ── GET /api/teste/resultado/:teste_id ──────────────────────
-// Devolve TODO o pacote de dados pra renderizar a página de resultado.
-// Frontend só renderiza, não calcula nada.
-router.get('/resultado/:teste_id', async (req, res) => {
-  try {
-    const testeId = (req.params.teste_id || '').toString().trim();
-    if (!testeId) return res.status(400).json({ ok: false, erro: 'teste_id ausente' });
-
-    // Busca o teste
-    const tRows = await poolTeste.query(
-      `SELECT t.*, v.nome AS versao_nome
-         FROM testes t
-         LEFT JOIN teste_versoes v ON v.id = t.versao_id
-        WHERE t.id = $1`,
-      [testeId]
-    );
-    if (!tRows.rows[0]) return res.status(404).json({ ok: false, erro: 'teste não encontrado' });
-    const teste = tRows.rows[0];
-
-    // Recalcula com a lógica oficial (não confia 100% no que está salvo —
-    // se a regra mudar, novos acessos refletem a regra nova).
-    // teste.respostas vem como JSONB; pode vir como array já parseado.
-    const respostas = Array.isArray(teste.respostas) ? teste.respostas : JSON.parse(teste.respostas || '[]');
-    const resultado = calcularResultado(respostas);
-
-    // ──────────────────────────────────────────────────────────
-    // PRIMEIRO ACESSO ao resultado → marca visto_em.
-    // Se é o PRIMEIRO teste da aluna (não tem outro com ativou_trilha=true),
-    // ativa a trilha automaticamente — não tem porque perguntar, é a 1ª vez.
-    // Se é RE-TESTE (já tem outro ativo), só marca visto_em e retorna
-    // eh_reteste=true pra o frontend mostrar o popup "quer atualizar trilha?".
-    // ──────────────────────────────────────────────────────────
-    let ehReteste = false;
-    let trilhaAtivadaAgora = false;
-
-    if (!teste.visto_em) {
-      // Marca como visto
-      try {
-        await poolTeste.query(
-          `UPDATE testes SET visto_em = NOW() WHERE id = $1 AND visto_em IS NULL`,
-          [testeId]
-        );
-        teste.visto_em = new Date();
-      } catch (e) {
-        console.warn('[teste/resultado] falha ao marcar visto_em:', e.message);
-      }
-
-      // Verifica se é primeiro teste ou re-teste
-      const outrosAtivos = await poolTeste.query(
-        `SELECT id FROM testes
-          WHERE (usuario_id = $1 OR telefone_canonico = $2)
-            AND id <> $3
-            AND ativou_trilha = TRUE
-          LIMIT 1`,
-        [teste.usuario_id, teste.telefone_canonico, testeId]
-      );
-
-      if (outrosAtivos.rows.length === 0) {
-        // PRIMEIRO TESTE — ativa a trilha automaticamente
-        try {
-          await poolTeste.query(
-            `UPDATE testes SET ativou_trilha = TRUE WHERE id = $1`,
-            [testeId]
-          );
-          teste.ativou_trilha = true;
-          trilhaAtivadaAgora = true;
-
-          // Atualiza cache no banco Core (usuarios.perfil_teste)
-          // E cria a atualização pendente da animação de celebração.
-          if (teste.usuario_id) {
-            const perfilBruto = (resultado.perfil_dominante || '').startsWith('prosperidade')
-              ? 'prosperidade'
-              : resultado.perfil_dominante;
-            await poolCore.query(
-              `UPDATE usuarios
-                  SET perfil_teste = $1,
-                      percentual_prosperidade = $2,
-                      atualizado_em = NOW()
-                WHERE id = $3`,
-              [perfilBruto, resultado.percentual_prosperidade, teste.usuario_id]
-            );
-
-            // Atualização pendente — frontend vai mostrar a splash quando
-            // a aluna clicar no banner/aviso, ou no fim do resultado do teste.
-            await poolCore.query(
-              `INSERT INTO atualizacoes_pendentes (usuario_id, tipo, payload)
-               VALUES ($1, 'teste', $2)`,
-              [teste.usuario_id, JSON.stringify({ teste_id: testeId, contexto: 'criando' })]
-            );
-          }
-        } catch (e) {
-          console.warn('[teste/resultado] falha ao ativar trilha (primeiro teste):', e.message);
-        }
+    const r = await fetch('/api/teste/resultado/' + encodeURIComponent(testeId));
+    if (!r.ok) {
+      if (r.status === 404) {
+        mostrarErro('Resultado não encontrado. Verifique o link.');
       } else {
-        // RE-TESTE — não ativa automaticamente, frontend vai mostrar popup
-        ehReteste = true;
+        mostrarErro('Não foi possível carregar este resultado. Tente novamente em alguns instantes.');
       }
+      return;
     }
-
-    // Nome da aluna (lead)
-    let nomeAluna = '';
-    if (teste.lead_id) {
-      const lRows = await poolTeste.query(
-        `SELECT nome FROM teste_leads WHERE id=$1`,
-        [teste.lead_id]
-      );
-      if (lRows.rows[0]) nomeAluna = lRows.rows[0].nome || '';
+    dados = await r.json();
+    if (!dados.ok) {
+      mostrarErro(dados.erro || 'Erro ao carregar resultado.');
+      return;
     }
-
-    // Conteúdo do perfil dominante (Banco Comunicação)
-    const conteudoR = await poolComunicacao.query(
-      `SELECT * FROM teste_perfis_conteudo WHERE slug = $1`,
-      [resultado.perfil_dominante]
-    );
-    const conteudoPerfil = conteudoR.rows[0] || null;
-
-    // Livros do Passo 2 — buscam dados da tabela `precos` (slugs:
-    // vencendo_medo, vencendo_desordem, vencendo_validacao, vencendo_sobrevivencia)
-    const livrosR = await poolComunicacao.query(
-      `SELECT key, dados FROM precos
-        WHERE key IN ('vencendo_medo','vencendo_desordem','vencendo_validacao','vencendo_sobrevivencia')`
-    );
-    const precosBySlug = {};
-    livrosR.rows.forEach(r => { precosBySlug[r.key] = r.dados || {}; });
-    const livrosRecomendados = montarLivrosRecomendados(precosBySlug, resultado);
-
-    // Lista das 5 energias (Bloco 3)
-    const energias = montarListaEnergias(resultado);
-
-    // Texto do compartilhamento
-    let textoCompartilhar = '';
-    try {
-      const cR = await poolComunicacao.query(
-        `SELECT dados FROM config WHERE chave = 'resultado_compartilhar_texto'`
-      );
-      if (cR.rows[0]) textoCompartilhar = cR.rows[0].dados.texto || '';
-    } catch {}
-
-    // ── Jornada do método ──
-    // Busca a jornada que o perfil dominante dispara, com os passos.
-    // OBS: como esse endpoint é público (acessível via link),
-    // só mostramos a JORNADA + os títulos dos passos. Não calculamos
-    // "comprado/não comprado" aqui — esse status é privado e só aparece
-    // no /app, autenticado.
-    let jornadaInfo = null;
-    try {
-      const mapR = await poolComunicacao.query(
-        `SELECT j.slug, j.numero, j.nome_exibicao, j.subtitulo, j.cor,
-                jp.ordem, jp.produto_slug, jp.titulo_passo, jp.descricao_passo
-           FROM jornadas_perfis_map m
-           JOIN jornadas_metodo j ON j.slug = m.jornada_slug
-           LEFT JOIN jornadas_passos jp ON jp.jornada_slug = j.slug
-          WHERE m.perfil_slug = $1
-          ORDER BY jp.ordem`,
-        [resultado.perfil_dominante]
-      );
-      if (mapR.rows[0]) {
-        const primeira = mapR.rows[0];
-        jornadaInfo = {
-          slug: primeira.slug,
-          numero: primeira.numero,
-          nome_exibicao: primeira.nome_exibicao,
-          subtitulo: primeira.subtitulo,
-          cor: primeira.cor,
-          passos: mapR.rows.filter(r => r.ordem != null).map(r => ({
-            ordem: r.ordem,
-            titulo: r.titulo_passo,
-            descricao: r.descricao_passo,
-            produto_slug: r.produto_slug,
-          })),
-        };
-      }
-    } catch (e) {
-      console.warn('[teste/resultado] erro ao montar jornada:', e.message);
-    }
-
-    return res.json({
-      ok: true,
-      teste: {
-        id: teste.id,
-        feito_em: teste.feito_em,
-        visto_em: teste.visto_em,
-        ativou_trilha: !!teste.ativou_trilha,
-        versao_nome: teste.versao_nome,
-      },
-      aluna: {
-        nome: nomeAluna,
-      },
-      // Cálculo
-      perfil_dominante: resultado.perfil_dominante,            // ex: 'medo' ou 'prosperidade_nv2'
-      perfil_dominante_bruto: resultado.perfil_dominante_bruto, // ex: 'medo' ou 'prosperidade'
-      energias,                                                 // [{slug,label,percentual_inteiro}, ...]
-      // Conteúdo do perfil
-      conteudo: conteudoPerfil,                                 // tudo de teste_perfis_conteudo
-      // Livros do Passo 2
-      livros: livrosRecomendados,
-      // Jornada do método (genérica, pública)
-      jornada: jornadaInfo,
-      // Texto pro botão de compartilhar
-      compartilhar_texto: textoCompartilhar,
-      // ── Flags de fluxo ──
-      // eh_reteste: aluna acabou de ver um RE-TESTE (já tinha trilha ativa).
-      //   Frontend mostra popup "quer atualizar sua trilha?" antes de exibir.
-      // trilha_ativada_agora: era o PRIMEIRO teste e a trilha foi ativada
-      //   automaticamente. Frontend mostra animação "Criando sua jornada".
-      eh_reteste: ehReteste,
-      trilha_ativada_agora: trilhaAtivadaAgora,
-    });
   } catch (err) {
-    console.error('[teste/resultado] erro:', err);
-    return res.status(500).json({ ok: false, erro: 'erro interno' });
+    console.error('[resultado] erro:', err);
+    mostrarErro('Sem conexão. Tente novamente.');
+    return;
   }
-});
 
-// ── POST /api/teste/ativar-trilha/:teste_id ─────────────────
-// Endpoint pra confirmar que a aluna QUER atualizar a trilha pra esse teste.
-// Disparado pelo popup "Quer atualizar sua trilha?" no app aluna.
-//
-// Marca esse teste como ativou_trilha=true, desativa todos os outros do
-// mesmo lead/usuário, e atualiza o cache em usuarios.perfil_teste.
-//
-// Idempotente — se já está ativo, não faz nada.
-router.post('/ativar-trilha/:teste_id', async (req, res) => {
-  try {
-    const testeId = (req.params.teste_id || '').toString().trim();
-    if (!testeId) return res.status(400).json({ ok: false, erro: 'teste_id ausente' });
-
-    // Busca o teste
-    const tRows = await poolTeste.query(
-      `SELECT id, usuario_id, telefone_canonico, respostas, ativou_trilha
-         FROM testes WHERE id = $1`,
-      [testeId]
-    );
-    if (!tRows.rows[0]) return res.status(404).json({ ok: false, erro: 'teste não encontrado' });
-    const teste = tRows.rows[0];
-
-    // Se já está ativo, no-op
-    if (teste.ativou_trilha) return res.json({ ok: true, ja_ativo: true });
-
-    // Desativa todos os outros do mesmo lead/usuário
-    await poolTeste.query(
-      `UPDATE testes
-          SET ativou_trilha = FALSE
-        WHERE (usuario_id = $1 OR telefone_canonico = $2)
-          AND id <> $3`,
-      [teste.usuario_id, teste.telefone_canonico, testeId]
-    );
-
-    // Ativa esse
-    await poolTeste.query(
-      `UPDATE testes SET ativou_trilha = TRUE WHERE id = $1`,
-      [testeId]
-    );
-
-    // Atualiza cache em usuarios.perfil_teste (banco Core) E cria
-    // a atualização pendente pra disparar a splash de celebração.
-    if (teste.usuario_id) {
+  // ── Fluxo de fluxo da trilha ──
+  // dados.trilha_ativada_agora=true: foi o primeiro teste, já ativou auto.
+  //   → splash "Criando sua jornada" → renderiza
+  // dados.eh_reteste=true: aluna já tinha trilha ativa, refez o teste.
+  //   → popup "Quer atualizar sua trilha?". Se Sim, splash + ativa.
+  //                                          Se Não, renderiza direto.
+  if (dados.trilha_ativada_agora) {
+    elLoading.style.display = 'none';
+    await mostrarSplashJornada({ contexto: 'criando', jornadaPayload: dados.jornada });
+  } else if (dados.eh_reteste) {
+    elLoading.style.display = 'none';
+    const escolheuAtualizar = await mostrarPopupReteste();
+    if (escolheuAtualizar) {
       try {
-        const respostas = Array.isArray(teste.respostas) ? teste.respostas : JSON.parse(teste.respostas || '[]');
-        const resultado = calcularResultado(respostas);
-        const perfilBruto = (resultado.perfil_dominante || '').startsWith('prosperidade')
-          ? 'prosperidade'
-          : resultado.perfil_dominante;
-        await poolCore.query(
-          `UPDATE usuarios
-              SET perfil_teste = $1,
-                  percentual_prosperidade = $2,
-                  atualizado_em = NOW()
-            WHERE id = $3`,
-          [perfilBruto, resultado.percentual_prosperidade, teste.usuario_id]
-        );
-
-        // Atualização pendente — splash "Atualizando sua jornada" será
-        // disparada quando a aluna clicar no banner ou no aviso.
-        await poolCore.query(
-          `INSERT INTO atualizacoes_pendentes (usuario_id, tipo, payload)
-           VALUES ($1, 'teste', $2)`,
-          [teste.usuario_id, JSON.stringify({ teste_id: testeId, contexto: 'atualizando' })]
-        );
+        const r = await fetch('/api/teste/ativar-trilha/' + encodeURIComponent(testeId), {
+          method: 'POST',
+        });
+        if (r.ok) {
+          await mostrarSplashJornada({ contexto: 'atualizando', jornadaPayload: dados.jornada });
+        }
       } catch (e) {
-        console.warn('[teste/ativar-trilha] falha ao atualizar/criar pendência:', e.message);
+        console.warn('[resultado] erro ao ativar trilha:', e);
       }
     }
-
-    return res.json({ ok: true });
-  } catch (err) {
-    console.error('[teste/ativar-trilha] erro:', err);
-    return res.status(500).json({ ok: false, erro: 'erro interno' });
   }
-});
 
-// ──────────────────────────────────────────────────────────
-// DELETE /api/teste/em-andamento
-// Apaga as respostas de um teste não concluído da aluna logada.
-// Chamado pelo botão "Apagar" do card "Em andamento" em Materiais.
-// ──────────────────────────────────────────────────────────
-router.delete('/em-andamento', autenticar, async (req, res) => {
-  try {
-    const usuarioId = req.usuario && req.usuario.sub;
-    if (!usuarioId) return res.status(401).json({ ok: false, erro: 'não autenticado' });
+  renderizar(dados);
+  elLoading.style.display = 'none';
+  elConteudo.style.display = 'block';
 
-    // Acha telefone canônico pra cruzar com teste_leads (banco separado)
-    const uR = await poolCore.query(
-      `SELECT telefone FROM usuarios WHERE id=$1 LIMIT 1`,
-      [usuarioId]
-    );
-    const telefone = uR.rows[0] ? uR.rows[0].telefone : null;
+  // ── Animação de entrada: stagger nos blocos principais ──
+  // Aplica fade-up escalonado em cada seção do resultado pra dar
+  // sensação de "entrega" gradual e elegante.
+  aplicarEntradaStaggered();
 
-    // Busca leads dessa aluna (por usuario_id direto OU por telefone)
-    const leadsR = await poolTeste.query(
-      `SELECT id FROM teste_leads
-        WHERE usuario_id = $1
-           OR ($2::text IS NOT NULL AND telefone_canonico = $2)`,
-      [usuarioId, telefone]
-    );
-    const leadIds = leadsR.rows.map(r => r.id);
+  function aplicarEntradaStaggered() {
+    const seletores = [
+      '.b1-imagem-wrap',
+      '.b1-titulo',
+      '.b2-wrap',
+      '.b3-wrap',
+      '.b4-btn',
+      '.b5-wrap',
+      '.b6-wrap',
+      '.b7-trilha',
+      '.b8-wrap',
+      '.bj-wrap',
+      '.rodape-meta',
+      '.voltar-home-wrap',
+    ];
+    let delay = 0;
+    seletores.forEach(sel => {
+      const el = elConteudo.querySelector(sel);
+      if (!el || el.style.display === 'none') return;
+      el.classList.add('anim-entrada');
+      el.style.setProperty('--anim-delay', delay.toFixed(2) + 's');
+      delay += 0.12;
+    });
+    // Linhas do gráfico de energia entram com escalonamento extra
+    const linhasEnergia = elConteudo.querySelectorAll('#b3-lista .b3-energia-row');
+    linhasEnergia.forEach((linha, i) => {
+      linha.classList.add('anim-entrada');
+      linha.style.setProperty('--anim-delay', (0.45 + i * 0.07).toFixed(2) + 's');
+    });
+    // Passos da trilha também escalonam por dentro
+    const passos = elConteudo.querySelectorAll('.b7-trilha .passo-card');
+    passos.forEach((p, i) => {
+      p.classList.add('anim-entrada');
+      p.style.setProperty('--anim-delay', (1.0 + i * 0.18).toFixed(2) + 's');
+    });
+  }
 
-    if (leadIds.length === 0) {
-      return res.json({ ok: true, removidas: 0 });
+  // ── Botão X no topo: fecha aba ou volta pra Home ──
+  const btnFechar = document.getElementById('topo-fechar');
+  if (btnFechar) {
+    btnFechar.addEventListener('click', () => {
+      // Tenta fechar a aba. Se não tiver opener (foi aberta direta), vai pra Home.
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.close();
+          // Em alguns navegadores window.close() é silencioso quando a aba não foi
+          // aberta por script. Como fallback, em ~250ms manda pra Home.
+          setTimeout(() => { window.location.href = '/app.html'; }, 250);
+          return;
+        }
+      } catch {}
+      window.location.href = '/app.html';
+    });
+  }
+
+  // ── Botão "Voltar pra Home" no final ──
+  const btnVoltarHome = document.getElementById('voltar-home');
+  if (btnVoltarHome) {
+    btnVoltarHome.addEventListener('click', () => {
+      window.location.href = '/app.html';
+    });
+  }
+
+  // ════════════════════════════════════════════════════
+  // Popup "Quer atualizar sua trilha?"
+  // Retorna Promise<boolean> — true se Sim, false se Não.
+  function mostrarPopupReteste() {
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.className = 'reteste-overlay';
+      overlay.innerHTML = `
+        <div class="reteste-popup">
+          <div class="reteste-popup-icone">✨</div>
+          <h3 class="reteste-popup-titulo">Quer atualizar sua trilha de conhecimento agora?</h3>
+          <p class="reteste-popup-aviso">Essa escolha não pode ser desfeita. Sua trilha vai refletir o resultado deste novo teste.</p>
+          <div class="reteste-popup-botoes">
+            <button class="reteste-btn reteste-btn-secundario" data-acao="nao">Não, manter atual</button>
+            <button class="reteste-btn reteste-btn-primario" data-acao="sim">Sim, atualizar</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      requestAnimationFrame(() => overlay.classList.add('visivel'));
+
+      overlay.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const escolha = btn.dataset.acao === 'sim';
+          overlay.classList.remove('visivel');
+          setTimeout(() => overlay.remove(), 300);
+          resolve(escolha);
+        });
+      });
+    });
+  }
+
+  // ════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════
+  // Splash "Criando/Atualizando sua jornada" — 4 fases:
+  // 1. Reticências animadas
+  // 2. Fade pra "Jornada criada com sucesso"
+  // 3. Barra de progresso real anima 0 → percentual
+  // 4. Botão "Concluir →"
+  function mostrarSplashJornada({ contexto = 'criando', jornadaPayload = null } = {}) {
+    return new Promise(resolve => {
+      const ehCriando = contexto === 'criando';
+      const tituloFase1 = ehCriando ? 'Criando sua jornada' : 'Atualizando sua jornada';
+      const tituloFase2 = ehCriando ? 'Jornada criada com sucesso' : 'Jornada atualizada com sucesso';
+      const subFase1 = 'Estamos preparando sua trilha personalizada';
+
+      // Calcula progresso da jornada com base no payload público
+      // (jornada vem do /api/teste/resultado — genérica, sem cruzamento
+      // de produtos comprados; aqui sempre arranca em 0% / 0 de N).
+      const totalPassos = (jornadaPayload && Array.isArray(jornadaPayload.passos))
+        ? jornadaPayload.passos.length
+        : 0;
+      const passosConcluidos = 0;  // página pública não conhece produtos da aluna
+      const percentual = 0;
+      const nomeJornada = (jornadaPayload && jornadaPayload.nome_exibicao)
+        ? jornadaPayload.nome_exibicao
+        : 'Sua jornada';
+
+      const splash = document.createElement('div');
+      splash.className = 'jornada-splash';
+      splash.innerHTML = `
+        <div class="jornada-splash-particulas">
+          ${Array.from({ length: 28 }, (_, i) => `<span class="js-particula js-p${i % 7}"></span>`).join('')}
+        </div>
+        <div class="jornada-splash-conteudo">
+          <div class="jornada-splash-icone">✦</div>
+          <h2 class="jornada-splash-titulo">${tituloFase1}<span class="reticencias"><span>.</span><span>.</span><span>.</span></span></h2>
+          <p class="jornada-splash-sub">${subFase1}</p>
+          <div class="jornada-splash-progresso">
+            <div class="jornada-splash-prog-info">
+              <span class="jornada-splash-prog-nome">${nomeJornada}</span>
+              <span class="jornada-splash-prog-passos">${passosConcluidos} de ${totalPassos}</span>
+            </div>
+            <div class="jornada-splash-prog-bar">
+              <div class="jornada-splash-prog-fill" data-prog-fill></div>
+            </div>
+            <div class="jornada-splash-prog-pct">
+              <span class="pct-num" data-prog-pct>0</span><span class="pct-sym">%</span>
+            </div>
+          </div>
+          <button class="jornada-splash-botao" data-btn-concluir>Concluir →</button>
+        </div>
+      `;
+      document.body.appendChild(splash);
+      requestAnimationFrame(() => splash.classList.add('visivel'));
+
+      // Botão Concluir: fecha splash e resolve (mostra o resultado embaixo)
+      splash.querySelector('[data-btn-concluir]').addEventListener('click', () => {
+        splash.classList.remove('visivel');
+        setTimeout(() => { splash.remove(); resolve(); }, 400);
+      });
+
+      // FASE 2 (em 2s): fade do título → trocar texto → fade in
+      setTimeout(() => {
+        splash.classList.add('fase-transicao');
+        setTimeout(() => {
+          const titEl = splash.querySelector('.jornada-splash-titulo');
+          const subEl = splash.querySelector('.jornada-splash-sub');
+          if (titEl) titEl.innerHTML = tituloFase2 + ' ✦';
+          if (subEl) subEl.textContent = 'Sua trilha está pronta';
+          splash.classList.remove('fase-transicao');
+        }, 400);
+      }, 2000);
+
+      // FASE 3 (em 3s): barra de progresso aparece e anima
+      setTimeout(() => {
+        splash.classList.add('fase-progresso');
+        setTimeout(() => {
+          const fillEl = splash.querySelector('[data-prog-fill]');
+          const pctEl = splash.querySelector('[data-prog-pct]');
+          if (fillEl) fillEl.style.width = percentual + '%';
+          if (pctEl) {
+            const inicio = performance.now();
+            function tick(agora) {
+              const t = Math.min(1, (agora - inicio) / 1200);
+              const ease = 1 - Math.pow(1 - t, 3);
+              pctEl.textContent = Math.round(percentual * ease);
+              if (t < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+          }
+        }, 200);
+      }, 3000);
+
+      // FASE 4 (em 4.5s): botão Concluir aparece
+      setTimeout(() => {
+        splash.classList.add('fase-botao');
+      }, 4500);
+    });
+  }
+
+  // ════════════════════════════════════════════════════
+  function renderizar(d) {
+    // ── BLOCO 1: imagem ──
+    // /assets/resultado-{slug}.png — slug do perfil dominante (medo, prosperidade_nv2, etc)
+    const imgEl = document.getElementById('b1-imagem');
+    imgEl.src = '/assets/resultado-' + d.perfil_dominante + '.png';
+    imgEl.alt = 'Energia ' + (d.conteudo && d.conteudo.nome_exibicao ? d.conteudo.nome_exibicao : '');
+    imgEl.onerror = function() { imgEl.style.display = 'none'; };
+
+    // ── BLOCO 2: nome + energia predominante ──
+    document.getElementById('b2-nome').textContent = d.aluna && d.aluna.nome ? d.aluna.nome : '';
+    const nomeEnergia = (d.conteudo && d.conteudo.nome_exibicao) ? d.conteudo.nome_exibicao : '—';
+    document.getElementById('b2-energia').textContent = 'Energia da ' + nomeEnergia;
+
+    // ── BLOCO 3: lista das 5 energias ──
+    const listaWrap = document.getElementById('b3-lista');
+    listaWrap.innerHTML = d.energias.map(e => {
+      // Marca como dominante se bater com o perfil bruto (prosperidade, medo, etc)
+      const isDominante = (e.slug === d.perfil_dominante_bruto);
+      return (
+        '<div class="b3-energia-row' + (isDominante ? ' is-dominante' : '') + '">' +
+          '<span class="b3-energia-label">Energia da ' + escapeHtml(e.label) + '</span>' +
+          '<span class="b3-energia-perc">' + e.percentual_inteiro + '%</span>' +
+        '</div>'
+      );
+    }).join('');
+
+    // ── BLOCO 4: botão de compartilhar ──
+    document.getElementById('b4-btn').addEventListener('click', () => {
+      const texto = (d.compartilhar_texto || 'Acabei de descobrir minha energia predominante no Teste do Subconsciente da Vida Mágica.') +
+                    '\n\nEnergia da ' + nomeEnergia + '\n\n' + window.location.href;
+      const url = 'https://wa.me/?text=' + encodeURIComponent(texto);
+      window.open(url, '_blank');
+    });
+
+    // ── BLOCO 5: vídeo ──
+    if (d.conteudo && d.conteudo.video_url) {
+      const videoUrl = d.conteudo.video_url.trim();
+      const container = document.getElementById('b5-video-container');
+      const embed = embedDeUrl(videoUrl);
+      if (embed) container.innerHTML = embed;
     }
 
-    // Apaga respostas em andamento (de qualquer versão).
-    // Não apaga linhas de testes finalizados (essas estão em `testes`,
-    // não em `teste_respostas`).
-    const r = await poolTeste.query(
-      `DELETE FROM teste_respostas WHERE lead_id = ANY($1::int[])`,
-      [leadIds]
-    );
+    // ── BLOCO 6: diagnóstico ──
+    if (d.conteudo && d.conteudo.texto_diagnostico) {
+      document.getElementById('b6-texto').innerHTML = textoSimplesParaHtml(d.conteudo.texto_diagnostico);
+    }
 
-    return res.json({ ok: true, removidas: r.rowCount });
-  } catch (err) {
-    console.error('[teste/em-andamento DELETE] erro:', err);
-    return res.status(500).json({ ok: false, erro: 'erro interno' });
+    // ── BLOCO 7: passos ──
+    if (d.conteudo) {
+      if (d.conteudo.passo1_texto) document.getElementById('passo1-texto').innerHTML = textoSimplesParaHtml(d.conteudo.passo1_texto);
+      if (d.conteudo.passo2_texto) document.getElementById('passo2-texto').innerHTML = textoSimplesParaHtml(d.conteudo.passo2_texto);
+      if (d.conteudo.passo3_texto) document.getElementById('passo3-texto').innerHTML = textoSimplesParaHtml(d.conteudo.passo3_texto);
+    }
+
+    // Livros (Passo 2)
+    const livrosWrap = document.getElementById('livros-lista');
+    if (Array.isArray(d.livros) && d.livros.length > 0) {
+      livrosWrap.innerHTML = d.livros.map(renderLivro).join('');
+    }
+
+    // Cursos (Passo 3) — pode ter 1 ou 2 cards
+    const cursosWrap = document.getElementById('cursos-lista');
+    if (d.conteudo) {
+      const cursos = [];
+      if (d.conteudo.passo3_curso_titulo) {
+        cursos.push({
+          titulo: d.conteudo.passo3_curso_titulo,
+          capa_url: d.conteudo.passo3_curso_capa_url,
+          descricao: d.conteudo.passo3_curso_descricao,
+          preco: d.conteudo.passo3_curso_preco,
+          link: d.conteudo.passo3_curso_link_checkout,
+        });
+      }
+      if (d.conteudo.passo3_curso_titulo_2) {
+        cursos.push({
+          titulo: d.conteudo.passo3_curso_titulo_2,
+          capa_url: d.conteudo.passo3_curso_capa_url_2,
+          descricao: d.conteudo.passo3_curso_descricao_2,
+          preco: d.conteudo.passo3_curso_preco_2,
+          link: d.conteudo.passo3_curso_link_checkout_2,
+        });
+      }
+      cursosWrap.innerHTML = cursos.map(renderCurso).join('');
+    }
+
+    // ── BLOCO 8: fechamento ──
+    if (d.conteudo && d.conteudo.texto_fechamento_final) {
+      document.getElementById('b8-texto').innerHTML = textoSimplesParaHtml(d.conteudo.texto_fechamento_final);
+    }
+
+    // ── BLOCO JORNADA: Sua jornada começa aqui ──
+    if (d.jornada && Array.isArray(d.jornada.passos) && d.jornada.passos.length > 0) {
+      const j = d.jornada;
+      document.getElementById('bj-eyebrow').textContent = 'Sua Jornada ' + j.numero + ' começa aqui';
+      document.getElementById('bj-titulo').textContent = j.nome_exibicao;
+      document.getElementById('bj-sub').textContent = j.subtitulo || '';
+      document.getElementById('bj-passos').innerHTML = j.passos.map(p => (
+        '<div class="bj-passo">' +
+          '<div class="bj-passo-num">' + p.ordem + '</div>' +
+          '<div class="bj-passo-texto">' +
+            '<div class="bj-passo-titulo">' + escapeHtml(p.titulo) + '</div>' +
+            (p.descricao ? '<div class="bj-passo-desc">' + escapeHtml(p.descricao) + '</div>' : '') +
+          '</div>' +
+        '</div>'
+      )).join('');
+      document.getElementById('bj-wrap').style.display = '';
+    }
+
+    // ── Rodapé meta ──
+    if (d.teste) {
+      document.getElementById('rodape-data').textContent = 'Realizado em ' + formatarData(d.teste.feito_em);
+      document.getElementById('rodape-versao').textContent = 'Versão ' + (d.teste.versao_nome || '—');
+    }
   }
-});
 
-module.exports = router;
+  // ── Helpers ─────────────────────────────────────────────
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  }
+
+  // Converte texto plano em HTML: parágrafos por linha em branco, mantém quebras simples como <br>
+  function textoSimplesParaHtml(texto) {
+    if (!texto) return '';
+    // Se já parece HTML (tem tag), retorna como está
+    if (/<\w+[^>]*>/.test(texto)) return texto;
+    const blocos = texto.trim().split(/\n\s*\n/);
+    return blocos.map(b => '<p>' + escapeHtml(b).replace(/\n/g, '<br>') + '</p>').join('');
+  }
+
+  function formatarData(iso) {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso);
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      return dd + '/' + mm + '/' + yyyy;
+    } catch { return '—'; }
+  }
+
+  function formatarPreco(p) {
+    if (p == null || p === '') return null;
+    const n = parseFloat(p);
+    if (isNaN(n) || n <= 0) return null;
+    return 'R$ ' + n.toFixed(2).replace('.', ',');
+  }
+
+  // YouTube/Vimeo → embed; senão tenta <video>
+  function embedDeUrl(url) {
+    if (!url) return null;
+    const yt = url.match(/(?:youtube\.com\/.*[?&]v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/);
+    if (yt) return '<iframe src="https://www.youtube.com/embed/' + yt[1] + '" allowfullscreen></iframe>';
+    const vimeo = url.match(/vimeo\.com\/(\d+)/);
+    if (vimeo) return '<iframe src="https://player.vimeo.com/video/' + vimeo[1] + '" allowfullscreen></iframe>';
+    if (/\.(mp4|webm|ogg)(\?|$)/i.test(url)) {
+      return '<video controls src="' + escapeHtml(url) + '"></video>';
+    }
+    return null;
+  }
+
+  function renderLivro(l) {
+    const capa = l.capa_url
+      ? '<img class="livro-capa" src="' + escapeHtml(l.capa_url) + '" alt="' + escapeHtml(l.titulo) + '">'
+      : '<div class="livro-capa-placeholder"><i class="fas fa-book"></i></div>';
+    // Preço: a página de resultado é pública, então mostra o preço padrão.
+    const precoStr = l.preco_padrao || '';
+    const preco = precoStr ? ('R$ ' + precoStr) : null;
+    // Link: a página é pública (lead anônima) — usa link padrão. Aluna logada
+    // que acessar tem o link padrão também (a versão "aluno" só aparece no
+    // painel de atendimento e no /app autenticado).
+    const link = l.link_checkout_padrao || '';
+    const cta = link
+      ? '<a href="' + escapeHtml(link) + '" class="livro-cta" target="_blank" rel="noopener">Quero este livro</a>'
+      : '<a href="#" class="livro-cta" onclick="alert(\'Em breve\');return false;">Quero este livro</a>';
+    return (
+      '<div class="livro-card">' +
+        capa +
+        '<div class="livro-info">' +
+          '<span class="livro-tag" style="background:' + escapeHtml(l.cor_fundo) + ';color:' + escapeHtml(l.cor_texto) + '">' + escapeHtml(l.tag) + '</span>' +
+          '<div class="livro-titulo">' + escapeHtml(l.titulo) + '</div>' +
+          '<div class="livro-evidencia">' + escapeHtml(l.linha_evidencia) + '</div>' +
+          (l.selo ? '<div class="livro-selo">' + escapeHtml(l.selo) + '</div>' : '') +
+          '<div class="livro-rodape">' +
+            (preco ? '<span class="livro-preco">' + preco + '</span>' : '<span class="livro-preco" style="color:var(--pearl-dim);font-size:0.85rem;font-style:italic">Preço em breve</span>') +
+            cta +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderCurso(c) {
+    const capa = c.capa_url
+      ? '<img class="curso-capa" src="' + escapeHtml(c.capa_url) + '" alt="' + escapeHtml(c.titulo) + '">'
+      : '<div class="curso-capa-placeholder"><i class="fas fa-graduation-cap"></i></div>';
+    const preco = formatarPreco(c.preco);
+    const cta = c.link
+      ? '<a href="' + escapeHtml(c.link) + '" class="curso-cta" target="_blank">Quero este curso</a>'
+      : '<a href="#" class="curso-cta" onclick="alert(\'Em breve\');return false;">Quero este curso</a>';
+    return (
+      '<div class="curso-card">' +
+        capa +
+        '<div class="curso-info">' +
+          '<div class="curso-titulo">' + escapeHtml(c.titulo) + '</div>' +
+          (c.descricao ? '<div class="curso-descricao">' + escapeHtml(c.descricao) + '</div>' : '') +
+          '<div class="curso-rodape">' +
+            (preco ? '<span class="curso-preco">' + preco + '</span>' : '<span class="curso-preco indefinido">Preço em breve</span>') +
+            cta +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+})();
+</script>
+
+</body>
+</html>
