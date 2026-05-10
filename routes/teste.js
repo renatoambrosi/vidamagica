@@ -696,4 +696,49 @@ router.post('/ativar-trilha/:teste_id', async (req, res) => {
   }
 });
 
+// ──────────────────────────────────────────────────────────
+// DELETE /api/teste/em-andamento
+// Apaga as respostas de um teste não concluído da aluna logada.
+// Chamado pelo botão "Apagar" do card "Em andamento" em Materiais.
+// ──────────────────────────────────────────────────────────
+router.delete('/em-andamento', autenticar, async (req, res) => {
+  try {
+    const usuarioId = req.usuario && req.usuario.sub;
+    if (!usuarioId) return res.status(401).json({ ok: false, erro: 'não autenticado' });
+
+    // Acha telefone canônico pra cruzar com teste_leads (banco separado)
+    const uR = await poolCore.query(
+      `SELECT telefone FROM usuarios WHERE id=$1 LIMIT 1`,
+      [usuarioId]
+    );
+    const telefone = uR.rows[0] ? uR.rows[0].telefone : null;
+
+    // Busca leads dessa aluna (por usuario_id direto OU por telefone)
+    const leadsR = await poolTeste.query(
+      `SELECT id FROM teste_leads
+        WHERE usuario_id = $1
+           OR ($2::text IS NOT NULL AND telefone_canonico = $2)`,
+      [usuarioId, telefone]
+    );
+    const leadIds = leadsR.rows.map(r => r.id);
+
+    if (leadIds.length === 0) {
+      return res.json({ ok: true, removidas: 0 });
+    }
+
+    // Apaga respostas em andamento (de qualquer versão).
+    // Não apaga linhas de testes finalizados (essas estão em `testes`,
+    // não em `teste_respostas`).
+    const r = await poolTeste.query(
+      `DELETE FROM teste_respostas WHERE lead_id = ANY($1::int[])`,
+      [leadIds]
+    );
+
+    return res.json({ ok: true, removidas: r.rowCount });
+  } catch (err) {
+    console.error('[teste/em-andamento DELETE] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
 module.exports = router;
