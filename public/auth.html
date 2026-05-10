@@ -216,6 +216,11 @@
 
     @media(max-width:480px){ .card{padding:2rem 1.5rem;} }
   </style>
+
+  <!-- intl-tel-input — input internacional de telefone -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@23.6.1/build/css/intlTelInput.css">
+  <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@23.6.1/build/js/intlTelInput.min.js"></script>
+  <script src="/vm-tel-input.js"></script>
 </head>
 <body>
 <div class="bg-layer"></div>
@@ -243,30 +248,15 @@
       <div class="usuario-detalhe" id="usuario-detalhe"></div>
       <button class="btn-trocar" onclick="trocarUsuario()">Não sou eu →</button>
     </div>
-    <div id="bloco-titulo-novo"><p class="titulo">Bem-vinda <em>de volta</em></p><p class="subtitulo">Sua entrada no Vida Mágica acontece pelo seu WhatsApp.</p><div class="divisor"></div></div>
-    <div id="bloco-titulo-lembrado" style="display:none"><p class="subtitulo" style="margin-bottom:1.25rem">Sua entrada no Vida Mágica acontece pelo seu WhatsApp.</p></div>
+    <div id="bloco-titulo-novo"><p class="titulo">Bem-vinda <em>de volta</em></p><p class="subtitulo">Entre com seu WhatsApp e senha.</p><div class="divisor"></div></div>
+    <div id="bloco-titulo-lembrado" style="display:none"><p class="subtitulo" style="margin-bottom:1.25rem">Entre com seu WhatsApp e senha.</p></div>
     <div class="msg erro" id="erro-login"></div>
 
-    <!-- ── Modo MAGIC LINK (padrão) ────────────────────────────────── -->
-    <div id="modo-magic">
-      <div class="campo" id="campo-id-magic">
-        <label>Seu WhatsApp</label>
-        <div class="input-wrap"><input id="input-tel-magic" type="tel" inputmode="numeric" placeholder="(__) _____-____" autocomplete="tel" maxlength="20"></div>
-      </div>
-
-      <button class="btn-cta" id="btn-magic" onclick="solicitarAcesso()">
-        <span>Solicite entrar pelo seu Whatsapp</span>
-        <span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
-      </button>
-
-      <button class="btn-toggle-modo" onclick="alternarModoLogin('senha')" type="button" style="background:none;border:none;color:var(--muted);font-family:var(--font-b);font-size:.78rem;text-decoration:underline;text-underline-offset:3px;padding:.85rem 0 .2rem;cursor:pointer;width:100%;text-align:center;transition:color .2s">▼ Entrar com número e senha</button>
-    </div>
-
-    <!-- ── Modo SENHA (drop-down) ───────────────────────────────────── -->
-    <div id="modo-senha" style="display:none">
+    <!-- ── Modo SENHA (padrão) ────────────────────────────────── -->
+    <div id="modo-senha">
       <div class="campo" id="campo-id">
         <label>WhatsApp</label>
-        <div class="input-wrap"><input id="input-id" type="tel" inputmode="numeric" placeholder="(__) _____-____" autocomplete="tel" maxlength="20"></div>
+        <div class="input-wrap"><input id="input-id" type="tel" placeholder="WhatsApp" autocomplete="tel"></div>
       </div>
       <div class="campo">
         <label>Senha</label>
@@ -281,7 +271,22 @@
         <label class="toggle-sw"><input type="checkbox" id="toggle-lembrar" checked><span class="toggle-slider"></span></label>
       </div>
       <button class="btn-cta" id="btn-login" onclick="fazerLogin()"><span>Entrar</span><span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span></button>
-      <button class="btn-toggle-modo" onclick="alternarModoLogin('magic')" type="button" style="background:none;border:none;color:var(--muted);font-family:var(--font-b);font-size:.78rem;text-decoration:underline;text-underline-offset:3px;padding:.85rem 0 .2rem;cursor:pointer;width:100%;text-align:center;transition:color .2s">▲ Voltar pro link via WhatsApp</button>
+      <button class="btn-toggle-modo" onclick="alternarModoLogin('magic')" type="button" style="background:none;border:none;color:var(--muted);font-family:var(--font-b);font-size:.78rem;text-decoration:underline;text-underline-offset:3px;padding:.85rem 0 .2rem;cursor:pointer;width:100%;text-align:center;transition:color .2s">▼ Entrar pelo WhatsApp (sem senha)</button>
+    </div>
+
+    <!-- ── Modo MAGIC LINK (secundário, drop-down) ─────────────────── -->
+    <div id="modo-magic" style="display:none">
+      <div class="campo" id="campo-id-magic">
+        <label>Seu WhatsApp</label>
+        <div class="input-wrap"><input id="input-tel-magic" type="tel" placeholder="WhatsApp" autocomplete="tel"></div>
+      </div>
+
+      <button class="btn-cta" id="btn-magic" onclick="solicitarAcesso()">
+        <span>Solicite entrar pelo seu WhatsApp</span>
+        <span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </button>
+
+      <button class="btn-toggle-modo" onclick="alternarModoLogin('senha')" type="button" style="background:none;border:none;color:var(--muted);font-family:var(--font-b);font-size:.78rem;text-decoration:underline;text-underline-offset:3px;padding:.85rem 0 .2rem;cursor:pointer;width:100%;text-align:center;transition:color .2s">▲ Voltar pro login com senha</button>
     </div>
 
     <!-- ── Estado: AGUARDANDO (token gerado, esperando aluna mandar zap) ── -->
@@ -658,14 +663,20 @@ function mostrarOverlay(nome){
   setTimeout(()=>{ window.location.replace('/app'); }, 1400);
 }
 
-// ── MASCARA TELEFONE BRASIL nos inputs novos ─────────────────────────────────
-const _paisBR = PAISES[0]; // {ddi:'55', mask:'(##) #####-####', max:11, ...}
-function aplicarMascaraBR(inp){
-  if (!inp) return;
-  inp.addEventListener('input', () => mascaraTel(inp, _paisBR));
+// ── INPUTS DE TELEFONE INTERNACIONAL (intl-tel-input via VmTelInput) ──────────
+// Substitui as máscaras manuais por seletor de país com bandeira.
+// Funciona pra Brasil, EUA, Portugal, qualquer país. Default: Brasil.
+const _vmTelMagic = VmTelInput.aplicar('#input-tel-magic', { paisDefault: 'br' });
+const _vmTelLogin = VmTelInput.aplicar('#input-id',         { paisDefault: 'br' });
+// (o input #c-tel do cadastro tem mascaraTel próprio — tratado em outro bloco abaixo)
+
+// Helpers pra ler o canônico em qualquer modo
+function getTelMagicCanonico() {
+  return _vmTelMagic ? _vmTelMagic.canonico() : (document.getElementById('input-tel-magic').value || '').replace(/\D/g, '');
 }
-aplicarMascaraBR(document.getElementById('input-tel-magic'));
-aplicarMascaraBR(document.getElementById('input-id'));
+function getTelLoginCanonico() {
+  return _vmTelLogin ? _vmTelLogin.canonico() : (document.getElementById('input-id').value || '').replace(/\D/g, '');
+}
 
 // ── ALTERNAR MODOS LOGIN (magic ↔ senha) ─────────────────────────────────────
 function alternarModoLogin(modo){
@@ -687,7 +698,7 @@ function alternarModoLogin(modo){
   elSenha.style.display = 'none';
   if (modo === 'senha'){
     elSenha.style.display    = '';
-    elFootCriar.style.display= 'none';
+    elFootCriar.style.display= '';
     setTimeout(() => document.getElementById('input-id')?.focus(), 50);
   } else {
     elMagic.style.display    = '';
@@ -732,8 +743,8 @@ document.getElementById('input-tel-magic').addEventListener('keydown', e => {
 
 async function solicitarAcesso(){
   limparMsg('erro-login');
-  const tel = (document.getElementById('input-tel-magic').value||'').trim();
-  if (!tel){
+  const tel = getTelMagicCanonico();
+  if (!tel || tel.length < 8){
     mostrarErro('erro-login','Informe seu WhatsApp.');
     document.getElementById('input-tel-magic').focus();
     return;
@@ -789,7 +800,7 @@ async function solicitarAcesso(){
 
 // Botão "Solicitar novamente" (na tela de aguardando)
 async function solicitarNovamente() {
-  const tel = window._telPedido || (document.getElementById('input-tel-magic').value||'').trim();
+  const tel = window._telPedido || getTelMagicCanonico();
   if (!tel) return;
   // Para o polling atual antes de pedir novo token
   if (window._aguardandoTimer)  { clearInterval(window._aguardandoTimer);  window._aguardandoTimer  = null; }
@@ -959,11 +970,11 @@ document.getElementById('input-senha').addEventListener('keydown', e=>{ if(e.key
 
 async function fazerLogin(){
   limparMsg('erro-login');
-  const identificador = (document.getElementById('input-id').value||'').trim();
+  const identificador = getTelLoginCanonico();
   const senha   = document.getElementById('input-senha').value;
   const lembrar = document.getElementById('toggle-lembrar').checked;
 
-  if (!identificador){
+  if (!identificador || identificador.length < 8){
     document.getElementById('campo-id').style.display='block';
     mostrarErro('erro-login','Informe seu WhatsApp.');
     document.getElementById('input-id').focus(); return;
@@ -975,6 +986,14 @@ async function fazerLogin(){
     const r = await fetch(`${API}/api/auth/login-senha`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identificador,senha})});
     const d = await r.json();
     if (r.ok){ VmSession.salvar(d, lembrar); mostrarOverlay(d.usuario?.nome); }
+    else if (d.code === 'SEM_SENHA' || d.code === 'CONTA_INCOMPLETA') {
+      // Aluna não tem senha definida (ou cadastro não foi finalizado).
+      // Oferece o caminho do magic link, que vai permitir definir senha.
+      mostrarErro('erro-login', d.error || 'Você precisa entrar pelo WhatsApp pra criar sua senha.');
+      // Pré-preenche o telefone no modo magic e troca pra esse modo
+      if (_vmTelMagic && identificador) _vmTelMagic.preencher(identificador);
+      setTimeout(() => alternarModoLogin('magic'), 800);
+    }
     else mostrarErro('erro-login', d.error||'Dados incorretos.');
   } catch { mostrarErro('erro-login','Falha de conexão. Tente novamente.'); }
   finally { resetBtn('btn-login','Entrar'); }
