@@ -1063,6 +1063,215 @@
     .voltar-home-btn:active { transform: scale(0.97); }
     .voltar-home-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
+    /* ═══════════════════════════════════════════════════
+       Barra de progresso da jornada
+       ═══════════════════════════════════════════════════ */
+    .b7-progresso-wrap {
+      margin: 1rem 0 1.6rem;
+      padding: 1rem 1.1rem;
+      background: rgba(245,240,232,0.04);
+      border: 1px solid rgba(245,240,232,0.1);
+      border-radius: 14px;
+    }
+    .b7-progresso-info {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-bottom: 0.6rem;
+    }
+    .b7-progresso-label {
+      font-family: var(--font-display);
+      font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--pearl-dim, rgba(245,240,232,0.7));
+    }
+    .b7-progresso-valor {
+      font-family: var(--font-display);
+      font-size: 1.2rem; font-weight: 800;
+      color: var(--gold, #C8922A);
+    }
+    .b7-progresso-bar {
+      height: 8px;
+      background: rgba(245,240,232,0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .b7-progresso-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold-deep, #A17523), var(--gold, #C8922A), var(--gold-light, #F4D060));
+      border-radius: 999px;
+      transition: width 0.9s cubic-bezier(0.22,1,0.36,1);
+    }
+
+    /* Cadeado de assinatura (sem Clube) */
+    .b7-cadeado-clube {
+      width: 100%;
+      margin-top: 0.85rem;
+      display: flex; align-items: center; gap: 0.85rem;
+      padding: 0.85rem 1rem;
+      background: linear-gradient(135deg, rgba(248,220,150,0.10), rgba(200,146,42,0.05));
+      border: 1px dashed rgba(200,146,42,0.4);
+      border-radius: 12px;
+      color: var(--pearl, #F5F0E8);
+      cursor: pointer;
+      text-align: left;
+      font-family: inherit;
+      transition: background 0.18s, border-color 0.18s, transform 0.12s;
+    }
+    .b7-cadeado-clube:hover {
+      background: linear-gradient(135deg, rgba(248,220,150,0.16), rgba(200,146,42,0.08));
+      border-color: rgba(200,146,42,0.6);
+    }
+    .b7-cadeado-clube:active { transform: scale(0.985); }
+    .b7-cadeado-icon { font-size: 1.4rem; }
+    .b7-cadeado-texto { display: flex; flex-direction: column; gap: 0.15rem; }
+    .b7-cadeado-texto strong {
+      font-family: var(--font-display);
+      font-size: 0.85rem; font-weight: 800;
+      color: var(--gold-light, #F4D060);
+    }
+    .b7-cadeado-texto span {
+      font-size: 0.75rem;
+      color: var(--pearl-dim, rgba(245,240,232,0.7));
+    }
+
+    /* Análise automatizada da jornada */
+    .b7-analise {
+      margin: 0.4rem 0 1.4rem;
+      padding: 0.9rem 1rem;
+      background: rgba(43,165,232,0.06);
+      border-left: 3px solid var(--sub-bright, #2ba5e8);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      line-height: 1.55;
+      color: var(--pearl, #F5F0E8);
+      font-style: italic;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       Modal: Conheça o Clube Vida Mágica
+       ═══════════════════════════════════════════════════ */
+    .clube-modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,7,59,0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 10000;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+    .clube-modal-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+    .clube-modal {
+      width: 100%; max-width: 480px;
+      max-height: 90vh; overflow-y: auto;
+      background: linear-gradient(180deg, #0F1B3D, #00073B);
+      border: 1px solid rgba(200,146,42,0.35);
+      border-radius: 20px;
+      padding: 2rem 1.6rem 1.6rem;
+      position: relative;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(248,220,150,0.08);
+      transform: scale(0.95) translateY(20px);
+      transition: transform 0.35s cubic-bezier(0.22,1,0.36,1);
+    }
+    .clube-modal-overlay.visible .clube-modal {
+      transform: scale(1) translateY(0);
+    }
+    .clube-modal-fechar {
+      position: absolute; top: 0.85rem; right: 0.85rem;
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: rgba(245,240,232,0.08);
+      border: 1px solid rgba(245,240,232,0.15);
+      color: var(--pearl, #F5F0E8);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.18s, transform 0.12s;
+    }
+    .clube-modal-fechar:hover { background: rgba(245,240,232,0.15); }
+    .clube-modal-fechar:active { transform: scale(0.92); }
+    .clube-modal-header { text-align: center; margin-bottom: 1.4rem; }
+    .clube-modal-eyebrow {
+      font-family: var(--font-display);
+      font-size: 0.68rem; font-weight: 800;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--gold, #C8922A);
+      margin-bottom: 0.3rem;
+    }
+    .clube-modal-titulo {
+      font-family: var(--font-display);
+      font-size: 1.8rem; font-weight: 800;
+      color: var(--gold-light, #F4D060);
+      margin: 0 0 0.45rem;
+      text-shadow: 0 0 24px rgba(200,146,42,0.4);
+    }
+    .clube-modal-sub {
+      font-size: 0.9rem; color: var(--pearl-dim, rgba(245,240,232,0.75));
+      font-style: italic;
+      margin: 0;
+    }
+    .clube-modal-beneficios {
+      display: flex; flex-direction: column; gap: 0.8rem;
+      margin: 1.4rem 0 1.8rem;
+    }
+    .clube-beneficio {
+      display: flex; align-items: flex-start; gap: 0.85rem;
+      padding: 0.65rem 0.8rem;
+      background: rgba(245,240,232,0.04);
+      border: 1px solid rgba(245,240,232,0.08);
+      border-radius: 10px;
+    }
+    .clube-beneficio-icone {
+      font-size: 1.25rem;
+      flex-shrink: 0;
+      line-height: 1.2;
+      margin-top: 0.1rem;
+    }
+    .clube-beneficio strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 0.88rem; font-weight: 700;
+      color: var(--pearl, #F5F0E8);
+      margin-bottom: 0.15rem;
+    }
+    .clube-beneficio span {
+      font-size: 0.78rem; line-height: 1.45;
+      color: var(--pearl-dim, rgba(245,240,232,0.7));
+    }
+    .clube-modal-cta {
+      display: block; width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, var(--gold-deep, #A17523), var(--gold, #C8922A), var(--gold-light, #F4D060));
+      color: #0F1B3D;
+      font-family: var(--font-display);
+      font-size: 0.95rem; font-weight: 800;
+      letter-spacing: 0.04em;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(200,146,42,0.4);
+      transition: transform 0.12s, box-shadow 0.18s;
+    }
+    .clube-modal-cta:hover {
+      box-shadow: 0 14px 38px rgba(200,146,42,0.55);
+      transform: translateY(-1px);
+    }
+    .clube-modal-cta:active { transform: scale(0.985); }
+    .clube-modal-depois {
+      display: block; width: 100%;
+      margin-top: 0.55rem;
+      padding: 0.7rem;
+      background: transparent; border: none;
+      color: var(--pearl-dim, rgba(245,240,232,0.6));
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .clube-modal-depois:hover { color: var(--pearl, #F5F0E8); }
+
   </style>
 </head>
 <body>
@@ -1138,7 +1347,30 @@
 
     <!-- BLOCO 7: Trilha — passos renderizados dinamicamente baseado em jornada+produtos -->
     <div class="b7-trilha">
-      <div class="b7-trilha-titulo">Trilha Conhecer e Despertar</div>
+      <div class="b7-trilha-titulo" id="b7-trilha-titulo">Trilha Conhecer e Despertar</div>
+
+      <!-- Barra de progresso (com cadeado quando sem Clube) -->
+      <div class="b7-progresso-wrap" id="b7-progresso-wrap" style="display:none">
+        <div class="b7-progresso-info">
+          <span class="b7-progresso-label">Sua trilha</span>
+          <span class="b7-progresso-valor" id="b7-progresso-valor">0%</span>
+        </div>
+        <div class="b7-progresso-bar">
+          <div class="b7-progresso-fill" id="b7-progresso-fill" style="width:0%"></div>
+        </div>
+        <!-- Cadeado de assinatura (só aparece pra quem não tem Clube) -->
+        <button class="b7-cadeado-clube" id="b7-cadeado-clube" type="button" style="display:none">
+          <span class="b7-cadeado-icon">🔒</span>
+          <span class="b7-cadeado-texto">
+            <strong>Acompanhamento bloqueado</strong>
+            <span>Toque pra conhecer o Clube Vida Mágica</span>
+          </span>
+        </button>
+      </div>
+
+      <!-- Análise automatizada (quando relevante — ex: prosperidade com trava forte) -->
+      <div class="b7-analise" id="b7-analise" style="display:none"></div>
+
       <div id="b7-passos-container"></div>
     </div>
 
@@ -1249,6 +1481,46 @@
   renderizar(dados);
   elLoading.style.display = 'none';
   elConteudo.style.display = 'block';
+
+  // ── Barra de progresso da jornada + cadeado de Clube ──
+  renderizarBarraJornada(dados);
+
+  function renderizarBarraJornada(d) {
+    const wrap = document.getElementById('b7-progresso-wrap');
+    const titulo = document.getElementById('b7-trilha-titulo');
+    const fill = document.getElementById('b7-progresso-fill');
+    const valor = document.getElementById('b7-progresso-valor');
+    const cadeado = document.getElementById('b7-cadeado-clube');
+    const analiseEl = document.getElementById('b7-analise');
+
+    const j = d && d.jornada;
+    if (!j) return;
+
+    // Título dinâmico baseado na jornada vigente
+    if (titulo) {
+      const nome = j.nome || 'Conhecer e Despertar';
+      titulo.textContent = 'Trilha ' + nome;
+    }
+
+    // Barra de progresso ponderada (vem do backend: progresso_percentual)
+    const pct = Math.max(0, Math.min(100, Math.round(j.progresso_percentual || 0)));
+    if (wrap) wrap.style.display = '';
+    if (valor) valor.textContent = pct + '%';
+    // Anima o fill com pequeno delay pra ter efeito visual
+    setTimeout(() => { if (fill) fill.style.width = pct + '%'; }, 200);
+
+    // Análise automatizada (texto que vem do backend quando há override etc)
+    if (analiseEl && j.analise) {
+      analiseEl.textContent = j.analise;
+      analiseEl.style.display = '';
+    }
+
+    // Cadeado de assinatura — só aparece se aluna NÃO tem Clube Vida Mágica
+    const temClube = !!d.tem_clube;
+    if (cadeado) {
+      cadeado.style.display = temClube ? 'none' : '';
+    }
+  }
 
   // ── Animação de entrada: stagger nos blocos principais ──
   // Aplica fade-up escalonado em cada seção do resultado pra dar
@@ -1531,9 +1803,10 @@
         return {
           ordem,
           titulo: p.titulo || titulosPadrao[ordem],
-          comprado: !!p.comprado,
+          subtitulo: p.subtitulo || '',
+          comprado: !!(p.concluido || p.comprado),  // novo formato usa "concluido"
           eh_proximo: !!p.eh_proximo,
-          produto_slug: p.produto_slug || null,
+          produtos: Array.isArray(p.produtos) ? p.produtos : (p.produto_slug ? [p.produto_slug] : []),
         };
       });
 
@@ -1840,6 +2113,112 @@
       '</div>'
     );
   }
+})();
+</script>
+
+<!-- ────────────────────────────────────────────────────────
+     MODAL: Conheça o Clube Vida Mágica
+     Abre quando aluna sem Clube toca em qualquer cadeado.
+──────────────────────────────────────────────────────────── -->
+<div class="clube-modal-overlay" id="clube-modal-overlay">
+  <div class="clube-modal" role="dialog" aria-modal="true" aria-labelledby="clube-modal-titulo">
+    <button class="clube-modal-fechar" id="clube-modal-fechar" type="button" aria-label="Fechar">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+
+    <div class="clube-modal-header">
+      <div class="clube-modal-eyebrow">CLUBE</div>
+      <h2 class="clube-modal-titulo" id="clube-modal-titulo">Vida Mágica</h2>
+      <p class="clube-modal-sub">Mais do que um conteúdo. Uma experiência guiada.</p>
+    </div>
+
+    <div class="clube-modal-beneficios">
+      <div class="clube-beneficio">
+        <span class="clube-beneficio-icone">✨</span>
+        <div>
+          <strong>Conteúdo exclusivo semanal</strong>
+          <span>1 vídeo novo por semana — técnicas práticas que não estão em lugar nenhum</span>
+        </div>
+      </div>
+      <div class="clube-beneficio">
+        <span class="clube-beneficio-icone">🎥</span>
+        <div>
+          <strong>Encontro mensal ao vivo</strong>
+          <span>1 live por mês — troca direta com a Su e o Rê</span>
+        </div>
+      </div>
+      <div class="clube-beneficio">
+        <span class="clube-beneficio-icone">💬</span>
+        <div>
+          <strong>Grupo de WhatsApp</strong>
+          <span>Comunidade ativa — pessoas reais vencendo problemas reais</span>
+        </div>
+      </div>
+      <div class="clube-beneficio">
+        <span class="clube-beneficio-icone">💛</span>
+        <div>
+          <strong>Tesouros da Su</strong>
+          <span>Direcionamentos, insights e lembretes no momento certo</span>
+        </div>
+      </div>
+      <div class="clube-beneficio">
+        <span class="clube-beneficio-icone">🌱</span>
+        <div>
+          <strong>Sementes de desconto</strong>
+          <span>Desconto exclusivo em todos os materiais Vida Mágica</span>
+        </div>
+      </div>
+      <div class="clube-beneficio">
+        <span class="clube-beneficio-icone">🗺️</span>
+        <div>
+          <strong>Acompanhamento da jornada</strong>
+          <span>Animações de avanço, feed personalizado, notificações ativas</span>
+        </div>
+      </div>
+      <div class="clube-beneficio">
+        <span class="clube-beneficio-icone">⚡</span>
+        <div>
+          <strong>Chat com resposta em até 5 dias</strong>
+          <span>Suporte direto comigo neste app</span>
+        </div>
+      </div>
+    </div>
+
+    <a href="https://www.vidamagica.com.br/assinar" target="_blank" rel="noopener" class="clube-modal-cta" id="clube-modal-cta">
+      Quero o Clube Vida Mágica
+    </a>
+    <button type="button" class="clube-modal-depois" id="clube-modal-depois">Agora não</button>
+  </div>
+</div>
+
+<script>
+// ── Controle do modal Clube ──
+(function() {
+  const overlay = document.getElementById('clube-modal-overlay');
+  const fechar = document.getElementById('clube-modal-fechar');
+  const depois = document.getElementById('clube-modal-depois');
+  const cadeado = document.getElementById('b7-cadeado-clube');
+
+  function abrir() {
+    if (!overlay) return;
+    overlay.classList.add('visible');
+    document.body.style.overflow = 'hidden';
+  }
+  function fechar2() {
+    if (!overlay) return;
+    overlay.classList.remove('visible');
+    document.body.style.overflow = '';
+  }
+
+  if (cadeado) cadeado.addEventListener('click', abrir);
+  if (fechar)  fechar.addEventListener('click', fechar2);
+  if (depois)  depois.addEventListener('click', fechar2);
+  if (overlay) overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) fechar2();
+  });
+
+  // Exposto pra outros pontos do app abrirem o mesmo modal
+  window.VmClubeModal = { abrir, fechar: fechar2 };
 })();
 </script>
 
