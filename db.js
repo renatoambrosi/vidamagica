@@ -695,6 +695,37 @@ async function initTeste() {
     await c.query(`ALTER TABLE testes ADD COLUMN IF NOT EXISTS visto_em TIMESTAMPTZ`);
     await c.query(`ALTER TABLE testes ADD COLUMN IF NOT EXISTS ativou_trilha BOOLEAN DEFAULT FALSE`);
 
+    // ── MIGRAÇÃO INTELIGENTE: testes feitos ANTES dessa coluna existir ──
+    // Antes, a aluna tinha 1 teste = era a trilha ativa por padrão. Após o
+    // deploy, todos esses testes nascem com ativou_trilha=FALSE, e o app
+    // não consegue identificar qual deles é o "atual".
+    //
+    // Esta migração preenche os ausentes: pra cada aluna que NUNCA teve
+    // ativou_trilha=true em nenhum teste, marca o mais recente como ativo.
+    // Idempotente: só age na 1ª execução, depois disso a regra normal
+    // (ativação via /resultado ou /ativar-trilha) toma conta.
+    await c.query(`
+      WITH alunas_sem_trilha AS (
+        SELECT DISTINCT COALESCE(usuario_id::text, telefone_canonico) AS chave
+          FROM testes
+        EXCEPT
+        SELECT DISTINCT COALESCE(usuario_id::text, telefone_canonico)
+          FROM testes
+         WHERE ativou_trilha = TRUE
+      ),
+      ultimos AS (
+        SELECT DISTINCT ON (COALESCE(usuario_id::text, telefone_canonico))
+               id
+          FROM testes
+         WHERE COALESCE(usuario_id::text, telefone_canonico) IN (SELECT chave FROM alunas_sem_trilha)
+         ORDER BY COALESCE(usuario_id::text, telefone_canonico), feito_em DESC
+      )
+      UPDATE testes
+         SET ativou_trilha = TRUE,
+             visto_em = COALESCE(visto_em, feito_em)
+       WHERE id IN (SELECT id FROM ultimos)
+    `);
+
     // ── MIGRAÇÃO ADITIVA: adiciona versao_id e ordem_exibicao se faltarem ──
     await c.query(`
       ALTER TABLE teste_perguntas
