@@ -862,7 +862,7 @@ router.get('/testes', autenticar, async (req, res) => {
 
     const r = await poolTeste.query(
       `SELECT id, perfil_dominante, percentual_prosperidade, nivel_prosperidade,
-              respostas, contagem, percentuais, feito_em, pago
+              respostas, contagem, percentuais, feito_em, visto_em, ativou_trilha, pago
        FROM testes
        WHERE usuario_id = $1
           OR ($2::text IS NOT NULL AND telefone_canonico = $2)
