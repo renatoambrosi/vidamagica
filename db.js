@@ -653,12 +653,17 @@ async function initTeste() {
         gateway_payment_id VARCHAR(255),
         pago BOOLEAN DEFAULT FALSE,
         feito_em TIMESTAMPTZ DEFAULT NOW(),
+        visto_em TIMESTAMPTZ,
+        ativou_trilha BOOLEAN DEFAULT FALSE,
         CHECK (usuario_id IS NOT NULL OR lead_id IS NOT NULL)
       )
     `);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_testes_telefone ON testes(telefone_canonico)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_testes_usuario ON testes(usuario_id)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_testes_lead ON testes(lead_id)`);
+    // Migrações aditivas: tabelas já criadas em deploys anteriores ganham as colunas novas
+    await c.query(`ALTER TABLE testes ADD COLUMN IF NOT EXISTS visto_em TIMESTAMPTZ`);
+    await c.query(`ALTER TABLE testes ADD COLUMN IF NOT EXISTS ativou_trilha BOOLEAN DEFAULT FALSE`);
 
     // ── MIGRAÇÃO ADITIVA: adiciona versao_id e ordem_exibicao se faltarem ──
     await c.query(`
