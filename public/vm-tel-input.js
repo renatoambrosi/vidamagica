@@ -6,10 +6,13 @@
    Não depende de bundle, fica no front estático.
 
    REGRA DE FORMATAÇÃO VISUAL:
-   - País = Brasil (br): máscara BRASILEIRA fixa "(DD) NNNNN-NNNN"
-                          (a aluna vê o que sempre viu: "(62) 98308-6320")
-   - Outros países: deixa o intl-tel-input formatar com o utilsScript
-                    (padrão internacional E.164 do país selecionado)
+   - País = Brasil (br): bandeira + dropdown + máscara "(DD) NNNNN-NNNN"
+                          SEM o "+55" aparecendo no input.
+                          A aluna vê "(62) 98308-6320" como sempre viu.
+   - Outros países: bandeira + dropdown + formato com DDI visível
+                    no padrão internacional (ex: "+1 (202) 555-0100",
+                    "+351 912 345 678"). Usa o utilsScript do
+                    intl-tel-input pra formatar.
 
    USO:
      <input id="campo-telefone" type="tel">
@@ -56,7 +59,6 @@
     }
 
     let iti = null;
-    let mascaraHandler = null;
 
     const wrapper = {
       _pendentePreenchimento: null,
@@ -66,13 +68,14 @@
       canonico() {
         if (!iti) return (el.value || '').replace(/\D/g, '');
         try {
-          // Se Brasil + máscara aplicada, monta DDI manualmente (intl-tel-input
-          // não consegue parsear "(62) 98308-6320" porque não é o formato dele)
           const pais = wrapper.pais();
           if (pais === 'br') {
+            // Brasil: input só tem dígitos do número (DDD+celular).
+            // Adiciona o "55" do DDI manualmente.
             const apenas = (el.value || '').replace(/\D/g, '');
             return apenas ? '55' + apenas : '';
           }
+          // Outros países: usa getNumber() que já vem em E.164 com '+'
           const num = iti.getNumber();
           return (num || '').replace(/\D/g, '');
         } catch {
@@ -85,7 +88,7 @@
         try {
           const pais = wrapper.pais();
           if (pais === 'br') {
-            // Brasil: validação manual (10 ou 11 dígitos)
+            // Brasil: validação manual (10 ou 11 dígitos no DDD+número)
             const d = (el.value || '').replace(/\D/g, '');
             return d.length === 10 || d.length === 11;
           }
@@ -109,16 +112,21 @@
       preencher(numeroCanonico) {
         if (!numeroCanonico) return;
         const apenasDigitos = String(numeroCanonico).replace(/\D/g, '');
-        const numComMais = '+' + apenasDigitos;
         if (!iti) {
-          this._pendentePreenchimento = numComMais;
+          this._pendentePreenchimento = '+' + apenasDigitos;
           return;
         }
         try {
-          // setNumber escolhe o país e formata. Depois, se for BR, aplica
-          // a máscara visual brasileira por cima.
-          iti.setNumber(numComMais);
-          aplicarMascaraSeBR();
+          // Detecta se é Brasil pelo prefixo
+          if (apenasDigitos.startsWith('55') && (apenasDigitos.length === 12 || apenasDigitos.length === 13)) {
+            // Força país BR e seta só os dígitos do número (sem DDI)
+            iti.setCountry('br');
+            const semDdi = apenasDigitos.slice(2);
+            el.value = mascaraBR(semDdi);
+          } else {
+            // Outros países: deixa setNumber escolher o país e formatar
+            iti.setNumber('+' + apenasDigitos);
+          }
         } catch {}
       },
 
@@ -137,20 +145,15 @@
       iti() { return iti; },
     };
 
-    // ── Lógica da máscara BR sobre o intl-tel-input ──
-    // Só aplica visualmente quando país=BR. Nos outros países,
-    // o intl-tel-input já formata sozinho.
-    function aplicarMascaraSeBR() {
+    // Aplica máscara visual baseada no país atual.
+    // Brasil → máscara "(DD) NNNNN-NNNN".
+    // Outros → não mexe (intl-tel-input formata via utilsScript).
+    function reformatarConformePais() {
       const pais = wrapper.pais();
       if (pais === 'br') {
-        // Pega só os dígitos do que está no input (pode ter vindo formatado
-        // pelo intl-tel-input sem o "(") e re-aplica máscara brasileira.
-        const apenas = (el.value || '').replace(/\D/g, '');
-        // Tira "55" do começo se veio com DDI duplicado
-        const semDdi = apenas.startsWith('55') && apenas.length > 11
-          ? apenas.slice(2)
-          : apenas;
-        el.value = mascaraBR(semDdi);
+        const apenas = (el.value || '').replace(/\D/g, '').slice(0, 11);
+        const formatado = mascaraBR(apenas);
+        if (el.value !== formatado) el.value = formatado;
       }
     }
 
@@ -164,49 +167,52 @@
             .then(data => success((data && data.country_code) ? data.country_code.toLowerCase() : 'br'))
             .catch(() => success('br'));
         },
-        separateDialCode: true,
+        // separateDialCode=false: NÃO mostra o "+55" antes do input.
+        // Pra Brasil isso some o DDI da UI (deixamos invisível pra ficar
+        // igual à máscara antiga). Pra outros países, o "+XX" aparece
+        // dentro do próprio campo, formatado pelo utilsScript.
+        separateDialCode: false,
         autoPlaceholder: 'aggressive',
+        formatOnDisplay: true,
       });
 
-      // Aplica intenções enfileiradas (preencher / bloquear)
+      // Aplica intenções enfileiradas
       if (wrapper._pendentePreenchimento) {
-        try { iti.setNumber(wrapper._pendentePreenchimento); } catch {}
+        const num = wrapper._pendentePreenchimento;
         wrapper._pendentePreenchimento = null;
+        wrapper.preencher(num);
       }
       if (wrapper._pendenteBloqueio) {
         wrapper.bloquear();
       }
 
-      // Aplica máscara BR no estado inicial (caso país padrão seja Brasil)
-      aplicarMascaraSeBR();
+      // Estado inicial: se Brasil e input vazio, define placeholder amigável.
+      // Se já tem valor, reformatar.
+      if (wrapper.pais() === 'br') {
+        el.placeholder = '(00) 00000-0000';
+        reformatarConformePais();
+      }
 
-      // Listener: a cada tecla, se for BR, re-aplica máscara
-      mascaraHandler = function () {
+      // A cada tecla: re-aplica máscara BR enquanto país for Brasil.
+      // (Pra outros países, deixa o intl-tel-input/utilsScript formatar.)
+      el.addEventListener('input', () => {
         if (wrapper.pais() === 'br') {
-          // Pega cursor atual pra tentar manter posição razoável
           const apenas = (el.value || '').replace(/\D/g, '').slice(0, 11);
           const formatado = mascaraBR(apenas);
-          if (el.value !== formatado) {
-            el.value = formatado;
-          }
+          if (el.value !== formatado) el.value = formatado;
         }
-        // Pra outros países, deixa o intl-tel-input fazer (não mexe)
-      };
-      el.addEventListener('input', mascaraHandler);
+      });
 
-      // Quando aluna troca de país: reformata visualmente
+      // Quando a aluna troca de país manualmente
       el.addEventListener('countrychange', () => {
         const pais = wrapper.pais();
         if (pais === 'br') {
-          aplicarMascaraSeBR();
           el.placeholder = '(00) 00000-0000';
+          reformatarConformePais();
         } else {
-          // Restaura placeholder do intl-tel-input pro país novo
-          // (autoPlaceholder='aggressive' já cuida disso, mas força)
-          try {
-            const num = iti.getNumber();
-            iti.setNumber(num || '');
-          } catch {}
+          // Outros: limpa input pra deixar o intl-tel-input mostrar
+          // o placeholder do país novo. setNumber('') reseta.
+          try { iti.setNumber(''); } catch {}
         }
       });
     });
