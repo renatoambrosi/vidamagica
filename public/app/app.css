@@ -111,43 +111,46 @@ body.chat-aberto .topo {
 .topo-logo { height: 28px; display: flex; align-items: center; flex-shrink: 0; }
 .topo-logo img { height: 28px; width: auto; mix-blend-mode: screen; }
 
-/* ── Barra de progresso da jornada no header ── */
+/* ── Barra de progresso da jornada no header (com ícones J atual e próxima) ── */
 .topo-jornada {
   flex: 1;
   min-width: 0;
   max-width: 240px;
   margin: 0 0.65rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: 0;
+  padding: 0.5rem 0;
+  cursor: pointer;
+  transition: opacity 0.15s;
 }
-.topo-jornada-info {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.4rem;
-  min-width: 0;
-}
-.topo-jornada-nome {
-  font-family: var(--font-display);
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(245,240,232,0.75);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-.topo-jornada-pct {
-  font-family: var(--font-display);
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: var(--ouro-claro, #F4D060);
+.topo-jornada:hover { opacity: 0.85; }
+.topo-jornada:active { opacity: 0.7; }
+.topo-jornada-icone {
   flex-shrink: 0;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.topo-jornada-icone-atual {
+  background: linear-gradient(135deg, var(--ouro-fundo, #C8922A), var(--ouro-claro, #F4D060));
+  color: rgba(13,8,0,0.92);
+  box-shadow: 0 0 0 2px rgba(248,220,150,0.25), 0 0 12px rgba(248,220,150,0.4);
+}
+.topo-jornada-icone-prox {
+  background: rgba(245,240,232,0.08);
+  color: rgba(245,240,232,0.5);
+  border: 1px solid rgba(245,240,232,0.18);
 }
 .topo-jornada-bar {
+  flex: 1;
+  min-width: 0;
   height: 4px;
   background: rgba(245,240,232,0.12);
   border-radius: 999px;
@@ -160,6 +163,223 @@ body.chat-aberto .topo {
   transition: width 0.7s cubic-bezier(0.22,1,0.36,1);
 }
 .topo-jornada.is-vazio { display: none; }
+
+/* ── Modal de detalhes da jornada (ao clicar no header) ── */
+.vm-jornada-modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.18s ease;
+  padding: 1.25rem;
+}
+.vm-jornada-modal-overlay.visible {
+  opacity: 1; pointer-events: auto;
+}
+.vm-jornada-modal {
+  background: linear-gradient(180deg, rgba(20,15,5,0.96), rgba(13,8,0,0.98));
+  border: 1px solid rgba(200,146,42,0.35);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 380px;
+  padding: 1.5rem 1.4rem 1.4rem;
+  position: relative;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.6);
+}
+.vm-jornada-modal-fechar {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(245,240,232,0.08);
+  color: rgba(245,240,232,0.75);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border: 0;
+}
+.vm-jornada-modal-fechar:hover { background: rgba(245,240,232,0.14); }
+.vm-jornada-modal-eyebrow {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ouro-claro, #F4D060);
+  margin-bottom: 0.3rem;
+  text-align: center;
+}
+.vm-jornada-modal-titulo {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--texto, #fff);
+  text-align: center;
+  margin-bottom: 1.1rem;
+  line-height: 1.2;
+}
+.vm-jornada-modal-pct-wrap {
+  margin-bottom: 1.2rem;
+  display: flex; align-items: center; gap: 0.6rem;
+}
+.vm-jornada-modal-pct-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(245,240,232,0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.vm-jornada-modal-pct-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ouro-fundo, #C8922A), var(--ouro-claro, #F4D060));
+  border-radius: 999px;
+  transition: width 0.6s cubic-bezier(0.22,1,0.36,1);
+}
+.vm-jornada-modal-pct-num {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--ouro-claro, #F4D060);
+}
+.vm-jornada-modal-passos { display: flex; flex-direction: column; gap: 0.55rem; }
+.vm-jornada-modal-passo {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 0.85rem;
+  background: rgba(245,240,232,0.04);
+  border: 1px solid rgba(245,240,232,0.1);
+  border-radius: 10px;
+}
+.vm-jornada-modal-passo.concluido {
+  background: rgba(79,140,92,0.1);
+  border-color: rgba(79,140,92,0.4);
+}
+.vm-jornada-modal-passo.atual {
+  background: rgba(248,220,150,0.08);
+  border-color: rgba(248,220,150,0.45);
+  box-shadow: 0 0 0 1px rgba(248,220,150,0.25);
+}
+.vm-jornada-modal-passo-num {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: rgba(245,240,232,0.08);
+  color: rgba(245,240,232,0.6);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+.vm-jornada-modal-passo.concluido .vm-jornada-modal-passo-num {
+  background: #4F8C5C;
+  color: white;
+}
+.vm-jornada-modal-passo.atual .vm-jornada-modal-passo-num {
+  background: linear-gradient(135deg, var(--ouro-fundo, #C8922A), var(--ouro-claro, #F4D060));
+  color: rgba(13,8,0,0.92);
+}
+.vm-jornada-modal-passo-info { flex: 1; min-width: 0; }
+.vm-jornada-modal-passo-titulo {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--texto, #fff);
+}
+.vm-jornada-modal-passo-status {
+  font-size: 0.7rem;
+  color: rgba(245,240,232,0.55);
+  margin-top: 0.1rem;
+}
+.vm-jornada-modal-passo.concluido .vm-jornada-modal-passo-status { color: #6FAA7C; }
+.vm-jornada-modal-passo.atual .vm-jornada-modal-passo-status { color: var(--ouro-claro, #F4D060); }
+
+/* ── Modal das Sementes (ao clicar no ícone do header) ── */
+.vm-sementes-modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.18s ease;
+  padding: 1.25rem;
+}
+.vm-sementes-modal-overlay.visible { opacity: 1; pointer-events: auto; }
+.vm-sementes-modal {
+  background: linear-gradient(180deg, rgba(20,15,5,0.96), rgba(13,8,0,0.98));
+  border: 1px solid rgba(200,146,42,0.35);
+  border-radius: 18px;
+  width: 100%; max-width: 380px;
+  padding: 1.6rem 1.4rem 1.4rem;
+  position: relative;
+  text-align: center;
+}
+.vm-sementes-modal-fechar {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(245,240,232,0.08);
+  color: rgba(245,240,232,0.75);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border: 0;
+}
+.vm-sementes-saldo {
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-weight: 900;
+  color: var(--ouro-claro, #F4D060);
+  line-height: 1;
+  margin-bottom: 0.2rem;
+}
+.vm-sementes-label {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: rgba(245,240,232,0.6);
+  margin-bottom: 1.3rem;
+}
+.vm-sementes-trocas { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; }
+.vm-sementes-troca {
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.85rem 1rem;
+  background: rgba(245,240,232,0.04);
+  border: 1px solid rgba(245,240,232,0.12);
+  border-radius: 12px;
+  text-align: left;
+  cursor: pointer; transition: background 0.15s, border-color 0.15s;
+}
+.vm-sementes-troca:hover { background: rgba(248,220,150,0.06); border-color: rgba(200,146,42,0.32); }
+.vm-sementes-troca.bloqueada { opacity: 0.55; cursor: not-allowed; }
+.vm-sementes-troca-custo {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--ouro-claro, #F4D060);
+  min-width: 48px;
+}
+.vm-sementes-troca-info { flex: 1; }
+.vm-sementes-troca-titulo {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--texto, #fff);
+}
+.vm-sementes-troca-sub {
+  font-size: 0.72rem;
+  color: rgba(245,240,232,0.55);
+  margin-top: 0.1rem;
+}
+.vm-sementes-info {
+  font-size: 0.72rem;
+  color: rgba(245,240,232,0.6);
+  line-height: 1.5;
+  padding: 0 0.4rem;
+}
 
 .topo-direita { display: flex; align-items: center; gap: 0.25rem; flex-shrink: 0; }
 .topo-btn { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-full); transition: background 0.15s, transform 0.12s; }
