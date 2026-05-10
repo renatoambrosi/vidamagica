@@ -1786,28 +1786,40 @@ body.teclado-aberto .bottom-nav {
    Mesma identidade visual do resultado.html — partículas
    douradas explodindo do centro, ícone pulsando, texto.
    ════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════
+   Splash de celebração da jornada (criada/atualizada)
+   Tema Vida Mágica (claro/dourado, NÃO o tema azul do teste).
+   Fases:
+     1. "Criando/Atualizando sua jornada..." com 3 pontinhos animados
+     2. Fade out → fade in "Jornada criada/atualizada com sucesso ✓"
+     3. Barra de progresso real anima 0 → percentual atual
+     4. Botão "Concluir →" aparece
+   ════════════════════════════════════════════════════ */
 .jornada-splash {
   position: fixed; inset: 0;
-  background: radial-gradient(ellipse at center, #0a4866 0%, #051929 60%, #02101a 100%);
+  background:
+    radial-gradient(ellipse at center, rgba(255,250,240,0.96) 0%, rgba(248,243,232,0.94) 60%, rgba(240,232,215,0.92) 100%),
+    url('/assets/background-theme.jpg');
+  background-size: cover;
+  background-position: center;
   display: flex; align-items: center; justify-content: center;
   z-index: 10000;
   opacity: 0;
   transition: opacity 0.4s ease;
   overflow: hidden;
+  padding: 1.5rem;
 }
 .jornada-splash.visivel { opacity: 1; }
-.jornada-splash-particulas {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
+
+/* Partículas explodindo do centro (douradas no fundo claro) */
+.jornada-splash-particulas { position: absolute; inset: 0; pointer-events: none; }
 .js-particula {
   position: absolute;
   top: 50%; left: 50%;
   width: 6px; height: 6px;
   border-radius: 50%;
-  background: radial-gradient(circle, #F8DC96 0%, #C8922A 60%, transparent 100%);
-  box-shadow: 0 0 12px #F8DC96, 0 0 24px rgba(248,220,150,0.6);
+  background: radial-gradient(circle, #C8922A 0%, #F8DC96 60%, transparent 100%);
+  box-shadow: 0 0 12px rgba(200,146,42,0.7), 0 0 24px rgba(248,220,150,0.4);
   opacity: 0;
   animation: jsExp0 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -1834,39 +1846,157 @@ body.teclado-aberto .bottom-nav {
 @keyframes jsExp6 { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-50% + 30px), calc(-50% + 280px)) scale(0.3); opacity: 0; } }
 
 .jornada-splash-conteudo {
-  text-align: center;
+  position: relative;
   z-index: 1;
-  animation: jsConteudoFade 0.6s ease 0.3s both;
-}
-@keyframes jsConteudoFade {
-  0% { opacity: 0; transform: translateY(20px); }
-  100% { opacity: 1; transform: translateY(0); }
+  text-align: center;
+  max-width: 380px;
+  width: 100%;
 }
 .jornada-splash-icone {
-  font-size: 3.5rem;
-  color: #F8DC96;
-  filter: drop-shadow(0 0 24px rgba(248,220,150,0.7));
-  margin-bottom: 1rem;
+  font-size: 3.2rem;
+  color: var(--ouro-fundo);
+  filter: drop-shadow(0 0 20px rgba(200,146,42,0.5));
+  margin-bottom: 1.1rem;
   animation: jsIconePulsa 1.6s ease-in-out infinite;
 }
 @keyframes jsIconePulsa {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 24px rgba(248,220,150,0.7)); }
-  50% { transform: scale(1.15); filter: drop-shadow(0 0 36px rgba(248,220,150,1)); }
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(200,146,42,0.5)); }
+  50% { transform: scale(1.12); filter: drop-shadow(0 0 32px rgba(200,146,42,0.8)); }
 }
 .jornada-splash-titulo {
-  font-size: 1.5rem;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--texto);
   margin-bottom: 0.5rem;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  transition: opacity 0.4s ease;
 }
+/* Pontinhos animados após o título */
+.jornada-splash-titulo .reticencias {
+  display: inline-block;
+}
+.jornada-splash-titulo .reticencias span {
+  display: inline-block;
+  animation: pontoPulsa 1.4s infinite;
+}
+.jornada-splash-titulo .reticencias span:nth-child(1) { animation-delay: 0s; }
+.jornada-splash-titulo .reticencias span:nth-child(2) { animation-delay: 0.18s; }
+.jornada-splash-titulo .reticencias span:nth-child(3) { animation-delay: 0.36s; }
+@keyframes pontoPulsa {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+
 .jornada-splash-sub {
-  font-size: 0.95rem;
-  color: rgba(255,255,255,0.8);
+  font-size: 0.9rem;
+  color: var(--texto-suave);
   max-width: 280px;
-  margin: 0 auto;
+  margin: 0 auto 1.5rem;
   line-height: 1.5;
+  transition: opacity 0.4s ease;
 }
+
+/* Estado: "transitando" entre fases — fade out do título */
+.jornada-splash.fase-transicao .jornada-splash-titulo,
+.jornada-splash.fase-transicao .jornada-splash-sub { opacity: 0; }
+
+/* Barra de progresso (Fase 3) — começa invisível, aparece com fade */
+.jornada-splash-progresso {
+  margin-top: 1.5rem;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.4s ease, max-height 0.5s ease;
+}
+.jornada-splash.fase-progresso .jornada-splash-progresso {
+  opacity: 1;
+  max-height: 200px;
+}
+.jornada-splash-prog-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+  font-family: var(--font-display);
+}
+.jornada-splash-prog-nome {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ouro-fundo);
+}
+.jornada-splash-prog-passos {
+  font-size: 0.78rem;
+  color: var(--texto-suave);
+  font-weight: 600;
+}
+.jornada-splash-prog-bar {
+  height: 8px;
+  background: rgba(200,146,42,0.12);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+.jornada-splash-prog-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--ouro-fundo), var(--ouro));
+  border-radius: 999px;
+  transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 12px rgba(200,146,42,0.45);
+}
+.jornada-splash-prog-pct {
+  text-align: right;
+  margin-top: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--ouro-fundo);
+  line-height: 1;
+}
+.jornada-splash-prog-pct .pct-num {
+  display: inline-block;
+  min-width: 2.5em;
+  text-align: right;
+}
+.jornada-splash-prog-pct .pct-sym {
+  font-size: 1rem;
+  color: var(--texto-suave);
+  font-weight: 600;
+  margin-left: 2px;
+}
+
+/* Botão "Concluir" (Fase 4) — aparece após barra animar */
+.jornada-splash-botao {
+  margin-top: 1.6rem;
+  display: inline-block;
+  padding: 0.85rem 2rem;
+  background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
+  color: white;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(200,146,42,0.32);
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.5s ease, box-shadow 0.15s;
+}
+.jornada-splash.fase-botao .jornada-splash-botao {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.jornada-splash-botao:hover { box-shadow: 0 6px 22px rgba(200,146,42,0.5); transform: translateY(-1px); }
+.jornada-splash-botao:active { transform: scale(0.97); }
 
 /* Selo no card do teste em "Seus testes" — quando esse teste é o
    que está aguardando ativação da trilha. */
