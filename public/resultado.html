@@ -693,32 +693,38 @@
        Splash "Criando/Atualizando sua jornada"
        Partículas douradas explodindo do centro.
        ════════════════════════════════════════════════════ */
+    /* ════════════════════════════════════════════════════
+       Splash de celebração da jornada (criada/atualizada)
+       Tema Vida Mágica (claro/dourado).
+       Fases: 1) Reticências  2) "com sucesso"  3) Barra  4) Botão
+       ════════════════════════════════════════════════════ */
     .jornada-splash {
       position: fixed; inset: 0;
-      background: radial-gradient(ellipse at center, #0a4866 0%, #051929 60%, #02101a 100%);
+      background:
+        radial-gradient(ellipse at center, rgba(255,250,240,0.96) 0%, rgba(248,243,232,0.94) 60%, rgba(240,232,215,0.92) 100%),
+        url('/assets/background-theme.jpg');
+      background-size: cover;
+      background-position: center;
       display: flex; align-items: center; justify-content: center;
       z-index: 10000;
       opacity: 0;
       transition: opacity 0.4s ease;
       overflow: hidden;
+      padding: 1.5rem;
     }
     .jornada-splash.visivel { opacity: 1; }
-    .jornada-splash-particulas {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-    }
+
+    .jornada-splash-particulas { position: absolute; inset: 0; pointer-events: none; }
     .js-particula {
       position: absolute;
       top: 50%; left: 50%;
       width: 6px; height: 6px;
       border-radius: 50%;
-      background: radial-gradient(circle, #F8DC96 0%, #C8922A 60%, transparent 100%);
-      box-shadow: 0 0 12px #F8DC96, 0 0 24px rgba(248,220,150,0.6);
+      background: radial-gradient(circle, #C8922A 0%, #F8DC96 60%, transparent 100%);
+      box-shadow: 0 0 12px rgba(200,146,42,0.7), 0 0 24px rgba(248,220,150,0.4);
       opacity: 0;
-      animation: jsExplodir 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: jsExp0 2.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
-    /* 7 trajetórias variadas — cada partícula nasce com uma delas */
     .js-p0 { animation-name: jsExp0; }
     .js-p1 { animation-name: jsExp1; }
     .js-p2 { animation-name: jsExp2; }
@@ -726,7 +732,6 @@
     .js-p4 { animation-name: jsExp4; }
     .js-p5 { animation-name: jsExp5; }
     .js-p6 { animation-name: jsExp6; }
-    /* delays escalonados — 4 ondas de partículas */
     .js-particula:nth-child(7n+1) { animation-delay: 0s; }
     .js-particula:nth-child(7n+2) { animation-delay: 0.08s; }
     .js-particula:nth-child(7n+3) { animation-delay: 0.16s; }
@@ -743,39 +748,144 @@
     @keyframes jsExp6 { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(calc(-50% + 30px), calc(-50% + 280px)) scale(0.3); opacity: 0; } }
 
     .jornada-splash-conteudo {
-      text-align: center;
+      position: relative;
       z-index: 1;
-      animation: jsConteudoFade 0.6s ease 0.3s both;
-    }
-    @keyframes jsConteudoFade {
-      0% { opacity: 0; transform: translateY(20px); }
-      100% { opacity: 1; transform: translateY(0); }
+      text-align: center;
+      max-width: 380px;
+      width: 100%;
     }
     .jornada-splash-icone {
-      font-size: 3.5rem;
-      color: #F8DC96;
-      filter: drop-shadow(0 0 24px rgba(248,220,150,0.7));
-      margin-bottom: 1rem;
+      font-size: 3.2rem;
+      color: #C8922A;
+      filter: drop-shadow(0 0 20px rgba(200,146,42,0.5));
+      margin-bottom: 1.1rem;
       animation: jsIconePulsa 1.6s ease-in-out infinite;
     }
     @keyframes jsIconePulsa {
-      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 24px rgba(248,220,150,0.7)); }
-      50% { transform: scale(1.15); filter: drop-shadow(0 0 36px rgba(248,220,150,1)); }
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(200,146,42,0.5)); }
+      50% { transform: scale(1.12); filter: drop-shadow(0 0 32px rgba(200,146,42,0.8)); }
     }
     .jornada-splash-titulo {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       font-weight: 800;
-      color: #fff;
+      color: #051929;
       margin-bottom: 0.5rem;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+      transition: opacity 0.4s ease;
+    }
+    .jornada-splash-titulo .reticencias { display: inline-block; }
+    .jornada-splash-titulo .reticencias span {
+      display: inline-block;
+      animation: pontoPulsa 1.4s infinite;
+    }
+    .jornada-splash-titulo .reticencias span:nth-child(1) { animation-delay: 0s; }
+    .jornada-splash-titulo .reticencias span:nth-child(2) { animation-delay: 0.18s; }
+    .jornada-splash-titulo .reticencias span:nth-child(3) { animation-delay: 0.36s; }
+    @keyframes pontoPulsa {
+      0%, 100% { opacity: 0.25; transform: translateY(0); }
+      40% { opacity: 1; transform: translateY(-3px); }
     }
     .jornada-splash-sub {
-      font-size: 0.95rem;
-      color: rgba(255,255,255,0.8);
+      font-size: 0.9rem;
+      color: rgba(5,25,41,0.65);
       max-width: 280px;
-      margin: 0 auto;
+      margin: 0 auto 1.5rem;
       line-height: 1.5;
+      transition: opacity 0.4s ease;
     }
+    .jornada-splash.fase-transicao .jornada-splash-titulo,
+    .jornada-splash.fase-transicao .jornada-splash-sub { opacity: 0; }
+
+    .jornada-splash-progresso {
+      margin-top: 1.5rem;
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: opacity 0.4s ease, max-height 0.5s ease;
+    }
+    .jornada-splash.fase-progresso .jornada-splash-progresso {
+      opacity: 1;
+      max-height: 200px;
+    }
+    .jornada-splash-prog-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.5rem;
+    }
+    .jornada-splash-prog-nome {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #C8922A;
+    }
+    .jornada-splash-prog-passos {
+      font-size: 0.78rem;
+      color: rgba(5,25,41,0.6);
+      font-weight: 600;
+    }
+    .jornada-splash-prog-bar {
+      height: 8px;
+      background: rgba(200,146,42,0.12);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .jornada-splash-prog-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #C8922A, #F8DC96);
+      border-radius: 999px;
+      transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 0 12px rgba(200,146,42,0.45);
+    }
+    .jornada-splash-prog-pct {
+      text-align: right;
+      margin-top: 0.5rem;
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: #C8922A;
+      line-height: 1;
+    }
+    .jornada-splash-prog-pct .pct-num {
+      display: inline-block;
+      min-width: 2.5em;
+      text-align: right;
+    }
+    .jornada-splash-prog-pct .pct-sym {
+      font-size: 1rem;
+      color: rgba(5,25,41,0.6);
+      font-weight: 600;
+      margin-left: 2px;
+    }
+
+    .jornada-splash-botao {
+      margin-top: 1.6rem;
+      display: inline-block;
+      padding: 0.85rem 2rem;
+      background: linear-gradient(135deg, #C8922A, #F8DC96);
+      color: white;
+      border-radius: 999px;
+      font-size: 0.92rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(200,146,42,0.32);
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      transition: opacity 0.5s ease, transform 0.5s ease, box-shadow 0.15s;
+    }
+    .jornada-splash.fase-botao .jornada-splash-botao {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .jornada-splash-botao:hover { box-shadow: 0 6px 22px rgba(200,146,42,0.5); transform: translateY(-1px); }
+    .jornada-splash-botao:active { transform: scale(0.97); }
 
   </style>
 </head>
@@ -962,7 +1072,7 @@
   //                                          Se Não, renderiza direto.
   if (dados.trilha_ativada_agora) {
     elLoading.style.display = 'none';
-    await mostrarSplashJornada({ contexto: 'criando' });
+    await mostrarSplashJornada({ contexto: 'criando', jornadaPayload: dados.jornada });
   } else if (dados.eh_reteste) {
     elLoading.style.display = 'none';
     const escolheuAtualizar = await mostrarPopupReteste();
@@ -972,7 +1082,7 @@
           method: 'POST',
         });
         if (r.ok) {
-          await mostrarSplashJornada({ contexto: 'atualizando' });
+          await mostrarSplashJornada({ contexto: 'atualizando', jornadaPayload: dados.jornada });
         }
       } catch (e) {
         console.warn('[resultado] erro ao ativar trilha:', e);
@@ -1017,38 +1127,101 @@
   }
 
   // ════════════════════════════════════════════════════
-  // Splash "Criando sua jornada" / "Atualizando sua jornada"
-  // Partículas douradas explodindo do centro. Texto pulsa.
-  // Após ~2.5s, fade-out e resolve.
-  function mostrarSplashJornada({ contexto = 'criando' } = {}) {
+  // ════════════════════════════════════════════════════
+  // Splash "Criando/Atualizando sua jornada" — 4 fases:
+  // 1. Reticências animadas
+  // 2. Fade pra "Jornada criada com sucesso"
+  // 3. Barra de progresso real anima 0 → percentual
+  // 4. Botão "Concluir →"
+  function mostrarSplashJornada({ contexto = 'criando', jornadaPayload = null } = {}) {
     return new Promise(resolve => {
+      const ehCriando = contexto === 'criando';
+      const tituloFase1 = ehCriando ? 'Criando sua jornada' : 'Atualizando sua jornada';
+      const tituloFase2 = ehCriando ? 'Jornada criada com sucesso' : 'Jornada atualizada com sucesso';
+      const subFase1 = 'Estamos preparando sua trilha personalizada';
+
+      // Calcula progresso da jornada com base no payload público
+      // (jornada vem do /api/teste/resultado — genérica, sem cruzamento
+      // de produtos comprados; aqui sempre arranca em 0% / 0 de N).
+      const totalPassos = (jornadaPayload && Array.isArray(jornadaPayload.passos))
+        ? jornadaPayload.passos.length
+        : 0;
+      const passosConcluidos = 0;  // página pública não conhece produtos da aluna
+      const percentual = 0;
+      const nomeJornada = (jornadaPayload && jornadaPayload.nome_exibicao)
+        ? jornadaPayload.nome_exibicao
+        : 'Sua jornada';
+
       const splash = document.createElement('div');
       splash.className = 'jornada-splash';
-      const titulo = contexto === 'atualizando' ? 'Atualizando sua jornada…' : 'Criando sua jornada…';
-      const subtitulo = contexto === 'atualizando' ? 'Sua trilha está sendo atualizada' : 'Sua trilha personalizada está sendo construída';
       splash.innerHTML = `
         <div class="jornada-splash-particulas">
           ${Array.from({ length: 28 }, (_, i) => `<span class="js-particula js-p${i % 7}"></span>`).join('')}
         </div>
         <div class="jornada-splash-conteudo">
           <div class="jornada-splash-icone">✦</div>
-          <h2 class="jornada-splash-titulo">${titulo}</h2>
-          <p class="jornada-splash-sub">${subtitulo}</p>
+          <h2 class="jornada-splash-titulo">${tituloFase1}<span class="reticencias"><span>.</span><span>.</span><span>.</span></span></h2>
+          <p class="jornada-splash-sub">${subFase1}</p>
+          <div class="jornada-splash-progresso">
+            <div class="jornada-splash-prog-info">
+              <span class="jornada-splash-prog-nome">${nomeJornada}</span>
+              <span class="jornada-splash-prog-passos">${passosConcluidos} de ${totalPassos}</span>
+            </div>
+            <div class="jornada-splash-prog-bar">
+              <div class="jornada-splash-prog-fill" data-prog-fill></div>
+            </div>
+            <div class="jornada-splash-prog-pct">
+              <span class="pct-num" data-prog-pct>0</span><span class="pct-sym">%</span>
+            </div>
+          </div>
+          <button class="jornada-splash-botao" data-btn-concluir>Concluir →</button>
         </div>
       `;
       document.body.appendChild(splash);
       requestAnimationFrame(() => splash.classList.add('visivel'));
 
-      // Após ~2.4s, exibe texto final, depois fade
-      setTimeout(() => {
-        splash.querySelector('.jornada-splash-titulo').textContent = 'Sua jornada foi criada!';
-        splash.querySelector('.jornada-splash-sub').textContent = 'Volte ao app depois do resultado pra vê-la';
-      }, 1800);
-
-      setTimeout(() => {
+      // Botão Concluir: fecha splash e resolve (mostra o resultado embaixo)
+      splash.querySelector('[data-btn-concluir]').addEventListener('click', () => {
         splash.classList.remove('visivel');
         setTimeout(() => { splash.remove(); resolve(); }, 400);
-      }, 2700);
+      });
+
+      // FASE 2 (em 2s): fade do título → trocar texto → fade in
+      setTimeout(() => {
+        splash.classList.add('fase-transicao');
+        setTimeout(() => {
+          const titEl = splash.querySelector('.jornada-splash-titulo');
+          const subEl = splash.querySelector('.jornada-splash-sub');
+          if (titEl) titEl.innerHTML = tituloFase2 + ' ✦';
+          if (subEl) subEl.textContent = 'Sua trilha está pronta';
+          splash.classList.remove('fase-transicao');
+        }, 400);
+      }, 2000);
+
+      // FASE 3 (em 3s): barra de progresso aparece e anima
+      setTimeout(() => {
+        splash.classList.add('fase-progresso');
+        setTimeout(() => {
+          const fillEl = splash.querySelector('[data-prog-fill]');
+          const pctEl = splash.querySelector('[data-prog-pct]');
+          if (fillEl) fillEl.style.width = percentual + '%';
+          if (pctEl) {
+            const inicio = performance.now();
+            function tick(agora) {
+              const t = Math.min(1, (agora - inicio) / 1200);
+              const ease = 1 - Math.pow(1 - t, 3);
+              pctEl.textContent = Math.round(percentual * ease);
+              if (t < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+          }
+        }, 200);
+      }, 3000);
+
+      // FASE 4 (em 4.5s): botão Concluir aparece
+      setTimeout(() => {
+        splash.classList.add('fase-botao');
+      }, 4500);
     });
   }
 
