@@ -2173,3 +2173,177 @@ body.teclado-aberto .bottom-nav {
 }
 .aviso-acao:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(200,146,42,0.4); }
 .aviso-acao:active { transform: scale(0.97); }
+
+/* ═══════════════════════════════════════════════════
+   CADEADO DE ASSINATURA (Clube Vida Mágica)
+   Aparece na barra de progresso da trilha quando aluna não tem Clube.
+   ═══════════════════════════════════════════════════ */
+.trilha-cadeado-clube {
+  width: 100%;
+  margin-top: 0.85rem;
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.7rem 0.95rem;
+  background: linear-gradient(135deg, rgba(248,220,150,0.12), rgba(200,146,42,0.06));
+  border: 1px dashed rgba(200,146,42,0.45);
+  border-radius: 12px;
+  color: var(--texto, #fff);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.18s, border-color 0.18s, transform 0.12s;
+}
+.trilha-cadeado-clube:hover {
+  background: linear-gradient(135deg, rgba(248,220,150,0.18), rgba(200,146,42,0.09));
+  border-color: rgba(200,146,42,0.65);
+}
+.trilha-cadeado-clube:active { transform: scale(0.985); }
+.trilha-cadeado-icon { font-size: 1.25rem; flex-shrink: 0; }
+.trilha-cadeado-texto { display: flex; flex-direction: column; gap: 0.1rem; }
+.trilha-cadeado-texto strong {
+  font-family: var(--font-display, Montserrat);
+  font-size: 0.82rem; font-weight: 800;
+  color: var(--ouro-claro, #F4D060);
+}
+.trilha-cadeado-texto span {
+  font-size: 0.72rem;
+  color: var(--texto-suave);
+}
+
+/* Análise automatizada da jornada (texto contextual) */
+.trilha-analise {
+  margin: 0.4rem 0 1rem;
+  padding: 0.85rem 1rem;
+  background: rgba(43,165,232,0.08);
+  border-left: 3px solid var(--sub-bright, #2ba5e8);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--texto, #fff);
+  font-style: italic;
+}
+
+/* ═══════════════════════════════════════════════════
+   MODAL CLUBE VIDA MÁGICA (compartilhado entre Home/Materiais)
+   ═══════════════════════════════════════════════════ */
+.vm-clube-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,7,59,0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+.vm-clube-modal-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+.vm-clube-modal {
+  width: 100%; max-width: 480px;
+  max-height: 90vh; overflow-y: auto;
+  background: linear-gradient(180deg, #0F1B3D, #00073B);
+  border: 1px solid rgba(200,146,42,0.35);
+  border-radius: 20px;
+  padding: 2rem 1.6rem 1.6rem;
+  position: relative;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(248,220,150,0.08);
+  transform: scale(0.95) translateY(20px);
+  transition: transform 0.35s cubic-bezier(0.22,1,0.36,1);
+}
+.vm-clube-modal-overlay.visible .vm-clube-modal {
+  transform: scale(1) translateY(0);
+}
+.vm-clube-fechar {
+  position: absolute; top: 0.85rem; right: 0.85rem;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: rgba(245,240,232,0.08);
+  border: 1px solid rgba(245,240,232,0.15);
+  color: #F5F0E8;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.18s, transform 0.12s;
+}
+.vm-clube-fechar:hover { background: rgba(245,240,232,0.15); }
+.vm-clube-fechar:active { transform: scale(0.92); }
+.vm-clube-header { text-align: center; margin-bottom: 1.4rem; }
+.vm-clube-eyebrow {
+  font-family: var(--font-display, Montserrat);
+  font-size: 0.68rem; font-weight: 800;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: #C8922A;
+  margin-bottom: 0.3rem;
+}
+.vm-clube-titulo {
+  font-family: var(--font-display, Montserrat);
+  font-size: 1.8rem; font-weight: 800;
+  color: #F4D060;
+  margin: 0 0 0.45rem;
+  text-shadow: 0 0 24px rgba(200,146,42,0.4);
+}
+.vm-clube-sub {
+  font-size: 0.9rem; color: rgba(245,240,232,0.75);
+  font-style: italic;
+  margin: 0;
+}
+.vm-clube-beneficios {
+  display: flex; flex-direction: column; gap: 0.8rem;
+  margin: 1.4rem 0 1.8rem;
+}
+.vm-clube-beneficio {
+  display: flex; align-items: flex-start; gap: 0.85rem;
+  padding: 0.65rem 0.8rem;
+  background: rgba(245,240,232,0.04);
+  border: 1px solid rgba(245,240,232,0.08);
+  border-radius: 10px;
+}
+.vm-clube-icone {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  line-height: 1.2;
+  margin-top: 0.1rem;
+}
+.vm-clube-beneficio strong {
+  display: block;
+  font-family: var(--font-display, Montserrat);
+  font-size: 0.88rem; font-weight: 700;
+  color: #F5F0E8;
+  margin-bottom: 0.15rem;
+}
+.vm-clube-beneficio span {
+  font-size: 0.78rem; line-height: 1.45;
+  color: rgba(245,240,232,0.7);
+}
+.vm-clube-cta {
+  display: block; width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #A17523, #C8922A, #F4D060);
+  color: #0F1B3D;
+  font-family: var(--font-display, Montserrat);
+  font-size: 0.95rem; font-weight: 800;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-decoration: none;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(200,146,42,0.4);
+  transition: transform 0.12s, box-shadow 0.18s;
+}
+.vm-clube-cta:hover {
+  box-shadow: 0 14px 38px rgba(200,146,42,0.55);
+  transform: translateY(-1px);
+}
+.vm-clube-cta:active { transform: scale(0.985); }
+.vm-clube-depois {
+  display: block; width: 100%;
+  margin-top: 0.55rem;
+  padding: 0.7rem;
+  background: transparent; border: none;
+  color: rgba(245,240,232,0.6);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.vm-clube-depois:hover { color: #F5F0E8; }
