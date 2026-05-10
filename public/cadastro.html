@@ -401,6 +401,11 @@
       .card { padding: 2rem 1.5rem; }
     }
   </style>
+
+  <!-- intl-tel-input — input internacional de telefone -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@23.6.1/build/css/intlTelInput.css">
+  <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@23.6.1/build/js/intlTelInput.min.js"></script>
+  <script src="/vm-tel-input.js"></script>
 </head>
 <body>
 
@@ -438,18 +443,13 @@
 
       <div class="campo">
         <label>Número do WhatsApp</label>
-        <div class="tel-wrap">
-          <div class="tel-prefix">🇧🇷 +55</div>
-          <div class="input-wrap" style="flex:1">
-            <input
-              id="input-tel"
-              type="tel"
-              inputmode="numeric"
-              placeholder="(11) 99999-9999"
-              maxlength="15"
-              autocomplete="tel"
-            >
-          </div>
+        <div class="input-wrap">
+          <input
+            id="input-tel"
+            type="tel"
+            placeholder="WhatsApp"
+            autocomplete="tel"
+          >
         </div>
       </div>
 
@@ -590,18 +590,10 @@ let timerInterval = null;
   }
 })();
 
-// ── MÁSCARA TELEFONE ─────────────────────────────────────────────────────────
-document.getElementById('input-tel').addEventListener('input', function () {
-  let v = this.value.replace(/\D/g, '').substring(0, 11);
-  if (v.length >= 7) {
-    v = `(${v.substring(0,2)}) ${v.substring(2,7)}-${v.substring(7)}`;
-  } else if (v.length >= 3) {
-    v = `(${v.substring(0,2)}) ${v.substring(2)}`;
-  } else if (v.length >= 1) {
-    v = `(${v}`;
-  }
-  this.value = v;
-});
+// ── INPUT INTERNACIONAL DE TELEFONE (intl-tel-input via VmTelInput) ───────────
+// Substitui a máscara brasileira fixa por seletor de país com bandeira.
+// Default: Brasil. Auto-detecta país por geo-IP.
+const _vmTelCadastro = VmTelInput.aplicar('#input-tel', { paisDefault: 'br' });
 
 document.getElementById('input-tel').addEventListener('keydown', function (e) {
   if (e.key === 'Enter') enviarOTP();
@@ -768,11 +760,11 @@ function voltarStep1() {
 // ── STEP 1: ENVIAR OTP ───────────────────────────────────────────────────────
 async function enviarOTP() {
   limparMsg('erro-1');
-  const rawTel = document.getElementById('input-tel').value;
-  const tel = limparTel(rawTel);
+  const tel = _vmTelCadastro ? _vmTelCadastro.canonico() : (document.getElementById('input-tel').value || '').replace(/\D/g, '');
 
-  if (tel.replace('55','').length < 10) {
-    mostrarErro('erro-1', 'Digite um número de WhatsApp válido com DDD.');
+  // Validação: VmTelInput valida por país; aqui só checa tamanho mínimo E.164
+  if (!tel || tel.length < 8 || (_vmTelCadastro && !_vmTelCadastro.valido())) {
+    mostrarErro('erro-1', 'Digite um número de WhatsApp válido.');
     return;
   }
 
@@ -788,7 +780,8 @@ async function enviarOTP() {
     const d = await r.json();
 
     if (r.ok) {
-      document.getElementById('tel-exibido').textContent = exibirTel(rawTel);
+      // Mostra o número no formato internacional pra aluna (com '+')
+      document.getElementById('tel-exibido').textContent = '+' + tel;
       irStep(2);
       iniciarTimer(60);
       setTimeout(() => document.getElementById('o0').focus(), 300);
