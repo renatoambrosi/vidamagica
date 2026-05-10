@@ -60,7 +60,7 @@ router.get('/contexto', autenticar, async (req, res) => {
     const testesRows = await poolTeste.query(
       `SELECT t.id, t.usuario_id, t.lead_id, t.versao_id, t.respostas, t.contagem,
               t.percentuais, t.perfil_dominante, t.percentual_prosperidade, t.nivel_prosperidade,
-              t.feito_em, v.nome AS versao_nome
+              t.feito_em, t.visto_em, t.ativou_trilha, t.pago, v.nome AS versao_nome
          FROM testes t
          LEFT JOIN teste_versoes v ON v.id = t.versao_id
         WHERE t.usuario_id = $1 OR t.telefone_canonico = $2
@@ -117,12 +117,24 @@ router.get('/contexto', autenticar, async (req, res) => {
       console.warn('[contexto] erro ao detectar teste em andamento:', e.message);
     }
 
-    // ── 5. Teste atual (mais recente concluído) + cálculo ───
+    // ── 5. Teste atual = mais recente com TRILHA ATIVADA ────
+    // Regra: a jornada/perfil da aluna no app só atualiza quando ela
+    // confirma "Sim, atualizar" no popup ao ver um re-teste (ou no banner
+    // "Atualizar agora"). No primeiro teste, é ativado automaticamente.
+    // Antes da ativação, o app continua mostrando o teste anterior ativo.
     let testeAtual = null;
     let jornadaAtual = null;
     let conteudoPerfil = null;
 
-    const testeMaisRecente = todosTestes[0];
+    const testeMaisRecente = todosTestes.find(t => t.ativou_trilha);
+
+    // Teste aguardando ativação: já foi visto MAS não foi ativado ainda.
+    // Ex: aluna refez o teste, viu o resultado, escolheu "Não" no popup ou
+    // ainda não decidiu — fica como pendente pra mostrar banner/aviso.
+    const testeAguardandoAtivacao = todosTestes.find(t =>
+      t.visto_em && !t.ativou_trilha && (!testeMaisRecente || t.id !== testeMaisRecente.id)
+    );
+
     if (testeMaisRecente) {
       // Recalcula com a lógica oficial (não confia 100% no que está salvo).
       const respostas = Array.isArray(testeMaisRecente.respostas)
@@ -140,12 +152,19 @@ router.get('/contexto', autenticar, async (req, res) => {
       );
       conteudoPerfil = cR.rows[0] || null;
 
-      // O teste é "pago" quando a aluna tem produto teste-subconsciente liberado
-      const pago = slugsComprados.has('teste-subconsciente');
+      // O teste é "pago" quando o registro tem pago=true OU quando a aluna
+      // tem o produto teste_subconsciente liberado em usuario_produtos.
+      // (slug com underscore — alinhado com Preços, fonte da verdade dos slugs)
+      //
+      // ⚠️ TEMPORÁRIO ⚠️ — enquanto o gateway de pagamento não está implementado,
+      // todos os testes são considerados pagos pra liberar acesso ao resultado.
+      // Quando o webhook do Kiwify entrar em produção, REMOVER `|| true`.
+      const pago = !!testeMaisRecente.pago || slugsComprados.has('teste_subconsciente') || true;
 
       testeAtual = {
         id: testeMaisRecente.id,
         feito_em: testeMaisRecente.feito_em,
+        visto_em: testeMaisRecente.visto_em,
         versao_nome: testeMaisRecente.versao_nome,
         perfil_dominante: calc.perfil_dominante,            // ex: prosperidade_nv2
         perfil_dominante_bruto: calc.perfil_dominante_bruto, // ex: prosperidade
@@ -250,13 +269,27 @@ router.get('/contexto', autenticar, async (req, res) => {
       },
       teste_atual: testeAtual,
       teste_em_andamento: testeEmAndamento,
+      // Teste aguardando ativação: aluna fez re-teste, viu o resultado, mas
+      // ainda não ativou a trilha. Frontend mostra banner "Seu novo perfil
+      // está pronto pra atualizar sua jornada. Quero atualizar →".
+      teste_aguardando_ativacao: testeAguardandoAtivacao ? {
+        id: testeAguardandoAtivacao.id,
+        feito_em: testeAguardandoAtivacao.feito_em,
+        visto_em: testeAguardandoAtivacao.visto_em,
+      } : null,
       jornada_atual: jornadaAtual,
       todos_testes: todosTestes.map(t => ({
         id: t.id,
         feito_em: t.feito_em,
+        visto_em: t.visto_em,
+        ativou_trilha: !!t.ativou_trilha,
         versao_nome: t.versao_nome,
         perfil_dominante: t.perfil_dominante,
         percentual_prosperidade: t.percentual_prosperidade,
+        // pago vem do registro OU do produto liberado em usuario_produtos.
+        // ⚠️ TEMPORÁRIO ⚠️ — `|| true` libera todos os testes enquanto o gateway
+        // de pagamento não está implementado. REMOVER quando o webhook entrar.
+        pago: !!t.pago || slugsComprados.has('teste_subconsciente') || true,
       })),
       // Enriquece com dados de Preços (fonte da verdade pra imagem/nome).
       // O JOIN com `produtos` na query cobre só campos básicos (slug/tipo);
