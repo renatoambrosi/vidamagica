@@ -180,35 +180,126 @@ function pararPlayer() { const iframe = document.getElementById('player-iframe')
 
 // ── FEED ─────────────────────────────────────────────────────
 function icone(tipo) { return {video:'🎬',texto:'📝',imagem:'🖼️',link:'🔗'}[tipo]||'✦'; }
+
+// Estado do feed (compartilhado com tesouros / página /feed)
+let feedItens = [];
+let feedItemDestaque = null;
+
 async function carregarFeed() {
   try {
     const r = await fetch(`${API}/api/feed`);
     if (!r.ok) return;
-    const itens = await r.json();
-    renderCarrossel(itens.filter(i => i.destaque));
-    renderLista(itens.filter(i => !i.destaque));
-  } catch {}
+    feedItens = await r.json();
+
+    // Apenas vídeos no feed-home (vídeos exclusivos da Su)
+    const videos = feedItens.filter(i => i.tipo === 'video' && i.ativo);
+    if (videos.length === 0) {
+      const vazio = document.getElementById('feed-home-vazio');
+      if (vazio) vazio.style.display = '';
+      return;
+    }
+
+    // Mais recente em destaque
+    const ordenados = [...videos].sort((a, b) => {
+      const da = a.publicado_em ? new Date(a.publicado_em).getTime() : 0;
+      const db = b.publicado_em ? new Date(b.publicado_em).getTime() : 0;
+      return db - da;
+    });
+    feedItemDestaque = ordenados[0];
+    renderFeedHome(feedItemDestaque);
+
+    const btnMais = document.getElementById('feed-home-ver-mais');
+    if (btnMais && ordenados.length > 1) btnMais.style.display = '';
+  } catch (e) {
+    console.warn('[feed] erro:', e);
+  }
 }
-function renderCarrossel(itens) {
-  const wrap=document.getElementById('feed-carrossel-wrap'), car=document.getElementById('feed-carrossel'), dots=document.getElementById('feed-dots');
-  if (!itens.length) { wrap.style.display='none'; return; }
-  wrap.style.display='';
-  car.innerHTML=itens.map(item=>{const thumb=item.imagem_url||thumbDeUrl(item.url),isVid=item.tipo==='video';return`<div class="feed-card-destaque" tabindex="0" data-tipo="${item.tipo}" data-url="${item.url||''}" data-titulo="${encodeURIComponent(item.titulo)}" data-subtitulo="${encodeURIComponent(item.subtitulo||'')}" data-corpo="${encodeURIComponent(item.corpo||'')}"><div class="feed-thumb">${thumb?`<img src="${thumb}" alt="${item.titulo}" loading="lazy">`:`<div class="feed-thumb-placeholder">${icone(item.tipo)}</div>`}${isVid?`<div class="feed-play-overlay"><div class="feed-play-btn"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>`:''}</div><div class="feed-card-body">${item.subtitulo?`<div class="feed-card-eyebrow">${item.subtitulo}</div>`:''}<div class="feed-card-titulo">${item.titulo}</div>${item.corpo?`<div class="feed-card-corpo">${item.corpo}</div>`:''}</div></div>`;}).join('');
-  dots.innerHTML=itens.map((_,i)=>`<div class="feed-dot${i===0?' ativo':''}" data-idx="${i}"></div>`).join('');
-  car.addEventListener('scroll',()=>{const idx=Math.round(car.scrollLeft/car.offsetWidth);dots.querySelectorAll('.feed-dot').forEach((d,i)=>d.classList.toggle('ativo',i===idx));},{passive:true});
-  dots.querySelectorAll('.feed-dot').forEach(d=>d.addEventListener('click',()=>{const c=car.children[parseInt(d.dataset.idx)];if(c)c.scrollIntoView({behavior:'smooth',block:'nearest',inline:'start'});}));
-  car.querySelectorAll('.feed-card-destaque').forEach(c=>c.addEventListener('click',()=>ativarItem(c)));
+
+function renderFeedHome(item) {
+  if (!item) return;
+  const destaqueEl = document.getElementById('feed-home-destaque');
+  const thumbEl    = document.getElementById('feed-home-thumb');
+  const tituloEl   = document.getElementById('feed-home-titulo');
+  const playEl     = document.getElementById('feed-home-play');
+  const infoEl     = document.getElementById('feed-home-info');
+  const cadeadoEl  = document.getElementById('feed-home-cadeado');
+
+  const thumb = item.imagem_url || thumbDeUrl(item.url);
+  if (thumbEl) thumbEl.src = thumb || '';
+  if (tituloEl) tituloEl.textContent = item.titulo || '';
+  if (destaqueEl) destaqueEl.style.display = '';
+
+  // Sem Clube → cadeado aparece
+  const temClube = !!(window.__vm_tem_clube);
+  if (cadeadoEl) cadeadoEl.style.display = temClube ? 'none' : '';
+
+  const acaoConteudo = () => {
+    if (temClube) {
+      try { abrirPlayer({ titulo: item.titulo, subtitulo: item.subtitulo, corpo: item.corpo, url: item.url }); }
+      catch { window.open(item.url, '_blank', 'noopener'); }
+    } else {
+      try { window.app && window.app.abrirModalClube && window.app.abrirModalClube(); } catch {}
+    }
+  };
+
+  if (playEl)    playEl.onclick = acaoConteudo;
+  if (cadeadoEl) cadeadoEl.onclick = acaoConteudo;
+  if (thumbEl)   thumbEl.onclick = acaoConteudo;
+
+  if (infoEl) {
+    infoEl.onclick = (ev) => {
+      ev.stopPropagation();
+      abrirModalInfoContextual('feed_video');
+    };
+  }
 }
-function renderLista(itens) {
-  const lista=document.getElementById('feed-lista');if(!lista)return;
-  lista.innerHTML=itens.map(item=>{const thumb=item.imagem_url||thumbDeUrl(item.url),isVid=item.tipo==='video';return`<div class="feed-card-lista" tabindex="0" data-tipo="${item.tipo}" data-url="${item.url||''}" data-titulo="${encodeURIComponent(item.titulo)}" data-subtitulo="${encodeURIComponent(item.subtitulo||'')}" data-corpo="${encodeURIComponent(item.corpo||'')}"><div class="feed-lista-thumb">${thumb?`<img src="${thumb}" alt="${item.titulo}" loading="lazy">`:`<div class="feed-lista-thumb-placeholder">${icone(item.tipo)}</div>`}${isVid?`<div class="feed-lista-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>`:''}</div><div class="feed-lista-info">${item.subtitulo?`<div class="feed-lista-eyebrow">${item.subtitulo}</div>`:''}<div class="feed-lista-titulo">${item.titulo}</div>${item.corpo?`<div class="feed-lista-corpo">${item.corpo}</div>`:''}</div></div>`;}).join('');
-  lista.querySelectorAll('.feed-card-lista').forEach(c=>c.addEventListener('click',()=>ativarItem(c)));
-}
-function ativarItem(card) {
-  const tipo=card.dataset.tipo,url=card.dataset.url,titulo=decodeURIComponent(card.dataset.titulo),subtitulo=decodeURIComponent(card.dataset.subtitulo),corpo=decodeURIComponent(card.dataset.corpo);
-  if(tipo==='video'&&url) abrirPlayer({titulo,subtitulo,corpo,url});
-  else if((tipo==='link'||tipo==='imagem')&&url) window.open(url,'_blank','noopener');
-  else abrirPlayer({titulo,subtitulo,corpo,url:null});
+
+// Modal "i" de informação contextual (texto varia por seção do app)
+function abrirModalInfoContextual(secao) {
+  const textos = {
+    feed_video: {
+      titulo: 'Vídeos exclusivos toda semana',
+      texto: 'A Suellen grava vídeos especiais toda semana, com técnicas práticas que não estão em lugar nenhum — só pra quem é do Clube Vida Mágica.',
+    },
+    jornada: {
+      titulo: 'Sua jornada completa',
+      texto: 'Assinando o Clube Vida Mágica, você tem acesso às 3 jornadas — Conhecer e Despertar, Vida Mágica e Multiplicando a Vida Mágica — com acompanhamento personalizado a cada passo.',
+    },
+    tesouros: {
+      titulo: 'Tesouros da Su',
+      texto: 'Tesouros diários da Suellen — direcionamentos, insights e lembretes no momento certo. Cada tesouro que você abre te dá 1 semente.',
+    },
+  };
+  const t = textos[secao] || textos.feed_video;
+
+  let ov = document.getElementById('vm-info-modal-overlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'vm-info-modal-overlay';
+    ov.className = 'vm-clube-modal-overlay';
+    ov.innerHTML = '\
+      <div class="vm-clube-modal" role="dialog" aria-modal="true">\
+        <button type="button" class="vm-clube-fechar" aria-label="Fechar">\
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>\
+        </button>\
+        <div class="vm-clube-header">\
+          <div class="vm-clube-eyebrow" id="vm-info-eyebrow">INFORMAÇÃO</div>\
+          <h2 class="vm-clube-titulo" id="vm-info-titulo"></h2>\
+          <p class="vm-clube-sub" id="vm-info-texto" style="font-style:normal"></p>\
+        </div>\
+        <a href="https://www.vidamagica.com.br/assinar" target="_blank" rel="noopener" class="vm-clube-cta">Assinar Vida Mágica</a>\
+        <button type="button" class="vm-clube-depois">Agora não</button>\
+      </div>';
+    document.body.appendChild(ov);
+    const fechar = () => { ov.classList.remove('visible'); document.body.style.overflow = ''; };
+    ov.querySelector('.vm-clube-fechar').addEventListener('click', fechar);
+    ov.querySelector('.vm-clube-depois').addEventListener('click', fechar);
+    ov.addEventListener('click', (e) => { if (e.target === ov) fechar(); });
+  }
+  ov.querySelector('#vm-info-titulo').textContent = t.titulo;
+  ov.querySelector('#vm-info-texto').textContent = t.texto;
+  ov.classList.add('visible');
+  document.body.style.overflow = 'hidden';
 }
 
 // ── TESOURO ──────────────────────────────────────────────────
@@ -1771,6 +1862,12 @@ function hidratarHome(ctx) {
   const badge = document.getElementById('badge-sementes');
   if (badge) badge.textContent = ctx.aluna.sementes || 0;
 
+  // ── Tem clube? (lido globalmente pelo feed e modais) ──
+  window.__vm_tem_clube = !!ctx.tem_clube;
+
+  // ── Barra de progresso da jornada no header ──
+  renderHeaderJornada(ctx);
+
   // ── Trilha (substitui a trilha hardcoded) ──
   renderTrilhaJornada(ctx);
 
@@ -1788,6 +1885,31 @@ function hidratarHome(ctx) {
 
   // ── Aba Materiais ──
   renderMateriais(ctx);
+}
+
+// ── BARRA DE PROGRESSO DA JORNADA NO HEADER ──
+function renderHeaderJornada(ctx) {
+  const wrap = document.getElementById('topo-jornada');
+  const nomeEl = document.getElementById('topo-jornada-nome');
+  const pctEl  = document.getElementById('topo-jornada-pct');
+  const fillEl = document.getElementById('topo-jornada-fill');
+  if (!wrap || !nomeEl || !pctEl || !fillEl) return;
+
+  // Preferir jornada_vigente (novo); fallback pra jornada_atual (legado)
+  const j = ctx.jornada_vigente || ctx.jornada_atual;
+  if (!j) {
+    wrap.classList.add('is-vazio');
+    return;
+  }
+  wrap.classList.remove('is-vazio');
+
+  const nome = j.nome || `Jornada ${j.numero || ''}`;
+  const pct  = Math.max(0, Math.min(100, Math.round(j.progresso_percentual || j.progresso || 0)));
+
+  nomeEl.textContent = nome;
+  pctEl.textContent  = pct + '%';
+  // animação aplica via CSS transition
+  requestAnimationFrame(() => { fillEl.style.width = pct + '%'; });
 }
 
 // ── BANNER "Seu novo perfil está pronto pra atualizar sua jornada" ──
