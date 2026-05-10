@@ -104,8 +104,8 @@ function calcularResultado(respostas) {
   // ── Subdivisão de Prosperidade em nv1/2/3 ──
   // Se a dominante for Prosperidade, dividimos pelo percentual:
   //   <= 50%  → prosperidade_nv1
-  //   <= 80%  → prosperidade_nv2
-  //   >  80%  → prosperidade_nv3
+  //   < 75%   → prosperidade_nv2
+  //   >= 75%  → prosperidade_nv3
   // Usamos o percentual INTERNO (com decimais) pra essa decisão.
   let perfilDominante = dominanteBruto;
   let nivelProsperidade = 0;
@@ -113,7 +113,7 @@ function calcularResultado(respostas) {
 
   if (dominanteBruto === 'prosperidade') {
     if (percProsp <= 50)      { perfilDominante = 'prosperidade_nv1'; nivelProsperidade = 1; }
-    else if (percProsp <= 80) { perfilDominante = 'prosperidade_nv2'; nivelProsperidade = 2; }
+    else if (percProsp < 75)  { perfilDominante = 'prosperidade_nv2'; nivelProsperidade = 2; }
     else                      { perfilDominante = 'prosperidade_nv3'; nivelProsperidade = 3; }
   }
 
