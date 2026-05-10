@@ -595,6 +595,11 @@
     }
     @media (max-width: 380px) { .hero-logo-wrap { max-width: 300px; } }
   </style>
+
+  <!-- intl-tel-input — input internacional de telefone com bandeira do país -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@23.6.1/build/css/intlTelInput.css">
+  <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@23.6.1/build/js/intlTelInput.min.js"></script>
+  <script src="/vm-tel-input.js"></script>
 </head>
 <body>
 
@@ -1234,18 +1239,19 @@
       const avisoEnc   = document.getElementById('aviso-encontrou');
       const btnEnviar  = document.getElementById('btn-comecar');
 
-      // ── Máscara de telefone (DD) DDDDD-DDDD ──
+      // ── Telefone internacional com bandeira (intl-tel-input via VmTelInput) ──
+      // O helper trata seleção de país, validação por país e canônico E.164.
+      // Default: Brasil. Auto-detecta país via geo-IP (ipapi.co).
+      const tel = VmTelInput.aplicar(inputTel, { paisDefault: 'br' });
+
+      // Mantém uma função "formatarTel" como fallback caso outro código a chame.
+      // O input visual passa a ser controlado pelo intl-tel-input.
       function formatarTel(valor){
-        const num = (valor || '').replace(/\D/g, '').slice(0, 11);
-        if (num.length === 0) return '';
-        if (num.length <= 2)  return `(${num}`;
-        if (num.length <= 6)  return `(${num.slice(0,2)}) ${num.slice(2)}`;
-        if (num.length <= 10) return `(${num.slice(0,2)}) ${num.slice(2,6)}-${num.slice(6)}`;
-        return `(${num.slice(0,2)}) ${num.slice(2,7)}-${num.slice(7)}`;
+        return String(valor || '');
       }
 
       function telDigitos(){
-        return inputTel.value.replace(/\D/g, '');
+        return tel ? tel.canonico() : (inputTel.value || '').replace(/\D/g, '');
       }
 
       // ── Validações ──
@@ -1253,8 +1259,7 @@
         return inputNome.value.trim().length >= 2;
       }
       function telefoneValido(){
-        const d = telDigitos();
-        return d.length === 10 || d.length === 11;
+        return tel ? tel.valido() : false;
       }
       function atualizarBotao(){
         btnEnviar.disabled = !(nomeValido() && telefoneValido() && inputAceite.checked);
@@ -1308,11 +1313,16 @@
 
           // Preenche os campos
           inputNome.value = data.nome;
-          // /api/auth/me retorna telefone_formatado (já formatado: "(11) 99999-9999")
-          // ou telefone_canonico (cru: "5511999999999"). Usa o que vier.
-          const telBruto = data.telefone_formatado || data.telefone_canonico || '';
-          if (telBruto) {
-            inputTel.value = formatarTel(telBruto.replace(/\D/g, ''));
+          // O canônico pode vir como '5562983086320' (sem '+') ou '(11) 99999-9999'.
+          // VmTelInput.preencher entende qualquer formato — limpa e seleciona o
+          // país certo automaticamente baseado no DDI.
+          const telBruto = (data.telefone_formatado || data.telefone_canonico || '')
+            .replace(/\D/g, '');
+          if (telBruto && tel) {
+            tel.preencher(telBruto);
+            // Telefone bloqueado: a aluna logada não pode trocar o número
+            // (vinculação ao usuário cadastrado). Pra trocar, vai pelo perfil.
+            tel.bloquear();
           }
           // Marca aceite (aluna já aceitou ao cadastrar)
           inputAceite.checked = true;
@@ -1336,11 +1346,15 @@
         }
       });
 
-      // ── Telefone: máscara + validação + auto-preenchimento ──
+      // ── Telefone: validação + auto-preenchimento ──
+      // (Formatação visual é responsabilidade do intl-tel-input.)
       inputTel.addEventListener('input', () => {
-        inputTel.value = formatarTel(inputTel.value);
         inputTel.classList.remove('is-erro');
         erroTel.classList.remove('is-visivel');
+        atualizarBotao();
+      });
+      inputTel.addEventListener('countrychange', () => {
+        // Trocar país pode mudar a validade — re-avalia o botão
         atualizarBotao();
       });
 
@@ -1355,14 +1369,12 @@
           const data = await r.json();
           if (data && data.encontrado && data.nome && !inputNome.value.trim()) {
             inputNome.value = data.nome;
-            // Mostra aviso amigável só na primeira vez
             const primeiroNome = data.nome.split(' ')[0];
             avisoEnc.querySelector('span').textContent = `Que bom te ver de novo, ${primeiroNome}!`;
             avisoEnc.classList.add('is-visivel');
             atualizarBotao();
           }
         } catch (err) {
-          // Silencioso — busca é só conveniência
           console.warn('Não foi possível buscar usuário:', err);
         }
       });
