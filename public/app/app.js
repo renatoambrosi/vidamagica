@@ -441,6 +441,19 @@ function renderPerfil() {
 // ════════════════════════════════════════════════════════════
 
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Formata "10/05/2026 às 14h01" a partir de ISO date
+function formatarDataHora(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    const dt = d.toLocaleDateString('pt-BR');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${dt} às ${hh}h${mm}`;
+  } catch { return '—'; }
+}
 function horaFmt(data) { return new Date(data).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
 function fmtTempo(s) { return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
 
@@ -2132,30 +2145,29 @@ function renderMateriais(ctx) {
 
   blocos.push('<div class="mat-secao"><div class="mat-secao-titulo">Em destaque</div>' + destaqueCards.join('') + '</div>');
 
-  // ── 2. SEUS TESTES — carrossel ou lista (preferência salva) ──
-  const blocoTestes = [];
+  // ── 2. SEUS TESTES — subseções "Em andamento" e "Concluídos" ──
+  // Em andamento: linha de teste_respostas existe sem teste finalizado.
+  //   → Card destacado em dourado/atenção. Botões "Continuar" e "Apagar".
+  // Concluídos: testes finalizados (pagos OU aguardando pagamento).
+  //   → Cards normais com badge verde "✓ Concluído". Mais recente em cima.
+  //   → Se for o teste mais recente E ainda não ativou trilha, mostra
+  //     também botão "Atualizar Trilha" em dourado.
+  // Card "+ Fazer novo" sempre por último.
 
-  // Banner de teste em andamento (separado)
-  if (ctx.teste_em_andamento) {
-    const tea = ctx.teste_em_andamento;
-    blocoTestes.push(
-      `<div class="mat-card mat-card-andamento" onclick="window.location.href='/teste?from=app'">
-        <div class="mat-card-eyebrow mat-card-eyebrow-andamento">Em andamento</div>
-        <div class="mat-card-titulo">Continuar Teste do Subconsciente</div>
-        <div class="mat-card-desc">Pergunta ${tea.respondidas} de ${tea.total} respondidas</div>
-      </div>`
-    );
-  }
+  // Lista de testes feitos, ordenada do mais recente pro mais antigo
+  const testesFeitosRaw = Array.isArray(ctx.todos_testes) ? ctx.todos_testes : [];
+  const testesFeitos = [...testesFeitosRaw].sort((a, b) => {
+    const da = a.feito_em ? new Date(a.feito_em).getTime() : 0;
+    const db = b.feito_em ? new Date(b.feito_em).getTime() : 0;
+    return db - da;
+  });
 
-  // Lista de testes feitos
-  const testesFeitos = Array.isArray(ctx.todos_testes) ? ctx.todos_testes : [];
+  const temAndamento = !!ctx.teste_em_andamento;
 
-  if (testesFeitos.length > 0 || blocoTestes.length > 0) {
-    // Carrossel ou lista? Lê preferência salva
+  if (testesFeitos.length > 0 || temAndamento) {
+    // Carrossel/lista (toggle só aparece se tiver concluídos pra mostrar)
     const modoSalvo = (() => { try { return localStorage.getItem('vm_testes_modo') || 'carrossel'; } catch { return 'carrossel'; } })();
-
-    // Toggle no header da seção
-    const toggleHtml = testesFeitos.length > 0
+    const toggleHtml = testesFeitos.length > 1
       ? `<div class="mat-secao-toggle">
           <button class="mat-toggle-btn ${modoSalvo === 'carrossel' ? 'ativo' : ''}" data-modo="carrossel" aria-label="Visualização em carrossel">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="6" height="12" rx="1"/><rect x="11" y="6" width="6" height="12" rx="1"/><rect x="19" y="6" width="2" height="12" rx="1" opacity="0.5"/></svg>
@@ -2166,54 +2178,100 @@ function renderMateriais(ctx) {
         </div>`
       : '';
 
-    // ID do teste aguardando ativação (se houver) — pra destacar no card
+    // ID do teste aguardando ativação (se houver) — pra destacar
     const idAguardando = ctx.teste_aguardando_ativacao ? ctx.teste_aguardando_ativacao.id : null;
+    // Pra "Atualizar Trilha" só no MAIS RECENTE: o primeiro teste pago da lista
+    // que esteja aguardando ativação (que é justamente o idAguardando).
+    // Se idAguardando não bater com o primeiro teste pago, ninguém recebe o botão.
 
-    // Cards dos testes feitos (clicar abre o resultado direto)
-    const testesCards = testesFeitos.map(t => {
-      const dataTxt = t.feito_em ? new Date(t.feito_em).toLocaleDateString('pt-BR') : '—';
-      // pago vem por teste (backend já calcula via t.pago OR usuario_produtos)
-      const pago = !!t.pago;
-      const status = pago ? 'pago' : 'bloqueado';
-      const ehAguardando = idAguardando && t.id === idAguardando;
-      const classeExtra = ehAguardando ? ' teste-mini-aguardando-ativacao' : '';
-      const seloAtualizar = ehAguardando
-        ? '<div class="teste-mini-selo-atualizar">Atualizar trilha</div>'
-        : '';
-      const onclick = pago
-        ? `onclick="window.open('/resultado/${t.id}', '_blank')"`
-        : `onclick="alert('Aguardando liberação do resultado.')"`;
-      const statusBadge = pago
-        ? '<div class="teste-mini-status teste-mini-pago">Ver resultado →</div>'
-        : '<div class="teste-mini-status teste-mini-bloqueado">🔒 Liberação pendente</div>';
-      return `<div class="teste-mini-card teste-mini-${status}${classeExtra}" ${onclick}>
-        ${seloAtualizar}
-        <div class="teste-mini-eyebrow">Teste do Subconsciente</div>
-        <div class="teste-mini-data">${dataTxt}</div>
-        ${statusBadge}
-      </div>`;
-    }).join('');
+    const partes = [];
+    partes.push('<div class="mat-secao"><div class="mat-secao-titulo-row"><div class="mat-secao-titulo">Seus testes</div>' + toggleHtml + '</div>');
 
-    // Card final "+ Fazer novo" — sempre como último item, em ambos modos
-    const fazerNovoCard = `<div class="teste-mini-card teste-mini-novo" onclick="window.location.href='/teste?from=app'">
-      <div class="teste-mini-novo-icone">+</div>
-      <div class="teste-mini-novo-label">Fazer novo</div>
-    </div>`;
-
-    if (testesFeitos.length > 0) {
-      blocoTestes.push(
-        `<div class="testes-wrapper testes-modo-${modoSalvo}" id="testes-wrapper">
-          ${testesCards}
-          ${fazerNovoCard}
+    // ── Subseção: Em andamento ──
+    if (temAndamento) {
+      const tea = ctx.teste_em_andamento;
+      const dataTxt = tea.iniciado_em
+        ? formatarDataHora(tea.iniciado_em)
+        : '—';
+      partes.push(
+        `<div class="testes-subsecao testes-subsecao-andamento">
+          <div class="testes-subsecao-titulo testes-subsecao-titulo-andamento">
+            <span class="testes-subsecao-icone">⚠</span> Em andamento
+          </div>
+          <div class="teste-mini-card teste-mini-em-andamento">
+            <div class="teste-mini-eyebrow">Teste do Subconsciente</div>
+            <div class="teste-mini-data">Iniciado em ${dataTxt}</div>
+            <div class="teste-mini-andamento-info">Pergunta ${tea.respondidas || 0} de ${tea.total || 15} respondidas</div>
+            <div class="teste-mini-acoes-row">
+              <button class="teste-mini-btn teste-mini-btn-continuar" onclick="window.location.href='/teste?from=app'">Continuar →</button>
+              <button class="teste-mini-btn teste-mini-btn-apagar" onclick="window.app.apagarTesteEmAndamento(event)">Apagar</button>
+            </div>
+          </div>
         </div>`
       );
     }
 
-    blocos.push(
-      '<div class="mat-secao"><div class="mat-secao-titulo-row"><div class="mat-secao-titulo">Seus testes</div>' + toggleHtml + '</div>'
-      + blocoTestes.join('')
-      + '</div>'
-    );
+    // ── Subseção: Concluídos ──
+    if (testesFeitos.length > 0) {
+      const testesCards = testesFeitos.map((t, idx) => {
+        const dataTxt = t.feito_em ? formatarDataHora(t.feito_em) : '—';
+        const pago = !!t.pago;
+        const status = pago ? 'pago' : 'bloqueado';
+        const ehAguardando = !!idAguardando && t.id === idAguardando;
+        const classeExtra = ehAguardando ? ' teste-mini-aguardando-ativacao' : '';
+        const onclick = pago
+          ? `onclick="window.open('/resultado/${t.id}', '_blank')"`
+          : `onclick="alert('Aguardando liberação do resultado.')"`;
+
+        // Linha de ações: "Ver resultado" sempre + "Atualizar Trilha" se aguardando
+        const acoesRow = pago
+          ? `<div class="teste-mini-acoes-row">
+              <span class="teste-mini-link teste-mini-link-resultado">Ver resultado →</span>
+              ${ehAguardando ? '<button class="teste-mini-link teste-mini-link-atualizar" onclick="event.stopPropagation();window.app.ativarTrilhaDoCard(\'' + t.id + '\')">Atualizar Trilha</button>' : ''}
+            </div>`
+          : '<div class="teste-mini-status teste-mini-bloqueado">🔒 Liberação pendente</div>';
+
+        return `<div class="teste-mini-card teste-mini-${status}${classeExtra}" ${onclick}>
+          <div class="teste-mini-badge-concluido">✓ Concluído</div>
+          <div class="teste-mini-eyebrow">Teste do Subconsciente</div>
+          <div class="teste-mini-data">${dataTxt}</div>
+          ${acoesRow}
+        </div>`;
+      }).join('');
+
+      // Card final "+ Fazer novo" — sempre como último item
+      const fazerNovoCard = `<div class="teste-mini-card teste-mini-novo" onclick="window.location.href='/teste?from=app'">
+        <div class="teste-mini-novo-icone">+</div>
+        <div class="teste-mini-novo-label">Fazer novo</div>
+      </div>`;
+
+      partes.push(
+        `<div class="testes-subsecao testes-subsecao-concluidos">
+          <div class="testes-subsecao-titulo testes-subsecao-titulo-concluidos">
+            <span class="testes-subsecao-icone">✓</span> Concluídos
+          </div>
+          <div class="testes-wrapper testes-modo-${modoSalvo}" id="testes-wrapper">
+            ${testesCards}
+            ${fazerNovoCard}
+          </div>
+        </div>`
+      );
+    } else if (temAndamento) {
+      // Tem só teste em andamento, sem concluídos — mostra "Fazer novo" sozinho
+      partes.push(
+        `<div class="testes-subsecao testes-subsecao-concluidos">
+          <div class="testes-wrapper testes-modo-lista">
+            <div class="teste-mini-card teste-mini-novo" onclick="window.location.href='/teste?from=app'">
+              <div class="teste-mini-novo-icone">+</div>
+              <div class="teste-mini-novo-label">Fazer novo</div>
+            </div>
+          </div>
+        </div>`
+      );
+    }
+
+    partes.push('</div>');
+    blocos.push(partes.join(''));
   }
 
   // ── 3. ADQUIRIDOS — produtos comprados, exceto recompra (já em destaque) ──
@@ -2450,6 +2508,43 @@ function renderTrilhaJornada(ctx) {
     '</div>' +
     '<ol class="trilha-lista">' + passosHtml + '</ol>';
 }
+
+// ── window.app: API exposta pra cliques inline em HTML gerado dinamicamente ──
+// (botões dentro de cards de Materiais que precisam chamar funções deste módulo)
+window.app = {
+  // Apaga teste em andamento (DELETE em teste_respostas)
+  apagarTesteEmAndamento(ev) {
+    if (ev && typeof ev.stopPropagation === 'function') ev.stopPropagation();
+    if (!confirm('Apagar suas respostas? Não pode desfazer.')) return;
+    fetch(`${API}/api/teste/em-andamento`, {
+      method: 'DELETE',
+      headers: authHeader(),
+    })
+      .then(r => {
+        if (!r.ok) throw new Error('Falha ao apagar');
+        return r.json().catch(() => ({}));
+      })
+      .then(() => {
+        // Recarrega contexto e re-renderiza Materiais
+        carregarContexto().then(c => { if (c) hidratarHome(c); });
+      })
+      .catch(err => {
+        alert('Não consegui apagar agora. Tente de novo daqui a pouco.');
+        console.error('apagarTesteEmAndamento:', err);
+      });
+  },
+
+  // Ativa trilha (re-teste): roda o popup → splash → recarrega
+  async ativarTrilhaDoCard(testeId) {
+    if (!testeId) return;
+    if (!confirm('Atualizar sua trilha de conhecimento agora?\nEssa escolha não pode ser desfeita.')) return;
+    try {
+      await ativarTrilhaComSplash(testeId);
+    } catch (e) {
+      console.error('ativarTrilhaDoCard:', e);
+    }
+  },
+};
 
 // ── INIT ──
 (async function init() {
