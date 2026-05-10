@@ -140,7 +140,7 @@ document.querySelectorAll('[data-close]').forEach(btn => {
 });
 document.addEventListener('keydown', e => { if (e.key==='Escape') document.querySelectorAll('.modal[aria-hidden="false"]').forEach(m => fecharModal(m)); });
 
-document.getElementById('btn-avisos')?.addEventListener('click', () => { renderAvisos(); abrirModal('modal-avisos'); setTimeout(() => { AVISOS.forEach(a => marcarLido(a.id)); atualizarBadgeAvisos(); }, 2000); });
+document.getElementById('btn-avisos')?.addEventListener('click', () => { renderAvisos(); abrirModal('modal-avisos'); setTimeout(() => { AVISOS().forEach(a => marcarLido(a.id)); atualizarBadgeAvisos(); }, 2000); });
 document.getElementById('btn-sementes')?.addEventListener('click', () => irPara('perfil'));
 document.getElementById('menu-testes')?.addEventListener('click',  () => { carregarTestes(); abrirModal('modal-testes'); });
 document.getElementById('menu-logout')?.addEventListener('click',  async () => {
@@ -257,21 +257,80 @@ document.getElementById('modal-tesouro-resgatar')?.addEventListener('click', asy
 
 // ── AVISOS ───────────────────────────────────────────────────
 const AVISOS_KEY = 'vm_avisos_lidos';
-const AVISOS = [
+const AVISOS_BASE = [
   {id:'av1',tag:'Tesouro da Su',titulo:'Seu presente chegou! ✨',desc:'Um novo tesouro está disponível para você hoje.',data:'Hoje'},
   {id:'av2',tag:'Comunidade',titulo:'Novo conteúdo disponível',desc:'A Suellen Seragi publicou um conteúdo exclusivo para membros.',data:'1 dia'},
 ];
+// Avisos dinâmicos (vindos do contexto da aluna). São injetados antes dos
+// avisos base porque costumam ser mais urgentes/personalizados.
+let AVISOS_DINAMICOS = [];
+function AVISOS() { return [...AVISOS_DINAMICOS, ...AVISOS_BASE]; }
+
 function getLidos() { try { return JSON.parse(localStorage.getItem(AVISOS_KEY)||'[]'); } catch { return []; } }
 function marcarLido(id) { const l=getLidos(); if(!l.includes(id)){l.push(id);localStorage.setItem(AVISOS_KEY,JSON.stringify(l));} }
 function atualizarBadgeAvisos() {
   const badge = document.getElementById('ponto-avisos');
-  if (badge) AVISOS.some(a=>!getLidos().includes(a.id)) ? badge.classList.add('visivel') : badge.classList.remove('visivel');
+  if (badge) AVISOS().some(a=>!getLidos().includes(a.id)) ? badge.classList.add('visivel') : badge.classList.remove('visivel');
 }
 function renderAvisos() {
   const corpo = document.getElementById('avisos-corpo'); if (!corpo) return;
   const lidos = getLidos();
-  corpo.innerHTML = AVISOS.map(a=>`<div class="aviso-item${!lidos.includes(a.id)?' nao-lido':''}" data-id="${a.id}"><div class="aviso-dot"></div><div class="aviso-corpo"><div class="aviso-tag">${a.tag}</div><div class="aviso-titulo">${a.titulo}</div><div class="aviso-desc">${a.desc}</div><div class="aviso-data">${a.data}</div></div></div>`).join('');
-  corpo.querySelectorAll('.aviso-item').forEach(el=>el.addEventListener('click',()=>{marcarLido(el.dataset.id);el.classList.remove('nao-lido');atualizarBadgeAvisos();}));
+  corpo.innerHTML = AVISOS().map(a => {
+    const acaoHtml = a.acao
+      ? `<button class="aviso-acao" data-acao="${escHtml(a.acao.tipo)}" data-payload="${escHtml(a.acao.payload || '')}">${escHtml(a.acao.label)}</button>`
+      : '';
+    return `<div class="aviso-item${!lidos.includes(a.id)?' nao-lido':''}" data-id="${a.id}">
+      <div class="aviso-dot"></div>
+      <div class="aviso-corpo">
+        <div class="aviso-tag">${a.tag}</div>
+        <div class="aviso-titulo">${a.titulo}</div>
+        <div class="aviso-desc">${a.desc}</div>
+        ${acaoHtml}
+        <div class="aviso-data">${a.data}</div>
+      </div>
+    </div>`;
+  }).join('');
+  // Click no item: marca lido
+  corpo.querySelectorAll('.aviso-item').forEach(el => {
+    el.addEventListener('click', (e) => {
+      // Não marca lido se clicou no botão de ação (deixa o handler dele agir)
+      if (e.target.classList.contains('aviso-acao')) return;
+      marcarLido(el.dataset.id);
+      el.classList.remove('nao-lido');
+      atualizarBadgeAvisos();
+    });
+  });
+  // Click no botão de ação
+  corpo.querySelectorAll('.aviso-acao').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const tipo = btn.dataset.acao;
+      const payload = btn.dataset.payload;
+      if (tipo === 'ativar-trilha' && payload) {
+        // Fecha modal de avisos antes da splash
+        const modal = document.getElementById('modal-avisos');
+        if (modal) modal.setAttribute('aria-hidden', 'true');
+        await ativarTrilhaComSplash(payload);
+      }
+    });
+  });
+}
+
+// Atualiza avisos dinâmicos com base no contexto da aluna.
+// Chamado no hidratarHome após /api/app/contexto.
+function sincronizarAvisosComContexto(ctx) {
+  AVISOS_DINAMICOS = [];
+  if (ctx && ctx.teste_aguardando_ativacao) {
+    AVISOS_DINAMICOS.push({
+      id: 'av-trilha-' + ctx.teste_aguardando_ativacao.id,
+      tag: 'Sua jornada',
+      titulo: 'Atualização disponível',
+      desc: 'Seu novo perfil está pronto pra atualizar sua jornada.',
+      data: 'Agora',
+      acao: { tipo: 'ativar-trilha', payload: ctx.teste_aguardando_ativacao.id, label: 'Quero atualizar →' },
+    });
+  }
+  atualizarBadgeAvisos();
 }
 
 // ── TESTES ───────────────────────────────────────────────────
@@ -1684,8 +1743,104 @@ function hidratarHome(ctx) {
   // ── Banner de teste em andamento ──
   renderBannerTesteEmAndamento(ctx);
 
+  // ── Banner de atualização de trilha disponível ──
+  renderBannerAtualizarTrilha(ctx);
+
+  // ── Sincroniza avisos dinâmicos (badge do sino + aviso na lista) ──
+  sincronizarAvisosComContexto(ctx);
+
   // ── Aba Materiais ──
   renderMateriais(ctx);
+}
+
+// ── BANNER "Seu novo perfil está pronto pra atualizar sua jornada" ──
+// Aparece quando aluna refez teste, viu o resultado, mas escolheu "Não" no
+// popup (ou ainda não decidiu). Também aparece em Avisos.
+function renderBannerAtualizarTrilha(ctx) {
+  const wrap = document.getElementById('view-home');
+  if (!wrap) return;
+  // Remove banner antigo (se existir) — re-render seguro
+  const antigo = document.getElementById('banner-atualizar-trilha');
+  if (antigo) antigo.remove();
+
+  if (!ctx.teste_aguardando_ativacao) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'banner-atualizar-trilha';
+  banner.className = 'banner-atualizar-trilha';
+  banner.innerHTML = `
+    <div class="banner-atualizar-icone">✦</div>
+    <div class="banner-atualizar-textos">
+      <div class="banner-atualizar-titulo">Seu novo perfil está pronto pra atualizar sua jornada.</div>
+      <button class="banner-atualizar-btn" data-teste-id="${ctx.teste_aguardando_ativacao.id}">
+        Quero atualizar →
+      </button>
+    </div>
+  `;
+  // Posiciona logo após a saudação, antes da trilha
+  const trilha = wrap.querySelector('.trilha-section, #trilha-jornada-wrap, .secao-trilha');
+  if (trilha) {
+    trilha.parentNode.insertBefore(banner, trilha);
+  } else {
+    wrap.insertBefore(banner, wrap.firstChild?.nextSibling || wrap.firstChild);
+  }
+
+  banner.querySelector('.banner-atualizar-btn').addEventListener('click', async (e) => {
+    const testeId = e.currentTarget.dataset.testeId;
+    await ativarTrilhaComSplash(testeId);
+  });
+}
+
+// Função reusável: chama /ativar-trilha + mostra splash + recarrega contexto
+async function ativarTrilhaComSplash(testeId) {
+  // Splash inline (sem precisar abrir página de resultado)
+  const splash = criarSplashJornada({ contexto: 'atualizando' });
+  document.body.appendChild(splash);
+  requestAnimationFrame(() => splash.classList.add('visivel'));
+
+  try {
+    await fetch(`${API}/api/teste/ativar-trilha/${encodeURIComponent(testeId)}`, {
+      method: 'POST',
+      headers: authHeader(),
+    });
+  } catch (e) {
+    console.warn('[ativarTrilha] erro:', e);
+  }
+
+  // Texto final aparece em ~1.8s
+  setTimeout(() => {
+    const tit = splash.querySelector('.jornada-splash-titulo');
+    const sub = splash.querySelector('.jornada-splash-sub');
+    if (tit) tit.textContent = 'Sua jornada foi atualizada!';
+    if (sub) sub.textContent = 'Confira a nova trilha';
+  }, 1800);
+
+  // Em 2.7s, fecha splash, recarrega contexto e re-renderiza Home
+  setTimeout(async () => {
+    splash.classList.remove('visivel');
+    setTimeout(() => splash.remove(), 400);
+    const novoCtx = await carregarContexto();
+    if (novoCtx) hidratarHome(novoCtx);
+  }, 2700);
+}
+
+// Cria elemento splash (igual o do resultado.html)
+function criarSplashJornada({ contexto = 'atualizando' } = {}) {
+  const splash = document.createElement('div');
+  splash.className = 'jornada-splash';
+  const titulo = contexto === 'atualizando' ? 'Atualizando sua jornada…' : 'Criando sua jornada…';
+  const subtitulo = contexto === 'atualizando' ? 'Sua trilha está sendo atualizada' : 'Sua trilha personalizada está sendo construída';
+  splash.innerHTML = `
+    <div class="jornada-splash-particulas">
+      ${Array.from({ length: 28 }, (_, i) => `<span class="js-particula js-p${i % 7}"></span>`).join('')}
+    </div>
+    <div class="jornada-splash-conteudo">
+      <div class="jornada-splash-icone">✦</div>
+      <h2 class="jornada-splash-titulo">${titulo}</h2>
+      <p class="jornada-splash-sub">${subtitulo}</p>
+    </div>
+  `;
+  return splash;
 }
 
 // ── HIDRATAÇÃO DA ABA MATERIAIS ─────────────────────────────
@@ -1802,19 +1957,28 @@ function renderMateriais(ctx) {
         </div>`
       : '';
 
+    // ID do teste aguardando ativação (se houver) — pra destacar no card
+    const idAguardando = ctx.teste_aguardando_ativacao ? ctx.teste_aguardando_ativacao.id : null;
+
     // Cards dos testes feitos (clicar abre o resultado direto)
     const testesCards = testesFeitos.map(t => {
       const dataTxt = t.feito_em ? new Date(t.feito_em).toLocaleDateString('pt-BR') : '—';
-      const isMaisRecente = ctx.teste_atual && t.id === ctx.teste_atual.id;
-      const pago = isMaisRecente ? ctx.teste_atual.pago : false;
+      // pago vem por teste (backend já calcula via t.pago OR usuario_produtos)
+      const pago = !!t.pago;
       const status = pago ? 'pago' : 'bloqueado';
+      const ehAguardando = idAguardando && t.id === idAguardando;
+      const classeExtra = ehAguardando ? ' teste-mini-aguardando-ativacao' : '';
+      const seloAtualizar = ehAguardando
+        ? '<div class="teste-mini-selo-atualizar">Atualizar trilha</div>'
+        : '';
       const onclick = pago
         ? `onclick="window.open('/resultado/${t.id}', '_blank')"`
         : `onclick="alert('Aguardando liberação do resultado.')"`;
       const statusBadge = pago
         ? '<div class="teste-mini-status teste-mini-pago">Ver resultado →</div>'
         : '<div class="teste-mini-status teste-mini-bloqueado">🔒 Liberação pendente</div>';
-      return `<div class="teste-mini-card teste-mini-${status}" ${onclick}>
+      return `<div class="teste-mini-card teste-mini-${status}${classeExtra}" ${onclick}>
+        ${seloAtualizar}
         <div class="teste-mini-eyebrow">Teste do Subconsciente</div>
         <div class="teste-mini-data">${dataTxt}</div>
         ${statusBadge}
