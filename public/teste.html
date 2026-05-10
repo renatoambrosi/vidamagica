@@ -457,6 +457,94 @@
     .modal-form-aviso.is-visivel { display: flex; }
     .modal-form-aviso i { font-size: 0.75rem; }
 
+    /* ── Label com ícone de informação (tel bloqueado quando logado) ── */
+    .modal-form-label-row { display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.45rem; }
+    .modal-form-label-row .modal-form-label { margin-bottom: 0; }
+    .modal-form-info-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: rgba(43,165,232,0.15);
+      border: 1px solid rgba(43,165,232,0.4);
+      color: var(--sub-bright);
+      font-size: 0.7rem; font-weight: 700;
+      font-family: var(--font-display);
+      cursor: help;
+      position: relative;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .modal-form-info-btn:hover, .modal-form-info-btn:focus { background: rgba(43,165,232,0.3); outline: none; }
+    .modal-form-info-tooltip {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%; transform: translateX(-50%);
+      width: max-content; max-width: 240px;
+      padding: 0.55rem 0.75rem;
+      background: rgba(5,25,41,0.98);
+      border: 1px solid rgba(43,165,232,0.4);
+      border-radius: 8px;
+      color: var(--pearl);
+      font-family: var(--font-body);
+      font-size: 0.78rem; font-weight: 400;
+      letter-spacing: normal; text-transform: none;
+      line-height: 1.4;
+      pointer-events: none;
+      opacity: 0; transition: opacity 0.15s;
+      z-index: 10;
+      white-space: normal; text-align: left;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+    .modal-form-info-btn:hover .modal-form-info-tooltip,
+    .modal-form-info-btn:focus .modal-form-info-tooltip,
+    .modal-form-info-btn.show-tooltip .modal-form-info-tooltip { opacity: 1; pointer-events: auto; }
+    .modal-form-info-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%; left: 50%; transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: rgba(43,165,232,0.4);
+    }
+
+    /* ── Campo de telefone BLOQUEADO (logada via app) ── */
+    /* Atinge o wrapper do intl-tel-input quando o input fica readOnly. */
+    .iti:has(input[readonly]) { opacity: 0.65; }
+    .iti:has(input[readonly]) input.modal-form-input { 
+      background: rgba(5,25,41,0.4) !important;
+      border-color: rgba(43,165,232,0.15) !important;
+      color: rgba(245,240,232,0.7) !important;
+      cursor: not-allowed;
+    }
+    .iti:has(input[readonly]) input.modal-form-input:focus {
+      box-shadow: none !important;
+      border-color: rgba(43,165,232,0.15) !important;
+    }
+    /* Fallback pra navegadores sem :has() — usa classe explícita */
+    .iti.is-bloqueado { opacity: 0.65; }
+    .iti.is-bloqueado input.modal-form-input { 
+      background: rgba(5,25,41,0.4) !important;
+      border-color: rgba(43,165,232,0.15) !important;
+      color: rgba(245,240,232,0.7) !important;
+      cursor: not-allowed;
+    }
+
+    /* ── Botão "Não sou eu / Sair" discreto ── */
+    .modal-form-sair {
+      display: block;
+      margin: 1.25rem auto 0;
+      padding: 0.5rem 1rem;
+      background: transparent;
+      border: none;
+      color: rgba(245,240,232,0.55);
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      transition: color 0.15s;
+    }
+    .modal-form-sair:hover { color: var(--pearl); }
+
     /* Checkbox custom */
     .modal-form-checkbox { display: flex; align-items: flex-start; gap: 0.7rem; margin: 1.5rem 0; cursor: pointer; user-select: none; }
     .modal-form-checkbox input { position: absolute; opacity: 0; pointer-events: none; }
@@ -1115,7 +1203,22 @@
 
               <form id="form-iniciar-teste" novalidate>
                 <div class="modal-form-grupo">
-                  <label class="modal-form-label" for="campo-telefone">Seu WhatsApp</label>
+                  <div class="modal-form-label-row">
+                    <label class="modal-form-label" for="campo-telefone">Seu WhatsApp</label>
+                    <button
+                      type="button"
+                      class="modal-form-info-btn"
+                      id="info-telefone"
+                      tabindex="0"
+                      aria-label="Por que não posso editar?"
+                      style="display:none"
+                    >
+                      i
+                      <span class="modal-form-info-tooltip">
+                        Você está logada — o número está vinculado à sua conta. Pra alterar, vá no perfil ou clique em "Não sou eu" abaixo.
+                      </span>
+                    </button>
+                  </div>
                   <input
                     type="tel"
                     id="campo-telefone"
@@ -1156,6 +1259,10 @@
                   <span class="spinner"></span>
                   <span class="submit-text">Começar agora</span>
                   <i class="fas fa-arrow-right submit-icon"></i>
+                </button>
+
+                <button type="button" class="modal-form-sair" id="btn-nao-sou-eu" style="display:none">
+                  Não sou eu — sair
                 </button>
               </form>
               </div>
@@ -1323,6 +1430,17 @@
             // Telefone bloqueado: a aluna logada não pode trocar o número
             // (vinculação ao usuário cadastrado). Pra trocar, vai pelo perfil.
             tel.bloquear();
+
+            // Estado visual de bloqueio:
+            // 1) Aplica classe no wrapper .iti (fallback pra navegadores sem :has)
+            const wrapIti = inputTel.closest('.iti');
+            if (wrapIti) wrapIti.classList.add('is-bloqueado');
+            // 2) Mostra ícone de informação ao lado do label
+            const infoBtn = document.getElementById('info-telefone');
+            if (infoBtn) infoBtn.style.display = '';
+            // 3) Mostra link "Não sou eu — sair" no fim do form
+            const btnSair = document.getElementById('btn-nao-sou-eu');
+            if (btnSair) btnSair.style.display = '';
           }
           // Marca aceite (aluna já aceitou ao cadastrar)
           inputAceite.checked = true;
@@ -1334,6 +1452,45 @@
           console.warn('[teste] erro ao auto-preencher do app:', err);
         }
       })();
+
+      // ── Botão "Não sou eu — sair" ──
+      // Limpa sessão local e manda pro /auth pra aluna entrar com a conta certa.
+      const btnNaoSouEu = document.getElementById('btn-nao-sou-eu');
+      if (btnNaoSouEu) {
+        btnNaoSouEu.addEventListener('click', () => {
+          if (!confirm('Sair da sua conta? Você vai precisar entrar de novo.')) return;
+          try {
+            ['vm_session','vm_session_local','vm_access_token','vm_refresh_token','vm_usuario'].forEach(k => {
+              try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch {}
+            });
+            document.cookie.split(';').forEach(c => {
+              const eq = c.indexOf('=');
+              const nome = (eq > -1 ? c.substr(0, eq) : c).trim();
+              if (nome.startsWith('vm_')) {
+                document.cookie = nome + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+              }
+            });
+          } catch {}
+          fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+            .catch(() => {})
+            .finally(() => { window.location.href = '/auth.html'; });
+        });
+      }
+
+      // ── Tooltip do ícone info no clique (pra mobile, que não tem hover) ──
+      const infoBtnTel = document.getElementById('info-telefone');
+      if (infoBtnTel) {
+        infoBtnTel.addEventListener('click', (e) => {
+          e.stopPropagation();
+          infoBtnTel.classList.toggle('show-tooltip');
+        });
+        // Fecha o tooltip ao tocar fora
+        document.addEventListener('click', (e) => {
+          if (!infoBtnTel.contains(e.target)) {
+            infoBtnTel.classList.remove('show-tooltip');
+          }
+        });
+      }
 
       // ── Listeners de fechamento ──
       modal.querySelectorAll('[data-close-modal]').forEach(el => {
