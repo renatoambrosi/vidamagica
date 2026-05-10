@@ -24,6 +24,7 @@
     .topo {
       display: flex; align-items: center; justify-content: space-between;
       margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem;
+      position: relative;
     }
     .topo-marca {
       display: flex; align-items: center; gap: 0.7rem; min-width: 0;
@@ -40,13 +41,82 @@
       color: var(--pearl-dim, rgba(245,240,232,0.7));
       letter-spacing: 0.01em;
     }
+    .topo-fechar {
+      flex-shrink: 0;
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: rgba(245,240,232,0.06);
+      border: 1px solid rgba(245,240,232,0.15);
+      color: var(--pearl-dim, rgba(245,240,232,0.7));
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.12s;
+    }
+    .topo-fechar:hover { background: rgba(245,240,232,0.12); color: var(--pearl, #F5F0E8); border-color: rgba(245,240,232,0.3); }
+    .topo-fechar:active { transform: scale(0.94); }
+    .topo-fechar svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
     /* ─── Loading state ─── */
     .loading {
-      text-align: center; padding: 4rem 1rem;
+      min-height: 60vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 3rem 1.5rem;
+      text-align: center;
       color: var(--pearl-dim, rgba(245,240,232,0.7));
     }
-    .loading i { font-size: 2rem; color: var(--sub-bright, #2ba5e8); margin-bottom: 1rem; }
+    .loading-anel {
+      position: relative;
+      width: 90px; height: 90px;
+      margin-bottom: 1.5rem;
+    }
+    .loading-anel::before, .loading-anel::after {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: 50%;
+      border: 2px solid transparent;
+    }
+    .loading-anel::before {
+      border-top-color: var(--gold, #C8922A);
+      border-right-color: rgba(200,146,42,0.4);
+      animation: anelGirar 1.4s linear infinite;
+    }
+    .loading-anel::after {
+      inset: 12px;
+      border-top-color: var(--sub-bright, #2ba5e8);
+      border-left-color: rgba(43,165,232,0.4);
+      animation: anelGirar 2.2s linear infinite reverse;
+    }
+    .loading-estrela {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.6rem;
+      color: var(--gold, #C8922A);
+      animation: estrelaPulse 2s ease-in-out infinite;
+      filter: drop-shadow(0 0 8px rgba(200,146,42,0.6));
+    }
+    @keyframes anelGirar { to { transform: rotate(360deg); } }
+    @keyframes estrelaPulse {
+      0%, 100% { opacity: 0.85; transform: translate(-50%,-50%) scale(1); }
+      50% { opacity: 1; transform: translate(-50%,-50%) scale(1.15); }
+    }
+    .loading-texto {
+      font-family: var(--font-display);
+      font-size: 0.85rem; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--pearl-dim, rgba(245,240,232,0.7));
+    }
+    .loading-texto .pontos::after {
+      content: '...';
+      animation: pontosPulse 1.4s steps(4, end) infinite;
+    }
+    @keyframes pontosPulse {
+      0%, 20% { content: ''; }
+      40% { content: '.'; }
+      60% { content: '..'; }
+      80%, 100% { content: '...'; }
+    }
+    .loading i { font-size: 2rem; color: var(--sub-bright, #2ba5e8); margin-bottom: 1rem; } /* legado */
 
     /* ─── Erro ─── */
     .erro-box {
@@ -887,25 +957,77 @@
     .jornada-splash-botao:hover { box-shadow: 0 6px 22px rgba(200,146,42,0.5); transform: translateY(-1px); }
     .jornada-splash-botao:active { transform: scale(0.97); }
 
+    /* ═══════════════════════════════════════════════════
+       Animação de entrada — stagger / fade-up
+       Cada bloco entra escalonado quando o conteúdo carrega.
+       Aplicado por JS adicionando .anim-entrada nos blocos.
+       ═══════════════════════════════════════════════════ */
+    .anim-entrada {
+      opacity: 0;
+      transform: translateY(18px);
+      animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      animation-delay: var(--anim-delay, 0s);
+      will-change: transform, opacity;
+    }
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Reduz movimento pra quem prefere */
+    @media (prefers-reduced-motion: reduce) {
+      .anim-entrada { animation: fadeOnly 0.4s ease forwards; transform: none; }
+      @keyframes fadeOnly { to { opacity: 1; } }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       Rodapé — botão voltar pra Home
+       ═══════════════════════════════════════════════════ */
+    .voltar-home-wrap {
+      margin: 3rem 0 1.5rem;
+      display: flex; justify-content: center;
+    }
+    .voltar-home-btn {
+      display: inline-flex; align-items: center; gap: 0.55rem;
+      padding: 0.85rem 1.6rem;
+      background: rgba(245,240,232,0.05);
+      border: 1px solid rgba(245,240,232,0.18);
+      border-radius: 999px;
+      color: var(--pearl-dim, rgba(245,240,232,0.75));
+      font-family: var(--font-display);
+      font-size: 0.82rem; font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.12s;
+    }
+    .voltar-home-btn:hover {
+      background: rgba(245,240,232,0.1);
+      border-color: rgba(245,240,232,0.32);
+      color: var(--pearl, #F5F0E8);
+    }
+    .voltar-home-btn:active { transform: scale(0.97); }
+    .voltar-home-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
   </style>
 </head>
 <body>
 
 <div class="container">
 
-  <!-- Topo: logo + voltar -->
+  <!-- Topo: logo + botão fechar -->
   <div class="topo">
     <div class="topo-marca">
       <img src="/assets/logo-horizontal.png" alt="Vida Mágica" class="topo-logo">
       <span class="topo-divisor"></span>
       <span class="topo-produto">Teste do Subconsciente</span>
     </div>
+    <button class="topo-fechar" id="topo-fechar" type="button" aria-label="Fechar">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
   </div>
 
-  <!-- Estado: carregando -->
+  <!-- Estado: carregando (ícone girando + texto pulsante) -->
   <div id="loading" class="loading">
-    <i class="fas fa-spinner fa-spin"></i>
-    <p>Preparando seu resultado…</p>
+    <div class="loading-anel"><span class="loading-estrela">✦</span></div>
+    <div class="loading-texto">Preparando seu resultado<span class="pontos"></span></div>
   </div>
 
   <!-- Estado: erro -->
@@ -1014,6 +1136,14 @@
       <span id="rodape-versao">—</span>
     </div>
 
+    <!-- Voltar pra Home (botão final discreto) -->
+    <div class="voltar-home-wrap">
+      <button class="voltar-home-btn" id="voltar-home" type="button">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Voltar pra Home
+      </button>
+    </div>
+
   </div>
 
 </div>
@@ -1093,6 +1223,74 @@
   renderizar(dados);
   elLoading.style.display = 'none';
   elConteudo.style.display = 'block';
+
+  // ── Animação de entrada: stagger nos blocos principais ──
+  // Aplica fade-up escalonado em cada seção do resultado pra dar
+  // sensação de "entrega" gradual e elegante.
+  aplicarEntradaStaggered();
+
+  function aplicarEntradaStaggered() {
+    const seletores = [
+      '.b1-imagem-wrap',
+      '.b1-titulo',
+      '.b2-wrap',
+      '.b3-wrap',
+      '.b4-btn',
+      '.b5-wrap',
+      '.b6-wrap',
+      '.b7-trilha',
+      '.b8-wrap',
+      '.bj-wrap',
+      '.rodape-meta',
+      '.voltar-home-wrap',
+    ];
+    let delay = 0;
+    seletores.forEach(sel => {
+      const el = elConteudo.querySelector(sel);
+      if (!el || el.style.display === 'none') return;
+      el.classList.add('anim-entrada');
+      el.style.setProperty('--anim-delay', delay.toFixed(2) + 's');
+      delay += 0.12;
+    });
+    // Linhas do gráfico de energia entram com escalonamento extra
+    const linhasEnergia = elConteudo.querySelectorAll('#b3-lista .b3-energia-row');
+    linhasEnergia.forEach((linha, i) => {
+      linha.classList.add('anim-entrada');
+      linha.style.setProperty('--anim-delay', (0.45 + i * 0.07).toFixed(2) + 's');
+    });
+    // Passos da trilha também escalonam por dentro
+    const passos = elConteudo.querySelectorAll('.b7-trilha .passo-card');
+    passos.forEach((p, i) => {
+      p.classList.add('anim-entrada');
+      p.style.setProperty('--anim-delay', (1.0 + i * 0.18).toFixed(2) + 's');
+    });
+  }
+
+  // ── Botão X no topo: fecha aba ou volta pra Home ──
+  const btnFechar = document.getElementById('topo-fechar');
+  if (btnFechar) {
+    btnFechar.addEventListener('click', () => {
+      // Tenta fechar a aba. Se não tiver opener (foi aberta direta), vai pra Home.
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.close();
+          // Em alguns navegadores window.close() é silencioso quando a aba não foi
+          // aberta por script. Como fallback, em ~250ms manda pra Home.
+          setTimeout(() => { window.location.href = '/app.html'; }, 250);
+          return;
+        }
+      } catch {}
+      window.location.href = '/app.html';
+    });
+  }
+
+  // ── Botão "Voltar pra Home" no final ──
+  const btnVoltarHome = document.getElementById('voltar-home');
+  if (btnVoltarHome) {
+    btnVoltarHome.addEventListener('click', () => {
+      window.location.href = '/app.html';
+    });
+  }
 
   // ════════════════════════════════════════════════════
   // Popup "Quer atualizar sua trilha?"
