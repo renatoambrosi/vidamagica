@@ -2439,7 +2439,7 @@ function renderTrilhaJornada(ctx) {
   }
 
   // Caso 2: aluna tem teste mas não tem jornada (não deveria acontecer)
-  if (!ctx.jornada_atual) {
+  if (!ctx.jornada_atual && !ctx.jornada_vigente) {
     trilha.innerHTML =
       '<div class="trilha-header">' +
         '<h2 class="trilha-titulo">Sua trilha</h2>' +
@@ -2449,7 +2449,39 @@ function renderTrilhaJornada(ctx) {
   }
 
   // Caso 3: jornada ativa — renderiza barra + passos
-  const j = ctx.jornada_atual;
+  // Preferimos jornada_vigente (novo, via core/jornadas.js). Se ainda não
+  // estiver presente no payload, caímos pra jornada_atual (antigo) e
+  // mapeamos os campos pra ter compatibilidade.
+  const vigente = ctx.jornada_vigente;
+  const j = vigente
+    ? {
+        numero: vigente.numero,
+        nome_exibicao: vigente.nome,
+        subtitulo: '',
+        cor: '#C8922A',
+        passos: (vigente.passos || []).map(p => ({
+          titulo: p.titulo,
+          // No formato vigente, "produtos" é array (P2 da Vida Mágica tem 2 produtos).
+          // Pra trilha da Home/Materiais, usamos o primeiro produto como representante visual.
+          produto_slug: (p.produtos && p.produtos[0]) || null,
+          produto_nome: p.subtitulo || p.titulo,
+          produto_imagem: '',
+          descricao: '',
+          comprado: !!p.concluido,
+          eh_proximo: !!p.eh_proximo,
+          link_checkout_padrao: '',
+          // Lista completa de produtos do passo (pra Materiais mostrar todos)
+          produtos_do_passo: p.produtos || [],
+          peso: p.peso || 0,
+        })),
+        progresso: {
+          passos_concluidos: (vigente.passos || []).filter(p => p.concluido).length,
+          passos_totais: (vigente.passos || []).length,
+          percentual: Math.round(vigente.progresso_percentual || 0),
+        },
+        analise: vigente.analise || null,
+      }
+    : ctx.jornada_atual;
   const cor = j.cor || '#C8922A';
   const passosHtml = j.passos.map((p, idx) => {
     const num = idx + 1;
@@ -2485,6 +2517,24 @@ function renderTrilhaJornada(ctx) {
     );
   }).join('');
 
+  // Cadeado de Clube (sem assinatura): aparece abaixo da barra de progresso
+  // Aluna sem Clube → mostra cadeado clicável que abre o modal Clube.
+  const semClube = !ctx.tem_clube;
+  const cadeadoClubeHtml = semClube
+    ? '<button type="button" class="trilha-cadeado-clube" onclick="window.app.abrirModalClube()">'
+        + '<span class="trilha-cadeado-icon">🔒</span>'
+        + '<span class="trilha-cadeado-texto">'
+          + '<strong>Acompanhamento bloqueado</strong>'
+          + '<span>Toque pra conhecer o Clube Vida Mágica</span>'
+        + '</span>'
+      + '</button>'
+    : '';
+
+  // Análise automatizada (texto da jornada — ex: trava forte mesmo com Prosperidade)
+  const analiseHtml = j.analise
+    ? '<div class="trilha-analise">' + escHtml(j.analise) + '</div>'
+    : '';
+
   trilha.innerHTML =
     '<div class="trilha-header">' +
       // ── Barra de progresso da jornada ──
@@ -2503,7 +2553,9 @@ function renderTrilhaJornada(ctx) {
         '<div style="height:7px;background:rgba(245,240,232,0.08);border-radius:4px;overflow:hidden">' +
           '<div style="height:100%;background:linear-gradient(90deg,' + cor + ',' + cor + 'cc);width:' + j.progresso.percentual + '%;transition:width 0.6s ease"></div>' +
         '</div>' +
+        cadeadoClubeHtml +
       '</div>' +
+      analiseHtml +
       '<h2 class="trilha-titulo" style="margin-top:0.5rem">Seu caminho</h2>' +
     '</div>' +
     '<ol class="trilha-lista">' + passosHtml + '</ol>';
@@ -2543,6 +2595,50 @@ window.app = {
     } catch (e) {
       console.error('ativarTrilhaDoCard:', e);
     }
+  },
+
+  // Abre o modal de assinatura do Clube Vida Mágica
+  // Criado dinamicamente na primeira chamada (não precisa estar no HTML)
+  abrirModalClube() {
+    let overlay = document.getElementById('vm-clube-modal-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'vm-clube-modal-overlay';
+      overlay.className = 'vm-clube-modal-overlay';
+      overlay.innerHTML = '\
+        <div class="vm-clube-modal" role="dialog" aria-modal="true">\
+          <button type="button" class="vm-clube-fechar" aria-label="Fechar">\
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>\
+          </button>\
+          <div class="vm-clube-header">\
+            <div class="vm-clube-eyebrow">CLUBE</div>\
+            <h2 class="vm-clube-titulo">Vida Mágica</h2>\
+            <p class="vm-clube-sub">Mais do que um conteúdo. Uma experiência guiada.</p>\
+          </div>\
+          <div class="vm-clube-beneficios">\
+            <div class="vm-clube-beneficio"><span class="vm-clube-icone">✨</span><div><strong>Conteúdo exclusivo semanal</strong><span>1 vídeo novo por semana — técnicas práticas que não estão em lugar nenhum</span></div></div>\
+            <div class="vm-clube-beneficio"><span class="vm-clube-icone">🎥</span><div><strong>Encontro mensal ao vivo</strong><span>1 live por mês — troca direta com a Su e o Rê</span></div></div>\
+            <div class="vm-clube-beneficio"><span class="vm-clube-icone">💬</span><div><strong>Grupo de WhatsApp</strong><span>Comunidade ativa — pessoas reais vencendo problemas reais</span></div></div>\
+            <div class="vm-clube-beneficio"><span class="vm-clube-icone">💛</span><div><strong>Tesouros da Su</strong><span>Direcionamentos, insights e lembretes no momento certo</span></div></div>\
+            <div class="vm-clube-beneficio"><span class="vm-clube-icone">🌱</span><div><strong>Sementes de desconto</strong><span>Desconto exclusivo em todos os materiais Vida Mágica</span></div></div>\
+            <div class="vm-clube-beneficio"><span class="vm-clube-icone">🗺️</span><div><strong>Acompanhamento da jornada</strong><span>Animações de avanço, feed personalizado, notificações ativas</span></div></div>\
+            <div class="vm-clube-beneficio"><span class="vm-clube-icone">⚡</span><div><strong>Chat com resposta em até 5 dias</strong><span>Suporte direto comigo neste app</span></div></div>\
+          </div>\
+          <a href="https://www.vidamagica.com.br/assinar" target="_blank" rel="noopener" class="vm-clube-cta">Quero o Clube Vida Mágica</a>\
+          <button type="button" class="vm-clube-depois">Agora não</button>\
+        </div>';
+      document.body.appendChild(overlay);
+
+      const fechar = () => {
+        overlay.classList.remove('visible');
+        document.body.style.overflow = '';
+      };
+      overlay.querySelector('.vm-clube-fechar').addEventListener('click', fechar);
+      overlay.querySelector('.vm-clube-depois').addEventListener('click', fechar);
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) fechar(); });
+    }
+    overlay.classList.add('visible');
+    document.body.style.overflow = 'hidden';
   },
 };
 
