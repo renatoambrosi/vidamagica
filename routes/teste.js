@@ -23,6 +23,7 @@ const {
   montarLivrosRecomendados,
   montarListaEnergias,
 } = require('../core/teste-resultado');
+const { autenticar } = require('../middleware/autenticar');
 
 // ── Validações simples ──────────────────────────────────────
 function validarNome(nome) {
