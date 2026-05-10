@@ -1279,6 +1279,52 @@
       });
       window.iniciarTeste = abrirModal;
 
+      // ── Aluna logada vinda do app: pré-preenche tudo e abre modal ──
+      // Quando o app aluna manda "Fazer novo" → /teste?from=app, a aluna
+      // já é cadastrada. Não faz sentido pedir nome/telefone/aceite de novo.
+      // Buscamos os dados via /api/auth/me, preenchemos o modal e abrimos
+      // automaticamente. Aluna ainda vê a tela de instruções (com o botão
+      // Começar) — só pula a fricção do cadastro.
+      (async () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('from') !== 'app') return;
+
+        // Pega token da sessão do app (salvo em localStorage como vm_s)
+        let token = null;
+        try {
+          const raw = localStorage.getItem('vm_s') || sessionStorage.getItem('vm_s');
+          if (raw) token = (JSON.parse(raw) || {}).access_token || null;
+        } catch {}
+        if (!token) return;  // não tem sessão, fluxo normal
+
+        try {
+          const r = await fetch('/api/auth/me', {
+            headers: { Authorization: 'Bearer ' + token },
+          });
+          if (!r.ok) return;
+          const data = await r.json();
+          // /api/auth/me retorna { id, nome, telefone_canonico, ... }
+          if (!data || !data.nome) return;
+
+          // Preenche os campos
+          inputNome.value = data.nome;
+          // /api/auth/me retorna telefone_formatado (já formatado: "(11) 99999-9999")
+          // ou telefone_canonico (cru: "5511999999999"). Usa o que vier.
+          const telBruto = data.telefone_formatado || data.telefone_canonico || '';
+          if (telBruto) {
+            inputTel.value = formatarTel(telBruto.replace(/\D/g, ''));
+          }
+          // Marca aceite (aluna já aceitou ao cadastrar)
+          inputAceite.checked = true;
+          // Atualiza estado dos campos e botão
+          atualizarBotao();
+          // Abre o modal já validado — aluna só precisa clicar em "Começar"
+          abrirModal();
+        } catch (err) {
+          console.warn('[teste] erro ao auto-preencher do app:', err);
+        }
+      })();
+
       // ── Listeners de fechamento ──
       modal.querySelectorAll('[data-close-modal]').forEach(el => {
         el.addEventListener('click', fecharModal);
