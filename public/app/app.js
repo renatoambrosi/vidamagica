@@ -306,11 +306,18 @@ function renderAvisos() {
       e.stopPropagation();
       const tipo = btn.dataset.acao;
       const payload = btn.dataset.payload;
+      // Fecha modal de avisos antes da splash
+      const modal = document.getElementById('modal-avisos');
+      if (modal) modal.setAttribute('aria-hidden', 'true');
+
       if (tipo === 'ativar-trilha' && payload) {
-        // Fecha modal de avisos antes da splash
-        const modal = document.getElementById('modal-avisos');
-        if (modal) modal.setAttribute('aria-hidden', 'true');
         await ativarTrilhaComSplash(payload);
+      } else if (tipo === 'celebrar-compra' && payload) {
+        // Encontra a atualização correspondente no contexto e dispara
+        const ctxAtual = await carregarContexto();
+        if (!ctxAtual) return;
+        const alvo = (ctxAtual.atualizacoes_pendentes || []).find(a => a.id === payload);
+        if (alvo) await dispararSplashAtualizacao(alvo, ctxAtual);
       }
     });
   });
@@ -328,6 +335,20 @@ function sincronizarAvisosComContexto(ctx) {
       desc: 'Seu novo perfil está pronto pra atualizar sua jornada.',
       data: 'Agora',
       acao: { tipo: 'ativar-trilha', payload: ctx.teste_aguardando_ativacao.id, label: 'Quero atualizar →' },
+    });
+  }
+  // Avisos de compras pendentes (produto adquirido — webhook futuro)
+  if (ctx && Array.isArray(ctx.atualizacoes_pendentes)) {
+    ctx.atualizacoes_pendentes.filter(a => a.tipo === 'compra').forEach(a => {
+      const produtoNome = (a.payload && a.payload.produto_nome) || 'Produto adquirido';
+      AVISOS_DINAMICOS.push({
+        id: 'av-compra-' + a.id,
+        tag: 'Sua jornada',
+        titulo: 'Sua jornada avançou! ✦',
+        desc: `${produtoNome} foi liberado e atualizou sua trilha.`,
+        data: 'Agora',
+        acao: { tipo: 'celebrar-compra', payload: a.id, label: 'Ver minha trilha →' },
+      });
     });
   }
   atualizarBadgeAvisos();
@@ -1743,8 +1764,11 @@ function hidratarHome(ctx) {
   // ── Banner de teste em andamento ──
   renderBannerTesteEmAndamento(ctx);
 
-  // ── Banner de atualização de trilha disponível ──
+  // ── Banner de atualização de trilha disponível (re-teste sem ativação) ──
   renderBannerAtualizarTrilha(ctx);
+
+  // ── Banner de atualização pendente por COMPRA (slot futuro pra Kiwify) ──
+  renderBannerAtualizarPorCompra(ctx);
 
   // ── Sincroniza avisos dinâmicos (badge do sino + aviso na lista) ──
   sincronizarAvisosComContexto(ctx);
@@ -1791,13 +1815,165 @@ function renderBannerAtualizarTrilha(ctx) {
   });
 }
 
-// Função reusável: chama /ativar-trilha + mostra splash + recarrega contexto
-async function ativarTrilhaComSplash(testeId) {
-  // Splash inline (sem precisar abrir página de resultado)
-  const splash = criarSplashJornada({ contexto: 'atualizando' });
-  document.body.appendChild(splash);
-  requestAnimationFrame(() => splash.classList.add('visivel'));
+// ── BANNER "Sua jornada avançou!" (compra de produto) ──
+// Aparece quando há atualização pendente do tipo 'compra'. Pega a primeira
+// e mostra o banner. Click dispara splash de celebração direto (sem precisar
+// de confirmação — o avanço já é fato, não escolha).
+function renderBannerAtualizarPorCompra(ctx) {
+  const wrap = document.getElementById('view-home');
+  if (!wrap) return;
+  const antigo = document.getElementById('banner-atualizar-compra');
+  if (antigo) antigo.remove();
 
+  const compras = (ctx.atualizacoes_pendentes || []).filter(a => a.tipo === 'compra');
+  if (compras.length === 0) return;
+
+  const a = compras[0];
+  const produtoNome = (a.payload && a.payload.produto_nome) || 'Novo produto';
+
+  const banner = document.createElement('div');
+  banner.id = 'banner-atualizar-compra';
+  banner.className = 'banner-atualizar-trilha';
+  banner.innerHTML = `
+    <div class="banner-atualizar-icone">✦</div>
+    <div class="banner-atualizar-textos">
+      <div class="banner-atualizar-titulo">Sua jornada avançou! Veja como ficou.</div>
+      <button class="banner-atualizar-btn" data-atualizacao-id="${a.id}">
+        Ver minha trilha →
+      </button>
+    </div>
+  `;
+  const trilha = wrap.querySelector('.trilha-section, #trilha-jornada-wrap, .secao-trilha');
+  if (trilha) {
+    trilha.parentNode.insertBefore(banner, trilha);
+  } else {
+    wrap.insertBefore(banner, wrap.firstChild?.nextSibling || wrap.firstChild);
+  }
+
+  banner.querySelector('.banner-atualizar-btn').addEventListener('click', async () => {
+    await dispararSplashAtualizacao(a, ctx);
+  });
+}
+
+// ──────────────────────────────────────────────────────────
+// SPLASH DE CELEBRAÇÃO DA JORNADA — 4 FASES
+// ──────────────────────────────────────────────────────────
+// Fase 1 (0-2s)   : "Criando/Atualizando sua jornada..." com 3 pontinhos
+// Fase 2 (2-3s)   : Fade out → fade in "Jornada criada/atualizada com sucesso"
+// Fase 3 (3-4.5s) : Barra de progresso real anima 0 → percentual atual
+// Fase 4 (4.5s+)  : Botão "Concluir →" aparece. Click fecha splash.
+//
+// Parâmetros:
+// - contexto: 'criando' (1º teste) | 'atualizando' (re-teste / compra)
+// - jornadaInfo: { nome, passos_total, passos_concluidos, percentual }
+// - aoConcluir: callback chamado quando aluna clica em "Concluir →"
+
+function criarSplashJornada({ contexto = 'atualizando', jornadaInfo = null, aoConcluir = null } = {}) {
+  const ehCriando = contexto === 'criando';
+  const tituloFase1 = ehCriando ? 'Criando sua jornada' : 'Atualizando sua jornada';
+  const subFase1 = 'Estamos preparando sua trilha personalizada';
+
+  const splash = document.createElement('div');
+  splash.className = 'jornada-splash';
+  splash.innerHTML = `
+    <div class="jornada-splash-particulas">
+      ${Array.from({ length: 28 }, (_, i) => `<span class="js-particula js-p${i % 7}"></span>`).join('')}
+    </div>
+    <div class="jornada-splash-conteudo">
+      <div class="jornada-splash-icone">✦</div>
+      <h2 class="jornada-splash-titulo">${tituloFase1}<span class="reticencias"><span>.</span><span>.</span><span>.</span></span></h2>
+      <p class="jornada-splash-sub">${subFase1}</p>
+      <div class="jornada-splash-progresso">
+        <div class="jornada-splash-prog-info">
+          <span class="jornada-splash-prog-nome" data-prog-nome>—</span>
+          <span class="jornada-splash-prog-passos" data-prog-passos>—</span>
+        </div>
+        <div class="jornada-splash-prog-bar">
+          <div class="jornada-splash-prog-fill" data-prog-fill></div>
+        </div>
+        <div class="jornada-splash-prog-pct">
+          <span class="pct-num" data-prog-pct>0</span><span class="pct-sym">%</span>
+        </div>
+      </div>
+      <button class="jornada-splash-botao" data-btn-concluir>Concluir →</button>
+    </div>
+  `;
+
+  splash.querySelector('[data-btn-concluir]').addEventListener('click', () => {
+    splash.classList.remove('visivel');
+    setTimeout(() => {
+      splash.remove();
+      if (aoConcluir) aoConcluir();
+    }, 400);
+  });
+
+  return splash;
+}
+
+// Orquestra as fases da splash. Retorna Promise que resolve quando aluna
+// clica em "Concluir" (ou splash é fechada por outro motivo).
+function rodarSplashJornada({ contexto = 'atualizando', jornadaInfo = null } = {}) {
+  return new Promise(resolve => {
+    const splash = criarSplashJornada({ contexto, aoConcluir: resolve });
+    document.body.appendChild(splash);
+    requestAnimationFrame(() => splash.classList.add('visivel'));
+
+    const tituloFase2 = contexto === 'criando' ? 'Jornada criada com sucesso' : 'Jornada atualizada com sucesso';
+
+    // FASE 2 (em 2s): fade do título → trocar texto → fade in
+    setTimeout(() => {
+      splash.classList.add('fase-transicao');
+      setTimeout(() => {
+        const titEl = splash.querySelector('.jornada-splash-titulo');
+        const subEl = splash.querySelector('.jornada-splash-sub');
+        if (titEl) titEl.innerHTML = tituloFase2 + ' ✦';
+        if (subEl) subEl.textContent = 'Sua trilha está pronta';
+        splash.classList.remove('fase-transicao');
+      }, 400);
+    }, 2000);
+
+    // FASE 3 (em 3s): mostra barra de progresso e anima
+    setTimeout(() => {
+      if (jornadaInfo) {
+        const nomeEl = splash.querySelector('[data-prog-nome]');
+        const passosEl = splash.querySelector('[data-prog-passos]');
+        if (nomeEl && jornadaInfo.nome) nomeEl.textContent = jornadaInfo.nome;
+        if (passosEl && jornadaInfo.passos_total) {
+          passosEl.textContent = `${jornadaInfo.passos_concluidos} de ${jornadaInfo.passos_total}`;
+        }
+      }
+      splash.classList.add('fase-progresso');
+
+      setTimeout(() => {
+        const fillEl = splash.querySelector('[data-prog-fill]');
+        const pctEl = splash.querySelector('[data-prog-pct]');
+        const pctAlvo = (jornadaInfo && typeof jornadaInfo.percentual === 'number') ? jornadaInfo.percentual : 0;
+        if (fillEl) fillEl.style.width = pctAlvo + '%';
+        if (pctEl) animarNumero(pctEl, 0, pctAlvo, 1200);
+      }, 200);
+    }, 3000);
+
+    // FASE 4 (em 4.5s): mostra botão "Concluir"
+    setTimeout(() => {
+      splash.classList.add('fase-botao');
+    }, 4500);
+  });
+}
+
+// Animação simples de contagem de número (easeOutCubic)
+function animarNumero(el, de, ate, duracao) {
+  const inicio = performance.now();
+  function tick(agora) {
+    const t = Math.min(1, (agora - inicio) / duracao);
+    const ease = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(de + (ate - de) * ease);
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+// Função: ativa a trilha de um teste + roda splash + recarrega Home
+async function ativarTrilhaComSplash(testeId) {
   try {
     await fetch(`${API}/api/teste/ativar-trilha/${encodeURIComponent(testeId)}`, {
       method: 'POST',
@@ -1807,40 +1983,73 @@ async function ativarTrilhaComSplash(testeId) {
     console.warn('[ativarTrilha] erro:', e);
   }
 
-  // Texto final aparece em ~1.8s
-  setTimeout(() => {
-    const tit = splash.querySelector('.jornada-splash-titulo');
-    const sub = splash.querySelector('.jornada-splash-sub');
-    if (tit) tit.textContent = 'Sua jornada foi atualizada!';
-    if (sub) sub.textContent = 'Confira a nova trilha';
-  }, 1800);
+  // Recarrega contexto pra pegar a nova jornada antes da splash
+  const novoCtx = await carregarContexto();
 
-  // Em 2.7s, fecha splash, recarrega contexto e re-renderiza Home
-  setTimeout(async () => {
-    splash.classList.remove('visivel');
-    setTimeout(() => splash.remove(), 400);
-    const novoCtx = await carregarContexto();
-    if (novoCtx) hidratarHome(novoCtx);
-  }, 2700);
+  // Marca a atualização pendente desse teste como consumida
+  await consumirAtualizacoesDoTeste(novoCtx, testeId);
+
+  // Monta info da jornada pra splash
+  const jornadaInfo = montarJornadaInfoSplash(novoCtx);
+
+  // Roda splash (volta quando aluna clica Concluir)
+  await rodarSplashJornada({ contexto: 'atualizando', jornadaInfo });
+
+  // Atualiza UI com novo contexto
+  if (novoCtx) hidratarHome(novoCtx);
 }
 
-// Cria elemento splash (igual o do resultado.html)
-function criarSplashJornada({ contexto = 'atualizando' } = {}) {
-  const splash = document.createElement('div');
-  splash.className = 'jornada-splash';
-  const titulo = contexto === 'atualizando' ? 'Atualizando sua jornada…' : 'Criando sua jornada…';
-  const subtitulo = contexto === 'atualizando' ? 'Sua trilha está sendo atualizada' : 'Sua trilha personalizada está sendo construída';
-  splash.innerHTML = `
-    <div class="jornada-splash-particulas">
-      ${Array.from({ length: 28 }, (_, i) => `<span class="js-particula js-p${i % 7}"></span>`).join('')}
-    </div>
-    <div class="jornada-splash-conteudo">
-      <div class="jornada-splash-icone">✦</div>
-      <h2 class="jornada-splash-titulo">${titulo}</h2>
-      <p class="jornada-splash-sub">${subtitulo}</p>
-    </div>
-  `;
-  return splash;
+// Função: dispara splash de celebração (uso geral — banner Home, aviso, compra)
+async function dispararSplashAtualizacao(atualizacao, ctxAtual) {
+  const contexto = (atualizacao.payload && atualizacao.payload.contexto) || 'atualizando';
+  const jornadaInfo = montarJornadaInfoSplash(ctxAtual);
+
+  await rodarSplashJornada({ contexto, jornadaInfo });
+
+  // Marca consumida
+  try {
+    await fetch(`${API}/api/app/atualizacoes/${encodeURIComponent(atualizacao.id)}/consumir`, {
+      method: 'POST',
+      headers: authHeader(),
+    });
+  } catch (e) {
+    console.warn('[atualizacoes/consumir] erro:', e);
+  }
+
+  // Recarrega contexto
+  const novoCtx = await carregarContexto();
+  if (novoCtx) hidratarHome(novoCtx);
+}
+
+// Marca todas as atualizações pendentes que se referem a um teste específico
+async function consumirAtualizacoesDoTeste(ctx, testeId) {
+  if (!ctx || !Array.isArray(ctx.atualizacoes_pendentes)) return;
+  const alvos = ctx.atualizacoes_pendentes.filter(a =>
+    a.tipo === 'teste' && a.payload && a.payload.teste_id === testeId
+  );
+  for (const a of alvos) {
+    try {
+      await fetch(`${API}/api/app/atualizacoes/${encodeURIComponent(a.id)}/consumir`, {
+        method: 'POST',
+        headers: authHeader(),
+      });
+    } catch {}
+  }
+}
+
+// Extrai info da jornada do contexto pra alimentar a barra da splash
+function montarJornadaInfoSplash(ctx) {
+  if (!ctx || !ctx.jornada_atual) return null;
+  const j = ctx.jornada_atual;
+  const total = (j.passos || []).length;
+  const concluidos = (j.passos || []).filter(p => p.comprado).length;
+  const percentual = total > 0 ? Math.round((concluidos / total) * 100) : 0;
+  return {
+    nome: j.nome_exibicao || ('Jornada ' + (j.numero || '')),
+    passos_total: total,
+    passos_concluidos: concluidos,
+    percentual,
+  };
 }
 
 // ── HIDRATAÇÃO DA ABA MATERIAIS ─────────────────────────────
