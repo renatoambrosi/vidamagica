@@ -326,78 +326,63 @@ router.post('/responder', async (req, res) => {
     }));
     const resultado = calcularPerfil(respostasArr);
 
-    const testeExistente = await poolTeste.query(
-      `SELECT id FROM testes WHERE lead_id=$1 AND versao_id=$2 ORDER BY feito_em DESC LIMIT 1`,
+    // ──────────────────────────────────────────────────────────
+    // REGRA DE PERSISTÊNCIA DO TESTE
+    // ──────────────────────────────────────────────────────────
+    // - Sem teste prévio                       → INSERT linha nova
+    // - Tem teste prévio, NÃO PAGO             → DELETE antigo + INSERT (sobrescreve)
+    // - Tem teste prévio, PAGO                 → INSERT linha nova (preserva histórico)
+    //
+    // Justificativa: testes pagos viram histórico permanente (a aluna pagou,
+    // tem direito ao registro). Testes não pagos podem ser sobrescritos quando
+    // refeitos, evitando lixo no banco.
+    // Aluna pode ter VÁRIOS testes do mesmo lead+versão se todos estão pagos.
+    const testesPrevios = await poolTeste.query(
+      `SELECT id, pago FROM testes
+        WHERE lead_id=$1 AND versao_id=$2
+        ORDER BY feito_em DESC`,
       [lead_id, versaoIdNum]
     );
 
-    let testeId;
-    if (testeExistente.rows[0]) {
-      testeId = testeExistente.rows[0].id;
+    // Separa: pagos preservar / não pagos deletar
+    const naoPagos = testesPrevios.rows.filter(t => !t.pago);
+    if (naoPagos.length > 0) {
+      const idsPraDeletar = naoPagos.map(t => t.id);
       await poolTeste.query(
-        `UPDATE testes
-            SET respostas=$1, contagem=$2, percentuais=$3,
-                perfil_dominante=$4, percentual_prosperidade=$5, nivel_prosperidade=$6,
-                feito_em=NOW()
-          WHERE id=$7`,
-        [
-          JSON.stringify(respostasArr),
-          JSON.stringify(resultado.contagem),
-          JSON.stringify(resultado.percentuais),
-          resultado.perfil_dominante,
-          resultado.percentual_prosperidade,
-          resultado.nivel_prosperidade,
-          testeId,
-        ]
+        `DELETE FROM testes WHERE id = ANY($1::uuid[])`,
+        [idsPraDeletar]
       );
-    } else {
-      const r = await poolTeste.query(
-        `INSERT INTO testes
-           (usuario_id, lead_id, versao_id, telefone_canonico, respostas,
-            contagem, percentuais,
-            perfil_dominante, percentual_prosperidade, nivel_prosperidade)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         RETURNING id`,
-        [
-          lead.usuario_id,
-          lead_id,
-          versaoIdNum,
-          lead.telefone_canonico,
-          JSON.stringify(respostasArr),
-          JSON.stringify(resultado.contagem),
-          JSON.stringify(resultado.percentuais),
-          resultado.perfil_dominante,
-          resultado.percentual_prosperidade,
-          resultado.nivel_prosperidade,
-        ]
-      );
-      testeId = r.rows[0].id;
     }
 
-    // ── Sincroniza usuarios.perfil_teste e .percentual_prosperidade ──
-    // Se o teste tem usuario_id (aluna logada ou lead já vinculado), atualiza
-    // o cache no banco Core pra Suellen ver no chat.
-    // OBS: usuarios.perfil_teste guarda o slug bruto (medo, prosperidade) — não nv1/nv2/nv3.
-    // Pra desempenho/clareza no chat, mantemos a versão "bruta" sem nível.
-    if (lead.usuario_id) {
-      try {
-        // Extrai a versão "bruta" do perfil (sem _nv1/2/3)
-        const perfilBruto = (resultado.perfil_dominante || '').startsWith('prosperidade')
-          ? 'prosperidade'
-          : resultado.perfil_dominante;
-        await poolCore.query(
-          `UPDATE usuarios
-              SET perfil_teste = $1,
-                  percentual_prosperidade = $2,
-                  atualizado_em = NOW()
-            WHERE id = $3`,
-          [perfilBruto, resultado.percentual_prosperidade, lead.usuario_id]
-        );
-      } catch (e) {
-        console.warn('[teste/responder] falha ao atualizar usuarios.perfil_teste:', e.message);
-        // não bloqueia — o registro do teste já foi salvo
-      }
-    }
+    // INSERT sempre — o registro novo nasce não pago e não visto.
+    const insR = await poolTeste.query(
+      `INSERT INTO testes
+         (usuario_id, lead_id, versao_id, telefone_canonico, respostas,
+          contagem, percentuais,
+          perfil_dominante, percentual_prosperidade, nivel_prosperidade)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING id`,
+      [
+        lead.usuario_id,
+        lead_id,
+        versaoIdNum,
+        lead.telefone_canonico,
+        JSON.stringify(respostasArr),
+        JSON.stringify(resultado.contagem),
+        JSON.stringify(resultado.percentuais),
+        resultado.perfil_dominante,
+        resultado.percentual_prosperidade,
+        resultado.nivel_prosperidade,
+      ]
+    );
+    const testeId = insR.rows[0].id;
+
+    // OBS: O cache usuarios.perfil_teste e .percentual_prosperidade NÃO é
+    // atualizado aqui. A regra é: a jornada/perfil da aluna só muda DEPOIS
+    // que ela clica em "ver resultado" (e marca visto_em). Esse update
+    // acontece em GET /api/teste/resultado/:teste_id.
+    // Justificativa: enquanto a aluna não viu o novo resultado, o app dela
+    // continua funcionando com base no teste anterior (jornada antiga).
 
     return res.json({
       ok: true,
@@ -438,6 +423,71 @@ router.get('/resultado/:teste_id', async (req, res) => {
     // teste.respostas vem como JSONB; pode vir como array já parseado.
     const respostas = Array.isArray(teste.respostas) ? teste.respostas : JSON.parse(teste.respostas || '[]');
     const resultado = calcularResultado(respostas);
+
+    // ──────────────────────────────────────────────────────────
+    // PRIMEIRO ACESSO ao resultado → marca visto_em.
+    // Se é o PRIMEIRO teste da aluna (não tem outro com ativou_trilha=true),
+    // ativa a trilha automaticamente — não tem porque perguntar, é a 1ª vez.
+    // Se é RE-TESTE (já tem outro ativo), só marca visto_em e retorna
+    // eh_reteste=true pra o frontend mostrar o popup "quer atualizar trilha?".
+    // ──────────────────────────────────────────────────────────
+    let ehReteste = false;
+    let trilhaAtivadaAgora = false;
+
+    if (!teste.visto_em) {
+      // Marca como visto
+      try {
+        await poolTeste.query(
+          `UPDATE testes SET visto_em = NOW() WHERE id = $1 AND visto_em IS NULL`,
+          [testeId]
+        );
+        teste.visto_em = new Date();
+      } catch (e) {
+        console.warn('[teste/resultado] falha ao marcar visto_em:', e.message);
+      }
+
+      // Verifica se é primeiro teste ou re-teste
+      const outrosAtivos = await poolTeste.query(
+        `SELECT id FROM testes
+          WHERE (usuario_id = $1 OR telefone_canonico = $2)
+            AND id <> $3
+            AND ativou_trilha = TRUE
+          LIMIT 1`,
+        [teste.usuario_id, teste.telefone_canonico, testeId]
+      );
+
+      if (outrosAtivos.rows.length === 0) {
+        // PRIMEIRO TESTE — ativa a trilha automaticamente
+        try {
+          await poolTeste.query(
+            `UPDATE testes SET ativou_trilha = TRUE WHERE id = $1`,
+            [testeId]
+          );
+          teste.ativou_trilha = true;
+          trilhaAtivadaAgora = true;
+
+          // Atualiza cache no banco Core (usuarios.perfil_teste)
+          if (teste.usuario_id) {
+            const perfilBruto = (resultado.perfil_dominante || '').startsWith('prosperidade')
+              ? 'prosperidade'
+              : resultado.perfil_dominante;
+            await poolCore.query(
+              `UPDATE usuarios
+                  SET perfil_teste = $1,
+                      percentual_prosperidade = $2,
+                      atualizado_em = NOW()
+                WHERE id = $3`,
+              [perfilBruto, resultado.percentual_prosperidade, teste.usuario_id]
+            );
+          }
+        } catch (e) {
+          console.warn('[teste/resultado] falha ao ativar trilha (primeiro teste):', e.message);
+        }
+      } else {
+        // RE-TESTE — não ativa automaticamente, frontend vai mostrar popup
+        ehReteste = true;
+      }
+    }
 
     // Nome da aluna (lead)
     let nomeAluna = '';
@@ -521,6 +571,8 @@ router.get('/resultado/:teste_id', async (req, res) => {
       teste: {
         id: teste.id,
         feito_em: teste.feito_em,
+        visto_em: teste.visto_em,
+        ativou_trilha: !!teste.ativou_trilha,
         versao_nome: teste.versao_nome,
       },
       aluna: {
@@ -538,9 +590,84 @@ router.get('/resultado/:teste_id', async (req, res) => {
       jornada: jornadaInfo,
       // Texto pro botão de compartilhar
       compartilhar_texto: textoCompartilhar,
+      // ── Flags de fluxo ──
+      // eh_reteste: aluna acabou de ver um RE-TESTE (já tinha trilha ativa).
+      //   Frontend mostra popup "quer atualizar sua trilha?" antes de exibir.
+      // trilha_ativada_agora: era o PRIMEIRO teste e a trilha foi ativada
+      //   automaticamente. Frontend mostra animação "Criando sua jornada".
+      eh_reteste: ehReteste,
+      trilha_ativada_agora: trilhaAtivadaAgora,
     });
   } catch (err) {
     console.error('[teste/resultado] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ── POST /api/teste/ativar-trilha/:teste_id ─────────────────
+// Endpoint pra confirmar que a aluna QUER atualizar a trilha pra esse teste.
+// Disparado pelo popup "Quer atualizar sua trilha?" no app aluna.
+//
+// Marca esse teste como ativou_trilha=true, desativa todos os outros do
+// mesmo lead/usuário, e atualiza o cache em usuarios.perfil_teste.
+//
+// Idempotente — se já está ativo, não faz nada.
+router.post('/ativar-trilha/:teste_id', async (req, res) => {
+  try {
+    const testeId = (req.params.teste_id || '').toString().trim();
+    if (!testeId) return res.status(400).json({ ok: false, erro: 'teste_id ausente' });
+
+    // Busca o teste
+    const tRows = await poolTeste.query(
+      `SELECT id, usuario_id, telefone_canonico, respostas, ativou_trilha
+         FROM testes WHERE id = $1`,
+      [testeId]
+    );
+    if (!tRows.rows[0]) return res.status(404).json({ ok: false, erro: 'teste não encontrado' });
+    const teste = tRows.rows[0];
+
+    // Se já está ativo, no-op
+    if (teste.ativou_trilha) return res.json({ ok: true, ja_ativo: true });
+
+    // Desativa todos os outros do mesmo lead/usuário
+    await poolTeste.query(
+      `UPDATE testes
+          SET ativou_trilha = FALSE
+        WHERE (usuario_id = $1 OR telefone_canonico = $2)
+          AND id <> $3`,
+      [teste.usuario_id, teste.telefone_canonico, testeId]
+    );
+
+    // Ativa esse
+    await poolTeste.query(
+      `UPDATE testes SET ativou_trilha = TRUE WHERE id = $1`,
+      [testeId]
+    );
+
+    // Atualiza cache em usuarios.perfil_teste (banco Core)
+    if (teste.usuario_id) {
+      try {
+        const respostas = Array.isArray(teste.respostas) ? teste.respostas : JSON.parse(teste.respostas || '[]');
+        const resultado = calcularResultado(respostas);
+        const perfilBruto = (resultado.perfil_dominante || '').startsWith('prosperidade')
+          ? 'prosperidade'
+          : resultado.perfil_dominante;
+        await poolCore.query(
+          `UPDATE usuarios
+              SET perfil_teste = $1,
+                  percentual_prosperidade = $2,
+                  atualizado_em = NOW()
+            WHERE id = $3`,
+          [perfilBruto, resultado.percentual_prosperidade, teste.usuario_id]
+        );
+      } catch (e) {
+        console.warn('[teste/ativar-trilha] falha ao atualizar usuarios.perfil_teste:', e.message);
+      }
+    }
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[teste/ativar-trilha] erro:', err);
     return res.status(500).json({ ok: false, erro: 'erro interno' });
   }
 });
