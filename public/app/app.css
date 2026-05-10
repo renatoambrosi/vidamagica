@@ -472,7 +472,12 @@ body.chat-aberto .views {
 .feed-home {
   width: 100%;
   margin-bottom: 1.5rem;
+  margin-top: 0;
   position: relative;
+}
+/* O #view-home tem espaço pro feed grudar no header sem cobrir */
+#view-home {
+  padding-top: 0;
 }
 .feed-home-vazio {
   padding: 2rem 1.25rem;
@@ -1230,6 +1235,13 @@ body.teclado-aberto .bottom-nav {
   padding: calc(var(--safe-top) + 24px) 18px 24px;
   align-items: stretch;
   justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+/* Trava fundo: na aba chat (tela de escolha) as partículas/sprites do bg ficam paradas */
+#view-chat.active ~ #particulas,
+body.view-chat-ativa #particulas {
+  display: none;
 }
 
 /* Tela de conversa: aparece SOBRE a tela de escolha com vidro real branco.
