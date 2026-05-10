@@ -104,9 +104,9 @@ function irPara(viewId) {
   document.getElementById(`view-${viewId}`)?.classList.add('active');
   document.querySelector(`.nav-tab[data-view="${viewId}"]`)?.classList.add('active');
 
-  // Esconde header preto quando entra no chat
+  // Header SÓ esconde quando abre uma conversa (não na tela de escolha)
   if (viewId === 'chat') {
-    document.body.classList.add('chat-aberto');
+    document.body.classList.remove('chat-aberto');
     abrirTelaEscolhaChat();
   } else {
     document.body.classList.remove('chat-aberto');
@@ -141,7 +141,7 @@ document.querySelectorAll('[data-close]').forEach(btn => {
 document.addEventListener('keydown', e => { if (e.key==='Escape') document.querySelectorAll('.modal[aria-hidden="false"]').forEach(m => fecharModal(m)); });
 
 document.getElementById('btn-avisos')?.addEventListener('click', () => { renderAvisos(); abrirModal('modal-avisos'); setTimeout(() => { AVISOS().forEach(a => marcarLido(a.id)); atualizarBadgeAvisos(); }, 2000); });
-document.getElementById('btn-sementes')?.addEventListener('click', () => irPara('perfil'));
+document.getElementById('btn-sementes')?.addEventListener('click', () => abrirModalSementes());
 document.getElementById('menu-testes')?.addEventListener('click',  () => { carregarTestes(); abrirModal('modal-testes'); });
 document.getElementById('menu-logout')?.addEventListener('click',  async () => {
   const refresh = VmSession.getRefresh();
@@ -188,31 +188,40 @@ let feedItemDestaque = null;
 async function carregarFeed() {
   try {
     const r = await fetch(`${API}/api/feed`);
-    if (!r.ok) return;
-    feedItens = await r.json();
-
-    // Apenas vídeos no feed-home (vídeos exclusivos da Su)
-    const videos = feedItens.filter(i => i.tipo === 'video' && i.ativo);
-    if (videos.length === 0) {
-      const vazio = document.getElementById('feed-home-vazio');
-      if (vazio) vazio.style.display = '';
-      return;
-    }
-
-    // Mais recente em destaque
-    const ordenados = [...videos].sort((a, b) => {
-      const da = a.publicado_em ? new Date(a.publicado_em).getTime() : 0;
-      const db = b.publicado_em ? new Date(b.publicado_em).getTime() : 0;
-      return db - da;
-    });
-    feedItemDestaque = ordenados[0];
-    renderFeedHome(feedItemDestaque);
-
-    const btnMais = document.getElementById('feed-home-ver-mais');
-    if (btnMais && ordenados.length > 1) btnMais.style.display = '';
+    if (r.ok) feedItens = await r.json();
   } catch (e) {
     console.warn('[feed] erro:', e);
   }
+
+  // Apenas vídeos no feed-home
+  let videos = (feedItens || []).filter(i => i.tipo === 'video' && i.ativo);
+
+  // Se não tem nenhum vídeo cadastrado, usa exemplo (mesmo do index.html)
+  if (videos.length === 0) {
+    videos = [{
+      id: 'exemplo',
+      tipo: 'video',
+      titulo: 'Vida Mágica — A Jornada',
+      subtitulo: '',
+      corpo: '',
+      url: 'https://www.youtube.com/embed/yzMQW1DW6eE',
+      imagem_url: 'https://img.youtube.com/vi/yzMQW1DW6eE/maxresdefault.jpg',
+      ativo: true,
+      publicado_em: new Date().toISOString(),
+    }];
+  }
+
+  // Mais recente em destaque
+  const ordenados = [...videos].sort((a, b) => {
+    const da = a.publicado_em ? new Date(a.publicado_em).getTime() : 0;
+    const db = b.publicado_em ? new Date(b.publicado_em).getTime() : 0;
+    return db - da;
+  });
+  feedItemDestaque = ordenados[0];
+  renderFeedHome(feedItemDestaque);
+
+  const btnMais = document.getElementById('feed-home-ver-mais');
+  if (btnMais && ordenados.length > 1) btnMais.style.display = '';
 }
 
 function renderFeedHome(item) {
@@ -569,6 +578,8 @@ function abrirTelaEscolhaChat() {
   canalAtivo = null;
   document.getElementById('chat-escolha-tela').style.display = 'flex';
   document.getElementById('chat-conversa-tela').style.display = 'none';
+  // Tela de escolha mostra header
+  document.body.classList.remove('chat-aberto');
   if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
   carregarResumoChats();
 }
@@ -605,6 +616,8 @@ function atualizarCardCanal(canal, info) {
 // ── Abrir canal ──
 async function abrirCanal(canal) {
   canalAtivo = canal;
+  // Conversa aberta → esconde header preto
+  document.body.classList.add('chat-aberto');
   // Tela de escolha continua renderizada POR BAIXO da tela de conversa.
   // A tela de conversa fica posicionada absoluta com liquid glass — efeito
   // de modal flutuante sobre os 2 cards de escolha borrados ao fundo.
@@ -1890,12 +1903,11 @@ function hidratarHome(ctx) {
 // ── BARRA DE PROGRESSO DA JORNADA NO HEADER ──
 function renderHeaderJornada(ctx) {
   const wrap = document.getElementById('topo-jornada');
-  const nomeEl = document.getElementById('topo-jornada-nome');
-  const pctEl  = document.getElementById('topo-jornada-pct');
+  const iconeAtualEl = document.getElementById('topo-jornada-icone-atual');
+  const iconeProxEl  = document.getElementById('topo-jornada-icone-prox');
   const fillEl = document.getElementById('topo-jornada-fill');
-  if (!wrap || !nomeEl || !pctEl || !fillEl) return;
+  if (!wrap || !iconeAtualEl || !iconeProxEl || !fillEl) return;
 
-  // Preferir jornada_vigente (novo); fallback pra jornada_atual (legado)
   const j = ctx.jornada_vigente || ctx.jornada_atual;
   if (!j) {
     wrap.classList.add('is-vazio');
@@ -1903,13 +1915,128 @@ function renderHeaderJornada(ctx) {
   }
   wrap.classList.remove('is-vazio');
 
-  const nome = j.nome || `Jornada ${j.numero || ''}`;
-  const pct  = Math.max(0, Math.min(100, Math.round(j.progresso_percentual || j.progresso || 0)));
+  const num = j.numero || 1;
+  const pct = Math.max(0, Math.min(100, Math.round(j.progresso_percentual || j.progresso || 0)));
 
-  nomeEl.textContent = nome;
-  pctEl.textContent  = pct + '%';
-  // animação aplica via CSS transition
+  iconeAtualEl.textContent = num;
+  // Próxima jornada (X+1), até 3
+  iconeProxEl.textContent = num < 3 ? (num + 1) : '★';
+
   requestAnimationFrame(() => { fillEl.style.width = pct + '%'; });
+
+  // Guarda dados pra modal
+  wrap.__jornada = j;
+}
+
+// Clique no header da jornada → modal com detalhes
+document.getElementById('topo-jornada')?.addEventListener('click', () => {
+  const wrap = document.getElementById('topo-jornada');
+  const j = wrap?.__jornada;
+  if (j) abrirModalJornada(j);
+});
+
+// ── MODAL JORNADA (detalhes da jornada vigente) ──
+function abrirModalJornada(j) {
+  let ov = document.getElementById('vm-jornada-modal-overlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'vm-jornada-modal-overlay';
+    ov.className = 'vm-jornada-modal-overlay';
+    ov.innerHTML = '\
+      <div class="vm-jornada-modal" role="dialog" aria-modal="true">\
+        <button type="button" class="vm-jornada-modal-fechar" aria-label="Fechar">\
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>\
+        </button>\
+        <div class="vm-jornada-modal-eyebrow" id="vm-jornada-eyebrow"></div>\
+        <h2 class="vm-jornada-modal-titulo" id="vm-jornada-titulo"></h2>\
+        <div class="vm-jornada-modal-pct-wrap">\
+          <div class="vm-jornada-modal-pct-bar"><div class="vm-jornada-modal-pct-fill" id="vm-jornada-pct-fill" style="width:0%"></div></div>\
+          <span class="vm-jornada-modal-pct-num" id="vm-jornada-pct-num">0%</span>\
+        </div>\
+        <div class="vm-jornada-modal-passos" id="vm-jornada-passos"></div>\
+      </div>';
+    document.body.appendChild(ov);
+    const fechar = () => { ov.classList.remove('visible'); document.body.style.overflow = ''; };
+    ov.querySelector('.vm-jornada-modal-fechar').addEventListener('click', fechar);
+    ov.addEventListener('click', (e) => { if (e.target === ov) fechar(); });
+  }
+  // Preencher
+  const num = j.numero || 1;
+  const pct = Math.max(0, Math.min(100, Math.round(j.progresso_percentual || j.progresso || 0)));
+  ov.querySelector('#vm-jornada-eyebrow').textContent = `JORNADA ${num}`;
+  ov.querySelector('#vm-jornada-titulo').textContent  = j.nome || `Jornada ${num}`;
+  ov.querySelector('#vm-jornada-pct-num').textContent = pct + '%';
+  requestAnimationFrame(() => { ov.querySelector('#vm-jornada-pct-fill').style.width = pct + '%'; });
+
+  const passosEl = ov.querySelector('#vm-jornada-passos');
+  const passos = Array.isArray(j.passos) ? j.passos : [];
+  // Identificar o passo "atual" = primeiro não concluído
+  let idxAtual = passos.findIndex(p => !p.concluido);
+  if (idxAtual === -1) idxAtual = -2; // todos concluídos
+  passosEl.innerHTML = passos.map((p, i) => {
+    let cls = '';
+    let status = '';
+    if (p.concluido) { cls = 'concluido'; status = '✓ Concluído'; }
+    else if (i === idxAtual) { cls = 'atual'; status = 'Você está aqui'; }
+    else { status = 'Próximos passos'; }
+    return `
+      <div class="vm-jornada-modal-passo ${cls}">
+        <div class="vm-jornada-modal-passo-num">${p.concluido ? '✓' : (p.ordem || (i+1))}</div>
+        <div class="vm-jornada-modal-passo-info">
+          <div class="vm-jornada-modal-passo-titulo">${p.titulo || `Passo ${i+1}`}</div>
+          <div class="vm-jornada-modal-passo-status">${status}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  ov.classList.add('visible');
+  document.body.style.overflow = 'hidden';
+}
+
+// ── MODAL SEMENTES (ao clicar no ícone do header) ──
+function abrirModalSementes() {
+  const saldo = (typeof usuario !== 'undefined' && usuario && usuario.sementes) ? Number(usuario.sementes) : 0;
+
+  let ov = document.getElementById('vm-sementes-modal-overlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'vm-sementes-modal-overlay';
+    ov.className = 'vm-sementes-modal-overlay';
+    ov.innerHTML = '\
+      <div class="vm-sementes-modal" role="dialog" aria-modal="true">\
+        <button type="button" class="vm-sementes-modal-fechar" aria-label="Fechar">\
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>\
+        </button>\
+        <div class="vm-sementes-saldo" id="vm-sementes-saldo">0</div>\
+        <div class="vm-sementes-label">🌱 Sementes</div>\
+        <div class="vm-sementes-trocas" id="vm-sementes-trocas"></div>\
+        <p class="vm-sementes-info">Você coleta 1 semente por dia ao abrir o Tesouro da Su.<br>Acumule e troque por testes e assinaturas.</p>\
+      </div>';
+    document.body.appendChild(ov);
+    const fechar = () => { ov.classList.remove('visible'); document.body.style.overflow = ''; };
+    ov.querySelector('.vm-sementes-modal-fechar').addEventListener('click', fechar);
+    ov.addEventListener('click', (e) => { if (e.target === ov) fechar(); });
+  }
+  ov.querySelector('#vm-sementes-saldo').textContent = saldo;
+  const trocasEl = ov.querySelector('#vm-sementes-trocas');
+  const trocas = [
+    { custo: 50,  titulo: 'Teste do Subconsciente', sub: 'Faça um teste sem custo' },
+    { custo: 100, titulo: 'Clube Vida Mágica',      sub: 'Um mês de assinatura' },
+  ];
+  trocasEl.innerHTML = trocas.map(t => {
+    const ok = saldo >= t.custo;
+    return `
+      <div class="vm-sementes-troca ${ok ? '' : 'bloqueada'}" data-custo="${t.custo}">
+        <div class="vm-sementes-troca-custo">${t.custo} 🌱</div>
+        <div class="vm-sementes-troca-info">
+          <div class="vm-sementes-troca-titulo">Trocar por ${t.titulo}</div>
+          <div class="vm-sementes-troca-sub">${ok ? t.sub : `Faltam ${t.custo - saldo} sementes`}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  ov.classList.add('visible');
+  document.body.style.overflow = 'hidden';
 }
 
 // ── BANNER "Seu novo perfil está pronto pra atualizar sua jornada" ──
