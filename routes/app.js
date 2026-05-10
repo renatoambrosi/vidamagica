@@ -255,6 +255,23 @@ router.get('/contexto', autenticar, async (req, res) => {
     };
     const normalizarSlug = (slug) => SLUG_LEGADO_MAP[slug] || slug;
 
+    // ── Atualizações pendentes (compra/teste/etc) ──────────
+    // Carregadas SEMPRE com /contexto pra o frontend já saber se precisa
+    // exibir banner / aviso / splash de celebração.
+    let atualizacoesPendentes = [];
+    try {
+      const aR = await poolCore.query(
+        `SELECT id, tipo, payload, criado_em
+           FROM atualizacoes_pendentes
+          WHERE usuario_id = $1 AND consumido_em IS NULL
+          ORDER BY criado_em DESC`,
+        [usuarioId]
+      );
+      atualizacoesPendentes = aR.rows;
+    } catch (e) {
+      console.warn('[contexto] erro ao buscar atualizações pendentes:', e.message);
+    }
+
     // ── Resposta ─────────────────────────────────────────────
     return res.json({
       ok: true,
@@ -277,6 +294,10 @@ router.get('/contexto', autenticar, async (req, res) => {
         feito_em: testeAguardandoAtivacao.feito_em,
         visto_em: testeAguardandoAtivacao.visto_em,
       } : null,
+      // Atualizações pendentes (compra de produto, ativação de teste).
+      // Cada atualização gera animação de celebração na próxima visita ao
+      // app, com a barra de progresso real animando 0 → percentual atual.
+      atualizacoes_pendentes: atualizacoesPendentes,
       jornada_atual: jornadaAtual,
       todos_testes: todosTestes.map(t => ({
         id: t.id,
@@ -314,6 +335,47 @@ router.get('/contexto', autenticar, async (req, res) => {
     });
   } catch (err) {
     console.error('[app/contexto] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ──────────────────────────────────────────────────────────
+// ATUALIZAÇÕES PENDENTES (jornada)
+// ──────────────────────────────────────────────────────────
+// Lista as atualizações que a aluna ainda não consumiu. O frontend
+// usa pra decidir se mostra banner "atualizar jornada" / aviso no
+// sino / splash de celebração na próxima visita.
+router.get('/atualizacoes', autenticar, async (req, res) => {
+  try {
+    const r = await poolCore.query(
+      `SELECT id, tipo, payload, criado_em
+         FROM atualizacoes_pendentes
+        WHERE usuario_id = $1 AND consumido_em IS NULL
+        ORDER BY criado_em DESC`,
+      [req.usuario.sub]
+    );
+    return res.json({ ok: true, atualizacoes: r.rows });
+  } catch (err) {
+    console.error('[app/atualizacoes] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// Marca uma atualização como consumida (aluna viu a splash de celebração).
+router.post('/atualizacoes/:id/consumir', autenticar, async (req, res) => {
+  try {
+    const id = (req.params.id || '').toString().trim();
+    if (!id) return res.status(400).json({ ok: false, erro: 'id ausente' });
+    const r = await poolCore.query(
+      `UPDATE atualizacoes_pendentes
+          SET consumido_em = NOW()
+        WHERE id = $1 AND usuario_id = $2 AND consumido_em IS NULL
+        RETURNING id`,
+      [id, req.usuario.sub]
+    );
+    return res.json({ ok: true, marcou: r.rowCount > 0 });
+  } catch (err) {
+    console.error('[app/atualizacoes/consumir] erro:', err);
     return res.status(500).json({ ok: false, erro: 'erro interno' });
   }
 });
