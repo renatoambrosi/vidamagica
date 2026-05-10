@@ -22,6 +22,7 @@ const {
   montarListaEnergias,
   montarJornada,
 } = require('../core/teste-resultado');
+const { calcularJornadaVigente, temClubeVidaMagica } = require('../core/jornadas');
 
 // ── GET /api/app/contexto ───────────────────────────────────
 router.get('/contexto', autenticar, async (req, res) => {
@@ -124,6 +125,7 @@ router.get('/contexto', autenticar, async (req, res) => {
     // Antes da ativação, o app continua mostrando o teste anterior ativo.
     let testeAtual = null;
     let jornadaAtual = null;
+    let jornadaVigente = null;
     let conteudoPerfil = null;
 
     const testeMaisRecente = todosTestes.find(t => t.ativou_trilha);
@@ -209,6 +211,23 @@ router.get('/contexto', autenticar, async (req, res) => {
         }
       } catch (e) {
         console.warn('[contexto] erro ao montar jornada:', e.message);
+      }
+      // ── 6.b Jornada vigente (via core/jornadas.js) ───────
+      // Função canônica que substitui a lógica antiga baseada em tabelas
+      // `jornadas_metodo`/`jornadas_passos`/`jornadas_perfis_map`. Aqui
+      // calculamos tudo em código: aplica regra do override (trava forte
+      // >20%), distribui pesos (P1/P2/P3), cruza com slugsComprados pra
+      // marcar concluído. Mantém `jornadaAtual` ao lado pra retrocompat.
+      try {
+        jornadaVigente = calcularJornadaVigente({
+          perfil_dominante: calc.perfil_dominante,
+          perfil_dominante_bruto: calc.perfil_dominante_bruto,
+          percentuais_exibicao: calc.percentuais_exibicao,
+          nivel_prosperidade: calc.nivel_prosperidade,
+          slugsComprados,
+        });
+      } catch (e) {
+        console.warn('[contexto] erro ao calcular jornadaVigente:', e.message);
       }
     }
 
@@ -299,6 +318,11 @@ router.get('/contexto', autenticar, async (req, res) => {
       // app, com a barra de progresso real animando 0 → percentual atual.
       atualizacoes_pendentes: atualizacoesPendentes,
       jornada_atual: jornadaAtual,
+      // jornada_vigente: nova fonte da verdade (core/jornadas.js).
+      // Frontend novo lê daqui; o `jornada_atual` fica pra retrocompat.
+      jornada_vigente: jornadaVigente,
+      // tem_clube: aluna tem Clube Vida Mágica ativo (plano !== 'gratuito')
+      tem_clube: temClubeVidaMagica({ plano: aluna.plano }),
       todos_testes: todosTestes.map(t => ({
         id: t.id,
         feito_em: t.feito_em,
