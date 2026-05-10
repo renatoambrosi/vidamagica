@@ -2139,7 +2139,7 @@ function renderMateriais(ctx) {
   if (ctx.teste_em_andamento) {
     const tea = ctx.teste_em_andamento;
     blocoTestes.push(
-      `<div class="mat-card mat-card-andamento" onclick="window.location.href='/teste'">
+      `<div class="mat-card mat-card-andamento" onclick="window.location.href='/teste?from=app'">
         <div class="mat-card-eyebrow mat-card-eyebrow-andamento">Em andamento</div>
         <div class="mat-card-titulo">Continuar Teste do Subconsciente</div>
         <div class="mat-card-desc">Pergunta ${tea.respondidas} de ${tea.total} respondidas</div>
@@ -2195,7 +2195,7 @@ function renderMateriais(ctx) {
     }).join('');
 
     // Card final "+ Fazer novo" — sempre como último item, em ambos modos
-    const fazerNovoCard = `<div class="teste-mini-card teste-mini-novo" onclick="window.location.href='/teste'">
+    const fazerNovoCard = `<div class="teste-mini-card teste-mini-novo" onclick="window.location.href='/teste?from=app'">
       <div class="teste-mini-novo-icone">+</div>
       <div class="teste-mini-novo-label">Fazer novo</div>
     </div>`;
