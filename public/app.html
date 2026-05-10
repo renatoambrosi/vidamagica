@@ -22,15 +22,13 @@
     </div>
 
     <!-- Barra de progresso da jornada (entre logo e ícones) -->
-    <div class="topo-jornada" id="topo-jornada">
-      <div class="topo-jornada-info">
-        <span class="topo-jornada-nome" id="topo-jornada-nome">Sua jornada</span>
-        <span class="topo-jornada-pct" id="topo-jornada-pct">0%</span>
-      </div>
+    <button class="topo-jornada" id="topo-jornada" type="button" aria-label="Ver minha jornada">
+      <span class="topo-jornada-icone topo-jornada-icone-atual" id="topo-jornada-icone-atual">1</span>
       <div class="topo-jornada-bar">
         <div class="topo-jornada-fill" id="topo-jornada-fill" style="width:0%"></div>
       </div>
-    </div>
+      <span class="topo-jornada-icone topo-jornada-icone-prox" id="topo-jornada-icone-prox">2</span>
+    </button>
 
     <div class="topo-direita">
       <button class="topo-btn" id="btn-sementes" aria-label="Sementes">
@@ -60,9 +58,13 @@
         <div class="feed-home-vazio" id="feed-home-vazio" style="display:none">
           <p>Nenhum vídeo publicado ainda.</p>
         </div>
-        <div class="feed-home-destaque" id="feed-home-destaque" style="display:none">
+        <!-- Vídeo destaque (mais recente). Inicia já visível com o vídeo de exemplo;
+             carregarFeed() substitui pelo mais recente do banco. -->
+        <div class="feed-home-destaque" id="feed-home-destaque">
           <div class="feed-home-thumb-wrap">
-            <img class="feed-home-thumb" id="feed-home-thumb" alt="" loading="lazy">
+            <img class="feed-home-thumb" id="feed-home-thumb"
+                 src="https://img.youtube.com/vi/yzMQW1DW6eE/maxresdefault.jpg"
+                 alt="Vida Mágica — A Jornada" loading="lazy">
             <div class="feed-home-play" id="feed-home-play" aria-label="Assistir">
               <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </div>
@@ -77,7 +79,7 @@
             </button>
           </div>
           <div class="feed-home-meta">
-            <div class="feed-home-titulo" id="feed-home-titulo"></div>
+            <div class="feed-home-titulo" id="feed-home-titulo">Vida Mágica — A Jornada</div>
           </div>
         </div>
         <a href="/feed.html" class="feed-home-ver-mais" id="feed-home-ver-mais" style="display:none">
