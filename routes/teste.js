@@ -354,13 +354,19 @@ router.post('/responder', async (req, res) => {
       );
     }
 
-    // INSERT sempre — o registro novo nasce não pago e não visto.
+    // INSERT sempre — o registro novo nasce não visto.
+    // ⚠️ TEMPORÁRIO ⚠️ — `pago=TRUE` na criação mantém todos os testes
+    // como "pago" enquanto o gateway não está implementado. Isso casa com
+    // o bypass `|| true` em routes/app.js. Quando o webhook do Kiwify
+    // entrar, REMOVER `pago` do INSERT (volta ao default FALSE) — daí
+    // só vira pago via /api/teste/marcar-pago disparado pelo webhook.
     const insR = await poolTeste.query(
       `INSERT INTO testes
          (usuario_id, lead_id, versao_id, telefone_canonico, respostas,
           contagem, percentuais,
-          perfil_dominante, percentual_prosperidade, nivel_prosperidade)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          perfil_dominante, percentual_prosperidade, nivel_prosperidade,
+          pago)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, TRUE)
        RETURNING id`,
       [
         lead.usuario_id,
