@@ -467,6 +467,7 @@ router.get('/resultado/:teste_id', async (req, res) => {
           trilhaAtivadaAgora = true;
 
           // Atualiza cache no banco Core (usuarios.perfil_teste)
+          // E cria a atualização pendente da animação de celebração.
           if (teste.usuario_id) {
             const perfilBruto = (resultado.perfil_dominante || '').startsWith('prosperidade')
               ? 'prosperidade'
@@ -478,6 +479,14 @@ router.get('/resultado/:teste_id', async (req, res) => {
                       atualizado_em = NOW()
                 WHERE id = $3`,
               [perfilBruto, resultado.percentual_prosperidade, teste.usuario_id]
+            );
+
+            // Atualização pendente — frontend vai mostrar a splash quando
+            // a aluna clicar no banner/aviso, ou no fim do resultado do teste.
+            await poolCore.query(
+              `INSERT INTO atualizacoes_pendentes (usuario_id, tipo, payload)
+               VALUES ($1, 'teste', $2)`,
+              [teste.usuario_id, JSON.stringify({ teste_id: testeId, contexto: 'criando' })]
             );
           }
         } catch (e) {
@@ -644,7 +653,8 @@ router.post('/ativar-trilha/:teste_id', async (req, res) => {
       [testeId]
     );
 
-    // Atualiza cache em usuarios.perfil_teste (banco Core)
+    // Atualiza cache em usuarios.perfil_teste (banco Core) E cria
+    // a atualização pendente pra disparar a splash de celebração.
     if (teste.usuario_id) {
       try {
         const respostas = Array.isArray(teste.respostas) ? teste.respostas : JSON.parse(teste.respostas || '[]');
@@ -660,8 +670,16 @@ router.post('/ativar-trilha/:teste_id', async (req, res) => {
             WHERE id = $3`,
           [perfilBruto, resultado.percentual_prosperidade, teste.usuario_id]
         );
+
+        // Atualização pendente — splash "Atualizando sua jornada" será
+        // disparada quando a aluna clicar no banner ou no aviso.
+        await poolCore.query(
+          `INSERT INTO atualizacoes_pendentes (usuario_id, tipo, payload)
+           VALUES ($1, 'teste', $2)`,
+          [teste.usuario_id, JSON.stringify({ teste_id: testeId, contexto: 'atualizando' })]
+        );
       } catch (e) {
-        console.warn('[teste/ativar-trilha] falha ao atualizar usuarios.perfil_teste:', e.message);
+        console.warn('[teste/ativar-trilha] falha ao atualizar/criar pendência:', e.message);
       }
     }
 
