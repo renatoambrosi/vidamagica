@@ -546,10 +546,10 @@ router.get('/resultado/:teste_id', async (req, res) => {
 
     // ── Jornada do método ──
     // Busca a jornada que o perfil dominante dispara, com os passos.
-    // OBS: como esse endpoint é público (acessível via link),
-    // só mostramos a JORNADA + os títulos dos passos. Não calculamos
-    // "comprado/não comprado" aqui — esse status é privado e só aparece
-    // no /app, autenticado.
+    // Se a aluna está logada (teste tem usuario_id), cruzamos com
+    // usuario_produtos pra marcar quais passos já foram conquistados —
+    // cortesias (origem='cortesia' ou 'manual' com ativo=true) contam
+    // como passo concluído. Se admin revogar (ativo=false), volta a "não comprado".
     let jornadaInfo = null;
     try {
       const mapR = await poolComunicacao.query(
@@ -564,18 +564,56 @@ router.get('/resultado/:teste_id', async (req, res) => {
       );
       if (mapR.rows[0]) {
         const primeira = mapR.rows[0];
+
+        // Slugs comprados pela aluna (se logada). Cortesia/manual entram
+        // naturalmente — qualquer linha em usuario_produtos com ativo=true conta.
+        const slugsComprados = new Set();
+        if (teste.usuario_id) {
+          try {
+            const compR = await poolCore.query(
+              `SELECT p.slug
+                 FROM usuario_produtos up
+                 JOIN produtos p ON p.id = up.produto_id
+                WHERE up.usuario_id = $1
+                  AND up.ativo = TRUE`,
+              [teste.usuario_id]
+            );
+            compR.rows.forEach(r => { if (r.slug) slugsComprados.add(r.slug); });
+          } catch (e) {
+            console.warn('[teste/resultado] erro ao buscar produtos da aluna:', e.message);
+          }
+        }
+        // Quem fez o teste já cumpriu o Passo 1 (Conhecer) por padrão —
+        // o teste é o conhecer. Garante mesmo que o produto_slug do passo
+        // não esteja em usuario_produtos.
+        slugsComprados.add('teste_subconsciente');
+
+        const passos = mapR.rows.filter(r => r.ordem != null).map(r => ({
+          ordem: r.ordem,
+          titulo: r.titulo_passo,
+          descricao: r.descricao_passo,
+          produto_slug: r.produto_slug,
+          comprado: r.produto_slug ? slugsComprados.has(r.produto_slug) : false,
+        }));
+
+        // Marca o "próximo" — primeiro passo NÃO comprado em ordem
+        const idxProximo = passos.findIndex(p => !p.comprado);
+        passos.forEach((p, i) => { p.eh_proximo = (i === idxProximo); });
+
+        const concluidos = passos.filter(p => p.comprado).length;
+
         jornadaInfo = {
           slug: primeira.slug,
           numero: primeira.numero,
           nome_exibicao: primeira.nome_exibicao,
           subtitulo: primeira.subtitulo,
           cor: primeira.cor,
-          passos: mapR.rows.filter(r => r.ordem != null).map(r => ({
-            ordem: r.ordem,
-            titulo: r.titulo_passo,
-            descricao: r.descricao_passo,
-            produto_slug: r.produto_slug,
-          })),
+          passos,
+          progresso: {
+            passos_concluidos: concluidos,
+            passos_totais: passos.length,
+            percentual: passos.length > 0 ? Math.round((concluidos / passos.length) * 100) : 0,
+          },
         };
       }
     } catch (e) {
