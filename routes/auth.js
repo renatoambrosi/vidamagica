@@ -589,8 +589,18 @@ router.post('/login-senha', async (req, res) => {
 
     const usuario = await buscarUsuarioPorIdentificador(id);
 
-    if (!usuario || !usuario.senha_hash) {
+    if (!usuario) {
       return res.status(401).json({ error: 'Dados incorretos. Verifique seu WhatsApp/e-mail e a senha.' });
+    }
+
+    // Aluna existe mas nunca definiu senha (caso transitório do legado).
+    // Frontend trata esse code mostrando opção de receber magic link pra
+    // completar o cadastro / definir senha.
+    if (!usuario.senha_hash) {
+      return res.status(401).json({
+        error: 'Você ainda não definiu uma senha. Entre pelo WhatsApp pra criar a sua.',
+        code: 'SEM_SENHA',
+      });
     }
 
     const ok = await bcrypt.compare(senha, usuario.senha_hash);
