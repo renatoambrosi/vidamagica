@@ -23,6 +23,7 @@ const {
   montarLivrosRecomendados,
   montarListaEnergias,
 } = require('../core/teste-resultado');
+const { calcularJornadaVigente, temClubeVidaMagica } = require('../core/jornadas');
 const { autenticar } = require('../middleware/autenticar');
 
 // ── Validações simples ──────────────────────────────────────
@@ -544,81 +545,57 @@ router.get('/resultado/:teste_id', async (req, res) => {
       if (cR.rows[0]) textoCompartilhar = cR.rows[0].dados.texto || '';
     } catch {}
 
-    // ── Jornada do método ──
-    // Busca a jornada que o perfil dominante dispara, com os passos.
-    // Se a aluna está logada (teste tem usuario_id), cruzamos com
-    // usuario_produtos pra marcar quais passos já foram conquistados —
-    // cortesias (origem='cortesia' ou 'manual' com ativo=true) contam
-    // como passo concluído. Se admin revogar (ativo=false), volta a "não comprado".
-    let jornadaInfo = null;
-    try {
-      const mapR = await poolComunicacao.query(
-        `SELECT j.slug, j.numero, j.nome_exibicao, j.subtitulo, j.cor,
-                jp.ordem, jp.produto_slug, jp.titulo_passo, jp.descricao_passo
-           FROM jornadas_perfis_map m
-           JOIN jornadas_metodo j ON j.slug = m.jornada_slug
-           LEFT JOIN jornadas_passos jp ON jp.jornada_slug = j.slug
-          WHERE m.perfil_slug = $1
-          ORDER BY jp.ordem`,
-        [resultado.perfil_dominante]
-      );
-      if (mapR.rows[0]) {
-        const primeira = mapR.rows[0];
+    // ── Jornada vigente (via core/jornadas.js) ──
+    // Função canônica que determina:
+    //   - qual jornada a aluna está (1, 2 ou 3)
+    //   - quais passos com pesos (P1/P2/P3) e produtos
+    //   - quais passos estão concluídos (cruzando com usuario_produtos)
+    //   - progresso ponderado em %
+    //   - análise automatizada (texto pra exibir quando relevante)
+    //
+    // Regras:
+    //   - Conhecer e Despertar = default ou quando há trava forte (>20%)
+    //   - Vida Mágica          = prosperidade dominante (nv1 ou nv2) sem trava
+    //   - Multiplicando Vida Mágica = prosperidade nv3 sem trava
 
-        // Slugs comprados pela aluna (se logada). Cortesia/manual entram
-        // naturalmente — qualquer linha em usuario_produtos com ativo=true conta.
-        const slugsComprados = new Set();
-        if (teste.usuario_id) {
-          try {
-            const compR = await poolCore.query(
-              `SELECT p.slug
-                 FROM usuario_produtos up
-                 JOIN produtos p ON p.id = up.produto_id
-                WHERE up.usuario_id = $1
-                  AND up.ativo = TRUE`,
-              [teste.usuario_id]
-            );
-            compR.rows.forEach(r => { if (r.slug) slugsComprados.add(r.slug); });
-          } catch (e) {
-            console.warn('[teste/resultado] erro ao buscar produtos da aluna:', e.message);
-          }
-        }
-        // Quem fez o teste já cumpriu o Passo 1 (Conhecer) por padrão —
-        // o teste é o conhecer. Garante mesmo que o produto_slug do passo
-        // não esteja em usuario_produtos.
-        slugsComprados.add('teste_subconsciente');
-
-        const passos = mapR.rows.filter(r => r.ordem != null).map(r => ({
-          ordem: r.ordem,
-          titulo: r.titulo_passo,
-          descricao: r.descricao_passo,
-          produto_slug: r.produto_slug,
-          comprado: r.produto_slug ? slugsComprados.has(r.produto_slug) : false,
-        }));
-
-        // Marca o "próximo" — primeiro passo NÃO comprado em ordem
-        const idxProximo = passos.findIndex(p => !p.comprado);
-        passos.forEach((p, i) => { p.eh_proximo = (i === idxProximo); });
-
-        const concluidos = passos.filter(p => p.comprado).length;
-
-        jornadaInfo = {
-          slug: primeira.slug,
-          numero: primeira.numero,
-          nome_exibicao: primeira.nome_exibicao,
-          subtitulo: primeira.subtitulo,
-          cor: primeira.cor,
-          passos,
-          progresso: {
-            passos_concluidos: concluidos,
-            passos_totais: passos.length,
-            percentual: passos.length > 0 ? Math.round((concluidos / passos.length) * 100) : 0,
-          },
-        };
+    // Slugs que a aluna possui (com cortesia/manual entrando naturalmente)
+    const slugsComprados = new Set();
+    let usuarioPlano = 'gratuito';
+    if (teste.usuario_id) {
+      try {
+        const compR = await poolCore.query(
+          `SELECT p.slug
+             FROM usuario_produtos up
+             JOIN produtos p ON p.id = up.produto_id
+            WHERE up.usuario_id = $1 AND up.ativo = TRUE`,
+          [teste.usuario_id]
+        );
+        compR.rows.forEach(r => { if (r.slug) slugsComprados.add(r.slug); });
+      } catch (e) {
+        console.warn('[teste/resultado] erro ao buscar produtos da aluna:', e.message);
       }
-    } catch (e) {
-      console.warn('[teste/resultado] erro ao montar jornada:', e.message);
+
+      // Plano atual da aluna (pra saber se tem Clube Vida Mágica)
+      try {
+        const uR = await poolCore.query(
+          `SELECT plano FROM usuarios WHERE id=$1`,
+          [teste.usuario_id]
+        );
+        if (uR.rows[0]) usuarioPlano = uR.rows[0].plano || 'gratuito';
+      } catch (e) {
+        console.warn('[teste/resultado] erro ao buscar plano:', e.message);
+      }
     }
+
+    const jornadaInfo = calcularJornadaVigente({
+      perfil_dominante: resultado.perfil_dominante,
+      perfil_dominante_bruto: resultado.perfil_dominante_bruto,
+      percentuais_exibicao: resultado.percentuais_exibicao,
+      nivel_prosperidade: resultado.nivel_prosperidade,
+      slugsComprados,
+    });
+
+    const temClube = temClubeVidaMagica({ plano: usuarioPlano });
 
     return res.json({
       ok: true,
@@ -644,6 +621,8 @@ router.get('/resultado/:teste_id', async (req, res) => {
       jornada: jornadaInfo,
       // Texto pro botão de compartilhar
       compartilhar_texto: textoCompartilhar,
+      // Plano da aluna (pra cadeado/CTA Clube Vida Mágica no frontend)
+      tem_clube: temClube,
       // ── Flags de fluxo ──
       // eh_reteste: aluna acabou de ver um RE-TESTE (já tinha trilha ativa).
       //   Frontend mostra popup "quer atualizar sua trilha?" antes de exibir.
