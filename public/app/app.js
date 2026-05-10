@@ -107,9 +107,11 @@ function irPara(viewId) {
   // Header SÓ esconde quando abre uma conversa (não na tela de escolha)
   if (viewId === 'chat') {
     document.body.classList.remove('chat-aberto');
+    document.body.classList.add('view-chat-ativa');
     abrirTelaEscolhaChat();
   } else {
     document.body.classList.remove('chat-aberto');
+    document.body.classList.remove('view-chat-ativa');
     // Tira foco do textarea pra fechar teclado se estava aberto
     document.getElementById('chat-input')?.blur();
   }
@@ -142,6 +144,33 @@ document.addEventListener('keydown', e => { if (e.key==='Escape') document.query
 
 document.getElementById('btn-avisos')?.addEventListener('click', () => { renderAvisos(); abrirModal('modal-avisos'); setTimeout(() => { AVISOS().forEach(a => marcarLido(a.id)); atualizarBadgeAvisos(); }, 2000); });
 document.getElementById('btn-sementes')?.addEventListener('click', () => abrirModalSementes());
+
+// Handler GLOBAL do ícone "i" do feed (sempre disponível, não depende do JS de renderFeedHome)
+document.getElementById('feed-home-info')?.addEventListener('click', (ev) => {
+  ev.stopPropagation();
+  abrirModalInfoContextual('feed_video');
+});
+
+// Handler GLOBAL da barra de progresso no header (clique → modal jornada)
+document.getElementById('topo-jornada')?.addEventListener('click', () => {
+  const wrap = document.getElementById('topo-jornada');
+  const j = wrap?.__jornada;
+  if (j) {
+    abrirModalJornada(j);
+  } else {
+    // Fallback: sem dados, mostra modal vazio com mensagem
+    abrirModalJornada({
+      numero: 1,
+      nome: 'Conhecer e Despertar',
+      progresso_percentual: 0,
+      passos: [
+        { ordem: 1, titulo: 'Conhecer', concluido: false },
+        { ordem: 2, titulo: 'Despertar', concluido: false },
+        { ordem: 3, titulo: 'Reprogramação', concluido: false },
+      ],
+    });
+  }
+});
 document.getElementById('menu-testes')?.addEventListener('click',  () => { carregarTestes(); abrirModal('modal-testes'); });
 document.getElementById('menu-logout')?.addEventListener('click',  async () => {
   const refresh = VmSession.getRefresh();
@@ -1928,13 +1957,6 @@ function renderHeaderJornada(ctx) {
   wrap.__jornada = j;
 }
 
-// Clique no header da jornada → modal com detalhes
-document.getElementById('topo-jornada')?.addEventListener('click', () => {
-  const wrap = document.getElementById('topo-jornada');
-  const j = wrap?.__jornada;
-  if (j) abrirModalJornada(j);
-});
-
 // ── MODAL JORNADA (detalhes da jornada vigente) ──
 function abrirModalJornada(j) {
   let ov = document.getElementById('vm-jornada-modal-overlay');
@@ -2318,6 +2340,25 @@ function montarJornadaInfoSplash(ctx) {
 function renderMateriais(ctx) {
   const wrap = document.getElementById('produtos-lista');
   if (!wrap) return;
+  try {
+    _renderMateriaisInterno(ctx, wrap);
+  } catch (e) {
+    console.error('[renderMateriais]', e);
+    // Fallback: mostra ao menos os produtos do catálogo sem cruzamento
+    const outros = Array.isArray(ctx.outros_produtos) ? ctx.outros_produtos : [];
+    if (outros.length === 0) return; // mantém empty-state
+    wrap.innerHTML = '<h3 style="font-family:var(--font-display);font-size:1.05rem;color:var(--texto);margin:0 0 1rem;padding:0 1.25rem">Conheça nossos produtos</h3>' +
+      outros.filter(p => !!p.link_checkout_padrao).map(p => `
+        <div class="mat-card" style="margin:0 1.25rem 1rem">
+          ${p.imagem_url ? `<img src="${escHtml(p.imagem_url)}" alt="" style="width:100%;border-radius:10px;display:block;margin-bottom:0.6rem">` : ''}
+          <div style="font-family:var(--font-display);font-size:0.95rem;font-weight:800;color:var(--texto);margin-bottom:0.4rem">${escHtml(p.nome || '')}</div>
+          <a href="${escHtml(p.link_checkout_padrao)}" target="_blank" rel="noopener" class="mat-cta">Quero este</a>
+        </div>
+      `).join('');
+  }
+}
+
+function _renderMateriaisInterno(ctx, wrap) {
 
   const blocos = [];
   const SLUG_TESTE = 'teste_subconsciente';
