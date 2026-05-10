@@ -444,6 +444,138 @@ body.chat-aberto .views {
   font-size: 1.4rem;
 }
 
+/* ── Subseções "Em andamento" / "Concluídos" ── */
+.testes-subsecao { margin-bottom: 1rem; }
+.testes-subsecao:last-child { margin-bottom: 0; }
+.testes-subsecao-titulo {
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0.55rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.testes-subsecao-icone { font-size: 0.85rem; line-height: 1; }
+.testes-subsecao-titulo-andamento { color: #B8732D; }  /* dourado escuro / âmbar de atenção */
+.testes-subsecao-titulo-concluidos { color: #4F8C5C; } /* verde charme */
+
+/* ── Card "Em andamento" — destaque dourado/âmbar ── */
+.teste-mini-em-andamento {
+  background: linear-gradient(135deg, rgba(248,220,150,0.32), rgba(232,201,122,0.18));
+  border: 1px solid rgba(200,146,42,0.55);
+  box-shadow: 0 2px 12px rgba(200,146,42,0.18);
+  cursor: default;
+}
+.teste-mini-em-andamento:hover {
+  transform: none;
+  border-color: rgba(200,146,42,0.7);
+  box-shadow: 0 4px 16px rgba(200,146,42,0.22);
+}
+.teste-mini-em-andamento .teste-mini-eyebrow { color: #B8732D; }
+.teste-mini-andamento-info {
+  font-size: 0.78rem;
+  color: var(--texto-suave);
+  margin-top: -0.15rem;
+}
+
+/* Linha de ações (botões lado a lado dentro do card) */
+.teste-mini-acoes-row {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+.teste-mini-btn {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.12s, opacity 0.15s, background 0.15s;
+}
+.teste-mini-btn:active { transform: scale(0.96); }
+.teste-mini-btn-continuar {
+  background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
+  color: white;
+  flex: 1;
+  min-width: 120px;
+}
+.teste-mini-btn-continuar:hover { opacity: 0.92; }
+.teste-mini-btn-apagar {
+  background: transparent;
+  color: var(--texto-suave);
+  border: 1px solid var(--vidro-borda);
+}
+.teste-mini-btn-apagar:hover {
+  color: #B85A48;
+  border-color: rgba(184,90,72,0.35);
+}
+
+/* Links de ação dentro do card concluído */
+.teste-mini-link {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.teste-mini-link-resultado { color: var(--ouro-fundo); }
+.teste-mini-link-atualizar {
+  color: var(--ouro-fundo);
+  position: relative;
+  padding-left: 0.65rem;
+  border-left: 1px solid rgba(200,146,42,0.35);
+  text-shadow: 0 0 1px rgba(200,146,42,0.15);
+}
+.teste-mini-link-atualizar:hover {
+  color: var(--ouro);
+  text-decoration: underline;
+}
+
+/* Badge "✓ Concluído" no canto do card concluído */
+.teste-mini-badge-concluido {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  background: rgba(79,140,92,0.14);
+  color: #4F8C5C;
+  border: 1px solid rgba(79,140,92,0.28);
+  border-radius: 999px;
+  padding: 0.12rem 0.55rem;
+  font-family: var(--font-display);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+/* O card precisa ser relative pro badge se posicionar */
+.teste-mini-card.teste-mini-pago,
+.teste-mini-card.teste-mini-bloqueado {
+  position: relative;
+}
+
+/* ── Passos concluídos da Jornada — verde charme ── */
+.trilha-passo-concluido .trilha-passo-status,
+.trilha-item-concluido .trilha-status {
+  color: #4F8C5C !important;
+}
+.trilha-passo-concluido .trilha-passo-badge,
+.trilha-item-concluido .trilha-badge {
+  background: rgba(79,140,92,0.14);
+  color: #4F8C5C;
+  border: 1px solid rgba(79,140,92,0.28);
+}
+
 .view-sub { font-size: 0.82rem; color: var(--texto-suave); font-style: italic; }
 /* ── Aba Materiais — cartões elegantes com seções e hierarquia ──
    Cada bloco (Seus testes / Adquiridos / Continue sua jornada / Para descobrir)
