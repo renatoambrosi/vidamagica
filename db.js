@@ -329,6 +329,36 @@ async function initCore() {
     await c.query(`CREATE INDEX IF NOT EXISTS idx_uprod_telefone ON usuario_produtos(telefone_canonico)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_uprod_usuario ON usuario_produtos(usuario_id)`);
 
+    // ── ATUALIZAÇÕES PENDENTES DA JORNADA ──────────────────
+    // Eventos que disparam um aviso de "sua jornada foi atualizada" no app
+    // aluna. Cada linha = 1 evento que ela ainda NÃO consumiu (não viu a
+    // animação de celebração).
+    //
+    // Quando aluna faz/refaz teste e ativa trilha → cria 1 atualização
+    //   pendente do tipo 'teste'.
+    // Quando aluna compra produto (webhook Kiwify) → cria 1 atualização
+    //   pendente do tipo 'compra'.
+    //
+    // O frontend lê `atualizacoes_pendentes != []` e mostra banner/aviso/
+    // splash. Quando ela vê (clica em "Concluir" da splash), o backend
+    // marca consumido_em.
+    //
+    // Slots prontos pra integração:
+    // - tipo: 'teste' | 'compra' | (futuros: 'evento_ao_vivo', 'mensagem_su')
+    // - payload JSON: detalhes contextuais (teste_id, produto_slug, etc)
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS atualizacoes_pendentes (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        tipo VARCHAR(30) NOT NULL CHECK (tipo IN ('teste','compra')),
+        payload JSONB DEFAULT '{}'::jsonb,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        consumido_em TIMESTAMPTZ
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_atualizacoes_usuario_pendente
+      ON atualizacoes_pendentes(usuario_id) WHERE consumido_em IS NULL`);
+
     // Financeiro
     await c.query(`
       CREATE TABLE IF NOT EXISTS eventos_financeiros (
