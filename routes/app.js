@@ -231,49 +231,25 @@ router.get('/contexto', autenticar, async (req, res) => {
       }
     }
 
-    // ── Outros produtos (catálogo completo) ──
-    // Junta DUAS fontes (regra: sem JOIN entre bancos, cruzamento em código):
-    //   • Core.produtos        → link_checkout_padrao, imagem_url, descricao, ativo
-    //   • Comunicação.precos   → nome, preço, link aluno
-    // O cruzamento é por slug. O resultado é o catálogo completo pro frontend.
+    // ── Outros produtos (catálogo completo da aba Preços) ──
+    // O frontend filtra os já comprados e os da jornada, e mostra o resto.
+    // Também serve como FONTE DA VERDADE pra enriquecer os comprados com
+    // imagem_url/nome canônicos (que vivem na aba Preços, não na tabela produtos).
     let outrosProdutos = [];
-    const precosBySlugAll = {};
-    const produtosBySlugAll = {};
+    const precosBySlugAll = {};  // mapa slug → dados de precos pra enriquecer comprados
     try {
-      // 1. Buscar tabela produtos (Core)
-      const prodR = await poolCore.query(
-        `SELECT slug, nome, descricao, tipo, imagem_url, link_lp, link_checkout_padrao, ativo, fase, ordem
-         FROM produtos WHERE ativo = TRUE OR ativo IS NULL ORDER BY ordem NULLS LAST, slug`
-      );
-      prodR.rows.forEach(p => { produtosBySlugAll[p.slug] = p; });
-
-      // 2. Buscar tabela precos (Comunicação)
       const todosR = await poolComunicacao.query(
         `SELECT key, dados FROM precos ORDER BY key`
       );
       todosR.rows.forEach(r => { precosBySlugAll[r.key] = r.dados || {}; });
-
-      // 3. Mesclar: união dos slugs das duas tabelas
-      const todosSlugs = new Set([
-        ...Object.keys(produtosBySlugAll),
-        ...Object.keys(precosBySlugAll),
-      ]);
-      outrosProdutos = Array.from(todosSlugs).map(slug => {
-        const p = produtosBySlugAll[slug] || {};
-        const pr = precosBySlugAll[slug] || {};
-        return {
-          slug,
-          nome: pr.nome || p.nome || slug,
-          descricao: p.descricao || '',
-          tipo: pr.tipo || p.tipo || '',
-          imagem_url: pr.imagem_url || p.imagem_url || '',
-          link_lp: p.link_lp || '',
-          link_checkout_padrao: p.link_checkout_padrao || pr.link_checkout_padrao || '',
-          link_checkout_aluno: pr.link_checkout_aluno || '',
-          fase: p.fase || null,
-          ordem: p.ordem || null,
-        };
-      });
+      outrosProdutos = todosR.rows.map(r => ({
+        slug: r.key,
+        nome: (r.dados || {}).nome || r.key,
+        imagem_url: (r.dados || {}).imagem_url || '',
+        tipo: (r.dados || {}).tipo || '',
+        link_checkout_padrao: (r.dados || {}).link_checkout_padrao || '',
+        link_checkout_aluno: (r.dados || {}).link_checkout_aluno || '',
+      }));
     } catch (e) {
       console.warn('[contexto] erro ao buscar catálogo:', e.message);
     }
