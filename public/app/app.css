@@ -2645,6 +2645,27 @@ body.view-chat-ativa #particulas {
 /* ═══════════════════════════════════════════════════
    MODAL CLUBE VIDA MÁGICA (compartilhado entre Home/Materiais)
    ═══════════════════════════════════════════════════ */
+/* Variante SEM overlay escuro (modal flutua só, sem escurecer o fundo) */
+.vm-clube-modal-overlay.is-no-overlay,
+.vm-jornada-modal-overlay.is-no-overlay,
+.vm-sementes-modal-overlay.is-no-overlay {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  pointer-events: none;
+}
+.vm-clube-modal-overlay.is-no-overlay.visible,
+.vm-jornada-modal-overlay.is-no-overlay.visible,
+.vm-sementes-modal-overlay.is-no-overlay.visible {
+  pointer-events: none;
+}
+.vm-clube-modal-overlay.is-no-overlay .vm-clube-modal,
+.vm-jornada-modal-overlay.is-no-overlay .vm-jornada-modal,
+.vm-sementes-modal-overlay.is-no-overlay .vm-sementes-modal {
+  pointer-events: auto;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.65), 0 0 0 1px rgba(248,220,150,0.18);
+}
+
 .vm-clube-modal-overlay {
   position: fixed; inset: 0;
   background: rgba(0,7,59,0.85);
