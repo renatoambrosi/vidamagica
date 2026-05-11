@@ -314,7 +314,7 @@ function abrirModalInfoContextual(secao) {
   if (!ov) {
     ov = document.createElement('div');
     ov.id = 'vm-info-modal-overlay';
-    ov.className = 'vm-clube-modal-overlay';
+    ov.className = 'vm-clube-modal-overlay is-no-overlay';
     ov.innerHTML = '\
       <div class="vm-clube-modal" role="dialog" aria-modal="true">\
         <button type="button" class="vm-clube-fechar" aria-label="Fechar">\
@@ -1963,7 +1963,7 @@ function abrirModalJornada(j) {
   if (!ov) {
     ov = document.createElement('div');
     ov.id = 'vm-jornada-modal-overlay';
-    ov.className = 'vm-jornada-modal-overlay';
+    ov.className = 'vm-jornada-modal-overlay is-no-overlay';
     ov.innerHTML = '\
       <div class="vm-jornada-modal" role="dialog" aria-modal="true">\
         <button type="button" class="vm-jornada-modal-fechar" aria-label="Fechar">\
