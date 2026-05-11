@@ -474,6 +474,8 @@ body.chat-aberto .views {
   margin-bottom: 1.5rem;
   margin-top: 0;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 /* O #view-home tem espaço pro feed grudar no header sem cobrir */
 #view-home {
@@ -584,28 +586,36 @@ body.chat-aberto .views {
 }
 
 .feed-home-ver-mais {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.45rem;
-  margin: 0.85rem 1.25rem 0;
-  padding: 0.7rem 1rem;
-  background: rgba(245,240,232,0.04);
-  border: 1px solid rgba(245,240,232,0.12);
-  border-radius: 10px;
-  color: var(--ouro-claro, #F4D060);
+  gap: 0.5rem;
+  margin: 1rem 1.25rem 0;
+  padding: 0.72rem 1.15rem;
+  background: linear-gradient(135deg, #2A1F0B 0%, #3D2D11 100%);
+  border: 1px solid rgba(248,220,150,0.45);
+  border-radius: 999px;
+  color: #F4D060;
   font-family: var(--font-display);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   text-decoration: none;
-  transition: background 0.18s, border-color 0.18s, transform 0.12s;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(248,220,150,0.12);
+  transition: transform 0.15s cubic-bezier(0.22,1,0.36,1), box-shadow 0.18s, border-color 0.18s, background 0.18s;
+  width: -webkit-fit-content;
+  width: fit-content;
+  align-self: flex-start;
 }
+.feed-home-ver-mais svg { transition: transform 0.2s cubic-bezier(0.22,1,0.36,1); }
 .feed-home-ver-mais:hover {
-  background: rgba(248,220,150,0.08);
-  border-color: rgba(200,146,42,0.3);
+  background: linear-gradient(135deg, #3D2D11 0%, #5C3F0A 100%);
+  border-color: rgba(248,220,150,0.7);
+  box-shadow: 0 8px 26px rgba(200,146,42,0.32), inset 0 1px 0 rgba(248,220,150,0.18);
 }
-.feed-home-ver-mais:active { transform: scale(0.985); }
+.feed-home-ver-mais:hover svg { transform: translateX(3px); }
+.feed-home-ver-mais:active { transform: scale(0.97); }
 
 .feed-carrossel-wrap { position: relative; margin-bottom: 0.5rem; }
 .feed-carrossel { display: flex; overflow-x: scroll; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 0.85rem; padding: 0.25rem 1.25rem 0.5rem; scroll-behavior: smooth; }
