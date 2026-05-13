@@ -381,7 +381,7 @@ select option { background: #1a1205; }
         </div>
         <div class="feed-form-grid" style="margin-bottom:0.85rem">
           <div class="toggle-row" style="padding:0">
-            <div><div class="tl-titulo">Destaque</div><div class="tl-sub">Aparece no carrossel principal</div></div>
+            <div><div class="tl-titulo">Player Principal</div><div class="tl-sub">Aparece como vídeo do topo no app (só 1 ativo)</div></div>
             <label class="toggle"><input type="checkbox" id="fn-destaque"><span class="toggle-slider"></span></label>
           </div>
           <div class="toggle-row" style="padding:0">
@@ -1046,7 +1046,7 @@ function renderFeedAdmin() {
         <span class="feed-item-tipo ${item.tipo}">${tipoLabel(item.tipo)}</span>
         <span class="feed-item-titulo">${escHtml(item.titulo)}</span>
         <span class="feed-item-badges">
-          ${item.destaque ? '<span class="feed-badge-destaque">⭐ Destaque</span>' : ''}
+          ${item.destaque ? '<span class="feed-badge-destaque">▶ Player Principal</span>' : ''}
           ${!item.ativo  ? '<span class="feed-badge-inativo">Inativo</span>' : ''}
         </span>
         <span class="feed-item-actions">
@@ -1076,7 +1076,7 @@ function renderFeedAdmin() {
         </div>
         <div class="field" style="margin-bottom:0.65rem"><label>Texto / Descrição</label><textarea data-field="corpo" rows="3">${escHtml(item.corpo||'')}</textarea></div>
         <div class="feed-form-grid" style="margin-bottom:0.85rem">
-          <div class="toggle-row" style="padding:0"><div><div class="tl-titulo">Destaque</div><div class="tl-sub">Carrossel principal</div></div><label class="toggle"><input type="checkbox" data-field="destaque" ${item.destaque?'checked':''}><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row" style="padding:0"><div><div class="tl-titulo">Player Principal</div><div class="tl-sub">Vídeo do topo no app (só 1 ativo)</div></div><label class="toggle"><input type="checkbox" data-field="destaque" ${item.destaque?'checked':''}><span class="toggle-slider"></span></label></div>
           <div class="toggle-row" style="padding:0"><div><div class="tl-titulo">Publicado</div><div class="tl-sub">Visível no app</div></div><label class="toggle"><input type="checkbox" data-field="ativo" ${item.ativo?'checked':''}><span class="toggle-slider"></span></label></div>
         </div>
         <div style="display:flex;gap:0.5rem">

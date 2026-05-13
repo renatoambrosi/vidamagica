@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#E8DCC0">
+  <meta name="robots" content="noindex,nofollow">
   <title>Vida Mágica</title>
   <link rel="icon" href="/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -43,12 +44,20 @@
 
     <!-- HOME -->
     <section class="view active" id="view-home">
-      <div class="saudacao">
-        <p class="saudacao-eyebrow">Bem-vinda de volta</p>
-        <h1 class="saudacao-nome" id="saudacao-nome">Sua jornada</h1>
-        <div class="saudacao-divisor"></div>
-        <p class="saudacao-frase">A vida começa quando a mente desperta.</p>
-      </div>
+
+      <!-- PLAYER PRINCIPAL (vídeo ou imagem do topo) — populado por carregarPlayerTopo() -->
+      <section class="player-topo" id="player-topo"></section>
+
+      <!-- BOTOEIRA (faixa abaixo do player) — populada por renderBotoeira() -->
+      <section class="botoeira" id="botoeira"></section>
+
+      <!-- SAUDAÇÃO + JORNADA (nome + barra de progresso + jornada atual) — populada por renderSaudacaoJornada() -->
+      <section class="saudacao-jornada" id="saudacao-jornada">
+        <div class="saudacao">
+          <p class="saudacao-eyebrow">Bem-vinda de volta</p>
+          <h1 class="saudacao-nome" id="saudacao-nome">Sua jornada</h1>
+        </div>
+      </section>
 
       <div class="tesouro-wrap" id="tesouro-wrap">
         <button class="tesouro-btn" id="tesouro-btn" aria-label="Tesouro da Su">
@@ -95,14 +104,6 @@
           </div>
         </button>
       </div>
-
-      <section class="feed" id="feed">
-        <div class="feed-carrossel-wrap" id="feed-carrossel-wrap" style="display:none">
-          <div class="feed-carrossel" id="feed-carrossel"></div>
-          <div class="feed-dots" id="feed-dots"></div>
-        </div>
-        <div class="feed-lista" id="feed-lista"></div>
-      </section>
 
       <section class="trilha">
         <div class="trilha-header">
@@ -317,6 +318,25 @@
       </div>
     </section>
 
+    <!-- VÍDEOS (estilo Netflix — acessada pelo botão "Assista mais vídeos" da botoeira) -->
+    <section class="view" id="view-videos">
+      <div class="view-topo videos-topo">
+        <button class="videos-voltar" id="videos-voltar" aria-label="Voltar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div>
+          <h2 class="view-titulo">Vídeos</h2>
+          <p class="view-sub">Conteúdo exclusivo Vida Mágica</p>
+        </div>
+      </div>
+      <div class="videos-grid" id="videos-grid">
+        <div class="empty-state">
+          <div class="empty-icon">🎬</div>
+          <p class="empty-titulo">Carregando vídeos…</p>
+        </div>
+      </div>
+    </section>
+
     <!-- PERFIL -->
     <section class="view" id="view-perfil">
       <div class="perfil-hero" id="perfil-hero">
@@ -489,6 +509,34 @@
         <p style="font-size:0.84rem;color:var(--texto-suave);line-height:1.6;margin-bottom:1.25rem">O app vai pedir acesso ao microfone para você gravar mensagens de voz. Toque em <strong>Permitir</strong> quando aparecer.</p>
         <button id="modal-mic-ok" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,var(--ouro-fundo),var(--ouro));color:white;border-radius:var(--radius-md);font-family:var(--font-display);font-size:0.85rem;font-weight:800;border:none;cursor:pointer;margin-bottom:0.75rem">Entendido, continuar</button>
         <button data-close style="width:100%;padding:0.6rem;background:transparent;color:var(--texto-mute);font-family:var(--font-display);font-size:0.75rem;font-weight:600;border:none;cursor:pointer">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Conteúdo exclusivo (cadeado do player) — só pra não-assinante -->
+  <div class="modal" id="modal-exclusivo" aria-hidden="true">
+    <div class="modal-overlay" data-close></div>
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-exclusivo">
+        <div class="modal-exclusivo-icone">🔒</div>
+        <h3 class="modal-exclusivo-titulo">Conteúdo exclusivo Vida Mágica</h3>
+        <p class="modal-exclusivo-texto">Esse vídeo faz parte do acervo do Clube Vida Mágica. Assine pra ter acesso a vídeos novos toda semana, encontros e conteúdo exclusivo.</p>
+        <button id="modal-exclusivo-assinar" class="modal-exclusivo-btn-primary">Quero assinar</button>
+        <button data-close class="modal-exclusivo-btn-ghost">Mais tarde</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Info do botão "i" da botoeira (texto curto sobre acesso semanal) -->
+  <div class="modal" id="modal-info-videos" aria-hidden="true">
+    <div class="modal-overlay" data-close></div>
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-info-videos">
+        <div class="modal-info-videos-icone">✨</div>
+        <p class="modal-info-videos-texto">Se você é assinante Vida Mágica, tem acesso a vídeos exclusivos toda semana!</p>
+        <button data-close class="modal-info-videos-btn">Fechar</button>
       </div>
     </div>
   </div>
