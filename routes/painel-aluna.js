@@ -63,6 +63,11 @@ router.get('/usuarios/:id/produtos', async (req, res) => {
   }
 });
 
+// Slug canônico do Clube Vida Mágica. Quando esse produto é liberado/revogado,
+// o campo `usuarios.plano` é sincronizado pra que `temClubeVidaMagica()` (que
+// olha o plano) reconheça a aluna como assinante.
+const SLUG_CLUBE = 'clube_vida_magica';
+
 // ── POST /usuarios/:id/produtos ─────────────────────────────
 router.post('/usuarios/:id/produtos', async (req, res) => {
   try {
@@ -74,15 +79,34 @@ router.post('/usuarios/:id/produtos', async (req, res) => {
     if (!u.rows[0]) return res.status(404).json({ ok: false, erro: 'usuário não encontrado' });
     const telefone = u.rows[0].telefone;
 
+    // Resolve produto_id pelo slug (se veio). Também guarda o slug pra
+    // sincronizar plano abaixo.
+    let slugResolvido = produto_slug || null;
     if (!produto_id && produto_slug) {
-      const p = await poolCore.query(`SELECT id FROM produtos WHERE slug = $1`, [produto_slug]);
+      const p = await poolCore.query(`SELECT id, slug FROM produtos WHERE slug = $1`, [produto_slug]);
       if (!p.rows[0]) return res.status(400).json({ ok: false, erro: 'produto não encontrado' });
       produto_id = p.rows[0].id;
+      slugResolvido = p.rows[0].slug;
+    } else if (produto_id && !slugResolvido) {
+      const p = await poolCore.query(`SELECT slug FROM produtos WHERE id = $1`, [produto_id]);
+      slugResolvido = p.rows[0]?.slug || null;
     }
     if (!produto_id) return res.status(400).json({ ok: false, erro: 'produto_id ou produto_slug obrigatório' });
 
     if (!['cortesia', 'manual'].includes(origem_tipo)) {
       origem_tipo = 'manual';
+    }
+
+    // Se está liberando o Clube Vida Mágica, sincroniza usuarios.plano='clube'.
+    // É a fonte da verdade que temClubeVidaMagica() consulta. Sem isso, a aluna
+    // recebe o produto mas o app continua tratando como gratuita.
+    async function sincronizarPlanoSeClube() {
+      if (slugResolvido === SLUG_CLUBE) {
+        await poolCore.query(
+          `UPDATE usuarios SET plano = 'clube', atualizado_em = NOW() WHERE id = $1`,
+          [usuarioId]
+        );
+      }
     }
 
     const exist = await poolCore.query(
@@ -97,6 +121,9 @@ router.post('/usuarios/:id/produtos', async (req, res) => {
         `UPDATE usuario_produtos SET observacao = COALESCE($1, observacao), atualizado_em = NOW() WHERE id = $2`,
         [observacao || null, exist.rows[0].id]
       );
+      // Mesmo caso "já existia": sincroniza plano (pode ser que o produto foi
+      // liberado antes mas o plano ficou desatualizado num cenário legado).
+      await sincronizarPlanoSeClube();
       return res.json({ ok: true, id: exist.rows[0].id, ja_existia: true });
     }
 
@@ -106,6 +133,7 @@ router.post('/usuarios/:id/produtos', async (req, res) => {
        RETURNING id`,
       [usuarioId, telefone, produto_id, origem_tipo, observacao || null]
     );
+    await sincronizarPlanoSeClube();
     return res.json({ ok: true, id: r.rows[0].id });
   } catch (err) {
     console.error('[painel-aluna POST] erro:', err);
@@ -117,12 +145,48 @@ router.post('/usuarios/:id/produtos', async (req, res) => {
 router.delete('/usuarios/:id/produtos/:upId', async (req, res) => {
   try {
     const { poolCore } = require('../db');
+
+    // Antes de revogar, descobre qual produto é (pra saber se precisa
+    // mexer no plano depois).
+    const info = await poolCore.query(
+      `SELECT p.slug
+         FROM usuario_produtos up
+         LEFT JOIN produtos p ON p.id = up.produto_id
+        WHERE up.id = $1`,
+      [req.params.upId]
+    );
+    const slugRevogado = info.rows[0]?.slug || null;
+
     const r = await poolCore.query(
       `UPDATE usuario_produtos SET ativo = false, atualizado_em = NOW()
         WHERE id = $1 AND (usuario_id = $2 OR telefone_canonico = (SELECT telefone FROM usuarios WHERE id = $2))`,
       [req.params.upId, req.params.id]
     );
     if (r.rowCount === 0) return res.status(404).json({ ok: false, erro: 'não encontrado' });
+
+    // Se revogou o Clube Vida Mágica, só volta o plano pra 'gratuito' se NÃO
+    // houver outro registro ativo do Clube (proteção contra cortesia + compra).
+    if (slugRevogado === SLUG_CLUBE) {
+      const tel = await poolCore.query(`SELECT telefone FROM usuarios WHERE id = $1`, [req.params.id]);
+      const telefone = tel.rows[0]?.telefone;
+      const aindaTem = await poolCore.query(
+        `SELECT 1
+           FROM usuario_produtos up
+           JOIN produtos p ON p.id = up.produto_id
+          WHERE (up.usuario_id = $1 OR up.telefone_canonico = $2)
+            AND p.slug = $3
+            AND up.ativo = true
+          LIMIT 1`,
+        [req.params.id, telefone, SLUG_CLUBE]
+      );
+      if (!aindaTem.rows[0]) {
+        await poolCore.query(
+          `UPDATE usuarios SET plano = 'gratuito', atualizado_em = NOW() WHERE id = $1`,
+          [req.params.id]
+        );
+      }
+    }
+
     return res.json({ ok: true });
   } catch (err) {
     console.error('[painel-aluna DELETE] erro:', err);
