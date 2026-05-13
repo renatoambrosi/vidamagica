@@ -43,36 +43,61 @@ router.get('/admin/feed', autenticarPainel('admin'), async (req, res) => {
 });
 
 // ── ADMIN — POST /api/admin/feed (criar) ──
+// Regra do "Player Principal": só 1 item pode ter destaque=TRUE por vez.
+// Se o novo item entra como destaque, desmarca todos os outros antes (transação).
 router.post('/admin/feed', autenticarPainel('admin'), async (req, res) => {
   const { tipo, titulo, subtitulo, corpo, url, imagem_url, destaque, ativo, ordem, publicado_em } = req.body;
   if (!tipo || !titulo) return res.status(400).json({ error: 'tipo e titulo são obrigatórios' });
+  const client = await poolComunicacao.connect();
   try {
-    const r = await poolComunicacao.query(`
+    await client.query('BEGIN');
+    if (destaque) {
+      await client.query('UPDATE feed SET destaque=FALSE WHERE destaque=TRUE');
+    }
+    const r = await client.query(`
       INSERT INTO feed (tipo, titulo, subtitulo, corpo, url, imagem_url, destaque, ativo, ordem, publicado_em)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *
     `, [tipo, titulo, subtitulo || null, corpo || null, url || null, imagem_url || null,
         destaque || false, ativo !== false, ordem || 0, publicado_em || new Date()]);
+    await client.query('COMMIT');
     res.json(r.rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK');
     res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
   }
 });
 
 // ── ADMIN — PUT /api/admin/feed/:id ──
+// Mesma regra do "Player Principal": se o item está virando destaque=TRUE,
+// desmarca todos os outros (exceto ele mesmo) antes do UPDATE.
 router.put('/admin/feed/:id', autenticarPainel('admin'), async (req, res) => {
   const { tipo, titulo, subtitulo, corpo, url, imagem_url, destaque, ativo, ordem, publicado_em } = req.body;
+  const client = await poolComunicacao.connect();
   try {
-    const r = await poolComunicacao.query(`
+    await client.query('BEGIN');
+    if (destaque) {
+      await client.query('UPDATE feed SET destaque=FALSE WHERE destaque=TRUE AND id<>$1', [req.params.id]);
+    }
+    const r = await client.query(`
       UPDATE feed SET
         tipo=$1, titulo=$2, subtitulo=$3, corpo=$4, url=$5, imagem_url=$6,
         destaque=$7, ativo=$8, ordem=$9, publicado_em=$10, atualizado_em=NOW()
       WHERE id=$11 RETURNING *
     `, [tipo, titulo, subtitulo || null, corpo || null, url || null, imagem_url || null,
         destaque || false, ativo !== false, ordem || 0, publicado_em || new Date(), req.params.id]);
-    if (!r.rows.length) return res.status(404).json({ error: 'Item não encontrado' });
+    if (!r.rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Item não encontrado' });
+    }
+    await client.query('COMMIT');
     res.json(r.rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK');
     res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
   }
 });
 
