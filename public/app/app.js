@@ -249,17 +249,23 @@ function invalidarFeedCache() { _feedItensCache = null; }
 // Embed do YouTube com proteção máxima possível (esconde controles de
 // compartilhar/abrir no YouTube, sugestões, anotações). Vídeo deve ser
 // configurado como "não listado" no painel do YouTube pra blindar de busca.
+//
+// Importante: NÃO usamos `enablejsapi=1&origin=...` porque o YouTube valida
+// o domínio do origin e qualquer divergência (subdomínio, https vs http,
+// proxy) dispara erros tipo 150/153. Também usamos `youtube.com` direto
+// (não `youtube-nocookie.com`), porque o nocookie é mais restritivo e
+// alguns vídeos não tocam nele.
 function embedProtegidoDeUrl(url) {
   if (!url) return '';
-  const origin = encodeURIComponent(window.location.origin);
   const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   if (yt) {
-    // modestbranding=1 → esconde logo do YouTube
+    // autoplay=1       → toca automaticamente quando o iframe aparece
     // rel=0            → não sugere vídeos de outros canais ao terminar
-    // iv_load_policy=3 → desliga anotações
+    // modestbranding=1 → esconde logo do YouTube no canto
+    // iv_load_policy=3 → desliga anotações antigas
     // playsinline=1    → não força tela cheia no iPhone
     // fs=1             → mantém botão fullscreen (pra TV/casting)
-    return `https://www.youtube-nocookie.com/embed/${yt[1]}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&fs=1&enablejsapi=1&origin=${origin}`;
+    return `https://www.youtube.com/embed/${yt[1]}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&fs=1`;
   }
   const vm = url.match(/vimeo\.com\/(\d+)/);
   if (vm) return `https://player.vimeo.com/video/${vm[1]}?autoplay=1`;
