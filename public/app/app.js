@@ -2021,12 +2021,12 @@ function renderBannerAtualizarTrilha(ctx) {
       </button>
     </div>
   `;
-  // Posiciona logo após a saudação, antes da trilha
-  const trilha = wrap.querySelector('.trilha-section, #trilha-jornada-wrap, .secao-trilha');
+  // Posiciona ANTES da trilha (logo abaixo do tesouro).
+  const trilha = wrap.querySelector('.trilha');
   if (trilha) {
     trilha.parentNode.insertBefore(banner, trilha);
   } else {
-    wrap.insertBefore(banner, wrap.firstChild?.nextSibling || wrap.firstChild);
+    wrap.appendChild(banner);
   }
 
   banner.querySelector('.banner-atualizar-btn').addEventListener('click', async (e) => {
@@ -2063,11 +2063,12 @@ function renderBannerAtualizarPorCompra(ctx) {
       </button>
     </div>
   `;
-  const trilha = wrap.querySelector('.trilha-section, #trilha-jornada-wrap, .secao-trilha');
+  // Posiciona ANTES da trilha (logo abaixo do tesouro).
+  const trilha = wrap.querySelector('.trilha');
   if (trilha) {
     trilha.parentNode.insertBefore(banner, trilha);
   } else {
-    wrap.insertBefore(banner, wrap.firstChild?.nextSibling || wrap.firstChild);
+    wrap.appendChild(banner);
   }
 
   banner.querySelector('.banner-atualizar-btn').addEventListener('click', async () => {
