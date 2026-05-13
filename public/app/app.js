@@ -70,20 +70,58 @@ function criarParticulas() {
   }
 }
 
+// SVG da estrelinha — a "marca registrada" do app.
+function svgEstrelinha(size, fill = 'rgba(232,201,122,0.7)', stroke = 'rgba(200,146,42,0.4)') {
+  return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none"><path d="M12 2L13.5 9L20 9L14.5 13.5L16.5 20L12 16L7.5 20L9.5 13.5L4 9L10.5 9Z" fill="${fill}" stroke="${stroke}" stroke-width="0.5"/></svg>`;
+}
+
 function criarSprites() {
-  const S = [
-    {top:'15%',left:'8%',size:18,dur:4.2,delay:0},
-    {top:'22%',right:'6%',size:14,dur:5.8,delay:1.4},
-    {top:'38%',left:'5%',size:12,dur:6.1,delay:2.2},
-    {top:'55%',right:'4%',size:16,dur:4.8,delay:0.8},
-    {top:'70%',left:'7%',size:10,dur:7.2,delay:3.1},
-    {top:'82%',right:'9%',size:20,dur:5.3,delay:1.9},
+  // ── SPRITES BASE — aparecem pra todo mundo (gratuito ou assinante) ──
+  // Distribuídos em várias posições da tela. z-index: 1 (atrás de .views,
+  // não atrapalha chat/modais).
+  const BASE = [
+    {top:'8%', left:'8%',  size:18, dur:4.2, delay:0},
+    {top:'14%',right:'6%', size:14, dur:5.8, delay:1.4},
+    {top:'22%',left:'5%',  size:12, dur:6.1, delay:2.2},
+    {top:'32%',right:'8%', size:16, dur:4.8, delay:0.8},
+    {top:'45%',left:'7%',  size:10, dur:7.2, delay:3.1},
+    {top:'58%',right:'5%', size:20, dur:5.3, delay:1.9},
+    {top:'68%',left:'9%',  size:14, dur:6.4, delay:2.6},
+    {top:'80%',right:'7%', size:16, dur:5.1, delay:0.4},
   ];
-  S.forEach(s => {
+  BASE.forEach(s => {
     const el = document.createElement('div');
     el.className = 'sprite';
     Object.assign(el.style, { top:s.top||'auto', left:s.left||'auto', right:s.right||'auto', width:s.size+'px', height:s.size+'px', animationDuration:s.dur+'s', animationDelay:s.delay+'s' });
-    el.innerHTML = `<svg viewBox="0 0 24 24" width="${s.size}" height="${s.size}" fill="none"><path d="M12 2L13.5 9L20 9L14.5 13.5L16.5 20L12 16L7.5 20L9.5 13.5L4 9L10.5 9Z" fill="rgba(232,201,122,0.7)" stroke="rgba(200,146,42,0.4)" stroke-width="0.5"/></svg>`;
+    el.innerHTML = svgEstrelinha(s.size);
+    document.body.appendChild(el);
+  });
+
+  // ── SPRITES EXTRAS (PLUS) — só aparecem pra assinante Vida Mágica ──
+  // São criados desligados (display:none via CSS). Quando body.clube-ativo
+  // for adicionado em hidratarHome, eles se revelam. Por estarem em
+  // posições novas (cantos, centro, espalhados), dão a sensação de "mais
+  // mágica" sem atrapalhar a leitura.
+  const PLUS = [
+    {top:'5%', left:'30%',  size:11, dur:5.5, delay:0.3},
+    {top:'10%',right:'28%', size:13, dur:6.2, delay:1.8},
+    {top:'18%',left:'45%',  size:9,  dur:4.6, delay:2.9},
+    {top:'28%',right:'40%', size:15, dur:5.0, delay:0.6},
+    {top:'40%',left:'18%',  size:11, dur:6.8, delay:2.0},
+    {top:'48%',right:'20%', size:13, dur:5.4, delay:1.2},
+    {top:'52%',left:'42%',  size:9,  dur:7.0, delay:3.4},
+    {top:'62%',right:'32%', size:14, dur:4.9, delay:0.9},
+    {top:'72%',left:'25%',  size:11, dur:6.3, delay:2.5},
+    {top:'78%',right:'42%', size:12, dur:5.6, delay:1.5},
+    {top:'88%',left:'35%',  size:13, dur:5.9, delay:0.7},
+    {top:'92%',right:'14%', size:10, dur:6.7, delay:3.0},
+  ];
+  PLUS.forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'sprite-plus';
+    Object.assign(el.style, { top:s.top||'auto', left:s.left||'auto', right:s.right||'auto', width:s.size+'px', height:s.size+'px', animationDuration:s.dur+'s', animationDelay:s.delay+'s' });
+    // Estrelinhas plus com fill um pouquinho mais brilhante (mais "marcado")
+    el.innerHTML = svgEstrelinha(s.size, 'rgba(248,220,150,0.85)', 'rgba(200,146,42,0.55)');
     document.body.appendChild(el);
   });
 }
@@ -1964,6 +2002,16 @@ function hidratarHome(ctx) {
   // Guarda o contexto atual num escopo global pra outras views consultarem
   // (ex: view-videos precisa saber se é assinante quando a aluna troca de aba)
   window._ctxAtual = ctx;
+
+  // ── Marca o body como "clube-ativo" quando a aluna tem Vida Mágica.
+  //    O CSS usa essa classe pra:
+  //      1) Revelar os sprites-plus (escondidos por padrão)
+  //      2) Intensificar a animação dos sprites base (mais opacidade)
+  //    Vale pra TODAS as views (Home, Materiais, Vídeos, Perfil) porque a
+  //    classe fica no <body>. Não tocamos no #view-chat — sprites têm
+  //    z-index 1 e ficam atrás das views (z-index 10), então o chat segue
+  //    intacto.
+  document.body.classList.toggle('clube-ativo', !!ctx.tem_clube);
 
   // ── Player do topo (vídeo/imagem destaque) ──
   carregarPlayerTopo(ctx);
