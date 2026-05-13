@@ -115,12 +115,26 @@ function irPara(viewId) {
   }
 
   if (viewId === 'perfil') renderPerfil();
+  if (viewId === 'videos') {
+    // Renderiza a grade Netflix passando o contexto atual (pra saber se é assinante)
+    renderViewVideos(window._ctxAtual || null);
+  }
 }
 document.querySelectorAll('.nav-tab').forEach(tab => {
   tab.addEventListener('click', () => irPara(tab.dataset.view));
 });
 document.querySelector('.nav-tab[data-view="chat"]')?.addEventListener('click', () => {
   document.getElementById('nav-chat-badge').style.display = 'none';
+});
+
+// Botão "voltar" da view-videos → volta pra Home
+document.getElementById('videos-voltar')?.addEventListener('click', () => irPara('home'));
+
+// Botão "Quero assinar" do modal exclusivo → abre o modal de Clube Vida Mágica
+document.getElementById('modal-exclusivo-assinar')?.addEventListener('click', () => {
+  fecharModal('modal-exclusivo');
+  // Pequeno delay pro fechamento ficar suave antes do próximo modal
+  setTimeout(() => { window.app?.abrirModalClube?.(); }, 200);
 });
 
 // ── MODAIS ───────────────────────────────────────────────────
@@ -180,35 +194,219 @@ function pararPlayer() { const iframe = document.getElementById('player-iframe')
 
 // ── FEED ─────────────────────────────────────────────────────
 function icone(tipo) { return {video:'🎬',texto:'📝',imagem:'🖼️',link:'🔗'}[tipo]||'✦'; }
-async function carregarFeed() {
+
+// Cache local dos itens do feed (evita refazer fetch quando troca pra view-videos)
+let _feedItensCache = null;
+async function obterFeedItens() {
+  if (_feedItensCache) return _feedItensCache;
   try {
     const r = await fetch(`${API}/api/feed`);
-    if (!r.ok) return;
-    const itens = await r.json();
-    renderCarrossel(itens.filter(i => i.destaque));
-    renderLista(itens.filter(i => !i.destaque));
-  } catch {}
+    if (!r.ok) return [];
+    _feedItensCache = await r.json();
+    return _feedItensCache;
+  } catch { return []; }
 }
-function renderCarrossel(itens) {
-  const wrap=document.getElementById('feed-carrossel-wrap'), car=document.getElementById('feed-carrossel'), dots=document.getElementById('feed-dots');
-  if (!itens.length) { wrap.style.display='none'; return; }
-  wrap.style.display='';
-  car.innerHTML=itens.map(item=>{const thumb=item.imagem_url||thumbDeUrl(item.url),isVid=item.tipo==='video';return`<div class="feed-card-destaque" tabindex="0" data-tipo="${item.tipo}" data-url="${item.url||''}" data-titulo="${encodeURIComponent(item.titulo)}" data-subtitulo="${encodeURIComponent(item.subtitulo||'')}" data-corpo="${encodeURIComponent(item.corpo||'')}"><div class="feed-thumb">${thumb?`<img src="${thumb}" alt="${item.titulo}" loading="lazy">`:`<div class="feed-thumb-placeholder">${icone(item.tipo)}</div>`}${isVid?`<div class="feed-play-overlay"><div class="feed-play-btn"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>`:''}</div><div class="feed-card-body">${item.subtitulo?`<div class="feed-card-eyebrow">${item.subtitulo}</div>`:''}<div class="feed-card-titulo">${item.titulo}</div>${item.corpo?`<div class="feed-card-corpo">${item.corpo}</div>`:''}</div></div>`;}).join('');
-  dots.innerHTML=itens.map((_,i)=>`<div class="feed-dot${i===0?' ativo':''}" data-idx="${i}"></div>`).join('');
-  car.addEventListener('scroll',()=>{const idx=Math.round(car.scrollLeft/car.offsetWidth);dots.querySelectorAll('.feed-dot').forEach((d,i)=>d.classList.toggle('ativo',i===idx));},{passive:true});
-  dots.querySelectorAll('.feed-dot').forEach(d=>d.addEventListener('click',()=>{const c=car.children[parseInt(d.dataset.idx)];if(c)c.scrollIntoView({behavior:'smooth',block:'nearest',inline:'start'});}));
-  car.querySelectorAll('.feed-card-destaque').forEach(c=>c.addEventListener('click',()=>ativarItem(c)));
+function invalidarFeedCache() { _feedItensCache = null; }
+
+// Embed do YouTube com proteção máxima possível (esconde controles de
+// compartilhar/abrir no YouTube, sugestões, anotações). Vídeo deve ser
+// configurado como "não listado" no painel do YouTube pra blindar de busca.
+function embedProtegidoDeUrl(url) {
+  if (!url) return '';
+  const origin = encodeURIComponent(window.location.origin);
+  const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (yt) {
+    // modestbranding=1 → esconde logo do YouTube
+    // rel=0            → não sugere vídeos de outros canais ao terminar
+    // iv_load_policy=3 → desliga anotações
+    // playsinline=1    → não força tela cheia no iPhone
+    // fs=1             → mantém botão fullscreen (pra TV/casting)
+    return `https://www.youtube-nocookie.com/embed/${yt[1]}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&fs=1&enablejsapi=1&origin=${origin}`;
+  }
+  const vm = url.match(/vimeo\.com\/(\d+)/);
+  if (vm) return `https://player.vimeo.com/video/${vm[1]}?autoplay=1`;
+  return url;
 }
-function renderLista(itens) {
-  const lista=document.getElementById('feed-lista');if(!lista)return;
-  lista.innerHTML=itens.map(item=>{const thumb=item.imagem_url||thumbDeUrl(item.url),isVid=item.tipo==='video';return`<div class="feed-card-lista" tabindex="0" data-tipo="${item.tipo}" data-url="${item.url||''}" data-titulo="${encodeURIComponent(item.titulo)}" data-subtitulo="${encodeURIComponent(item.subtitulo||'')}" data-corpo="${encodeURIComponent(item.corpo||'')}"><div class="feed-lista-thumb">${thumb?`<img src="${thumb}" alt="${item.titulo}" loading="lazy">`:`<div class="feed-lista-thumb-placeholder">${icone(item.tipo)}</div>`}${isVid?`<div class="feed-lista-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>`:''}</div><div class="feed-lista-info">${item.subtitulo?`<div class="feed-lista-eyebrow">${item.subtitulo}</div>`:''}<div class="feed-lista-titulo">${item.titulo}</div>${item.corpo?`<div class="feed-lista-corpo">${item.corpo}</div>`:''}</div></div>`;}).join('');
-  lista.querySelectorAll('.feed-card-lista').forEach(c=>c.addEventListener('click',()=>ativarItem(c)));
+
+// ── PLAYER DO TOPO (vídeo ou imagem) ─────────────────────────
+// Renderiza o item destaque do feed dentro de #player-topo.
+// Não-assinante → cadeado dourado. Click abre modal-exclusivo.
+// Assinante     → botão de play. Click carrega iframe com proteção.
+async function carregarPlayerTopo(ctx) {
+  const el = document.getElementById('player-topo');
+  if (!el) return;
+
+  const itens = await obterFeedItens();
+  const destaque = itens.find(i => i.destaque && i.ativo);
+  if (!destaque) { el.innerHTML = ''; return; }
+
+  const ehAssinante = !!ctx?.tem_clube;
+  const isVideo  = destaque.tipo === 'video';
+  const isImagem = destaque.tipo === 'imagem';
+  const thumb = destaque.imagem_url || thumbDeUrl(destaque.url) || '';
+
+  // Imagem pura: sem play/cadeado, só a imagem (sem overlay).
+  if (isImagem) {
+    el.innerHTML = thumb
+      ? `<img class="player-topo-thumb" src="${thumb}" alt="${escHtml(destaque.titulo||'')}" loading="lazy">`
+      : '';
+    return;
+  }
+
+  // Vídeo: mostra thumb + botão central (play se assinante, cadeado se não)
+  const btnConteudo = ehAssinante
+    ? `<div class="player-topo-btn player-topo-btn-play" aria-label="Assistir">
+         <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+       </div>`
+    : `<div class="player-topo-btn player-topo-btn-cadeado" aria-label="Conteúdo exclusivo">
+         <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+       </div>`;
+
+  el.innerHTML = `
+    ${thumb ? `<img class="player-topo-thumb" src="${thumb}" alt="${escHtml(destaque.titulo||'')}" loading="lazy">` : ''}
+    <button type="button" class="player-topo-overlay" aria-label="${ehAssinante?'Assistir vídeo':'Conteúdo exclusivo'}">
+      ${btnConteudo}
+    </button>
+  `;
+
+  const overlay = el.querySelector('.player-topo-overlay');
+  overlay?.addEventListener('click', () => {
+    if (!ehAssinante) { abrirModal('modal-exclusivo'); return; }
+    if (!destaque.url) return;
+    // Carrega iframe inline e esconde o overlay
+    const iframeWrap = document.createElement('div');
+    iframeWrap.className = 'player-topo-iframe-wrap';
+    iframeWrap.innerHTML = `<iframe src="${embedProtegidoDeUrl(destaque.url)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+    el.appendChild(iframeWrap);
+    el.classList.add('tocando');
+    // Bloqueia clique direito (long-press no mobile) sobre o player todo —
+    // dificulta a aluna copiar o link do vídeo via menu de contexto.
+    el.addEventListener('contextmenu', e => e.preventDefault());
+  });
 }
-function ativarItem(card) {
-  const tipo=card.dataset.tipo,url=card.dataset.url,titulo=decodeURIComponent(card.dataset.titulo),subtitulo=decodeURIComponent(card.dataset.subtitulo),corpo=decodeURIComponent(card.dataset.corpo);
-  if(tipo==='video'&&url) abrirPlayer({titulo,subtitulo,corpo,url});
-  else if((tipo==='link'||tipo==='imagem')&&url) window.open(url,'_blank','noopener');
-  else abrirPlayer({titulo,subtitulo,corpo,url:null});
+
+// ── BOTOEIRA (faixa abaixo do player) ────────────────────────
+function renderBotoeira() {
+  const el = document.getElementById('botoeira');
+  if (!el) return;
+  el.innerHTML = `
+    <button type="button" class="botoeira-btn-videos" id="botoeira-ir-videos">
+      <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Assista mais vídeos
+    </button>
+    <button type="button" class="botoeira-btn-info" id="botoeira-info" aria-label="Mais informações">i</button>
+  `;
+  document.getElementById('botoeira-ir-videos')?.addEventListener('click', () => irPara('videos'));
+  document.getElementById('botoeira-info')?.addEventListener('click', () => abrirModal('modal-info-videos'));
+}
+
+// ── SAUDAÇÃO + JORNADA (nome + barra de progresso + jornada atual) ──
+// Substitui o cabeçalho de jornada que ficava no topo da Trilha.
+function renderSaudacaoJornada(ctx) {
+  const el = document.getElementById('saudacao-jornada');
+  if (!el) return;
+
+  const primeiroNome = ctx?.aluna?.primeiro_nome || 'Você';
+
+  // Pega a jornada (prefere vigente, cai pra atual). Pode ser null.
+  const vigente = ctx?.jornada_vigente;
+  let nomeJornada = '', numeroJornada = '', subtitulo = '', concluidos = 0, totais = 0, percentual = 0;
+  if (vigente) {
+    nomeJornada = vigente.nome || '';
+    numeroJornada = vigente.numero ? `Jornada ${vigente.numero}` : '';
+    concluidos = (vigente.passos || []).filter(p => p.concluido).length;
+    totais = (vigente.passos || []).length;
+    percentual = Math.round(vigente.progresso_percentual || 0);
+  } else if (ctx?.jornada_atual) {
+    const j = ctx.jornada_atual;
+    nomeJornada = j.nome_exibicao || '';
+    numeroJornada = j.numero ? `Jornada ${j.numero}` : '';
+    subtitulo = j.subtitulo || '';
+    concluidos = j.progresso?.passos_concluidos || 0;
+    totais = j.progresso?.passos_totais || 0;
+    percentual = j.progresso?.percentual || 0;
+  }
+
+  const barraHtml = (totais > 0) ? `
+    <div class="saudacao-jornada-barra">
+      <div class="saudacao-jornada-barra-topo">
+        <div>
+          ${numeroJornada ? `<div class="saudacao-jornada-numero">${escHtml(numeroJornada)}</div>` : ''}
+          <div class="saudacao-jornada-nome">${escHtml(nomeJornada)}</div>
+          ${subtitulo ? `<div class="saudacao-jornada-sub">${escHtml(subtitulo)}</div>` : ''}
+        </div>
+        <div class="saudacao-jornada-passos">
+          <div class="saudacao-jornada-passos-num">${concluidos}/${totais}</div>
+          <div class="saudacao-jornada-passos-pct">${percentual}%</div>
+        </div>
+      </div>
+      <div class="saudacao-jornada-bar-track">
+        <div class="saudacao-jornada-bar-fill" style="width:${percentual}%"></div>
+      </div>
+    </div>
+  ` : '';
+
+  el.innerHTML = `
+    <div class="saudacao">
+      <p class="saudacao-eyebrow">Bem-vinda de volta</p>
+      <h1 class="saudacao-nome" id="saudacao-nome">Olá, ${escHtml(primeiroNome)}</h1>
+    </div>
+    ${barraHtml}
+  `;
+}
+
+// ── VIEW VÍDEOS (grade Netflix) ──────────────────────────────
+async function renderViewVideos(ctx) {
+  const grid = document.getElementById('videos-grid');
+  if (!grid) return;
+
+  const itens = await obterFeedItens();
+  const videos = itens.filter(i => i.tipo === 'video' && i.ativo);
+
+  if (!videos.length) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1">
+        <div class="empty-icon">🎬</div>
+        <p class="empty-titulo">Nada por aqui ainda</p>
+        <p class="empty-sub">Em breve novos vídeos exclusivos.</p>
+      </div>`;
+    return;
+  }
+
+  const ehAssinante = !!ctx?.tem_clube;
+
+  grid.innerHTML = videos.map(v => {
+    const thumb = v.imagem_url || thumbDeUrl(v.url) || '';
+    const btnClasse = ehAssinante ? 'video-card-btn-play' : 'video-card-btn-cadeado';
+    const btnSvg = ehAssinante
+      ? '<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+      : '<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+    return `
+      <div class="video-card" data-id="${v.id}" data-url="${escAttr(v.url||'')}" data-titulo="${escAttr(v.titulo||'')}" data-subtitulo="${escAttr(v.subtitulo||'')}" data-corpo="${escAttr(v.corpo||'')}">
+        ${thumb
+          ? `<img class="video-card-thumb" src="${thumb}" alt="${escHtml(v.titulo||'')}" loading="lazy">`
+          : `<div class="video-card-thumb"></div>`}
+        <div class="video-card-overlay">
+          <div class="video-card-btn ${btnClasse}">${btnSvg}</div>
+        </div>
+        <div class="video-card-info">
+          <div class="video-card-titulo">${escHtml(v.titulo||'')}</div>
+          ${v.subtitulo ? `<div class="video-card-sub">${escHtml(v.subtitulo)}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  grid.querySelectorAll('.video-card').forEach(card => {
+    card.addEventListener('click', () => {
+      if (!ehAssinante) { abrirModal('modal-exclusivo'); return; }
+      abrirPlayer({
+        titulo: card.dataset.titulo,
+        subtitulo: card.dataset.subtitulo,
+        corpo: card.dataset.corpo,
+        url: card.dataset.url,
+      });
+    });
+  });
 }
 
 // ── TESOURO ──────────────────────────────────────────────────
@@ -441,6 +639,8 @@ function renderPerfil() {
 // ════════════════════════════════════════════════════════════
 
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// Versão pra usar dentro de atributos HTML (escapa aspas duplas e simples também).
+function escAttr(s) { return escHtml(s).replace(/"/g,'&#34;').replace(/'/g,'&#39;'); }
 
 // Formata "10/05/2026 às 14h01" a partir de ISO date
 function formatarDataHora(iso) {
@@ -1761,11 +1961,18 @@ async function carregarContexto() {
 function hidratarHome(ctx) {
   if (!ctx) return;
 
-  // ── Saudação ──
-  const elNome = document.getElementById('saudacao-nome');
-  if (elNome) {
-    elNome.textContent = `Olá, ${ctx.aluna.primeiro_nome}`;
-  }
+  // Guarda o contexto atual num escopo global pra outras views consultarem
+  // (ex: view-videos precisa saber se é assinante quando a aluna troca de aba)
+  window._ctxAtual = ctx;
+
+  // ── Player do topo (vídeo/imagem destaque) ──
+  carregarPlayerTopo(ctx);
+
+  // ── Botoeira (faixa abaixo do player com "Assista mais vídeos" + "i") ──
+  renderBotoeira();
+
+  // ── Saudação + barra de progresso da jornada ──
+  renderSaudacaoJornada(ctx);
 
   // ── Badge sementes ──
   const badge = document.getElementById('badge-sementes');
@@ -2535,26 +2742,13 @@ function renderTrilhaJornada(ctx) {
     ? '<div class="trilha-analise">' + escHtml(j.analise) + '</div>'
     : '';
 
+  // A barra de progresso e o nome da jornada agora ficam na seção
+  // "Saudação + Jornada" (#saudacao-jornada), renderizada por
+  // renderSaudacaoJornada(). Aqui mantemos só o cadeado de Clube,
+  // a análise automatizada e a lista de passos.
   trilha.innerHTML =
     '<div class="trilha-header">' +
-      // ── Barra de progresso da jornada ──
-      '<div class="jornada-barra-wrap" style="margin-bottom:1rem">' +
-        '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:0.4rem">' +
-          '<div>' +
-            '<div style="font-size:0.7rem;color:' + cor + ';letter-spacing:0.08em;text-transform:uppercase;font-weight:800">Jornada ' + j.numero + '</div>' +
-            '<div style="font-family:var(--font-display,Montserrat);font-size:1.1rem;color:var(--texto,#fff);font-weight:700;line-height:1.1">' + escHtml(j.nome_exibicao) + '</div>' +
-            (j.subtitulo ? '<div style="font-size:0.78rem;color:var(--texto-suave);margin-top:0.15rem">' + escHtml(j.subtitulo) + '</div>' : '') +
-          '</div>' +
-          '<div style="text-align:right">' +
-            '<div style="font-family:var(--font-display,Montserrat);font-weight:800;font-size:1.05rem;color:' + cor + '">' + j.progresso.passos_concluidos + '/' + j.progresso.passos_totais + '</div>' +
-            '<div style="font-size:0.7rem;color:var(--texto-suave)">' + j.progresso.percentual + '%</div>' +
-          '</div>' +
-        '</div>' +
-        '<div style="height:7px;background:rgba(245,240,232,0.08);border-radius:4px;overflow:hidden">' +
-          '<div style="height:100%;background:linear-gradient(90deg,' + cor + ',' + cor + 'cc);width:' + j.progresso.percentual + '%;transition:width 0.6s ease"></div>' +
-        '</div>' +
-        cadeadoClubeHtml +
-      '</div>' +
+      cadeadoClubeHtml +
       analiseHtml +
       '<h2 class="trilha-titulo" style="margin-top:0.5rem">Seu caminho</h2>' +
     '</div>' +
@@ -2659,7 +2853,6 @@ window.app = {
   const ctx = await carregarContexto();
   if (ctx) hidratarHome(ctx);
 
-  carregarFeed();
   carregarTesouro();
   conectarChatWs();
   carregarResumoChats();

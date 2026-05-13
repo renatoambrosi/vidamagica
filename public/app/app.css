@@ -2347,3 +2347,288 @@ body.teclado-aberto .bottom-nav {
   transition: color 0.15s;
 }
 .vm-clube-depois:hover { color: #F5F0E8; }
+
+/* ============================================================
+   PLAYER PRINCIPAL DO TOPO + BOTOEIRA + SAUDAÇÃO/JORNADA
+   + VIEW DE VÍDEOS (NETFLIX) + MODAIS NOVOS
+   Estilos da reestruturação visual da Home.
+   ============================================================ */
+
+/* ── PLAYER PRINCIPAL (vídeo OU imagem) ── */
+/* Largura 100vw furando a max-width da .views, encostado no header (sem gap). */
+.player-topo {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  aspect-ratio: 16/9;
+  background: rgba(13,8,0,0.92);
+  overflow: hidden;
+  user-select: none;
+}
+.player-topo:empty { display: none; }
+.player-topo-thumb {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.player-topo-iframe-wrap {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+}
+.player-topo-iframe-wrap iframe {
+  width: 100%; height: 100%;
+  border: 0;
+  display: block;
+}
+/* Camada que captura right-click e long-press sobre o iframe */
+.player-topo-shield {
+  position: absolute; inset: 0;
+  z-index: 2;
+  pointer-events: none; /* só ativa pra contextmenu (via JS) */
+}
+.player-topo-overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, rgba(13,8,0,0.15) 0%, rgba(13,8,0,0.45) 100%);
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.player-topo-overlay:hover { opacity: 0.92; }
+/* Botão de play OU cadeado — mesmo tamanho (52×52) */
+.player-topo-btn {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--ouro), var(--ouro-fundo));
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 22px rgba(13,8,0,0.4), 0 0 0 4px rgba(255,255,255,0.12);
+  color: #fff;
+}
+.player-topo-btn svg { width: 22px; height: 22px; }
+.player-topo-btn-play svg { fill: #fff; margin-left: 3px; }
+.player-topo-btn-cadeado svg { stroke: #fff; fill: none; stroke-width: 2.2; }
+
+/* Quando a aluna clica e o iframe está rodando, o overlay desaparece */
+.player-topo.tocando .player-topo-overlay { display: none; }
+
+/* ── BOTOEIRA (faixa abaixo do player) ── */
+/* Mesma largura full (ponta a ponta), encostada no player sem gap. */
+.botoeira {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0.7rem 1.25rem;
+  background: linear-gradient(180deg, rgba(200,146,42,0.16), rgba(200,146,42,0.08));
+  border-bottom: 1px solid var(--vidro-borda);
+}
+.botoeira:empty { display: none; }
+.botoeira-btn-videos {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  padding: 0.55rem 1.05rem;
+  background: linear-gradient(135deg, var(--ouro), var(--ouro-fundo));
+  color: #fff;
+  font-family: var(--font-display); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.04em;
+  border: 0; border-radius: var(--radius-full);
+  box-shadow: var(--sombra-suave);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.botoeira-btn-videos:hover { transform: translateY(-1px); box-shadow: var(--sombra-media); }
+.botoeira-btn-videos svg { width: 14px; height: 14px; fill: currentColor; }
+.botoeira-btn-info {
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: 1.5px solid var(--ouro-fundo);
+  color: var(--ouro-fundo);
+  border-radius: 50%;
+  font-family: var(--font-display); font-weight: 800; font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.botoeira-btn-info:hover { background: var(--ouro); color: #fff; border-color: var(--ouro); }
+
+/* ── SAUDAÇÃO + JORNADA (nova seção que herdou a barra de progresso) ── */
+.saudacao-jornada { padding: 1.25rem 1.25rem 1.25rem; }
+.saudacao-jornada .saudacao { padding: 0 0 1rem; text-align: left; }
+.saudacao-jornada .saudacao-eyebrow { color: var(--ouro-fundo); }
+.saudacao-jornada-barra {
+  background: var(--vidro);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--vidro-borda);
+  border-radius: var(--radius-lg);
+  padding: 0.95rem 1.05rem;
+  box-shadow: var(--sombra-suave);
+}
+.saudacao-jornada-barra-topo {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  gap: 0.75rem; margin-bottom: 0.55rem;
+}
+.saudacao-jornada-numero {
+  font-family: var(--font-display);
+  font-size: 0.62rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ouro-fundo);
+}
+.saudacao-jornada-nome {
+  font-family: var(--font-display);
+  font-size: 1.05rem; font-weight: 800; line-height: 1.15;
+  color: var(--texto);
+}
+.saudacao-jornada-sub {
+  font-size: 0.78rem; color: var(--texto-suave); margin-top: 0.15rem;
+}
+.saudacao-jornada-passos {
+  text-align: right;
+  font-family: var(--font-display);
+}
+.saudacao-jornada-passos-num {
+  font-weight: 900; font-size: 1.05rem; color: var(--ouro-fundo);
+}
+.saudacao-jornada-passos-pct {
+  font-size: 0.7rem; color: var(--texto-suave);
+}
+.saudacao-jornada-bar-track {
+  height: 7px;
+  background: rgba(200,146,42,0.12);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.saudacao-jornada-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ouro), var(--ouro-fundo));
+  transition: width 0.6s ease;
+}
+
+/* ── VIEW VÍDEOS (Netflix-like) ── */
+.videos-topo { display: flex; align-items: center; gap: 0.75rem; padding: 1.25rem 1.25rem 1rem; }
+.videos-voltar {
+  width: 36px; height: 36px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
+  color: var(--texto);
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.videos-voltar svg { width: 18px; height: 18px; }
+.videos-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.85rem;
+  padding: 0 1.25rem 2rem;
+}
+@media (min-width: 720px) {
+  .videos-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1100px) {
+  .videos-grid { grid-template-columns: repeat(4, 1fr); }
+}
+.video-card {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
+  cursor: pointer;
+  transition: transform 0.18s, border-color 0.18s;
+}
+.video-card:hover { transform: translateY(-2px); border-color: var(--vidro-borda-hi); }
+.video-card-thumb {
+  width: 100%; aspect-ratio: 16/9;
+  background: rgba(13,8,0,0.12);
+  display: block;
+  object-fit: cover;
+}
+.video-card-overlay {
+  position: absolute; top: 0; left: 0; right: 0; aspect-ratio: 16/9;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, rgba(13,8,0,0.05), rgba(13,8,0,0.35));
+}
+.video-card-btn {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--ouro), var(--ouro-fundo));
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(13,8,0,0.35);
+  color: #fff;
+}
+.video-card-btn svg { width: 18px; height: 18px; }
+.video-card-btn-play svg { fill: #fff; margin-left: 2px; }
+.video-card-btn-cadeado svg { stroke: #fff; fill: none; stroke-width: 2.2; }
+.video-card-info {
+  padding: 0.6rem 0.75rem 0.75rem;
+}
+.video-card-titulo {
+  font-family: var(--font-display);
+  font-size: 0.82rem; font-weight: 800; line-height: 1.2;
+  color: var(--texto);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.video-card-sub {
+  font-size: 0.7rem; color: var(--texto-suave); margin-top: 0.2rem;
+}
+
+/* ── MODAL: Conteúdo exclusivo (cadeado do player) ── */
+.modal-exclusivo {
+  padding: 1.5rem 1.5rem 1.25rem;
+  text-align: center;
+}
+.modal-exclusivo-icone {
+  font-size: 2.4rem; margin-bottom: 0.6rem;
+}
+.modal-exclusivo-titulo {
+  font-family: var(--font-display);
+  font-size: 1.1rem; font-weight: 900;
+  color: var(--texto);
+  margin-bottom: 0.65rem;
+}
+.modal-exclusivo-texto {
+  font-size: 0.86rem; color: var(--texto-suave); line-height: 1.55;
+  margin-bottom: 1.25rem;
+}
+.modal-exclusivo-btn-primary {
+  display: block; width: 100%;
+  padding: 0.85rem;
+  background: linear-gradient(135deg, var(--ouro), var(--ouro-fundo));
+  color: #fff;
+  font-family: var(--font-display); font-size: 0.86rem; font-weight: 800;
+  border: 0; border-radius: var(--radius-md);
+  cursor: pointer;
+  margin-bottom: 0.6rem;
+}
+.modal-exclusivo-btn-ghost {
+  display: block; width: 100%;
+  padding: 0.65rem;
+  background: transparent;
+  color: var(--texto-mute);
+  font-family: var(--font-display); font-size: 0.78rem; font-weight: 700;
+  border: 0;
+  cursor: pointer;
+}
+
+/* ── MODAL: Info do botão "i" (acesso semanal) ── */
+.modal-info-videos {
+  padding: 1.5rem 1.5rem 1.25rem;
+  text-align: center;
+}
+.modal-info-videos-icone {
+  font-size: 2.2rem; margin-bottom: 0.6rem;
+}
+.modal-info-videos-texto {
+  font-size: 0.92rem; color: var(--texto); line-height: 1.55;
+  margin-bottom: 1.25rem;
+}
+.modal-info-videos-btn {
+  display: block; width: 100%;
+  padding: 0.8rem;
+  background: linear-gradient(135deg, var(--ouro), var(--ouro-fundo));
+  color: #fff;
+  font-family: var(--font-display); font-size: 0.84rem; font-weight: 800;
+  border: 0; border-radius: var(--radius-md);
+  cursor: pointer;
+}
