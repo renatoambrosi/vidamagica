@@ -2355,7 +2355,9 @@ body.teclado-aberto .bottom-nav {
    ============================================================ */
 
 /* ── PLAYER PRINCIPAL (vídeo OU imagem) ── */
-/* Largura 100vw furando a max-width da .views, encostado no header (sem gap). */
+/* Mobile: 100vw furando a max-width da .views, encostado no header.
+   Desktop (≥720px): respeita o max-width do app (720px), fica encostado
+   nas bordas do contêiner, sem furar a viewport (senão fica gigante). */
 .player-topo {
   position: relative;
   width: 100vw;
@@ -2365,6 +2367,13 @@ body.teclado-aberto .bottom-nav {
   background: rgba(13,8,0,0.92);
   overflow: hidden;
   user-select: none;
+}
+@media (min-width: 720px) {
+  .player-topo {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
 }
 .player-topo:empty { display: none; }
 .player-topo-thumb {
@@ -2413,7 +2422,7 @@ body.teclado-aberto .bottom-nav {
 .player-topo.tocando .player-topo-overlay { display: none; }
 
 /* ── BOTOEIRA (faixa abaixo do player) ── */
-/* Mesma largura full (ponta a ponta), encostada no player sem gap. */
+/* Mesma regra do player: full no mobile, respeita 720px no desktop. */
 .botoeira {
   position: relative;
   width: 100vw;
@@ -2424,6 +2433,13 @@ body.teclado-aberto .bottom-nav {
   padding: 0.7rem 1.25rem;
   background: linear-gradient(180deg, rgba(200,146,42,0.16), rgba(200,146,42,0.08));
   border-bottom: 1px solid var(--vidro-borda);
+}
+@media (min-width: 720px) {
+  .botoeira {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
 }
 .botoeira:empty { display: none; }
 .botoeira-btn-videos {
