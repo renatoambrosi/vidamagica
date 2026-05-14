@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>O Ouro da Reprogramação Mental — Você foi criada para mais | Suellen Seragi</title>
+  <meta name="description" content="Curso da Suellen Seragi: 3 módulos de reprogramação mental com base bíblica. Linguagem leve, conteúdo profundo, acesso por 1 ano. Comece a escrever sua nova história.">
+  <meta name="theme-color" content="#5c3f1a">
+
+  <link rel="icon" href="/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+
+  <style>
+    /* ════════════════════════════════════════════════════════════
+       OURO DA REPROGRAMAÇÃO MENTAL — LP do curso da Suellen Seragi.
+       Espelha a estrutura de teste.html (navbar, .section-eyebrow/title/lead,
+       .hero, .glow, .dep-carousel, .faq-list, .btn-cta, footer, data-reveal,
+       scroll-progress, back-top, ripple) — divergência só na paleta (champagne
+       quente em vez de azul-noite) e no conteúdo do produto.
+       ════════════════════════════════════════════════════════════ */
+    :root {
+      /* Paleta champanhe quente (DIVERGÊNCIA do teste.html, que é azul-noite) */
+      --warm-deep:    #1a0e02;
+      --warm-night:   #2a1b06;
+      --warm-mid:     #5c3f1a;
+      --warm-light:   #8b6520;
+      --champ-bright: #f4d998;
+      --champ-glow:      rgba(244,217,152,0.55);
+      --champ-glow-soft: rgba(244,217,152,0.20);
+      /* Pérola — IDÊNTICA ao teste.html/index.html (semelhança) */
+      --pearl:        #F5F0E8;
+      --pearl-dim:    rgba(245,240,232,0.85);
+      --pearl-mute:   rgba(245,240,232,0.62);
+      --pearl-faint:  rgba(245,240,232,0.38);
+      /* Ouro — IDÊNTICO ao teste.html/index.html (semelhança) */
+      --gold:          #C8922A;
+      --gold-light:    #E8C97A;
+      --gold-bright:   #F4D998;
+      --gold-deep:     #A17523;
+      --color-brown-dark: #1A1205;
+      /* Fonts e raios — IDÊNTICOS (semelhança) */
+      --font-display: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-body:    'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --r-md: 14px;
+      --r-lg: 20px;
+      --r-full: 9999px;
+      --shadow-glow: 0 0 32px rgba(244,217,152,0.22), 0 0 80px rgba(244,217,152,0.08);
+      --shadow-card: 0 12px 36px rgba(26,14,2,0.45);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+      overscroll-behavior-y: none;
+    }
+    body {
+      font-family: var(--font-body);
+      background: var(--warm-deep);
+      color: var(--pearl);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+
+    /* ═══ NAVBAR — IDÊNTICA AO TESTE.HTML/INDEX.HTML ═══ */
+    .navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 1.25rem;
+      background: rgba(13,8,0,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(200,146,42,0.12);
+      height: 52px;
+    }
+    .navbar-logo { height: 32px; width: auto; }
+    .navbar-actions { display: flex; align-items: center; gap: 0.5rem; }
+    .btn-login {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--gold);
+      background: none;
+      border: 1px solid rgba(200,146,42,0.4);
+      border-radius: var(--r-full);
+      padding: 0.38rem 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      letter-spacing: 0.05em;
+    }
+    .btn-login:hover { background: rgba(200,146,42,0.1); border-color: var(--gold); }
+    .btn-cadastro-nav {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--color-brown-dark);
+      background: var(--gold);
+      border: none;
+      border-radius: var(--r-full);
+      padding: 0.42rem 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      letter-spacing: 0.04em;
+    }
+    .btn-cadastro-nav:hover { background: var(--gold-deep); }
+
+    /* AVATAR NAVBAR (logada) — IDÊNTICO ao teste.html */
+    .nav-avatar-wrap { position: relative; }
+    .nav-avatar-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(200,146,42,.5); background: rgba(200,146,42,.12); cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0; transition: border-color .2s, box-shadow .2s; }
+    .nav-avatar-btn:hover { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(200,146,42,.15); }
+    .nav-avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .nav-avatar-iniciais { font-family: var(--font-display); font-size: .72rem; font-weight: 800; color: var(--gold-light); letter-spacing: .05em; text-transform: uppercase; pointer-events: none; }
+    .nav-drop { position: absolute; top: calc(100% + 10px); right: 0; min-width: 200px; background: rgba(13,8,0,.97); border: 1px solid rgba(200,146,42,.25); border-radius: 14px; box-shadow: 0 16px 48px rgba(0,0,0,.6); backdrop-filter: blur(20px); overflow: hidden; opacity: 0; transform: translateY(-6px) scale(.97); pointer-events: none; transition: opacity .2s, transform .2s; z-index: 300; }
+    .nav-drop.aberto { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+    .nav-drop-header { padding: .9rem 1.1rem .7rem; border-bottom: 1px solid rgba(200,146,42,.12); }
+    .nav-drop-nome { font-family: var(--font-display); font-size: .78rem; font-weight: 800; color: var(--gold-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nav-drop-sub { font-size: .67rem; color: rgba(245,240,232,.35); margin-top: 2px; }
+    .nav-drop-item { display: flex; align-items: center; gap: .65rem; padding: .65rem 1.1rem; font-size: .8rem; font-weight: 500; color: rgba(245,240,232,.7); cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: background .15s, color .15s; text-decoration: none; }
+    .nav-drop-item:hover { background: rgba(200,146,42,.08); color: var(--gold-light); }
+    .nav-drop-item.danger { color: rgba(240,100,100,.75); }
+    .nav-drop-item.danger:hover { background: rgba(200,60,60,.08); color: #f09090; }
+    .nav-drop-sep { height: 1px; background: rgba(200,146,42,.1); margin: .2rem 0; }
+    .nav-drop-icon { font-size: .9rem; width: 16px; text-align: center; flex-shrink: 0; }
+
+    /* SCROLL PROGRESS — IDÊNTICO (cor adaptada pra dourado) */
+    .scroll-progress { position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: 2px; background: linear-gradient(90deg, var(--champ-bright), var(--gold-light), var(--gold)); transform-origin: 0 0; transform: scaleX(0); transition: transform 0.05s linear; box-shadow: 0 0 12px var(--champ-glow); }
+
+    /* BACKGROUND — DIVERGÊNCIA: champanhe quente em vez de azul-noite */
+    .bg-base { position: fixed; inset: 0; z-index: -3; background:
+      radial-gradient(ellipse 90% 60% at 30% 0%, rgba(180,140,80,0.55) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 50% at 80% 30%, rgba(200,160,100,0.35) 0%, transparent 60%),
+      radial-gradient(ellipse 70% 50% at 20% 80%, rgba(140,100,55,0.5) 0%, transparent 55%),
+      linear-gradient(180deg, #2a1b06 0%, #4a3210 35%, #6f4f1e 65%, #4a3210 100%); }
+    .orbs { position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.45; animation: orbFloat 14s ease-in-out infinite; will-change: transform; }
+    .orb-1 { width: 380px; height: 380px; top: 8%;  right: -80px;  background: radial-gradient(circle, var(--gold-light), transparent 60%); animation-delay: 0s; }
+    .orb-2 { width: 460px; height: 460px; bottom: 12%; left: -120px; background: radial-gradient(circle, var(--gold), transparent 60%); animation-delay: -5s; }
+    .orb-3 { width: 280px; height: 280px; top: 50%; left: 50%; background: radial-gradient(circle, var(--champ-bright), transparent 60%); opacity: 0.22; animation-delay: -8s; }
+    @keyframes orbFloat { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(40px,-30px) scale(1.05); } 66% { transform: translate(-30px,40px) scale(0.95); } }
+    /* Bokeh dourado — pontinhos brilhantes (substitui as estrelas brancas do teste.html) */
+    .bokeh { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+    .bokeh-dot { position: absolute; border-radius: 50%; background: radial-gradient(circle, rgba(255,236,180,0.95) 0%, rgba(244,217,152,0.35) 60%, transparent 100%); filter: blur(1px); animation: bokehFloat linear infinite; will-change: transform, opacity; }
+    @keyframes bokehFloat { 0%   { transform: translateY(110vh) scale(0.6); opacity: 0; } 12%  { opacity: 0.85; transform: scale(1); } 90%  { opacity: 0.55; } 100% { transform: translateY(-12vh) scale(1.3); opacity: 0; } }
+
+    /* LAYOUT — IDÊNTICO */
+    main { position: relative; z-index: 2; padding-top: 52px; line-height: 1.65; }
+    section { padding: 5rem 1.5rem; position: relative; }
+    .container { max-width: 960px; margin: 0 auto; width: 100%; }
+    .container-narrow { max-width: 680px; margin: 0 auto; width: 100%; }
+
+    /* REVEAL ON SCROLL — IDÊNTICO ao teste.html */
+    [data-reveal] {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.65s ease-out, transform 0.65s ease-out;
+      will-change: opacity, transform;
+    }
+    [data-reveal="left"]  { transform: translateX(-28px); }
+    [data-reveal="right"] { transform: translateX(28px); }
+    [data-reveal="zoom"]  { transform: scale(0.95); }
+    [data-reveal].in { opacity: 1; transform: none; }
+
+    /* ═══ HERO — 2 colunas em desktop (texto + mockup), 1 em mobile ═══ */
+    .hero { min-height: calc(100vh - 52px); display: flex; align-items: center; padding: 4rem 1.5rem 5rem; position: relative; overflow: hidden; }
+    .hero::before { content: ''; position: absolute; inset: 0; background:
+      radial-gradient(ellipse 60% 45% at 20% 30%, rgba(220,180,110,0.45) 0%, transparent 60%),
+      radial-gradient(ellipse 55% 40% at 85% 65%, rgba(180,135,75,0.4) 0%, transparent 60%);
+      z-index: -1; }
+    .hero-grid { display: grid; grid-template-columns: 1fr; gap: 3rem; align-items: center; max-width: 1100px; margin: 0 auto; width: 100%; }
+    @media (min-width: 880px) { .hero-grid { grid-template-columns: 1.05fr 1fr; gap: 4rem; } }
+    .hero-texto { text-align: center; }
+    @media (min-width: 880px) { .hero-texto { text-align: left; } }
+    .hero-eyebrow { font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gold-light); margin-bottom: 1rem; }
+    .hero h1 { font-family: var(--font-display); font-size: clamp(2rem, 5.5vw, 3.2rem); font-weight: 800; line-height: 1.12; color: var(--pearl); margin-bottom: 1.5rem; letter-spacing: -0.012em; text-shadow: 0 2px 24px rgba(0,0,0,0.35); }
+    .hero h1 .glow { background: linear-gradient(120deg, var(--champ-bright) 0%, var(--gold-light) 50%, var(--champ-bright) 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: glowShift 5s ease-in-out infinite; }
+    @keyframes glowShift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+    .hero-headline { font-family: var(--font-display); font-size: clamp(1.4rem, 3vw, 1.7rem); font-weight: 700; color: var(--pearl); margin-bottom: 1.5rem; line-height: 1.25; }
+    .hero-sub { font-size: 1rem; color: var(--pearl-dim); margin-bottom: 1.25rem; line-height: 1.75; max-width: 540px; }
+    @media (min-width: 880px) { .hero-sub { margin-left: 0; margin-right: 0; } }
+    .hero-mockup-wrap { position: relative; display: flex; justify-content: center; align-items: center; animation: mockupEntry 1.4s cubic-bezier(0.22,1,0.36,1) 0.3s both; }
+    @keyframes mockupEntry { 0% { opacity: 0; transform: translateY(30px) scale(0.95); filter: blur(8px); } 100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
+    .hero-mockup { width: 100%; max-width: 420px; border-radius: 22px; box-shadow: 0 30px 80px rgba(0,0,0,0.45), 0 0 60px rgba(244,217,152,0.18); animation: mockupFloat 6s ease-in-out infinite; }
+    @keyframes mockupFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+    /* SECTION HEADERS — IDÊNTICAS ao teste.html (semelhança), cor adaptada */
+    .section-eyebrow { display: block; font-family: var(--font-display); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gold-light); margin-bottom: 0.85rem; text-align: center; }
+    .section-title { font-family: var(--font-display); font-size: clamp(1.75rem,4.5vw,2.5rem); font-weight: 800; line-height: 1.18; color: var(--pearl); text-align: center; margin-bottom: 1rem; letter-spacing: -0.012em; }
+    .section-title .glow { background: linear-gradient(120deg, var(--champ-bright), var(--gold-light)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .section-lead { font-size: 1rem; color: var(--pearl-dim); text-align: center; max-width: 620px; margin: 0 auto 2.5rem; line-height: 1.8; }
+
+    /* ═══ BOTÃO CTA — DIVERGÊNCIA: dourado em vez de azul, mas mesma anatomia ═══ */
+    .btn-cta { display: inline-flex; align-items: center; gap: 0.65rem; font-family: var(--font-display); font-size: 0.92rem; font-weight: 800; color: var(--color-brown-dark); background: linear-gradient(135deg, var(--gold) 0%, var(--gold-deep) 100%); border-radius: var(--r-full); padding: 1.05rem 2.1rem; letter-spacing: 0.04em; text-transform: uppercase; box-shadow: 0 8px 32px rgba(200,146,42,0.5), 0 0 0 1px rgba(255,236,180,0.25) inset; position: relative; overflow: hidden; transition: transform 0.25s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s; animation: ctaPulse 2.4s ease-in-out infinite; }
+    @keyframes ctaPulse { 0%,100% { box-shadow: 0 8px 32px rgba(200,146,42,0.5), 0 0 0 1px rgba(255,236,180,0.25) inset; } 50% { box-shadow: 0 12px 48px rgba(244,217,152,0.65), 0 0 0 1px rgba(255,236,180,0.4) inset; } }
+    .btn-cta:hover { transform: translateY(-2px); }
+    .btn-cta::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent); transition: left 0.6s; }
+    .btn-cta:hover::before { left: 100%; }
+    .btn-cta-sub { font-size: 0.78rem; color: var(--pearl-mute); margin-top: 0.95rem; letter-spacing: 0.04em; text-align: center; }
+
+    /* ═══ DOR — "Você já tentou de tudo, né?" ═══ */
+    .dor-card-big { background: linear-gradient(135deg, rgba(140,100,55,0.5) 0%, rgba(80,55,20,0.55) 100%); border: 1px solid rgba(244,217,152,0.28); border-radius: var(--r-lg); padding: 2.5rem 2rem; max-width: 560px; margin: 0 auto; backdrop-filter: blur(10px); box-shadow: var(--shadow-glow); text-align: center; }
+    .dor-card-big h3 { font-family: var(--font-display); font-size: clamp(1.2rem, 3vw, 1.5rem); font-weight: 700; color: var(--pearl); margin-bottom: 1.5rem; line-height: 1.3; }
+    .dor-lista { list-style: none; padding: 0; margin: 0 auto 1.5rem; max-width: 280px; }
+    .dor-lista li { display: flex; align-items: center; gap: 0.65rem; padding: 0.45rem 0; font-size: 1.02rem; color: var(--pearl); }
+    .dor-lista li i { color: #b54a3a; font-size: 1.05rem; flex-shrink: 0; }
+    .dor-conclusao { font-style: italic; color: var(--pearl-dim); font-size: 0.96rem; line-height: 1.7; margin-bottom: 1.5rem; }
+    .dor-fecho { font-family: var(--font-display); font-size: 1.18rem; font-weight: 700; color: var(--gold-light); }
+    .narrativa-pessoal { max-width: 620px; margin: 2.5rem auto 0; color: var(--pearl-dim); font-size: 1rem; line-height: 1.8; text-align: center; }
+    .narrativa-pessoal p { margin-bottom: 1rem; }
+    .narrativa-pessoal p strong { color: var(--gold-light); font-weight: 700; }
+
+    /* ═══ COMO FUNCIONA — 4 features em linha ═══ */
+    .features-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; max-width: 720px; margin: 0 auto 2.5rem; }
+    @media (min-width: 720px) { .features-row { grid-template-columns: repeat(4, 1fr); } }
+    .feature { text-align: center; padding: 1rem 0.5rem; }
+    .feature-icon { width: 64px; height: 64px; margin: 0 auto 0.85rem; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--gold-light), var(--gold) 60%, var(--gold-deep)); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 18px var(--champ-glow-soft); }
+    .feature-icon i { color: var(--color-brown-dark); font-size: 1.4rem; }
+    .feature-label { font-family: var(--font-display); font-size: 0.85rem; font-weight: 700; color: var(--pearl); line-height: 1.25; }
+
+    /* ═══ CONQUISTAS — 4 itens com ícone à esquerda ═══ */
+    .conquistas { display: flex; flex-direction: column; gap: 1.4rem; max-width: 600px; margin: 0 auto; }
+    .conquista { display: flex; align-items: flex-start; gap: 1.1rem; }
+    .conquista-icon { width: 48px; height: 48px; flex-shrink: 0; border-radius: 50%; background: rgba(244,217,152,0.12); border: 1px solid rgba(244,217,152,0.32); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 18px var(--champ-glow-soft); }
+    .conquista-icon i { color: var(--gold-light); font-size: 1.15rem; }
+    .conquista-texto { font-size: 1rem; color: var(--pearl); line-height: 1.55; padding-top: 0.4rem; }
+
+    /* ═══ PERSONAS — "Esse curso foi feito pra você que..." ═══ */
+    .personas-card { background: linear-gradient(135deg, rgba(140,100,55,0.5) 0%, rgba(80,55,20,0.55) 100%); border: 1px solid rgba(244,217,152,0.28); border-radius: var(--r-lg); padding: 2.5rem 2rem; max-width: 640px; margin: 0 auto; backdrop-filter: blur(10px); box-shadow: var(--shadow-glow); }
+    .personas-card h3 { font-family: var(--font-display); font-size: clamp(1.2rem, 3vw, 1.5rem); font-weight: 700; color: var(--pearl); margin-bottom: 1.75rem; line-height: 1.3; text-align: center; }
+    .personas-lista { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 1.1rem; }
+    .personas-lista li { display: flex; align-items: flex-start; gap: 0.85rem; color: var(--pearl); font-size: 0.98rem; line-height: 1.55; }
+    .personas-lista li::before { content: '›'; color: var(--gold-light); font-size: 1.6rem; font-weight: 700; flex-shrink: 0; line-height: 1; }
+
+    /* ═══ DEPOIMENTOS — "Relatos de ouro" — mesma engine do teste.html ═══ */
+    .dep-section { background: rgba(26,14,2,0.35); }
+    .dep-carousel { position: relative; overflow: hidden; margin-bottom: 2.5rem; padding: 1rem 0; }
+    .dep-track { display: flex; gap: 1.25rem; animation: depScroll 30s linear infinite; will-change: transform; }
+    @keyframes depScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    .dep-carousel:hover .dep-track { animation-play-state: paused; }
+    .dep-card { flex: 0 0 320px; background: rgba(26,14,2,0.65); border: 1px solid rgba(244,217,152,0.22); border-left: 3px solid var(--gold-light); border-radius: 12px; padding: 1.4rem 1.25rem; text-align: left; transition: all 0.3s ease; cursor: pointer; position: relative; }
+    .dep-card:hover { border-color: var(--champ-bright); transform: translateY(-4px); box-shadow: 0 8px 22px rgba(244,217,152,0.28); }
+    .dep-texto { font-size: 0.92rem; line-height: 1.7; color: var(--pearl-dim); margin-bottom: 1rem; font-style: italic; }
+    .dep-autor { font-family: var(--font-display); font-size: 0.8rem; font-weight: 700; color: var(--gold-light); letter-spacing: 0.05em; }
+    .dep-autor::before { content: '— '; color: var(--gold-light); }
+
+    /* ═══ CRIADORES — foto Suellen + bio ═══ */
+    .criadores-section { text-align: center; }
+    .criadores-foto { width: 280px; height: 280px; border-radius: 50%; object-fit: cover; object-position: center 20%; margin: 0 auto 2rem; border: 2px solid rgba(244,217,152,0.45); box-shadow: 0 0 40px var(--champ-glow); filter: grayscale(20%); }
+    .criadores-texto { max-width: 660px; margin: 0 auto; color: var(--pearl-dim); font-size: 1rem; line-height: 1.85; }
+    .criadores-texto p { margin-bottom: 1.1rem; }
+    .criadores-texto p strong { color: var(--gold-light); font-weight: 700; }
+
+    /* ═══ OFERTA FINAL — "Chegou a hora!" + preço + CTA grande ═══ */
+    .cta-final { background: linear-gradient(180deg, rgba(26,14,2,0.55) 0%, rgba(200,146,42,0.22) 100%); text-align: center; position: relative; overflow: hidden; }
+    .cta-final::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 50% at 50% 100%, rgba(244,217,152,0.3), transparent); pointer-events: none; }
+    .cta-final-box { max-width: 660px; margin: 0 auto; padding: 1rem; position: relative; }
+    .cta-final-pre { font-size: 1.05rem; color: var(--pearl-dim); margin-bottom: 1.5rem; line-height: 1.75; }
+    .cta-final-pre strong { color: var(--gold-light); font-weight: 700; }
+    .cta-mockup { max-width: 280px; margin: 2rem auto 1.5rem; border-radius: 18px; box-shadow: 0 20px 60px rgba(0,0,0,0.35), 0 0 50px var(--champ-glow-soft); }
+    .preco-bloco { margin: 1.5rem auto 2rem; }
+    .preco-promo { font-family: var(--font-display); font-size: 0.85rem; font-weight: 700; color: var(--gold-light); letter-spacing: 0.15em; font-style: italic; margin-bottom: 0.4rem; }
+    .preco-de { font-size: 0.9rem; color: var(--pearl-mute); margin-bottom: 0.35rem; }
+    .preco-de s { color: var(--pearl-faint); margin: 0 0.3em; }
+    .preco-big { display: block; font-family: var(--font-display); font-size: clamp(2.4rem, 7vw, 3.2rem); font-weight: 900; color: var(--pearl); line-height: 1; margin: 0.4rem 0 0.5rem; letter-spacing: -0.02em; }
+    .preco-big small { font-size: 0.5em; font-weight: 700; color: var(--gold-light); }
+    .preco-vista { font-size: 0.88rem; color: var(--pearl-mute); }
+
+    /* ═══ FAQ — IDÊNTICO ao teste.html (mesma engine, cor adaptada) ═══ */
+    .faq-section { background: rgba(26,14,2,0.3); }
+    .faq-list { max-width: 720px; margin: 0 auto; }
+    .faq-item { border-bottom: 1px solid rgba(244,217,152,0.18); }
+    .faq-q { width: 100%; padding: 1.3rem 0.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-family: var(--font-display); font-size: 0.96rem; font-weight: 600; color: var(--pearl); text-align: left; transition: color 0.2s; }
+    .faq-q:hover { color: var(--gold-light); }
+    .faq-q .icon { width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; background: rgba(244,217,152,0.14); display: flex; align-items: center; justify-content: center; color: var(--gold-light); transition: transform 0.3s, background 0.3s; }
+    .faq-item.open .faq-q .icon { transform: rotate(45deg); background: rgba(244,217,152,0.28); }
+    .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.22,1,0.36,1), padding 0.3s; color: var(--pearl-dim); font-size: 0.94rem; line-height: 1.75; }
+    .faq-item.open .faq-a { max-height: 500px; padding: 0 0.5rem 1.3rem; }
+
+    /* ═══ FOOTER — IDÊNTICO ao teste.html/index.html ═══ */
+    footer { padding: 2.5rem 1.5rem; text-align: center; background: #080500; }
+    .footer-text { font-size: 0.72rem; color: rgba(245,240,232,0.32); letter-spacing: 0.06em; }
+    .footer-sociais { display: flex; justify-content: center; gap: 1.2rem; margin-bottom: 1.1rem; }
+    .footer-sociais a { color: rgba(245,240,232,0.5); font-size: 1.1rem; transition: color 0.2s; }
+    .footer-sociais a:hover { color: var(--gold-light); }
+
+    /* BACK TO TOP — IDÊNTICO (cor adaptada) */
+    .back-top { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 80; width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--gold-light), var(--gold)); color: var(--color-brown-dark); display: flex; align-items: center; justify-content: center; opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.3s; box-shadow: 0 8px 24px var(--champ-glow); }
+    .back-top.visible { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+    .back-top:hover { transform: translateY(-3px) scale(1.05); }
+
+    /* RIPPLE — IDÊNTICO */
+    .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.4); transform: scale(0); animation: rippleAnim 0.6s ease-out; pointer-events: none; }
+    @keyframes rippleAnim { to { transform: scale(2.5); opacity: 0; } }
+  </style>
+</head>
+<body>
+
+  <div class="scroll-progress" id="scroll-progress"></div>
+
+  <div class="bg-base"></div>
+  <div class="orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="bokeh" id="bokeh"></div>
+
+  <!-- NAVBAR — IDÊNTICA AO TESTE.HTML/INDEX.HTML -->
+  <nav class="navbar" id="navbar">
+    <a href="/"><img src="/assets/logo-horizontal.png" alt="Vida Mágica" class="navbar-logo" onerror="this.style.display='none'"></a>
+    <div class="navbar-actions" id="navbar-actions"></div>
+  </nav>
+
+  <main>
+
+    <!-- ═══ HERO ═══ -->
+    <section class="hero">
+      <div class="hero-grid">
+        <div class="hero-texto">
+          <p class="hero-eyebrow" data-reveal>Curso da Suellen Seragi</p>
+          <h1 data-reveal>O <span class="glow">Ouro</span> da Reprogramação Mental</h1>
+          <p class="hero-headline" data-reveal>Você foi criada para mais!</p>
+          <p class="hero-sub" data-reveal>Mais do que sobreviver à rotina, mais do que fingir que está tudo bem. Você nasceu para viver uma vida que vale a pena ser vivida. E tudo começa dentro de você.</p>
+          <p class="hero-sub" data-reveal>Você não precisa fugir, recomeçar do zero ou esperar o 'momento certo'. O que você precisa é reprogramar a forma como você pensa — para reescrever a forma como você vive. E foi exatamente isso que mudou a minha vida. <strong style="color:var(--gold-light)">É isso que vai mudar a sua.</strong></p>
+          <div style="margin-top:2rem" data-reveal>
+            <a href="#cta-final" class="btn-cta" id="cta-hero"><i class="fas fa-arrow-right"></i> Quero transformar minha vida</a>
+          </div>
+        </div>
+        <div class="hero-mockup-wrap" data-reveal="zoom">
+          <img src="/assets/products/ouro-reprogramacao.png" alt="O Ouro da Reprogramação Mental" class="hero-mockup" onerror="this.style.display='none'">
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ DOR — "Você já tentou de tudo, né?" ═══ -->
+    <section id="dor">
+      <div class="container">
+        <span class="section-eyebrow" data-reveal>Eu sei como é</span>
+        <h2 class="section-title" data-reveal>Talvez você reconheça <span class="glow">esse lugar</span></h2>
+
+        <div class="dor-card-big" data-reveal="zoom">
+          <h3>Você já tentou de tudo, né?</h3>
+          <ul class="dor-lista">
+            <li>Ler livros <i class="fas fa-check"></i></li>
+            <li>Ouvir pregações <i class="fas fa-check"></i></li>
+            <li>Orações <i class="fas fa-check"></i></li>
+            <li>Ouvir coaches <i class="fas fa-check"></i></li>
+            <li>Horas de terapias... <i class="fas fa-check"></i></li>
+          </ul>
+          <p class="dor-conclusao">Mas parece que tem sempre algo te puxando pra trás. Como se você estivesse presa num ciclo invisível de frustração.</p>
+          <p class="dor-fecho">Eu entendo você...</p>
+        </div>
+
+        <div class="narrativa-pessoal" data-reveal>
+          <p>...porque eu estive nesse lugar. E foi só quando entendi o poder de reprogramar minha mente, com base em princípios eternos, que tudo começou a mudar. <strong>Foi nesse lugar que eu encontrei o 'ouro'.</strong></p>
+          <p>E é exatamente esse tesouro que eu quero te entregar nesse curso.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ COMO FUNCIONA ═══ -->
+    <section id="como-funciona">
+      <div class="container">
+        <span class="section-eyebrow" data-reveal>O que você recebe</span>
+        <h2 class="section-title" data-reveal>Como funciona o <span class="glow">curso?</span></h2>
+
+        <div class="features-row" data-reveal>
+          <div class="feature">
+            <div class="feature-icon"><i class="fas fa-comment-dots"></i></div>
+            <p class="feature-label">linguagem<br>leve</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon"><i class="fas fa-mountain"></i></div>
+            <p class="feature-label">conteúdo<br>profundo</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon"><i class="fas fa-list-ol"></i></div>
+            <p class="feature-label">3 módulos</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon"><i class="fas fa-calendar-check"></i></div>
+            <p class="feature-label">acesso por<br>1 ano</p>
+          </div>
+        </div>
+
+        <p class="section-lead" data-reveal>Você vai ter acesso a <strong style="color:var(--gold-light)">3 módulos gravados</strong> por mim, com a mesma linguagem leve, direta e verdadeira que você vê nos meus vídeos. São aulas profundas, mas práticas. Curtas, mas transformadoras. Você terá acesso por <strong style="color:var(--gold-light)">1 ano inteiro</strong> e poderá rever as aulas quantas vezes quiser, no seu ritmo.</p>
+      </div>
+    </section>
+
+    <!-- ═══ CONQUISTAS — "O que vou conquistar fazendo o curso?" ═══ -->
+    <section id="conquistas">
+      <div class="container-narrow">
+        <span class="section-eyebrow" data-reveal>Resultados</span>
+        <h2 class="section-title" data-reveal>O que vou conquistar <span class="glow">fazendo o curso?</span></h2>
+
+        <div class="conquistas">
+          <div class="conquista" data-reveal>
+            <div class="conquista-icon"><i class="fas fa-brain"></i></div>
+            <p class="conquista-texto">Clareza de quem você é — e quem nunca mais vai voltar a ser.</p>
+          </div>
+          <div class="conquista" data-reveal>
+            <div class="conquista-icon"><i class="fas fa-dove"></i></div>
+            <p class="conquista-texto">Um novo padrão mental, livre da autossabotagem e da insegurança.</p>
+          </div>
+          <div class="conquista" data-reveal>
+            <div class="conquista-icon"><i class="fas fa-seedling"></i></div>
+            <p class="conquista-texto">Uma vida que reflita sua fé, seus valores e seus sonhos.</p>
+          </div>
+          <div class="conquista" data-reveal>
+            <div class="conquista-icon"><i class="fas fa-heart"></i></div>
+            <p class="conquista-texto">Uma mente curada, alinhada com aquilo que Deus sonhou pra você.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ PERSONAS — "Esse curso foi feito pra você que..." ═══ -->
+    <section id="personas">
+      <div class="container">
+        <span class="section-eyebrow" data-reveal>Pra quem é</span>
+        <h2 class="section-title" data-reveal>Esse curso foi feito <span class="glow">pra você que...</span></h2>
+
+        <div class="personas-card" data-reveal="zoom">
+          <ul class="personas-lista">
+            <li>Sente que carrega traumas ou feridas que nunca cicatrizaram totalmente</li>
+            <li>Está cansada de recomeçar e voltar sempre pro mesmo ponto</li>
+            <li>Sabe que tem um potencial enorme — mas algo dentro te bloqueia</li>
+            <li>Já orou, já chorou, já tentou... mas ainda sente que não virou a chave</li>
+            <li>Tem fé, mas sente que não vive o que crê de verdade</li>
+            <li>Tem medo de se entregar pra uma nova versão de si mesma — e se frustrar de novo</li>
+          </ul>
+        </div>
+
+        <div style="text-align:center;margin-top:2.5rem" data-reveal>
+          <a href="#cta-final" class="btn-cta" id="cta-personas"><i class="fas fa-arrow-right"></i> Eu preciso dessa transformação</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ DEPOIMENTOS — "Relatos de ouro" ═══ -->
+    <section class="dep-section">
+      <div class="container">
+        <span class="section-eyebrow" data-reveal>Quem já fez</span>
+        <h2 class="section-title" data-reveal>Relatos de <span class="glow">ouro</span></h2>
+        <p class="section-lead" data-reveal>O que mulheres como você viveram depois do curso.</p>
+      </div>
+      <div class="dep-carousel">
+        <div class="dep-track" id="dep-track"></div>
+      </div>
+      <div class="container" style="text-align:center;margin-top:2rem" data-reveal>
+        <a href="#cta-final" class="btn-cta" id="cta-dep"><i class="fas fa-arrow-right"></i> Quero viver o que essas mulheres viveram</a>
+      </div>
+    </section>
+
+    <!-- ═══ SOBRE A AUTORA ═══ -->
+    <section class="criadores-section">
+      <div class="container-narrow">
+        <span class="section-eyebrow" data-reveal>Quem criou</span>
+        <h2 class="section-title" data-reveal>Suellen <span class="glow">Seragi</span></h2>
+        <img src="/assets/suellencafe.jpg" alt="Suellen Seragi" class="criadores-foto" data-reveal="zoom" onerror="this.style.display='none'">
+        <div class="criadores-texto" data-reveal>
+          <p><strong>Suellen Seragi</strong> é professora, escritora, teóloga e criadora de conteúdo com mais de 400 mil seguidores. Depois de vencer traumas profundos, pobreza, crises emocionais e espirituais, ela desenvolveu um caminho exclusivo de reprogramação mental com base bíblica — que mudou completamente a sua história.</p>
+          <p>Hoje, ela dedica sua vida a guiar outras mulheres para essa mesma transformação. Não com fórmulas mágicas. Mas com <strong>verdade, fé e resultado</strong>.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ CTA FINAL — "Chegou a hora!" ═══ -->
+    <section class="cta-final" id="cta-final">
+      <div class="cta-final-box">
+        <span class="section-eyebrow" data-reveal>Decisão</span>
+        <h2 class="section-title" data-reveal>Chegou a <span class="glow">hora!</span></h2>
+        <p class="cta-final-pre" data-reveal>A hora de deixar de sobreviver e começar a <strong>viver com intenção</strong>. A hora de parar de se esconder atrás da dor — e começar a escrever sua nova história.</p>
+        <p class="cta-final-pre" data-reveal style="font-style:italic">Essa é a sua chance.</p>
+
+        <div data-reveal="zoom">
+          <img src="/assets/products/ouro-reprogramacao.png" alt="O Ouro da Reprogramação Mental" class="cta-mockup" onerror="this.style.display='none'">
+          <p style="font-family:var(--font-display);font-weight:700;font-size:1.05rem;color:var(--pearl);margin-bottom:0.4rem">Curso: O Ouro da Reprogramação Mental</p>
+
+          <div class="preco-bloco">
+            <p class="preco-promo">PROMO 20% OFF</p>
+            <p class="preco-de">de <s>R$ 511,00</s> por</p>
+            <span class="preco-big">12x <small>R$</small> 42,51</span>
+            <p class="preco-vista">ou R$ 411,00 à vista</p>
+          </div>
+
+          <!-- TODO: trocar href="#" pelo link do checkout Kiwify quando estiver pronto -->
+          <a href="#" class="btn-cta" id="cta-final-btn" style="font-size:1rem;padding:1.2rem 2.4rem">
+            <i class="fas fa-arrow-right"></i> Clique aqui e comece sua transformação
+          </a>
+        </div>
+        <p class="btn-cta-sub" data-reveal>Pagamento único · 1 ano de acesso · 100% online</p>
+      </div>
+    </section>
+
+    <!-- ═══ FAQ ═══ -->
+    <section class="faq-section">
+      <div class="container-narrow">
+        <span class="section-eyebrow" data-reveal>Dúvidas</span>
+        <h2 class="section-title" data-reveal><span class="glow">FAQ</span></h2>
+        <div class="faq-list" data-reveal>
+          <div class="faq-item"><button class="faq-q">Preciso ser cristã para fazer o curso?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Não. A base é bíblica, mas a linguagem é leve e universal. Todas são bem-vindas.</p></div></div>
+          <div class="faq-item"><button class="faq-q">O curso é online?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Sim! 100% online, para assistir quando e onde quiser.</p></div></div>
+          <div class="faq-item"><button class="faq-q">Terei suporte?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Sim! O suporte é oferecido diretamente pelos atendentes da plataforma Kiwify e estará disponível para qualquer problema técnico que possa vir a ocorrer.</p></div></div>
+          <div class="faq-item"><button class="faq-q">Por quanto tempo terei acesso ao curso?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Durante 1 ano completo após a compra.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER — IDÊNTICO AO TESTE.HTML/INDEX.HTML -->
+  <footer>
+    <div class="footer-sociais">
+      <a href="https://www.youtube.com/@suellenseragi" target="_blank" rel="noopener" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+      <a href="https://www.instagram.com/suellenseragi" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+      <a href="https://www.tiktok.com/@suellenseragi" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+    </div>
+    <p class="footer-text">Renato &amp; Suellen Seragi · Vida Mágica · 2025</p>
+  </footer>
+
+  <button class="back-top" id="back-top" aria-label="Voltar ao topo">
+    <i class="fas fa-arrow-up"></i>
+  </button>
+
+  <script>
+    const API_BASE = window.location.origin;
+    const TAG_LP   = 'ouro_reprogramacao_mental';
+
+    /* BOKEH — partículas douradas (substitui as stars brancas do teste.html) */
+    (function() {
+      const el = document.getElementById('bokeh');
+      if (!el) return;
+      const QTD = window.innerWidth < 640 ? 14 : 26;
+      for (let i = 0; i < QTD; i++) {
+        const p = document.createElement('div');
+        p.className = 'bokeh-dot';
+        const size = Math.random() * 16 + 8;
+        const dur  = Math.random() * 16 + 16;
+        p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;opacity:${Math.random()*0.4+0.45};animation-duration:${dur}s;animation-delay:-${Math.random()*dur}s;`;
+        el.appendChild(p);
+      }
+    })();
+
+    /* ═══ NAVBAR AUTH — IDÊNTICO ao teste.html/index.html ═══ */
+    window.VmSession = window.VmSession || (function(){
+      const K='vm_s',P='vm_lembrar',U='vm_u';
+      function salvar(d,l){const p=l!==undefined?l:getLembrar();localStorage.setItem(P,p?'1':'0');const s=p?localStorage:sessionStorage,o=p?sessionStorage:localStorage;o.removeItem(K);s.setItem(K,JSON.stringify(d));if(p&&d.usuario?.nome){localStorage.setItem(U,JSON.stringify({nome:d.usuario.nome,email:d.usuario.email||null,telefone_formatado:d.usuario.telefone_formatado||null,foto_url:d.usuario.foto_url||null}));}else if(!p){localStorage.removeItem(U);}}
+      function carregar(){try{const r=localStorage.getItem(K)||sessionStorage.getItem(K);return r?JSON.parse(r):null;}catch{return null;}}
+      function destruir(){localStorage.removeItem(K);sessionStorage.removeItem(K);}
+      function getAccess(){return carregar()?.access_token||null;}
+      function getRefresh(){return carregar()?.refresh_token||null;}
+      function getLembrar(){return localStorage.getItem(P)!=='0';}
+      function getUsuarioLembrado(){try{return JSON.parse(localStorage.getItem(U)||'null');}catch{return null;}}
+      function limparUsuarioLembrado(){localStorage.removeItem(U);}
+      return{salvar,carregar,destruir,getAccess,getRefresh,getLembrar,getUsuarioLembrado,limparUsuarioLembrado};
+    })();
+
+    (async function navbarAuth(){
+      const actions = document.getElementById('navbar-actions');
+      if (!actions) return;
+
+      function renderBotoes(){
+        actions.innerHTML = `<a href="/auth?intencional" class="btn-login">Entrar</a><a href="/auth?cadastro" class="btn-cadastro-nav">Criar conta</a>`;
+      }
+
+      function renderAvatar(usuario){
+        const iniciais = (usuario.nome||'?').split(' ').slice(0,2).map(p=>p[0]).join('').toUpperCase();
+        const fotoHtml = usuario.foto_url
+          ? `<img src="${usuario.foto_url}" alt="${usuario.nome}" class="nav-avatar-img">`
+          : `<span class="nav-avatar-iniciais">${iniciais}</span>`;
+        actions.innerHTML = `
+          <div class="nav-avatar-wrap" id="nav-avatar-wrap">
+            <button class="nav-avatar-btn" onclick="toggleNavDrop()" aria-label="Menu">${fotoHtml}</button>
+            <div class="nav-drop" id="nav-drop">
+              <div class="nav-drop-header">
+                <div class="nav-drop-nome">${usuario.nome||'Minha conta'}</div>
+                <div class="nav-drop-sub">${usuario.email||usuario.telefone_formatado||''}</div>
+              </div>
+              <a href="/app" class="nav-drop-item"><span class="nav-drop-icon">🌱</span> Minha área</a>
+              <div class="nav-drop-sep"></div>
+              <button class="nav-drop-item danger" onclick="navLogout()"><span class="nav-drop-icon">🚪</span> Sair</button>
+            </div>
+          </div>`;
+        document.addEventListener('click', function(e){
+          const wrap = document.getElementById('nav-avatar-wrap');
+          if (wrap && !wrap.contains(e.target)) document.getElementById('nav-drop')?.classList.remove('aberto');
+        });
+      }
+
+      window.toggleNavDrop = function(){ document.getElementById('nav-drop')?.classList.toggle('aberto'); };
+      window.navLogout = async function(){
+        try{ await fetch(`${API_BASE}/api/auth/logout`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:VmSession.getRefresh()})}); }catch{}
+        VmSession.destruir(); renderBotoes();
+      };
+
+      const access = VmSession.getAccess();
+      if (!access){ renderBotoes(); return; }
+      try{
+        const r = await fetch(`${API_BASE}/api/auth/me`,{headers:{Authorization:`Bearer ${access}`}});
+        if (r.ok){ renderAvatar(await r.json()); return; }
+      }catch{}
+      const refresh = VmSession.getRefresh();
+      if (refresh){
+        try{
+          const r2 = await fetch(`${API_BASE}/api/auth/renovar`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refresh})});
+          if (r2.ok){
+            const d = await r2.json();
+            VmSession.salvar(d, VmSession.getLembrar());
+            const r3 = await fetch(`${API_BASE}/api/auth/me`,{headers:{Authorization:`Bearer ${d.access_token}`}});
+            if (r3.ok){ renderAvatar(await r3.json()); return; }
+          }
+        }catch{}
+      }
+      VmSession.destruir(); renderBotoes();
+    })();
+
+    /* ═══ DEPOIMENTOS — fetch /api/depoimentos?tag + fallback hardcoded dos 3 reais
+       Mesma engine do teste.html (semelhança). Fallback usa depoimentos do PDF. */
+    (async function(){
+      let depoimentos = [];
+      let shuffleAtivo = false;
+
+      try{
+        const r1 = await fetch(`${API_BASE}/api/depoimentos?tag=${TAG_LP}`,{headers:{'Accept':'application/json'},mode:'cors'});
+        if (r1.ok) {
+          const d = await r1.json();
+          if (Array.isArray(d) && d.length) depoimentos = d;
+        }
+        const r3 = await fetch(`${API_BASE}/api/config`,{headers:{'Accept':'application/json'},mode:'cors'});
+        if (r3.ok) {
+          const cfg = await r3.json();
+          shuffleAtivo = cfg.shuffle_depoimentos || false;
+        }
+      }catch(_){}
+
+      if (!Array.isArray(depoimentos) || depoimentos.length === 0) {
+        // Fallback: depoimentos reais do PDF
+        depoimentos = [
+          { nome: 'Maria S., 41 anos', texto: 'Não achei que daria certo comigo. Eu já tinha feito de tudo. Mas algo nesse curso me alcançou. Hoje, meu jeito de pensar mudou. E com ele, meu casamento, minha autoestima e até minha fé.' },
+          { nome: 'Vanessa T., 29 anos', texto: 'A Suellen fala como se estivesse dentro da gente. Eu nunca fui de acreditar em curso nenhum. Mas esse não é um curso. É um processo de cura. Deus me visitou aqui.' },
+          { nome: 'Camila R., 37 anos', texto: 'Eu achei que esse curso ia ser só mais um... Teve uma aula que me fez chorar do começo ao fim, porque parecia que ela tava contando a minha história. Hoje, eu consigo olhar pra mim com mais amor e clareza. E o mais lindo: comecei a sonhar de novo.' },
+        ];
+      }
+
+      if (shuffleAtivo) {
+        const a = [...depoimentos];
+        for (let i=a.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+        depoimentos = a;
+      }
+
+      const depTrack = document.getElementById('dep-track');
+      if (depTrack) {
+        const doubled = [...depoimentos, ...depoimentos];
+        depTrack.innerHTML = doubled.map(d => {
+          const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
+          return `<div class="dep-card"><p class="dep-texto">"${d.texto}"</p><div class="dep-autor">${autor}</div></div>`;
+        }).join('');
+      }
+    })();
+
+    /* ═══ REVEAL ON SCROLL — IDÊNTICO ao teste.html ═══ */
+    (function(){
+      const obs = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+          if(e.isIntersecting){
+            e.target.classList.add('in');
+            obs.unobserve(e.target);
+          }
+        });
+      },{ threshold: 0.15, rootMargin: '0px' });
+
+      document.querySelectorAll('[data-reveal]').forEach((el)=>{
+        const siblings = Array.from(el.parentNode.children).filter(c=>c.hasAttribute('data-reveal'));
+        const idx = siblings.indexOf(el);
+        if(idx > 0 && idx < 5) el.style.transitionDelay = (idx * 80) + 'ms';
+        obs.observe(el);
+      });
+    })();
+
+    /* ═══ SCROLL: progress + back-top — IDÊNTICO ═══ */
+    (function(){
+      const bar     = document.getElementById('scroll-progress');
+      const backTop = document.getElementById('back-top');
+      let ticking = false;
+
+      function update(){
+        const h = document.documentElement.scrollHeight - window.innerHeight;
+        const y = window.scrollY;
+        bar.style.transform = `scaleX(${h>0 ? y/h : 0})`;
+        backTop.classList.toggle('visible', y > 600);
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) { ticking = true; requestAnimationFrame(update); }
+      }, { passive: true });
+
+      backTop.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
+    })();
+
+    /* ═══ FAQ — IDÊNTICO ao teste.html ═══ */
+    document.querySelectorAll('.faq-q').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const item=btn.closest('.faq-item');
+        const aberto=item.classList.contains('open');
+        document.querySelectorAll('.faq-item.open').forEach(i=>i.classList.remove('open'));
+        if(!aberto) item.classList.add('open');
+      });
+    });
+
+    /* ═══ RIPPLE nos CTAs — IDÊNTICO ═══ */
+    document.querySelectorAll('.btn-cta').forEach(btn=>{
+      btn.style.position='relative'; btn.style.overflow='hidden';
+      btn.addEventListener('click',(e)=>{
+        const rect=btn.getBoundingClientRect();
+        const size=Math.max(rect.width,rect.height);
+        const r=document.createElement('span');
+        r.className='ripple';
+        r.style.cssText=`width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+        btn.appendChild(r);
+        setTimeout(()=>r.remove(),600);
+      });
+    });
+
+    /* ═══ PARALLAX ORBES — IDÊNTICO (desktop só) ═══ */
+    (function(){
+      if(window.matchMedia('(hover: none)').matches) return;
+      const orbs=document.querySelectorAll('.orb');
+      let rafId;
+      window.addEventListener('mousemove',(e)=>{
+        cancelAnimationFrame(rafId);
+        rafId=requestAnimationFrame(()=>{
+          const x=(e.clientX/window.innerWidth-0.5)*2;
+          const y=(e.clientY/window.innerHeight-0.5)*2;
+          orbs.forEach((o,i)=>{const sp=(i+1)*8;o.style.transform=`translate(${x*sp}px,${y*sp}px)`;});
+        });
+      });
+    })();
+  </script>
+
+</body>
+</html>
