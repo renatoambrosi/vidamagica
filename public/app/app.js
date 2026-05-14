@@ -210,7 +210,7 @@ function embedDeUrl(url) {
   const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   if (yt) return `https://www.youtube.com/embed/${yt[1]}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&fs=1`;
   const vm = url.match(/vimeo\.com\/(\d+)/);
-  if (vm) return `https://player.vimeo.com/video/${vm[1]}?autoplay=1&title=0&byline=0&portrait=0`;
+  if (vm) return `https://player.vimeo.com/video/${vm[1]}?autoplay=1&title=0&byline=0&portrait=0&badge=0&autopause=0`;
   return url;
 }
 function thumbDeUrl(url) {
@@ -271,7 +271,7 @@ function embedProtegidoDeUrl(url) {
   const vm = url.match(/vimeo\.com\/(\d+)/);
   if (vm) {
     // Vimeo embed limpo: esconde título, byline e foto do autor.
-    return `https://player.vimeo.com/video/${vm[1]}?autoplay=1&title=0&byline=0&portrait=0`;
+    return `https://player.vimeo.com/video/${vm[1]}?autoplay=1&title=0&byline=0&portrait=0&badge=0&autopause=0`;
   }
   return url;
 }
@@ -330,7 +330,7 @@ async function carregarPlayerTopo(ctx) {
     const iframeWrap = document.createElement('div');
     iframeWrap.className = 'player-topo-iframe-wrap';
     iframeWrap.innerHTML = `
-      <iframe src="${embedProtegidoDeUrl(destaque.url)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      <iframe src="${embedProtegidoDeUrl(destaque.url)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
       <div class="player-topo-bloqueio-tl" aria-hidden="true"></div>
       <div class="player-topo-bloqueio-tr" aria-hidden="true"></div>
       <div class="player-topo-bloqueio-bl" aria-hidden="true"></div>
