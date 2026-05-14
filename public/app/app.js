@@ -392,13 +392,59 @@ function renderBotoeira() {
   document.getElementById('botoeira-info')?.addEventListener('click', () => abrirModal('modal-info-videos'));
 }
 
-// ── SAUDAÇÃO + JORNADA (nome + barra de progresso + jornada atual) ──
-// Substitui o cabeçalho de jornada que ficava no topo da Trilha.
+// ── GÊNERO PELO NOME ────────────────────────────────────────
+// Heurística leve pra decidir 'do' / 'da' / 'do(a)' antes do nome da aluna.
+// Não há campo de gênero no perfil — inferimos pelo primeiro nome. Universo
+// real é >99% feminino (alunas), mas mantemos a cortesia 'do(a)' em ambíguos
+// e a possibilidade de 'do' em casos masculinos (admin, dependente, etc).
+//
+// Regras (todas case-insensitive sobre o primeiro nome sem acentos):
+// 1. Termina em 'a' → 'da'           (Maria, Ana, Patrícia, Tainá, Naomi-NÃO)
+// 2. Termina em 'en'/'lyn'/'lin' → 'da' (Suellen, Ellen, Karen, Carolin)
+// 3. Termina em 'ce'/'ês'/'eth' → 'da' (Alice, Inês, Beth)
+// 4. Termina em 'o','or','os','on','son','us','im' → 'do' (Renato, Heitor, Joaquim)
+// 5. Lista explícita de ambíguos → 'do(a)' (Alex, Sam, Lee, Cris)
+// 6. Default → 'do(a)'
+function generoArtigoPorNome(nome) {
+  if (!nome || typeof nome !== 'string') return 'do(a)';
+  const n = nome.trim().toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, ''); // remove acentos
+  if (!n) return 'do(a)';
+
+  const ambiguos = new Set(['alex', 'sam', 'lee', 'cris', 'andrea']);
+  if (ambiguos.has(n)) return 'do(a)';
+
+  if (/(en|lyn|lin)$/.test(n)) return 'da';            // Suellen, Ellen, Karen, Carolin
+  if (/(ce|es|eth)$/.test(n))  return 'da';            // Alice, Inês (sem acento → ines), Beth
+  if (n.endsWith('a'))         return 'da';            // Maria, Ana, Patrícia
+  if (/(son|im|us|os|on|or)$/.test(n)) return 'do';    // Anderson, Joaquim, Carlos, Heitor
+  if (/[o]$/.test(n))          return 'do';            // Renato, Paulo
+
+  return 'do(a)';
+}
+
+// ── SAUDAÇÃO + BARRA DE JORNADA (view-jornada) ──────────────
+// Renderiza dentro de view-jornada:
+//   - view-sub (#jornada-saudacao-sub) → "Jornada do/da/do(a) NOME"
+//   - barra com número, nome, subtítulo, passos e %
+// O bloco saudacao-jornada antes ficava no view-home — moveu junto com a
+// trilha. A Home agora não tem mais saudação própria (era acoplada à barra).
 function renderSaudacaoJornada(ctx) {
+  const primeiroNome = ctx?.aluna?.primeiro_nome || '';
+
+  // Atualiza a view-sub "Jornada do/da NOME" no topo do view-jornada
+  const subEl = document.getElementById('jornada-saudacao-sub');
+  if (subEl) {
+    if (primeiroNome) {
+      const artigo = generoArtigoPorNome(primeiroNome);
+      subEl.textContent = `Jornada ${artigo} ${primeiroNome}`;
+    } else {
+      subEl.textContent = 'Sua jornada';
+    }
+  }
+
   const el = document.getElementById('saudacao-jornada');
   if (!el) return;
-
-  const primeiroNome = ctx?.aluna?.primeiro_nome || 'Você';
 
   // Pega a jornada (prefere vigente, cai pra atual). Pode ser null.
   const vigente = ctx?.jornada_vigente;
@@ -438,13 +484,7 @@ function renderSaudacaoJornada(ctx) {
     </div>
   ` : '';
 
-  el.innerHTML = `
-    <div class="saudacao">
-      <p class="saudacao-eyebrow">Bem-vinda de volta</p>
-      <h1 class="saudacao-nome" id="saudacao-nome">Olá, ${escHtml(primeiroNome)}</h1>
-    </div>
-    ${barraHtml}
-  `;
+  el.innerHTML = barraHtml;
 }
 
 // ── POP-UP CONVITE CLUBE VIDA MÁGICA ─────────────────────────
@@ -2170,7 +2210,7 @@ function hidratarHome(ctx) {
 // Aparece quando aluna refez teste, viu o resultado, mas escolheu "Não" no
 // popup (ou ainda não decidiu). Também aparece em Avisos.
 function renderBannerAtualizarTrilha(ctx) {
-  const wrap = document.getElementById('view-home');
+  const wrap = document.getElementById('view-jornada');
   if (!wrap) return;
   // Remove banner antigo (se existir) — re-render seguro
   const antigo = document.getElementById('banner-atualizar-trilha');
@@ -2209,7 +2249,7 @@ function renderBannerAtualizarTrilha(ctx) {
 // e mostra o banner. Click dispara splash de celebração direto (sem precisar
 // de confirmação — o avanço já é fato, não escolha).
 function renderBannerAtualizarPorCompra(ctx) {
-  const wrap = document.getElementById('view-home');
+  const wrap = document.getElementById('view-jornada');
   if (!wrap) return;
   const antigo = document.getElementById('banner-atualizar-compra');
   if (antigo) antigo.remove();
@@ -2777,13 +2817,15 @@ function renderBannerTesteEmAndamento(ctx) {
     '<div style="font-size:1.4rem;color:var(--ouro-fundo,#C8922A)">▸</div>';
   banner.addEventListener('click', () => { window.location.href = '/teste'; });
 
-  // Insere no topo do view-home, logo após a saudação
-  const home = document.getElementById('view-home');
-  const saudacao = home?.querySelector('.saudacao');
-  if (saudacao && saudacao.nextSibling) {
-    saudacao.parentNode.insertBefore(banner, saudacao.nextSibling);
-  } else if (home) {
-    home.insertBefore(banner, home.firstChild);
+  // Insere no topo do view-jornada, antes da barra de saudação/progresso.
+  // (O banner é sobre continuar o teste, que é o 1º passo da trilha — vive
+  // junto com a jornada.)
+  const wrap = document.getElementById('view-jornada');
+  const barra = wrap?.querySelector('#saudacao-jornada');
+  if (barra) {
+    barra.parentNode.insertBefore(banner, barra);
+  } else if (wrap) {
+    wrap.insertBefore(banner, wrap.firstChild);
   }
 }
 
@@ -2999,7 +3041,7 @@ window.app = {
   // chegar no fim do init. Síncrono — aplica antes do primeiro paint.
   try {
     const viewSalva = sessionStorage.getItem('vm_view_atual');
-    const viewsValidas = ['home', 'produtos', 'fale-com-a-su', 'videos', 'perfil'];
+    const viewsValidas = ['home', 'jornada', 'produtos', 'fale-com-a-su', 'videos', 'perfil'];
     if (viewSalva && viewSalva !== 'home' && viewsValidas.includes(viewSalva)) {
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
