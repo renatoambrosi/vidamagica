@@ -846,16 +846,18 @@ body.teclado-aberto .bottom-nav {
 }
 
 
-/* Tela de escolha — agora dentro de #view-fale-com-a-su (view normal,
-   display: block). Sem flex: 1 nem justify-content: center, porque o pai
-   não é flex. Os cards aparecem empilhados normalmente, como conteúdo
-   de qualquer outra view. */
+/* Tela de escolha — dentro de #view-fale-com-a-su (view normal,
+   display: block). min-height cobre a área útil entre header e
+   bottom-nav, e `justify-content: center` centraliza verticalmente
+   o título + os 2 cards. */
 .chat-escolha {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 24px 18px 24px;
+  padding: 24px 18px;
   align-items: stretch;
+  justify-content: center;
+  min-height: calc(100vh - var(--topo-h) - var(--safe-top) - var(--nav-h) - var(--safe-bottom));
 }
 
 /* Tela de conversa: aparece SOBRE a tela de escolha com vidro real branco.
