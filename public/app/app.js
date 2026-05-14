@@ -26,7 +26,7 @@ async function checarAuth() {
     if (r.ok) return await r.json();
     if (r.status === 401) {
       const refresh = VmSession.getRefresh();
-      if (!refresh) { VmSession.destruir(); window.location.replace('/auth?intencional'); return null; }
+      if (!refresh) { try{limparCooldownPopupClube();}catch{} VmSession.destruir(); window.location.replace('/auth?intencional'); return null; }
       const r2 = await fetch(`${API}/api/auth/renovar`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ refresh_token: refresh }) });
       if (r2.ok) {
         const d = await r2.json();
@@ -34,7 +34,7 @@ async function checarAuth() {
         const r3 = await fetch(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${d.access_token}` } });
         if (r3.ok) return await r3.json();
       }
-      VmSession.destruir(); window.location.replace('/auth?intencional'); return null;
+      try{limparCooldownPopupClube();}catch{} VmSession.destruir(); window.location.replace('/auth?intencional'); return null;
     }
   } catch {}
   return null;
@@ -176,6 +176,7 @@ document.getElementById('menu-testes')?.addEventListener('click',  () => { carre
 document.getElementById('menu-logout')?.addEventListener('click',  async () => {
   const refresh = VmSession.getRefresh();
   try { await fetch(`${API}/api/auth/logout`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({refresh_token:refresh}) }); } catch {}
+  try { limparCooldownPopupClube(); } catch {}
   VmSession.destruir();
   window.location.replace('/');
 });
@@ -442,6 +443,10 @@ function fecharPopupClube() {
   try { localStorage.setItem(POPUP_CLUBE_KEY, String(Date.now())); } catch {}
   const el = document.getElementById('popup-clube');
   if (el) el.remove();
+}
+// Limpa o cooldown — chamado em todo logout pra próxima aluna ver o pop-up.
+function limparCooldownPopupClube() {
+  try { localStorage.removeItem(POPUP_CLUBE_KEY); } catch {}
 }
 function renderPopupClube(ctx) {
   // Remove se já existir (re-render seguro)
