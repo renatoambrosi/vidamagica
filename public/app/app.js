@@ -203,13 +203,14 @@ document.getElementById('menu-logout')?.addEventListener('click',  async () => {
 });
 
 // ── PLAYER ───────────────────────────────────────────────────
+// Embed usado pelo modal-player (aberto via "Assista mais vídeos").
+// Sem `enablejsapi&origin` pra não disparar erro 153 do YouTube.
 function embedDeUrl(url) {
   if (!url) return '';
-  const origin = encodeURIComponent(window.location.origin);
   const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (yt) return `https://www.youtube-nocookie.com/embed/${yt[1]}?autoplay=1&rel=0&enablejsapi=1&origin=${origin}`;
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&fs=1`;
   const vm = url.match(/vimeo\.com\/(\d+)/);
-  if (vm) return `https://player.vimeo.com/video/${vm[1]}?autoplay=1`;
+  if (vm) return `https://player.vimeo.com/video/${vm[1]}?autoplay=1&title=0&byline=0&portrait=0`;
   return url;
 }
 function thumbDeUrl(url) {
@@ -268,7 +269,10 @@ function embedProtegidoDeUrl(url) {
     return `https://www.youtube.com/embed/${yt[1]}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&fs=1`;
   }
   const vm = url.match(/vimeo\.com\/(\d+)/);
-  if (vm) return `https://player.vimeo.com/video/${vm[1]}?autoplay=1`;
+  if (vm) {
+    // Vimeo embed limpo: esconde título, byline e foto do autor.
+    return `https://player.vimeo.com/video/${vm[1]}?autoplay=1&title=0&byline=0&portrait=0`;
+  }
   return url;
 }
 
