@@ -163,9 +163,10 @@
     </section>
 
     <!-- CHAT -->
-    <section class="view" id="view-chat">
-
-      <!-- Tela 1: escolha de canal -->
+    <!-- FALE COM A SU — view INDEPENDENTE: comporta como qualquer view comum
+         (com header preto e bottom-nav normal). É a "antessala" do chat.
+         O chat real só abre quando a aluna clica em um dos canais abaixo. -->
+    <section class="view" id="view-fale-com-a-su">
       <div id="chat-escolha-tela" class="chat-escolha">
         <p class="chat-escolha-titulo">Com quem você quer conversar?</p>
 
@@ -193,9 +194,15 @@
           <span class="chat-canal-badge" id="canal-suporte-badge" style="display:none">0</span>
         </button>
       </div>
+    </section>
 
-      <!-- Tela 2: conversa -->
-      <div id="chat-conversa-tela" style="display:none;flex-direction:column;flex:1;min-height:0;">
+    <!-- CHAT — view com as suas próprias regras (header escondido,
+         altura dvh com teclado, etc). Só ativada quando a aluna clica em
+         um canal na view "Fale com a Su". -->
+    <section class="view" id="view-chat">
+
+      <!-- Conversa -->
+      <div id="chat-conversa-tela" style="display:flex;flex-direction:column;flex:1;min-height:0;">
 
         <div class="chat-canal-header">
           <button class="chat-back-escolha" id="btn-back-escolha" type="button" aria-label="Voltar">
@@ -402,7 +409,7 @@
       </div>
       <span class="nav-tab-label">Materiais</span>
     </button>
-    <button class="nav-tab" data-view="chat" aria-label="Fale com a Su" id="nav-chat">
+    <button class="nav-tab" data-view="fale-com-a-su" aria-label="Fale com a Su" id="nav-chat">
       <div class="nav-tab-icon">
         <svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         <span class="nav-chat-badge" id="nav-chat-badge" style="display:none"></span>
