@@ -126,6 +126,7 @@ function irPara(viewId) {
     abrirTelaEscolhaChat();
   } else {
     document.body.classList.remove('chat-aberto');
+    document.body.classList.remove('chat-escolha-ativa');
     // Tira foco do textarea pra fechar teclado se estava aberto
     document.getElementById('chat-input')?.blur();
   }
@@ -812,6 +813,9 @@ function abrirTelaEscolhaChat() {
   canalAtivo = null;
   document.getElementById('chat-escolha-tela').style.display = 'flex';
   document.getElementById('chat-conversa-tela').style.display = 'none';
+  // Trava scroll do body somente nessa tela (sem alterar nada do chat
+  // em si). Quando entra na conversa, a classe é removida.
+  document.body.classList.add('chat-escolha-ativa');
   if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
   carregarResumoChats();
 }
@@ -852,6 +856,9 @@ async function abrirCanal(canal) {
   // A tela de conversa fica posicionada absoluta com liquid glass — efeito
   // de modal flutuante sobre os 2 cards de escolha borrados ao fundo.
   document.getElementById('chat-conversa-tela').style.display = 'flex';
+  // Tira a trava de scroll que valia só pra escolha — na conversa o chat
+  // gerencia o próprio scroll interno.
+  document.body.classList.remove('chat-escolha-ativa');
 
   const isS = canal === 'suellen';
   const headerImg = document.getElementById('chat-canal-header-img');
