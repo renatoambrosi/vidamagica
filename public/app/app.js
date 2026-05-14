@@ -60,10 +60,11 @@ function hidratarUI(u) {
 // ── PARTÍCULAS ──────────────────────────────────────────────
 // Os "brilhos que sobem na tela" — marca registrada do app, mesmo padrão
 // do index.html e admin.html (.particle com keyframe float lá; aqui .particula
-// com keyframe flutua, equivalente). Cor aleatória entre dourado e branco.
+// com keyframe flutua, equivalente).
 //
-// 18 partículas BASE (todo mundo) + 14 partículas EXTRAS escondidas, que
-// aparecem quando body.clube-ativo é adicionado (assinante Vida Mágica).
+// 18 partículas BASE (todo mundo, dourado claro + branco) +
+// 20 partículas EXTRAS escondidas, SÓ ouro, MAIORES, com GLOW dourado.
+// Aparecem quando body.clube-ativo é adicionado (assinante Vida Mágica).
 function criarParticulas() {
   const c = document.getElementById('particulas');
   if (!c) return;
@@ -71,24 +72,23 @@ function criarParticulas() {
   for (let i = 0; i < 18; i++) {
     const p = document.createElement('div');
     p.className = 'particula';
-    const t = Math.random() * 4 + 2;
+    const t = Math.random() * 4 + 2;  // 2-6px
     const cor = Math.random() > 0.5
       ? 'rgba(248,220,150,0.75)'   // dourado quente (igual index.html)
       : 'rgba(255,255,255,0.55)';  // branco suave (igual index.html)
     p.style.cssText = `width:${t}px;height:${t}px;left:${Math.random()*100}%;background:radial-gradient(circle,${cor} 0%,${cor.replace(/,[^,]*\)$/,',0)')} 70%);animation-duration:${Math.random()*18+12}s;animation-delay:${Math.random()*20}s;`;
     c.appendChild(p);
   }
-  // 14 partículas extras — só ativam pro assinante (controlado por
-  // body.clube-ativo via CSS). Maiores e mais brilhantes pra dar a
-  // sensação de "mais magia" — elegante, sem poluir.
-  for (let i = 0; i < 14; i++) {
+  // 20 partículas extras — SÓ pro assinante (controlado por body.clube-ativo
+  // via CSS). DOURADAS, MAIORES e COM GLOW — diferenciação clara, elegante.
+  for (let i = 0; i < 20; i++) {
     const p = document.createElement('div');
     p.className = 'particula particula-plus';
-    const t = Math.random() * 5 + 3;
-    const cor = Math.random() > 0.5
-      ? 'rgba(248,220,150,0.85)'   // dourado um pouco mais marcado
-      : 'rgba(255,255,255,0.7)';   // branco mais marcado
-    p.style.cssText = `width:${t}px;height:${t}px;left:${Math.random()*100}%;background:radial-gradient(circle,${cor} 0%,${cor.replace(/,[^,]*\)$/,',0)')} 70%);animation-duration:${Math.random()*16+10}s;animation-delay:${Math.random()*18}s;`;
+    const t = Math.random() * 6 + 4;  // 4-10px (claramente maiores)
+    // Dourado saturado — sem branco, pra dar a marca de "ouro" do Clube
+    const dourado = 'rgba(244,208,96,0.95)';        // núcleo brilhante
+    const douradoFade = 'rgba(244,208,96,0)';
+    p.style.cssText = `width:${t}px;height:${t}px;left:${Math.random()*100}%;background:radial-gradient(circle,${dourado} 0%,${douradoFade} 70%);box-shadow:0 0 ${t*2}px rgba(244,208,96,0.6),0 0 ${t*4}px rgba(244,208,96,0.25);animation-duration:${Math.random()*14+10}s;animation-delay:${Math.random()*16}s;`;
     c.appendChild(p);
   }
 }

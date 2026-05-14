@@ -89,6 +89,13 @@ ul, ol { list-style: none; }
 .particula-plus { display: none; }
 body.clube-ativo .particula-plus { display: block; }
 
+/* Quando assinante, as partículas BASE também ficam mais visíveis: aumento
+   sutil de opacidade na fase de pico da animação `flutua`. Não duplica
+   partículas, só intensifica as que já existem. */
+body.clube-ativo .particula:not(.particula-plus) {
+  filter: brightness(1.25) saturate(1.15);
+}
+
 /* ════════════════════════════════════════════════
    TOPO — esconde quando body.chat-aberto
    ════════════════════════════════════════════════ */
