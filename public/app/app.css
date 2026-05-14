@@ -862,19 +862,23 @@ body.teclado-aberto .bottom-nav {
   justify-content: center;
   min-height: 100vh;
 }
-/* Quando a antessala está ativa, anulamos os paddings do .views pra que
-   a min-height: 100vh da .chat-escolha valha à página inteira (e não
-   somada aos paddings do .views, que estouraria o body).
-   Classe adicionada via JS em irPara() — mais confiável que :has(). */
+/* Quando a antessala está ativa, o .views vira position: fixed cobrindo
+   a viewport inteira. iOS Safari ignora `overflow: hidden` no body, então
+   essa é a única técnica que realmente trava o scroll (de conteúdo E do
+   background-attachment fixed). Classe via JS em irPara(). */
 body.antessala-ativa .views {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   padding-top: 0;
   padding-bottom: 0;
   min-height: 0;
+  max-width: none;
+  overflow: hidden;
 }
-body.antessala-ativa,
-body.antessala-ativa .views {
-  /* Garante que body não rola nesse estado. min-height: 100vh da
-     .chat-escolha cobre toda a viewport, sem espaço extra. */
+body.antessala-ativa {
   overflow: hidden;
 }
 
