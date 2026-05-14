@@ -54,9 +54,6 @@ html, body { height: 100%; overflow-x: hidden; }
    a área extra do bounce mostraria o fundo do html sem essa pintura. */
 html {
   background-color: #E8DCC0;
-  /* `contain` bloqueia pull-to-refresh sem travar o scroll vertical normal
-     do conteúdo (diferente de `none` que pode interferir no iOS Safari). */
-  overscroll-behavior-y: contain;
 }
 body {
   font-family: var(--font-body);
@@ -143,7 +140,6 @@ body.chat-aberto .topo {
   min-height: 100vh;
   max-width: var(--content-max);
   margin: 0 auto;
-  transition: padding-top 0.22s ease;
 }
 body.chat-aberto .views {
   padding-top: var(--safe-top);
@@ -286,7 +282,7 @@ body.chat-aberto .views {
 .trilha-btn:disabled { background: rgba(200,146,42,0.18); color: var(--texto-mute); cursor: not-allowed; font-weight: 600; letter-spacing: 0.02em; text-transform: none; }
 .rodape { text-align: center; margin-top: 2rem; padding: 1.5rem; font-size: 0.7rem; color: var(--texto-fraco); }
 
-.view-topo { padding: 1.5rem 1.25rem 0.75rem; }
+.view-topo { padding: 2.25rem 1.25rem 0.75rem; }
 .view-titulo { font-family: var(--font-display); font-size: 1.4rem; font-weight: 900; color: var(--texto); margin-bottom: 0.2rem; }
 /* Padding lateral da aba Materiais. O padding-bottom usa as variáveis da
    bottom-nav (--nav-h + --safe-bottom) + folga generosa pra dar respiro

@@ -2994,6 +2994,23 @@ window.app = {
 
 // ── INIT ──
 (async function init() {
+  // Restaura a view SALVA antes de qualquer outra coisa, pra evitar o
+  // "piscar" da Home (que é a .active default no HTML) antes do JS
+  // chegar no fim do init. Síncrono — aplica antes do primeiro paint.
+  try {
+    const viewSalva = sessionStorage.getItem('vm_view_atual');
+    const viewsValidas = ['home', 'produtos', 'fale-com-a-su', 'videos', 'perfil'];
+    if (viewSalva && viewSalva !== 'home' && viewsValidas.includes(viewSalva)) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(`view-${viewSalva}`)?.classList.add('active');
+      document.querySelector(`.nav-tab[data-view="${viewSalva}"]`)?.classList.add('active');
+      if (viewSalva === 'fale-com-a-su') {
+        document.body.classList.add('antessala-ativa');
+      }
+    }
+  } catch {}
+
   criarParticulas();
   atualizarBadgeAvisos();
   setupVisualViewport();
@@ -3013,14 +3030,13 @@ window.app = {
   carregarResumoChats();
   setInterval(carregarResumoChats, 30000);
 
-  // Restaura a view que a aluna estava antes do reload (pull-to-refresh
-  // ou recarga manual). Salva em sessionStorage por toda chamada de
-  // irPara(). Se não há valor salvo, fica na Home (default).
-  try {
-    const viewSalva = sessionStorage.getItem('vm_view_atual');
-    const viewsValidas = ['home', 'produtos', 'fale-com-a-su', 'videos', 'perfil'];
-    if (viewSalva && viewSalva !== 'home' && viewsValidas.includes(viewSalva)) {
-      irPara(viewSalva);
-    }
-  } catch {}
+  // Se restaurou a antessala lá em cima, atualiza o resumo dos canais
+  // (que normalmente é chamado por irPara('fale-com-a-su')).
+  if (document.body.classList.contains('antessala-ativa')) {
+    carregarResumoChats();
+  }
+  // Se restaurou o Perfil, renderiza ele (irPara('perfil') faria isso).
+  if (document.getElementById('view-perfil')?.classList.contains('active')) {
+    renderPerfil();
+  }
 })();
