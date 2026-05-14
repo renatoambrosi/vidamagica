@@ -54,10 +54,9 @@ html, body { height: 100%; overflow-x: hidden; }
    a área extra do bounce mostraria o fundo do html sem essa pintura. */
 html {
   background-color: #E8DCC0;
-  /* Bloqueia o pull-to-refresh em TODAS as views, inclusive aquelas com
-     conteúdo pequeno (antessala, perfil) onde o body não rola e o iOS
-     escala pra o html. */
-  overscroll-behavior-y: none;
+  /* `contain` bloqueia pull-to-refresh sem travar o scroll vertical normal
+     do conteúdo (diferente de `none` que pode interferir no iOS Safari). */
+  overscroll-behavior-y: contain;
 }
 body {
   font-family: var(--font-body);
