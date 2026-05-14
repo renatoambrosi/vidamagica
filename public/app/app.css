@@ -856,7 +856,7 @@ body.teclado-aberto .bottom-nav {
   padding: 0 18px;
   align-items: stretch;
   justify-content: center;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 /* Quando a antessala está ativa, o .views vira position: fixed cobrindo
    a viewport inteira. iOS Safari ignora `overflow: hidden` no body, então
