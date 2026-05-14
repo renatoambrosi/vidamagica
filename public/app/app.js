@@ -62,33 +62,43 @@ function hidratarUI(u) {
 // do index.html e admin.html (.particle com keyframe float lá; aqui .particula
 // com keyframe flutua, equivalente).
 //
-// 18 partículas BASE (todo mundo, dourado claro + branco) +
-// 20 partículas EXTRAS escondidas, SÓ ouro, MAIORES, com GLOW dourado.
-// Aparecem quando body.clube-ativo é adicionado (assinante Vida Mágica).
+// PADRÃO BASE (todo mundo): 22 partículas douradas saturadas, médias, com
+// glow dourado. Cria a vibe mágica do app desde o cadastro.
+//
+// PADRÃO PLUS (assinante Vida Mágica): +24 partículas adicionais ainda
+// maiores e com glow mais intenso, fazendo o efeito de "chuva de ouro".
+// O CSS também aumenta brilho/saturação das base. Aparecem quando
+// body.clube-ativo é adicionado.
 function criarParticulas() {
   const c = document.getElementById('particulas');
   if (!c) return;
-  // 18 partículas base — aparecem pra todos
-  for (let i = 0; i < 18; i++) {
+
+  // 22 partículas BASE — pra todos. Douradas saturadas, 4-10px, com glow.
+  for (let i = 0; i < 22; i++) {
     const p = document.createElement('div');
     p.className = 'particula';
-    const t = Math.random() * 4 + 2;  // 2-6px
-    const cor = Math.random() > 0.5
-      ? 'rgba(248,220,150,0.75)'   // dourado quente (igual index.html)
-      : 'rgba(255,255,255,0.55)';  // branco suave (igual index.html)
-    p.style.cssText = `width:${t}px;height:${t}px;left:${Math.random()*100}%;background:radial-gradient(circle,${cor} 0%,${cor.replace(/,[^,]*\)$/,',0)')} 70%);animation-duration:${Math.random()*18+12}s;animation-delay:${Math.random()*20}s;`;
+    const t = Math.random() * 6 + 4;  // 4-10px
+    const dourado = 'rgba(244,208,96,0.95)';
+    const douradoFade = 'rgba(244,208,96,0)';
+    p.style.cssText = `width:${t}px;height:${t}px;left:${Math.random()*100}%;background:radial-gradient(circle,${dourado} 0%,${douradoFade} 70%);box-shadow:0 0 ${t*2}px rgba(244,208,96,0.6),0 0 ${t*4}px rgba(244,208,96,0.25);animation-duration:${Math.random()*18+12}s;animation-delay:${Math.random()*20}s;`;
     c.appendChild(p);
   }
-  // 20 partículas extras — SÓ pro assinante (controlado por body.clube-ativo
-  // via CSS). DOURADAS, MAIORES e COM GLOW — diferenciação clara, elegante.
-  for (let i = 0; i < 20; i++) {
+
+  // 24 partículas PLUS — SÓ pro assinante (controlado por body.clube-ativo).
+  // Maiores (6-14px) e com glow muito mais amplo. Algumas em ouro claro
+  // pra dar variação luminosa elegante.
+  for (let i = 0; i < 24; i++) {
     const p = document.createElement('div');
     p.className = 'particula particula-plus';
-    const t = Math.random() * 6 + 4;  // 4-10px (claramente maiores)
-    // Dourado saturado — sem branco, pra dar a marca de "ouro" do Clube
-    const dourado = 'rgba(244,208,96,0.95)';        // núcleo brilhante
-    const douradoFade = 'rgba(244,208,96,0)';
-    p.style.cssText = `width:${t}px;height:${t}px;left:${Math.random()*100}%;background:radial-gradient(circle,${dourado} 0%,${douradoFade} 70%);box-shadow:0 0 ${t*2}px rgba(244,208,96,0.6),0 0 ${t*4}px rgba(244,208,96,0.25);animation-duration:${Math.random()*14+10}s;animation-delay:${Math.random()*16}s;`;
+    const t = Math.random() * 8 + 6;  // 6-14px (bem maiores)
+    // 2 tons de ouro pra dar profundidade:
+    // - ouro brilhante (F4D060) → cor principal da marca
+    // - champagne (F8DC96) → ouro pálido, mais luminoso
+    const ehChampagne = Math.random() > 0.5;
+    const cor = ehChampagne ? 'rgba(248,220,150,1)' : 'rgba(244,208,96,1)';
+    const corFade = ehChampagne ? 'rgba(248,220,150,0)' : 'rgba(244,208,96,0)';
+    const glowCor = ehChampagne ? 'rgba(248,220,150,0.75)' : 'rgba(244,208,96,0.75)';
+    p.style.cssText = `width:${t}px;height:${t}px;left:${Math.random()*100}%;background:radial-gradient(circle,${cor} 0%,${corFade} 70%);box-shadow:0 0 ${t*3}px ${glowCor},0 0 ${t*6}px rgba(244,208,96,0.35);animation-duration:${Math.random()*14+10}s;animation-delay:${Math.random()*16}s;`;
     c.appendChild(p);
   }
 }
