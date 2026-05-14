@@ -154,11 +154,33 @@ body.chat-aberto .views {
 .view { display: none; }
 .view.active { display: block; }
 #view-chat { display: none; }
-#view-chat.active { display: flex; }
-/* Antessala "Fale com a Su" — é uma view comum, mas precisa de flex pra
-   que a .chat-escolha (flex: 1) centralize os cards verticalmente. */
+#view-chat.active {
+  display: flex;
+  /* Entrada suave do chat ao abrir a conversa */
+  animation: chat-entra 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes chat-entra {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* Antessala "Fale com a Su" — view normal com flex pra .chat-escolha
+   centralizar os cards verticalmente sem adicionar min-height (que
+   somaria com o min-height: 100vh do .views e causaria scroll). */
 #view-fale-com-a-su { display: none; }
-#view-fale-com-a-su.active { display: flex; flex-direction: column; min-height: 100vh; }
+#view-fale-com-a-su.active {
+  display: flex;
+  flex-direction: column;
+  /* Altura exata da área útil entre header e bottom-nav: evita scroll
+     do body. Sem isso, o min-height: 100vh do .views somado ao conteúdo
+     da view fazia o body crescer além da tela. */
+  min-height: calc(100dvh - var(--topo-h) - var(--safe-top) - var(--nav-h) - var(--safe-bottom) - 1rem);
+  /* Entrada suave ao voltar pra antessala (ou ao entrar nela do menu) */
+  animation: antessala-entra 0.25s ease-out both;
+}
+@keyframes antessala-entra {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
 
 /* ════════════════════════════════════════════════
    BOTTOM NAV — todos ícones iguais (sem destaque no chat)
