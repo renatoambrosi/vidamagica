@@ -30,9 +30,21 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // ── SEGURANÇA ──────────────────────────────────────────────
+// Helmet com defaults relaxados pra permitir embed de YouTube/Vimeo no /app.
+// Quando o iframe do YouTube carrega no /app, o navegador envia headers ao
+// YouTube — e o YouTube valida o "Referer" pra autorizar a reprodução.
+// Os defaults do helmet 7 (`no-referrer` + Cross-Origin-*=same-origin)
+// fazem o YouTube bloquear o embed com erro 153 ("Erro de configuração
+// do player"). Aqui afrouxamos só esses 3 — o resto da segurança fica.
 app.use(helmet({
   contentSecurityPolicy: false,
   permissionsPolicy: false,
+  // Envia origem (não path) pro cross-origin. YouTube precisa pra validar.
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  // Desliga isolamento cross-origin: permite iframes externos (YouTube/Vimeo)
+  // se comportarem como esperado.
+  crossOriginOpenerPolicy: false,
+  crossOriginResourcePolicy: false,
 }));
 app.use((req, res, next) => {
   res.setHeader('Permissions-Policy', 'microphone=(self), camera=(self), autoplay=(self)');
