@@ -47,7 +47,8 @@ app.use(helmet({
   crossOriginResourcePolicy: false,
 }));
 app.use((req, res, next) => {
-  res.setHeader('Permissions-Policy', 'microphone=(self), camera=(self), autoplay=(self)');
+  // fullscreen=* libera fullscreen pra iframes cross-origin (Vimeo/YouTube)
+  res.setHeader('Permissions-Policy', 'microphone=(self), camera=(self), autoplay=*, fullscreen=*');
   next();
 });
 
