@@ -821,14 +821,16 @@ body.teclado-aberto .bottom-nav {
   display: none;
 }
 
-/* Trava scroll do body APENAS na tela de escolha do chat. Quando entra na
-   conversa, a classe é removida e o body volta ao normal.
-   Usa overscroll-behavior: none pra impedir o bounce do iOS Safari
-   (que expõe área branca embaixo da bottom-nav). */
+/* Trava scroll do body APENAS na tela de escolha do chat. Técnica iOS:
+   position: fixed no body + JS salva/restaura scroll position. Sem isso,
+   o iOS Safari ignora `overflow: hidden` e continua rolando o body. */
 body.chat-escolha-ativa {
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
   overflow: hidden;
   overscroll-behavior: none;
-  height: 100dvh;
 }
 /* O comportamento padrão (`body.chat-aberto .topo`) esconde o header preto
    em todo o /app/chat. Mas na TELA DE ESCOLHA, o usuário quer ver o header
