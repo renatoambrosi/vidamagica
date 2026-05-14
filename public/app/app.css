@@ -162,21 +162,9 @@ body.chat-aberto .views {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-/* Antessala "Fale com a Su" — fixed cobrindo a área entre header e
-   bottom-nav. Cards centralizados verticalmente. SEM SCROLL, ponto. */
-#view-fale-com-a-su { display: none; }
-#view-fale-com-a-su.active {
-  position: fixed;
-  top: calc(var(--topo-h) + var(--safe-top));
-  left: 0;
-  right: 0;
-  bottom: calc(var(--nav-h) + var(--safe-bottom));
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  z-index: 11;
-  overflow: hidden;
-}
+/* Antessala "Fale com a Su" — herda `.view.active { display: block }`
+   como Início, Materiais e Perfil. Sem regras específicas, comporta-se
+   exatamente igual às demais views. */
 
 /* ════════════════════════════════════════════════
    BOTTOM NAV — todos ícones iguais (sem destaque no chat)
