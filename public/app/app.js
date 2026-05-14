@@ -120,6 +120,15 @@ function irPara(viewId) {
   document.getElementById(`view-${viewId}`)?.classList.add('active');
   document.querySelector(`.nav-tab[data-view="${viewId}"]`)?.classList.add('active');
 
+  // Persiste a view atual em sessionStorage. Se a aluna der pull-to-refresh
+  // (ou recarregar de qualquer outro jeito), o init() vai restaurar essa
+  // view em vez de cair sempre na Home. Exceção: chat → cai pra antessala,
+  // que é o comportamento mais natural após reload (não recarrega conversa).
+  try {
+    const viewSalvar = (viewId === 'chat') ? 'fale-com-a-su' : viewId;
+    sessionStorage.setItem('vm_view_atual', viewSalvar);
+  } catch {}
+
   // body.chat-aberto ativa as regras especiais SÓ na conversa real do chat.
   // A "antessala" (#view-fale-com-a-su) é uma view normal e NÃO ativa essa
   // classe — comporta-se exatamente como Home/Materiais/Perfil.
@@ -3003,4 +3012,15 @@ window.app = {
   conectarChatWs();
   carregarResumoChats();
   setInterval(carregarResumoChats, 30000);
+
+  // Restaura a view que a aluna estava antes do reload (pull-to-refresh
+  // ou recarga manual). Salva em sessionStorage por toda chamada de
+  // irPara(). Se não há valor salvo, fica na Home (default).
+  try {
+    const viewSalva = sessionStorage.getItem('vm_view_atual');
+    const viewsValidas = ['home', 'produtos', 'fale-com-a-su', 'videos', 'perfil'];
+    if (viewSalva && viewSalva !== 'home' && viewsValidas.includes(viewSalva)) {
+      irPara(viewSalva);
+    }
+  } catch {}
 })();
