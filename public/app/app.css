@@ -88,6 +88,23 @@ ul, ol { list-style: none; }
   80%       { opacity: 0.55; transform: scale(1.1)  rotate(22deg); }
 }
 
+/* ── SPRITES EXTRAS PRO ASSINANTE VIDA MÁGICA ──
+   Aparecem só quando body.clube-ativo está presente (adicionado pelo JS em
+   hidratarHome quando ctx.tem_clube === true). Z-index 1 (igual aos sprites
+   base): ficam ATRÁS de .views (z-index 10), então não atrapalham o chat
+   nem qualquer outra view. */
+.sprite-plus { position: fixed; pointer-events: none; z-index: 1; opacity: 0; display: none; animation: sprite-flicker-clube ease-in-out infinite; }
+body.clube-ativo .sprite-plus { display: block; }
+/* No assinante, os sprites BASE também ficam mais intensos (mais opacidade
+   nos picos da animação). Sem alterar o resto do app. */
+body.clube-ativo .sprite { animation-name: sprite-flicker-clube; }
+@keyframes sprite-flicker-clube {
+  0%, 100% { opacity: 0;    transform: scale(0.7) rotate(0deg); }
+  20%       { opacity: 0.95; transform: scale(1.05) rotate(20deg); }
+  50%       { opacity: 0.65; transform: scale(0.9)  rotate(-12deg); }
+  75%       { opacity: 0.85; transform: scale(1.15) rotate(26deg); }
+}
+
 /* ════════════════════════════════════════════════
    TOPO — esconde quando body.chat-aberto
    ════════════════════════════════════════════════ */
@@ -2391,6 +2408,24 @@ body.teclado-aberto .bottom-nav {
   border: 0;
   display: block;
 }
+/* Bloqueios dos cantos: cobrem os botões "Compartilhar" (BL), logo YouTube
+   (BR) e "Assistir no YouTube" (TL, que aparece quando o mouse passa).
+   Invisíveis, mas capturam clique antes de chegar no iframe.
+   Tamanhos pequenos pra não tampar a timeline central nem o botão de
+   fullscreen (que fica ~40px do canto inferior direito). */
+.player-topo-bloqueio-tl,
+.player-topo-bloqueio-tr,
+.player-topo-bloqueio-bl,
+.player-topo-bloqueio-br {
+  position: absolute;
+  background: transparent;
+  z-index: 3;
+  cursor: default;
+}
+.player-topo-bloqueio-tl { top: 0;    left: 0;    width: 70%; height: 50px; }
+.player-topo-bloqueio-tr { top: 0;    right: 0;   width: 15%; height: 50px; }
+.player-topo-bloqueio-bl { bottom: 0; left: 0;    width: 40px; height: 40px; }
+.player-topo-bloqueio-br { bottom: 0; right: 0;   width: 90px; height: 40px; }
 /* Camada que captura right-click e long-press sobre o iframe */
 .player-topo-shield {
   position: absolute; inset: 0;

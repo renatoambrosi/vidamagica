@@ -317,10 +317,21 @@ async function carregarPlayerTopo(ctx) {
   overlay?.addEventListener('click', () => {
     if (!ehAssinante) { abrirModal('modal-exclusivo'); return; }
     if (!destaque.url) return;
-    // Carrega iframe inline e esconde o overlay
+    // Carrega iframe inline e esconde o overlay.
+    // Os divs ".player-topo-bloqueio-*" cobrem os cantos onde o YouTube
+    // mostra "Compartilhar" (inferior esquerdo) e "Assistir no YouTube"
+    // (inferior direito). Como o iframe é cross-origin, não dá pra esconder
+    // esses botões via CSS interno — cobrimos por cima e capturamos o
+    // clique antes de chegar no iframe.
     const iframeWrap = document.createElement('div');
     iframeWrap.className = 'player-topo-iframe-wrap';
-    iframeWrap.innerHTML = `<iframe src="${embedProtegidoDeUrl(destaque.url)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+    iframeWrap.innerHTML = `
+      <iframe src="${embedProtegidoDeUrl(destaque.url)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      <div class="player-topo-bloqueio-tl" aria-hidden="true"></div>
+      <div class="player-topo-bloqueio-tr" aria-hidden="true"></div>
+      <div class="player-topo-bloqueio-bl" aria-hidden="true"></div>
+      <div class="player-topo-bloqueio-br" aria-hidden="true"></div>
+    `;
     el.appendChild(iframeWrap);
     el.classList.add('tocando');
     // Bloqueia clique direito (long-press no mobile) sobre o player todo —
