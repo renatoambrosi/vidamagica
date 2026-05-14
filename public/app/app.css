@@ -846,18 +846,14 @@ body.teclado-aberto .bottom-nav {
 }
 
 
-/* Tela de escolha — centralizada em relação à PÁGINA INTEIRA (100vh,
-   não só na área útil entre header e bottom-nav). Header e bottom-nav
-   ficam sobre o conteúdo, mas o padding interno empurra os cards pra
-   ficarem visíveis dentro da área útil. */
+/* Tela de escolha — centralizada exatamente no meio dos 100vh.
+   Paddings laterais iguais (esquerda/direita só); top/bottom = 0 pra
+   `justify-content: center` cair no centro absoluto da viewport. */
 .chat-escolha {
   display: flex;
   flex-direction: column;
   gap: 22px;
-  padding:
-    calc(var(--topo-h) + var(--safe-top) + 16px)
-    18px
-    calc(var(--nav-h) + var(--safe-bottom) + 16px);
+  padding: 0 18px;
   align-items: stretch;
   justify-content: center;
   min-height: 100vh;
@@ -878,7 +874,13 @@ body.antessala-ativa .views {
   max-width: none;
   overflow: hidden;
 }
+/* iOS Safari só respeita scroll travado se o body também for fixed. */
 body.antessala-ativa {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   overflow: hidden;
 }
 
