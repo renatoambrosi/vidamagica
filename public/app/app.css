@@ -2628,68 +2628,76 @@ body.teclado-aberto .bottom-nav {
 }
 
 /* ── POP-UP CONVITE CLUBE VIDA MÁGICA ── */
-/* Flutua abaixo do header (z-index entre header e modais), na frente do
-   player do topo. Só aparece pra não-assinante. Tem botão fechar (X)
-   que esconde por 12h (localStorage). */
+/* Glassmorphism escuro elegante, flutuando abaixo do header sobre o player.
+   Só aparece pra não-assinante. Fechar (X) esconde por 12h (localStorage). */
 .popup-clube {
   position: fixed;
-  top: calc(var(--topo-h) + var(--safe-top) + 0.5rem);
+  top: calc(var(--topo-h) + var(--safe-top) + 0.6rem);
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 1.5rem);
   max-width: calc(var(--content-max) - 1.5rem);
-  z-index: 60; /* acima do header (50), abaixo dos modais (100) */
+  z-index: 60;
   display: flex;
   align-items: center;
-  gap: 0.7rem;
-  padding: 0.75rem 0.9rem;
-  padding-right: 2.2rem; /* espaço pro X */
-  background: linear-gradient(135deg, rgba(244,208,96,0.98) 0%, rgba(200,146,42,0.98) 100%);
-  border: 1px solid rgba(255,255,255,0.35);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 8px 28px rgba(13,8,0,0.35), 0 0 0 1px rgba(200,146,42,0.4);
-  backdrop-filter: blur(8px);
-  animation: popupClubeEntra 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) both;
+  gap: 0.85rem;
+  padding: 0.75rem 0.95rem;
+  padding-right: 2.5rem;
+  /* Vidro escuro com leve tom dourado — fica acima do player sem competir */
+  background: rgba(13,8,0,0.72);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  border: 1px solid rgba(244,208,96,0.22);
+  border-radius: 14px;
+  box-shadow: 0 10px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+  animation: popupClubeEntra 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 @keyframes popupClubeEntra {
-  from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 .popup-clube-fechar {
   position: absolute;
-  top: 6px; right: 6px;
-  width: 28px; height: 28px;
+  top: 8px; right: 8px;
+  width: 22px; height: 22px;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(13,8,0,0.18);
-  color: #fff;
+  background: transparent;
+  color: rgba(255,255,255,0.55);
   border: 0;
   border-radius: 50%;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: color 0.15s, background 0.15s;
 }
-.popup-clube-fechar:hover { background: rgba(13,8,0,0.32); }
+.popup-clube-fechar:hover { color: rgba(255,255,255,0.95); background: rgba(255,255,255,0.08); }
 .popup-clube-icone {
-  font-size: 1.5rem;
   flex-shrink: 0;
-  filter: drop-shadow(0 1px 2px rgba(13,8,0,0.25));
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(244,208,96,0.18), rgba(244,208,96,0.06));
+  border: 1px solid rgba(244,208,96,0.25);
+  color: rgba(248,220,150,1);
 }
+.popup-clube-icone svg { width: 14px; height: 14px; }
 .popup-clube-textos {
   flex: 1;
   min-width: 0;
-  color: #2A1A05;
 }
 .popup-clube-titulo {
   font-family: var(--font-display);
-  font-size: 0.82rem;
-  font-weight: 900;
-  line-height: 1.15;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
   margin-bottom: 0.15rem;
-  letter-spacing: 0.01em;
+  color: rgba(255,250,240,0.96);
+  text-transform: uppercase;
 }
 .popup-clube-sub {
   font-size: 0.7rem;
-  line-height: 1.35;
-  color: rgba(42,26,5,0.78);
+  line-height: 1.4;
+  color: rgba(255,250,240,0.6);
+  font-weight: 400;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -2697,23 +2705,22 @@ body.teclado-aberto .bottom-nav {
 }
 .popup-clube-btn {
   flex-shrink: 0;
-  padding: 0.55rem 0.85rem;
-  background: #2A1A05;
-  color: var(--ouro-claro, #E8C97A);
+  padding: 0.5rem 0.95rem;
+  background: rgba(244,208,96,0.92);
+  color: #1A1005;
   font-family: var(--font-display);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.03em;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   border: 0;
-  border-radius: var(--radius-full);
+  border-radius: 999px;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
-  box-shadow: 0 2px 8px rgba(13,8,0,0.25);
+  transition: background 0.15s, transform 0.15s;
 }
-.popup-clube-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(13,8,0,0.35); }
+.popup-clube-btn:hover { background: rgba(248,220,150,1); transform: translateY(-1px); }
+.popup-clube-btn:active { transform: translateY(0); }
 
-/* Quando o chat está aberto, o header some — então escondemos o pop-up
-   também pra ele não ficar "voando" no meio do chat. */
+/* Esconde o pop-up no chat (header some, pop-up junto) */
 body.chat-aberto .popup-clube { display: none; }
 
 /* ── MODAL: Conteúdo exclusivo (cadeado do player) ── */
