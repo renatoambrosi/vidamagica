@@ -142,11 +142,23 @@ body.chat-aberto .topo {
 }
 body.chat-aberto .views {
   padding-top: var(--safe-top);
+  /* Trava a altura do .views à viewport quando o chat está aberto. Sem isso,
+     o min-height: 100vh somado ao padding-bottom enorme deixava o body com
+     altura de 2-3 viewports — e o usuário rolava pra baixo num vazio. */
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 0;
 }
 .view { display: none; }
 .view.active { display: block; }
 #view-chat { display: none; }
 #view-chat.active { display: flex; }
+/* Antessala "Fale com a Su" — é uma view comum, mas precisa de flex pra
+   que a .chat-escolha (flex: 1) centralize os cards verticalmente. */
+#view-fale-com-a-su { display: none; }
+#view-fale-com-a-su.active { display: flex; flex-direction: column; min-height: 100vh; }
 
 /* ════════════════════════════════════════════════
    BOTTOM NAV — todos ícones iguais (sem destaque no chat)

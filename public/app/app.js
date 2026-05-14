@@ -120,14 +120,23 @@ function irPara(viewId) {
   document.getElementById(`view-${viewId}`)?.classList.add('active');
   document.querySelector(`.nav-tab[data-view="${viewId}"]`)?.classList.add('active');
 
-  // Esconde header preto quando entra no chat
+  // body.chat-aberto ativa as regras especiais SÓ na conversa real do chat.
+  // A "antessala" (#view-fale-com-a-su) é uma view normal e NÃO ativa essa
+  // classe — comporta-se exatamente como Home/Materiais/Perfil.
   if (viewId === 'chat') {
     document.body.classList.add('chat-aberto');
-    abrirTelaEscolhaChat();
+    // Na conversa, mantém o botão "Fale com a Su" da bottom-nav destacado
+    // (ele que disparou a entrada nesse fluxo).
+    document.querySelector('.nav-tab[data-view="fale-com-a-su"]')?.classList.add('active');
   } else {
     document.body.classList.remove('chat-aberto');
-    // Tira foco do textarea pra fechar teclado se estava aberto
     document.getElementById('chat-input')?.blur();
+  }
+
+  if (viewId === 'fale-com-a-su') {
+    // Entra na antessala: reseta canal ativo e atualiza resumo.
+    canalAtivo = null;
+    carregarResumoChats();
   }
 
   if (viewId === 'perfil') renderPerfil();
@@ -139,7 +148,7 @@ function irPara(viewId) {
 document.querySelectorAll('.nav-tab').forEach(tab => {
   tab.addEventListener('click', () => irPara(tab.dataset.view));
 });
-document.querySelector('.nav-tab[data-view="chat"]')?.addEventListener('click', () => {
+document.querySelector('.nav-tab[data-view="fale-com-a-su"]')?.addEventListener('click', () => {
   document.getElementById('nav-chat-badge').style.display = 'none';
 });
 
@@ -807,13 +816,13 @@ function isMensagemAssinatura(msg) {
   return c.includes('vidamagica.com.br/assinar') || c.includes('Para assinar o Vida Mágica');
 }
 
-// ── Tela de escolha ──
+// ── Voltar pra antessala (view "Fale com a Su") ──
+// A antessala é uma view independente do chat. Navegar pra ela é o
+// equivalente a "voltar da conversa". O irPara('fale-com-a-su') já
+// reseta canalAtivo e recarrega o resumo via lógica do próprio irPara.
 function abrirTelaEscolhaChat() {
-  canalAtivo = null;
-  document.getElementById('chat-escolha-tela').style.display = 'flex';
-  document.getElementById('chat-conversa-tela').style.display = 'none';
   if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-  carregarResumoChats();
+  irPara('fale-com-a-su');
 }
 
 async function carregarResumoChats() {
@@ -848,9 +857,10 @@ function atualizarCardCanal(canal, info) {
 // ── Abrir canal ──
 async function abrirCanal(canal) {
   canalAtivo = canal;
-  // Tela de escolha continua renderizada POR BAIXO da tela de conversa.
-  // A tela de conversa fica posicionada absoluta com liquid glass — efeito
-  // de modal flutuante sobre os 2 cards de escolha borrados ao fundo.
+  // Navega pra view do chat (antes a aluna estava na antessala
+  // #view-fale-com-a-su). irPara('chat') ativa o body.chat-aberto
+  // que aplica todas as regras especiais do chat (header escondido, etc).
+  irPara('chat');
   document.getElementById('chat-conversa-tela').style.display = 'flex';
 
   const isS = canal === 'suellen';
@@ -1626,7 +1636,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;
   conectarChatWs();
   if (!chatConv) return;
-  if (!document.querySelector('.nav-tab[data-view="chat"]')?.classList.contains('active')) return;
+  if (!document.getElementById('view-chat')?.classList.contains('active')) return;
   recarregarChatAtual('push');
 });
 
@@ -1671,13 +1681,13 @@ function conectarChatWs() {
             document.getElementById('chat-msgs')?.appendChild(renderMensagem(msg));
             scrollChat();
             // Aluna está vendo o chat AGORA → marca lida instantâneo (✓✓ azul pra Suellen).
-            if (document.querySelector('.nav-tab[data-view="chat"]').classList.contains('active')
+            if (document.getElementById('view-chat')?.classList.contains('active')
                 && document.visibilityState === 'visible') {
               marcarLidas(chatConv.tipo);
             }
           }
           carregarResumoChats();
-          if (!document.querySelector('.nav-tab[data-view="chat"]').classList.contains('active')) {
+          if (!document.getElementById('view-chat')?.classList.contains('active')) {
             document.getElementById('nav-chat-badge').style.display = '';
           }
         }
@@ -1692,13 +1702,13 @@ function conectarChatWs() {
           mensagensAtuais.push(msg);
           document.getElementById('chat-msgs')?.appendChild(renderMensagem(msg));
           scrollChat();
-          if (document.querySelector('.nav-tab[data-view="chat"]').classList.contains('active')
+          if (document.getElementById('view-chat')?.classList.contains('active')
               && document.visibilityState === 'visible') {
             marcarLidas(chatConv.tipo);
           }
         }
         carregarResumoChats();
-        if (!document.querySelector('.nav-tab[data-view="chat"]').classList.contains('active')) {
+        if (!document.getElementById('view-chat')?.classList.contains('active')) {
           document.getElementById('nav-chat-badge').style.display = '';
         }
       }
