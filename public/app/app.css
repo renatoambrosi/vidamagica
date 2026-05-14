@@ -821,12 +821,25 @@ body.teclado-aberto .bottom-nav {
   display: none;
 }
 
-/* Trava scroll do body APENAS na tela de escolha do chat — sem nenhuma
-   alteração de layout, fundo ou estilo. Quando o usuário entra numa
-   conversa (suellen ou suporte), a classe `chat-escolha-ativa` é removida
-   pelo JS e o body volta ao normal. */
+/* Trava scroll do body APENAS na tela de escolha do chat. Quando entra na
+   conversa, a classe é removida e o body volta ao normal.
+   Usa overscroll-behavior: none pra impedir o bounce do iOS Safari
+   (que expõe área branca embaixo da bottom-nav). */
 body.chat-escolha-ativa {
   overflow: hidden;
+  overscroll-behavior: none;
+  height: 100dvh;
+}
+/* O comportamento padrão (`body.chat-aberto .topo`) esconde o header preto
+   em todo o /app/chat. Mas na TELA DE ESCOLHA, o usuário quer ver o header
+   normal (com sementes, avisos e logo). Aqui reverte só nessa tela. */
+body.chat-aberto.chat-escolha-ativa .topo {
+  transform: none;
+  opacity: 1;
+  pointer-events: auto;
+}
+body.chat-aberto.chat-escolha-ativa .views {
+  padding-top: calc(var(--topo-h) + var(--safe-top));
 }
 
 /* Tela de escolha */
