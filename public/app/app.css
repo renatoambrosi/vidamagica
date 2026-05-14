@@ -80,30 +80,14 @@ ul, ol { list-style: none; }
   100% { transform: translateY(-10vh) translateX(-15px) scale(0.8); opacity: 0; }
 }
 
-.sprite { position: fixed; pointer-events: none; z-index: 1; opacity: 0; animation: sprite-flicker ease-in-out infinite; }
-@keyframes sprite-flicker {
-  0%, 100% { opacity: 0;    transform: scale(0.6) rotate(0deg); }
-  25%       { opacity: 0.65; transform: scale(1)   rotate(18deg); }
-  60%       { opacity: 0.35; transform: scale(0.85) rotate(-10deg); }
-  80%       { opacity: 0.55; transform: scale(1.1)  rotate(22deg); }
-}
-
-/* ── SPRITES EXTRAS PRO ASSINANTE VIDA MÁGICA ──
-   Aparecem só quando body.clube-ativo está presente (adicionado pelo JS em
-   hidratarHome quando ctx.tem_clube === true). Z-index 1 (igual aos sprites
-   base): ficam ATRÁS de .views (z-index 10), então não atrapalham o chat
-   nem qualquer outra view. */
-.sprite-plus { position: fixed; pointer-events: none; z-index: 1; opacity: 0; display: none; animation: sprite-flicker-clube ease-in-out infinite; }
-body.clube-ativo .sprite-plus { display: block; }
-/* No assinante, os sprites BASE também ficam mais intensos (mais opacidade
-   nos picos da animação). Sem alterar o resto do app. */
-body.clube-ativo .sprite { animation-name: sprite-flicker-clube; }
-@keyframes sprite-flicker-clube {
-  0%, 100% { opacity: 0;    transform: scale(0.7) rotate(0deg); }
-  20%       { opacity: 0.95; transform: scale(1.05) rotate(20deg); }
-  50%       { opacity: 0.65; transform: scale(0.9)  rotate(-12deg); }
-  75%       { opacity: 0.85; transform: scale(1.15) rotate(26deg); }
-}
+/* ── PARTÍCULAS EXTRAS PRO ASSINANTE VIDA MÁGICA ──
+   Adicionadas pelo JS junto das base, com class .particula-plus.
+   Por padrão ficam ESCONDIDAS (display: none) — só aparecem quando o body
+   recebe a classe `clube-ativo` (adicionada em hidratarHome quando
+   ctx.tem_clube === true). Z-index igual ao das particulas: ficam atrás
+   das views (z-index: 10), então não atrapalham chat nem modais. */
+.particula-plus { display: none; }
+body.clube-ativo .particula-plus { display: block; }
 
 /* ════════════════════════════════════════════════
    TOPO — esconde quando body.chat-aberto
