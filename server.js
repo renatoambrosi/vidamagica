@@ -128,7 +128,7 @@ app.get('/resultado/:id', (req, res) => {
 // ── ROTA AMIGÁVEL: /app e /app/* (exceto arquivos estáticos) → app.html ──
 // Permite /app/dashboard, /app/perfil etc. — sem .html
 // Exclui /app/app.css, /app/app.js, /app/scene.js, /app/assets/*
-app.get(/^\/app(\/(dashboard|perfil|chat|loja|sementes)?)?$/, (req, res) => {
+app.get(/^\/app(\/(dashboard|perfil|chat|loja|sementes|jornada)?)?$/, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'app.html'));
 });
 
