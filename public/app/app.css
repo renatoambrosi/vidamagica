@@ -868,13 +868,12 @@ body.teclado-aberto .bottom-nav {
    A escolha continua renderizada por baixo, borrada — dá sensação de
    modal flutuante (estética iOS). O #view-chat já é position:fixed,
    então o absolute aqui se posiciona em relação a ele. */
+/* Antes era position:absolute com blur pra liquid-glass sobre a tela de
+   escolha. A escolha foi pra outra view, então removemos o efeito —
+   o chat agora mostra o fundo do body direto, sem blur. */
 #chat-conversa-tela {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  background: linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.2) 100%);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  flex: 1;
+  min-height: 0;
 }
 .chat-escolha-titulo {
   text-align: center;
