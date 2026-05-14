@@ -864,11 +864,18 @@ body.teclado-aberto .bottom-nav {
 }
 /* Quando a antessala está ativa, anulamos os paddings do .views pra que
    a min-height: 100vh da .chat-escolha valha à página inteira (e não
-   somada aos paddings do .views, que estouraria o body). */
-body:has(#view-fale-com-a-su.active) .views {
+   somada aos paddings do .views, que estouraria o body).
+   Classe adicionada via JS em irPara() — mais confiável que :has(). */
+body.antessala-ativa .views {
   padding-top: 0;
   padding-bottom: 0;
   min-height: 0;
+}
+body.antessala-ativa,
+body.antessala-ativa .views {
+  /* Garante que body não rola nesse estado. min-height: 100vh da
+     .chat-escolha cobre toda a viewport, sem espaço extra. */
+  overflow: hidden;
 }
 
 /* Tela de conversa: aparece SOBRE a tela de escolha com vidro real branco.

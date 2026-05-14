@@ -133,8 +133,12 @@ function irPara(viewId) {
     document.getElementById('chat-input')?.blur();
   }
 
+  // Liga a class `antessala-ativa` no body só quando está nessa view.
+  // Usada no CSS pra anular paddings do .views e travar scroll, fazendo
+  // a min-height: 100vh da .chat-escolha centralizar EM 100vh real.
+  document.body.classList.toggle('antessala-ativa', viewId === 'fale-com-a-su');
+
   if (viewId === 'fale-com-a-su') {
-    // Entra na antessala: reseta canal ativo e atualiza resumo.
     canalAtivo = null;
     carregarResumoChats();
   }
