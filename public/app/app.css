@@ -254,7 +254,7 @@ body.chat-aberto .views {
 .feed-lista-titulo { font-family: var(--font-display); font-size: 0.85rem; font-weight: 700; color: var(--texto); line-height: 1.3; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .feed-lista-corpo { font-size: 0.75rem; color: var(--texto-mute); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-.trilha { padding: 0 1.25rem 1rem; }
+.trilha { padding: 0 1.25rem calc(var(--nav-h) + var(--safe-bottom) + 3rem); }
 .trilha-header { text-align: center; margin-bottom: 1.75rem; }
 .trilha-eyebrow { display: inline-block; font-family: var(--font-display); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ouro-fundo); background: var(--ouro-pelicula); border: 1px solid var(--vidro-borda); padding: 0.3rem 0.9rem; border-radius: var(--radius-full); margin-bottom: 0.75rem; }
 .trilha-titulo { font-family: var(--font-display); font-size: 1.6rem; font-weight: 900; color: var(--texto); margin-bottom: 0.35rem; }
