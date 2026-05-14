@@ -219,6 +219,32 @@ function thumbDeUrl(url) {
   if (yt) return `https://img.youtube.com/vi/${yt[1]}/mqdefault.jpg`;
   return null;
 }
+
+// Cache de thumbs do Vimeo (oEmbed retorna por fetch — evita refazer toda vez)
+const _vimeoThumbCache = {};
+// Busca a thumbnail do Vimeo via API oficial oEmbed.
+// Retorna null se a URL não é Vimeo, se o fetch falhar, ou se o vídeo
+// não está acessível (privado/erro).
+async function thumbVimeoDeUrl(url) {
+  if (!url) return null;
+  const vm = url.match(/vimeo\.com\/(\d+)/);
+  if (!vm) return null;
+  const id = vm[1];
+  if (_vimeoThumbCache[id] !== undefined) return _vimeoThumbCache[id];
+  try {
+    const r = await fetch(`https://vimeo.com/api/oembed.json?url=https://vimeo.com/${id}`);
+    if (!r.ok) { _vimeoThumbCache[id] = null; return null; }
+    const data = await r.json();
+    // thumbnail_url_with_play é versão com play overlay; preferimos sem,
+    // porque o nosso overlay desenha o botão por cima.
+    const thumb = data.thumbnail_url || null;
+    _vimeoThumbCache[id] = thumb;
+    return thumb;
+  } catch {
+    _vimeoThumbCache[id] = null;
+    return null;
+  }
+}
 function abrirPlayer({ titulo, subtitulo, corpo, url }) {
   document.getElementById('player-titulo').textContent = titulo||'';
   document.getElementById('player-sub').textContent    = subtitulo||'';
@@ -291,7 +317,13 @@ async function carregarPlayerTopo(ctx) {
   const ehAssinante = !!ctx?.tem_clube;
   const isVideo  = destaque.tipo === 'video';
   const isImagem = destaque.tipo === 'imagem';
-  const thumb = destaque.imagem_url || thumbDeUrl(destaque.url) || '';
+  // Prioridade: imagem cadastrada manualmente no admin > thumb auto (YT/Vimeo)
+  let thumb = destaque.imagem_url || thumbDeUrl(destaque.url) || '';
+  // Vimeo: thumb vem por fetch oEmbed (assíncrono). Se a admin não cadastrou
+  // imagem_url manualmente, buscamos automaticamente.
+  if (!thumb && destaque.url && /vimeo\.com\/\d+/.test(destaque.url)) {
+    thumb = (await thumbVimeoDeUrl(destaque.url)) || '';
+  }
 
   // Imagem pura: sem play/cadeado, só a imagem (sem overlay).
   if (isImagem) {
@@ -434,8 +466,18 @@ async function renderViewVideos(ctx) {
 
   const ehAssinante = !!ctx?.tem_clube;
 
-  grid.innerHTML = videos.map(v => {
-    const thumb = v.imagem_url || thumbDeUrl(v.url) || '';
+  // Busca thumbs em paralelo. YouTube/Imagem manual: síncrono.
+  // Vimeo: via fetch oEmbed (cacheado, então só pesa na primeira vez).
+  const thumbs = await Promise.all(videos.map(async (v) => {
+    if (v.imagem_url) return v.imagem_url;
+    const t = thumbDeUrl(v.url);
+    if (t) return t;
+    if (v.url && /vimeo\.com\/\d+/.test(v.url)) return (await thumbVimeoDeUrl(v.url)) || '';
+    return '';
+  }));
+
+  grid.innerHTML = videos.map((v, idx) => {
+    const thumb = thumbs[idx];
     const btnClasse = ehAssinante ? 'video-card-btn-play' : 'video-card-btn-cadeado';
     const btnSvg = ehAssinante
       ? '<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
