@@ -821,6 +821,15 @@ body.teclado-aberto .bottom-nav {
   display: none;
 }
 
+/* Trava scroll do body quando o chat está aberto. Sem isso, o conteúdo da
+   Home rola por trás do #view-chat (especialmente na tela de escolha onde
+   há áreas vazias). O scroll real do chat acontece dentro do próprio
+   .chat-mensagens, não no body. */
+body.chat-aberto {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 /* Tela de escolha */
 .chat-escolha {
   flex: 1;
@@ -2658,27 +2667,31 @@ body.teclado-aberto .bottom-nav {
 }
 .popup-clube-fechar {
   position: absolute;
-  top: 8px; right: 8px;
-  width: 22px; height: 22px;
+  top: 6px; right: 6px;
+  width: 32px; height: 32px;
   display: flex; align-items: center; justify-content: center;
   background: transparent;
-  color: rgba(255,255,255,0.55);
+  color: rgba(255,255,255,0.7);
   border: 0;
   border-radius: 50%;
   cursor: pointer;
   transition: color 0.15s, background 0.15s;
 }
-.popup-clube-fechar:hover { color: rgba(255,255,255,0.95); background: rgba(255,255,255,0.08); }
+.popup-clube-fechar:hover { color: rgba(255,255,255,1); background: rgba(255,255,255,0.1); }
 .popup-clube-icone {
   flex-shrink: 0;
-  width: 32px; height: 32px;
+  width: 36px; height: 36px;
   display: flex; align-items: center; justify-content: center;
   border-radius: 50%;
   background: linear-gradient(135deg, rgba(244,208,96,0.18), rgba(244,208,96,0.06));
   border: 1px solid rgba(244,208,96,0.25);
-  color: rgba(248,220,150,1);
+  overflow: hidden;
 }
-.popup-clube-icone svg { width: 14px; height: 14px; }
+.popup-clube-icone img {
+  width: 22px; height: 22px;
+  object-fit: contain;
+  display: block;
+}
 .popup-clube-textos {
   flex: 1;
   min-width: 0;

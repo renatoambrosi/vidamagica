@@ -461,10 +461,10 @@ function renderPopupClube(ctx) {
   el.className = 'popup-clube';
   el.innerHTML = `
     <button type="button" class="popup-clube-fechar" aria-label="Fechar">
-      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
     <div class="popup-clube-icone" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 6.4L20 10l-6.4 1.6L12 18l-1.6-6.4L4 10l6.4-1.6L12 2z"/></svg>
+      <img src="/assets/favicon.png" alt="" onerror="this.style.display='none'">
     </div>
     <div class="popup-clube-textos">
       <div class="popup-clube-titulo">Clube Vida Mágica</div>
