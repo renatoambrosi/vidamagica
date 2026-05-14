@@ -424,6 +424,54 @@ function renderSaudacaoJornada(ctx) {
   `;
 }
 
+// ── POP-UP CONVITE CLUBE VIDA MÁGICA ─────────────────────────
+// Flutua logo abaixo do header, sobre o player do topo, convidando a aluna
+// a assinar. Só pra NÃO-assinante (ctx.tem_clube === false). Tem botão
+// fechar (X) — quando fecha, fica oculto por 12h (cookie em localStorage).
+const POPUP_CLUBE_KEY = 'vm_popup_clube_fechado_em';
+const POPUP_CLUBE_HORAS_OCULTO = 12;
+function popupClubeEstaOculto() {
+  try {
+    const ts = parseInt(localStorage.getItem(POPUP_CLUBE_KEY) || '0', 10);
+    if (!ts) return false;
+    const horas = (Date.now() - ts) / (1000 * 60 * 60);
+    return horas < POPUP_CLUBE_HORAS_OCULTO;
+  } catch { return false; }
+}
+function fecharPopupClube() {
+  try { localStorage.setItem(POPUP_CLUBE_KEY, String(Date.now())); } catch {}
+  const el = document.getElementById('popup-clube');
+  if (el) el.remove();
+}
+function renderPopupClube(ctx) {
+  // Remove se já existir (re-render seguro)
+  const antigo = document.getElementById('popup-clube');
+  if (antigo) antigo.remove();
+  // Só pra não-assinante. E respeita o "fechei, não me mostra de novo agora".
+  if (ctx?.tem_clube) return;
+  if (popupClubeEstaOculto()) return;
+
+  const el = document.createElement('div');
+  el.id = 'popup-clube';
+  el.className = 'popup-clube';
+  el.innerHTML = `
+    <button type="button" class="popup-clube-fechar" aria-label="Fechar">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="popup-clube-icone">✨</div>
+    <div class="popup-clube-textos">
+      <div class="popup-clube-titulo">Clube Vida Mágica</div>
+      <div class="popup-clube-sub">Conteúdo exclusivo toda semana, encontros e acompanhamento da sua jornada.</div>
+    </div>
+    <button type="button" class="popup-clube-btn">Quero assinar</button>
+  `;
+  document.body.appendChild(el);
+  el.querySelector('.popup-clube-fechar').addEventListener('click', fecharPopupClube);
+  el.querySelector('.popup-clube-btn').addEventListener('click', () => {
+    window.app?.abrirModalClube?.();
+  });
+}
+
 // ── VIEW VÍDEOS (grade Netflix) ──────────────────────────────
 async function renderViewVideos(ctx) {
   const grid = document.getElementById('videos-grid');
@@ -2056,6 +2104,9 @@ function hidratarHome(ctx) {
   // ── Player do topo (vídeo/imagem destaque) ──
   carregarPlayerTopo(ctx);
 
+  // ── Pop-up convite Clube (só pra não-assinante; flutua abaixo do header) ──
+  renderPopupClube(ctx);
+
   // ── Botoeira (faixa abaixo do player com "Assista mais vídeos" + "i") ──
   renderBotoeira();
 
@@ -2813,31 +2864,17 @@ function renderTrilhaJornada(ctx) {
     );
   }).join('');
 
-  // Cadeado de Clube (sem assinatura): aparece abaixo da barra de progresso
-  // Aluna sem Clube → mostra cadeado clicável que abre o modal Clube.
-  const semClube = !ctx.tem_clube;
-  const cadeadoClubeHtml = semClube
-    ? '<button type="button" class="trilha-cadeado-clube" onclick="window.app.abrirModalClube()">'
-        + '<span class="trilha-cadeado-icon">🔒</span>'
-        + '<span class="trilha-cadeado-texto">'
-          + '<strong>Acompanhamento bloqueado</strong>'
-          + '<span>Toque pra conhecer o Clube Vida Mágica</span>'
-        + '</span>'
-      + '</button>'
-    : '';
-
   // Análise automatizada (texto da jornada — ex: trava forte mesmo com Prosperidade)
   const analiseHtml = j.analise
     ? '<div class="trilha-analise">' + escHtml(j.analise) + '</div>'
     : '';
 
-  // A barra de progresso e o nome da jornada agora ficam na seção
+  // A barra de progresso e o nome da jornada ficam na seção
   // "Saudação + Jornada" (#saudacao-jornada), renderizada por
-  // renderSaudacaoJornada(). Aqui mantemos só o cadeado de Clube,
-  // a análise automatizada e a lista de passos.
+  // renderSaudacaoJornada(). O convite pro Clube foi pra um pop-up
+  // flutuante (renderPopupClube). Aqui só análise + lista de passos.
   trilha.innerHTML =
     '<div class="trilha-header">' +
-      cadeadoClubeHtml +
       analiseHtml +
       '<h2 class="trilha-titulo" style="margin-top:0.5rem">Seu caminho</h2>' +
     '</div>' +
