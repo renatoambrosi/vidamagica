@@ -51,13 +51,7 @@
       <!-- BOTOEIRA (faixa abaixo do player) — populada por renderBotoeira() -->
       <section class="botoeira" id="botoeira"></section>
 
-      <!-- SAUDAÇÃO + JORNADA (nome + barra de progresso + jornada atual) — populada por renderSaudacaoJornada() -->
-      <section class="saudacao-jornada" id="saudacao-jornada">
-        <div class="saudacao">
-          <p class="saudacao-eyebrow">Bem-vinda de volta</p>
-          <h1 class="saudacao-nome" id="saudacao-nome">Sua jornada</h1>
-        </div>
-      </section>
+      <!-- Saudação + barra de jornada moveram pra view-jornada. -->
 
       <div class="tesouro-wrap" id="tesouro-wrap">
         <button class="tesouro-btn" id="tesouro-btn" aria-label="Tesouro da Su">
@@ -105,46 +99,26 @@
         </button>
       </div>
 
-      <section class="trilha">
-        <div class="trilha-header">
-          <span class="trilha-eyebrow">Fase 1 · Despertando</span>
-          <h2 class="trilha-titulo">Sua trilha</h2>
-          <p class="trilha-sub">Avance uma atividade por vez.</p>
-        </div>
-        <ol class="trilha-lista">
-          <li class="trilha-item trilha-ativo">
-            <div class="trilha-num">1</div>
-            <div class="trilha-card">
-              <div class="trilha-eyebrow-card">Diagnóstico</div>
-              <h3 class="trilha-card-titulo">Teste do Subconsciente</h3>
-              <p class="trilha-card-desc">Descubra em 15 perguntas o padrão mental que bloqueia sua prosperidade.</p>
-              <div class="trilha-meta"><span>15 perguntas</span><span>~7 min</span></div>
-              <button class="trilha-btn">Começar →</button>
-            </div>
-          </li>
-          <li class="trilha-item trilha-bloqueado">
-            <div class="trilha-num">2</div>
-            <div class="trilha-card">
-              <div class="trilha-eyebrow-card">Sessão</div>
-              <h3 class="trilha-card-titulo">Diagnóstico do Teste</h3>
-              <p class="trilha-card-desc">Sessão guiada para entender em profundidade o seu resultado.</p>
-              <div class="trilha-meta"><span>~25 min</span></div>
-              <button class="trilha-btn" disabled>🔒 Conclua a etapa anterior</button>
-            </div>
-          </li>
-          <li class="trilha-item trilha-bloqueado">
-            <div class="trilha-num">3</div>
-            <div class="trilha-card">
-              <div class="trilha-eyebrow-card">E-book</div>
-              <h3 class="trilha-card-titulo">Despertando a Prosperidade Bíblica</h3>
-              <p class="trilha-card-desc">Leitura para entender as travas espirituais que impedem a abundância.</p>
-              <div class="trilha-meta"><span>~2 horas</span></div>
-              <button class="trilha-btn" disabled>🔒 Etapa bloqueada</button>
-            </div>
-          </li>
-        </ol>
-      </section>
+      <!-- Trilha moveu pra view-jornada. -->
       <footer class="rodape"><p>Vida Mágica · Renato &amp; Suellen Seragi</p></footer>
+    </section>
+
+    <!-- MINHA JORNADA -->
+    <!-- Espelha a estrutura de #view-produtos: view-topo (título + sub) e
+         corpo abaixo. A saudação "Jornada do/da NOME" é a view-sub
+         (populada por renderSaudacaoJornada via #jornada-saudacao-sub).
+         Conteúdo migrado de view-home: barra de progresso + trilha. -->
+    <section class="view" id="view-jornada">
+      <div class="view-topo">
+        <h2 class="view-titulo">Minha Jornada</h2>
+        <p class="view-sub" id="jornada-saudacao-sub">Sua jornada</p>
+      </div>
+
+      <!-- BARRA DE PROGRESSO (número, nome, passos, %) — populada por renderSaudacaoJornada() -->
+      <section class="saudacao-jornada" id="saudacao-jornada"></section>
+
+      <!-- TRILHA "Seu caminho" — populada por renderTrilhaJornada() -->
+      <section class="trilha"></section>
     </section>
 
     <!-- MATERIAIS -->
@@ -403,11 +377,11 @@
       </div>
       <span class="nav-tab-label">Início</span>
     </button>
-    <button class="nav-tab" data-view="produtos" aria-label="Materiais">
+    <button class="nav-tab" data-view="jornada" aria-label="Minha Jornada">
       <div class="nav-tab-icon">
-        <svg viewBox="0 0 24 24" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M12 2 L14.5 9 L22 9 L16 13.5 L18.5 21 L12 16.5 L5.5 21 L8 13.5 L2 9 L9.5 9 Z"/></svg>
       </div>
-      <span class="nav-tab-label">Materiais</span>
+      <span class="nav-tab-label">Minha Jornada</span>
     </button>
     <button class="nav-tab" data-view="fale-com-a-su" aria-label="Fale com a Su" id="nav-chat">
       <div class="nav-tab-icon">
@@ -415,6 +389,12 @@
         <span class="nav-chat-badge" id="nav-chat-badge" style="display:none"></span>
       </div>
       <span class="nav-tab-label">Fale com a Su</span>
+    </button>
+    <button class="nav-tab" data-view="produtos" aria-label="Materiais">
+      <div class="nav-tab-icon">
+        <svg viewBox="0 0 24 24" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      </div>
+      <span class="nav-tab-label">Materiais</span>
     </button>
     <button class="nav-tab" data-view="perfil" aria-label="Perfil">
       <div class="nav-tab-icon">
