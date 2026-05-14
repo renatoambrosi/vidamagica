@@ -821,28 +821,6 @@ body.teclado-aberto .bottom-nav {
   display: none;
 }
 
-/* Trava scroll do body APENAS na tela de escolha do chat. Técnica iOS:
-   position: fixed no body + JS salva/restaura scroll position. Sem isso,
-   o iOS Safari ignora `overflow: hidden` e continua rolando o body. */
-body.chat-escolha-ativa {
-  position: fixed;
-  left: 0;
-  right: 0;
-  width: 100%;
-  overflow: hidden;
-  overscroll-behavior: none;
-}
-/* O comportamento padrão (`body.chat-aberto .topo`) esconde o header preto
-   em todo o /app/chat. Mas na TELA DE ESCOLHA, o usuário quer ver o header
-   normal (com sementes, avisos e logo). Aqui reverte só nessa tela. */
-body.chat-aberto.chat-escolha-ativa .topo {
-  transform: none;
-  opacity: 1;
-  pointer-events: auto;
-}
-body.chat-aberto.chat-escolha-ativa .views {
-  padding-top: calc(var(--topo-h) + var(--safe-top));
-}
 
 /* Tela de escolha */
 .chat-escolha {

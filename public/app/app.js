@@ -126,13 +126,6 @@ function irPara(viewId) {
     abrirTelaEscolhaChat();
   } else {
     document.body.classList.remove('chat-aberto');
-    // destravarScrollChatEscolha pode ainda não estar definido aqui (irPara
-    // é definido bem cedo). Faz inline pra garantir.
-    if (document.body.classList.contains('chat-escolha-ativa')) {
-      document.body.classList.remove('chat-escolha-ativa');
-      document.body.style.top = '';
-      try { window.scrollTo(0, window._scrollAntesChatEscolha || 0); } catch {}
-    }
     // Tira foco do textarea pra fechar teclado se estava aberto
     document.getElementById('chat-input')?.blur();
   }
@@ -815,27 +808,10 @@ function isMensagemAssinatura(msg) {
 }
 
 // ── Tela de escolha ──
-// Guarda o scrollY antes de travar o body (técnica iOS pra position: fixed
-// no body sem perder a posição quando voltar).
-let _scrollAntesChatEscolha = 0;
-function travarScrollChatEscolha() {
-  if (document.body.classList.contains('chat-escolha-ativa')) return;
-  _scrollAntesChatEscolha = window.scrollY || window.pageYOffset || 0;
-  document.body.style.top = `-${_scrollAntesChatEscolha}px`;
-  document.body.classList.add('chat-escolha-ativa');
-}
-function destravarScrollChatEscolha() {
-  if (!document.body.classList.contains('chat-escolha-ativa')) return;
-  document.body.classList.remove('chat-escolha-ativa');
-  document.body.style.top = '';
-  window.scrollTo(0, _scrollAntesChatEscolha);
-}
-
 function abrirTelaEscolhaChat() {
   canalAtivo = null;
   document.getElementById('chat-escolha-tela').style.display = 'flex';
   document.getElementById('chat-conversa-tela').style.display = 'none';
-  travarScrollChatEscolha();
   if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
   carregarResumoChats();
 }
@@ -876,9 +852,6 @@ async function abrirCanal(canal) {
   // A tela de conversa fica posicionada absoluta com liquid glass — efeito
   // de modal flutuante sobre os 2 cards de escolha borrados ao fundo.
   document.getElementById('chat-conversa-tela').style.display = 'flex';
-  // Tira a trava de scroll que valia só pra escolha — na conversa o chat
-  // gerencia o próprio scroll interno.
-  destravarScrollChatEscolha();
 
   const isS = canal === 'suellen';
   const headerImg = document.getElementById('chat-canal-header-img');
