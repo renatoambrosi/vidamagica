@@ -114,6 +114,11 @@ app.get('/teste', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'teste.html'));
 });
 
+// ── ROTA AMIGÁVEL: /ouro-da-reprogramacao-mental → LP do curso ─────
+app.get('/ouro-da-reprogramacao-mental', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'ouro-da-reprogramacao-mental.html'));
+});
+
 // ── ROTA AMIGÁVEL: /termos serve termos.html ───────────────
 app.get('/termos', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'termos.html'));
