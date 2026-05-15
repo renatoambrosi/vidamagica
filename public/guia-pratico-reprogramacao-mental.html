@@ -199,12 +199,19 @@
     .hero-sub { font-size: 1rem; color: var(--text-soft); max-width: 600px; margin: 0 auto 1.25rem; line-height: 1.75; }
     .hero-sub strong { color: var(--text-dark); }
 
-    /* Hero features: 3 cards inline (E-book + Exercícios Práticos + Aulão) */
-    .hero-features { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.6rem 0.85rem; max-width: 640px; margin: 0.5rem auto 1.75rem; }
-    .hero-feature-card { background: rgba(255,255,255,0.85); border: 1px solid var(--border-soft); border-radius: var(--r-md); padding: 0.85rem 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.45rem; min-width: 115px; backdrop-filter: blur(6px); box-shadow: 0 4px 12px rgba(26,18,5,0.06); }
-    .hero-feature-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--orange-deep); font-size: 1.3rem; }
-    .hero-feature-text { font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; color: var(--text-dark); text-align: center; line-height: 1.2; letter-spacing: 0.02em; }
-    .hero-feature-plus { font-family: var(--font-display); font-size: 1.5rem; font-weight: 900; color: var(--orange); }
+    /* Hero features: 3 cards SEMPRE numa linha (com + entre eles) */
+    .hero-features { display: flex; flex-wrap: nowrap; justify-content: center; align-items: center; gap: 0.35rem; max-width: 640px; margin: 0.5rem auto 1.75rem; }
+    .hero-feature-card { background: rgba(255,255,255,0.88); border: 1px solid var(--border-soft); border-radius: var(--r-md); padding: 0.7rem 0.45rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.35rem; flex: 1 1 0; min-width: 0; backdrop-filter: blur(6px); box-shadow: 0 4px 12px rgba(26,18,5,0.06); }
+    .hero-feature-icon { display: flex; align-items: center; justify-content: center; color: var(--orange-deep); font-size: 1.05rem; }
+    .hero-feature-text { font-family: var(--font-display); font-size: 0.66rem; font-weight: 700; color: var(--text-dark); text-align: center; line-height: 1.18; letter-spacing: 0.01em; }
+    .hero-feature-plus { font-family: var(--font-display); font-size: 1.15rem; font-weight: 900; color: var(--orange); flex-shrink: 0; }
+    @media (min-width: 560px) {
+      .hero-features { gap: 0.6rem 0.85rem; }
+      .hero-feature-card { padding: 0.85rem 1rem; gap: 0.45rem; }
+      .hero-feature-icon { font-size: 1.3rem; }
+      .hero-feature-text { font-size: 0.78rem; letter-spacing: 0.02em; }
+      .hero-feature-plus { font-size: 1.5rem; }
+    }
 
     /* SECTION HEADERS — IDÊNTICAS, paleta light */
     .section-eyebrow { display: block; font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.32em; text-transform: uppercase; color: var(--orange-deep); margin-bottom: 1rem; text-align: center; }
@@ -372,7 +379,7 @@
       <div class="hero-logo-wrap">
         <img src="/assets/products/guia-pratico.png" alt="Guia Prático para Reprogramar a Mente" class="hero-logo" onerror="this.style.display='none'">
       </div>
-      <p class="hero-eyebrow" data-reveal>Produto da Suellen Seragi</p>
+      <p class="hero-eyebrow" data-reveal>Renato e Suellen Seragi</p>
       <h1 data-reveal>Guia Prático <span class="glow">para reprogramar</span> a mente</h1>
       <p class="hero-headline" data-reveal>A forma mais simples, leve e organizada de começar — ou aprofundar — sua reprogramação mental.</p>
 
@@ -395,13 +402,15 @@
 
       <p class="hero-sub" data-reveal><strong>Um guia direto</strong>, inspirado em <strong>princípios do Grande Livro</strong>, em <strong>PNL</strong>, neurociência e reprogramação mental — pronto para <strong>transformar sua mente de forma prática e real</strong>.</p>
 
-      <div style="margin-top:2rem" data-reveal>
-        <a href="https://pay.kiwify.com.br/itNhMPe?utm_source=vidamagica&utm_campaign=LpGuia-hero" class="btn-cta" id="cta-hero" target="_blank" rel="noopener"><i class="fas fa-compass"></i> Começar agora</a>
+      <!-- PREÇO antes do CTA (dá respiro). Injetado dinamicamente via /api/precos -->
+      <div class="preco-hero" data-reveal>
+        <p class="preco-hero-de" data-preco-de style="display:none">de <s>R$ 711,00</s> por</p>
+        <p class="preco-hero-big" data-preco-parcelas>12x <small>R$</small> 8,70</p>
+        <p class="preco-hero-vista" data-preco-avista>ou R$ 84,11 à vista</p>
       </div>
 
-      <div class="preco-hero" data-reveal>
-        <p class="preco-hero-big">12x <small>R$</small> 8,70</p>
-        <p class="preco-hero-vista">ou R$ 84,11 à vista</p>
+      <div style="margin-top:1.75rem" data-reveal>
+        <a href="https://pay.kiwify.com.br/itNhMPe?utm_source=vidamagica&utm_campaign=LpGuia-hero" class="btn-cta" id="cta-hero" target="_blank" rel="noopener" data-checkout-link data-utm="LpGuia-hero"><i class="fas fa-compass"></i> Começar agora</a>
       </div>
     </section>
 
@@ -540,7 +549,7 @@
         <div class="dep-track" id="dep-track"></div>
       </div>
       <div class="container" style="text-align:center;margin-top:2rem" data-reveal>
-        <a href="https://pay.kiwify.com.br/itNhMPe?utm_source=vidamagica&utm_campaign=LpGuia-dep" class="btn-cta" id="cta-dep" target="_blank" rel="noopener"><i class="fas fa-compass"></i> Quero a mesma transformação</a>
+        <a href="https://pay.kiwify.com.br/itNhMPe?utm_source=vidamagica&utm_campaign=LpGuia-dep" class="btn-cta" id="cta-dep" target="_blank" rel="noopener" data-checkout-link data-utm="LpGuia-dep"><i class="fas fa-compass"></i> Quero a mesma transformação</a>
       </div>
     </section>
 
@@ -602,14 +611,14 @@
 
         <div class="cta-card" data-reveal="zoom">
           <p class="cta-card-title">Pacote completo</p>
-          <p class="cta-price-parcelado">12x R$ 8,70</p>
-          <p class="cta-price-avista">ou R$ 84,11 à vista</p>
+          <p class="cta-price-parcelado" data-preco-parcelas-plain>12x R$ 8,70</p>
+          <p class="cta-price-avista" data-preco-avista>ou R$ 84,11 à vista</p>
           <ul class="cta-list">
             <li><i class="fas fa-check"></i> E-book Guia Prático da Reprogramação Mental</li>
             <li><i class="fas fa-check"></i> Exercícios Práticos</li>
             <li><i class="fas fa-check"></i> Aulão com Suellen Seragi</li>
           </ul>
-          <a href="https://pay.kiwify.com.br/itNhMPe?utm_source=vidamagica&utm_campaign=LpGuia-cta" class="btn-cta" id="cta-final-btn" style="font-size:1rem;padding:1.15rem 2.3rem" target="_blank" rel="noopener">
+          <a href="https://pay.kiwify.com.br/itNhMPe?utm_source=vidamagica&utm_campaign=LpGuia-cta" class="btn-cta" id="cta-final-btn" style="font-size:1rem;padding:1.15rem 2.3rem" target="_blank" rel="noopener" data-checkout-link data-utm="LpGuia-cta">
             <i class="fas fa-cart-shopping"></i> Quero começar agora
           </a>
         </div>
@@ -652,6 +661,46 @@
   <script>
     const API_BASE = window.location.origin;
     const TAG_LP   = 'guia_pratico_rm';
+    const PRECO_KEY = 'guia_pratico'; // slug em /api/precos (admin gerencia)
+
+    /* ═══ PREÇO + CHECKOUT — fonte única: /api/precos
+       Atualiza:
+       - [data-preco-parcelas]       → "12x <small>R$</small> 8,70"
+       - [data-preco-parcelas-plain] → "12x R$ 8,70" (sem <small>)
+       - [data-preco-avista]         → "ou R$ 84,11 à vista"
+       - [data-preco-de]             → "de <s>R$ 711,00</s> por" (esconde se sem promo)
+       - [data-checkout-link]        → href com link_checkout_padrao + UTM do data-utm
+       Fallback: HTML mantém valores do seed pra caso /api/precos falhe. */
+    (async function carregarPrecos(){
+      try{
+        const r = await fetch(`${API_BASE}/api/precos`, {headers:{'Accept':'application/json'},mode:'cors'});
+        if (!r.ok) return;
+        const precos = await r.json();
+        const p = precos[PRECO_KEY];
+        if (!p) return;
+
+        const parcelasHtml  = `${p.exibir_parcelas_qtd}x <small>R$</small> ${p.exibir_parcelas_valor}`;
+        const parcelasPlain = `${p.exibir_parcelas_qtd}x R$ ${p.exibir_parcelas_valor}`;
+        const avistaTxt     = `ou R$ ${p.exibir_avista} à vista`;
+
+        document.querySelectorAll('[data-preco-parcelas]').forEach(el => { el.innerHTML = parcelasHtml; });
+        document.querySelectorAll('[data-preco-parcelas-plain]').forEach(el => { el.textContent = parcelasPlain; });
+        document.querySelectorAll('[data-preco-avista]').forEach(el => { el.textContent = avistaTxt; });
+        document.querySelectorAll('[data-preco-de]').forEach(el => {
+          if (p.exibir_de) { el.innerHTML = `de <s>R$ ${p.exibir_de}</s> por`; el.style.display = ''; }
+          else             { el.style.display = 'none'; }
+        });
+
+        const link = p.link_checkout_padrao;
+        if (link) {
+          document.querySelectorAll('[data-checkout-link]').forEach(el => {
+            const utm = el.getAttribute('data-utm') || 'LpGuia';
+            const sep = link.includes('?') ? '&' : '?';
+            el.href = `${link}${sep}utm_source=vidamagica&utm_campaign=${utm}`;
+          });
+        }
+      }catch(e){ /* mantém valores do HTML como fallback */ }
+    })();
 
     /* ═══ NAVBAR AUTH — IDÊNTICO ao teste/ouro/lei/index ═══ */
     window.VmSession = window.VmSession || (function(){
