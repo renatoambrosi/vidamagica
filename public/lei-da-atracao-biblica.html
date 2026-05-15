@@ -220,8 +220,9 @@
 
     /* PREÇO INLINE NO HERO */
     .preco-hero { margin-top: 0.5rem; }
-    .preco-hero-de { font-size: 0.85rem; color: var(--pearl-mute); margin-bottom: 0.3rem; }
-    .preco-hero-de s { color: var(--pearl-faint); margin: 0 0.3em; }
+    .preco-hero-de { font-size: 0.85rem; color: var(--pearl-mute); margin-bottom: 0.45rem; display: flex; align-items: center; justify-content: center; gap: 0.55rem; flex-wrap: wrap; }
+    .preco-hero-de s { color: var(--pearl-faint); }
+    .preco-badge { display: inline-block; padding: 0.18rem 0.6rem; background: linear-gradient(135deg, var(--gold-light), var(--gold)); color: var(--color-brown-dark); font-family: var(--font-display); font-size: 0.72rem; font-weight: 800; border-radius: 4px; letter-spacing: 0.05em; box-shadow: 0 2px 8px rgba(244,217,152,0.35); }
     .preco-hero-big { font-family: var(--font-display); font-size: clamp(1.6rem,4.5vw,2.2rem); font-weight: 900; color: var(--pearl); line-height: 1; margin-bottom: 0.3rem; letter-spacing: -0.015em; }
     .preco-hero-big small { font-size: 0.55em; font-weight: 700; color: var(--gold-light); }
     .preco-hero-vista { font-size: 0.82rem; color: var(--pearl-mute); }
@@ -318,9 +319,8 @@
     .cta-final-pre strong { color: var(--gold-light); font-weight: 700; }
     .cta-mockup { max-width: 280px; margin: 2rem auto 1.5rem; border-radius: 18px; box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 50px var(--gold-glow-soft); }
     .preco-bloco { margin: 1.5rem auto 2rem; }
-    .preco-promo { font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; color: var(--gold-light); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 0.45rem; }
-    .preco-de { font-size: 0.9rem; color: var(--pearl-mute); margin-bottom: 0.35rem; }
-    .preco-de s { color: var(--pearl-faint); margin: 0 0.3em; }
+    .preco-de { font-size: 0.9rem; color: var(--pearl-mute); margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.55rem; flex-wrap: wrap; }
+    .preco-de s { color: var(--pearl-faint); }
     .preco-big { display: block; font-family: var(--font-display); font-size: clamp(2.4rem,7vw,3.2rem); font-weight: 900; color: var(--pearl); line-height: 1; margin: 0.4rem 0 0.5rem; letter-spacing: -0.02em; }
     .preco-big small { font-size: 0.5em; font-weight: 700; color: var(--gold-light); }
     .preco-vista { font-size: 0.88rem; color: var(--pearl-mute); }
@@ -396,12 +396,13 @@
       <p class="hero-sub" data-reveal><strong style="color:var(--pearl)">Você crê em Deus, faz tudo que pode mas não está vendo resultado?</strong> A resposta que você pediu pra Deus está aqui.</p>
       <p class="hero-sub" data-reveal>Aprenda a <strong style="color:var(--gold-light)">atrair uma vida de sucesso e ser respondida por Deus</strong>, com alinhamento espiritual correto.</p>
       <div style="margin-top:2rem" data-reveal>
-        <a href="https://pay.kiwify.com.br/8BoTzTD?utm_source=vidamagica&utm_campaign=LpLda-hero" class="btn-cta" id="cta-hero" target="_blank" rel="noopener"><i class="fas fa-crown"></i> Quero transformar minha vida</a>
+        <a href="https://pay.kiwify.com.br/8BoTzTD" class="btn-cta" id="cta-hero" target="_blank" rel="noopener" data-checkout-link data-utm="LpLda-hero"><i class="fas fa-crown"></i> Quero transformar minha vida</a>
       </div>
+      <!-- Preço dinâmico vindo de /api/precos (slug lda_biblica) -->
       <div class="preco-hero" data-reveal>
-        <p class="preco-hero-de">de <s>R$ 711,00</s> por</p>
-        <p class="preco-hero-big">12x <small>R$</small> 52,85</p>
-        <p class="preco-hero-vista">ou R$ 511,00 à vista</p>
+        <p class="preco-hero-de" data-preco-de style="display:none">de <s>R$ 0,00</s></p>
+        <p class="preco-hero-big" data-preco-parcelas>12x <small>R$</small> 52,85</p>
+        <p class="preco-hero-vista" data-preco-avista>ou R$ 511,00 à vista</p>
       </div>
     </section>
 
@@ -601,7 +602,7 @@
         <div class="dep-track" id="dep-track"></div>
       </div>
       <div class="container" style="text-align:center;margin-top:2rem" data-reveal>
-        <a href="https://pay.kiwify.com.br/8BoTzTD?utm_source=vidamagica&utm_campaign=LpLda-dep" class="btn-cta" id="cta-dep" target="_blank" rel="noopener"><i class="fas fa-crown"></i> Quero a mesma transformação</a>
+        <a href="https://pay.kiwify.com.br/8BoTzTD" class="btn-cta" id="cta-dep" target="_blank" rel="noopener" data-checkout-link data-utm="LpLda-dep"><i class="fas fa-crown"></i> Quero a mesma transformação</a>
       </div>
     </section>
 
@@ -616,14 +617,14 @@
           <img src="/assets/products/lda-biblica.png" alt="Lei da Atração Bíblica" class="cta-mockup" onerror="this.style.display='none'">
           <p style="font-family:var(--font-display);font-weight:700;font-size:1.05rem;color:var(--pearl);margin-bottom:0.4rem">Curso: Lei da Atração Bíblica</p>
 
+          <!-- Preço dinâmico vindo de /api/precos (slug lda_biblica) -->
           <div class="preco-bloco">
-            <p class="preco-promo">Investimento único</p>
-            <p class="preco-de">de <s>R$ 711,00</s> por</p>
-            <span class="preco-big">12x <small>R$</small> 52,85</span>
-            <p class="preco-vista">ou R$ 511,00 à vista</p>
+            <p class="preco-de" data-preco-de style="display:none">de <s>R$ 0,00</s></p>
+            <span class="preco-big" data-preco-parcelas>12x <small>R$</small> 52,85</span>
+            <p class="preco-vista" data-preco-avista>ou R$ 511,00 à vista</p>
           </div>
 
-          <a href="https://pay.kiwify.com.br/8BoTzTD?utm_source=vidamagica&utm_campaign=LpLda-cta" class="btn-cta" id="cta-final-btn" style="font-size:1rem;padding:1.2rem 2.4rem" target="_blank" rel="noopener">
+          <a href="https://pay.kiwify.com.br/8BoTzTD" class="btn-cta" id="cta-final-btn" style="font-size:1rem;padding:1.2rem 2.4rem" target="_blank" rel="noopener" data-checkout-link data-utm="LpLda-cta">
             <i class="fas fa-crown"></i> Quero começar agora
           </a>
         </div>
@@ -674,6 +675,49 @@
   <script>
     const API_BASE = window.location.origin;
     const TAG_LP   = 'lei_atracao_biblica';
+    const PRECO_KEY = 'lda_biblica'; // slug em /api/precos (admin gerencia)
+
+    /* ═══ PREÇO + CHECKOUT — fonte única: /api/precos
+       Atualiza:
+       - [data-preco-parcelas] → "12x <small>R$</small> 52,85"
+       - [data-preco-avista]   → "ou R$ 511,00 à vista"
+       - [data-preco-de]       → "de <s>R$ 711,00</s>" + badge "% OFF" (esconde se sem promo)
+       - [data-checkout-link]  → href com link_checkout_padrao + UTM do data-utm
+       Fallback: HTML mantém valores do seed pra caso /api/precos falhe. */
+    (async function carregarPrecos(){
+      try{
+        const r = await fetch(`${API_BASE}/api/precos`, {headers:{'Accept':'application/json'},mode:'cors'});
+        if (!r.ok) return;
+        const precos = await r.json();
+        const p = precos[PRECO_KEY];
+        if (!p) return;
+
+        const parcelasHtml = `${p.exibir_parcelas_qtd}x <small>R$</small> ${p.exibir_parcelas_valor}`;
+        const avistaTxt    = `ou R$ ${p.exibir_avista} à vista`;
+
+        document.querySelectorAll('[data-preco-parcelas]').forEach(el => { el.innerHTML = parcelasHtml; });
+        document.querySelectorAll('[data-preco-avista]').forEach(el => { el.textContent = avistaTxt; });
+        // "de R$ X" riscado + badge "% OFF" — só aparecem quando mostrar_promo está ligada
+        document.querySelectorAll('[data-preco-de]').forEach(el => {
+          if (p.exibir_de) {
+            const badge = p.desconto_pct ? `<span class="preco-badge">${p.desconto_pct}% OFF</span>` : '';
+            el.innerHTML = `de <s>R$ ${p.exibir_de}</s> ${badge}`;
+            el.style.display = '';
+          } else {
+            el.style.display = 'none';
+          }
+        });
+
+        const link = p.link_checkout_padrao;
+        if (link) {
+          document.querySelectorAll('[data-checkout-link]').forEach(el => {
+            const utm = el.getAttribute('data-utm') || 'LpLda';
+            const sep = link.includes('?') ? '&' : '?';
+            el.href = `${link}${sep}utm_source=vidamagica&utm_campaign=${utm}`;
+          });
+        }
+      }catch(e){ /* mantém valores do HTML como fallback */ }
+    })();
 
     /* STARS — partículas douradas/peroladas subindo (atmosfera 'céu noturno') */
     (function() {

@@ -300,11 +300,14 @@
     .plano-icon { width: 64px; height: 64px; margin: 0 auto 1rem; border-radius: 50%; background: linear-gradient(135deg, var(--gold-light), var(--gold)); display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 18px var(--gold-glow-soft); }
     .plano-icon i { color: #FFFFFF; font-size: 1.5rem; }
     .plano-card.destaque .plano-icon { background: linear-gradient(135deg, var(--gold-radiant), var(--gold), var(--gold-deep)); box-shadow: 0 8px 24px var(--gold-glow); }
+    /* Mockup do combo: imagem quadrada no topo do card destaque, no lugar do ícone redondo */
+    .plano-mockup { width: 100%; max-width: 220px; aspect-ratio: 1; margin: 0 auto 1rem; border-radius: 14px; object-fit: cover; box-shadow: 0 8px 24px rgba(61,40,20,0.18), 0 0 30px rgba(244,217,152,0.4); display: block; }
     .plano-titulo { font-family: var(--font-display); font-size: 1.15rem; font-weight: 800; color: var(--text-dark); text-align: center; margin-bottom: 0.35rem; letter-spacing: -0.01em; }
     .plano-sub { font-size: 0.85rem; color: var(--text-soft); text-align: center; margin-bottom: 1.1rem; font-style: italic; }
     .plano-preco { text-align: center; padding: 1rem 0; border-top: 1px solid var(--border-card); border-bottom: 1px solid var(--border-card); margin-bottom: 1.1rem; }
-    .plano-preco-de { font-size: 0.82rem; color: var(--text-mute); margin-bottom: 0.25rem; }
-    .plano-preco-de s { color: var(--text-faint); margin: 0 0.25em; }
+    .plano-preco-de { font-size: 0.82rem; color: var(--text-mute); margin-bottom: 0.4rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex-wrap: wrap; }
+    .plano-preco-de s { color: var(--text-faint); }
+    .plano-preco-badge { display: inline-block; padding: 0.18rem 0.55rem; background: linear-gradient(135deg, var(--gold), var(--gold-deep)); color: #FFFFFF; font-family: var(--font-display); font-size: 0.7rem; font-weight: 800; border-radius: 4px; letter-spacing: 0.05em; box-shadow: 0 2px 6px rgba(200,146,42,0.35); }
     .plano-preco-parcelas { font-family: var(--font-display); font-size: clamp(1.55rem,4.5vw,1.95rem); font-weight: 900; color: var(--text-dark); line-height: 1; margin-bottom: 0.3rem; letter-spacing: -0.015em; }
     .plano-preco-parcelas small { font-size: 0.55em; font-weight: 700; color: var(--gold-deep); }
     .plano-preco-vista { font-size: 0.82rem; color: var(--text-soft); }
@@ -590,10 +593,10 @@
             </div>
           </div>
 
-          <!-- ── PLANO 3: COMBO COMPLETO (destaque) ── -->
+          <!-- ── PLANO 3: COMBO COMPLETO (destaque, com mockup) ── -->
           <div class="plano-card destaque" data-reveal>
             <span class="plano-badge">Mais completo</span>
-            <div class="plano-icon"><i class="fas fa-crown"></i></div>
+            <img src="/assets/products/atal-maneira-combo.png" alt="Combo A Tal Maneira — Livro + Curso" class="plano-mockup" onerror="this.style.display='none'">
             <p class="plano-titulo">Combo Completo</p>
             <p class="plano-sub">Livro + Curso + Bônus</p>
             <div class="plano-preco">
@@ -855,9 +858,15 @@
 
           document.querySelectorAll(`[data-preco-key="${slug}"][data-preco-parcelas]`).forEach(el => { el.innerHTML = parcelasHtml; });
           document.querySelectorAll(`[data-preco-key="${slug}"][data-preco-avista]`).forEach(el => { el.textContent = avistaTxt; });
+          // "de R$ X" riscado + badge "% OFF" — só aparecem quando mostrar_promo está ligada
           document.querySelectorAll(`[data-preco-key="${slug}"][data-preco-de]`).forEach(el => {
-            if (p.exibir_de) { el.innerHTML = `de <s>R$ ${p.exibir_de}</s> por`; el.style.display = ''; }
-            else             { el.style.display = 'none'; }
+            if (p.exibir_de) {
+              const badge = p.desconto_pct ? `<span class="plano-preco-badge">${p.desconto_pct}% OFF</span>` : '';
+              el.innerHTML = `de <s>R$ ${p.exibir_de}</s> ${badge}`;
+              el.style.display = '';
+            } else {
+              el.style.display = 'none';
+            }
           });
 
           const link = p.link_checkout_padrao;
