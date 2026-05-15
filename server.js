@@ -124,6 +124,11 @@ app.get('/lei-da-atracao-biblica', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'lei-da-atracao-biblica.html'));
 });
 
+// ── ROTA AMIGÁVEL: /guia-pratico-reprogramacao-mental → LP do produto ──
+app.get('/guia-pratico-reprogramacao-mental', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'guia-pratico-reprogramacao-mental.html'));
+});
+
 // ── ROTA AMIGÁVEL: /termos serve termos.html ───────────────
 app.get('/termos', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'termos.html'));
