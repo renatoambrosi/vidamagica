@@ -208,6 +208,24 @@ const PRECOS_INICIAIS = {
     parcelas_valor_promo: '52,85',
     preco_alunos: '411,00',
     parcelas_valor_alunos: '42,51'
+  },
+  // Combo Livro Digital + Curso A Tal Maneira. Preços placeholder —
+  // ajustar pelo painel /admin → Preços antes de divulgar. Links Kiwify
+  // já apontam pros checkouts corretos do combo.
+  atal_maneira_combo: {
+    nome: 'Combo A Tal Maneira - Livro Digital + Curso Completo',
+    tipo: 'curso',
+    imagem_url: '/assets/products/atal-maneira-curso.png',
+    link_checkout_padrao: 'https://pay.kiwify.com.br/c7dRjkL',
+    link_checkout_aluno: 'https://pay.kiwify.com.br/g47SRft',
+    mostrar_promo: false,
+    preco_padrao: '0,00',
+    parcelas_qtd: 12,
+    parcelas_valor_padrao: '0,00',
+    preco_promo: '0,00',
+    parcelas_valor_promo: '0,00',
+    preco_alunos: '0,00',
+    parcelas_valor_alunos: '0,00'
   }
 };
 
