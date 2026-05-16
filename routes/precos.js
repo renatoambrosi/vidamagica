@@ -36,7 +36,8 @@ function processarPrecos(precos) {
         p.desconto_pct = null;
       }
 
-    } else if (p.tipo === 'curso') {
+    } else if (p.tipo === 'curso' || p.tipo === 'ebook') {
+      // 'ebook' é alias de 'curso' — mesma estrutura de exibição (parcelas + avista + promo)
       if (p.mostrar_promo) {
         p.exibir_de = p.preco_padrao;
         p.exibir_avista = p.preco_promo;
