@@ -219,13 +219,8 @@
     .btn-cta-sub { font-size: 0.78rem; color: var(--pearl-mute); margin-top: 0.95rem; letter-spacing: 0.04em; text-align: center; }
 
     /* PREÇO INLINE NO HERO */
-    .preco-hero { margin-top: 0.5rem; }
-    .preco-hero-de { font-size: 0.85rem; color: var(--pearl-mute); margin-bottom: 0.45rem; display: flex; align-items: center; justify-content: center; gap: 0.55rem; flex-wrap: wrap; }
-    .preco-hero-de s { color: var(--pearl-faint); }
+    /* Badge "% OFF" — injetado pelo JS quando mostrar_promo está ligada */
     .preco-badge { display: inline-block; padding: 0.18rem 0.6rem; background: linear-gradient(135deg, var(--gold-light), var(--gold)); color: var(--color-brown-dark); font-family: var(--font-display); font-size: 0.72rem; font-weight: 800; border-radius: 4px; letter-spacing: 0.05em; box-shadow: 0 2px 8px rgba(244,217,152,0.35); }
-    .preco-hero-big { font-family: var(--font-display); font-size: clamp(1.6rem,4.5vw,2.2rem); font-weight: 900; color: var(--pearl); line-height: 1; margin-bottom: 0.3rem; letter-spacing: -0.015em; }
-    .preco-hero-big small { font-size: 0.55em; font-weight: 700; color: var(--gold-light); }
-    .preco-hero-vista { font-size: 0.82rem; color: var(--pearl-mute); }
 
     /* ═══ PROBLEM — "Você se identifica com isso?" — 3 cards ═══ */
     .problem-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 1rem; margin: 2rem 0 2.5rem; }
@@ -319,11 +314,14 @@
     .cta-final-pre strong { color: var(--gold-light); font-weight: 700; }
     .cta-mockup { max-width: 280px; margin: 2rem auto 1.5rem; border-radius: 18px; box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 50px var(--gold-glow-soft); }
     .preco-bloco { margin: 1.5rem auto 2rem; }
+    /* No hero, o preco-bloco vem logo após o CTA — precisa de mais respiro acima */
+    .hero .preco-bloco { margin-top: 3rem; }
+    .preco-titulo-produto { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; color: var(--pearl); margin-bottom: 0.5rem; text-align: center; }
     .preco-de { font-size: 0.9rem; color: var(--pearl-mute); margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.55rem; flex-wrap: wrap; }
     .preco-de s { color: var(--pearl-faint); }
-    .preco-big { display: block; font-family: var(--font-display); font-size: clamp(2.4rem,7vw,3.2rem); font-weight: 900; color: var(--pearl); line-height: 1; margin: 0.4rem 0 0.5rem; letter-spacing: -0.02em; }
+    .preco-big { display: block; font-family: var(--font-display); font-size: clamp(2.4rem,7vw,3.2rem); font-weight: 900; color: var(--pearl); line-height: 1; margin: 0.4rem 0 0.5rem; letter-spacing: -0.02em; text-align: center; }
     .preco-big small { font-size: 0.5em; font-weight: 700; color: var(--gold-light); }
-    .preco-vista { font-size: 0.88rem; color: var(--pearl-mute); }
+    .preco-vista { font-size: 0.88rem; color: var(--pearl-mute); text-align: center; }
 
     .guarantee { display: flex; align-items: center; gap: 1rem; max-width: 540px; margin: 2rem auto 0; padding: 1.2rem 1.4rem; background: rgba(244,217,152,0.06); border: 1px solid rgba(244,217,152,0.3); border-radius: var(--r-md); text-align: left; }
     .guarantee-icon { width: 48px; height: 48px; flex-shrink: 0; border-radius: 50%; background: rgba(244,217,152,0.12); border: 1px solid rgba(244,217,152,0.4); display: flex; align-items: center; justify-content: center; }
@@ -398,11 +396,12 @@
       <div style="margin-top:2rem" data-reveal>
         <a href="https://pay.kiwify.com.br/8BoTzTD" class="btn-cta" id="cta-hero" target="_blank" rel="noopener" data-checkout-link data-utm="LpLda-hero"><i class="fas fa-crown"></i> Quero transformar minha vida</a>
       </div>
-      <!-- Preço dinâmico vindo de /api/precos (slug lda_biblica) -->
-      <div class="preco-hero" data-reveal>
-        <p class="preco-hero-de" data-preco-de style="display:none">de <s>R$ 0,00</s></p>
-        <p class="preco-hero-big" data-preco-parcelas>12x <small>R$</small> 52,85</p>
-        <p class="preco-hero-vista" data-preco-avista>ou R$ 511,00 à vista</p>
+      <!-- Preço dinâmico vindo de /api/precos (slug lda_biblica) — mesmo bloco do CTA final -->
+      <div class="preco-bloco" data-reveal>
+        <p class="preco-titulo-produto">Curso: Lei da Atração Bíblica</p>
+        <p class="preco-de" data-preco-de style="display:none">de <s>R$ 0,00</s></p>
+        <span class="preco-big" data-preco-parcelas>12x <small>R$</small> 52,85</span>
+        <p class="preco-vista" data-preco-avista>ou R$ 511,00 à vista</p>
       </div>
     </section>
 
@@ -615,7 +614,7 @@
 
         <div data-reveal="zoom">
           <img src="/assets/products/lda-biblica.png" alt="Lei da Atração Bíblica" class="cta-mockup" onerror="this.style.display='none'">
-          <p style="font-family:var(--font-display);font-weight:700;font-size:1.05rem;color:var(--pearl);margin-bottom:0.4rem">Curso: Lei da Atração Bíblica</p>
+          <p class="preco-titulo-produto">Curso: Lei da Atração Bíblica</p>
 
           <!-- Preço dinâmico vindo de /api/precos (slug lda_biblica) -->
           <div class="preco-bloco">
