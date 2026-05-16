@@ -215,9 +215,26 @@ const PRECOS_INICIAIS = {
   atal_maneira_combo: {
     nome: 'Combo A Tal Maneira - Livro Digital + Curso Completo',
     tipo: 'curso',
-    imagem_url: '/assets/products/atal-maneira-curso.png',
+    imagem_url: '/assets/products/atal-maneira-combo.png',
     link_checkout_padrao: 'https://pay.kiwify.com.br/c7dRjkL',
     link_checkout_aluno: 'https://pay.kiwify.com.br/g47SRft',
+    mostrar_promo: false,
+    preco_padrao: '0,00',
+    parcelas_qtd: 12,
+    parcelas_valor_padrao: '0,00',
+    preco_promo: '0,00',
+    parcelas_valor_promo: '0,00',
+    preco_alunos: '0,00',
+    parcelas_valor_alunos: '0,00'
+  },
+  // Guia de bolso "A Mágica do Fluir" — Suellen Seragi. Preço placeholder,
+  // ajustar pelo /admin → Preços antes de divulgar. Links Kiwify já corretos.
+  magica_do_fluir: {
+    nome: 'A Mágica do Fluir - Guia de Bolso',
+    tipo: 'ebook',
+    imagem_url: '/assets/products/magica-fluir.png',
+    link_checkout_padrao: 'https://pay.kiwify.com.br/yl5TJqM',
+    link_checkout_aluno: 'https://pay.kiwify.com.br/AkYXx5F',
     mostrar_promo: false,
     preco_padrao: '0,00',
     parcelas_qtd: 12,
