@@ -129,6 +129,16 @@ app.get('/guia-pratico-reprogramacao-mental', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'guia-pratico-reprogramacao-mental.html'));
 });
 
+// ── ROTA AMIGÁVEL: /a-tal-maneira → LP do método (Livro + Curso + Combo) ──
+app.get('/a-tal-maneira', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'a-tal-maneira.html'));
+});
+
+// ── ROTA AMIGÁVEL: /magica-do-fluir → LP do guia de bolso ──
+app.get('/magica-do-fluir', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'magica-do-fluir.html'));
+});
+
 // ── ROTA AMIGÁVEL: /termos serve termos.html ───────────────
 app.get('/termos', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'termos.html'));
