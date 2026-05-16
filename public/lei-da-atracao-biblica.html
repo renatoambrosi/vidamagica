@@ -168,8 +168,10 @@
     @keyframes orbFloat { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(40px,-30px) scale(1.05); } 66% { transform: translate(-30px,40px) scale(0.95); } }
 
     /* Sparkles douradas/peroladas — atmosfera 'céu noturno' */
+    /* Sparkles brancos com halo dourado intenso — reforçados pra destacar
+       sobre o fundo marinho-profundo (estavam tímidos com cor dourada clara). */
     .stars { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
-    .star { position: absolute; border-radius: 50%; background: radial-gradient(circle, rgba(255,236,180,1) 0%, rgba(244,217,152,0.35) 60%, transparent 100%); animation: starTwinkle linear infinite; will-change: transform, opacity; filter: blur(0.4px); }
+    .star { position: absolute; border-radius: 50%; background: #FFFFFF; animation: starTwinkle linear infinite; will-change: transform, opacity; }
     @keyframes starTwinkle { 0% { transform: translateY(110vh) scale(0.5); opacity: 0; } 10% { opacity: 0.9; transform: scale(1); } 90% { opacity: 0.6; } 100% { transform: translateY(-12vh) scale(1.35); opacity: 0; } }
 
     /* LAYOUT — IDÊNTICO (52px navbar + ~36px ticker) */
@@ -719,7 +721,8 @@
       }catch(e){ /* mantém valores do HTML como fallback */ }
     })();
 
-    /* STARS — partículas douradas/peroladas subindo (atmosfera 'céu noturno') */
+    /* STARS — pontos brancos com halo dourado intenso (atmosfera 'céu noturno').
+       Tamanhos maiores + halo duplo pra destacar bem no fundo marinho. */
     (function() {
       const el = document.getElementById('stars');
       if (!el) return;
@@ -727,9 +730,9 @@
       for (let i = 0; i < QTD; i++) {
         const p = document.createElement('div');
         p.className = 'star';
-        const size = Math.random() * 3.5 + 1.5;
+        const size = Math.random() * 4 + 3;
         const dur  = Math.random() * 14 + 14;
-        p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;opacity:${Math.random()*0.4+0.55};animation-duration:${dur}s;animation-delay:-${Math.random()*dur}s;`;
+        p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;box-shadow:0 0 ${size*3}px rgba(244,217,152,0.95), 0 0 ${size*6}px rgba(232,201,122,0.55);animation-duration:${dur}s;animation-delay:-${Math.random()*dur}s;`;
         el.appendChild(p);
       }
     })();

@@ -178,12 +178,13 @@
     .orb-2 { width: 380px; height: 380px; bottom: 12%; left: -120px; background: radial-gradient(circle, var(--gold-radiant), transparent 60%); }
     .orb-3 { width: 220px; height: 220px; top: 50%; left: 55%; background: radial-gradient(circle, var(--sky-soft), transparent 60%); opacity: 0.18; }
 
-    /* Sparkles — IDÊNTICO ao a-tal-maneira.html (que funciona com fundo similar).
-       Única divergência: 1 em 4 vira variante azul-céu (.azul) como borboleta. */
+    /* Sparkles — cor branca pura pra contrastar com o fundo dourado claro.
+       O fundo creme-dourado da Mágica do Fluir não dá contraste pra sparkles
+       dourados (como nas outras LPs com fundo escuro/sépia). Brancas brilhantes
+       + glow saturado dourado/azul resolvem isso. */
     .sparkles { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
-    .sparkle { position: absolute; border-radius: 50%; background: radial-gradient(circle, rgba(255,236,180,1) 0%, rgba(244,217,152,0.4) 60%, transparent 100%); animation: sparkleTwinkle linear infinite; will-change: transform, opacity; filter: blur(0.3px); }
-    .sparkle.azul { background: radial-gradient(circle, rgba(184,220,232,1) 0%, rgba(136,197,220,0.4) 60%, transparent 100%); }
-    @keyframes sparkleTwinkle { 0% { transform: translateY(110vh) scale(0.5); opacity: 0; } 10% { opacity: 0.9; transform: scale(1); } 90% { opacity: 0.6; } 100% { transform: translateY(-12vh) scale(1.4); opacity: 0; } }
+    .sparkle { position: absolute; border-radius: 50%; background: #FFFFFF; animation: sparkleTwinkle linear infinite; will-change: transform, opacity; }
+    @keyframes sparkleTwinkle { 0% { transform: translateY(110vh) scale(0.5); opacity: 0; } 10% { opacity: 1; transform: scale(1); } 90% { opacity: 0.85; } 100% { transform: translateY(-12vh) scale(1.4); opacity: 0; } }
 
     /* LAYOUT */
     main { position: relative; z-index: 2; padding-top: calc(52px + 36px); line-height: 1.65; }
@@ -523,22 +524,23 @@
     const TAG_LP   = 'magica_fluir';
     const PRECO_KEY = 'magica_fluir'; // slug em /api/precos (admin gerencia)
 
-    /* SPARKLES — IDÊNTICO ao a-tal-maneira.html (funciona com fundo similar).
-       Única diferença: 1 em 4 vira variante azul-céu (.azul) como "borboleta". */
+    /* SPARKLES — pontos brancos brilhantes com halo dourado/azul.
+       Cor branca + glow forte = visíveis em qualquer fundo (especialmente o
+       creme-dourado claro da Mágica do Fluir, onde sparkles dourados sumiam). */
     (function() {
       const el = document.getElementById('sparkles');
       if (!el) return;
       const QTD = window.innerWidth < 640 ? 22 : 38;
       for (let i = 0; i < QTD; i++) {
         const p = document.createElement('div');
-        const isAzul = Math.random() < 0.25;
-        p.className = 'sparkle' + (isAzul ? ' azul' : '');
-        const size = Math.random() * 4 + 2;
+        const isAzul = Math.random() < 0.25; // 1 em 4 vira halo azul-céu (borboleta)
+        p.className = 'sparkle';
+        const size = Math.random() * 4 + 3; // 3–7px
         const dur  = Math.random() * 14 + 14;
         const shadow = isAzul
-          ? `box-shadow:0 0 ${size*2}px rgba(136,197,220,0.7);`
-          : `box-shadow:0 0 ${size*2}px rgba(244,217,152,0.7);`;
-        p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;opacity:${Math.random()*0.45+0.55};${shadow}animation-duration:${dur}s;animation-delay:-${Math.random()*dur}s;`;
+          ? `0 0 ${size*3}px rgba(91,163,196,0.95), 0 0 ${size*6}px rgba(91,163,196,0.55)`
+          : `0 0 ${size*3}px rgba(200,146,42,0.95), 0 0 ${size*6}px rgba(200,146,42,0.6)`;
+        p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;box-shadow:${shadow};animation-duration:${dur}s;animation-delay:-${Math.random()*dur}s;`;
         el.appendChild(p);
       }
     })();

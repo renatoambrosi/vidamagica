@@ -172,6 +172,12 @@
     .orb-3 { width: 280px; height: 280px; top: 50%; left: 50%; background: radial-gradient(circle, var(--gold-light), transparent 60%); opacity: 0.25; animation-delay: -8s; }
     @keyframes orbFloat { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(40px,-30px) scale(1.05); } 66% { transform: translate(-30px,40px) scale(0.95); } }
 
+    /* Sparkles brancos com halo laranja-dourado saturado — pra contrastar
+       com o fundo pérola/marfim claro (sparkles claros sumiriam). */
+    .sparkles { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+    .sparkle { position: absolute; border-radius: 50%; background: #FFFFFF; animation: sparkleTwinkle linear infinite; will-change: transform, opacity; }
+    @keyframes sparkleTwinkle { 0% { transform: translateY(110vh) scale(0.5); opacity: 0; } 10% { opacity: 1; transform: scale(1); } 90% { opacity: 0.85; } 100% { transform: translateY(-12vh) scale(1.4); opacity: 0; } }
+
     /* LAYOUT — IDÊNTICO */
     main { position: relative; z-index: 2; padding-top: calc(52px + 36px); line-height: 1.65; }
     section { padding: 3rem 1.5rem 3.5rem; position: relative; }
@@ -230,9 +236,15 @@
 
     /* PREÇO INLINE NO HERO */
     .preco-hero { margin-top: 0.5rem; }
+    .preco-hero-de { font-size: 0.85rem; color: var(--text-mute); margin-bottom: 0.4rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex-wrap: wrap; }
+    .preco-hero-de s { color: var(--text-faint); }
+    .preco-badge { display: inline-block; padding: 0.18rem 0.55rem; background: linear-gradient(135deg, var(--orange), var(--orange-deep)); color: #FFFFFF; font-family: var(--font-display); font-size: 0.7rem; font-weight: 800; border-radius: 4px; letter-spacing: 0.05em; box-shadow: 0 2px 6px rgba(230,126,34,0.35); }
     .preco-hero-big { font-family: var(--font-display); font-size: clamp(1.6rem,4.5vw,2.1rem); font-weight: 900; color: var(--text-dark); line-height: 1; margin-bottom: 0.25rem; letter-spacing: -0.015em; }
     .preco-hero-big small { font-size: 0.55em; font-weight: 700; color: var(--orange-deep); }
     .preco-hero-vista { font-size: 0.85rem; color: var(--text-soft); }
+    /* "de R$ X" + badge "% OFF" no card CTA final */
+    .cta-price-de { font-size: 0.85rem; color: var(--text-mute); margin-bottom: 0.4rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex-wrap: wrap; }
+    .cta-price-de s { color: var(--text-faint); }
 
     /* ═══ PROBLEM — 2 colunas (perfis) ═══ */
     .problem-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; margin: 1.5rem auto 2rem; max-width: 880px; }
@@ -360,6 +372,7 @@
     <div class="orb orb-2"></div>
     <div class="orb orb-3"></div>
   </div>
+  <div class="sparkles" id="sparkles"></div>
 
   <!-- NAVBAR — mesma estrutura, paleta clara -->
   <nav class="navbar" id="navbar">
@@ -611,6 +624,7 @@
 
         <div class="cta-card" data-reveal="zoom">
           <p class="cta-card-title">Pacote completo</p>
+          <p class="cta-price-de" data-preco-de style="display:none">de <s>R$ 0,00</s></p>
           <p class="cta-price-parcelado" data-preco-parcelas-plain>12x R$ 8,70</p>
           <p class="cta-price-avista" data-preco-avista>ou R$ 84,11 à vista</p>
           <ul class="cta-list">
@@ -663,6 +677,22 @@
     const TAG_LP   = 'guia_pratico_rm';
     const PRECO_KEY = 'guia_pratico'; // slug em /api/precos (admin gerencia)
 
+    /* SPARKLES — pontos brancos com halo laranja-dourado saturado.
+       Cor branca + glow forte = visíveis no fundo pérola/marfim claro do Guia. */
+    (function() {
+      const el = document.getElementById('sparkles');
+      if (!el) return;
+      const QTD = window.innerWidth < 640 ? 20 : 36;
+      for (let i = 0; i < QTD; i++) {
+        const p = document.createElement('div');
+        p.className = 'sparkle';
+        const size = Math.random() * 4 + 3;
+        const dur  = Math.random() * 14 + 14;
+        p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;box-shadow:0 0 ${size*3}px rgba(230,126,34,0.95), 0 0 ${size*6}px rgba(230,126,34,0.5);animation-duration:${dur}s;animation-delay:-${Math.random()*dur}s;`;
+        el.appendChild(p);
+      }
+    })();
+
     /* ═══ PREÇO + CHECKOUT — fonte única: /api/precos
        Atualiza:
        - [data-preco-parcelas]       → "12x <small>R$</small> 8,70"
@@ -686,9 +716,15 @@
         document.querySelectorAll('[data-preco-parcelas]').forEach(el => { el.innerHTML = parcelasHtml; });
         document.querySelectorAll('[data-preco-parcelas-plain]').forEach(el => { el.textContent = parcelasPlain; });
         document.querySelectorAll('[data-preco-avista]').forEach(el => { el.textContent = avistaTxt; });
+        // "de R$ X" riscado + badge "% OFF" — só aparecem quando mostrar_promo está ligada
         document.querySelectorAll('[data-preco-de]').forEach(el => {
-          if (p.exibir_de) { el.innerHTML = `de <s>R$ ${p.exibir_de}</s> por`; el.style.display = ''; }
-          else             { el.style.display = 'none'; }
+          if (p.exibir_de) {
+            const badge = p.desconto_pct ? `<span class="preco-badge">${p.desconto_pct}% OFF</span>` : '';
+            el.innerHTML = `de <s>R$ ${p.exibir_de}</s> ${badge}`;
+            el.style.display = '';
+          } else {
+            el.style.display = 'none';
+          }
         });
 
         const link = p.link_checkout_padrao;

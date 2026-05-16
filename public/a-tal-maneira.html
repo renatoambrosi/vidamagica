@@ -181,9 +181,11 @@
     @keyframes orbFloat { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(40px,-30px) scale(1.05); } 66% { transform: translate(-30px,40px) scale(0.95); } }
 
     /* Sparkles dourados — atmosfera "mapa antigo iluminado" */
+    /* Sparkles brancos com halo dourado saturado — pra contrastar com o fundo
+       claro/sépia (sparkles dourados sumiam no creme-papiro). */
     .sparkles { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
-    .sparkle { position: absolute; border-radius: 50%; background: radial-gradient(circle, rgba(255,236,180,1) 0%, rgba(244,217,152,0.4) 60%, transparent 100%); animation: sparkleTwinkle linear infinite; will-change: transform, opacity; filter: blur(0.3px); }
-    @keyframes sparkleTwinkle { 0% { transform: translateY(110vh) scale(0.5); opacity: 0; } 10% { opacity: 0.9; transform: scale(1); } 90% { opacity: 0.6; } 100% { transform: translateY(-12vh) scale(1.4); opacity: 0; } }
+    .sparkle { position: absolute; border-radius: 50%; background: #FFFFFF; animation: sparkleTwinkle linear infinite; will-change: transform, opacity; }
+    @keyframes sparkleTwinkle { 0% { transform: translateY(110vh) scale(0.5); opacity: 0; } 10% { opacity: 1; transform: scale(1); } 90% { opacity: 0.85; } 100% { transform: translateY(-12vh) scale(1.4); opacity: 0; } }
 
     /* LAYOUT */
     main { position: relative; z-index: 2; padding-top: calc(52px + 36px); line-height: 1.65; }
@@ -760,7 +762,9 @@
     // Slugs em /api/precos (admin gerencia). Os 3 planos da LP usam estes:
     const PRECO_KEYS = ['atal_maneira_livro', 'atal_maneira_curso', 'atal_maneira_combo'];
 
-    /* SPARKLES — atmosfera "mapa antigo iluminado" (replicada do teste.html, ouro do produto) */
+    /* SPARKLES — pontos brancos com halo dourado saturado.
+       Cor branca + glow forte = visíveis no fundo creme-sépia do Tal Maneira
+       (sparkles dourados claros sumiam no fundo papiro). */
     (function() {
       const el = document.getElementById('sparkles');
       if (!el) return;
@@ -768,9 +772,9 @@
       for (let i = 0; i < QTD; i++) {
         const p = document.createElement('div');
         p.className = 'sparkle';
-        const size = Math.random() * 4 + 2;
+        const size = Math.random() * 4 + 3;
         const dur  = Math.random() * 14 + 14;
-        p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;opacity:${Math.random()*0.45+0.55};box-shadow:0 0 ${size*2}px rgba(244,217,152,0.7);animation-duration:${dur}s;animation-delay:-${Math.random()*dur}s;`;
+        p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;box-shadow:0 0 ${size*3}px rgba(200,146,42,0.95), 0 0 ${size*6}px rgba(200,146,42,0.55);animation-duration:${dur}s;animation-delay:-${Math.random()*dur}s;`;
         el.appendChild(p);
       }
     })();
