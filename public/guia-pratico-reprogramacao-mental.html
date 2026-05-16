@@ -165,12 +165,12 @@
       radial-gradient(ellipse 75% 60% at 15% 90%,  rgba(230,126,34,0.10) 0%, transparent 55%),
       radial-gradient(ellipse 60% 50% at 85% 95%,  rgba(232,201,122,0.16) 0%, transparent 55%),
       linear-gradient(180deg, var(--bg-cream) 0%, var(--bg-pearl) 50%, var(--bg-cream) 100%); }
+    /* Orbs estáticos (sem orbFloat infinita) — anim pesada estava causando piscar/loop em Safari iOS */
     .orbs { position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; }
-    .orb { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.4; animation: orbFloat 14s ease-in-out infinite; will-change: transform; }
-    .orb-1 { width: 380px; height: 380px; top: 8%;  right: -80px;  background: radial-gradient(circle, var(--orange-light), transparent 60%); animation-delay: 0s; }
-    .orb-2 { width: 460px; height: 460px; bottom: 12%; left: -120px; background: radial-gradient(circle, var(--gold-warm), transparent 60%); animation-delay: -5s; }
-    .orb-3 { width: 280px; height: 280px; top: 50%; left: 50%; background: radial-gradient(circle, var(--gold-light), transparent 60%); opacity: 0.25; animation-delay: -8s; }
-    @keyframes orbFloat { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(40px,-30px) scale(1.05); } 66% { transform: translate(-30px,40px) scale(0.95); } }
+    .orb { position: absolute; border-radius: 50%; filter: blur(50px); opacity: 0.35; }
+    .orb-1 { width: 320px; height: 320px; top: 8%;  right: -80px;  background: radial-gradient(circle, var(--orange-light), transparent 60%); }
+    .orb-2 { width: 380px; height: 380px; bottom: 12%; left: -120px; background: radial-gradient(circle, var(--gold-warm), transparent 60%); }
+    .orb-3 { width: 220px; height: 220px; top: 50%; left: 50%; background: radial-gradient(circle, var(--gold-light), transparent 60%); opacity: 0.22; }
 
     /* Sparkles brancos com halo laranja-dourado saturado — pra contrastar
        com o fundo pérola/marfim claro (sparkles claros sumiriam). */
@@ -915,20 +915,7 @@
       });
     });
 
-    /* ═══ PARALLAX ORBES — desktop só ═══ */
-    (function(){
-      if(window.matchMedia('(hover: none)').matches) return;
-      const orbs=document.querySelectorAll('.orb');
-      let rafId;
-      window.addEventListener('mousemove',(e)=>{
-        cancelAnimationFrame(rafId);
-        rafId=requestAnimationFrame(()=>{
-          const x=(e.clientX/window.innerWidth-0.5)*2;
-          const y=(e.clientY/window.innerHeight-0.5)*2;
-          orbs.forEach((o,i)=>{const sp=(i+1)*8;o.style.transform=`translate(${x*sp}px,${y*sp}px)`;});
-        });
-      });
-    })();
+    /* Parallax dos orbs removido — orbs agora são estáticos pra reduzir carga no Safari iOS */
   </script>
 
 </body>
