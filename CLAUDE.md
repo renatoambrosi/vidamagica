@@ -25,6 +25,18 @@ O servidor depende de `dotenv` (`.env` na raiz). Sem essas variáveis, partes do
 
 Deploy alvo: Railway (`vidamagica-production.up.railway.app`). Origins CORS estão hardcoded em `server.js:55-66` (Railway, Vercel, vidamagica.com.br + localhost 3000/5173).
 
+## Fase atual e decisões deliberadas
+
+**Contexto operacional importante:**
+
+- O sistema está **em produção no Railway**, mas hoje só o **Renato** (dono do projeto) usa. Ainda não foi aberto pra alunas reais.
+- Renato **não é programador** e **não usa terminal**. Ele edita arquivos via interface web do GitHub e o Railway auto-deploya em 1-2 min. "Ver funcionando" pra ele = ver no site de produção.
+- **Não há ambiente de staging.** O que entra na branch principal vai direto pra produção. Mudanças arriscadas precisam de cuidado proporcional — mas sem alunas reais hoje, ainda há espaço pra experimentar.
+
+**Decisão deliberada que NÃO é bug:**
+
+⚠️ `routes/app.js:164` e `routes/app.js:337` contêm `|| true` que considera **qualquer teste como pago**, ignorando o gateway de pagamento. Isso é **proposital** e os próprios comentários no código marcam como ⚠️ TEMPORÁRIO ⚠️. Razão técnica: **o Kiwify não tem modo sandbox/teste** — toda transação é dinheiro real. Renato precisa rodar o fluxo do Teste do Subconsciente várias vezes pra validar texto, layout do resultado, e-mail, etc. Se o pagamento estivesse ligado, cada validação custaria uma compra real. O `|| true` é o "modo desenvolvedor" caseiro que o Kiwify não oferece. **Não tratar como bug nem sugerir remover** até que Renato diga explicitamente "vou plugar o Kiwify pra valer" / "vou abrir pras alunas". Nesse momento, essas 2 linhas (e qualquer outra similar) saem.
+
 ## Arquitetura (visão macro)
 
 Backend Express monolítico + WebSocket nativo (`ws`) servindo tanto API REST quanto o frontend estático (`public/`). O frontend são páginas HTML estáticas (não há build step) que falam com a API por fetch e WS.
@@ -83,7 +95,21 @@ LPs novas (Guia Prático, A Tal Maneira, Mágica do Fluir, e as antigas Ouro e L
 
 Navbar das LPs **light** (guia-pratico, a-tal-maneira, magica-do-fluir) usa fundo dourado `linear-gradient(135deg, var(--gold), var(--gold-deep))` pra destacar a logo dourada; navbar das **dark** mantém fundo escuro padrão. Botões `.btn-login` e `.btn-cadastro-nav` adaptam cor pra contrastar com o fundo.
 
-A área `/app` é uma mini-SPA cujas seções (`dashboard|perfil|chat|loja|sementes|jornada`) caem todas em `public/app.html` via regex (`server.js:131`).
+A área `/app` é uma mini-SPA cujas seções (`dashboard|perfil|chat|loja|sementes|jornada`) caem todas em `public/app.html` via regex (`server.js:131`). **Atenção à distinção:** essas 6 URLs são as únicas com endereço próprio no navegador. Internamente, o `/app` tem mais views (`view-home`, `view-produtos`, `view-fale-com-a-su`, `view-chat`, `view-videos`, `view-perfil`) que **não têm URL** — são trocadas via JS, não via navegação do browser.
+
+### Frontend `/app` — convenção do mini-SPA
+
+- Cada tela é um `<div class="view" id="view-NOME">` em `public/app.html`.
+- Troca de tela via função global `irPara('NOME')` em `public/app/app.js` (adiciona/remove classe `.active`).
+- A view atual persiste em `sessionStorage` — sobrevive a pull-to-refresh do iOS.
+- Quando a aluna é assinante do Clube Vida Mágica, `hidratarHome` adiciona a classe `clube-ativo` no `<body>`. Essa classe ativa a "chuva de ouro" extra das partículas (`criarParticulas()` em `app.js`) — 46 partículas em vez de 22, com glow forte. **É marca registrada visual, não enfeite descartável.**
+- Player principal do topo: mostra o item do feed com `destaque=true`. Backend garante que **apenas 1 item** pode ter destaque ativo por vez (`routes/feed.js`). Pra não-assinante, exibe cadeado dourado + modal de venda; pra assinante, abre iframe inline. YouTube e Vimeo são suportados (Vimeo preferido por proteção de link).
+
+### `/api/app/contexto` — princípio de "fonte única"
+
+`routes/app.js` expõe `GET /api/app/contexto`, que retorna **TUDO** que qualquer tela do `/app` precisa em uma chamada só: dados da aluna, teste mais recente concluído, teste em andamento, produtos liberados, jornada vigente, atualizações pendentes, flags (`tem_clube` etc.).
+
+**Princípio arquitetural:** *nenhuma tela do `/app` calcula nada — o contexto é a verdade.* Telas novas devem consumir esse payload, não criar endpoints próprios. Se algo está faltando no contexto, **acrescenta no `/contexto`** em vez de criar uma nova rota.
 
 ### Routers montados (`server.js:136-150`)
 
@@ -124,6 +150,58 @@ Os 5 routers montados em `/api` raiz definem seus próprios subpaths internament
 ### Seed idempotente
 
 `routes/seed.js` exporta `seedPrecos()` que roda no boot (após `initDb`). Adicione produtos novos em `PRECOS_INICIAIS` lá; o seed insere apenas o que não existe, sem sobrescrever edições do admin.
+
+## Conceitos do produto (vocabulário oficial)
+
+Nomes e conceitos do produto. **Escrever sempre por extenso, na grafia exata** — Renato é cuidadoso com a marca e corrige abreviações.
+
+### As 3 Jornadas (ordem fixa)
+
+1. **Conhecer e Despertar** (`conhecer_e_despertar`) — default; pra quem tem trava forte
+2. **Vida Mágica** (`vida_magica`) — Prosperidade dominante nv1 ou nv2, SEM trava > 20%
+3. **Multiplicando a Vida Mágica** (`multiplicando_vida_magica`) — Prosperidade dominante nv3, SEM trava > 20%
+
+**Regra do override** (em `core/jornadas.js`): mesmo se Prosperidade for dominante, se QUALQUER perfil bloqueador (medo/desordem/sobrevivencia/validacao) > 20%, a aluna fica na Jornada 1 (Conhecer e Despertar). Trava forte tem prioridade. **Não bypassar** — é regra do produto.
+
+### Os 5 perfis do Teste do Subconsciente
+
+- **Medo** (`medo`)
+- **Desordem** (`desordem`)
+- **Sobrevivência** (`sobrevivencia`) — antes `autossuficiencia`, renomeado; mesma lógica
+- **Validação** (`validacao`)
+- **Prosperidade** (`prosperidade`), subdividida em `prosperidade_nv1` (≤ 50%), `prosperidade_nv2`, `prosperidade_nv3`
+
+Os 4 primeiros são "perfis bloqueadores". Cálculo interno usa alta resolução (fração decimal); exibição usa `Math.round`. Empates visuais são possíveis (ex: 27% e 27%) mas o desempate interno é fixo: `validacao > sobrevivencia > desordem > medo`.
+
+### Outros termos de marca
+
+- **Teste do Subconsciente** — não "teste de prosperidade" (esse aparece em alguns nomes de banco, mas o nome pra aluna é Subconsciente).
+- **Clube Vida Mágica** — assinatura recorrente. Aluna é membro quando `usuarios.plano !== 'gratuito'`. Helper `temClubeVidaMagica()` em `core/jornadas.js` é fonte da verdade.
+- **Tesouro da Su** — mensagem/áudio diário pra aluna, registrado em `poolMensagens`.
+- **Sementes** — moeda virtual da aluna (`usuarios.sementes`), ganhas em interações com o app.
+- **Suellen** (ou **Su**) — face do atendimento pra aluna. Renato é o admin/dono.
+
+### Atualizações pendentes
+
+`core/atualizacoes.js` expõe helpers (`criarAtualizacaoTeste`, `criarAtualizacaoCompra`) que geram celebração na Home (banner + sino + splash com barra animada 0 → percentual atual). Quando criar uma linha em `usuario_produtos` (ex: webhook de compra), **sempre chame `criarAtualizacaoCompra`** logo depois. Sem isso a aluna não vê a celebração na próxima visita.
+
+## Limitações conhecidas (pegadinhas reais)
+
+### iOS Safari
+
+- `background-attachment: fixed` é tratado como `scroll` (não fixa o fundo).
+- `overflow: hidden` no `<body>` nem sempre trava scroll — em alguns casos precisa `position: fixed` no body.
+- Pull-to-refresh nativo é tricky de bloquear — precisa `overscroll-behavior: none` e às vezes mais.
+
+### YouTube embed
+
+- Não dá pra esconder 100% o botão "Compartilhar" nem o logo "YouTube" do player.
+- Alguns vídeos/canais bloqueiam embed com erro 153 ("Erro de configuração do player"). Por isso o Helmet está afrouxado.
+- Long-press no iOS expõe a URL do vídeo. Pra blindagem séria, **trocar pra Vimeo Pro** (com domain restriction) ou Cloudflare Stream.
+
+### Chat — canais limitados
+
+A coluna `chat_conversas.tipo` aceita apenas `'suellen'` ou `'suporte'`. Adicionar canal novo exige mexer em `routes/chat.js`, `public/atendimento.html` e WS de atendimento — não é trivial.
 
 ## Convenções do código
 
