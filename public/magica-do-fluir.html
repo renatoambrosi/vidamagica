@@ -522,12 +522,11 @@
     const TAG_LP   = 'magica_fluir';
     const PRECO_KEY = 'magica_fluir'; // slug em /api/precos (admin gerencia)
 
-    /* SPARKLES — partículas douradas + azul-céu subindo (atmosfera "borboletas no fluxo").
-       Quantidade reduzida pra não estourar memória do Safari iOS. */
+    /* SPARKLES — partículas douradas + azul-céu subindo (atmosfera "borboletas no fluxo") */
     (function() {
       const el = document.getElementById('sparkles');
       if (!el) return;
-      const QTD = window.innerWidth < 640 ? 14 : 24;
+      const QTD = window.innerWidth < 640 ? 22 : 38;
       for (let i = 0; i < QTD; i++) {
         const p = document.createElement('div');
         // 1 em 4 vira azul-céu (das borboletas), resto dourado
