@@ -522,18 +522,23 @@
     const TAG_LP   = 'magica_fluir';
     const PRECO_KEY = 'magica_fluir'; // slug em /api/precos (admin gerencia)
 
-    /* SPARKLES — partículas douradas + azul-céu subindo (atmosfera "borboletas no fluxo") */
+    /* SPARKLES — partículas douradas + azul-céu subindo (atmosfera "borboletas no fluxo").
+       box-shadow inline é o que dá visibilidade no fundo creme — sem ele a partícula
+       fica quase invisível porque a cor base é parecida com o gradiente do bg. */
     (function() {
       const el = document.getElementById('sparkles');
       if (!el) return;
       const QTD = window.innerWidth < 640 ? 22 : 38;
       for (let i = 0; i < QTD; i++) {
         const p = document.createElement('div');
-        // 1 em 4 vira azul-céu (das borboletas), resto dourado
-        p.className = 'sparkle' + (Math.random() < 0.25 ? ' azul' : '');
+        const isAzul = Math.random() < 0.25; // 1 em 4 vira azul-céu (borboleta), resto dourado
+        p.className = 'sparkle' + (isAzul ? ' azul' : '');
         const size = Math.random() * 4 + 2;
         const dur  = Math.random() * 14 + 14;
-        p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;opacity:${Math.random()*0.45+0.55};animation-duration:${dur}s;animation-delay:-${Math.random()*dur}s;`;
+        const glow = isAzul
+          ? `0 0 ${size*2.5}px rgba(136,197,220,0.85), 0 0 ${size*5}px rgba(91,163,196,0.4)`
+          : `0 0 ${size*2.5}px rgba(255,214,107,0.95), 0 0 ${size*5}px rgba(200,146,42,0.5)`;
+        p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;opacity:${Math.random()*0.45+0.55};box-shadow:${glow};animation-duration:${dur}s;animation-delay:-${Math.random()*dur}s;`;
         el.appendChild(p);
       }
     })();
