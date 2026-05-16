@@ -201,8 +201,9 @@
     @keyframes glowShift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
     .hero-headline { font-family: var(--font-display); font-size: clamp(1.3rem,3vw,1.65rem); font-weight: 700; color: var(--pearl); margin-bottom: 1.5rem; line-height: 1.25; max-width: 700px; }
     .hero-sub { font-size: 1.05rem; color: var(--pearl-dim); max-width: 600px; margin: 0 auto 1.25rem; line-height: 1.75; }
-    .hero-selo { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.55rem 1.1rem; background: rgba(245,240,232,0.05); border: 1px solid rgba(200,146,42,0.3); border-radius: var(--r-full); font-family: var(--font-display); font-size: 0.78rem; font-weight: 600; color: var(--gold-light); letter-spacing: 0.06em; backdrop-filter: blur(8px); margin-bottom: 1.5rem; }
-    .hero-selo i { color: var(--gold); }
+    /* Subtítulo do hero — "Sem medo · Sem dúvidas · Sem desagradar a Deus".
+       Sem pill, sem ícone — só texto bem espaçado pra acomodar quebra em mobile. */
+    .hero-selo { display: block; max-width: 520px; margin: 0 auto 1.75rem; padding: 0; font-family: var(--font-display); font-size: 0.92rem; font-weight: 600; color: var(--gold-light); letter-spacing: 0.04em; line-height: 1.55; text-align: center; }
 
     /* SECTION HEADERS — IDÊNTICAS */
     .section-eyebrow { display: block; font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold-light); margin-bottom: 1rem; text-align: center; }
@@ -390,7 +391,7 @@
       <p class="hero-eyebrow" data-reveal>Curso da Suellen Seragi</p>
       <h1 data-reveal>Lei da Atração <span class="glow">Bíblica</span></h1>
       <p class="hero-headline" data-reveal>Conhecimento espiritual que atrai resultados</p>
-      <span class="hero-selo" data-reveal><i class="fas fa-cross"></i> Sem medo · Sem dúvidas · Sem desagradar a Deus</span>
+      <p class="hero-selo" data-reveal>Sem medo · Sem dúvidas · Sem desagradar a Deus</p>
       <p class="hero-sub" data-reveal><strong style="color:var(--pearl)">Você crê em Deus, faz tudo que pode mas não está vendo resultado?</strong> A resposta que você pediu pra Deus está aqui.</p>
       <p class="hero-sub" data-reveal>Aprenda a <strong style="color:var(--gold-light)">atrair uma vida de sucesso e ser respondida por Deus</strong>, com alinhamento espiritual correto.</p>
       <div style="margin-top:2rem" data-reveal>
