@@ -23,7 +23,7 @@ const {
   montarLivrosRecomendados,
   montarListaEnergias,
 } = require('../core/teste-resultado');
-const { calcularJornadaVigente, temClubeVidaMagica } = require('../core/jornadas');
+const { calcularJornadaVigente, temClubeVidaMagica, temTravaForte, SLUG } = require('../core/jornadas');
 const { autenticar } = require('../middleware/autenticar');
 
 // ── Validações simples ──────────────────────────────────────
@@ -523,15 +523,69 @@ router.get('/resultado/:teste_id', async (req, res) => {
     );
     const conteudoPerfil = conteudoR.rows[0] || null;
 
-    // Livros do Passo 2 — buscam dados da tabela `precos` (slugs:
-    // vencendo_medo, vencendo_desordem, vencendo_validacao, vencendo_sobrevivencia)
+    // Produtos relevantes pro resultado:
+    //   - Livros do Passo 2: 4 livros da Série Conhecer e Despertar
+    //   - Cursos do Passo 3: Ouro, LDA, A Tal Maneira (livro e curso)
+    // Tudo da mesma tabela `precos` (= produtos).
     const livrosR = await poolComunicacao.query(
       `SELECT key, dados FROM precos
-        WHERE key IN ('vencendo_medo','vencendo_desordem','vencendo_validacao','vencendo_sobrevivencia')`
+        WHERE key IN (
+          'vencendo_medo','vencendo_desordem','vencendo_validacao','vencendo_sobrevivencia',
+          'ouro_reprogramacao','lda_biblica','atal_maneira_livro','atal_maneira_curso'
+        )`
     );
     const precosBySlug = {};
     livrosR.rows.forEach(r => { precosBySlug[r.key] = r.dados || {}; });
     const livrosRecomendados = montarLivrosRecomendados(precosBySlug, resultado);
+
+    // ── Passo 3 — Curso recomendado (vem da regra, NÃO do admin) ──
+    // Substituímos os campos manuais antigos do teste_perfis_conteudo
+    // (passo3_curso_titulo, _capa_url, _preco, _link_checkout) pela
+    // leitura automática do produto da tabela `precos` baseado no perfil.
+    //
+    // Regra:
+    //   - Sobrevivência dominante → Lei da Atração Bíblica
+    //   - Demais perfis bloqueadores dominantes (medo/desordem/validação) → Ouro
+    //   - Prosperidade COM trava forte → cai em Conhecer e Despertar; mesma regra
+    //     dos perfis bloqueadores (Ouro, porque dominante bruto vira 'prosperidade')
+    //   - Prosperidade nv1 ou nv2 SEM trava → A Tal Maneira (livro)
+    //   - Prosperidade nv3 SEM trava → A Tal Maneira (curso)
+    //
+    // ⚠️ Quando a Frente 4.B for executada (regra nova: prosperidade + trava
+    // vai pra Vida Mágica/Multiplicando com adições), revisar esta função.
+    if (conteudoPerfil) {
+      const trava = temTravaForte(resultado.percentuais_exibicao);
+      const ehProsp = (resultado.perfil_dominante_bruto === 'prosperidade');
+      let slugCurso = SLUG.OURO;
+
+      if (ehProsp && !trava) {
+        slugCurso = (resultado.nivel_prosperidade >= 3)
+          ? SLUG.ATAL_CURSO
+          : SLUG.ATAL_LIVRO;
+      } else if (resultado.perfil_dominante_bruto === 'sobrevivencia') {
+        slugCurso = SLUG.LDA;
+      } else {
+        slugCurso = SLUG.OURO;
+      }
+
+      const produto = precosBySlug[slugCurso] || {};
+      conteudoPerfil.passo3_curso_slug         = slugCurso;
+      conteudoPerfil.passo3_curso_titulo       = produto.nome || '';
+      conteudoPerfil.passo3_curso_capa_url     = produto.imagem_url || '';
+      conteudoPerfil.passo3_curso_preco        = produto.preco_padrao || '';
+      conteudoPerfil.passo3_curso_link_checkout = produto.link_checkout_padrao || '';
+      // descricao: não vem do produto. Mantém vazio (frontend esconde
+      // o trecho se for falsy). Quem precisar de descrição contextualizada
+      // pode preencher no admin de Produtos (descricao do próprio produto
+      // — Fase 4.B pode introduzir um campo lá).
+      conteudoPerfil.passo3_curso_descricao = conteudoPerfil.passo3_curso_descricao || '';
+      // Limpa o "2 de 2" — não usamos mais a duplicação de Prosperidade.
+      conteudoPerfil.passo3_curso_titulo_2 = null;
+      conteudoPerfil.passo3_curso_capa_url_2 = null;
+      conteudoPerfil.passo3_curso_descricao_2 = null;
+      conteudoPerfil.passo3_curso_preco_2 = null;
+      conteudoPerfil.passo3_curso_link_checkout_2 = null;
+    }
 
     // Lista das 5 energias (Bloco 3)
     const energias = montarListaEnergias(resultado);

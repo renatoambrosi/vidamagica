@@ -102,19 +102,21 @@ function calcularResultado(respostas) {
   }
 
   // ── Subdivisão de Prosperidade em nv1/2/3 ──
-  // Se a dominante for Prosperidade, dividimos pelo percentual:
-  //   <= 50%  → prosperidade_nv1
-  //   < 75%   → prosperidade_nv2
-  //   >= 75%  → prosperidade_nv3
+  // Faixas oficiais (definidas pelo Renato):
+  //   < 50%        → prosperidade_nv1  (até 49,99%)   → libera Vida Mágica se dominante
+  //   50% a < 80%  → prosperidade_nv2  (50 a 79,99%)  → NV2 ainda não tem jornada própria
+  //                                                       (produtos serão criados — até lá,
+  //                                                        comportamento idêntico ao nv1)
+  //   >= 80%       → prosperidade_nv3  (80% ou mais)  → libera Multiplicando a Vida Mágica
   // Usamos o percentual INTERNO (com decimais) pra essa decisão.
   let perfilDominante = dominanteBruto;
   let nivelProsperidade = 0;
   const percProsp = percentuais.prosperidade;
 
   if (dominanteBruto === 'prosperidade') {
-    if (percProsp <= 50)      { perfilDominante = 'prosperidade_nv1'; nivelProsperidade = 1; }
-    else if (percProsp < 75)  { perfilDominante = 'prosperidade_nv2'; nivelProsperidade = 2; }
-    else                      { perfilDominante = 'prosperidade_nv3'; nivelProsperidade = 3; }
+    if (percProsp < 50)        { perfilDominante = 'prosperidade_nv1'; nivelProsperidade = 1; }
+    else if (percProsp < 80)   { perfilDominante = 'prosperidade_nv2'; nivelProsperidade = 2; }
+    else                       { perfilDominante = 'prosperidade_nv3'; nivelProsperidade = 3; }
   }
 
   return {

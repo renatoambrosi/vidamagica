@@ -170,11 +170,21 @@ function calcularJornadaVigente({
   let analise = null;
 
   if (ehProsperidadeDominante && !trava) {
-    // Sem trava forte → liberada pra próxima jornada
+    // Sem trava forte → liberada pra próxima jornada.
+    //
+    // Faixas de Prosperidade (definidas pelo Renato):
+    //   nv1 (< 50%)       → Vida Mágica
+    //   nv2 (50% a 79,99%) → ⚠️ ainda não tem jornada própria; Renato vai criar
+    //                        produtos pra essa faixa. ENQUANTO ISSO,
+    //                        nv2 segue a mesma trilha de nv1 (Vida Mágica).
+    //                        Quando os produtos novos forem criados, troque
+    //                        este `numero = 2` por `numero = X` (jornada nova)
+    //                        ou crie um branch separado pra nv2.
+    //   nv3 (>= 80%)      → Multiplicando a Vida Mágica
     if (nivel_prosperidade >= 3) {
       numero = 3;  // Multiplicando a Vida Mágica
     } else {
-      numero = 2;  // Vida Mágica (nv1 ou nv2)
+      numero = 2;  // Vida Mágica — placeholder enquanto nv2 não tem jornada própria
     }
   } else if (ehProsperidadeDominante && trava) {
     // Prosperidade dominante MAS tem trava forte → fica em Conhecer e Despertar

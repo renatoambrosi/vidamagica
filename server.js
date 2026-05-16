@@ -168,7 +168,8 @@ app.use('/api/painel',        require('./routes/admin-auth'));        // OTP do 
 app.use('/api/admin',         require('./routes/admin'));             // Painel admin (gateway, templates, usuários)
 app.use('/api/painel-aluna',  require('./routes/painel-aluna'));      // Produtos+Jornada da aluna (admin OU atendimento)
 app.use('/webhook',           require('./routes/webhook-evolution')); // Webhook Evolution (zap entrante)
-app.use('/api',               require('./routes/precos'));
+app.use('/api',               require('./routes/produtos'));     // /api/produtos (canônico)
+app.use('/api',               require('./routes/precos'));       // /api/precos (alias legado — não remover)
 app.use('/api',               require('./routes/depoimentos'));
 app.use('/api',               require('./routes/feed'));
 app.use('/api',               require('./routes/config'));
@@ -304,12 +305,18 @@ server.listen(PORT, async () => {
     // automaticamente no próximo deploy. Não sobrescreve nada que o
     // admin já tenha editado.
     try {
-      const { seedPrecos } = require('./routes/seed');
-      if (typeof seedPrecos === 'function') {
-        await seedPrecos();
+      const seedMod = require('./routes/seed');
+      if (typeof seedMod.seedPrecos === 'function') {
+        await seedMod.seedPrecos();
+      }
+      // Limpeza pontual: corrige duplicação da Mágica do Fluir no banco
+      // (rodada idempotente via seed_log). Mantém o produto com preço
+      // e herda os links de checkout do duplicado antes de apagá-lo.
+      if (typeof seedMod.corrigirDuplicacaoMagicaFluir === 'function') {
+        await seedMod.corrigirDuplicacaoMagicaFluir();
       }
     } catch (err) {
-      console.error('⚠️ Seed de preços não rodou:', err.message);
+      console.error('⚠️ Seed de produtos não rodou:', err.message);
       // Não derruba o servidor — o seed é um nice-to-have, não bloqueante
     }
 

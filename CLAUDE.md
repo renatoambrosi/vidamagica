@@ -85,6 +85,26 @@ Login do painel é por **OTP via WhatsApp** (`routes/admin-auth.js`), não senha
 
 Upgrade handler em `server.js` autentica via query string (`?token=...&modo=aluna|atendimento`) e delega registro pra `routes/chat.js` (`registrarWsAluna`/`registrarWsAtendimento`). Heartbeat ping/pong a cada 30s. JWT do painel pode vir no formato novo (`role='admin'`, `escopo='atendimento'`) ou legado (`role='atendimento'|'suellen'`).
 
+### "Produto" vs "preço" — vocabulário canônico
+
+**Regra absoluta:**
+
+- **Produto** = entidade do catálogo (Ouro da Reprogramação Mental, Clube Vida Mágica, A Tal Maneira etc.). Tem nome, imagem, tipo, preços (campos), parcelas, links de checkout. **Termo usado pelo Renato e pela aluna.**
+- **Preço** = APENAS um campo do produto. Não é a entidade.
+
+**Mapeamento código ↔ realidade:**
+
+- Tabela do banco: `precos` (nome histórico — mantido por compat; não renomear)
+- Rota canônica nova: `/api/produtos` (+ `/api/admin/produtos`)
+- Rota legada (mantida pra LPs e webhooks): `/api/precos` (+ `/api/admin/precos`) → reusa os mesmos handlers de `routes/produtos.js`
+- Arquivo canônico: `routes/produtos.js`
+- Arquivo legado (NÃO REMOVER): `routes/precos.js` (alias fino)
+- Variáveis JS no admin: `dadosProdutos`, `carregarProdutos`, `salvarProdutos`, `coletarProdutos`
+- Aba do admin: `tab-produtos` (URL hash: `#produtos`)
+- Atributos HTML nas LPs: `data-preco-key`, `data-preco-de`, `data-preco-parcelas`, `data-preco-avista` (espalhados em 7 arquivos — não renomear, custo desproporcional)
+
+Quando o Renato falar "produto", é da tabela `precos` que estamos falando — não confundir.
+
 ### Roteamento e páginas servidas
 
 `server.js` define rotas "amigáveis" (sem `.html`) que devolvem páginas estáticas: `/atendimento`, `/admin`, `/auth`, `/cadastro`, `/teste`, `/ouro-da-reprogramacao-mental`, `/lei-da-atracao-biblica`, `/guia-pratico-reprogramacao-mental`, `/a-tal-maneira`, `/magica-do-fluir`, `/termos`, `/resultado/:id`, `/app[/<seção>]`. Depois disso, `express.static('public')`, depois 404 JSON em `/api/*`, e finalmente SPA fallback (`*` → `index.html`).
@@ -169,7 +189,10 @@ Nomes e conceitos do produto. **Escrever sempre por extenso, na grafia exata** �
 - **Desordem** (`desordem`)
 - **Sobrevivência** (`sobrevivencia`) — antes `autossuficiencia`, renomeado; mesma lógica
 - **Validação** (`validacao`)
-- **Prosperidade** (`prosperidade`), subdividida em `prosperidade_nv1` (≤ 50%), `prosperidade_nv2`, `prosperidade_nv3`
+- **Prosperidade** (`prosperidade`), subdividida em 3 níveis (faixas oficiais — não confundir com versões antigas do código):
+  - `prosperidade_nv1` — **< 50%** (até 49,99) → abre **Vida Mágica** se dominante
+  - `prosperidade_nv2` — **≥ 50% e < 80%** (50 a 79,99) → ⚠️ ainda **não tem jornada própria**; Renato vai criar produtos pra essa faixa. Enquanto isso, segue mesma trilha de nv1 (Vida Mágica) como placeholder
+  - `prosperidade_nv3` — **≥ 80%** → abre **Multiplicando a Vida Mágica**
 
 Os 4 primeiros são "perfis bloqueadores". Cálculo interno usa alta resolução (fração decimal); exibição usa `Math.round`. Empates visuais são possíveis (ex: 27% e 27%) mas o desempate interno é fixo: `validacao > sobrevivencia > desordem > medo`.
 
@@ -180,6 +203,22 @@ Os 4 primeiros são "perfis bloqueadores". Cálculo interno usa alta resolução
 - **Tesouro da Su** — mensagem/áudio diário pra aluna, registrado em `poolMensagens`.
 - **Sementes** — moeda virtual da aluna (`usuarios.sementes`), ganhas em interações com o app.
 - **Suellen** (ou **Su**) — face do atendimento pra aluna. Renato é o admin/dono.
+
+### Passo 3 do Resultado — automático (não editável no admin)
+
+A página `/resultado/:id` mostra um "Passo 3 — Curso recomendado". **Os 5 campos manuais antigos** (`passo3_curso_titulo`, `passo3_curso_capa_url`, `passo3_curso_descricao`, `passo3_curso_preco`, `passo3_curso_link_checkout`) e seus duplicados `_2` **NÃO são mais editáveis no admin** (foram removidos da tela "Conteúdo dos Resultados").
+
+O backend (`routes/teste.js`) preenche esses campos automaticamente lendo do produto vinculado, via regra de jornada:
+
+- **Sobrevivência** dominante → `lda_biblica`
+- **Medo / Desordem / Validação** dominantes → `ouro_reprogramacao`
+- **Prosperidade dominante COM trava forte** (>20% em alguma energia-problema) → hoje cai em Conhecer e Despertar e recebe `ouro_reprogramacao` (⚠️ Frente 4.B pendente: Renato definiu que essa aluna deveria ir pra Vida Mágica/Multiplicando com livros e Ouro adicionados no início — ainda não implementado)
+- **Prosperidade nv1 ou nv2 SEM trava** → `atal_maneira_livro`
+- **Prosperidade nv3 SEM trava** → `atal_maneira_curso`
+
+Os campos antigos continuam no banco (`teste_perfis_conteudo`) por compat, mas são sobrescritos no envio da resposta. Frontend (`resultado.html`) não muda — recebe os mesmos nomes de campo.
+
+**Pra mudar qual produto aparece**: ajustar a regra em `routes/teste.js` (bloco "Passo 3 — Curso recomendado") ou alterar dados do produto na aba "Produtos" do admin.
 
 ### Atualizações pendentes
 

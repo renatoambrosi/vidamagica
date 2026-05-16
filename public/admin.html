@@ -106,12 +106,15 @@ select option { background: #1a1205; }
 .btn-sm { padding: 0.28rem 0.7rem; font-size: 0.7rem; }
 .save-bar { position: sticky; bottom: 0; background: rgba(13,8,0,0.96); border-top: 1px solid var(--border); padding: 0.85rem 1.75rem; display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin: 0 -1.75rem -1.75rem; backdrop-filter: blur(12px); }
 .save-status { font-size: 0.7rem; color: var(--text-muted); }
-.dep-grid { display: flex; flex-direction: column; gap: 0.65rem; margin-bottom: 1.25rem; }
-.dep-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.9rem 1.1rem; display: flex; gap: 0.9rem; align-items: flex-start; backdrop-filter: blur(12px); transition: border-color 0.2s; }
+.dep-grid { display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 1rem; }
+/* Variante grid pra TEMAS: 2 colunas no desktop, 1 no mobile */
+.dep-grid.grid-2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 0.6rem; }
+.dep-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.75rem 0.95rem; display: flex; gap: 0.75rem; align-items: flex-start; backdrop-filter: blur(12px); transition: border-color 0.2s; }
 .dep-card:hover { border-color: var(--border-hover); }
 .dep-order { font-size: 0.65rem; font-weight: 700; color: var(--color-gold-amber); min-width: 18px; margin-top: 3px; opacity: 0.7; }
 .dep-fields { flex: 1; display: flex; flex-direction: column; gap: 0.45rem; }
-.dep-row { display: grid; grid-template-columns: 1fr 120px; gap: 0.45rem; }
+.dep-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-end; }
+.dep-row > .field { flex: 1 1 140px; min-width: 0; }
 .dep-actions { display: flex; flex-direction: column; gap: 0.35rem; padding-top: 2px; }
 .tags-wrap { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px 8px; min-height: 36px; cursor: text; transition: border-color 0.2s; }
 .tags-wrap:focus-within { border-color: rgba(200,146,42,0.5); }
@@ -123,8 +126,52 @@ select option { background: #1a1205; }
 .add-form { background: var(--bg-card); border: 1px dashed rgba(200,146,42,0.3); border-radius: var(--radius-md); padding: 1.1rem; margin-bottom: 1rem; backdrop-filter: blur(12px); }
 .loading { text-align: center; padding: 2.5rem; color: var(--text-muted); font-size: 0.82rem; }
 .gold-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(200,146,42,0.3), transparent); margin: 1.25rem 0; }
-.shuffle-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.85rem 1.1rem; margin-bottom: 1.25rem; backdrop-filter: blur(12px); }
+.shuffle-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.7rem 1rem; margin-bottom: 1rem; backdrop-filter: blur(12px); }
 .shuffle-box .toggle-row { padding: 0; }
+
+/* ── SUB-TABS (dentro de uma aba) ── */
+.subtabs { display: flex; gap: 0.25rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+.subtab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.18s;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+}
+.subtab-btn:hover { color: var(--color-gold-light); }
+.subtab-btn.active {
+  color: var(--color-gold-amber);
+  border-bottom-color: var(--color-gold-amber);
+}
+.subtab-badge {
+  background: rgba(200,146,42,0.12);
+  color: var(--color-gold-light);
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+}
+.subtab-panel { display: none; }
+.subtab-panel.active { display: block; }
+
+/* Section header mais enxuta na aba Depoimentos */
+.tab-panel#tab-depoimentos .section-header { margin-bottom: 0.8rem; }
+.tab-panel#tab-depoimentos .add-form { padding: 0.85rem; margin-bottom: 0.8rem; }
+.tab-panel#tab-depoimentos .dep-row { gap: 0.5rem; }
+.tab-panel#tab-depoimentos textarea { min-height: 64px; }
+.tab-panel#tab-depoimentos .dep-card textarea { min-height: 56px; line-height: 1.45; font-size: 0.8rem; }
+.tab-panel#tab-depoimentos .dep-fields > .field label { font-size: 0.62rem; }
+.tab-panel#tab-depoimentos .dep-card input,
+.tab-panel#tab-depoimentos .dep-card select { padding: 0.4rem 0.55rem; font-size: 0.78rem; }
 .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; background: none; border: none; }
 .hamburger span { display: block; width: 22px; height: 2px; background: var(--color-gold-amber); border-radius: 2px; transition: all 0.25s; }
 .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 150; backdrop-filter: blur(2px); }
@@ -196,7 +243,8 @@ select option { background: #1a1205; }
   .main { margin-left: 0; }
   .hamburger { display: flex; }
   .fields-grid, .fields-grid.three, .promo-fields.visible { grid-template-columns: 1fr; }
-  .dep-row { grid-template-columns: 1fr; }
+  .dep-row { flex-direction: column; align-items: stretch; }
+  .dep-row > .field { flex: 1 1 100%; max-width: none !important; }
   .content { padding: 1rem; }
   .save-bar { margin: 0 -1rem -1rem; padding: 0.75rem 1rem; }
   .wz-stats-row { grid-template-columns: repeat(2,1fr); }
@@ -217,8 +265,8 @@ select option { background: #1a1205; }
   </div>
 
   <div class="sidebar-section-label">Conteúdo</div>
-  <div class="nav-item active" id="nav-precos" onclick="goTab('precos', this)">
-    <span class="nav-icon">💰</span> Preços
+  <div class="nav-item active" id="nav-produtos" onclick="goTab('produtos', this)">
+    <span class="nav-icon">💰</span> Produtos
   </div>
   <div class="nav-item" id="nav-depoimentos" onclick="goTab('depoimentos', this)">
     <span class="nav-icon">💬</span> Depoimentos
@@ -260,132 +308,150 @@ select option { background: #1a1205; }
         <span></span><span></span><span></span>
       </button>
       <div class="topbar-left">
-        <h1 id="topbar-title">Gestão de Preços</h1>
-        <p id="topbar-sub">Preços públicos, promoções e descontos de alunos</p>
+        <h1 id="topbar-title">Gestão de Produtos</h1>
+        <p id="topbar-sub">Catálogo, preços, promoções e descontos de alunos</p>
       </div>
     </div>
   </div>
 
   <div class="content">
 
-    <!-- ABA PREÇOS -->
-    <div class="tab-panel active" id="tab-precos">
-      <div id="precos-container"><div class="loading">Carregando preços...</div></div>
+    <!-- ABA PRODUTOS -->
+    <div class="tab-panel active" id="tab-produtos">
+      <div id="produtos-container"><div class="loading">Carregando produtos...</div></div>
       <div class="save-bar">
-        <span class="save-status" id="precos-status"></span>
-        <button class="btn btn-primary" onclick="salvarPrecos()" id="btn-save-precos">Salvar Preços</button>
+        <span class="save-status" id="produtos-status"></span>
+        <button class="btn btn-primary" onclick="salvarProdutos()" id="btn-save-produtos">Salvar Produtos</button>
       </div>
     </div>
 
     <!-- ABA DEPOIMENTOS -->
     <div class="tab-panel" id="tab-depoimentos">
 
-      <!-- ── EMBARALHAR (mantido) ── -->
-      <div class="shuffle-box">
-        <div class="toggle-row">
-          <div>
-            <div class="tl-titulo">Embaralhar no site</div>
-            <div class="tl-sub">Quando ativo, o site exibe os relatos em ordem aleatória a cada visita</div>
-          </div>
-          <label class="toggle">
-            <input type="checkbox" id="toggle-shuffle" onchange="salvarShuffle()">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
+      <!-- ── SUB-TABS: Configurações | Depoimentos ── -->
+      <div class="subtabs" role="tablist">
+        <button type="button" class="subtab-btn active" data-subtab="config" onclick="goSubtab('config', this)">
+          ⚙️ Configurações <span class="subtab-badge" id="badge-temas">—</span>
+        </button>
+        <button type="button" class="subtab-btn" data-subtab="relatos" onclick="goSubtab('relatos', this)">
+          💬 Depoimentos <span class="subtab-badge" id="badge-deps">—</span>
+        </button>
       </div>
 
       <!-- ╔════════════════════════════════════════════════════════════╗ -->
-      <!-- ║ BLOCO 1 — TEMAS                                            ║ -->
-      <!-- ║ Cada tema aponta pra um produto (slug em Preços) e agrupa  ║ -->
-      <!-- ║ os relatos. O nome do tema é o que a aluna VÊ na página    ║ -->
-      <!-- ║ /relatos — NUNCA o nome do produto.                        ║ -->
+      <!-- ║ SUB-PAINEL 1 — CONFIGURAÇÕES                               ║ -->
+      <!-- ║ Embaralhar + Temas (taxonomia que agrupa relatos).         ║ -->
       <!-- ╚════════════════════════════════════════════════════════════╝ -->
-      <div class="section-header" style="margin-top:1.5rem">
-        <span class="section-title">Temas</span>
-        <button class="btn btn-ghost btn-sm" onclick="abrirNovoTema()">+ Novo tema</button>
-      </div>
-      <div class="add-form" id="form-novo-tema" style="display:none">
-        <div class="dep-row" style="margin-bottom:0.5rem">
-          <div class="field"><label>Slug (id curto, ex: orm)</label><input type="text" id="tm-new-slug" placeholder="Ex: orm" style="text-transform:lowercase"></div>
-          <div class="field"><label>Nome exibido pra aluna</label><input type="text" id="tm-new-nome" placeholder='Ex: "Reprogramação Mental"'></div>
-        </div>
-        <div class="dep-row" style="margin-bottom:0.65rem">
-          <div class="field">
-            <label>Produto vinculado (Preços)</label>
-            <select id="tm-new-produto"><option value="">— sem produto —</option></select>
-          </div>
-          <div class="field" style="max-width:120px"><label>Ordem</label><input type="number" id="tm-new-ordem" value="99"></div>
-        </div>
-        <div style="display:flex;gap:0.5rem">
-          <button class="btn btn-primary btn-sm" onclick="criarTema()">Criar tema</button>
-          <button class="btn btn-ghost btn-sm" onclick="fecharNovoTema()">Cancelar</button>
-        </div>
-      </div>
-      <div class="dep-grid" id="temas-grid"><div class="loading">Carregando temas...</div></div>
+      <div class="subtab-panel active" id="subtab-config">
 
-      <!-- ╔════════════════════════════════════════════════════════════╗ -->
-      <!-- ║ BLOCO 2 — RELATOS                                          ║ -->
-      <!-- ╚════════════════════════════════════════════════════════════╝ -->
-      <div class="section-header" style="margin-top:2rem">
-        <span class="section-title">Relatos</span>
-        <button class="btn btn-ghost btn-sm" onclick="abrirNovoDep()">+ Novo relato</button>
-      </div>
-
-      <!-- Filtros -->
-      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.85rem;align-items:center">
-        <div class="field" style="margin:0;max-width:200px">
-          <label>Filtrar por tema</label>
-          <select id="filtro-tema" onchange="carregarDeps()">
-            <option value="">— todos os temas —</option>
-          </select>
-        </div>
-        <div class="field" style="margin:0;max-width:160px">
-          <label>Placeholders</label>
-          <select id="filtro-placeholder" onchange="carregarDeps()">
-            <option value="">— todos —</option>
-            <option value="true">Só placeholders</option>
-            <option value="false">Sem placeholders</option>
-          </select>
-        </div>
-        <div class="field" style="margin:0;max-width:140px">
-          <label>Ticker</label>
-          <select id="filtro-ticker" onchange="carregarDeps()">
-            <option value="">— todos —</option>
-            <option value="true">Só no ticker</option>
-            <option value="false">Fora do ticker</option>
-          </select>
-        </div>
-        <span style="font-size:0.65rem;color:var(--text-muted);margin-left:auto" id="dep-status">—</span>
-      </div>
-
-      <!-- Form de novo relato -->
-      <div class="add-form" id="form-novo-dep" style="display:none">
-        <div class="dep-row" style="margin-bottom:0.5rem">
-          <div class="field"><label>Nome</label><input type="text" id="dep-new-nome" placeholder="Ex: Ana Paula"></div>
-          <div class="field" style="max-width:200px"><label>Profissão</label><input type="text" id="dep-new-profissao" placeholder="Ex: Designer"></div>
-          <div class="field" style="max-width:90px"><label>Idade</label><input type="number" id="dep-new-idade" min="1" max="120"></div>
-        </div>
-        <div class="dep-row" style="margin-bottom:0.5rem">
-          <div class="field"><label>Tema</label><select id="dep-new-tema"></select></div>
-          <div class="field" style="max-width:200px">
-            <label style="display:flex;align-items:center;gap:0.5rem;justify-content:space-between">
-              <span>Aparecer no ticker</span>
-              <label class="toggle"><input type="checkbox" id="dep-new-ticker" checked><span class="toggle-slider"></span></label>
+        <!-- Embaralhar -->
+        <div class="shuffle-box">
+          <div class="toggle-row">
+            <div>
+              <div class="tl-titulo">Embaralhar no site</div>
+              <div class="tl-sub">Quando ativo, o site exibe os relatos em ordem aleatória a cada visita</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="toggle-shuffle" onchange="salvarShuffle()">
+              <span class="toggle-slider"></span>
             </label>
           </div>
         </div>
-        <div class="field" style="margin-bottom:0.4rem">
-          <label>Relato <span style="float:right;color:var(--text-muted);font-weight:400" id="dep-new-counter">0 caracteres</span></label>
-          <textarea id="dep-new-texto" placeholder="Escreva o relato aqui..." oninput="updateCounter('dep-new-texto','dep-new-counter')"></textarea>
-          <span class="tag-hint">Relatos curtos (até ~140 caracteres) ficam melhor no ticker.</span>
+
+        <!-- Temas -->
+        <div class="section-header">
+          <span class="section-title">Temas</span>
+          <button class="btn btn-ghost btn-sm" onclick="abrirNovoTema()">+ Novo tema</button>
         </div>
-        <div style="display:flex;gap:0.5rem">
-          <button class="btn btn-primary btn-sm" onclick="criarDep()">Adicionar relato</button>
-          <button class="btn btn-ghost btn-sm" onclick="fecharNovoDep()">Cancelar</button>
+        <div class="add-form" id="form-novo-tema" style="display:none">
+          <div class="dep-row" style="margin-bottom:0.5rem">
+            <div class="field"><label>Slug (id curto, ex: orm)</label><input type="text" id="tm-new-slug" placeholder="Ex: orm" style="text-transform:lowercase"></div>
+            <div class="field"><label>Nome exibido pra aluna</label><input type="text" id="tm-new-nome" placeholder='Ex: "Reprogramação Mental"'></div>
+          </div>
+          <div class="dep-row" style="margin-bottom:0.65rem">
+            <div class="field">
+              <label>Produto vinculado</label>
+              <select id="tm-new-produto"><option value="">— sem produto —</option></select>
+            </div>
+            <div class="field" style="max-width:120px"><label>Ordem</label><input type="number" id="tm-new-ordem" value="99"></div>
+          </div>
+          <div style="display:flex;gap:0.5rem">
+            <button class="btn btn-primary btn-sm" onclick="criarTema()">Criar tema</button>
+            <button class="btn btn-ghost btn-sm" onclick="fecharNovoTema()">Cancelar</button>
+          </div>
         </div>
+        <div class="dep-grid grid-2" id="temas-grid"><div class="loading">Carregando temas...</div></div>
+
       </div>
 
-      <div class="dep-grid" id="dep-grid"><div class="loading">Carregando relatos...</div></div>
+      <!-- ╔════════════════════════════════════════════════════════════╗ -->
+      <!-- ║ SUB-PAINEL 2 — DEPOIMENTOS (Relatos)                       ║ -->
+      <!-- ╚════════════════════════════════════════════════════════════╝ -->
+      <div class="subtab-panel" id="subtab-relatos">
+
+        <div class="section-header">
+          <span class="section-title">Relatos</span>
+          <button class="btn btn-ghost btn-sm" onclick="abrirNovoDep()">+ Novo relato</button>
+        </div>
+
+        <!-- Filtros -->
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.85rem;align-items:flex-end">
+          <div class="field" style="margin:0;max-width:200px">
+            <label>Filtrar por tema</label>
+            <select id="filtro-tema" onchange="carregarDeps()">
+              <option value="">— todos os temas —</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0;max-width:160px">
+            <label>Placeholders</label>
+            <select id="filtro-placeholder" onchange="carregarDeps()">
+              <option value="">— todos —</option>
+              <option value="true">Só placeholders</option>
+              <option value="false">Sem placeholders</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0;max-width:140px">
+            <label>Ticker</label>
+            <select id="filtro-ticker" onchange="carregarDeps()">
+              <option value="">— todos —</option>
+              <option value="true">Só no ticker</option>
+              <option value="false">Fora do ticker</option>
+            </select>
+          </div>
+          <span style="font-size:0.65rem;color:var(--text-muted);margin-left:auto" id="dep-status">—</span>
+        </div>
+
+        <!-- Form de novo relato -->
+        <div class="add-form" id="form-novo-dep" style="display:none">
+          <div class="dep-row" style="margin-bottom:0.5rem">
+            <div class="field"><label>Nome</label><input type="text" id="dep-new-nome" placeholder="Ex: Ana Paula"></div>
+            <div class="field" style="max-width:200px"><label>Profissão</label><input type="text" id="dep-new-profissao" placeholder="Ex: Designer"></div>
+            <div class="field" style="max-width:90px"><label>Idade</label><input type="number" id="dep-new-idade" min="1" max="120"></div>
+          </div>
+          <div class="dep-row" style="margin-bottom:0.5rem">
+            <div class="field"><label>Tema</label><select id="dep-new-tema"></select></div>
+            <div class="field" style="max-width:200px">
+              <label style="display:flex;align-items:center;gap:0.5rem;justify-content:space-between">
+                <span>Aparecer no ticker</span>
+                <label class="toggle"><input type="checkbox" id="dep-new-ticker" checked><span class="toggle-slider"></span></label>
+              </label>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0.4rem">
+            <label>Relato <span style="float:right;color:var(--text-muted);font-weight:400" id="dep-new-counter">0 caracteres</span></label>
+            <textarea id="dep-new-texto" placeholder="Escreva o relato aqui..." oninput="updateCounter('dep-new-texto','dep-new-counter')"></textarea>
+            <span class="tag-hint">Relatos curtos (até ~140 caracteres) ficam melhor no ticker.</span>
+          </div>
+          <div style="display:flex;gap:0.5rem">
+            <button class="btn btn-primary btn-sm" onclick="criarDep()">Adicionar relato</button>
+            <button class="btn btn-ghost btn-sm" onclick="fecharNovoDep()">Cancelar</button>
+          </div>
+        </div>
+
+        <div class="dep-grid" id="dep-grid"><div class="loading">Carregando relatos...</div></div>
+
+      </div>
+
     </div>
 
     <!-- ABA FEED DO APP -->
@@ -821,7 +887,7 @@ function openSidebar()  { document.getElementById('sidebar').classList.add('open
 function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
 
 const tabMeta = {
-  precos:      { title: 'Gestão de Preços',   sub: 'Preços públicos, promoções e descontos de alunos' },
+  produtos:    { title: 'Gestão de Produtos', sub: 'Catálogo, preços, promoções e descontos de alunos' },
   depoimentos: { title: 'Depoimentos',         sub: 'Frases exibidas no ticker do site' },
   feed:        { title: 'Feed do App',          sub: 'Conteúdo publicado no app — vídeos, textos, imagens e links' },
   whatsapp:    { title: 'Gateway WhatsApp',    sub: 'Cooldowns, categorias, fila ao vivo e templates' },
@@ -1000,7 +1066,7 @@ async function vmVerificarOtp() {
 // ============================================================
 // PREÇOS
 // ============================================================
-let dadosPrecos = {};
+let dadosProdutos = {};
 // Fallback de imagens caso o admin ainda não tenha preenchido imagem_url
 // na aba Preços. A FONTE DA VERDADE é p.imagem_url (vindo do banco precos).
 const IMGS = {
@@ -1042,11 +1108,11 @@ function buildPromo(key,p){const ativo=p.mostrar_promo||false;const pct=calcDesc
 function buildAlunos(key,p){if(p.tipo!=='curso')return'';const pct=calcDesc(p.preco_padrao,p.preco_alunos);const temParcela=p.parcelas_valor_alunos!=null;const temQtd=p.parcelas_qtd_alunos!=null;return`<div class="secao"><div class="secao-titulo">Preço Alunos</div><div class="fields-grid ${temParcela?'three':''}"><div class="field"><label>Alunos à vista (R$)</label><input type="text" data-field="preco_alunos" value="${p.preco_alunos||''}" oninput="recalc('${key}')"></div>${temParcela?`<div class="field"><label>Parcela Alunos (R$)</label><input type="text" data-field="parcelas_valor_alunos" value="${p.parcelas_valor_alunos||''}"></div>`:''}${temQtd?`<div class="field"><label>Nº Parcelas Alunos</label><input type="text" data-field="parcelas_qtd_alunos" value="${p.parcelas_qtd_alunos}"></div>`:''}</div><div class="desconto-tag alunos ${pct?'visible':''}" id="desc-alunos-${key}">Desconto ao aluno: <strong id="pct-alunos-${key}">${pct?pct+'% off':'—'}</strong></div></div>`;}
 function buildComunidade(key,p){const pO=calcDesc(p.preco_ouro,p.preco_ouro_promo);const pM=calcDesc(p.preco_magico,p.preco_magico_promo);return`<div class="secao" style="margin-top:0;padding-top:0;border:none"><div class="secao-titulo">Plano Ouro</div><div class="fields-grid"><div class="field"><label>Preço Ouro (R$)</label><input type="text" data-field="preco_ouro" value="${p.preco_ouro}" oninput="recalc('${key}')"></div><div class="field"><label>Promo Ouro (R$)</label><input type="text" data-field="preco_ouro_promo" value="${p.preco_ouro_promo}" oninput="recalc('${key}')"></div></div><div class="toggle-row"><div><div class="tl-titulo">Exibir Promo Ouro</div></div><label class="toggle"><input type="checkbox" data-field="mostrar_promo_ouro" ${p.mostrar_promo_ouro?'checked':''} onchange="recalc('${key}')"><span class="toggle-slider"></span></label></div><div class="desconto-tag promo ${p.mostrar_promo_ouro&&pO?'visible':''}" id="desc-ouro-${key}">Desconto: <strong id="pct-ouro-${key}">${pO?pO+'% off':'—'}</strong></div></div><div class="secao"><div class="secao-titulo">Plano Mágico</div><div class="fields-grid"><div class="field"><label>Preço Mágico (R$)</label><input type="text" data-field="preco_magico" value="${p.preco_magico}" oninput="recalc('${key}')"></div><div class="field"><label>Promo Mágico (R$)</label><input type="text" data-field="preco_magico_promo" value="${p.preco_magico_promo}" oninput="recalc('${key}')"></div></div><div class="toggle-row"><div><div class="tl-titulo">Exibir Promo Mágico</div></div><label class="toggle"><input type="checkbox" data-field="mostrar_promo_magico" ${p.mostrar_promo_magico?'checked':''} onchange="recalc('${key}')"><span class="toggle-slider"></span></label></div><div class="desconto-tag alunos ${p.mostrar_promo_magico&&pM?'visible':''}" id="desc-magico-${key}">Desconto: <strong id="pct-magico-${key}">${pM?pM+'% off':'—'}</strong></div></div>`;}
 function togglePromo(key,ativo){document.getElementById(`promo-${key}`)?.classList.toggle('visible',ativo);if(!ativo)document.getElementById(`desc-promo-${key}`)?.classList.remove('visible');else recalc(key);}
-function recalc(key){const card=document.querySelector(`.card[data-key="${key}"]`);const p=dadosPrecos[key];if(!card||!p)return;if(p.tipo==='comunidade'){['ouro','magico'].forEach(pl=>{const de=getVal(card,`preco_${pl}`),por=getVal(card,`preco_${pl}_promo`);const chk=card.querySelector(`[data-field="mostrar_promo_${pl}"]`);const el=document.getElementById(`desc-${pl}-${key}`),ep=document.getElementById(`pct-${pl}-${key}`);if(el&&ep){const pct=chk?.checked?calcDesc(de,por):null;if(pct){ep.textContent=pct+'% off';el.classList.add('visible');}else el.classList.remove('visible');}});return;}const pad=getVal(card,'preco_padrao'),pro=getVal(card,'preco_promo'),alu=getVal(card,'preco_alunos');const chk=card.querySelector('[data-field="mostrar_promo"]');const sub=document.getElementById(`sub-${key}`);if(sub)sub.textContent=`De R$ ${pad} por R$ ${pro}`;const elP=document.getElementById(`desc-promo-${key}`),epP=document.getElementById(`pct-promo-${key}`);if(elP&&epP&&chk?.checked){const pct=calcDesc(pad,pro);epP.textContent=pct?pct+'% off':'—';elP.classList.toggle('visible',!!pct);}const elA=document.getElementById(`desc-alunos-${key}`),epA=document.getElementById(`pct-alunos-${key}`);if(elA&&epA&&alu){const pct=calcDesc(pad,alu);epA.textContent=pct?pct+'% off':'—';elA.classList.toggle('visible',!!pct);}}
-function coletarPrecos(){const res=JSON.parse(JSON.stringify(dadosPrecos));document.querySelectorAll('.card[data-key]').forEach(card=>{const key=card.dataset.key;card.querySelectorAll('[data-field]').forEach(inp=>{res[key][inp.dataset.field]=inp.type==='checkbox'?inp.checked:inp.value.trim();});});return res;}
+function recalc(key){const card=document.querySelector(`.card[data-key="${key}"]`);const p=dadosProdutos[key];if(!card||!p)return;if(p.tipo==='comunidade'){['ouro','magico'].forEach(pl=>{const de=getVal(card,`preco_${pl}`),por=getVal(card,`preco_${pl}_promo`);const chk=card.querySelector(`[data-field="mostrar_promo_${pl}"]`);const el=document.getElementById(`desc-${pl}-${key}`),ep=document.getElementById(`pct-${pl}-${key}`);if(el&&ep){const pct=chk?.checked?calcDesc(de,por):null;if(pct){ep.textContent=pct+'% off';el.classList.add('visible');}else el.classList.remove('visible');}});return;}const pad=getVal(card,'preco_padrao'),pro=getVal(card,'preco_promo'),alu=getVal(card,'preco_alunos');const chk=card.querySelector('[data-field="mostrar_promo"]');const sub=document.getElementById(`sub-${key}`);if(sub)sub.textContent=`De R$ ${pad} por R$ ${pro}`;const elP=document.getElementById(`desc-promo-${key}`),epP=document.getElementById(`pct-promo-${key}`);if(elP&&epP&&chk?.checked){const pct=calcDesc(pad,pro);epP.textContent=pct?pct+'% off':'—';elP.classList.toggle('visible',!!pct);}const elA=document.getElementById(`desc-alunos-${key}`),epA=document.getElementById(`pct-alunos-${key}`);if(elA&&epA&&alu){const pct=calcDesc(pad,alu);epA.textContent=pct?pct+'% off':'—';elA.classList.toggle('visible',!!pct);}}
+function coletarProdutos(){const res=JSON.parse(JSON.stringify(dadosProdutos));document.querySelectorAll('.card[data-key]').forEach(card=>{const key=card.dataset.key;card.querySelectorAll('[data-field]').forEach(inp=>{res[key][inp.dataset.field]=inp.type==='checkbox'?inp.checked:inp.value.trim();});});return res;}
 const ORDEM_PRODUTOS=['clube_vida_magica','teste_prosperidade','teste_subconsciente','vencendo_medo','vencendo_desordem','vencendo_validacao','vencendo_sobrevivencia','magica_fluir','guia_pratico','atal_maneira_livro','ouro_reprogramacao','lda_biblica','atal_maneira_curso'];
-async function carregarPrecos(){try{const r=await fetch(`${API}/api/admin/precos`,{headers:{'Authorization':authHeader()}});if(!r.ok)throw new Error();dadosPrecos=await r.json();const ordenado=ORDEM_PRODUTOS.filter(k=>dadosPrecos[k]).map(k=>[k,dadosPrecos[k]]);Object.entries(dadosPrecos).forEach(([k,v])=>{if(!ORDEM_PRODUTOS.includes(k))ordenado.push([k,v]);});document.getElementById('precos-container').innerHTML=ordenado.map(([k,p])=>buildPreco(k,p)).join('');}catch{document.getElementById('precos-container').innerHTML='<div class="loading">Erro ao carregar. Verifique a autenticação.</div>';}}
-async function salvarPrecos(){const btn=document.getElementById('btn-save-precos');btn.disabled=true;btn.textContent='Salvando...';try{const payload=coletarPrecos();const r=await fetch(`${API}/api/admin/precos`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':authHeader()},body:JSON.stringify(payload)});if(!r.ok)throw new Error();dadosPrecos=payload;toast('✓ Preços salvos com sucesso');document.getElementById('precos-status').textContent=`Salvo às ${new Date().toLocaleTimeString('pt-BR')}`;}catch{toast('✗ Erro ao salvar preços','error');}finally{btn.disabled=false;btn.textContent='Salvar Preços';}}
+async function carregarProdutos(){try{const r=await fetch(`${API}/api/admin/produtos`,{headers:{'Authorization':authHeader()}});if(!r.ok)throw new Error();dadosProdutos=await r.json();const ordenado=ORDEM_PRODUTOS.filter(k=>dadosProdutos[k]).map(k=>[k,dadosProdutos[k]]);Object.entries(dadosProdutos).forEach(([k,v])=>{if(!ORDEM_PRODUTOS.includes(k))ordenado.push([k,v]);});document.getElementById('produtos-container').innerHTML=ordenado.map(([k,p])=>buildPreco(k,p)).join('');}catch{document.getElementById('produtos-container').innerHTML='<div class="loading">Erro ao carregar. Verifique a autenticação.</div>';}}
+async function salvarProdutos(){const btn=document.getElementById('btn-save-produtos');btn.disabled=true;btn.textContent='Salvando...';try{const payload=coletarProdutos();const r=await fetch(`${API}/api/admin/produtos`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':authHeader()},body:JSON.stringify(payload)});if(!r.ok)throw new Error();dadosProdutos=payload;toast('✓ Produtos salvos com sucesso');document.getElementById('produtos-status').textContent=`Salvo às ${new Date().toLocaleTimeString('pt-BR')}`;}catch{toast('✗ Erro ao salvar produtos','error');}finally{btn.disabled=false;btn.textContent='Salvar Produtos';}}
 
 // ============================================================
 // DEPOIMENTOS
@@ -1070,6 +1136,22 @@ function updateCounter(textareaId, counterId){
   c.style.color = n > 180 ? '#F09090' : (n > 140 ? 'var(--color-gold-amber)' : 'var(--text-muted)');
 }
 
+// ─── SUB-TABS (Configurações ↔ Depoimentos) ───
+function goSubtab(id, btn){
+  document.querySelectorAll('#tab-depoimentos .subtab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('#tab-depoimentos .subtab-btn').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById('subtab-' + id);
+  if (panel) panel.classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+function atualizarBadges(){
+  const bt = document.getElementById('badge-temas');
+  const bd = document.getElementById('badge-deps');
+  if (bt) bt.textContent = String(temas.length || 0);
+  if (bd) bd.textContent = String(deps.length || 0);
+}
+
 // ─── TEMAS ───
 async function carregarTemas(){
   try{
@@ -1078,6 +1160,7 @@ async function carregarTemas(){
   }catch{ temas = []; }
   renderTemas();
   popularDropdownsDeTema();
+  atualizarBadges();
 }
 
 function renderTemas(){
@@ -1216,7 +1299,7 @@ function popularDropdownsDeTema(){
 }
 
 // ─── PREÇOS (pra dropdown de produto) ───
-async function carregarPrecosParaDropdown(){
+async function carregarProdutosParaDropdown(){
   try{
     const r = await fetch(`${API}/api/precos`, {headers:{'Accept':'application/json'}});
     if (r.ok){
@@ -1260,6 +1343,7 @@ async function carregarDeps(){
   } catch { deps = []; }
 
   renderDeps();
+  atualizarBadges();
   const status = document.getElementById('dep-status');
   if (status) status.textContent = `${deps.length} relato(s)`;
 }
@@ -1419,7 +1503,7 @@ async function salvarShuffle(){
 
 // Boot da aba Depoimentos: carrega preços (pra dropdown) → temas → relatos.
 async function bootDepoimentos(){
-  await carregarPrecosParaDropdown();
+  await carregarProdutosParaDropdown();
   await carregarTemas();
   await carregarDeps();
 }
@@ -2784,63 +2868,13 @@ const perfisAdmin = (function(){
         '</div>' +
       '</div>' +
 
-      '<div class="pf-form-secao">' +
-        '<div class="pf-form-secao-titulo">Passo 3 — Curso recomendado' + (ehProsperidade ? ' (1 de 2)' : '') + '</div>' +
-        '<div class="pf-row-2">' +
-          '<div class="pf-campo">' +
-            '<label class="pf-campo-label">Título</label>' +
-            '<input type="text" class="pf-input" id="pf-passo3_curso_titulo" value="' + escapeText(p.passo3_curso_titulo || '') + '">' +
-          '</div>' +
-          '<div class="pf-campo">' +
-            '<label class="pf-campo-label">URL da capa</label>' +
-            '<input type="text" class="pf-input" id="pf-passo3_curso_capa_url" value="' + escapeText(p.passo3_curso_capa_url || '') + '">' +
-          '</div>' +
-        '</div>' +
-        '<div class="pf-campo">' +
-          '<label class="pf-campo-label">Descrição</label>' +
-          '<textarea class="pf-textarea" id="pf-passo3_curso_descricao">' + escapeText(p.passo3_curso_descricao || '') + '</textarea>' +
-        '</div>' +
-        '<div class="pf-row-2">' +
-          '<div class="pf-campo">' +
-            '<label class="pf-campo-label">Preço (R$) — deixe vazio se ainda não definido</label>' +
-            '<input type="number" step="0.01" min="0" class="pf-input" id="pf-passo3_curso_preco" value="' + (p.passo3_curso_preco || '') + '">' +
-          '</div>' +
-          '<div class="pf-campo">' +
-            '<label class="pf-campo-label">Link do checkout</label>' +
-            '<input type="text" class="pf-input" id="pf-passo3_curso_link_checkout" value="' + escapeText(p.passo3_curso_link_checkout || '') + '">' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-
-      (ehProsperidade ?
-        '<div class="pf-form-secao">' +
-          '<div class="pf-form-secao-titulo">Passo 3 — Curso recomendado (2 de 2)</div>' +
-          '<div class="pf-row-2">' +
-            '<div class="pf-campo">' +
-              '<label class="pf-campo-label">Título</label>' +
-              '<input type="text" class="pf-input" id="pf-passo3_curso_titulo_2" value="' + escapeText(p.passo3_curso_titulo_2 || '') + '">' +
-            '</div>' +
-            '<div class="pf-campo">' +
-              '<label class="pf-campo-label">URL da capa</label>' +
-              '<input type="text" class="pf-input" id="pf-passo3_curso_capa_url_2" value="' + escapeText(p.passo3_curso_capa_url_2 || '') + '">' +
-            '</div>' +
-          '</div>' +
-          '<div class="pf-campo">' +
-            '<label class="pf-campo-label">Descrição</label>' +
-            '<textarea class="pf-textarea" id="pf-passo3_curso_descricao_2">' + escapeText(p.passo3_curso_descricao_2 || '') + '</textarea>' +
-          '</div>' +
-          '<div class="pf-row-2">' +
-            '<div class="pf-campo">' +
-              '<label class="pf-campo-label">Preço (R$)</label>' +
-              '<input type="number" step="0.01" min="0" class="pf-input" id="pf-passo3_curso_preco_2" value="' + (p.passo3_curso_preco_2 || '') + '">' +
-            '</div>' +
-            '<div class="pf-campo">' +
-              '<label class="pf-campo-label">Link do checkout</label>' +
-              '<input type="text" class="pf-input" id="pf-passo3_curso_link_checkout_2" value="' + escapeText(p.passo3_curso_link_checkout_2 || '') + '">' +
-            '</div>' +
-          '</div>' +
-        '</div>'
-      : '') +
+      // ⚠️ Bloco "Passo 3 — Curso recomendado" foi REMOVIDO desta tela.
+      // Decisão do Renato: a fonte do curso recomendado é a aba Produtos.
+      // O backend (routes/teste.js) preenche título, capa, preço e link
+      // automaticamente lendo do produto via regra de jornada — sem
+      // intervenção manual aqui. Os campos legacy (passo3_curso_titulo,
+      // _capa_url, _descricao, _preco, _link_checkout e os "_2") seguem
+      // existindo no banco mas não são mais editados nem usados.
 
       '<div class="pf-form-secao">' +
         '<div class="pf-form-secao-titulo">Bloco 8 — Texto de Fechamento</div>' +
@@ -2859,13 +2893,12 @@ const perfisAdmin = (function(){
     btn.disabled = true; btn.textContent = '⏳ Salvando…';
     fb.style.display = 'none';
 
+    // Campos editáveis pela tela "Conteúdo dos Resultados".
+    // Os campos passo3_curso_* (e seus _2) foram removidos da UI — o backend
+    // preenche automaticamente lendo do produto vinculado via regra de jornada.
     const campos = [
       'nome_exibicao', 'video_url', 'texto_diagnostico',
       'passo1_texto', 'passo2_texto', 'passo3_texto',
-      'passo3_curso_titulo', 'passo3_curso_capa_url', 'passo3_curso_descricao',
-      'passo3_curso_preco', 'passo3_curso_link_checkout',
-      'passo3_curso_titulo_2', 'passo3_curso_capa_url_2', 'passo3_curso_descricao_2',
-      'passo3_curso_preco_2', 'passo3_curso_link_checkout_2',
       'texto_fechamento_final',
     ];
     const body = {};
@@ -3192,7 +3225,7 @@ const produtosAluna = (function(){
 })();
 
 // ===== INIT =====
-carregarPrecos();
+carregarProdutos();
 bootDepoimentos();
 </script>
 </body>
