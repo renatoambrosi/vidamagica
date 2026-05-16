@@ -227,11 +227,12 @@ const PRECOS_INICIAIS = {
     preco_alunos: '0,00',
     parcelas_valor_alunos: '0,00'
   },
-  // Guia de bolso "A Mágica do Fluir" — Suellen Seragi. Preço placeholder,
-  // ajustar pelo /admin → Preços antes de divulgar. Links Kiwify já corretos.
-  magica_do_fluir: {
+  // Guia de bolso "A Mágica do Fluir" — Suellen Seragi.
+  // Slug igual ao padrão do projeto (sem "_do_"): magica_fluir.
+  // Preço placeholder — ajustar pelo /admin → Preços antes de divulgar.
+  magica_fluir: {
     nome: 'A Mágica do Fluir - Guia de Bolso',
-    tipo: 'ebook',
+    tipo: 'curso',
     imagem_url: '/assets/products/magica-fluir.png',
     link_checkout_padrao: 'https://pay.kiwify.com.br/yl5TJqM',
     link_checkout_aluno: 'https://pay.kiwify.com.br/AkYXx5F',
