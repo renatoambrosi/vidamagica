@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A Mágica do Fluir — Guia de bolso para viver no fluxo divino | Suellen Seragi</title>
+  <meta name="description" content="Guia de bolso da Suellen Seragi pra quem já despertou e quer parar de forçar pra começar a receber. Alinhamento sem esforço, pílula diária de paz e fluxo divino.">
+  <meta name="theme-color" content="#E8B85C">
+
+  <link rel="icon" href="/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+
+  <style>
+    /* ════════════════════════════════════════════════════════════
+       A MÁGICA DO FLUIR — LP do guia de bolso.
+       Espelha estrutura do teste/ouro/lei/guia/a-tal-maneira (navbar
+       fixa dourada + ticker, .section-eyebrow/title/lead, .btn-cta,
+       .dep-carousel, .faq-item, footer, data-reveal, scroll-progress,
+       back-top, ripple, VmSession).
+       Divergência: paleta LIGHT dourado radiante + azul-céu sutil
+       (borboletas), inspirada na imagem do produto.
+       Preço e checkout HERDAM de /api/precos (slug magica_do_fluir).
+       ════════════════════════════════════════════════════════════ */
+    :root {
+      /* Paleta LIGHT dourado radiante + azul-céu sutil (DIVERGÊNCIA pra Mágica do Fluir) */
+      --bg-cream:     #FFF4D6;
+      --bg-soft:      #FFE9A8;
+      --bg-warm:      #F4D998;
+      --bg-card:      #FFFAEC;
+      --paper-deep:   #E8B85C;
+      --sky-soft:     #88C5DC;
+      --sky-mist:     #B8DCE8;
+      --sky-deep:     #5BA3C4;
+      --text-dark:    #3D2814;
+      --text-mid:     #5C3F1A;
+      --text-mute:    #8B6F47;
+      --text-soft:    rgba(61,40,20,0.68);
+      --text-faint:   rgba(61,40,20,0.42);
+      /* Ouro (semelhança — vars idênticas às outras LPs) */
+      --gold:         #E8B85C;
+      --gold-deep:    #C8922A;
+      --gold-light:   #E8C97A;
+      --gold-bright:  #F4D998;
+      --gold-radiant: #FFD66B;
+      --gold-glow:    rgba(255,214,107,0.55);
+      --gold-glow-soft: rgba(255,214,107,0.20);
+      --border-soft:  rgba(168,123,55,0.35);
+      --border-card:  rgba(61,40,20,0.10);
+      --color-brown-dark: #1A1205;
+      /* Fonts e raios — IDÊNTICOS (semelhança) */
+      --font-display: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-body:    'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --r-md: 14px;
+      --r-lg: 20px;
+      --r-full: 9999px;
+      --shadow-card: 0 8px 24px rgba(61,40,20,0.10), 0 1px 2px rgba(61,40,20,0.05);
+      --shadow-hover: 0 16px 40px rgba(232,184,92,0.30), 0 4px 10px rgba(61,40,20,0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+      overscroll-behavior-y: none;
+    }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-cream);
+      color: var(--text-dark);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+
+    /* ═══ NAVBAR — fundo dourado (mesma cor do botão "Criar conta") pra destacar a logo ═══ */
+    .navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 1.25rem;
+      background: linear-gradient(135deg, var(--gold), var(--gold-deep));
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(61,40,20,0.18);
+      height: 52px;
+      box-shadow: 0 2px 14px rgba(61,40,20,0.18);
+    }
+    .navbar-logo { height: 32px; width: auto; }
+    .navbar-actions { display: flex; align-items: center; gap: 0.5rem; }
+    /* Entrar: outline branco */
+    .btn-login {
+      font-family: var(--font-body);
+      font-size: 0.78rem; font-weight: 600;
+      color: #FFFFFF;
+      background: none;
+      border: 1px solid rgba(255,255,255,0.55);
+      border-radius: var(--r-full);
+      padding: 0.38rem 1rem;
+      cursor: pointer; transition: all 0.2s;
+      text-decoration: none; letter-spacing: 0.05em;
+    }
+    .btn-login:hover { background: rgba(255,255,255,0.15); border-color: #FFFFFF; }
+    /* Criar conta: invertido (fundo branco, texto dourado) */
+    .btn-cadastro-nav {
+      font-family: var(--font-body);
+      font-size: 0.78rem; font-weight: 700;
+      color: var(--gold-deep);
+      background: #FFFFFF;
+      border: none;
+      border-radius: var(--r-full);
+      padding: 0.42rem 1.1rem;
+      cursor: pointer; transition: all 0.2s;
+      text-decoration: none; letter-spacing: 0.04em;
+      box-shadow: 0 2px 8px rgba(61,40,20,0.25);
+    }
+    .btn-cadastro-nav:hover { transform: translateY(-1px); background: var(--bg-cream); box-shadow: 0 4px 14px rgba(61,40,20,0.35); }
+
+    /* AVATAR NAVBAR — contraste com fundo dourado */
+    .nav-avatar-wrap { position: relative; }
+    .nav-avatar-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,.6); background: rgba(255,255,255,.2); cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0; transition: border-color .2s, box-shadow .2s; }
+    .nav-avatar-btn:hover { border-color: #FFFFFF; box-shadow: 0 0 0 3px rgba(255,255,255,.2); }
+    .nav-avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .nav-avatar-iniciais { font-family: var(--font-display); font-size: .72rem; font-weight: 800; color: #FFFFFF; letter-spacing: .05em; text-transform: uppercase; pointer-events: none; }
+    .nav-drop { position: absolute; top: calc(100% + 10px); right: 0; min-width: 200px; background: #FFFAEC; border: 1px solid rgba(61,40,20,0.1); border-radius: 14px; box-shadow: 0 16px 48px rgba(61,40,20,0.15); backdrop-filter: blur(20px); overflow: hidden; opacity: 0; transform: translateY(-6px) scale(.97); pointer-events: none; transition: opacity .2s, transform .2s; z-index: 300; }
+    .nav-drop.aberto { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+    .nav-drop-header { padding: .9rem 1.1rem .7rem; border-bottom: 1px solid rgba(61,40,20,.1); }
+    .nav-drop-nome { font-family: var(--font-display); font-size: .78rem; font-weight: 800; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nav-drop-sub { font-size: .67rem; color: var(--text-mute); margin-top: 2px; }
+    .nav-drop-item { display: flex; align-items: center; gap: .65rem; padding: .65rem 1.1rem; font-size: .8rem; font-weight: 500; color: var(--text-mid); cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: background .15s, color .15s; text-decoration: none; }
+    .nav-drop-item:hover { background: rgba(232,184,92,.12); color: var(--gold-deep); }
+    .nav-drop-item.danger { color: #c44; }
+    .nav-drop-item.danger:hover { background: rgba(200,60,60,.08); color: #a33; }
+    .nav-drop-sep { height: 1px; background: rgba(61,40,20,.1); margin: .2rem 0; }
+    .nav-drop-icon { font-size: .9rem; width: 16px; text-align: center; flex-shrink: 0; }
+
+    /* SCROLL PROGRESS */
+    .scroll-progress { position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: 2px; background: linear-gradient(90deg, var(--gold-radiant), var(--gold), var(--gold-deep)); transform-origin: 0 0; transform: scaleX(0); transition: transform 0.05s linear; box-shadow: 0 0 12px var(--gold-glow); }
+
+    /* TICKER */
+    .ticker-wrap {
+      position: fixed;
+      top: 52px; left: 0; right: 0;
+      z-index: 99;
+      overflow: hidden;
+      padding: 0.5rem 0;
+      background: rgba(255,233,168,0.95);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(168,123,55,0.32);
+    }
+    .ticker-track { display: flex; gap: 3.5rem; animation: ticker 22s linear infinite; white-space: nowrap; }
+    @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    .ticker-item { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.73rem; color: var(--text-mid); flex-shrink: 0; font-family: var(--font-body); }
+    .ticker-item .q { color: var(--gold-deep); }
+    .ticker-item strong { color: var(--gold-deep); font-weight: 700; }
+
+    /* BACKGROUND — creme luminoso + bokeh dourado + toques azul-céu sutis */
+    .bg-base { position: fixed; inset: 0; z-index: -3; background:
+      radial-gradient(ellipse 90% 60% at 50% 0%,   rgba(255,214,107,0.35) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 55% at 90% 25%,  rgba(136,197,220,0.18) 0%, transparent 55%),
+      radial-gradient(ellipse 75% 60% at 10% 70%,  rgba(232,201,122,0.32) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 50% at 80% 95%,  rgba(255,214,107,0.20) 0%, transparent 55%),
+      linear-gradient(180deg, #FFF4D6 0%, #FFE9A8 50%, #F4D998 100%); }
+    .orbs { position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.5; animation: orbFloat 14s ease-in-out infinite; will-change: transform; }
+    .orb-1 { width: 380px; height: 380px; top: 8%;  right: -80px;  background: radial-gradient(circle, var(--gold-bright), transparent 60%); animation-delay: 0s; }
+    .orb-2 { width: 460px; height: 460px; bottom: 12%; left: -120px; background: radial-gradient(circle, var(--gold-radiant), transparent 60%); animation-delay: -5s; opacity: 0.45; }
+    .orb-3 { width: 280px; height: 280px; top: 50%; left: 55%; background: radial-gradient(circle, var(--sky-soft), transparent 60%); opacity: 0.2; animation-delay: -8s; }
+    @keyframes orbFloat { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(40px,-30px) scale(1.05); } 66% { transform: translate(-30px,40px) scale(0.95); } }
+
+    /* Borboletas / sparkles douradas flutuando — atmosfera de "fluxo" */
+    .sparkles { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+    .sparkle { position: absolute; border-radius: 50%; background: radial-gradient(circle, rgba(255,236,180,1) 0%, rgba(255,214,107,0.45) 60%, transparent 100%); animation: sparkleFloat linear infinite; will-change: transform, opacity; filter: blur(0.3px); }
+    .sparkle.azul { background: radial-gradient(circle, rgba(184,220,232,1) 0%, rgba(136,197,220,0.45) 60%, transparent 100%); }
+    @keyframes sparkleFloat { 0% { transform: translateY(110vh) scale(0.5); opacity: 0; } 12% { opacity: 0.9; transform: scale(1); } 90% { opacity: 0.5; } 100% { transform: translateY(-12vh) scale(1.3); opacity: 0; } }
+
+    /* LAYOUT */
+    main { position: relative; z-index: 2; padding-top: calc(52px + 36px); line-height: 1.65; }
+    section { padding: 3rem 1.5rem 3.5rem; position: relative; }
+    .container { max-width: 960px; margin: 0 auto; width: 100%; }
+    .container-narrow { max-width: 680px; margin: 0 auto; width: 100%; }
+
+    /* REVEAL ON SCROLL */
+    [data-reveal] { opacity: 0; transform: translateY(20px); transition: opacity 0.65s ease-out, transform 0.65s ease-out; will-change: opacity, transform; }
+    [data-reveal="left"]  { transform: translateX(-28px); }
+    [data-reveal="right"] { transform: translateX(28px); }
+    [data-reveal="zoom"]  { transform: scale(0.95); }
+    [data-reveal].in { opacity: 1; transform: none; }
+
+    /* ═══ HERO ═══ */
+    .hero { min-height: calc(100vh - 52px); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 3rem 1.5rem 4rem; position: relative; overflow: hidden; }
+    .hero-logo-wrap { position: relative; width: 100%; max-width: 360px; margin: 0 auto 2.5rem; animation: logoEntry 1.6s cubic-bezier(0.22,1,0.36,1) 0.3s both; }
+    @keyframes logoEntry { 0% { opacity: 0; transform: translateY(30px) scale(0.95); filter: blur(12px); } 100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
+    .hero-logo { width: 100%; height: auto; display: block; border-radius: 18px; filter: drop-shadow(0 22px 50px rgba(61,40,20,0.22)) drop-shadow(0 0 40px rgba(255,214,107,0.5)); animation: logoBreath 5s ease-in-out infinite; }
+    @keyframes logoBreath { 0%,100% { filter: drop-shadow(0 22px 50px rgba(61,40,20,0.22)) drop-shadow(0 0 30px rgba(255,214,107,0.4)); } 50% { filter: drop-shadow(0 22px 50px rgba(61,40,20,0.22)) drop-shadow(0 0 60px rgba(255,214,107,0.75)); } }
+    .hero-eyebrow { font-family: var(--font-display); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold-deep); margin-bottom: 1.25rem; }
+    .hero h1 { font-family: var(--font-display); font-size: clamp(2rem,6vw,3.4rem); font-weight: 900; line-height: 1.1; letter-spacing: -0.015em; color: var(--text-dark); margin-bottom: 1.25rem; max-width: 820px; }
+    .hero h1 .glow { background: linear-gradient(120deg, var(--gold-deep) 0%, var(--gold) 50%, var(--gold-deep) 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: glowShift 5s ease-in-out infinite; }
+    @keyframes glowShift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+    .hero-headline { font-family: var(--font-display); font-size: clamp(1.15rem,2.8vw,1.45rem); font-weight: 700; color: var(--text-mid); margin-bottom: 1.5rem; line-height: 1.35; max-width: 720px; }
+    .hero-selo { display: block; max-width: 540px; margin: 0 auto 1.75rem; padding: 0; font-family: var(--font-display); font-size: 0.92rem; font-weight: 600; color: var(--gold-deep); letter-spacing: 0.04em; line-height: 1.55; text-align: center; }
+    .hero-sub { font-size: 1.05rem; color: var(--text-soft); max-width: 600px; margin: 0 auto 1.25rem; line-height: 1.75; }
+    .hero-sub strong { color: var(--text-dark); }
+
+    /* SECTION HEADERS */
+    .section-eyebrow { display: block; font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold-deep); margin-bottom: 1rem; text-align: center; }
+    .section-title { font-family: var(--font-display); font-size: clamp(1.75rem,4.5vw,2.5rem); font-weight: 800; line-height: 1.18; color: var(--text-dark); text-align: center; margin-bottom: 1rem; letter-spacing: -0.012em; }
+    .section-title .glow { background: linear-gradient(120deg, var(--gold-deep), var(--gold)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .section-lead { font-size: 1rem; color: var(--text-soft); text-align: center; max-width: 660px; margin: 0 auto 2rem; line-height: 1.8; }
+    .section-lead strong { color: var(--text-dark); }
+    .section-lead em { color: var(--sky-deep); font-style: italic; font-weight: 600; }
+
+    /* CTA BUTTON */
+    .btn-cta { display: inline-flex; align-items: center; gap: 0.65rem; font-family: var(--font-display); font-size: 0.92rem; font-weight: 800; color: #FFFFFF; background: linear-gradient(135deg, var(--gold) 0%, var(--gold-deep) 100%); border-radius: var(--r-full); padding: 1.05rem 2.1rem; letter-spacing: 0.04em; text-transform: uppercase; box-shadow: 0 8px 28px rgba(232,184,92,0.45), 0 0 0 1px rgba(255,236,180,0.25) inset; position: relative; overflow: hidden; transition: transform 0.25s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s; animation: ctaPulse 2.4s ease-in-out infinite; }
+    @keyframes ctaPulse { 0%,100% { box-shadow: 0 8px 28px rgba(232,184,92,0.45), 0 0 0 1px rgba(255,236,180,0.25) inset; } 50% { box-shadow: 0 12px 44px rgba(255,214,107,0.7), 0 0 0 1px rgba(255,236,180,0.4) inset; } }
+    .btn-cta:hover { transform: translateY(-2px); }
+    .btn-cta::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent); transition: left 0.6s; }
+    .btn-cta:hover::before { left: 100%; }
+    .btn-cta-sub { font-size: 0.78rem; color: var(--text-soft); margin-top: 0.95rem; letter-spacing: 0.04em; text-align: center; }
+
+    /* PREÇO INLINE NO HERO/CTA — mesmo padrão das outras LPs */
+    .preco-bloco { margin: 1.5rem auto 2rem; }
+    .hero .preco-bloco { margin-top: 3rem; }
+    .preco-titulo-produto { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; color: var(--text-dark); margin-bottom: 0.5rem; text-align: center; }
+    .preco-de { font-size: 0.9rem; color: var(--text-mute); margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.55rem; flex-wrap: wrap; }
+    .preco-de s { color: var(--text-faint); }
+    .preco-badge { display: inline-block; padding: 0.18rem 0.6rem; background: linear-gradient(135deg, var(--gold), var(--gold-deep)); color: #FFFFFF; font-family: var(--font-display); font-size: 0.72rem; font-weight: 800; border-radius: 4px; letter-spacing: 0.05em; box-shadow: 0 2px 8px rgba(232,184,92,0.4); }
+    .preco-big { display: block; font-family: var(--font-display); font-size: clamp(2.4rem,7vw,3.2rem); font-weight: 900; color: var(--text-dark); line-height: 1; margin: 0.4rem 0 0.5rem; letter-spacing: -0.02em; text-align: center; }
+    .preco-big small { font-size: 0.5em; font-weight: 700; color: var(--gold-deep); }
+    .preco-vista { font-size: 0.88rem; color: var(--text-soft); text-align: center; }
+
+    /* ═══ MANIFESTO — bloco narrativo "Você já pediu. Você já reprogramou..." ═══ */
+    .manifesto { max-width: 720px; margin: 0 auto; padding: 2.5rem 2rem; background: var(--bg-card); border: 1px solid var(--border-soft); border-left: 4px solid var(--gold); border-radius: 0 var(--r-md) var(--r-md) 0; box-shadow: var(--shadow-card); }
+    .manifesto-headline { font-family: var(--font-display); font-size: clamp(1.3rem, 3.5vw, 1.7rem); font-weight: 800; color: var(--gold-deep); line-height: 1.25; margin-bottom: 1rem; text-align: center; }
+    .manifesto-headline em { font-style: italic; color: var(--sky-deep); }
+    .manifesto-texto { font-size: 1rem; color: var(--text-mid); line-height: 1.8; }
+    .manifesto-texto p { margin-bottom: 1rem; }
+    .manifesto-texto p:last-child { margin-bottom: 0; }
+    .manifesto-texto strong { color: var(--text-dark); font-weight: 700; }
+    .manifesto-fecho { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px dashed var(--border-soft); text-align: center; font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; color: var(--gold-deep); }
+
+    /* ═══ CONQUISTAS — 4 cards (Wu Wei / Não Escavar / Tabela / Pílula) ═══ */
+    .conquistas-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; max-width: 880px; margin: 2rem auto 0; }
+    @media (min-width: 720px) { .conquistas-grid { grid-template-columns: 1fr 1fr; } }
+    .conquista-card { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--r-lg); padding: 1.75rem 1.5rem; transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s; box-shadow: var(--shadow-card); position: relative; overflow: hidden; }
+    .conquista-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); border-color: var(--gold-light); }
+    /* Borda esquerda alternando entre dourado e azul-céu pra dar ritmo visual (borboletas) */
+    .conquista-card { border-left: 3px solid var(--gold); }
+    .conquista-card:nth-child(2n) { border-left-color: var(--sky-soft); }
+    .conquista-icon { width: 56px; height: 56px; margin-bottom: 1rem; border-radius: 50%; background: linear-gradient(135deg, var(--gold-light), var(--gold)); display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 18px var(--gold-glow-soft); }
+    .conquista-card:nth-child(2n) .conquista-icon { background: linear-gradient(135deg, var(--sky-mist), var(--sky-soft)); box-shadow: 0 6px 18px rgba(136,197,220,0.35); }
+    .conquista-icon i { color: #FFFFFF; font-size: 1.3rem; }
+    .conquista-titulo { font-family: var(--font-display); font-size: 1.08rem; font-weight: 800; color: var(--text-dark); margin-bottom: 0.45rem; line-height: 1.3; letter-spacing: -0.01em; }
+    .conquista-titulo em { font-style: italic; color: var(--gold-deep); font-weight: 700; }
+    .conquista-texto { font-size: 0.94rem; color: var(--text-soft); line-height: 1.65; }
+    .conquista-texto strong { color: var(--text-dark); }
+
+    /* ═══ SOBRE A SUELLEN ═══ */
+    .about-foto { width: 240px; height: 240px; border-radius: 50%; object-fit: cover; object-position: center 22%; margin: 0 auto 2rem; border: 3px solid var(--gold-light); box-shadow: 0 16px 36px rgba(61,40,20,0.18), 0 0 0 7px var(--bg-card); display: block; }
+    .about-texto { max-width: 660px; margin: 0 auto; color: var(--text-soft); font-size: 1rem; line-height: 1.85; text-align: center; }
+    .about-texto p { margin-bottom: 1.05rem; }
+    .about-texto p strong { color: var(--text-dark); font-weight: 700; }
+    .credentials { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin-top: 1.75rem; }
+    .credential-item { display: inline-flex; align-items: center; gap: 0.55rem; padding: 0.55rem 1rem; background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: var(--r-full); font-size: 0.82rem; color: var(--text-mid); font-weight: 600; box-shadow: 0 2px 8px rgba(61,40,20,0.06); }
+    .credential-item i { color: var(--gold-deep); font-size: 0.92rem; }
+
+    /* ═══ DEPOIMENTOS ═══ */
+    .dep-section { background: linear-gradient(180deg, rgba(255,233,168,0.4) 0%, transparent 100%); }
+    .dep-carousel { position: relative; overflow: hidden; margin-bottom: 2.5rem; padding: 1rem 0; }
+    .dep-track { display: flex; gap: 1.25rem; animation: depScroll 30s linear infinite; will-change: transform; }
+    @keyframes depScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    .dep-carousel:hover .dep-track { animation-play-state: paused; }
+    .dep-card { flex: 0 0 320px; background: var(--bg-card); border: 1px solid var(--border-card); border-left: 3px solid var(--gold); border-radius: 12px; padding: 1.4rem 1.25rem; text-align: left; transition: all 0.3s ease; cursor: pointer; position: relative; box-shadow: var(--shadow-card); }
+    .dep-card:hover { border-color: var(--gold); transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+    .dep-stars { display: flex; gap: 0.18rem; margin-bottom: 0.65rem; color: var(--gold); font-size: 0.78rem; }
+    .dep-texto { font-size: 0.92rem; line-height: 1.7; color: var(--text-mid); margin-bottom: 1rem; font-style: italic; }
+    .dep-autor { font-family: var(--font-display); font-size: 0.82rem; font-weight: 700; color: var(--gold-deep); letter-spacing: 0.04em; }
+    .dep-autor::before { content: '— '; color: var(--gold); }
+    .dep-autor small { display: block; color: var(--text-soft); font-weight: 500; font-size: 0.72rem; letter-spacing: 0; text-transform: none; margin-top: 0.2rem; }
+
+    /* ═══ CTA FINAL ═══ */
+    .cta-final { background: linear-gradient(180deg, rgba(255,233,168,0.5) 0%, rgba(232,184,92,0.25) 100%); text-align: center; position: relative; overflow: hidden; }
+    .cta-final-box { max-width: 660px; margin: 0 auto; padding: 1rem; position: relative; }
+    .cta-final-pre { font-size: 1.05rem; color: var(--text-mid); margin-bottom: 1.5rem; line-height: 1.75; }
+    .cta-final-pre strong { color: var(--text-dark); font-weight: 700; }
+    .cta-mockup { max-width: 240px; margin: 2rem auto 1.5rem; border-radius: 18px; box-shadow: 0 18px 50px rgba(61,40,20,0.22), 0 0 50px rgba(255,214,107,0.4); }
+
+    /* ═══ FAQ ═══ */
+    .faq-section { background: rgba(255,244,214,0.5); }
+    .faq-list { max-width: 720px; margin: 0 auto; }
+    .faq-item { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--r-md); margin-bottom: 0.75rem; box-shadow: var(--shadow-card); transition: border-color 0.2s; }
+    .faq-item:hover { border-color: var(--border-soft); }
+    .faq-q { width: 100%; padding: 1.15rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-family: var(--font-display); font-size: 0.96rem; font-weight: 600; color: var(--text-dark); text-align: left; transition: color 0.2s; }
+    .faq-q:hover { color: var(--gold-deep); }
+    .faq-q .icon { width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; background: rgba(232,184,92,0.16); display: flex; align-items: center; justify-content: center; color: var(--gold-deep); transition: transform 0.3s, background 0.3s; }
+    .faq-item.open .faq-q .icon { transform: rotate(45deg); background: rgba(232,184,92,0.3); }
+    .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.22,1,0.36,1), padding 0.3s; color: var(--text-soft); font-size: 0.94rem; line-height: 1.75; padding: 0 1.25rem; }
+    .faq-item.open .faq-a { max-height: 500px; padding: 0 1.25rem 1.1rem; }
+
+    /* FOOTER */
+    footer { padding: 2.5rem 1.5rem; text-align: center; background: var(--bg-warm); border-top: 1px solid var(--border-card); }
+    .footer-sociais { display: flex; justify-content: center; gap: 1.2rem; margin-bottom: 1.1rem; }
+    .footer-sociais a { color: var(--text-mute); font-size: 1.1rem; transition: color 0.2s; }
+    .footer-sociais a:hover { color: var(--gold-deep); }
+    .footer-text { font-size: 0.72rem; color: var(--text-faint); letter-spacing: 0.06em; }
+
+    /* BACK TO TOP */
+    .back-top { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 80; width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--gold-light), var(--gold)); color: #FFFFFF; display: flex; align-items: center; justify-content: center; opacity: 0; transform: translateY(20px) scale(0.8); pointer-events: none; transition: all 0.3s; box-shadow: 0 8px 24px var(--gold-glow); }
+    .back-top.visible { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+    .back-top:hover { transform: translateY(-3px) scale(1.05); }
+
+    /* RIPPLE */
+    .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.4); transform: scale(0); animation: rippleAnim 0.6s ease-out; pointer-events: none; }
+    @keyframes rippleAnim { to { transform: scale(2.5); opacity: 0; } }
+  </style>
+</head>
+<body>
+
+  <div class="scroll-progress" id="scroll-progress"></div>
+
+  <div class="bg-base"></div>
+  <div class="orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="sparkles" id="sparkles"></div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar" id="navbar">
+    <a href="/"><img src="/assets/logo-horizontal.png" alt="Vida Mágica" class="navbar-logo" onerror="this.style.display='none'"></a>
+    <div class="navbar-actions" id="navbar-actions"></div>
+  </nav>
+
+  <!-- TICKER -->
+  <div class="ticker-wrap">
+    <div class="ticker-track" id="ticker-track"></div>
+  </div>
+
+  <main>
+
+    <!-- ═══ HERO ═══ -->
+    <section class="hero">
+      <div class="hero-logo-wrap">
+        <img src="/assets/products/magica-fluir.png" alt="A Mágica do Fluir — Guia de bolso" class="hero-logo" onerror="this.style.display='none'">
+      </div>
+      <p class="hero-eyebrow" data-reveal>Guia de bolso da Suellen Seragi</p>
+      <h1 data-reveal>A Mágica do <span class="glow">Fluir</span></h1>
+      <p class="hero-headline" data-reveal>Para quem já despertou e está pronto pra viver no fluxo divino.</p>
+      <p class="hero-selo" data-reveal>Você já pediu · Você já reprogramou · Agora é hora de receber</p>
+      <p class="hero-sub" data-reveal><strong>É hora de parar de forçar e começar a receber.</strong> Muitas vezes, a maior barreira entre você e a vida que você sonha não é a falta de esforço — é o excesso dele.</p>
+      <div style="margin-top:2rem" data-reveal>
+        <a href="https://pay.kiwify.com.br/yl5TJqM" class="btn-cta" id="cta-hero" target="_blank" rel="noopener" data-checkout-link data-utm="LpFluir-hero"><i class="fas fa-feather"></i> Quero meu guia de bolso</a>
+      </div>
+      <!-- Preço dinâmico vindo de /api/precos (slug magica_do_fluir) -->
+      <div class="preco-bloco" data-reveal>
+        <p class="preco-titulo-produto">A Mágica do Fluir — Guia de Bolso</p>
+        <p class="preco-de" data-preco-de style="display:none">de <s>R$ 0,00</s></p>
+        <span class="preco-big" data-preco-parcelas>12x <small>R$</small> ...</span>
+        <p class="preco-vista" data-preco-avista>ou R$ ... à vista</p>
+      </div>
+    </section>
+
+    <!-- ═══ MANIFESTO — diagnóstico do reprogramado ═══ -->
+    <section id="manifesto">
+      <div class="container">
+        <span class="section-eyebrow" data-reveal>Pra quem é</span>
+        <h2 class="section-title" data-reveal>O fruto não vem pelo <em style="font-style:italic;color:var(--sky-deep)">estresse</em> — vem pelo <span class="glow">alinhamento</span></h2>
+
+        <div class="manifesto" data-reveal="zoom">
+          <p class="manifesto-headline">Depois de mapear seus bloqueios e renovar sua mente...</p>
+          <div class="manifesto-texto">
+            <p>...o maior desafio do reprogramado é o <strong>piloto automático da ansiedade</strong>, que tenta controlar o como e o quando.</p>
+            <p>Mas o <strong>Grande Livro</strong> e a <strong>ciência</strong> são claros: o fruto não vem pelo estresse, ele vem pelo alinhamento.</p>
+            <p>A <strong>Mágica do Fluir</strong> é a sua pílula diária de direção prática. Um manual minimalista de bolso feito exclusivamente pra te manter na frequência certa da paz, do descanso e dos milagres diários — sem complicação.</p>
+          </div>
+          <p class="manifesto-fecho">Se você já entendeu a teoria, apenas pratique.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ CONQUISTAS — 4 cards (Wu Wei / Não Escavar / Tabela / Pílula) ═══ -->
+    <section id="conquistas">
+      <div class="container">
+        <span class="section-eyebrow" data-reveal>O que você vai conquistar</span>
+        <h2 class="section-title" data-reveal>O guia de bolso que cabe na <span class="glow">sua rotina</span></h2>
+        <p class="section-lead" data-reveal>4 frentes práticas pra você sair do excesso de esforço e entrar no estado de recepção.</p>
+
+        <div class="conquistas-grid">
+          <div class="conquista-card" data-reveal>
+            <div class="conquista-icon"><i class="fas fa-spa"></i></div>
+            <p class="conquista-titulo">O Alinhamento sem Esforço <em>(Wu Wei)</em></p>
+            <p class="conquista-texto">Aprenda a rotina exata pra <strong>relaxar a mente</strong> e deixar que as bênçãos corram até você — em vez de você se esgotar correndo atrás delas.</p>
+          </div>
+          <div class="conquista-card" data-reveal>
+            <div class="conquista-icon"><i class="fas fa-seedling"></i></div>
+            <p class="conquista-titulo">O Segredo de "Não Escavar a Semente"</p>
+            <p class="conquista-texto">Descubra como <strong>proteger suas orações e metas</strong> do hábito destrutivo de analisar demais a situação o tempo todo.</p>
+          </div>
+          <div class="conquista-card" data-reveal>
+            <div class="conquista-icon"><i class="fas fa-balance-scale"></i></div>
+            <p class="conquista-titulo">A Tabela Prática: Fluir × Forçar</p>
+            <p class="conquista-texto">Um <strong>mapa de autodiagnóstico instantâneo</strong> pra identificar quando você saiu do eixo — e como voltar ao estado de recepção em segundos.</p>
+          </div>
+          <div class="conquista-card" data-reveal>
+            <div class="conquista-icon"><i class="fas fa-pills"></i></div>
+            <p class="conquista-titulo">A Pílula Diária de Realinhamento</p>
+            <p class="conquista-texto">Diretrizes objetivas de <strong>gratidão, respiração e intuição</strong> pra aplicar no meio da sua rotina corrida e reter uma fé viva e ativa.</p>
+          </div>
+        </div>
+
+        <div style="text-align:center;margin-top:2.5rem" data-reveal>
+          <a href="https://pay.kiwify.com.br/yl5TJqM" class="btn-cta" id="cta-meio" target="_blank" rel="noopener" data-checkout-link data-utm="LpFluir-meio"><i class="fas fa-feather"></i> Quero começar a fluir agora</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SOBRE A SUELLEN ═══ -->
+    <section id="sobre">
+      <div class="container-narrow" style="text-align:center">
+        <span class="section-eyebrow" data-reveal>Quem escreveu</span>
+        <h2 class="section-title" data-reveal>Suellen <span class="glow">Seragi</span></h2>
+        <img src="/assets/suellencafe.jpg" alt="Suellen Seragi" class="about-foto" data-reveal="zoom" onerror="this.style.display='none'">
+        <div class="about-texto" data-reveal>
+          <p><strong>Suellen Seragi</strong> é professora, escritora, teóloga e criadora de conteúdo com mais de 400 mil seguidores. Depois de vencer travas profundas com mentalidade de escassez e crises emocionais, ela desenvolveu um caminho exclusivo de reprogramação mental com base bíblica.</p>
+          <p>Hoje, ela dedica sua vida a guiar outras mulheres pra essa mesma transformação. <strong>A Mágica do Fluir</strong> é o último passo dessa jornada — o manual de bolso pra quem já entendeu a teoria e quer só viver no fluxo, sem complicar o que Deus fez pra ser leve.</p>
+          <div class="credentials">
+            <span class="credential-item"><i class="fas fa-award"></i> Mentora de Crescimento Espiritual</span>
+            <span class="credential-item"><i class="fas fa-users"></i> +1.700 Alunas Transformadas</span>
+            <span class="credential-item"><i class="fas fa-book-open"></i> Método baseado no Grande Livro</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ DEPOIMENTOS ═══ -->
+    <section class="dep-section">
+      <div class="container">
+        <span class="section-eyebrow" data-reveal>Quem já fluiu</span>
+        <h2 class="section-title" data-reveal>Relatos de quem <span class="glow">soltou o controle</span></h2>
+        <p class="section-lead" data-reveal>O que mulheres como você viveram depois de parar de forçar.</p>
+      </div>
+      <div class="dep-carousel">
+        <div class="dep-track" id="dep-track"></div>
+      </div>
+      <div class="container" style="text-align:center;margin-top:2rem" data-reveal>
+        <a href="https://pay.kiwify.com.br/yl5TJqM" class="btn-cta" id="cta-dep" target="_blank" rel="noopener" data-checkout-link data-utm="LpFluir-dep"><i class="fas fa-feather"></i> Quero o meu guia</a>
+      </div>
+    </section>
+
+    <!-- ═══ CTA FINAL ═══ -->
+    <section class="cta-final" id="comprar">
+      <div class="cta-final-box">
+        <span class="section-eyebrow" data-reveal>Decisão</span>
+        <h2 class="section-title" data-reveal>Acalme o consciente.<br>Ative o <span class="glow">subconsciente</span>.</h2>
+        <p class="cta-final-pre" data-reveal>Não permita que sua mente complique o que Deus fez pra ser <strong>leve, simples e abundante</strong>. Tenha em mãos o comando definitivo pra ver as coisas acontecerem quando você menos espera.</p>
+
+        <div data-reveal="zoom">
+          <img src="/assets/products/magica-fluir.png" alt="A Mágica do Fluir" class="cta-mockup" onerror="this.style.display='none'">
+
+          <!-- Preço dinâmico vindo de /api/precos (slug magica_do_fluir) -->
+          <div class="preco-bloco">
+            <p class="preco-titulo-produto">A Mágica do Fluir — Guia de Bolso</p>
+            <p class="preco-de" data-preco-de style="display:none">de <s>R$ 0,00</s></p>
+            <span class="preco-big" data-preco-parcelas>12x <small>R$</small> ...</span>
+            <p class="preco-vista" data-preco-avista>ou R$ ... à vista</p>
+          </div>
+
+          <a href="https://pay.kiwify.com.br/yl5TJqM" class="btn-cta" id="cta-final-btn" style="font-size:1rem;padding:1.2rem 2.4rem" target="_blank" rel="noopener" data-checkout-link data-utm="LpFluir-cta">
+            <i class="fas fa-feather"></i> Quero meu guia de bolso e começar a fluir agora
+          </a>
+        </div>
+
+        <p class="btn-cta-sub" data-reveal>Pagamento único · Acesso imediato · Pagamento seguro pela Kiwify</p>
+      </div>
+    </section>
+
+    <!-- ═══ FAQ ═══ -->
+    <section class="faq-section">
+      <div class="container-narrow">
+        <span class="section-eyebrow" data-reveal>Dúvidas</span>
+        <h2 class="section-title" data-reveal>Perguntas <span class="glow">frequentes</span></h2>
+        <div class="faq-list" data-reveal>
+          <div class="faq-item"><button class="faq-q">Esse guia é pra quem está começando do zero?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Não. A Mágica do Fluir é pra quem <strong>já despertou</strong> — que já leu, ouviu, orou, reprogramou. É o manual de bolso pra parar de complicar o que já foi entendido e começar a viver no fluxo.</p></div></div>
+          <div class="faq-item"><button class="faq-q">É um livro ou um curso?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>É um <strong>guia de bolso digital</strong> — minimalista, direto, prático. Pensado pra você consultar no meio da rotina corrida quando sentir que saiu do eixo.</p></div></div>
+          <div class="faq-item"><button class="faq-q">Por quanto tempo tenho acesso?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Acesso vitalício ao guia digital. Você baixa, salva no celular e consulta sempre que precisar.</p></div></div>
+          <div class="faq-item"><button class="faq-q">Preciso ter feito outro material da Suellen antes?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Não é obrigatório, mas ele complementa muito bem quem já fez O Ouro da Reprogramação Mental, A Tal Maneira ou a Lei da Atração Bíblica. É o "passo final" — viver o que já foi aprendido.</p></div></div>
+          <div class="faq-item"><button class="faq-q">Como funciona o pagamento?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Pagamento seguro pela plataforma Kiwify — cartão em até 12x, PIX ou boleto à vista. Acesso liberado imediatamente após confirmação.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-sociais">
+      <a href="https://www.youtube.com/@suellenseragi" target="_blank" rel="noopener" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+      <a href="https://www.instagram.com/suellenseragi" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+      <a href="https://www.tiktok.com/@suellenseragi" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+    </div>
+    <p class="footer-text">Renato &amp; Suellen Seragi · Vida Mágica · 2026</p>
+  </footer>
+
+  <button class="back-top" id="back-top" aria-label="Voltar ao topo">
+    <i class="fas fa-arrow-up"></i>
+  </button>
+
+  <script>
+    const API_BASE = window.location.origin;
+    const TAG_LP   = 'magica_fluir';
+    const PRECO_KEY = 'magica_do_fluir'; // slug em /api/precos (admin gerencia)
+
+    /* SPARKLES — partículas douradas + azul-céu subindo (atmosfera "borboletas no fluxo") */
+    (function() {
+      const el = document.getElementById('sparkles');
+      if (!el) return;
+      const QTD = window.innerWidth < 640 ? 22 : 38;
+      for (let i = 0; i < QTD; i++) {
+        const p = document.createElement('div');
+        // 1 em 4 vira azul-céu (das borboletas), resto dourado
+        p.className = 'sparkle' + (Math.random() < 0.25 ? ' azul' : '');
+        const size = Math.random() * 4 + 2;
+        const dur  = Math.random() * 14 + 14;
+        p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;opacity:${Math.random()*0.45+0.55};animation-duration:${dur}s;animation-delay:-${Math.random()*dur}s;`;
+        el.appendChild(p);
+      }
+    })();
+
+    /* ═══ NAVBAR AUTH — IDÊNTICO às outras LPs ═══ */
+    window.VmSession = window.VmSession || (function(){
+      const K='vm_s',P='vm_lembrar',U='vm_u';
+      function salvar(d,l){const p=l!==undefined?l:getLembrar();localStorage.setItem(P,p?'1':'0');const s=p?localStorage:sessionStorage,o=p?sessionStorage:localStorage;o.removeItem(K);s.setItem(K,JSON.stringify(d));if(p&&d.usuario?.nome){localStorage.setItem(U,JSON.stringify({nome:d.usuario.nome,email:d.usuario.email||null,telefone_formatado:d.usuario.telefone_formatado||null,foto_url:d.usuario.foto_url||null}));}else if(!p){localStorage.removeItem(U);}}
+      function carregar(){try{const r=localStorage.getItem(K)||sessionStorage.getItem(K);return r?JSON.parse(r):null;}catch{return null;}}
+      function destruir(){localStorage.removeItem(K);sessionStorage.removeItem(K);}
+      function getAccess(){return carregar()?.access_token||null;}
+      function getRefresh(){return carregar()?.refresh_token||null;}
+      function getLembrar(){return localStorage.getItem(P)!=='0';}
+      function getUsuarioLembrado(){try{return JSON.parse(localStorage.getItem(U)||'null');}catch{return null;}}
+      function limparUsuarioLembrado(){localStorage.removeItem(U);}
+      return{salvar,carregar,destruir,getAccess,getRefresh,getLembrar,getUsuarioLembrado,limparUsuarioLembrado};
+    })();
+
+    (async function navbarAuth(){
+      const actions = document.getElementById('navbar-actions');
+      if (!actions) return;
+      function renderBotoes(){
+        actions.innerHTML = `<a href="/auth?intencional" class="btn-login">Entrar</a><a href="/auth?cadastro" class="btn-cadastro-nav">Criar conta</a>`;
+      }
+      function renderAvatar(usuario){
+        const iniciais = (usuario.nome||'?').split(' ').slice(0,2).map(p=>p[0]).join('').toUpperCase();
+        const fotoHtml = usuario.foto_url
+          ? `<img src="${usuario.foto_url}" alt="${usuario.nome}" class="nav-avatar-img">`
+          : `<span class="nav-avatar-iniciais">${iniciais}</span>`;
+        actions.innerHTML = `
+          <div class="nav-avatar-wrap" id="nav-avatar-wrap">
+            <button class="nav-avatar-btn" onclick="toggleNavDrop()" aria-label="Menu">${fotoHtml}</button>
+            <div class="nav-drop" id="nav-drop">
+              <div class="nav-drop-header">
+                <div class="nav-drop-nome">${usuario.nome||'Minha conta'}</div>
+                <div class="nav-drop-sub">${usuario.email||usuario.telefone_formatado||''}</div>
+              </div>
+              <a href="/app" class="nav-drop-item"><span class="nav-drop-icon">🌱</span> Minha área</a>
+              <div class="nav-drop-sep"></div>
+              <button class="nav-drop-item danger" onclick="navLogout()"><span class="nav-drop-icon">🚪</span> Sair</button>
+            </div>
+          </div>`;
+        document.addEventListener('click', function(e){
+          const wrap = document.getElementById('nav-avatar-wrap');
+          if (wrap && !wrap.contains(e.target)) document.getElementById('nav-drop')?.classList.remove('aberto');
+        });
+      }
+      window.toggleNavDrop = function(){ document.getElementById('nav-drop')?.classList.toggle('aberto'); };
+      window.navLogout = async function(){
+        try{ await fetch(`${API_BASE}/api/auth/logout`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:VmSession.getRefresh()})}); }catch{}
+        VmSession.destruir(); renderBotoes();
+      };
+      const access = VmSession.getAccess();
+      if (!access){ renderBotoes(); return; }
+      try{
+        const r = await fetch(`${API_BASE}/api/auth/me`,{headers:{Authorization:`Bearer ${access}`}});
+        if (r.ok){ renderAvatar(await r.json()); return; }
+      }catch{}
+      const refresh = VmSession.getRefresh();
+      if (refresh){
+        try{
+          const r2 = await fetch(`${API_BASE}/api/auth/renovar`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refresh})});
+          if (r2.ok){
+            const d = await r2.json();
+            VmSession.salvar(d, VmSession.getLembrar());
+            const r3 = await fetch(`${API_BASE}/api/auth/me`,{headers:{Authorization:`Bearer ${d.access_token}`}});
+            if (r3.ok){ renderAvatar(await r3.json()); return; }
+          }
+        }catch{}
+      }
+      VmSession.destruir(); renderBotoes();
+    })();
+
+    /* ═══ PREÇO + CHECKOUT — fonte única /api/precos ═══ */
+    (async function carregarPrecos(){
+      try{
+        const r = await fetch(`${API_BASE}/api/precos`, {headers:{'Accept':'application/json'},mode:'cors'});
+        if (!r.ok) return;
+        const precos = await r.json();
+        const p = precos[PRECO_KEY];
+        if (!p) return;
+
+        const parcelasHtml = `${p.exibir_parcelas_qtd}x <small>R$</small> ${p.exibir_parcelas_valor}`;
+        const avistaTxt    = `ou R$ ${p.exibir_avista} à vista`;
+
+        document.querySelectorAll('[data-preco-parcelas]').forEach(el => { el.innerHTML = parcelasHtml; });
+        document.querySelectorAll('[data-preco-avista]').forEach(el => { el.textContent = avistaTxt; });
+        // "de R$ X" riscado + badge "% OFF" — só aparecem quando mostrar_promo está ligada
+        document.querySelectorAll('[data-preco-de]').forEach(el => {
+          if (p.exibir_de) {
+            const badge = p.desconto_pct ? `<span class="preco-badge">${p.desconto_pct}% OFF</span>` : '';
+            el.innerHTML = `de <s>R$ ${p.exibir_de}</s> ${badge}`;
+            el.style.display = '';
+          } else {
+            el.style.display = 'none';
+          }
+        });
+
+        const link = p.link_checkout_padrao;
+        if (link) {
+          document.querySelectorAll('[data-checkout-link]').forEach(el => {
+            const utm = el.getAttribute('data-utm') || 'LpFluir';
+            const sep = link.includes('?') ? '&' : '?';
+            el.href = `${link}${sep}utm_source=vidamagica&utm_campaign=${utm}`;
+          });
+        }
+      }catch(e){ /* mantém valores HTML como fallback */ }
+    })();
+
+    /* ═══ DEPOIMENTOS — ticker + carrossel, com fallback hardcoded ═══ */
+    (async function(){
+      let depoimentos = [];
+      let shuffleAtivo = false;
+      try{
+        const r1 = await fetch(`${API_BASE}/api/depoimentos?tag=${TAG_LP}`,{headers:{'Accept':'application/json'},mode:'cors'});
+        if (r1.ok) {
+          const d = await r1.json();
+          if (Array.isArray(d) && d.length) depoimentos = d;
+        }
+        const r3 = await fetch(`${API_BASE}/api/config`,{headers:{'Accept':'application/json'},mode:'cors'});
+        if (r3.ok) {
+          const cfg = await r3.json();
+          shuffleAtivo = cfg.shuffle_depoimentos || false;
+        }
+      }catch(_){}
+
+      if (!Array.isArray(depoimentos) || depoimentos.length === 0) {
+        // Fallback genérico (admin pode adicionar depoimentos com tag=magica_fluir)
+        depoimentos = [
+          { nome: 'Patrícia A.', cidade: 'Empresária, 38 anos', texto: 'Eu tava forçando tudo — orando, reprogramando, mas com ansiedade. O guia me ensinou a soltar. Em 2 semanas as coisas começaram a acontecer sozinhas. Surreal.' },
+          { nome: 'Renata C.', cidade: 'Terapeuta, 42 anos', texto: 'A tabela Fluir × Forçar é tipo um espelho. Toda vez que saio do eixo, eu olho e volto. Mudou meu dia a dia completamente.' },
+          { nome: 'Camila F.', cidade: 'Designer, 31 anos', texto: 'Eu achava que precisava me esforçar mais. Esse guia me mostrou que precisava me esforçar MENOS. Hoje vivo no que ela chama de "frequência da paz".' },
+        ];
+      }
+
+      if (shuffleAtivo) {
+        const a = [...depoimentos];
+        for (let i=a.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+        depoimentos = a;
+      }
+
+      // TICKER
+      const tickerTrack = document.getElementById('ticker-track');
+      if (tickerTrack) {
+        const doubled = [...depoimentos, ...depoimentos];
+        tickerTrack.innerHTML = doubled.map(d => {
+          const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
+          return `<span class="ticker-item"><span class="q">"</span>${d.texto}<span class="q">"</span> — <strong>${autor}</strong></span>`;
+        }).join('');
+      }
+
+      // CARROSSEL grande com estrelas
+      const depTrack = document.getElementById('dep-track');
+      if (depTrack) {
+        const stars5 = '<i class="fas fa-star"></i>'.repeat(5);
+        const doubled = [...depoimentos, ...depoimentos];
+        depTrack.innerHTML = doubled.map(d => {
+          const sub = d.cidade ? `<small>${d.cidade}</small>` : '';
+          return `<div class="dep-card"><div class="dep-stars">${stars5}</div><p class="dep-texto">"${d.texto}"</p><div class="dep-autor">${d.nome}${sub}</div></div>`;
+        }).join('');
+      }
+    })();
+
+    /* ═══ REVEAL ON SCROLL ═══ */
+    (function(){
+      const obs = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{
+          if(e.isIntersecting){ e.target.classList.add('in'); obs.unobserve(e.target); }
+        });
+      },{ threshold: 0.15, rootMargin: '0px' });
+      document.querySelectorAll('[data-reveal]').forEach((el)=>{
+        const siblings = Array.from(el.parentNode.children).filter(c=>c.hasAttribute('data-reveal'));
+        const idx = siblings.indexOf(el);
+        if(idx > 0 && idx < 5) el.style.transitionDelay = (idx * 80) + 'ms';
+        obs.observe(el);
+      });
+    })();
+
+    /* ═══ SCROLL: progress + back-top ═══ */
+    (function(){
+      const bar     = document.getElementById('scroll-progress');
+      const backTop = document.getElementById('back-top');
+      let ticking = false;
+      function update(){
+        const h = document.documentElement.scrollHeight - window.innerHeight;
+        const y = window.scrollY;
+        bar.style.transform = `scaleX(${h>0 ? y/h : 0})`;
+        backTop.classList.toggle('visible', y > 600);
+        ticking = false;
+      }
+      window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+      backTop.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
+    })();
+
+    /* ═══ FAQ ═══ */
+    document.querySelectorAll('.faq-q').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const item=btn.closest('.faq-item');
+        const aberto=item.classList.contains('open');
+        document.querySelectorAll('.faq-item.open').forEach(i=>i.classList.remove('open'));
+        if(!aberto) item.classList.add('open');
+      });
+    });
+
+    /* ═══ RIPPLE ═══ */
+    document.querySelectorAll('.btn-cta').forEach(btn=>{
+      btn.style.position='relative'; btn.style.overflow='hidden';
+      btn.addEventListener('click',(e)=>{
+        const rect=btn.getBoundingClientRect();
+        const size=Math.max(rect.width,rect.height);
+        const r=document.createElement('span');
+        r.className='ripple';
+        r.style.cssText=`width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+        btn.appendChild(r);
+        setTimeout(()=>r.remove(),600);
+      });
+    });
+
+    /* ═══ PARALLAX ORBES — desktop só ═══ */
+    (function(){
+      if(window.matchMedia('(hover: none)').matches) return;
+      const orbs=document.querySelectorAll('.orb');
+      let rafId;
+      window.addEventListener('mousemove',(e)=>{
+        cancelAnimationFrame(rafId);
+        rafId=requestAnimationFrame(()=>{
+          const x=(e.clientX/window.innerWidth-0.5)*2;
+          const y=(e.clientY/window.innerHeight-0.5)*2;
+          orbs.forEach((o,i)=>{const sp=(i+1)*8;o.style.transform=`translate(${x*sp}px,${y*sp}px)`;});
+        });
+      });
+    })();
+  </script>
+
+</body>
+</html>
