@@ -81,7 +81,7 @@
     a { color: inherit; text-decoration: none; }
     img { max-width: 100%; display: block; }
 
-    /* ═══ NAVBAR — paleta clara ═══ */
+    /* ═══ NAVBAR — fundo dourado (mesma cor do botão "Criar conta") pra destacar a logo ═══ */
     .navbar {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -90,47 +90,49 @@
       align-items: center;
       justify-content: space-between;
       padding: 0.6rem 1.25rem;
-      background: rgba(255,250,236,0.96);
+      background: linear-gradient(135deg, var(--gold), var(--gold-deep));
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(168,123,55,0.18);
+      border-bottom: 1px solid rgba(61,40,20,0.18);
       height: 52px;
-      box-shadow: 0 2px 12px rgba(61,40,20,0.06);
+      box-shadow: 0 2px 14px rgba(61,40,20,0.18);
     }
     .navbar-logo { height: 32px; width: auto; }
     .navbar-actions { display: flex; align-items: center; gap: 0.5rem; }
+    /* Entrar: outline branco (pra contrastar com o fundo dourado da navbar) */
     .btn-login {
       font-family: var(--font-body);
       font-size: 0.78rem; font-weight: 600;
-      color: var(--gold-deep);
+      color: #FFFFFF;
       background: none;
-      border: 1px solid rgba(200,146,42,0.45);
+      border: 1px solid rgba(255,255,255,0.55);
       border-radius: var(--r-full);
       padding: 0.38rem 1rem;
       cursor: pointer; transition: all 0.2s;
       text-decoration: none; letter-spacing: 0.05em;
     }
-    .btn-login:hover { background: rgba(200,146,42,0.08); border-color: var(--gold); }
+    .btn-login:hover { background: rgba(255,255,255,0.15); border-color: #FFFFFF; }
+    /* Criar conta: invertido (fundo branco, texto dourado) pra continuar destacando como CTA */
     .btn-cadastro-nav {
       font-family: var(--font-body);
       font-size: 0.78rem; font-weight: 700;
-      color: #FFFFFF;
-      background: linear-gradient(135deg, var(--gold), var(--gold-deep));
+      color: var(--gold-deep);
+      background: #FFFFFF;
       border: none;
       border-radius: var(--r-full);
       padding: 0.42rem 1.1rem;
       cursor: pointer; transition: all 0.2s;
       text-decoration: none; letter-spacing: 0.04em;
-      box-shadow: 0 2px 8px rgba(200,146,42,0.35);
+      box-shadow: 0 2px 8px rgba(61,40,20,0.25);
     }
-    .btn-cadastro-nav:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(200,146,42,0.5); }
+    .btn-cadastro-nav:hover { transform: translateY(-1px); background: var(--bg-cream); box-shadow: 0 4px 14px rgba(61,40,20,0.35); }
 
-    /* AVATAR NAVBAR — IDÊNTICO (paleta clara) */
+    /* AVATAR NAVBAR — ajustado pra fundo dourado da navbar (precisa contrastar com branco) */
     .nav-avatar-wrap { position: relative; }
-    .nav-avatar-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(200,146,42,.5); background: rgba(200,146,42,.1); cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0; transition: border-color .2s, box-shadow .2s; }
-    .nav-avatar-btn:hover { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(200,146,42,.15); }
+    .nav-avatar-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,.6); background: rgba(255,255,255,.2); cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0; transition: border-color .2s, box-shadow .2s; }
+    .nav-avatar-btn:hover { border-color: #FFFFFF; box-shadow: 0 0 0 3px rgba(255,255,255,.2); }
     .nav-avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-    .nav-avatar-iniciais { font-family: var(--font-display); font-size: .72rem; font-weight: 800; color: var(--gold-deep); letter-spacing: .05em; text-transform: uppercase; pointer-events: none; }
+    .nav-avatar-iniciais { font-family: var(--font-display); font-size: .72rem; font-weight: 800; color: #FFFFFF; letter-spacing: .05em; text-transform: uppercase; pointer-events: none; }
     .nav-drop { position: absolute; top: calc(100% + 10px); right: 0; min-width: 200px; background: #FFFAEC; border: 1px solid rgba(61,40,20,0.1); border-radius: 14px; box-shadow: 0 16px 48px rgba(61,40,20,0.15); backdrop-filter: blur(20px); overflow: hidden; opacity: 0; transform: translateY(-6px) scale(.97); pointer-events: none; transition: opacity .2s, transform .2s; z-index: 300; }
     .nav-drop.aberto { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
     .nav-drop-header { padding: .9rem 1.1rem .7rem; border-bottom: 1px solid rgba(61,40,20,.1); }
@@ -540,7 +542,7 @@
     <!-- ═══ PLANOS — 3 cards (Livro / Curso / COMBO) ═══ -->
     <section class="planos-section" id="planos">
       <div class="container-wide">
-        <span class="section-eyebrow" data-reveal>Escolha seu plano</span>
+        <span class="section-eyebrow" data-reveal>Escolha seu material</span>
         <h2 class="section-title" data-reveal>Como você quer <span class="glow">começar?</span></h2>
         <p class="section-lead" data-reveal>Comece pelo livro, vá direto pro curso completo comentado, ou leve o <strong>combo com tudo</strong>.</p>
 
@@ -548,7 +550,7 @@
 
           <!-- ── PLANO 1: LIVRO DIGITAL ── -->
           <div class="plano-card" data-reveal>
-            <div class="plano-icon"><i class="fas fa-book"></i></div>
+            <img src="/assets/products/atal-maneira-livro.png" alt="Livro Digital A Tal Maneira" class="plano-mockup" onerror="this.style.display='none'">
             <p class="plano-titulo">Livro Digital</p>
             <p class="plano-sub">Comece pelo essencial</p>
             <div class="plano-preco">
@@ -571,7 +573,7 @@
 
           <!-- ── PLANO 2: CURSO COMPLETO ── -->
           <div class="plano-card" data-reveal>
-            <div class="plano-icon"><i class="fas fa-graduation-cap"></i></div>
+            <img src="/assets/products/atal-maneira-curso.png" alt="Curso A Tal Maneira" class="plano-mockup" onerror="this.style.display='none'">
             <p class="plano-titulo">Curso Completo</p>
             <p class="plano-sub">O método em aulas comentadas</p>
             <div class="plano-preco">
