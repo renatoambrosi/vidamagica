@@ -675,6 +675,7 @@
   <script>
     const API_BASE = window.location.origin;
     const TAG_LP   = 'guia_pratico_rm';
+    const TEMA_LP  = 'gprm';
     const PRECO_KEY = 'guia_pratico'; // slug em /api/precos (admin gerencia)
 
     /* SPARKLES — pontos brancos com halo laranja-dourado saturado.
@@ -807,15 +808,22 @@
       VmSession.destruir(); renderBotoes();
     })();
 
-    /* ═══ DEPOIMENTOS — ticker + carrossel, com fallback hardcoded ═══ */
+    /* ═══ DEPOIMENTOS — fetch /api/depoimentos?tema=gprm (sem hardcoded)
+       Carrossel agora clicável (modal) e arrastável via /relatos-card.js. */
     (async function(){
       let depoimentos = [];
+      let depoimentosTicker = [];
       let shuffleAtivo = false;
       try{
-        const r1 = await fetch(`${API_BASE}/api/depoimentos?tag=${TAG_LP}`,{headers:{'Accept':'application/json'},mode:'cors'});
+        const r1 = await fetch(`${API_BASE}/api/depoimentos?tema=${TEMA_LP}`,{headers:{'Accept':'application/json'},mode:'cors'});
         if (r1.ok) {
           const d = await r1.json();
-          if (Array.isArray(d) && d.length) depoimentos = d;
+          if (Array.isArray(d)) depoimentos = d;
+        }
+        const r2 = await fetch(`${API_BASE}/api/depoimentos?tema=${TEMA_LP}&ticker=true`,{headers:{'Accept':'application/json'},mode:'cors'});
+        if (r2.ok) {
+          const d = await r2.json();
+          if (Array.isArray(d) && d.length) depoimentosTicker = d;
         }
         const r3 = await fetch(`${API_BASE}/api/config`,{headers:{'Accept':'application/json'},mode:'cors'});
         if (r3.ok) {
@@ -824,25 +832,22 @@
         }
       }catch(_){}
 
-      if (!Array.isArray(depoimentos) || depoimentos.length === 0) {
-        // Fallback: depoimentos reais da LP original
-        depoimentos = [
-          { nome: 'Juliana A.', texto: 'Senti diferença no primeiro dia. Era exatamente esse "como" que eu não conseguia achar.' },
-          { nome: 'Gabriella S.', texto: 'Já tinha feito o Ouro, mas esse guia me deu a prática diária que faltava. Minha mente está mais leve.' },
-          { nome: 'Ana N.', texto: 'É simples, direto e realmente funciona. Finalmente entendi como aplicar reprogramação mental na vida real.' },
-        ];
-      }
+      if (!depoimentosTicker.length) depoimentosTicker = depoimentos;
 
       if (shuffleAtivo) {
-        const a = [...depoimentos];
-        for (let i=a.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
-        depoimentos = a;
+        const shuffle = (arr) => {
+          const a = [...arr];
+          for (let i=a.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+          return a;
+        };
+        depoimentos = shuffle(depoimentos);
+        depoimentosTicker = shuffle(depoimentosTicker);
       }
 
       // TICKER
       const tickerTrack = document.getElementById('ticker-track');
-      if (tickerTrack) {
-        const doubled = [...depoimentos, ...depoimentos];
+      if (tickerTrack && depoimentosTicker.length) {
+        const doubled = [...depoimentosTicker, ...depoimentosTicker];
         tickerTrack.innerHTML = doubled.map(d => {
           const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
           return `<span class="ticker-item"><span class="q">"</span>${d.texto}<span class="q">"</span> — <strong>${autor}</strong></span>`;
@@ -851,12 +856,16 @@
 
       // CARROSSEL grande
       const depTrack = document.getElementById('dep-track');
-      if (depTrack) {
+      if (depTrack && depoimentos.length) {
         const doubled = [...depoimentos, ...depoimentos];
         depTrack.innerHTML = doubled.map(d => {
           const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
           return `<div class="dep-card"><p class="dep-texto">"${d.texto}"</p><div class="dep-autor">${autor}</div></div>`;
         }).join('');
+
+        if (window.VmRelatos) {
+          window.VmRelatos.iniciar({ tema: TEMA_LP, depoimentos, container: '#dep-track' });
+        }
       }
     })();
 
@@ -917,6 +926,9 @@
 
     /* Parallax dos orbs removido — orbs agora são estáticos pra reduzir carga no Safari iOS */
   </script>
+
+  <!-- Modal + swipe dos cards de relatos (compartilhado entre as 7 LPs) -->
+  <script src="/relatos-card.js"></script>
 
 </body>
 </html>

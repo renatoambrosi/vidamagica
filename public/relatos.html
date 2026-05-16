@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1A1205">
+<title>Relatos — Vida Mágica</title>
+
+<link rel="stylesheet" href="/colors_and_type.css">
+
+<style>
+  /* ═══════════════════════════════════════════════════════════
+     RELATOS — página universal em "experiência de view"
+     Tela cheia, dark, com barras dropdown por tema.
+     Acesso: /relatos  ou  /relatos#orm (abre tema específico)
+     ═══════════════════════════════════════════════════════════ */
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg-dark);
+    color: var(--text-light);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overscroll-behavior-y: contain;
+  }
+  body {
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 0%, rgba(200,146,42,0.10), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 50% 100%, rgba(30,143,213,0.06), transparent 70%),
+      var(--bg-dark);
+    background-attachment: fixed;
+  }
+
+  /* Topo da página: fixo, com X */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.25rem;
+    background: rgba(26, 18, 5, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(200,146,42,0.18);
+  }
+  .topbar h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--color-gold-light);
+    text-transform: uppercase;
+  }
+  .topbar h1 span { color: var(--text-light); }
+  .btn-close {
+    background: none; border: 1px solid rgba(200,146,42,0.35);
+    color: var(--color-gold-light);
+    width: 36px; height: 36px;
+    border-radius: 999px;
+    font-size: 1.05rem; line-height: 1;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.18s;
+  }
+  .btn-close:hover { background: rgba(200,146,42,0.12); border-color: var(--color-gold-light); }
+
+  /* Container principal */
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 4rem;
+  }
+  .lead {
+    font-size: 0.92rem;
+    color: rgba(245, 240, 232, 0.7);
+    text-align: center;
+    margin: 0 0 2rem;
+    line-height: 1.5;
+  }
+
+  /* Barras dropdown (accordion) */
+  .barra {
+    border: 1px solid rgba(200,146,42,0.18);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.02);
+    margin-bottom: 0.8rem;
+    overflow: hidden;
+    transition: border-color 0.25s;
+  }
+  .barra.aberta { border-color: rgba(200,146,42,0.45); }
+
+  .barra-cabeca {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.15rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+  }
+  .barra-cabeca:hover { background: rgba(200, 146, 42, 0.04); }
+  .barra-titulo {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--color-gold-light);
+    letter-spacing: 0.02em;
+  }
+  .barra-info {
+    display: flex; align-items: center; gap: 0.65rem;
+    font-size: 0.72rem;
+    color: rgba(245, 240, 232, 0.55);
+  }
+  .barra-contador {
+    background: rgba(200,146,42,0.1);
+    border: 1px solid rgba(200,146,42,0.25);
+    color: var(--color-gold-bright);
+    padding: 2px 9px; border-radius: 999px;
+    font-size: 0.66rem; font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .barra-chevron {
+    color: var(--color-gold-amber);
+    font-size: 1rem;
+    transition: transform 0.3s;
+    display: inline-block;
+  }
+  .barra.aberta .barra-chevron { transform: rotate(180deg); }
+
+  .barra-corpo {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-in-out;
+  }
+  .barra.aberta .barra-corpo { max-height: 9999px; }
+
+  .relatos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 0.7rem;
+    padding: 0.4rem 1.15rem 1.3rem;
+  }
+
+  /* Card de relato */
+  .relato-card {
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(200,146,42,0.18);
+    border-radius: 10px;
+    padding: 0.95rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; flex-direction: column;
+    gap: 0.6rem;
+  }
+  .relato-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(200,146,42,0.4);
+    transform: translateY(-1px);
+  }
+  .relato-texto {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: rgba(245, 240, 232, 0.88);
+    margin: 0;
+    /* Trunca em 3 linhas; modal mostra completo */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .relato-autor {
+    font-size: 0.7rem;
+    color: var(--color-gold-light);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .relato-meta {
+    font-size: 0.65rem;
+    color: rgba(245, 240, 232, 0.45);
+    font-weight: 400;
+  }
+
+  /* Modal de leitura (full-screen sobreposto) */
+  .modal-bg {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 100;
+    display: none;
+    align-items: flex-start; justify-content: center;
+    padding: 1.5rem 1rem;
+    overflow-y: auto;
+    animation: fadeIn 0.25s;
+  }
+  .modal-bg.aberto { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal-card {
+    background: var(--bg-dark);
+    border: 1px solid rgba(200,146,42,0.4);
+    border-radius: 16px;
+    max-width: 560px;
+    width: 100%;
+    padding: 1.4rem 1.4rem 1.6rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .modal-topo {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 1rem; margin-bottom: 1rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid rgba(200,146,42,0.18);
+  }
+  .modal-topo-info { flex: 1; min-width: 0; }
+  .modal-tema {
+    display: inline-block;
+    font-size: 0.6rem; font-weight: 700;
+    color: var(--color-gold-bright);
+    background: rgba(200,146,42,0.12);
+    border: 1px solid rgba(200,146,42,0.3);
+    padding: 3px 9px; border-radius: 999px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .modal-autor {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-gold-light);
+    line-height: 1.25;
+  }
+  .modal-meta {
+    font-size: 0.75rem;
+    color: rgba(245, 240, 232, 0.55);
+    margin-top: 0.15rem;
+  }
+  .modal-texto {
+    font-size: 0.95rem;
+    line-height: 1.65;
+    color: rgba(245, 240, 232, 0.92);
+    white-space: pre-line;
+    margin: 0 0 1.3rem;
+  }
+
+  .modal-cta-box {
+    background: rgba(200,146,42,0.05);
+    border: 1px solid rgba(200,146,42,0.18);
+    border-radius: 12px;
+    padding: 1rem 1rem 1.1rem;
+  }
+  .modal-cta-frase {
+    font-size: 0.78rem;
+    color: rgba(245, 240, 232, 0.72);
+    margin: 0 0 0.85rem;
+    line-height: 1.45;
+  }
+  .modal-produto-row {
+    display: flex; align-items: center; gap: 0.9rem;
+    margin-bottom: 1rem;
+  }
+  .modal-produto-img {
+    width: 56px; height: 56px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid rgba(200,146,42,0.25);
+    background: rgba(255,255,255,0.04);
+    flex-shrink: 0;
+  }
+  .modal-produto-link {
+    font-size: 0.78rem;
+    color: var(--color-gold-light);
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(232, 201, 122, 0.4);
+    transition: color 0.2s;
+  }
+  .modal-produto-link:hover { color: var(--color-gold-bright); border-color: var(--color-gold-bright); }
+  .modal-cta-btn {
+    display: block;
+    width: 100%;
+    background: linear-gradient(135deg, var(--color-gold-dark), var(--color-gold-amber));
+    color: var(--bg-dark);
+    border: none;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    font-family: var(--font-body);
+    font-size: 0.86rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .modal-cta-btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
+  .modal-cta-btn.disabled {
+    background: rgba(200,146,42,0.15);
+    color: rgba(245, 240, 232, 0.4);
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* Loading + vazio */
+  .loading {
+    text-align: center;
+    color: rgba(245, 240, 232, 0.5);
+    padding: 3rem 1rem;
+    font-size: 0.85rem;
+  }
+  .empty {
+    text-align: center;
+    color: rgba(245, 240, 232, 0.45);
+    padding: 2rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  /* Mobile */
+  @media (max-width: 600px) {
+    .wrap { padding: 1rem 0.75rem 3rem; }
+    .barra-cabeca { padding: 0.85rem 1rem; }
+    .barra-titulo { font-size: 0.95rem; }
+    .relatos-grid { grid-template-columns: 1fr; padding: 0.3rem 0.85rem 1rem; }
+    .modal-bg { padding: 0.5rem; }
+    .modal-card { padding: 1.1rem 1.1rem 1.3rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+    .modal-autor { font-size: 0.95rem; }
+    .modal-texto { font-size: 0.9rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── TOPO ── -->
+<div class="topbar">
+  <h1>Relatos<span> de quem viveu</span></h1>
+  <button class="btn-close" onclick="fecharPagina()" aria-label="Fechar">✕</button>
+</div>
+
+<div class="wrap">
+  <p class="lead">Mulheres reais contando o que mudou. Toque em um relato pra ler por inteiro.</p>
+  <div id="lista">
+    <div class="loading">Carregando relatos...</div>
+  </div>
+</div>
+
+<!-- ── MODAL DE LEITURA ── -->
+<div class="modal-bg" id="modal" onclick="fecharModalFundo(event)">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-topo">
+      <div class="modal-topo-info">
+        <span class="modal-tema" id="m-tema">—</span>
+        <div class="modal-autor" id="m-autor">—</div>
+        <div class="modal-meta" id="m-meta"></div>
+      </div>
+      <button class="btn-close" onclick="fecharModal()" aria-label="Fechar">✕</button>
+    </div>
+    <p class="modal-texto" id="m-texto">—</p>
+    <div class="modal-cta-box" id="m-cta-box">
+      <p class="modal-cta-frase">Essa aluna deu esse relato depois de ter praticado o meu material:</p>
+      <div class="modal-produto-row">
+        <img class="modal-produto-img" id="m-produto-img" alt="" loading="lazy">
+        <a class="modal-produto-link" id="m-produto-link" href="#">saber mais →</a>
+      </div>
+      <a class="modal-cta-btn" id="m-cta-btn" href="#" target="_blank" rel="noopener">Quero esse material também</a>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   relatos.html — Lógica
+   1) Busca dois endpoints em paralelo:
+        - /api/depoimentos/agrupados → barras por tema (já filtra ativos)
+        - /api/precos                → imagem + checkout do produto vinculado
+   2) Renderiza barras. Se ?tema=SLUG ou #slug, abre essa barra automática.
+   3) Click no card → modal de leitura com CTA do produto.
+
+   Mapas:
+     - SLUG_LP[tema_slug] = caminho da LP do tema (pro "saber mais")
+     - precos[produto_slug] = {nome, imagem_url, link_checkout_padrao}
+   ═══════════════════════════════════════════════════════════════ */
+
+const SLUG_LP = {
+  ts: '/teste',
+  orm: '/ouro-da-reprogramacao-mental',
+  lda: '/lei-da-atracao-biblica',
+  gprm: '/guia-pratico-reprogramacao-mental',
+  tm: '/a-tal-maneira',
+  mf: '/magica-do-fluir',
+  // vm, cdm, cdv, cdd, cds, sessao, geral: sem LP dedicada (link some)
+};
+
+let GRUPOS = [];
+let PRECOS = {};   // key → {nome, imagem_url, link_checkout_padrao}
+
+function escHtml(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function metaDoRelato(d){
+  const partes = [];
+  if (d.profissao) partes.push(d.profissao);
+  if (d.idade) partes.push(d.idade + ' anos');
+  return partes.join(' • ');
+}
+
+function temaParaAbrir(){
+  // Aceita ?tema=slug ou #slug. Prioriza query string.
+  const u = new URL(window.location.href);
+  const t = u.searchParams.get('tema');
+  if (t) return t.toLowerCase();
+  if (u.hash && u.hash.length > 1) return u.hash.substring(1).toLowerCase();
+  return null;
+}
+
+async function carregar(){
+  try{
+    const [r1, r2] = await Promise.all([
+      fetch('/api/depoimentos/agrupados', {headers:{'Accept':'application/json'}}),
+      fetch('/api/precos', {headers:{'Accept':'application/json'}}),
+    ]);
+
+    GRUPOS = r1.ok ? await r1.json() : [];
+
+    if (r2.ok){
+      const data = await r2.json();
+      PRECOS = {};
+      if (Array.isArray(data)){
+        data.forEach(p => { if (p.key) PRECOS[p.key] = p; });
+      } else if (data && typeof data === 'object'){
+        Object.entries(data).forEach(([k,v]) => { PRECOS[k] = v; });
+      }
+    }
+    render();
+  }catch(e){
+    document.getElementById('lista').innerHTML =
+      '<div class="empty">Não consegui carregar os relatos agora. Tente recarregar a página.</div>';
+  }
+}
+
+function render(){
+  const cont = document.getElementById('lista');
+  if (!GRUPOS.length){
+    cont.innerHTML = '<div class="empty">Ainda não temos relatos publicados.</div>';
+    return;
+  }
+
+  const abrirSlug = temaParaAbrir();
+
+  cont.innerHTML = GRUPOS.map((g, idx) => {
+    const aberto = abrirSlug
+      ? (g.tema_slug === abrirSlug)
+      : (idx === 0);  // sem âncora: abre a primeira
+
+    const cards = g.relatos.map((d, i) => `
+      <div class="relato-card" onclick="abrirModal(${idx}, ${i})">
+        <p class="relato-texto">"${escHtml(d.texto)}"</p>
+        <div>
+          <div class="relato-autor">${escHtml(d.nome || '—')}</div>
+          ${metaDoRelato(d) ? `<div class="relato-meta">${escHtml(metaDoRelato(d))}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+
+    return `
+      <div class="barra ${aberto ? 'aberta' : ''}" data-idx="${idx}">
+        <div class="barra-cabeca" onclick="toggleBarra(${idx})">
+          <span class="barra-titulo">${escHtml(g.tema_nome || g.tema_slug)}</span>
+          <div class="barra-info">
+            <span class="barra-contador">${g.relatos.length} relato${g.relatos.length>1?'s':''}</span>
+            <span class="barra-chevron">▾</span>
+          </div>
+        </div>
+        <div class="barra-corpo">
+          <div class="relatos-grid">${cards}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Se a barra está aberta via âncora, faz scroll suave até ela.
+  if (abrirSlug){
+    const idx = GRUPOS.findIndex(g => g.tema_slug === abrirSlug);
+    if (idx >= 0){
+      setTimeout(() => {
+        const el = document.querySelector(`.barra[data-idx="${idx}"]`);
+        if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+      }, 100);
+    }
+  }
+}
+
+function toggleBarra(idx){
+  const el = document.querySelector(`.barra[data-idx="${idx}"]`);
+  if (el) el.classList.toggle('aberta');
+}
+
+function abrirModal(grupoIdx, relIdx){
+  const g = GRUPOS[grupoIdx];
+  const d = g.relatos[relIdx];
+  if (!d) return;
+
+  document.getElementById('m-tema').textContent = g.tema_nome || g.tema_slug || '';
+  document.getElementById('m-autor').textContent = d.nome || '—';
+  const meta = metaDoRelato(d);
+  const mMeta = document.getElementById('m-meta');
+  mMeta.textContent = meta;
+  mMeta.style.display = meta ? 'block' : 'none';
+  document.getElementById('m-texto').textContent = d.texto || '';
+
+  // CTA do produto vinculado ao tema (não ao relato)
+  const ctaBox = document.getElementById('m-cta-box');
+  const produtoSlug = g.produto_slug;
+  const produto = produtoSlug ? PRECOS[produtoSlug] : null;
+
+  if (!produto){
+    ctaBox.style.display = 'none';   // tema sem produto (ex: Geral, Sessão) → some o CTA
+  } else {
+    ctaBox.style.display = 'block';
+    const img = document.getElementById('m-produto-img');
+    img.src = produto.imagem_url || '';
+    img.alt = produto.nome || '';
+    img.style.display = produto.imagem_url ? 'block' : 'none';
+
+    const link = document.getElementById('m-produto-link');
+    const lp = SLUG_LP[g.tema_slug];
+    if (lp){ link.href = lp; link.style.display = 'inline'; }
+    else { link.style.display = 'none'; }
+
+    const btn = document.getElementById('m-cta-btn');
+    const checkout = produto.link_checkout_padrao;
+    if (checkout){
+      btn.href = checkout;
+      btn.classList.remove('disabled');
+    } else {
+      btn.removeAttribute('href');
+      btn.classList.add('disabled');
+    }
+  }
+
+  document.getElementById('modal').classList.add('aberto');
+  document.body.style.overflow = 'hidden';
+}
+
+function fecharModal(){
+  document.getElementById('modal').classList.remove('aberto');
+  document.body.style.overflow = '';
+}
+function fecharModalFundo(e){ if (e.target.id === 'modal') fecharModal(); }
+
+function fecharPagina(){
+  // Volta pro ponto de origem se veio de uma LP do mesmo site,
+  // senão manda pra home.
+  const sameOrigin = document.referrer && document.referrer.startsWith(window.location.origin);
+  if (sameOrigin && history.length > 1) history.back();
+  else window.location.href = '/';
+}
+
+// ESC fecha modal
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape'){
+    if (document.getElementById('modal').classList.contains('aberto')) fecharModal();
+    else fecharPagina();
+  }
+});
+
+// Trocar âncora ao reabrir (deep-linking)
+window.addEventListener('hashchange', render);
+
+carregar();
+</script>
+
+</body>
+</html>

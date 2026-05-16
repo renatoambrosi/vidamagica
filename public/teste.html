@@ -896,6 +896,7 @@
   <script>
     const API_BASE = window.location.origin;
     const TAG_LP   = 'teste_subconsciente';
+    const TEMA_LP  = 'ts';
 
     /* LOADING */
     window.addEventListener('load', () => {
@@ -992,29 +993,24 @@
       VmSession.destruir(); renderBotoes();
     })();
 
-    /* ═══ TICKER + DEPOIMENTOS — IDÊNTICO AO INDEX.HTML
-       Filtra por tag teste_subconsciente. Fallback geral.
-       Mesma string template do index, sem aspas duplicadas. */
+    /* ═══ TICKER + DEPOIMENTOS — fetch /api/depoimentos?tema=ts (sem hardcoded)
+       Carrossel agora clicável (modal) e arrastável via /relatos-card.js. */
     (async function(){
       let depoimentos = [];
+      let depoimentosTicker = [];
       let shuffleAtivo = false;
 
       try{
-        // Tenta filtro por tag primeiro
-        const r1 = await fetch(`${API_BASE}/api/depoimentos?tag=${TAG_LP}`,{headers:{'Accept':'application/json'},mode:'cors'});
+        const r1 = await fetch(`${API_BASE}/api/depoimentos?tema=${TEMA_LP}`,{headers:{'Accept':'application/json'},mode:'cors'});
         if (r1.ok) {
           const d = await r1.json();
-          if (Array.isArray(d) && d.length) depoimentos = d;
+          if (Array.isArray(d)) depoimentos = d;
         }
-        // Se não veio nada com tag, busca geral
-        if (!depoimentos.length) {
-          const r2 = await fetch(`${API_BASE}/api/depoimentos`,{headers:{'Accept':'application/json'},mode:'cors'});
-          if (r2.ok) {
-            const d = await r2.json();
-            if (Array.isArray(d) && d.length) depoimentos = d;
-          }
+        const r2 = await fetch(`${API_BASE}/api/depoimentos?tema=${TEMA_LP}&ticker=true`,{headers:{'Accept':'application/json'},mode:'cors'});
+        if (r2.ok) {
+          const d = await r2.json();
+          if (Array.isArray(d) && d.length) depoimentosTicker = d;
         }
-        // Config (shuffle)
         const r3 = await fetch(`${API_BASE}/api/config`,{headers:{'Accept':'application/json'},mode:'cors'});
         if (r3.ok) {
           const cfg = await r3.json();
@@ -1022,28 +1018,22 @@
         }
       }catch(_){}
 
+      if (!depoimentosTicker.length) depoimentosTicker = depoimentos;
+
       if (shuffleAtivo) {
-        const a = [...depoimentos];
-        for (let i=a.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
-        depoimentos = a;
+        const shuffle = (arr) => {
+          const a = [...arr];
+          for (let i=a.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+          return a;
+        };
+        depoimentos = shuffle(depoimentos);
+        depoimentosTicker = shuffle(depoimentosTicker);
       }
 
-      if (!Array.isArray(depoimentos) || depoimentos.length === 0) {
-        depoimentos = [
-          { nome: 'Camila S.', cidade: '', texto: 'Fiquei sem palavras. Ler o resultado do teste me desarmou por dentro. Me senti vista e não julgada.' },
-          { nome: 'Fernanda M.', cidade: '', texto: 'Foi certeiro! Meu marido fez também — ele ficou de cara com o quanto o resultado bateu com a realidade dele.' },
-          { nome: 'Juliana R.', cidade: '', texto: 'Deu nível 1 de prosperidade. Tudo a ver com o que estou passando. Li várias vezes pra acreditar.' },
-          { nome: 'Patrícia L.', cidade: '', texto: 'Fiz o teste, foi incrível. Emocionei, chorei, mas era exatamente tudo o que eu precisava ouvir.' },
-          { nome: 'Renata C.', cidade: '', texto: 'Que benção é esse teste?! Realmente me identifiquei muito com o resultado. Até chorei refletindo.' },
-          { nome: 'Beatriz A.', cidade: '', texto: 'Tomei coragem e fiz. Falou tanto comigo que hoje comprei o curso que ele me recomendou.' },
-          { nome: 'Marina P.', cidade: '', texto: 'Acabei de fazer e foi certeiro. 40% de energia de desordem — fez todo sentido.' },
-        ];
-      }
-
-      // TICKER — string template IDÊNTICA ao index.html
+      // TICKER — string template mantida (não mexer).
       const tickerTrack = document.getElementById('ticker-track');
-      if (tickerTrack) {
-        const doubled = [...depoimentos, ...depoimentos];
+      if (tickerTrack && depoimentosTicker.length) {
+        const doubled = [...depoimentosTicker, ...depoimentosTicker];
         tickerTrack.innerHTML = doubled.map(d => {
           const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
           return `<span class="ticker-item"><span class="q">"</span>"${d.texto}" — <strong>${autor}</strong><span class="q">"</span></span>`;
@@ -1052,12 +1042,16 @@
 
       // CARROSSEL grande
       const depTrack = document.getElementById('dep-track');
-      if (depTrack) {
+      if (depTrack && depoimentos.length) {
         const doubled = [...depoimentos, ...depoimentos];
         depTrack.innerHTML = doubled.map(d => {
           const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
           return `<div class="dep-card"><p class="dep-texto">${d.texto}</p><div class="dep-autor">${autor}</div></div>`;
         }).join('');
+
+        if (window.VmRelatos) {
+          window.VmRelatos.iniciar({ tema: TEMA_LP, depoimentos, container: '#dep-track' });
+        }
       }
     })();
 
@@ -1952,5 +1946,8 @@
       addUtms(document.getElementById('cta-final'), 'lp-final');
     })();
   </script>
+
+  <!-- Modal + swipe dos cards de relatos (compartilhado entre as 7 LPs) -->
+  <script src="/relatos-card.js"></script>
 </body>
 </html>

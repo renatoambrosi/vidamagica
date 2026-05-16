@@ -144,6 +144,11 @@ app.get('/termos', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'termos.html'));
 });
 
+// ── ROTA AMIGÁVEL: /relatos → página universal de relatos ──
+app.get('/relatos', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'relatos.html'));
+});
+
 // ── ROTA AMIGÁVEL: /resultado/:id serve resultado.html ─────
 // O frontend recebe o ID via window.location e busca via /api/teste/resultado/:id
 app.get('/resultado/:id', (req, res) => {
@@ -306,6 +311,19 @@ server.listen(PORT, async () => {
     } catch (err) {
       console.error('⚠️ Seed de preços não rodou:', err.message);
       // Não derruba o servidor — o seed é um nice-to-have, não bloqueante
+    }
+
+    // Seed dos temas + relatos iniciais (Fase 1 do refactor de Relatos).
+    // - seedTemas: idempotente via ON CONFLICT (slug). Roda sempre, só insere
+    //   o que falta.
+    // - seedDepoimentos: idempotente via tabela seed_log. Roda 1 vez.
+    //   Pra forçar re-rodar, apagar a linha 'depoimentos_v1_fase1' em seed_log.
+    try {
+      const depMod = require('./routes/depoimentos');
+      if (typeof depMod.seedTemas === 'function') await depMod.seedTemas();
+      if (typeof depMod.seedDepoimentos === 'function') await depMod.seedDepoimentos();
+    } catch (err) {
+      console.error('⚠️ Seed de relatos não rodou:', err.message);
     }
 
     // Liga o worker do gateway de WhatsApp DEPOIS dos bancos estarem prontos

@@ -279,62 +279,113 @@ select option { background: #1a1205; }
 
     <!-- ABA DEPOIMENTOS -->
     <div class="tab-panel" id="tab-depoimentos">
+
+      <!-- ── EMBARALHAR (mantido) ── -->
       <div class="shuffle-box">
         <div class="toggle-row">
           <div>
             <div class="tl-titulo">Embaralhar no site</div>
-            <div class="tl-sub">Quando ativo, o site exibe os depoimentos em ordem aleatória a cada visita</div>
+            <div class="tl-sub">Quando ativo, o site exibe os relatos em ordem aleatória a cada visita</div>
           </div>
           <label class="toggle">
-            <input type="checkbox" id="toggle-shuffle" onchange="marcarAlterado()">
+            <input type="checkbox" id="toggle-shuffle" onchange="salvarShuffle()">
             <span class="toggle-slider"></span>
           </label>
         </div>
       </div>
-      <div class="section-header">
-        <span class="section-title">Depoimentos do Ticker</span>
-        <div style="display:flex;gap:0.5rem">
-          <button class="btn btn-ghost btn-sm" onclick="showRawEditor()">{ } Editor Raw</button>
-          <button class="btn btn-ghost btn-sm" onclick="showFormNovo()">+ Adicionar</button>
-        </div>
+
+      <!-- ╔════════════════════════════════════════════════════════════╗ -->
+      <!-- ║ BLOCO 1 — TEMAS                                            ║ -->
+      <!-- ║ Cada tema aponta pra um produto (slug em Preços) e agrupa  ║ -->
+      <!-- ║ os relatos. O nome do tema é o que a aluna VÊ na página    ║ -->
+      <!-- ║ /relatos — NUNCA o nome do produto.                        ║ -->
+      <!-- ╚════════════════════════════════════════════════════════════╝ -->
+      <div class="section-header" style="margin-top:1.5rem">
+        <span class="section-title">Temas</span>
+        <button class="btn btn-ghost btn-sm" onclick="abrirNovoTema()">+ Novo tema</button>
       </div>
-      <div class="add-form" id="raw-editor" style="display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.65rem">
-          <label style="font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted)">Editor Raw — JSON</label>
-          <div style="display:flex;gap:0.5rem">
-            <button class="btn btn-primary btn-sm" onclick="aplicarRaw()">Aplicar</button>
-            <button class="btn btn-ghost btn-sm" onclick="fecharRaw()">Cancelar</button>
-          </div>
-        </div>
-        <textarea id="raw-textarea" style="min-height:240px;font-family:monospace;font-size:0.78rem;line-height:1.6;border-color:rgba(200,146,42,0.3)" placeholder='[{"nome":"Ana Paula","cidade":"SP","texto":"Mudou minha vida.","tags":["reprogramação"]}]'></textarea>
-        <p style="font-size:0.68rem;color:var(--text-muted);margin-top:0.5rem">Campos: <code style="color:var(--color-gold-amber)">nome</code>, <code style="color:var(--color-gold-amber)">cidade</code>, <code style="color:var(--color-gold-amber)">texto</code>, <code style="color:var(--color-gold-amber)">tags</code> (array).</p>
-      </div>
-      <div class="add-form" id="form-novo" style="display:none">
+      <div class="add-form" id="form-novo-tema" style="display:none">
         <div class="dep-row" style="margin-bottom:0.5rem">
-          <div class="field"><label>Nome</label><input type="text" id="new-nome" placeholder="Ex: Ana Paula"></div>
-          <div class="field"><label>Cidade</label><input type="text" id="new-cidade" placeholder="Ex: SP"></div>
+          <div class="field"><label>Slug (id curto, ex: orm)</label><input type="text" id="tm-new-slug" placeholder="Ex: orm" style="text-transform:lowercase"></div>
+          <div class="field"><label>Nome exibido pra aluna</label><input type="text" id="tm-new-nome" placeholder='Ex: "Reprogramação Mental"'></div>
         </div>
-        <div class="field" style="margin-bottom:0.5rem">
-          <label>Depoimento</label>
-          <textarea id="new-texto" placeholder="Escreva o depoimento aqui..."></textarea>
-        </div>
-        <div class="field" style="margin-bottom:0.65rem">
-          <label>Tags</label>
-          <div class="tags-wrap" id="new-tags-wrap" onclick="document.getElementById('new-tag-input').focus()">
-            <input class="tag-input" id="new-tag-input" placeholder="Digite e pressione Enter ou vírgula..." onkeydown="handleTagKeydown(event,'new-tags-wrap')" oninput="handleTagInput(event,'new-tags-wrap')">
+        <div class="dep-row" style="margin-bottom:0.65rem">
+          <div class="field">
+            <label>Produto vinculado (Preços)</label>
+            <select id="tm-new-produto"><option value="">— sem produto —</option></select>
           </div>
-          <span class="tag-hint">Pressione Enter ou vírgula para confirmar cada tag</span>
+          <div class="field" style="max-width:120px"><label>Ordem</label><input type="number" id="tm-new-ordem" value="99"></div>
         </div>
         <div style="display:flex;gap:0.5rem">
-          <button class="btn btn-primary btn-sm" onclick="adicionarDep()">Adicionar</button>
-          <button class="btn btn-ghost btn-sm" onclick="cancelarNovo()">Cancelar</button>
+          <button class="btn btn-primary btn-sm" onclick="criarTema()">Criar tema</button>
+          <button class="btn btn-ghost btn-sm" onclick="fecharNovoTema()">Cancelar</button>
         </div>
       </div>
-      <div class="dep-grid" id="dep-grid"><div class="loading">Carregando depoimentos...</div></div>
-      <div class="save-bar">
-        <span class="save-status" id="dep-status"></span>
-        <button class="btn btn-primary" onclick="salvarDeps()" id="btn-save-dep">Salvar Depoimentos</button>
+      <div class="dep-grid" id="temas-grid"><div class="loading">Carregando temas...</div></div>
+
+      <!-- ╔════════════════════════════════════════════════════════════╗ -->
+      <!-- ║ BLOCO 2 — RELATOS                                          ║ -->
+      <!-- ╚════════════════════════════════════════════════════════════╝ -->
+      <div class="section-header" style="margin-top:2rem">
+        <span class="section-title">Relatos</span>
+        <button class="btn btn-ghost btn-sm" onclick="abrirNovoDep()">+ Novo relato</button>
       </div>
+
+      <!-- Filtros -->
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.85rem;align-items:center">
+        <div class="field" style="margin:0;max-width:200px">
+          <label>Filtrar por tema</label>
+          <select id="filtro-tema" onchange="carregarDeps()">
+            <option value="">— todos os temas —</option>
+          </select>
+        </div>
+        <div class="field" style="margin:0;max-width:160px">
+          <label>Placeholders</label>
+          <select id="filtro-placeholder" onchange="carregarDeps()">
+            <option value="">— todos —</option>
+            <option value="true">Só placeholders</option>
+            <option value="false">Sem placeholders</option>
+          </select>
+        </div>
+        <div class="field" style="margin:0;max-width:140px">
+          <label>Ticker</label>
+          <select id="filtro-ticker" onchange="carregarDeps()">
+            <option value="">— todos —</option>
+            <option value="true">Só no ticker</option>
+            <option value="false">Fora do ticker</option>
+          </select>
+        </div>
+        <span style="font-size:0.65rem;color:var(--text-muted);margin-left:auto" id="dep-status">—</span>
+      </div>
+
+      <!-- Form de novo relato -->
+      <div class="add-form" id="form-novo-dep" style="display:none">
+        <div class="dep-row" style="margin-bottom:0.5rem">
+          <div class="field"><label>Nome</label><input type="text" id="dep-new-nome" placeholder="Ex: Ana Paula"></div>
+          <div class="field" style="max-width:200px"><label>Profissão</label><input type="text" id="dep-new-profissao" placeholder="Ex: Designer"></div>
+          <div class="field" style="max-width:90px"><label>Idade</label><input type="number" id="dep-new-idade" min="1" max="120"></div>
+        </div>
+        <div class="dep-row" style="margin-bottom:0.5rem">
+          <div class="field"><label>Tema</label><select id="dep-new-tema"></select></div>
+          <div class="field" style="max-width:200px">
+            <label style="display:flex;align-items:center;gap:0.5rem;justify-content:space-between">
+              <span>Aparecer no ticker</span>
+              <label class="toggle"><input type="checkbox" id="dep-new-ticker" checked><span class="toggle-slider"></span></label>
+            </label>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0.4rem">
+          <label>Relato <span style="float:right;color:var(--text-muted);font-weight:400" id="dep-new-counter">0 caracteres</span></label>
+          <textarea id="dep-new-texto" placeholder="Escreva o relato aqui..." oninput="updateCounter('dep-new-texto','dep-new-counter')"></textarea>
+          <span class="tag-hint">Relatos curtos (até ~140 caracteres) ficam melhor no ticker.</span>
+        </div>
+        <div style="display:flex;gap:0.5rem">
+          <button class="btn btn-primary btn-sm" onclick="criarDep()">Adicionar relato</button>
+          <button class="btn btn-ghost btn-sm" onclick="fecharNovoDep()">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="dep-grid" id="dep-grid"><div class="loading">Carregando relatos...</div></div>
     </div>
 
     <!-- ABA FEED DO APP -->
@@ -1000,28 +1051,378 @@ async function salvarPrecos(){const btn=document.getElementById('btn-save-precos
 // ============================================================
 // DEPOIMENTOS
 // ============================================================
-let deps=[];let depAlterado=false;
-function marcarAlterado(){depAlterado=true;}
-function getTagsFromWrap(wrapId){return Array.from(document.querySelectorAll(`#${wrapId} .tag-chip`)).map(c=>c.dataset.tag);}
-function addTagToWrap(wrapId,tag){tag=tag.trim().toLowerCase().replace(/,/g,'');if(!tag)return;const wrap=document.getElementById(wrapId);const input=wrap.querySelector('.tag-input');if(getTagsFromWrap(wrapId).includes(tag)){if(input)input.value='';return;}const chip=document.createElement('span');chip.className='tag-chip';chip.dataset.tag=tag;chip.innerHTML=`${tag}<button type="button" onclick="removeTag(this)" title="Remover">✕</button>`;wrap.insertBefore(chip,input);if(input)input.value='';}
-function removeTag(btn){btn.closest('.tag-chip').remove();marcarAlterado();}
-function handleTagKeydown(e,wrapId){if(e.key==='Enter'||e.key===','){e.preventDefault();addTagToWrap(wrapId,e.target.value);marcarAlterado();}else if(e.key==='Backspace'&&e.target.value===''){const chips=document.getElementById(wrapId).querySelectorAll('.tag-chip');if(chips.length>0)chips[chips.length-1].remove();marcarAlterado();}}
-function handleTagInput(e,wrapId){if(e.target.value.includes(',')){const parts=e.target.value.split(',');parts.slice(0,-1).forEach(p=>addTagToWrap(wrapId,p));e.target.value=parts[parts.length-1];marcarAlterado();}}
-function buildTagsWrap(wrapId,tags=[]){const chipsHtml=tags.map(t=>`<span class="tag-chip" data-tag="${t}">${t}<button type="button" onclick="removeTag(this);marcarAlterado()" title="Remover">✕</button></span>`).join('');return`<div class="tags-wrap" id="${wrapId}" onclick="document.querySelector('#${wrapId} .tag-input').focus()">${chipsHtml}<input class="tag-input" placeholder="${tags.length?'':'Tags...'}" onkeydown="handleTagKeydown(event,'${wrapId}')" oninput="handleTagInput(event,'${wrapId}')"></div>`;}
-function escHtml(str){return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function renderDeps(){const grid=document.getElementById('dep-grid');if(!deps.length){grid.innerHTML='<div class="loading">Nenhum depoimento cadastrado.</div>';return;}grid.innerHTML='';deps.forEach((d,i)=>{const wrapId=`tags-wrap-${i}`;const card=document.createElement('div');card.className='dep-card';card.innerHTML=`<div class="dep-order">#${i+1}</div><div class="dep-fields"><div class="dep-row"><div class="field"><label>Nome</label><input type="text" value="${escHtml(d.nome||'')}" oninput="deps[${i}].nome=this.value;marcarAlterado()"></div><div class="field"><label>Cidade</label><input type="text" value="${escHtml(d.cidade||'')}" oninput="deps[${i}].cidade=this.value;marcarAlterado()"></div></div><div class="field"><label>Depoimento</label><textarea oninput="deps[${i}].texto=this.value;marcarAlterado()">${escHtml(d.texto||'')}</textarea></div><div class="field"><label>Tags</label>${buildTagsWrap(wrapId,d.tags||[])}<span class="tag-hint">Enter ou vírgula para confirmar</span></div></div><div class="dep-actions"><button class="btn btn-ghost btn-sm" onclick="moverDep(${i},-1)" ${i===0?'disabled':''}>↑</button><button class="btn btn-ghost btn-sm" onclick="moverDep(${i},1)" ${i===deps.length-1?'disabled':''}>↓</button><button class="btn btn-danger btn-sm" onclick="removerDep(${i})">✕</button></div>`;grid.appendChild(card);});}
-function coletarDepsDoDOM(){document.querySelectorAll('#dep-grid .dep-card').forEach((card,i)=>{if(deps[i])deps[i].tags=getTagsFromWrap(`tags-wrap-${i}`);});return deps;}
-function moverDep(i,dir){const j=i+dir;if(j<0||j>=deps.length)return;[deps[i],deps[j]]=[deps[j],deps[i]];renderDeps();marcarAlterado();}
-function removerDep(i){if(!confirm('Remover este depoimento?'))return;deps.splice(i,1);renderDeps();marcarAlterado();}
-function showRawEditor(){fecharFormNovo();const ta=document.getElementById('raw-textarea');ta.value=JSON.stringify(deps,null,2);document.getElementById('raw-editor').style.display='block';ta.focus();}
-function fecharRaw(){document.getElementById('raw-editor').style.display='none';}
-function aplicarRaw(){const raw=document.getElementById('raw-textarea').value.trim();try{const parsed=JSON.parse(raw);if(!Array.isArray(parsed))throw new Error('Deve ser um array');deps=parsed.filter(d=>d.nome&&d.texto).map(d=>({nome:d.nome.trim(),cidade:(d.cidade||'').trim(),texto:d.texto.trim(),tags:Array.isArray(d.tags)?d.tags.map(t=>String(t).trim().toLowerCase()).filter(Boolean):[]}));fecharRaw();renderDeps();marcarAlterado();toast(`✓ ${deps.length} depoimentos importados`);}catch(e){toast(`✗ JSON inválido: ${e.message}`,'error');}}
-function fecharFormNovo(){document.getElementById('form-novo').style.display='none';}
-function showFormNovo(){fecharRaw();document.getElementById('form-novo').style.display='block';document.getElementById('new-nome').focus();}
-function cancelarNovo(){document.getElementById('form-novo').style.display='none';['new-nome','new-cidade','new-texto'].forEach(id=>document.getElementById(id).value='');const wrap=document.getElementById('new-tags-wrap');wrap.querySelectorAll('.tag-chip').forEach(c=>c.remove());wrap.querySelector('.tag-input').value='';}
-function adicionarDep(){const nome=document.getElementById('new-nome').value.trim(),cidade=document.getElementById('new-cidade').value.trim(),texto=document.getElementById('new-texto').value.trim();const tagInput=document.querySelector('#new-tags-wrap .tag-input');if(tagInput?.value.trim())addTagToWrap('new-tags-wrap',tagInput.value);const tags=getTagsFromWrap('new-tags-wrap');if(!nome||!texto){toast('Preencha nome e depoimento','error');return;}deps.push({nome,cidade,texto,tags});cancelarNovo();renderDeps();marcarAlterado();}
-async function carregarDeps(){try{const r=await fetch(`${API}/api/admin/depoimentos`,{headers:{'Authorization':authHeader()}});const data=await r.json();deps=data.map(d=>({...d,tags:Array.isArray(d.tags)?d.tags:[]}));}catch{deps=[];}try{const r=await fetch(`${API}/api/admin/config`,{headers:{'Authorization':authHeader()}});if(r.ok){const cfg=await r.json();document.getElementById('toggle-shuffle').checked=cfg.shuffle_depoimentos||false;}}catch{}renderDeps();}
-async function salvarDeps(){const btn=document.getElementById('btn-save-dep');btn.disabled=true;btn.textContent='Salvando...';try{const lista=coletarDepsDoDOM(),shuffle=document.getElementById('toggle-shuffle').checked;const r=await fetch(`${API}/api/admin/depoimentos`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':authHeader()},body:JSON.stringify(lista)});if(!r.ok)throw new Error();try{await fetch(`${API}/api/admin/config`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':authHeader()},body:JSON.stringify({shuffle_depoimentos:shuffle})});}catch{}toast('✓ Depoimentos salvos com sucesso');document.getElementById('dep-status').textContent=`Salvo às ${new Date().toLocaleTimeString('pt-BR')}`;depAlterado=false;}catch{toast('✗ Erro ao salvar','error');}finally{btn.disabled=false;btn.textContent='Salvar Depoimentos';}}
+// ─── Estado local ───
+let temas = [];            // lista de temas {id, slug, nome, produto_slug, ordem, ativo, qtd_relatos}
+let deps  = [];            // lista de relatos
+let produtosPrecos = {};   // { slug: {nome, imagem_url, ...} } — pra dropdown e preview
+
+function marcarAlterado(){ /* compat — sistema novo salva por relato individual */ }
+
+// escHtml é utilitário compartilhado (usado também por Feed, Usuários, etc.).
+function escHtml(str){return String(str==null?'':str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function updateCounter(textareaId, counterId){
+  const t = document.getElementById(textareaId);
+  const c = document.getElementById(counterId);
+  if (!t || !c) return;
+  const n = (t.value || '').length;
+  c.textContent = `${n} caracteres`;
+  c.style.color = n > 180 ? '#F09090' : (n > 140 ? 'var(--color-gold-amber)' : 'var(--text-muted)');
+}
+
+// ─── TEMAS ───
+async function carregarTemas(){
+  try{
+    const r = await fetch(`${API}/api/admin/temas`, {headers:{'Authorization':authHeader()}});
+    temas = r.ok ? await r.json() : [];
+  }catch{ temas = []; }
+  renderTemas();
+  popularDropdownsDeTema();
+}
+
+function renderTemas(){
+  const grid = document.getElementById('temas-grid');
+  if (!grid) return;
+  if (!temas.length){ grid.innerHTML = '<div class="loading">Nenhum tema cadastrado.</div>'; return; }
+  grid.innerHTML = '';
+  temas.forEach((t)=>{
+    const card = document.createElement('div');
+    card.className = 'dep-card';
+    card.innerHTML = `
+      <div class="dep-order">#${t.ordem}</div>
+      <div class="dep-fields">
+        <div class="dep-row">
+          <div class="field" style="max-width:140px"><label>Slug</label>
+            <input type="text" value="${escHtml(t.slug)}" data-field="slug" style="text-transform:lowercase">
+          </div>
+          <div class="field"><label>Nome exibido pra aluna</label>
+            <input type="text" value="${escHtml(t.nome)}" data-field="nome">
+          </div>
+        </div>
+        <div class="dep-row">
+          <div class="field"><label>Produto vinculado</label>
+            <select data-field="produto_slug">${optProdutos(t.produto_slug)}</select>
+          </div>
+          <div class="field" style="max-width:100px"><label>Ordem</label>
+            <input type="number" value="${t.ordem||0}" data-field="ordem">
+          </div>
+          <div class="field" style="max-width:130px"><label style="display:flex;align-items:center;gap:0.5rem;justify-content:space-between"><span>Ativo</span>
+            <label class="toggle"><input type="checkbox" data-field="ativo" ${t.ativo?'checked':''}><span class="toggle-slider"></span></label>
+          </label></div>
+        </div>
+        <span class="tag-hint">${t.qtd_relatos || 0} relato(s) vinculado(s)</span>
+      </div>
+      <div class="dep-actions">
+        <button class="btn btn-primary btn-sm" onclick="salvarTema(${t.id}, this)">Salvar</button>
+        <button class="btn btn-danger btn-sm" onclick="deletarTema(${t.id})">✕</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function optProdutos(selected){
+  const keys = Object.keys(produtosPrecos).sort();
+  const opts = ['<option value="">— sem produto —</option>'].concat(
+    keys.map(k => {
+      const nome = produtosPrecos[k]?.nome || k;
+      const sel = (selected === k) ? 'selected' : '';
+      return `<option value="${escHtml(k)}" ${sel}>${escHtml(nome)} (${escHtml(k)})</option>`;
+    })
+  );
+  return opts.join('');
+}
+
+function abrirNovoTema(){
+  document.getElementById('form-novo-tema').style.display = 'block';
+  document.getElementById('tm-new-produto').innerHTML = optProdutos('');
+  document.getElementById('tm-new-slug').focus();
+}
+function fecharNovoTema(){
+  document.getElementById('form-novo-tema').style.display = 'none';
+  ['tm-new-slug','tm-new-nome'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('tm-new-ordem').value = '99';
+}
+
+async function criarTema(){
+  const slug = document.getElementById('tm-new-slug').value.trim().toLowerCase();
+  const nome = document.getElementById('tm-new-nome').value.trim();
+  const produto_slug = document.getElementById('tm-new-produto').value || null;
+  const ordem = parseInt(document.getElementById('tm-new-ordem').value, 10) || 99;
+  if (!slug || !nome) return toast('Slug e nome são obrigatórios','error');
+  try{
+    const r = await fetch(`${API}/api/admin/temas`, {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body: JSON.stringify({slug, nome, produto_slug, ordem})
+    });
+    const d = await r.json();
+    if (!r.ok) return toast(d.error || 'Erro','error');
+    fecharNovoTema();
+    await carregarTemas();
+    toast('✓ Tema criado');
+  }catch(e){ toast('Erro ao criar tema','error'); }
+}
+
+async function salvarTema(id, btn){
+  const card = btn.closest('.dep-card');
+  const body = {
+    slug: card.querySelector('[data-field="slug"]').value.trim().toLowerCase(),
+    nome: card.querySelector('[data-field="nome"]').value.trim(),
+    produto_slug: card.querySelector('[data-field="produto_slug"]').value || null,
+    ordem: parseInt(card.querySelector('[data-field="ordem"]').value, 10) || 0,
+    ativo: card.querySelector('[data-field="ativo"]').checked,
+  };
+  btn.disabled = true;
+  try{
+    const r = await fetch(`${API}/api/admin/temas/${id}`, {
+      method:'PUT', headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (!r.ok) return toast(d.error || 'Erro','error');
+    await carregarTemas();
+    toast('✓ Tema atualizado');
+  }catch(e){ toast('Erro ao salvar tema','error'); }
+  finally{ btn.disabled = false; }
+}
+
+async function deletarTema(id){
+  if (!confirm('Apagar este tema? (só funciona se não houver relatos vinculados)')) return;
+  try{
+    const r = await fetch(`${API}/api/admin/temas/${id}`, {method:'DELETE', headers:{'Authorization':authHeader()}});
+    const d = await r.json();
+    if (!r.ok) return toast(d.error || 'Erro','error');
+    await carregarTemas();
+    toast('✓ Tema apagado');
+  }catch(e){ toast('Erro ao apagar tema','error'); }
+}
+
+function popularDropdownsDeTema(){
+  const opts = ['<option value="">— sem tema —</option>']
+    .concat(temas.map(t => `<option value="${t.id}">${escHtml(t.nome)} (${escHtml(t.slug)})</option>`))
+    .join('');
+  const filtroOpts = ['<option value="">— todos os temas —</option>']
+    .concat(temas.map(t => `<option value="${escHtml(t.slug)}">${escHtml(t.nome)}</option>`))
+    .join('');
+  const sel = (id, html, keep) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const v = keep ? el.value : '';
+    el.innerHTML = html;
+    if (v) el.value = v;
+  };
+  sel('dep-new-tema', opts, true);
+  sel('filtro-tema', filtroOpts, true);
+}
+
+// ─── PREÇOS (pra dropdown de produto) ───
+async function carregarPrecosParaDropdown(){
+  try{
+    const r = await fetch(`${API}/api/precos`, {headers:{'Accept':'application/json'}});
+    if (r.ok){
+      const data = await r.json();
+      // /api/precos retorna formato com display; pegamos só nome + slug
+      produtosPrecos = {};
+      if (Array.isArray(data)) {
+        data.forEach(p => { if (p.key) produtosPrecos[p.key] = {nome: p.nome || p.key}; });
+      } else if (typeof data === 'object') {
+        Object.entries(data).forEach(([k,v]) => { produtosPrecos[k] = {nome: (v && v.nome) || k}; });
+      }
+    }
+  }catch{}
+}
+
+// ─── RELATOS ───
+async function carregarDeps(){
+  // Atualiza o toggle de shuffle (mantido)
+  try {
+    const r = await fetch(`${API}/api/admin/config`,{headers:{'Authorization':authHeader()}});
+    if (r.ok) {
+      const cfg = await r.json();
+      const t = document.getElementById('toggle-shuffle');
+      if (t) t.checked = cfg.shuffle_depoimentos || false;
+    }
+  } catch{}
+
+  // Filtros ativos
+  const tema = document.getElementById('filtro-tema')?.value || '';
+  const placeholder = document.getElementById('filtro-placeholder')?.value || '';
+  const ticker = document.getElementById('filtro-ticker')?.value || '';
+  const qs = new URLSearchParams();
+  if (tema) qs.set('tema', tema);
+  if (placeholder) qs.set('placeholder', placeholder);
+  if (ticker) qs.set('ticker', ticker);
+
+  try {
+    const r = await fetch(`${API}/api/admin/depoimentos${qs.toString()?'?'+qs.toString():''}`,
+      {headers:{'Authorization':authHeader()}});
+    deps = r.ok ? await r.json() : [];
+  } catch { deps = []; }
+
+  renderDeps();
+  const status = document.getElementById('dep-status');
+  if (status) status.textContent = `${deps.length} relato(s)`;
+}
+
+function renderDeps(){
+  const grid = document.getElementById('dep-grid');
+  if (!grid) return;
+  if (!deps.length) { grid.innerHTML = '<div class="loading">Nenhum relato encontrado com esses filtros.</div>'; return; }
+  grid.innerHTML = '';
+  deps.forEach((d) => {
+    const card = document.createElement('div');
+    card.className = 'dep-card';
+    const placeholderBadge = d.gerado_por_ia
+      ? '<span class="nav-tag" style="margin-left:0;background:rgba(240,144,144,0.12);color:#F09090;border-color:rgba(240,144,144,0.25)">IA</span>'
+      : '';
+    const charCount = (d.texto || '').length;
+    const counterId = `dep-counter-${d.id}`;
+    const taId = `dep-texto-${d.id}`;
+    card.innerHTML = `
+      <div class="dep-order">#${d.id}</div>
+      <div class="dep-fields">
+        <div class="dep-row">
+          <div class="field"><label>Nome ${placeholderBadge}</label>
+            <input type="text" value="${escHtml(d.nome||'')}" data-field="nome">
+          </div>
+          <div class="field" style="max-width:200px"><label>Profissão</label>
+            <input type="text" value="${escHtml(d.profissao||'')}" data-field="profissao" placeholder="Ex: Designer">
+          </div>
+          <div class="field" style="max-width:90px"><label>Idade</label>
+            <input type="number" value="${d.idade||''}" data-field="idade" min="1" max="120">
+          </div>
+        </div>
+        <div class="dep-row">
+          <div class="field"><label>Tema</label>
+            <select data-field="tema_id">${dropdownTemaSelected(d.tema_id)}</select>
+          </div>
+          <div class="field" style="max-width:160px"><label style="display:flex;align-items:center;gap:0.5rem;justify-content:space-between"><span>No ticker</span>
+            <label class="toggle"><input type="checkbox" data-field="mostrar_no_ticker" ${d.mostrar_no_ticker?'checked':''}><span class="toggle-slider"></span></label>
+          </label></div>
+          <div class="field" style="max-width:130px"><label style="display:flex;align-items:center;gap:0.5rem;justify-content:space-between"><span>Ativo</span>
+            <label class="toggle"><input type="checkbox" data-field="ativo" ${d.ativo?'checked':''}><span class="toggle-slider"></span></label>
+          </label></div>
+        </div>
+        <div class="field" style="margin-bottom:0.3rem">
+          <label>Relato <span style="float:right;color:var(--text-muted);font-weight:400" id="${counterId}">${charCount} caracteres</span></label>
+          <textarea id="${taId}" data-field="texto" oninput="updateCounter('${taId}','${counterId}')">${escHtml(d.texto||'')}</textarea>
+        </div>
+      </div>
+      <div class="dep-actions">
+        <button class="btn btn-primary btn-sm" onclick="salvarDep(${d.id}, this)">Salvar</button>
+        <button class="btn btn-danger btn-sm" onclick="deletarDep(${d.id})">✕</button>
+      </div>
+    `;
+    grid.appendChild(card);
+    // Pinta contador inicial com cor correta
+    updateCounter(taId, counterId);
+  });
+}
+
+function dropdownTemaSelected(selectedId){
+  const opts = ['<option value="">— sem tema —</option>']
+    .concat(temas.map(t => `<option value="${t.id}" ${t.id===selectedId?'selected':''}>${escHtml(t.nome)} (${escHtml(t.slug)})</option>`))
+    .join('');
+  return opts;
+}
+
+function abrirNovoDep(){
+  document.getElementById('form-novo-dep').style.display = 'block';
+  document.getElementById('dep-new-tema').innerHTML = ['<option value="">— sem tema —</option>']
+    .concat(temas.map(t => `<option value="${t.id}">${escHtml(t.nome)} (${escHtml(t.slug)})</option>`)).join('');
+  document.getElementById('dep-new-nome').focus();
+  updateCounter('dep-new-texto','dep-new-counter');
+}
+function fecharNovoDep(){
+  document.getElementById('form-novo-dep').style.display = 'none';
+  ['dep-new-nome','dep-new-profissao','dep-new-idade','dep-new-texto'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('dep-new-ticker').checked = true;
+  updateCounter('dep-new-texto','dep-new-counter');
+}
+
+async function criarDep(){
+  const body = {
+    nome: document.getElementById('dep-new-nome').value.trim(),
+    profissao: document.getElementById('dep-new-profissao').value.trim() || null,
+    idade: parseInt(document.getElementById('dep-new-idade').value, 10) || null,
+    tema_id: parseInt(document.getElementById('dep-new-tema').value, 10) || null,
+    mostrar_no_ticker: document.getElementById('dep-new-ticker').checked,
+    texto: document.getElementById('dep-new-texto').value.trim(),
+    ativo: true,
+    status_moderacao: 'aprovado',
+  };
+  if (!body.nome || !body.texto) return toast('Nome e relato são obrigatórios','error');
+  try{
+    const r = await fetch(`${API}/api/admin/depoimentos`, {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (!r.ok) return toast(d.error || 'Erro','error');
+    fecharNovoDep();
+    await carregarDeps();
+    toast('✓ Relato criado');
+  }catch(e){ toast('Erro ao criar relato','error'); }
+}
+
+async function salvarDep(id, btn){
+  const card = btn.closest('.dep-card');
+  const body = {
+    nome: card.querySelector('[data-field="nome"]').value.trim(),
+    profissao: card.querySelector('[data-field="profissao"]').value.trim() || null,
+    idade: parseInt(card.querySelector('[data-field="idade"]').value, 10) || null,
+    tema_id: parseInt(card.querySelector('[data-field="tema_id"]').value, 10) || null,
+    mostrar_no_ticker: card.querySelector('[data-field="mostrar_no_ticker"]').checked,
+    ativo: card.querySelector('[data-field="ativo"]').checked,
+    texto: card.querySelector('[data-field="texto"]').value.trim(),
+  };
+  btn.disabled = true;
+  try{
+    const r = await fetch(`${API}/api/admin/depoimentos/${id}`, {
+      method:'PUT', headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (!r.ok) return toast(d.error || 'Erro','error');
+    toast('✓ Relato salvo');
+    // Atualiza estado local sem re-carregar tudo
+    const idx = deps.findIndex(x => x.id === id);
+    if (idx >= 0) deps[idx] = d;
+  }catch(e){ toast('Erro ao salvar','error'); }
+  finally{ btn.disabled = false; }
+}
+
+async function deletarDep(id){
+  if (!confirm('Apagar este relato?')) return;
+  try{
+    const r = await fetch(`${API}/api/admin/depoimentos/${id}`, {method:'DELETE', headers:{'Authorization':authHeader()}});
+    const d = await r.json();
+    if (!r.ok) return toast(d.error || 'Erro','error');
+    await carregarDeps();
+    toast('✓ Relato apagado');
+  }catch(e){ toast('Erro ao apagar','error'); }
+}
+
+// ─── Shuffle (preservado, agora salva imediato no toggle) ───
+async function salvarShuffle(){
+  const shuffle = document.getElementById('toggle-shuffle').checked;
+  try{
+    await fetch(`${API}/api/admin/config`, {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body: JSON.stringify({shuffle_depoimentos: shuffle})
+    });
+    toast(shuffle ? '✓ Embaralhar ativado' : '✓ Embaralhar desativado');
+  }catch{ toast('Erro ao salvar','error'); }
+}
+
+// Boot da aba Depoimentos: carrega preços (pra dropdown) → temas → relatos.
+async function bootDepoimentos(){
+  await carregarPrecosParaDropdown();
+  await carregarTemas();
+  await carregarDeps();
+}
 
 // ============================================================
 // FEED DO APP
@@ -2792,7 +3193,7 @@ const produtosAluna = (function(){
 
 // ===== INIT =====
 carregarPrecos();
-carregarDeps();
+bootDepoimentos();
 </script>
 </body>
 </html>

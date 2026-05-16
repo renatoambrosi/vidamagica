@@ -1262,6 +1262,57 @@ async function initComunicacao() {
       )
     `);
 
+    // ── TEMAS — taxonomia oficial dos depoimentos ──
+    // Cada tema aponta pra UM produto (slug em precos). Frontend exibe
+    // o nome do tema pra aluna (NUNCA o nome do curso/produto).
+    // Tags antigas (coluna depoimentos.tags) continuam existindo por compat
+    // mas a verdade nova é depoimentos.tema_id.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS temas (
+        id SERIAL PRIMARY KEY,
+        slug VARCHAR(50) UNIQUE NOT NULL,
+        nome VARCHAR(200) NOT NULL,
+        produto_slug VARCHAR(100),
+        ordem INTEGER DEFAULT 0,
+        ativo BOOLEAN DEFAULT TRUE,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_temas_slug ON temas(slug)`);
+
+    // ── Migrations idempotentes em depoimentos ──
+    // Schema novo (Fase 1 do refactor de Relatos):
+    // - profissao + idade substituem cidade na exibição pra aluna
+    //   (cidade fica como legacy; não exibida em frontend novo)
+    // - tema_id é a vinculação oficial (substitui tags na busca)
+    // - usuario_id liga a relato enviado pela aluna pela área logada
+    //   (Fase 2 — referência LÓGICA pra usuarios em poolCore, sem FK)
+    // - mostrar_no_ticker: controle MANUAL do Renato (sem automação)
+    // - gerado_por_ia: marca placeholders criados na migração inicial
+    //   (filtro no admin pra revisar antes de qualquer coisa)
+    // - status_moderacao: pendente/aprovado/rejeitado
+    //   (Fase 3 — moderação dos relatos enviados pela aluna)
+    await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS profissao TEXT`);
+    await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS idade INTEGER`);
+    await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS tema_id INTEGER`);
+    await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS usuario_id UUID`);
+    await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS mostrar_no_ticker BOOLEAN DEFAULT TRUE`);
+    await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS gerado_por_ia BOOLEAN DEFAULT FALSE`);
+    await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS status_moderacao VARCHAR(20) DEFAULT 'aprovado'`);
+    await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS atualizado_em TIMESTAMPTZ DEFAULT NOW()`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_depoimentos_tema ON depoimentos(tema_id)`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_depoimentos_usuario ON depoimentos(usuario_id)`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_depoimentos_status ON depoimentos(status_moderacao)`);
+
+    // ── SEED LOG — controla seeds idempotentes (rodam 1 vez) ──
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS seed_log (
+        seed_key VARCHAR(100) PRIMARY KEY,
+        rodado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
     await c.query(`
       CREATE TABLE IF NOT EXISTS config (
         chave TEXT PRIMARY KEY,

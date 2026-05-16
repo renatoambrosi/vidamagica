@@ -620,6 +620,7 @@
   <script>
     const API_BASE = window.location.origin;
     const TAG_LP   = 'ouro_reprogramacao_mental';
+    const TEMA_LP  = 'orm';
     const PRECO_KEY = 'ouro_reprogramacao'; // slug em /api/precos (admin gerencia)
 
     /* ═══ PREÇO + CHECKOUT — fonte única: /api/precos
@@ -752,17 +753,25 @@
       VmSession.destruir(); renderBotoes();
     })();
 
-    /* ═══ DEPOIMENTOS — fetch /api/depoimentos?tag + fallback hardcoded dos 3 reais
-       Mesma engine do teste.html (semelhança). Fallback usa depoimentos do PDF. */
+    /* ═══ DEPOIMENTOS — fetch /api/depoimentos?tema=SLUG
+       Não há mais fallback hardcoded — o backend tem seed garantindo ≥3 relatos
+       por tema. Ticker (filtrado por mostrar_no_ticker) + carrossel grande.
+       O carrossel é interativo via /relatos-card.js (swipe + modal de leitura). */
     (async function(){
       let depoimentos = [];
+      let depoimentosTicker = [];
       let shuffleAtivo = false;
 
       try{
-        const r1 = await fetch(`${API_BASE}/api/depoimentos?tag=${TAG_LP}`,{headers:{'Accept':'application/json'},mode:'cors'});
+        const r1 = await fetch(`${API_BASE}/api/depoimentos?tema=${TEMA_LP}`,{headers:{'Accept':'application/json'},mode:'cors'});
         if (r1.ok) {
           const d = await r1.json();
-          if (Array.isArray(d) && d.length) depoimentos = d;
+          if (Array.isArray(d)) depoimentos = d;
+        }
+        const r2 = await fetch(`${API_BASE}/api/depoimentos?tema=${TEMA_LP}&ticker=true`,{headers:{'Accept':'application/json'},mode:'cors'});
+        if (r2.ok) {
+          const d = await r2.json();
+          if (Array.isArray(d) && d.length) depoimentosTicker = d;
         }
         const r3 = await fetch(`${API_BASE}/api/config`,{headers:{'Accept':'application/json'},mode:'cors'});
         if (r3.ok) {
@@ -771,39 +780,43 @@
         }
       }catch(_){}
 
-      if (!Array.isArray(depoimentos) || depoimentos.length === 0) {
-        // Fallback: depoimentos reais do PDF
-        depoimentos = [
-          { nome: 'Maria S., 41 anos', texto: 'Não achei que daria certo comigo. Eu já tinha feito de tudo. Mas algo nesse curso me alcançou. Hoje, meu jeito de pensar mudou. E com ele, meu casamento, minha autoestima e até minha fé.' },
-          { nome: 'Vanessa T., 29 anos', texto: 'A Suellen fala como se estivesse dentro da gente. Eu nunca fui de acreditar em curso nenhum. Mas esse não é um curso. É um processo de cura. Deus me visitou aqui.' },
-          { nome: 'Camila R., 37 anos', texto: 'Eu achei que esse curso ia ser só mais um... Teve uma aula que me fez chorar do começo ao fim, porque parecia que ela tava contando a minha história. Hoje, eu consigo olhar pra mim com mais amor e clareza. E o mais lindo: comecei a sonhar de novo.' },
-        ];
-      }
+      // Fallback: se o ticker vier vazio (nenhum marcado mostrar_no_ticker),
+      // usa a lista completa pra não deixar o ticker em branco.
+      if (!depoimentosTicker.length) depoimentosTicker = depoimentos;
 
       if (shuffleAtivo) {
-        const a = [...depoimentos];
-        for (let i=a.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
-        depoimentos = a;
+        const shuffle = (arr) => {
+          const a = [...arr];
+          for (let i=a.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+          return a;
+        };
+        depoimentos = shuffle(depoimentos);
+        depoimentosTicker = shuffle(depoimentosTicker);
       }
 
-      // TICKER — string template IDÊNTICA ao teste.html/index.html
+      // TICKER — comportamento mantido (Renato pediu pra não mexer).
       const tickerTrack = document.getElementById('ticker-track');
-      if (tickerTrack) {
-        const doubled = [...depoimentos, ...depoimentos];
+      if (tickerTrack && depoimentosTicker.length) {
+        const doubled = [...depoimentosTicker, ...depoimentosTicker];
         tickerTrack.innerHTML = doubled.map(d => {
           const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
           return `<span class="ticker-item"><span class="q">"</span>${d.texto}<span class="q">"</span> — <strong>${autor}</strong></span>`;
         }).join('');
       }
 
-      // CARROSSEL grande
+      // CARROSSEL grande — agora clicável (modal) e arrastável (swipe).
       const depTrack = document.getElementById('dep-track');
-      if (depTrack) {
+      if (depTrack && depoimentos.length) {
         const doubled = [...depoimentos, ...depoimentos];
         depTrack.innerHTML = doubled.map(d => {
           const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
           return `<div class="dep-card"><p class="dep-texto">"${d.texto}"</p><div class="dep-autor">${autor}</div></div>`;
         }).join('');
+
+        // Liga o modal + swipe (script /relatos-card.js incluído no fim do body).
+        if (window.VmRelatos) {
+          window.VmRelatos.iniciar({ tema: TEMA_LP, depoimentos, container: '#dep-track' });
+        }
       }
     })();
 
@@ -886,6 +899,9 @@
       });
     })();
   </script>
+
+  <!-- Modal + swipe dos cards de relatos (compartilhado entre as 7 LPs) -->
+  <script src="/relatos-card.js"></script>
 
 </body>
 </html>

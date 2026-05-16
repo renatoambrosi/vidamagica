@@ -1422,16 +1422,22 @@
     }
 
     // ===== TICKER + CARROSSEL =====
+    // Home usa o tema "geral" (depoimentos selecionados pelo Renato pra home).
+    // Ticker filtra por mostrar_no_ticker=true. Carrossel é clicável + arrastável (relatos-card.js).
     (async function() {
+      const TEMA_LP = 'geral';
       let depoimentos = [];
+      let depoimentosTicker = [];
       let shuffleAtivo = false;
 
       try {
-        const [resDep, resCfg] = await Promise.allSettled([
-          fetch(`${API_BASE}/api/depoimentos`, { headers: { 'Accept': 'application/json' }, mode: 'cors' }),
-          fetch(`${API_BASE}/api/config`,      { headers: { 'Accept': 'application/json' }, mode: 'cors' })
+        const [resDep, resTk, resCfg] = await Promise.allSettled([
+          fetch(`${API_BASE}/api/depoimentos?tema=${TEMA_LP}`, { headers: { 'Accept': 'application/json' }, mode: 'cors' }),
+          fetch(`${API_BASE}/api/depoimentos?tema=${TEMA_LP}&ticker=true`, { headers: { 'Accept': 'application/json' }, mode: 'cors' }),
+          fetch(`${API_BASE}/api/config`, { headers: { 'Accept': 'application/json' }, mode: 'cors' })
         ]);
         if (resDep.status === 'fulfilled' && resDep.value.ok) depoimentos = await resDep.value.json();
+        if (resTk.status === 'fulfilled' && resTk.value.ok)  depoimentosTicker = await resTk.value.json();
         if (resCfg.status === 'fulfilled' && resCfg.value.ok) {
           const cfg = await resCfg.value.json();
           shuffleAtivo = cfg.shuffle_depoimentos || false;
@@ -1440,24 +1446,17 @@
         console.warn('Erro ao carregar depoimentos:', e);
       }
 
-      if (shuffleAtivo) depoimentos = shuffle(depoimentos);
+      if (!Array.isArray(depoimentos)) depoimentos = [];
+      if (!Array.isArray(depoimentosTicker) || !depoimentosTicker.length) depoimentosTicker = depoimentos;
 
-      if (!Array.isArray(depoimentos) || depoimentos.length === 0) {
-        depoimentos = [
-          { nome: 'Ana Paula', cidade: 'SP', texto: 'Mudou completamente a forma como eu via minha vida.' },
-          { nome: 'Marcos', cidade: 'RJ', texto: 'Nunca imaginei que fé e ciência poderiam andar juntas assim.' },
-          { nome: 'Carla', cidade: 'MG', texto: 'O Teste me abriu os olhos para padrões que eu nem percebia.' },
-          { nome: 'Roberto', cidade: 'PR', texto: 'Em 3 meses minha realidade financeira mudou radicalmente.' },
-          { nome: 'Fernanda', cidade: 'BA', texto: 'Suellen fala de um jeito que ninguém mais fala. É real, é profundo.' },
-          { nome: 'Juliana', cidade: 'SP', texto: 'A Sessão de Diagnóstico foi um divisor de águas na minha vida.' },
-          { nome: 'André', cidade: 'MG', texto: 'Finalmente entendi por que eu sabotava meu próprio sucesso.' },
-          { nome: 'Patrícia', cidade: 'RS', texto: 'O curso Ouro da RM me deu ferramentas que uso até hoje.' },
-        ];
+      if (shuffleAtivo) {
+        depoimentos = shuffle(depoimentos);
+        depoimentosTicker = shuffle(depoimentosTicker);
       }
 
       const tickerTrack = document.getElementById('ticker-track');
-      if (tickerTrack) {
-        const doubled = [...depoimentos, ...depoimentos];
+      if (tickerTrack && depoimentosTicker.length) {
+        const doubled = [...depoimentosTicker, ...depoimentosTicker];
         tickerTrack.innerHTML = doubled.map(d => {
           const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
           return `<span class="ticker-item"><span class="q">"</span>"${d.texto}" — <strong>${autor}</strong><span class="q">"</span></span>`;
@@ -1465,12 +1464,21 @@
       }
 
       const carrosselTrack = document.getElementById('depoimentos-track');
-      if (carrosselTrack) {
+      if (carrosselTrack && depoimentos.length) {
         const doubled = [...depoimentos, ...depoimentos];
         carrosselTrack.innerHTML = doubled.map(d => {
           const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
           return `<div class="depoimento-card"><p class="depoimento-texto">${d.texto}</p><div class="depoimento-autor">${autor}</div></div>`;
         }).join('');
+
+        if (window.VmRelatos) {
+          window.VmRelatos.iniciar({
+            tema: TEMA_LP,
+            depoimentos,
+            container: '#depoimentos-track',
+            cardSelector: '.depoimento-card',
+          });
+        }
       }
     })();
 
@@ -1667,6 +1675,9 @@
     renderBotoes();
   })();
   </script>
+
+  <!-- Modal + swipe dos cards de relatos (compartilhado entre as 7 LPs) -->
+  <script src="/relatos-card.js"></script>
 
 </body>
 </html>

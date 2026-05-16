@@ -759,6 +759,7 @@
   <script>
     const API_BASE = window.location.origin;
     const TAG_LP   = 'atal_maneira';
+    const TEMA_LP  = 'tm';
     // Slugs em /api/precos (admin gerencia). Os 3 planos da LP usam estes:
     const PRECO_KEYS = ['atal_maneira_livro', 'atal_maneira_curso', 'atal_maneira_combo'];
 
@@ -887,15 +888,22 @@
       }catch(e){ /* mantém valores HTML como fallback */ }
     })();
 
-    /* ═══ DEPOIMENTOS — ticker + carrossel, com fallback hardcoded ═══ */
+    /* ═══ DEPOIMENTOS — fetch /api/depoimentos?tema=tm (sem hardcoded)
+       Carrossel agora clicável (modal) e arrastável via /relatos-card.js. */
     (async function(){
       let depoimentos = [];
+      let depoimentosTicker = [];
       let shuffleAtivo = false;
       try{
-        const r1 = await fetch(`${API_BASE}/api/depoimentos?tag=${TAG_LP}`,{headers:{'Accept':'application/json'},mode:'cors'});
+        const r1 = await fetch(`${API_BASE}/api/depoimentos?tema=${TEMA_LP}`,{headers:{'Accept':'application/json'},mode:'cors'});
         if (r1.ok) {
           const d = await r1.json();
-          if (Array.isArray(d) && d.length) depoimentos = d;
+          if (Array.isArray(d)) depoimentos = d;
+        }
+        const r2 = await fetch(`${API_BASE}/api/depoimentos?tema=${TEMA_LP}&ticker=true`,{headers:{'Accept':'application/json'},mode:'cors'});
+        if (r2.ok) {
+          const d = await r2.json();
+          if (Array.isArray(d) && d.length) depoimentosTicker = d;
         }
         const r3 = await fetch(`${API_BASE}/api/config`,{headers:{'Accept':'application/json'},mode:'cors'});
         if (r3.ok) {
@@ -904,40 +912,41 @@
         }
       }catch(_){}
 
-      if (!Array.isArray(depoimentos) || depoimentos.length === 0) {
-        // Fallback: depoimentos reais da LP original
-        depoimentos = [
-          { nome: 'Juliana M.', cidade: 'Afiliada digital, 33 anos', texto: 'Eu estava perdida, mal conseguia pagar minhas contas básicas e estava cheia de dívidas. Seu livro Tal Maneira transformou minha vida. O livro eu imprimi e encadernei, amei a aula, mas o audiobook eu ouvia todo dia, e foi o que mudou meu subconsciente. Hoje, não só paguei as dívidas, como encontrei paz ganhando mais que nunca!' },
-          { nome: 'Bia', cidade: 'Manicure, 29 anos', texto: 'Su, depois de tentar tanto na vida eu realmente estava me conformando em ganhar 2 mil por mês. Foram muitas decepções. Você não tem ideia da minha gratidão pelo seu método. Eu tô ganhando por volta de 3 mil só com vendas na internet, e agora tô até considerando deixar meu emprego. Era tudo que eu precisava pra voltar a confiar em mim — como é bom poder comprar uma roupa sem se preocupar se vai faltar. Gratidão!' },
-          { nome: 'Fernanda R.', cidade: 'Corretora, 35 anos', texto: 'Suuuuu, seu método mudou minha vida completamente! Em apenas 3 meses praticando A Tal Maneira consegui fechar contratos que triplicaram minha renda. Finalmente percebi que ganhar o dinheiro que a gente quer não é o bicho de sete cabeças que eu pensava!' },
-        ];
-      }
+      if (!depoimentosTicker.length) depoimentosTicker = depoimentos;
 
       if (shuffleAtivo) {
-        const a = [...depoimentos];
-        for (let i=a.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
-        depoimentos = a;
+        const shuffle = (arr) => {
+          const a = [...arr];
+          for (let i=a.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+          return a;
+        };
+        depoimentos = shuffle(depoimentos);
+        depoimentosTicker = shuffle(depoimentosTicker);
       }
 
       // TICKER
       const tickerTrack = document.getElementById('ticker-track');
-      if (tickerTrack) {
-        const doubled = [...depoimentos, ...depoimentos];
+      if (tickerTrack && depoimentosTicker.length) {
+        const doubled = [...depoimentosTicker, ...depoimentosTicker];
         tickerTrack.innerHTML = doubled.map(d => {
           const autor = d.cidade ? `${d.nome}, ${d.cidade}` : d.nome;
           return `<span class="ticker-item"><span class="q">"</span>${d.texto}<span class="q">"</span> — <strong>${autor}</strong></span>`;
         }).join('');
       }
 
-      // CARROSSEL grande com estrelas
+      // CARROSSEL grande com estrelas (visual mantido).
       const depTrack = document.getElementById('dep-track');
-      if (depTrack) {
+      if (depTrack && depoimentos.length) {
         const stars5 = '<i class="fas fa-star"></i>'.repeat(5);
         const doubled = [...depoimentos, ...depoimentos];
         depTrack.innerHTML = doubled.map(d => {
           const sub = d.cidade ? `<small>${d.cidade}</small>` : '';
           return `<div class="dep-card"><div class="dep-stars">${stars5}</div><p class="dep-texto">"${d.texto}"</p><div class="dep-autor">${d.nome}${sub}</div></div>`;
         }).join('');
+
+        if (window.VmRelatos) {
+          window.VmRelatos.iniciar({ tema: TEMA_LP, depoimentos, container: '#dep-track' });
+        }
       }
     })();
 
@@ -1011,6 +1020,9 @@
       });
     })();
   </script>
+
+  <!-- Modal + swipe dos cards de relatos (compartilhado entre as 7 LPs) -->
+  <script src="/relatos-card.js"></script>
 
 </body>
 </html>
