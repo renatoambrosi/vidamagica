@@ -404,4 +404,408 @@ router.post('/atualizacoes/:id/consumir', autenticar, async (req, res) => {
   }
 });
 
+// ════════════════════════════════════════════════════════════════════
+// RELATOS — Fase 2.1 (aluna posta) + 2.2 (reage + Baú)
+// Pool: poolComunicacao (depoimentos vive lá), mas ID da aluna vem do JWT
+// (poolCore). Cross-pool feito em JS, sem JOIN.
+// ════════════════════════════════════════════════════════════════════
+
+// POST /api/app/relato — aluna posta um relato (vai pra moderação)
+// Body: { texto: string }
+// Limite: 1 relato pendente por aluna por vez (evita spam acidental).
+// Limite mensal: 1 relato por aluna por mês (regra de produto — força transformação real, não spam).
+router.post('/relato', autenticar, async (req, res) => {
+  try {
+    const usuarioId = req.usuario.sub;
+    const texto = (req.body && req.body.texto || '').toString().trim();
+    if (!texto || texto.length < 20) {
+      return res.status(400).json({ ok: false, erro: 'O relato precisa ter pelo menos 20 caracteres' });
+    }
+    if (texto.length > 2000) {
+      return res.status(400).json({ ok: false, erro: 'O relato é grande demais (máximo 2000 caracteres)' });
+    }
+
+    // Busca dados da aluna pra montar o snapshot (nome + assinatura no momento)
+    const uRows = await poolCore.query(
+      `SELECT id, nome, plano FROM usuarios WHERE id = $1`,
+      [usuarioId]
+    );
+    if (!uRows.rows[0]) return res.status(404).json({ ok: false, erro: 'usuário não encontrado' });
+    const aluna = uRows.rows[0];
+    const eAssinante = !!(aluna.plano && aluna.plano !== 'gratuito');
+
+    // Regra anti-spam: se já tem 1 pendente, recusa
+    const pend = await poolComunicacao.query(
+      `SELECT id FROM depoimentos
+        WHERE usuario_id = $1 AND status_moderacao = 'pendente'
+        LIMIT 1`,
+      [usuarioId]
+    );
+    if (pend.rows[0]) {
+      return res.status(409).json({
+        ok: false,
+        erro: 'Você já tem um relato em análise. Aguarde a aprovação antes de enviar outro.',
+        relato_pendente_id: pend.rows[0].id,
+      });
+    }
+
+    // Regra de produto: 1 relato aprovado por mês (calendário rolling — últimos 30 dias)
+    const mensal = await poolComunicacao.query(
+      `SELECT COUNT(*) AS qtd FROM depoimentos
+        WHERE usuario_id = $1 AND status_moderacao = 'aprovado'
+          AND criado_em > NOW() - INTERVAL '30 days'`,
+      [usuarioId]
+    );
+    if (parseInt(mensal.rows[0].qtd, 10) >= 1) {
+      return res.status(429).json({
+        ok: false,
+        erro: 'Você já compartilhou um relato neste mês. Volte daqui a alguns dias 🌱',
+      });
+    }
+
+    // Insere o relato pendente. Tema + categorias são preenchidos pelo admin na moderação.
+    const ins = await poolComunicacao.query(
+      `INSERT INTO depoimentos
+         (nome, usuario_id, texto, status_moderacao, ativo, mostrar_no_ticker,
+          gerado_por_ia, autora_era_assinante_clube, tags, ordem)
+       VALUES ($1, $2, $3, 'pendente', TRUE, FALSE, FALSE, $4, '{}', 0)
+       RETURNING id, criado_em`,
+      [aluna.nome || 'Aluna Vida Mágica', usuarioId, texto, eAssinante]
+    );
+
+    return res.json({
+      ok: true,
+      relato: {
+        id: ins.rows[0].id,
+        status: 'pendente',
+        criado_em: ins.rows[0].criado_em,
+      },
+    });
+  } catch (err) {
+    console.error('[app/relato POST] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// GET /api/app/meus-relatos — lista relatos da aluna logada (pendentes + aprovados + rejeitados)
+router.get('/meus-relatos', autenticar, async (req, res) => {
+  try {
+    const usuarioId = req.usuario.sub;
+    const r = await poolComunicacao.query(
+      `SELECT d.id, d.texto, d.status_moderacao, d.motivo_rejeicao,
+              d.criado_em, d.atualizado_em,
+              d.tema_id, t.slug AS tema_slug, t.nome AS tema_nome
+         FROM depoimentos d
+         LEFT JOIN temas t ON t.id = d.tema_id
+        WHERE d.usuario_id = $1
+        ORDER BY d.criado_em DESC`,
+      [usuarioId]
+    );
+    return res.json({ ok: true, relatos: r.rows });
+  } catch (err) {
+    console.error('[app/meus-relatos] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// REAÇÕES (Fase 2.2) — quero / ja_vivo / nao_e_pra_mim / parabens
+// Regras:
+//   - quero | ja_vivo | nao_e_pra_mim são MUTUAMENTE EXCLUSIVAS (1 só por relato)
+//   - parabens é INDEPENDENTE (pode acumular com qualquer outra)
+//   - Toda reação salva no Baú (UNIQUE evita duplicar). Mesmo se removida depois,
+//     a entrada do Baú permanece (histórico comportamental).
+// ════════════════════════════════════════════════════════════════════
+const TIPOS_REACAO = ['quero', 'ja_vivo', 'nao_e_pra_mim', 'parabens'];
+const TIPOS_EXCLUSIVOS = ['quero', 'ja_vivo', 'nao_e_pra_mim'];
+
+// POST /api/app/relato/:id/reagir { tipo }  → adiciona/troca reação
+router.post('/relato/:id/reagir', autenticar, async (req, res) => {
+  try {
+    const usuarioId = req.usuario.sub;
+    const depoimentoId = parseInt(req.params.id, 10);
+    const tipo = String((req.body && req.body.tipo) || '').trim();
+
+    if (!Number.isFinite(depoimentoId)) return res.status(400).json({ ok: false, erro: 'id inválido' });
+    if (!TIPOS_REACAO.includes(tipo)) return res.status(400).json({ ok: false, erro: 'tipo inválido' });
+
+    // Confere se o relato existe e está visível publicamente
+    const rel = await poolComunicacao.query(
+      `SELECT id FROM depoimentos
+        WHERE id = $1 AND ativo = TRUE AND status_moderacao = 'aprovado'
+          AND oculto_por_conta_inativa = FALSE LIMIT 1`,
+      [depoimentoId]
+    );
+    if (!rel.rows[0]) return res.status(404).json({ ok: false, erro: 'relato não encontrado ou não disponível' });
+
+    // Se o tipo é exclusivo, remove os outros 2 exclusivos antes de inserir o novo
+    if (TIPOS_EXCLUSIVOS.includes(tipo)) {
+      const outros = TIPOS_EXCLUSIVOS.filter(t => t !== tipo);
+      await poolComunicacao.query(
+        `DELETE FROM depoimento_reacoes
+          WHERE depoimento_id = $1 AND usuario_id = $2 AND tipo = ANY($3)`,
+        [depoimentoId, usuarioId, outros]
+      );
+    }
+
+    // Insere a reação (idempotente — se já existe, não duplica)
+    await poolComunicacao.query(
+      `INSERT INTO depoimento_reacoes (depoimento_id, usuario_id, tipo)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (depoimento_id, usuario_id, tipo) DO NOTHING`,
+      [depoimentoId, usuarioId, tipo]
+    );
+
+    // Salva no Baú (idempotente, fica pra sempre)
+    await poolComunicacao.query(
+      `INSERT INTO relatos_salvos_bau (usuario_id, depoimento_id, tipo_reacao)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (usuario_id, depoimento_id, tipo_reacao) DO NOTHING`,
+      [usuarioId, depoimentoId, tipo]
+    );
+
+    // Retorna estado atual (reações da aluna nesse relato + contagens públicas)
+    const meu = await poolComunicacao.query(
+      `SELECT tipo FROM depoimento_reacoes WHERE depoimento_id = $1 AND usuario_id = $2`,
+      [depoimentoId, usuarioId]
+    );
+    const cont = await poolComunicacao.query(
+      `SELECT tipo, COUNT(*)::int AS n FROM depoimento_reacoes
+        WHERE depoimento_id = $1 GROUP BY tipo`,
+      [depoimentoId]
+    );
+
+    return res.json({
+      ok: true,
+      minhas_reacoes: meu.rows.map(r => r.tipo),
+      contagens: cont.rows.reduce((acc, r) => ({ ...acc, [r.tipo]: r.n }), {}),
+      primeira_no_bau: true, // o frontend decide se mostra a animação na 1ª vez (via localStorage)
+    });
+  } catch (err) {
+    console.error('[app/relato/reagir POST] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// DELETE /api/app/relato/:id/reagir?tipo=X  → remove uma reação específica
+// (Não apaga do Baú — histórico permanece. Só some o "checked" visual no modal.)
+router.delete('/relato/:id/reagir', autenticar, async (req, res) => {
+  try {
+    const usuarioId = req.usuario.sub;
+    const depoimentoId = parseInt(req.params.id, 10);
+    const tipo = String((req.query && req.query.tipo) || '').trim();
+
+    if (!Number.isFinite(depoimentoId)) return res.status(400).json({ ok: false, erro: 'id inválido' });
+    if (!TIPOS_REACAO.includes(tipo)) return res.status(400).json({ ok: false, erro: 'tipo inválido' });
+
+    await poolComunicacao.query(
+      `DELETE FROM depoimento_reacoes
+        WHERE depoimento_id = $1 AND usuario_id = $2 AND tipo = $3`,
+      [depoimentoId, usuarioId, tipo]
+    );
+
+    const meu = await poolComunicacao.query(
+      `SELECT tipo FROM depoimento_reacoes WHERE depoimento_id = $1 AND usuario_id = $2`,
+      [depoimentoId, usuarioId]
+    );
+    const cont = await poolComunicacao.query(
+      `SELECT tipo, COUNT(*)::int AS n FROM depoimento_reacoes
+        WHERE depoimento_id = $1 GROUP BY tipo`,
+      [depoimentoId]
+    );
+    return res.json({
+      ok: true,
+      minhas_reacoes: meu.rows.map(r => r.tipo),
+      contagens: cont.rows.reduce((acc, r) => ({ ...acc, [r.tipo]: r.n }), {}),
+    });
+  } catch (err) {
+    console.error('[app/relato/reagir DELETE] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// GET /api/app/relato/:id/reacoes  → minhas_reacoes + contagens (pra hidratar o modal)
+router.get('/relato/:id/reacoes', autenticar, async (req, res) => {
+  try {
+    const usuarioId = req.usuario.sub;
+    const depoimentoId = parseInt(req.params.id, 10);
+    if (!Number.isFinite(depoimentoId)) return res.status(400).json({ ok: false, erro: 'id inválido' });
+
+    const meu = await poolComunicacao.query(
+      `SELECT tipo FROM depoimento_reacoes WHERE depoimento_id = $1 AND usuario_id = $2`,
+      [depoimentoId, usuarioId]
+    );
+    const cont = await poolComunicacao.query(
+      `SELECT tipo, COUNT(*)::int AS n FROM depoimento_reacoes
+        WHERE depoimento_id = $1 GROUP BY tipo`,
+      [depoimentoId]
+    );
+    return res.json({
+      ok: true,
+      minhas_reacoes: meu.rows.map(r => r.tipo),
+      contagens: cont.rows.reduce((acc, r) => ({ ...acc, [r.tipo]: r.n }), {}),
+    });
+  } catch (err) {
+    console.error('[app/relato/reacoes GET] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// POST /api/app/relato/:id/visto — registra visualização (aluna abriu o modal)
+// Idempotente: UPSERT incrementando vezes_visto + atualizando visto_em.
+router.post('/relato/:id/visto', autenticar, async (req, res) => {
+  try {
+    const usuarioId = req.usuario.sub;
+    const depoimentoId = parseInt(req.params.id, 10);
+    if (!Number.isFinite(depoimentoId)) return res.status(400).json({ ok: false, erro: 'id inválido' });
+    await poolComunicacao.query(
+      `INSERT INTO depoimento_visualizacoes (depoimento_id, usuario_id, visto_em, vezes_visto)
+       VALUES ($1, $2, NOW(), 1)
+       ON CONFLICT (depoimento_id, usuario_id)
+       DO UPDATE SET visto_em = NOW(), vezes_visto = depoimento_visualizacoes.vezes_visto + 1`,
+      [depoimentoId, usuarioId]
+    );
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[app/relato/visto] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// GET /api/app/relatos-feed?limit=N — feed inteligente com algoritmo completo
+// Score por relato R pra aluna V (calculado em JS após query):
+//   score = RANDOM × novidade × jornada × popularidade × penalidade_visto
+// Reset: se TODOS os candidatos foram reagidos, ignora a penalidade_reagido
+//        (resolve "esgotou tudo, agora repete").
+router.get('/relatos-feed', autenticar, async (req, res) => {
+  try {
+    const usuarioId = req.usuario.sub;
+    const limit = Math.max(1, Math.min(50, parseInt(req.query.limit, 10) || 12));
+
+    // 1. Lê config (com fallback caso a row tenha sido apagada manualmente)
+    const cRow = await poolComunicacao.query(
+      `SELECT dados FROM feed_relevancia_config WHERE chave = 'relevancia' LIMIT 1`
+    );
+    const cfg = (cRow.rows[0] && cRow.rows[0].dados) || {
+      mult_novidade: 5.0, mult_jornada: 3.0, mult_popularidade: 0.5,
+      penalidade_visto: 0.4, penalidade_reagido: 0.05, janela_novidade_horas: 48,
+    };
+
+    // 2. Pega produtos da jornada vigente da aluna (pra boost de venda)
+    let slugsJornada = new Set();
+    try {
+      const aluna = await poolCore.query(`SELECT id, telefone, plano FROM usuarios WHERE id=$1`, [usuarioId]);
+      if (aluna.rows[0]) {
+        const testes = await poolTeste.query(
+          `SELECT * FROM testes
+            WHERE (usuario_id=$1 OR telefone_canonico=$2) AND status='concluido'
+            ORDER BY feito_em DESC LIMIT 1`,
+          [usuarioId, aluna.rows[0].telefone]
+        );
+        if (testes.rows[0]) {
+          const vigente = calcularJornadaVigente({
+            perfilDominante: testes.rows[0].perfil_dominante,
+            nivelProsperidade: testes.rows[0].nivel_prosperidade,
+            percentualProsperidade: testes.rows[0].percentual_prosperidade,
+            plano: aluna.rows[0].plano,
+            energiasBrutas: testes.rows[0].energias_brutas,
+          });
+          if (vigente && Array.isArray(vigente.passos)) {
+            for (const p of vigente.passos) {
+              if (p.produto_slug) slugsJornada.add(p.produto_slug);
+            }
+          }
+        }
+      }
+    } catch { /* sem jornada disponível — segue sem boost */ }
+
+    // 3. Busca todos os relatos visíveis + estado da aluna (visto / reagiu) + contagem de reações
+    const rel = await poolComunicacao.query(
+      `SELECT
+         d.id, d.nome, d.profissao, d.idade, d.texto, d.criado_em,
+         d.tema_id, t.slug AS tema_slug, t.nome AS tema_nome, t.produto_slug,
+         d.autora_era_assinante_clube,
+         (SELECT vezes_visto FROM depoimento_visualizacoes v
+           WHERE v.depoimento_id = d.id AND v.usuario_id = $1) AS vezes_visto,
+         (SELECT COUNT(*)::int FROM depoimento_reacoes r
+           WHERE r.depoimento_id = d.id AND r.usuario_id = $1) AS minhas_reacoes_qtd,
+         (SELECT COUNT(*)::int FROM depoimento_reacoes r
+           WHERE r.depoimento_id = d.id) AS reacoes_publicas
+       FROM depoimentos d
+       LEFT JOIN temas t ON t.id = d.tema_id
+       WHERE d.ativo = TRUE
+         AND d.status_moderacao = 'aprovado'
+         AND d.oculto_por_conta_inativa = FALSE`,
+      [usuarioId]
+    );
+
+    if (!rel.rows.length) return res.json({ ok: true, relatos: [] });
+
+    const agora = Date.now();
+    const janelaMs = Number(cfg.janela_novidade_horas || 48) * 60 * 60 * 1000;
+
+    // 4. Detecta se TODOS os candidatos já foram reagidos (cenário do "esgotou")
+    const todosReagidos = rel.rows.every(r => (r.minhas_reacoes_qtd || 0) > 0);
+
+    // 5. Calcula score por relato
+    const scored = rel.rows.map(r => {
+      const idadeMs = r.criado_em ? (agora - new Date(r.criado_em).getTime()) : Infinity;
+      const ehNovo = idadeMs <= janelaMs;
+      const ehJornada = r.produto_slug && slugsJornada.has(r.produto_slug);
+      const reacoes = r.reacoes_publicas || 0;
+      const jaViu = (r.vezes_visto || 0) > 0;
+      const jaReagiu = (r.minhas_reacoes_qtd || 0) > 0;
+
+      let pesoVisto = 1.0;
+      if (jaReagiu && !todosReagidos)      pesoVisto = Number(cfg.penalidade_reagido || 0.05);
+      else if (jaViu && !jaReagiu)         pesoVisto = Number(cfg.penalidade_visto || 0.4);
+
+      const score = Math.random()
+        * (ehNovo ? Number(cfg.mult_novidade || 5.0) : 1)
+        * (ehJornada ? Number(cfg.mult_jornada || 3.0) : 1)
+        * (1 + Number(cfg.mult_popularidade || 0.5) * Math.log(1 + reacoes))
+        * pesoVisto;
+
+      return { ...r, _score: score };
+    });
+
+    scored.sort((a, b) => b._score - a._score);
+    const top = scored.slice(0, limit).map(({ _score, vezes_visto, minhas_reacoes_qtd, ...rest }) => rest);
+    return res.json({ ok: true, relatos: top, reset_aplicado: todosReagidos });
+  } catch (err) {
+    console.error('[app/relatos-feed] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// GET /api/app/bau  → todos os relatos salvos da aluna, agrupados por tipo de reação
+router.get('/bau', autenticar, async (req, res) => {
+  try {
+    const usuarioId = req.usuario.sub;
+    const r = await poolComunicacao.query(
+      `SELECT b.tipo_reacao, b.salvo_em,
+              d.id, d.nome, d.profissao, d.idade, d.texto,
+              d.autora_era_assinante_clube,
+              d.tema_id, t.slug AS tema_slug, t.nome AS tema_nome, t.produto_slug
+         FROM relatos_salvos_bau b
+         JOIN depoimentos d ON d.id = b.depoimento_id
+         LEFT JOIN temas t ON t.id = d.tema_id
+        WHERE b.usuario_id = $1
+          AND d.ativo = TRUE AND d.status_moderacao = 'aprovado'
+          AND d.oculto_por_conta_inativa = FALSE
+        ORDER BY b.salvo_em DESC`,
+      [usuarioId]
+    );
+    // Agrupa por tipo_reacao
+    const abas = { quero: [], ja_vivo: [], nao_e_pra_mim: [], parabens: [] };
+    for (const row of r.rows) {
+      if (abas[row.tipo_reacao]) abas[row.tipo_reacao].push(row);
+    }
+    return res.json({ ok: true, abas });
+  } catch (err) {
+    console.error('[app/bau] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
 module.exports = router;

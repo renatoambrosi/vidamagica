@@ -1239,4 +1239,60 @@ router.put('/teste/livros/:slug', async (req, res) => {
   }
 });
 
+// ════════════════════════════════════════════════════════════════════
+// CONFIG DO ALGORITMO DO FEED DE RELATOS (Fase 2.5)
+// Tabela: feed_relevancia_config — singleton chave='relevancia'.
+// ════════════════════════════════════════════════════════════════════
+router.get('/feed-relevancia-config', async (req, res) => {
+  try {
+    const r = await poolComunicacao.query(
+      `SELECT dados, atualizado_em FROM feed_relevancia_config WHERE chave='relevancia' LIMIT 1`
+    );
+    if (!r.rows[0]) {
+      const defaults = {
+        mult_novidade: 5.0, mult_jornada: 3.0, mult_popularidade: 0.5,
+        penalidade_visto: 0.4, penalidade_reagido: 0.05, janela_novidade_horas: 48,
+      };
+      await poolComunicacao.query(
+        `INSERT INTO feed_relevancia_config (chave, dados) VALUES ('relevancia', $1::jsonb) ON CONFLICT (chave) DO NOTHING`,
+        [JSON.stringify(defaults)]
+      );
+      return res.json({ ok: true, dados: defaults, atualizado_em: new Date().toISOString() });
+    }
+    return res.json({ ok: true, dados: r.rows[0].dados, atualizado_em: r.rows[0].atualizado_em });
+  } catch (err) {
+    console.error('[admin/feed-relevancia-config GET] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+router.put('/feed-relevancia-config', async (req, res) => {
+  try {
+    const b = req.body || {};
+    const num = (v, def, min, max) => {
+      const n = parseFloat(v);
+      if (!Number.isFinite(n)) return def;
+      return Math.max(min, Math.min(max, n));
+    };
+    const dados = {
+      mult_novidade:         num(b.mult_novidade,       5.0,  0, 20),
+      mult_jornada:          num(b.mult_jornada,        3.0,  0, 20),
+      mult_popularidade:     num(b.mult_popularidade,   0.5,  0, 5),
+      penalidade_visto:      num(b.penalidade_visto,    0.4,  0, 1),
+      penalidade_reagido:    num(b.penalidade_reagido,  0.05, 0, 1),
+      janela_novidade_horas: Math.max(1, Math.min(720, parseInt(b.janela_novidade_horas, 10) || 48)),
+    };
+    await poolComunicacao.query(
+      `INSERT INTO feed_relevancia_config (chave, dados, atualizado_em)
+       VALUES ('relevancia', $1::jsonb, NOW())
+       ON CONFLICT (chave) DO UPDATE SET dados = $1::jsonb, atualizado_em = NOW()`,
+      [JSON.stringify(dados)]
+    );
+    return res.json({ ok: true, dados });
+  } catch (err) {
+    console.error('[admin/feed-relevancia-config PUT] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
 module.exports = router;

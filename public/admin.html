@@ -303,6 +303,154 @@ select option { background: #1a1205; }
   border-color: rgba(200,146,42,0.45);
   background: rgba(200,146,42,0.07);
 }
+/* Toggle-pill especial: marca de assinante do Clube — brilho dourado mais forte */
+.toggle-pill-clube:has(input:checked) {
+  border-color: rgba(232,201,122,0.7);
+  background: linear-gradient(135deg, rgba(200,146,42,0.18), rgba(232,201,122,0.08));
+  box-shadow: 0 0 12px rgba(200,146,42,0.25);
+}
+.toggle-pill-clube:has(input:checked) .toggle-pill-label { color: #F4D998; }
+
+/* ── Checkboxes de categoria (pendentes) ── */
+.cat-checkboxes {
+  display: flex; flex-wrap: wrap; gap: 0.4rem;
+  margin-top: 4px;
+}
+.cat-checkbox {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.76rem; font-weight: 500;
+  color: var(--text-light);
+  background: rgba(255,255,255,0.025);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.18s;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.cat-checkbox:hover { border-color: var(--border-hover); background: rgba(200,146,42,0.05); }
+.cat-checkbox input { margin: 0; accent-color: var(--color-gold-amber); width: 14px; height: 14px; }
+.cat-checkbox:has(input:checked) {
+  border-color: rgba(200,146,42,0.55);
+  background: rgba(200,146,42,0.1);
+  color: var(--color-gold-light);
+}
+.cat-checkbox span { line-height: 1; }
+
+/* ── Botão "Rejeitar" mais forte (red ghost) ── */
+.btn-danger-strong {
+  background: rgba(200,80,77,0.12);
+  color: #F09090;
+  border: 1px solid rgba(200,80,77,0.4);
+  min-height: 32px; padding: 0 0.9rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body); font-size: 0.76rem; font-weight: 700;
+  letter-spacing: 0.03em; line-height: 1;
+  cursor: pointer; transition: all 0.18s;
+  display: inline-flex; align-items: center; gap: 0.3rem;
+}
+.btn-danger-strong:hover {
+  background: rgba(200,80,77,0.22);
+  border-color: rgba(200,80,77,0.6);
+}
+.btn-danger-strong:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ════════════════════════════════════════════════════
+   SUB-PAINEL "ALGORITMO" — sliders de pesos (Fase 2.5)
+   ════════════════════════════════════════════════════ */
+.algo-grupo {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+.algo-grupo:last-of-type { border-bottom: 0; padding-bottom: 0.5rem; }
+.algo-grupo-titulo {
+  font-family: var(--font-display);
+  font-size: 0.78rem; font-weight: 800;
+  color: var(--color-gold-amber);
+  letter-spacing: 0.06em;
+  margin-bottom: 0.8rem;
+}
+.algo-slider {
+  margin-bottom: 1rem;
+}
+.algo-slider-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 1rem; margin-bottom: 0.35rem;
+}
+.algo-slider-row label {
+  font-size: 0.78rem; font-weight: 600;
+  color: var(--text-light);
+  text-transform: none; letter-spacing: 0;
+  margin: 0; flex: 1;
+}
+.algo-slider-hint {
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  display: block; margin-top: 1px;
+}
+.algo-slider-valor {
+  font-family: var(--font-display);
+  font-size: 0.95rem; font-weight: 800;
+  color: var(--color-gold-light);
+  flex-shrink: 0;
+  min-width: 70px;
+  text-align: right;
+}
+.algo-slider input[type="range"] {
+  width: 100%;
+  height: 6px;
+  background: rgba(200,146,42,0.15);
+  border-radius: 999px;
+  appearance: none;
+  outline: none;
+  margin: 0.3rem 0 0.1rem;
+}
+.algo-slider input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px; height: 20px;
+  background: linear-gradient(135deg, var(--color-gold-light), var(--color-gold-amber));
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--bg-dark);
+  box-shadow: 0 2px 8px rgba(200,146,42,0.45);
+}
+.algo-slider input[type="range"]::-moz-range-thumb {
+  width: 20px; height: 20px;
+  background: linear-gradient(135deg, var(--color-gold-light), var(--color-gold-amber));
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--bg-dark);
+}
+.algo-slider-min-max {
+  display: flex; justify-content: space-between;
+  font-size: 0.62rem; color: var(--text-muted);
+  margin-top: 1px;
+}
+.algo-explicacao {
+  margin-top: 0.55rem;
+  padding: 0.7rem 0.85rem;
+  background: rgba(200,146,42,0.05);
+  border: 1px solid rgba(200,146,42,0.18);
+  border-radius: var(--radius-sm);
+  font-size: 0.74rem; color: var(--text-muted);
+  line-height: 1.5;
+}
+.algo-acoes {
+  display: flex; align-items: center;
+  gap: 0.55rem; flex-wrap: wrap;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+.algo-status {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.algo-status.algo-ok { color: #8BC87A; }
+.algo-status.algo-erro { color: #F09090; }
 
 /* ── Card de relato: mais respiro, tipografia maior ── */
 .dep-grid { gap: 0.85rem; }
@@ -416,13 +564,22 @@ select option { background: #1a1205; }
     <!-- ABA DEPOIMENTOS -->
     <div class="tab-panel" id="tab-depoimentos">
 
-      <!-- ── SUB-TABS: Configurações | Depoimentos ── -->
+      <!-- ── SUB-TABS: Configurações | Depoimentos | Pendentes | Categorias ── -->
       <div class="subtabs" role="tablist">
         <button type="button" class="subtab-btn active" data-subtab="config" onclick="goSubtab('config', this)">
           ⚙️ Configurações <span class="subtab-badge" id="badge-temas">—</span>
         </button>
         <button type="button" class="subtab-btn" data-subtab="relatos" onclick="goSubtab('relatos', this)">
           💬 Depoimentos <span class="subtab-badge" id="badge-deps">—</span>
+        </button>
+        <button type="button" class="subtab-btn" data-subtab="pendentes" onclick="goSubtab('pendentes', this)">
+          📩 Pendentes <span class="subtab-badge" id="badge-pendentes">—</span>
+        </button>
+        <button type="button" class="subtab-btn" data-subtab="categorias" onclick="goSubtab('categorias', this)">
+          🌱 Categorias <span class="subtab-badge" id="badge-categorias">—</span>
+        </button>
+        <button type="button" class="subtab-btn" data-subtab="algoritmo" onclick="goSubtab('algoritmo', this); carregarAlgoritmo()">
+          ⚙️ Algoritmo
         </button>
       </div>
 
@@ -538,6 +695,136 @@ select option { background: #1a1205; }
 
         <div class="dep-grid" id="dep-grid"><div class="loading">Carregando relatos...</div></div>
 
+      </div>
+
+      <!-- ╔════════════════════════════════════════════════════════════╗ -->
+      <!-- ║ SUB-PAINEL 3 — PENDENTES (moderação Fase 2.1)              ║ -->
+      <!-- ║ Relatos enviados pela aluna pelo /app esperando aprovação. ║ -->
+      <!-- ╚════════════════════════════════════════════════════════════╝ -->
+      <div class="subtab-panel" id="subtab-pendentes">
+        <div class="section-header">
+          <span class="section-title">Relatos pendentes de moderação</span>
+          <button class="btn btn-ghost btn-sm" onclick="carregarPendentes()">↻ Atualizar</button>
+        </div>
+        <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.85rem;line-height:1.5">
+          Aqui aparecem os relatos enviados pelas alunas pela área logada (/app).
+          Pra aprovar, escolha o <strong>tema (produto)</strong> e marque as <strong>categorias de vida</strong>.
+        </p>
+        <div class="dep-grid" id="pendentes-grid"><div class="loading">Carregando pendentes...</div></div>
+      </div>
+
+      <!-- ╔════════════════════════════════════════════════════════════╗ -->
+      <!-- ║ SUB-PAINEL 5 — ALGORITMO DO FEED (Fase 2.5)                ║ -->
+      <!-- ║ Pesos que controlam a ordem do feed "Relatos da Comunidade".║ -->
+      <!-- ╚════════════════════════════════════════════════════════════╝ -->
+      <div class="subtab-panel" id="subtab-algoritmo">
+        <div class="section-header">
+          <span class="section-title">Algoritmo do feed de relatos</span>
+          <button class="btn btn-ghost btn-sm" onclick="carregarAlgoritmo()">↻ Recarregar</button>
+        </div>
+        <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:1.2rem;line-height:1.55">
+          Controla quais relatos aparecem primeiro no feed da home do <strong>/app</strong>. A fórmula é:
+          <br><code style="background:rgba(200,146,42,0.08);padding:2px 6px;border-radius:4px;font-size:0.72rem">score = RANDOM × novidade × jornada × popularidade × penalidade_visto</code>
+        </p>
+
+        <div class="dep-card" style="display:block">
+          <div class="algo-grupo">
+            <div class="algo-grupo-titulo">📈 Boosts (multiplicadores positivos)</div>
+
+            <div class="algo-slider">
+              <div class="algo-slider-row">
+                <label>Boost de novidade <span class="algo-slider-hint">(relatos dentro da janela ganham × este valor)</span></label>
+                <span class="algo-slider-valor" id="vmult_novidade">—</span>
+              </div>
+              <input type="range" min="0" max="20" step="0.5" id="mult_novidade" oninput="document.getElementById('vmult_novidade').textContent='× ' + (+this.value).toFixed(1)">
+              <div class="algo-slider-min-max"><span>0 (sem boost)</span><span>20 (extremo)</span></div>
+            </div>
+
+            <div class="algo-slider">
+              <div class="algo-slider-row">
+                <label>Janela de novidade <span class="algo-slider-hint">(quantas horas o relato é considerado "novo")</span></label>
+                <span class="algo-slider-valor" id="vjanela_novidade_horas">— h</span>
+              </div>
+              <input type="range" min="1" max="168" step="1" id="janela_novidade_horas" oninput="document.getElementById('vjanela_novidade_horas').textContent=this.value + ' h'">
+              <div class="algo-slider-min-max"><span>1h</span><span>168h (1 semana)</span></div>
+            </div>
+
+            <div class="algo-slider">
+              <div class="algo-slider-row">
+                <label>Boost de jornada vigente <span class="algo-slider-hint">(relato do produto que a aluna deve consumir agora)</span></label>
+                <span class="algo-slider-valor" id="vmult_jornada">—</span>
+              </div>
+              <input type="range" min="0" max="20" step="0.5" id="mult_jornada" oninput="document.getElementById('vmult_jornada').textContent='× ' + (+this.value).toFixed(1)">
+              <div class="algo-slider-min-max"><span>0 (ignora jornada)</span><span>20 (motor de venda forte)</span></div>
+            </div>
+
+            <div class="algo-slider">
+              <div class="algo-slider-row">
+                <label>Boost de popularidade <span class="algo-slider-hint">(relato com muitas reações sobe — fórmula: 1 + valor × log(1 + reações))</span></label>
+                <span class="algo-slider-valor" id="vmult_popularidade">—</span>
+              </div>
+              <input type="range" min="0" max="5" step="0.1" id="mult_popularidade" oninput="document.getElementById('vmult_popularidade').textContent='× ' + (+this.value).toFixed(2)">
+              <div class="algo-slider-min-max"><span>0 (não conta)</span><span>5 (popular domina)</span></div>
+            </div>
+          </div>
+
+          <div class="algo-grupo">
+            <div class="algo-grupo-titulo">📉 Penalidades (anti-repetição)</div>
+
+            <div class="algo-slider">
+              <div class="algo-slider-row">
+                <label>Penalidade quando aluna já viu <span class="algo-slider-hint">(abriu o modal mas não reagiu)</span></label>
+                <span class="algo-slider-valor" id="vpenalidade_visto">—</span>
+              </div>
+              <input type="range" min="0" max="1" step="0.05" id="penalidade_visto" oninput="document.getElementById('vpenalidade_visto').textContent='× ' + (+this.value).toFixed(2)">
+              <div class="algo-slider-min-max"><span>0 (esconde sempre)</span><span>1 (não penaliza)</span></div>
+            </div>
+
+            <div class="algo-slider">
+              <div class="algo-slider-row">
+                <label>Penalidade quando aluna já reagiu <span class="algo-slider-hint">(curtiu/marcou — quase exilado, volta só quando esgotar)</span></label>
+                <span class="algo-slider-valor" id="vpenalidade_reagido">—</span>
+              </div>
+              <input type="range" min="0" max="1" step="0.05" id="penalidade_reagido" oninput="document.getElementById('vpenalidade_reagido').textContent='× ' + (+this.value).toFixed(2)">
+              <div class="algo-slider-min-max"><span>0 (esconde sempre)</span><span>1 (não penaliza)</span></div>
+            </div>
+            <p class="algo-explicacao">
+              💡 Quando <strong>todos</strong> os relatos disponíveis já foram reagidos pela aluna, o sistema <strong>ignora automaticamente</strong> a penalidade — assim ela volta a ver tudo sem o feed ficar vazio.
+            </p>
+          </div>
+
+          <div class="algo-acoes">
+            <button class="btn btn-primary btn-sm" onclick="salvarAlgoritmo(this)">💾 Salvar configuração</button>
+            <button class="btn btn-ghost btn-sm" onclick="restaurarAlgoritmoDefaults()">↺ Restaurar padrões</button>
+            <span class="algo-status" id="algo-status"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ╔════════════════════════════════════════════════════════════╗ -->
+      <!-- ║ SUB-PAINEL 4 — CATEGORIAS (Fase 2.1a)                      ║ -->
+      <!-- ║ CRUD do catálogo de áreas-da-vida que classificam relatos. ║ -->
+      <!-- ╚════════════════════════════════════════════════════════════╝ -->
+      <div class="subtab-panel" id="subtab-categorias">
+        <div class="section-header">
+          <span class="section-title">Categorias de vida</span>
+          <button class="btn btn-ghost btn-sm" onclick="abrirNovaCat()">+ Nova categoria</button>
+        </div>
+        <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.85rem;line-height:1.5">
+          Categorias = <strong>área da vida</strong> em que o relato fala (filhos, renda, carreira...). Não confunda com Tema (que aponta pro produto que a aluna leu).
+          <br>Você marca categorias nos relatos pendentes na hora de aprovar.
+        </p>
+        <div class="add-form" id="form-nova-cat" style="display:none">
+          <div class="dep-row" style="margin-bottom:0.5rem">
+            <div class="field"><label>Nome (visível pra você)</label><input type="text" id="cat-new-nome" placeholder='Ex: "Saúde mental"'></div>
+            <div class="field" style="max-width:160px"><label>Ordem</label><input type="number" id="cat-new-ordem" value="99"></div>
+          </div>
+          <div style="display:flex;gap:0.5rem">
+            <button class="btn btn-primary btn-sm" onclick="criarCat()">Criar categoria</button>
+            <button class="btn btn-ghost btn-sm" onclick="fecharNovaCat()">Cancelar</button>
+          </div>
+        </div>
+        <div class="dep-grid" id="categorias-grid"><div class="loading">Carregando categorias...</div></div>
       </div>
 
     </div>
@@ -1208,6 +1495,8 @@ async function salvarProdutos(){const btn=document.getElementById('btn-save-prod
 // ─── Estado local ───
 let temas = [];            // lista de temas {id, slug, nome, produto_slug, ordem, ativo, qtd_relatos}
 let deps  = [];            // lista de relatos
+let pendentes  = [];       // relatos com status_moderacao='pendente' (Fase 2.1)
+let categorias = [];       // catálogo de categorias de vida (Fase 2.1a)
 let produtosPrecos = {};   // { slug: {nome, imagem_url, ...} } — pra dropdown e preview
 
 function marcarAlterado(){ /* compat — sistema novo salva por relato individual */ }
@@ -1236,8 +1525,16 @@ function goSubtab(id, btn){
 function atualizarBadges(){
   const bt = document.getElementById('badge-temas');
   const bd = document.getElementById('badge-deps');
+  const bp = document.getElementById('badge-pendentes');
+  const bc = document.getElementById('badge-categorias');
   if (bt) bt.textContent = String(temas.length || 0);
   if (bd) bd.textContent = String(deps.length || 0);
+  if (bp) {
+    bp.textContent = String(pendentes.length || 0);
+    bp.style.background = pendentes.length ? 'rgba(240,144,144,0.18)' : 'rgba(200,146,42,0.12)';
+    bp.style.color = pendentes.length ? '#F09090' : 'var(--color-gold-light)';
+  }
+  if (bc) bc.textContent = String(categorias.filter(c => c.ativo).length || 0);
 }
 
 // ─── TEMAS ───
@@ -1483,6 +1780,10 @@ function renderDeps(){
               <span class="toggle-pill-label">Ativo</span>
               <span class="toggle"><input type="checkbox" data-field="ativo" ${d.ativo?'checked':''}><span class="toggle-slider"></span></span>
             </label>
+            <label class="toggle-pill toggle-pill-clube" title="Marca este relato como vindo de uma assinante do Clube Vida Mágica — ativa o brilho dourado em todas as superfícies (LPs, /app, /relatos)">
+              <span class="toggle-pill-label">💛 Assinante</span>
+              <span class="toggle"><input type="checkbox" data-field="autora_era_assinante_clube" ${d.autora_era_assinante_clube?'checked':''}><span class="toggle-slider"></span></span>
+            </label>
           </div>
           <div class="dep-footer-actions">
             <button class="btn btn-primary btn-sm" onclick="salvarDep(${d.id}, this)">Salvar</button>
@@ -1556,6 +1857,7 @@ async function salvarDep(id, btn){
     tema_id: parseInt(card.querySelector('[data-field="tema_id"]').value, 10) || null,
     mostrar_no_ticker: card.querySelector('[data-field="mostrar_no_ticker"]').checked,
     ativo: card.querySelector('[data-field="ativo"]').checked,
+    autora_era_assinante_clube: card.querySelector('[data-field="autora_era_assinante_clube"]')?.checked || false,
     texto: card.querySelector('[data-field="texto"]').value.trim(),
   };
   btn.disabled = true;
@@ -1597,11 +1899,350 @@ async function salvarShuffle(){
   }catch{ toast('Erro ao salvar','error'); }
 }
 
-// Boot da aba Depoimentos: carrega preços (pra dropdown) → temas → relatos.
+// Boot da aba Depoimentos: carrega preços (pra dropdown) → temas → categorias → relatos → pendentes.
 async function bootDepoimentos(){
   await carregarProdutosParaDropdown();
   await carregarTemas();
+  await carregarCategorias();
   await carregarDeps();
+  await carregarPendentes();
+}
+
+// ============================================================
+// CATEGORIAS DE VIDA (Fase 2.1a)
+// ============================================================
+async function carregarCategorias(){
+  try{
+    const r = await fetch(`${API}/api/admin/categorias-relato`, {headers:{'Authorization':authHeader()}});
+    categorias = r.ok ? await r.json() : [];
+  }catch{ categorias = []; }
+  renderCategorias();
+  atualizarBadges();
+}
+
+function renderCategorias(){
+  const grid = document.getElementById('categorias-grid');
+  if (!grid) return;
+  if (!categorias.length){ grid.innerHTML = '<div class="loading">Nenhuma categoria cadastrada.</div>'; return; }
+  grid.innerHTML = '';
+  categorias.forEach((c) => {
+    const card = document.createElement('div');
+    card.className = 'dep-card';
+    card.innerHTML = `
+      <div class="dep-order">#${c.ordem}</div>
+      <div class="dep-fields">
+        <div class="dep-row">
+          <div class="field"><label>Nome</label>
+            <input type="text" value="${escHtml(c.nome)}" data-field="nome">
+          </div>
+          <div class="field" style="max-width:160px"><label>Slug (congelado)</label>
+            <input type="text" value="${escHtml(c.slug)}" data-field="slug" readonly title="Slug não pode ser alterado depois de criada (quebra histórico)">
+          </div>
+          <div class="field" style="max-width:100px"><label>Ordem</label>
+            <input type="number" value="${c.ordem||0}" data-field="ordem">
+          </div>
+        </div>
+        <span class="tag-hint">${c.qtd_uso || 0} relato(s) usando esta categoria</span>
+        <div class="dep-footer">
+          <div class="dep-footer-toggles">
+            <label class="toggle-pill">
+              <span class="toggle-pill-label">Ativa</span>
+              <span class="toggle"><input type="checkbox" data-field="ativo" ${c.ativo?'checked':''}><span class="toggle-slider"></span></span>
+            </label>
+          </div>
+          <div class="dep-footer-actions">
+            <button class="btn btn-primary btn-sm" onclick="salvarCat(${c.id}, this)">Salvar</button>
+            <button class="btn-icon" onclick="deletarCat(${c.id})" title="Apagar categoria" aria-label="Apagar categoria">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function abrirNovaCat(){
+  document.getElementById('form-nova-cat').style.display = 'block';
+  document.getElementById('cat-new-nome').focus();
+}
+function fecharNovaCat(){
+  document.getElementById('form-nova-cat').style.display = 'none';
+  document.getElementById('cat-new-nome').value = '';
+  document.getElementById('cat-new-ordem').value = '99';
+}
+async function criarCat(){
+  const nome = document.getElementById('cat-new-nome').value.trim();
+  if (!nome) return toast('Nome obrigatório','error');
+  const ordem = parseInt(document.getElementById('cat-new-ordem').value, 10) || 99;
+  try{
+    const r = await fetch(`${API}/api/admin/categorias-relato`, {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body: JSON.stringify({ nome, ordem })
+    });
+    const d = await r.json();
+    if (!r.ok) return toast(d.error || 'Erro','error');
+    fecharNovaCat();
+    await carregarCategorias();
+    toast('✓ Categoria criada');
+  }catch{ toast('Erro ao criar categoria','error'); }
+}
+async function salvarCat(id, btn){
+  const card = btn.closest('.dep-card');
+  const body = {
+    nome: card.querySelector('[data-field="nome"]').value.trim(),
+    ordem: parseInt(card.querySelector('[data-field="ordem"]').value, 10) || 0,
+    ativo: card.querySelector('[data-field="ativo"]').checked,
+  };
+  btn.disabled = true;
+  try{
+    const r = await fetch(`${API}/api/admin/categorias-relato/${id}`, {
+      method:'PUT', headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (!r.ok) return toast(d.error || 'Erro','error');
+    toast('✓ Categoria salva');
+    const idx = categorias.findIndex(x => x.id === id);
+    if (idx >= 0) categorias[idx] = { ...categorias[idx], ...d };
+    atualizarBadges();
+  }catch{ toast('Erro ao salvar','error'); }
+  finally{ btn.disabled = false; }
+}
+async function deletarCat(id){
+  if (!confirm('Apagar essa categoria? Se ela já estiver vinculada a relatos, o sistema vai pedir pra você desativar em vez de apagar.')) return;
+  try{
+    const r = await fetch(`${API}/api/admin/categorias-relato/${id}`, {
+      method:'DELETE', headers:{'Authorization':authHeader()}
+    });
+    const d = await r.json();
+    if (!r.ok) return toast(d.error || 'Erro','error');
+    toast('✓ Apagada');
+    await carregarCategorias();
+  }catch{ toast('Erro ao apagar','error'); }
+}
+
+// ============================================================
+// PENDENTES (Fase 2.1) — moderação de relatos enviados pela aluna
+// ============================================================
+async function carregarPendentes(){
+  try{
+    const r = await fetch(`${API}/api/admin/depoimentos?status=pendente`, {headers:{'Authorization':authHeader()}});
+    pendentes = r.ok ? await r.json() : [];
+  }catch{ pendentes = []; }
+  renderPendentes();
+  atualizarBadges();
+}
+
+function renderPendentes(){
+  const grid = document.getElementById('pendentes-grid');
+  if (!grid) return;
+  if (!pendentes.length){
+    grid.innerHTML = '<div class="loading">🌱 Nenhum relato pendente. Tudo em dia.</div>';
+    return;
+  }
+  grid.innerHTML = '';
+  pendentes.forEach((d) => {
+    const card = document.createElement('div');
+    card.className = 'dep-card';
+    const charCount = (d.texto || '').length;
+    const taId = `pend-texto-${d.id}`;
+    const counterId = `pend-counter-${d.id}`;
+    const checkboxesCategorias = categorias
+      .filter(c => c.ativo)
+      .map(c => {
+        const checked = (d.categorias_ids || []).includes(c.id) ? 'checked' : '';
+        return `
+          <label class="cat-checkbox">
+            <input type="checkbox" data-cat-id="${c.id}" ${checked}>
+            <span>${escHtml(c.nome)}</span>
+          </label>
+        `;
+      }).join('');
+    card.innerHTML = `
+      <div class="dep-order">#${d.id}</div>
+      <div class="dep-fields">
+        <div class="dep-row">
+          <div class="field"><label>Nome</label>
+            <input type="text" value="${escHtml(d.nome||'')}" data-field="nome">
+          </div>
+          <div class="field" style="max-width:220px"><label>Profissão</label>
+            <input type="text" value="${escHtml(d.profissao||'')}" data-field="profissao" placeholder="Ex: Designer">
+          </div>
+          <div class="field" style="max-width:100px"><label>Idade</label>
+            <input type="number" value="${d.idade||''}" data-field="idade" min="1" max="120">
+          </div>
+        </div>
+        <div class="dep-row">
+          <div class="field"><label>Tema (produto) <span style="color:#F09090">*</span></label>
+            <select data-field="tema_id" required>${dropdownTemaSelected(d.tema_id)}</select>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0.3rem">
+          <label>Relato <span style="float:right;color:var(--text-muted);font-weight:400" id="${counterId}">${charCount} caracteres</span></label>
+          <textarea id="${taId}" data-field="texto" oninput="updateCounter('${taId}','${counterId}')">${escHtml(d.texto||'')}</textarea>
+        </div>
+        <div class="field">
+          <label>Categorias de vida — marque as que se aplicam</label>
+          <div class="cat-checkboxes" data-categorias-wrap>
+            ${checkboxesCategorias || '<span class="tag-hint">Nenhuma categoria cadastrada. Crie em "🌱 Categorias".</span>'}
+          </div>
+        </div>
+        <div class="dep-footer">
+          <div class="dep-footer-toggles">
+            <label class="toggle-pill toggle-pill-clube">
+              <span class="toggle-pill-label">💛 Assinante</span>
+              <span class="toggle"><input type="checkbox" data-field="autora_era_assinante_clube" ${d.autora_era_assinante_clube?'checked':''}><span class="toggle-slider"></span></span>
+            </label>
+            <label class="toggle-pill">
+              <span class="toggle-pill-label">Ticker</span>
+              <span class="toggle"><input type="checkbox" data-field="mostrar_no_ticker" ${d.mostrar_no_ticker?'checked':''}><span class="toggle-slider"></span></span>
+            </label>
+          </div>
+          <div class="dep-footer-actions">
+            <button class="btn btn-primary btn-sm" onclick="aprovarPendente(${d.id}, this)">✓ Aprovar</button>
+            <button class="btn btn-sm btn-danger-strong" onclick="rejeitarPendente(${d.id}, this)">✗ Rejeitar</button>
+          </div>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+    updateCounter(taId, counterId);
+  });
+}
+
+function coletarCategoriasIds(card){
+  return Array.from(card.querySelectorAll('[data-cat-id]'))
+    .filter(cb => cb.checked)
+    .map(cb => parseInt(cb.dataset.catId, 10))
+    .filter(n => Number.isFinite(n));
+}
+
+async function aprovarPendente(id, btn){
+  const card = btn.closest('.dep-card');
+  const tema_id = parseInt(card.querySelector('[data-field="tema_id"]').value, 10);
+  if (!tema_id) return toast('Escolha o tema (produto) antes de aprovar', 'error');
+  const body = {
+    nome: card.querySelector('[data-field="nome"]').value.trim(),
+    profissao: card.querySelector('[data-field="profissao"]').value.trim() || null,
+    idade: parseInt(card.querySelector('[data-field="idade"]').value, 10) || null,
+    tema_id,
+    texto: card.querySelector('[data-field="texto"]').value.trim(),
+    autora_era_assinante_clube: card.querySelector('[data-field="autora_era_assinante_clube"]').checked,
+    mostrar_no_ticker: card.querySelector('[data-field="mostrar_no_ticker"]').checked,
+    status_moderacao: 'aprovado',
+    ativo: true,
+    categorias_ids: coletarCategoriasIds(card),
+  };
+  btn.disabled = true;
+  try{
+    const r = await fetch(`${API}/api/admin/depoimentos/${id}`, {
+      method:'PUT', headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (!r.ok) return toast(d.error || 'Erro','error');
+    toast('✓ Relato aprovado e publicado');
+    await carregarPendentes();
+    await carregarDeps();
+  }catch{ toast('Erro ao aprovar','error'); }
+  finally{ btn.disabled = false; }
+}
+
+async function rejeitarPendente(id, btn){
+  const motivo = prompt('Motivo da rejeição (opcional — só pra seu registro interno):') || null;
+  const card = btn.closest('.dep-card');
+  const body = {
+    status_moderacao: 'rejeitado',
+    motivo_rejeicao: motivo,
+    ativo: false,
+  };
+  btn.disabled = true;
+  try{
+    const r = await fetch(`${API}/api/admin/depoimentos/${id}`, {
+      method:'PUT', headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (!r.ok) return toast(d.error || 'Erro','error');
+    toast('✓ Relato rejeitado');
+    await carregarPendentes();
+  }catch{ toast('Erro ao rejeitar','error'); }
+  finally{ btn.disabled = false; }
+}
+
+// ============================================================
+// ALGORITMO DO FEED (Fase 2.5)
+// ============================================================
+const ALGO_CHAVES = ['mult_novidade','mult_jornada','mult_popularidade','penalidade_visto','penalidade_reagido','janela_novidade_horas'];
+const ALGO_DEFAULTS = {
+  mult_novidade: 5.0, mult_jornada: 3.0, mult_popularidade: 0.5,
+  penalidade_visto: 0.4, penalidade_reagido: 0.05, janela_novidade_horas: 48,
+};
+const ALGO_FORMATS = {
+  mult_novidade:        v => '× ' + (+v).toFixed(1),
+  mult_jornada:         v => '× ' + (+v).toFixed(1),
+  mult_popularidade:    v => '× ' + (+v).toFixed(2),
+  penalidade_visto:     v => '× ' + (+v).toFixed(2),
+  penalidade_reagido:   v => '× ' + (+v).toFixed(2),
+  janela_novidade_horas: v => v + ' h',
+};
+
+function aplicarAlgoritmoNaUI(dados){
+  ALGO_CHAVES.forEach(k => {
+    const input = document.getElementById(k);
+    const visor = document.getElementById('v' + k);
+    if (input) input.value = dados[k];
+    if (visor) visor.textContent = ALGO_FORMATS[k](dados[k]);
+  });
+}
+
+async function carregarAlgoritmo(){
+  const status = document.getElementById('algo-status');
+  if (status) { status.textContent = 'Carregando…'; status.className = 'algo-status'; }
+  try{
+    const r = await fetch(`${API}/api/admin/feed-relevancia-config`, {headers:{'Authorization':authHeader()}});
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.erro || 'falha');
+    aplicarAlgoritmoNaUI(data.dados);
+    if (status) {
+      const dt = data.atualizado_em ? new Date(data.atualizado_em).toLocaleString('pt-BR') : '';
+      status.textContent = dt ? `Última atualização: ${dt}` : '';
+    }
+  }catch(err){
+    if (status) { status.textContent = 'Erro ao carregar — usando padrões'; status.className = 'algo-status algo-erro'; }
+    aplicarAlgoritmoNaUI(ALGO_DEFAULTS);
+  }
+}
+
+async function salvarAlgoritmo(btn){
+  const status = document.getElementById('algo-status');
+  const body = {};
+  ALGO_CHAVES.forEach(k => { body[k] = parseFloat(document.getElementById(k).value); });
+  btn.disabled = true;
+  if (status) { status.textContent = 'Salvando…'; status.className = 'algo-status'; }
+  try{
+    const r = await fetch(`${API}/api/admin/feed-relevancia-config`, {
+      method:'PUT', headers:{'Content-Type':'application/json','Authorization':authHeader()},
+      body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.erro || 'erro');
+    if (status) { status.textContent = '✓ Configuração salva — vale pro próximo carregamento do feed das alunas'; status.className = 'algo-status algo-ok'; }
+    aplicarAlgoritmoNaUI(data.dados);
+    toast('✓ Algoritmo atualizado');
+  }catch(err){
+    if (status) { status.textContent = 'Erro ao salvar'; status.className = 'algo-status algo-erro'; }
+    toast('Erro ao salvar','error');
+  }finally{ btn.disabled = false; }
+}
+
+function restaurarAlgoritmoDefaults(){
+  if (!confirm('Voltar todos os pesos pros valores padrão?\n\n• Novidade × 5\n• Jornada × 3\n• Popularidade × 0.5\n• Penalidade visto × 0.4\n• Penalidade reagido × 0.05\n• Janela 48h')) return;
+  aplicarAlgoritmoNaUI(ALGO_DEFAULTS);
+  const status = document.getElementById('algo-status');
+  if (status) { status.textContent = 'Padrões carregados — clique em Salvar pra aplicar'; status.className = 'algo-status'; }
 }
 
 // ============================================================

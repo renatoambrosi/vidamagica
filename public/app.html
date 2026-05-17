@@ -99,6 +99,19 @@
         </button>
       </div>
 
+      <!-- ── RELATOS DA COMUNIDADE — feed horizontal abaixo do Tesouro ── -->
+      <section class="relatos-comunidade-wrap" id="relatos-comunidade-wrap">
+        <div class="relatos-comunidade-head">
+          <h3 class="relatos-comunidade-titulo">Relatos da Comunidade</h3>
+          <span class="relatos-comunidade-sub" id="relatos-comunidade-sub">Histórias reais de transformação</span>
+        </div>
+        <div class="relatos-comunidade-carousel" id="relatos-comunidade-carousel">
+          <div class="relatos-comunidade-track" id="relatos-comunidade-track">
+            <div class="relatos-comunidade-loading">Carregando relatos…</div>
+          </div>
+        </div>
+      </section>
+
       <!-- Trilha moveu pra view-jornada. -->
       <footer class="rodape"><p>Vida Mágica · Renato &amp; Suellen Seragi</p></footer>
     </section>
@@ -335,6 +348,24 @@
           <span class="perfil-sementes-label">sementes</span>
         </div>
       </div>
+      <button type="button" class="perfil-bau-btn" onclick="irPara('bau')">
+        <span class="perfil-bau-btn-icone">🧰</span>
+        <div class="perfil-bau-btn-info">
+          <div class="perfil-bau-btn-titulo">Meu Baú de Relatos</div>
+          <div class="perfil-bau-btn-sub">Tudo que ressoou em você</div>
+        </div>
+        <span class="perfil-bau-btn-seta">›</span>
+      </button>
+
+      <button type="button" class="perfil-bau-btn" onclick="irPara('meus-relatos')">
+        <span class="perfil-bau-btn-icone">📝</span>
+        <div class="perfil-bau-btn-info">
+          <div class="perfil-bau-btn-titulo">Meus Relatos</div>
+          <div class="perfil-bau-btn-sub">Seus envios e o status de cada um</div>
+        </div>
+        <span class="perfil-bau-btn-seta">›</span>
+      </button>
+
       <ul class="perfil-menu">
         <li class="perfil-item" id="menu-testes">
           <span class="perfil-item-icone">📊</span>
@@ -365,6 +396,42 @@
           <div class="perfil-item-info"><span class="perfil-item-titulo">Sair</span></div>
         </li>
       </ul>
+    </section>
+
+    <!-- BAÚ DE RELATOS -->
+    <section class="view" id="view-bau">
+      <div class="view-topo">
+        <h2 class="view-titulo">Meu Baú de Relatos</h2>
+        <p class="view-sub">Tudo que ressoou em você — guardado pra sempre</p>
+      </div>
+      <nav class="bau-abas" id="bau-abas" role="tablist">
+        <button type="button" class="bau-aba ativa" data-aba="quero" onclick="trocarAbaBau('quero', this)">
+          <span>✨</span><span>Quero manifestar</span><span class="bau-aba-count" id="bau-count-quero">0</span>
+        </button>
+        <button type="button" class="bau-aba" data-aba="ja_vivo" onclick="trocarAbaBau('ja_vivo', this)">
+          <span>💛</span><span>Já vivo e celebro</span><span class="bau-aba-count" id="bau-count-ja_vivo">0</span>
+        </button>
+        <button type="button" class="bau-aba" data-aba="parabens" onclick="trocarAbaBau('parabens', this)">
+          <span>🙏</span><span>Honro e reconheço</span><span class="bau-aba-count" id="bau-count-parabens">0</span>
+        </button>
+        <button type="button" class="bau-aba" data-aba="nao_e_pra_mim" onclick="trocarAbaBau('nao_e_pra_mim', this)">
+          <span>🌿</span><span>Não me serve</span><span class="bau-aba-count" id="bau-count-nao_e_pra_mim">0</span>
+        </button>
+      </nav>
+      <div class="bau-lista" id="bau-lista">
+        <div class="bau-empty">Carregando seu Baú…</div>
+      </div>
+    </section>
+
+    <!-- MEUS RELATOS (status dos envios da aluna) -->
+    <section class="view" id="view-meus-relatos">
+      <div class="view-topo">
+        <h2 class="view-titulo">Meus Relatos</h2>
+        <p class="view-sub">Seus envios e o status de cada um</p>
+      </div>
+      <div class="bau-lista" id="meus-relatos-lista">
+        <div class="bau-empty">Carregando…</div>
+      </div>
     </section>
 
   </main>
@@ -530,6 +597,32 @@
 
   <div id="toast"></div>
 
+  <!-- MODAL: Aluna posta um relato (Sub-fase 2.1) -->
+  <div class="modal-postar-bg" id="modal-postar-relato">
+    <div class="modal-postar-card">
+      <div class="modal-postar-topo">
+        <div>
+          <div class="modal-postar-titulo">Compartilhar meu relato</div>
+        </div>
+        <button class="modal-postar-x" type="button" onclick="fecharModalPostarRelato()" aria-label="Fechar">✕</button>
+      </div>
+      <p class="modal-postar-sub">
+        Conte com suas palavras a transformação que você viveu. Vai pra moderação antes de aparecer — você pode mandar 1 relato por mês 🌱
+      </p>
+      <textarea class="modal-postar-textarea" id="postar-relato-texto"
+                maxlength="2000"
+                placeholder="Escreva aqui sua história de transformação..."
+                oninput="atualizarCounterRelato()"></textarea>
+      <div class="modal-postar-counter" id="postar-relato-counter">0 / 2000 caracteres</div>
+      <div class="modal-postar-acoes">
+        <button type="button" class="modal-postar-btn-cancelar" onclick="fecharModalPostarRelato()">Cancelar</button>
+        <button type="button" class="modal-postar-btn-enviar" id="postar-relato-enviar" onclick="postarRelato()">Enviar pra aprovação</button>
+      </div>
+      <div class="modal-postar-feedback" id="postar-relato-feedback"></div>
+    </div>
+  </div>
+
+  <script src="/relatos-card.js"></script>
   <script type="module" src="/app/app.js"></script>
 </body>
 </html>

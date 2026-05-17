@@ -153,6 +153,8 @@ function irPara(viewId) {
   }
 
   if (viewId === 'perfil') renderPerfil();
+  if (viewId === 'bau') renderBau();
+  if (viewId === 'meus-relatos') renderMeusRelatos();
   if (viewId === 'videos') {
     // Renderiza a grade Netflix passando o contexto atual (pra saber se é assinante)
     renderViewVideos(window._ctxAtual || null);
@@ -2174,6 +2176,9 @@ function hidratarHome(ctx) {
   // ── Player do topo (vídeo/imagem destaque) ──
   carregarPlayerTopo(ctx);
 
+  // ── Relatos da Comunidade (feed horizontal abaixo do Tesouro) ──
+  carregarRelatosComunidade(ctx);
+
   // ── Pop-up convite Clube (só pra não-assinante; flutua abaixo do header) ──
   renderPopupClube(ctx);
 
@@ -3082,3 +3087,282 @@ window.app = {
     renderPerfil();
   }
 })();
+
+// ════════════════════════════════════════════════════════════════════
+// MODAL POSTAR RELATO (Sub-fase 2.1)
+// ════════════════════════════════════════════════════════════════════
+window.abrirModalPostarRelato = function(){
+  const m = document.getElementById('modal-postar-relato');
+  if (!m) return;
+  document.getElementById('postar-relato-texto').value = '';
+  document.getElementById('postar-relato-feedback').className = 'modal-postar-feedback';
+  document.getElementById('postar-relato-feedback').textContent = '';
+  document.getElementById('postar-relato-enviar').disabled = false;
+  atualizarCounterRelato();
+  m.classList.add('aberto');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('postar-relato-texto')?.focus(), 100);
+};
+
+window.fecharModalPostarRelato = function(){
+  document.getElementById('modal-postar-relato')?.classList.remove('aberto');
+  document.body.style.overflow = '';
+};
+
+window.atualizarCounterRelato = function(){
+  const ta = document.getElementById('postar-relato-texto');
+  const c  = document.getElementById('postar-relato-counter');
+  if (!ta || !c) return;
+  const n = ta.value.length;
+  c.textContent = `${n} / 2000 caracteres`;
+  c.style.color = (n > 0 && n < 20)
+    ? 'var(--ouro-fundo)'
+    : (n > 1900 ? '#a83838' : 'var(--texto-mute)');
+};
+
+window.postarRelato = async function(){
+  const texto = (document.getElementById('postar-relato-texto').value || '').trim();
+  const feedback = document.getElementById('postar-relato-feedback');
+  const btn = document.getElementById('postar-relato-enviar');
+  feedback.className = 'modal-postar-feedback';
+  feedback.textContent = '';
+
+  if (texto.length < 20) {
+    feedback.className = 'modal-postar-feedback tipo-erro';
+    feedback.textContent = 'Escreva pelo menos 20 caracteres pra contar sua história.';
+    return;
+  }
+  btn.disabled = true;
+  try {
+    const r = await fetchAutenticado(`${API}/api/app/relato`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texto }),
+    });
+    if (!r) return; // fetchAutenticado já tratou expiração de sessão
+    const data = await r.json();
+    if (!r.ok) {
+      feedback.className = 'modal-postar-feedback tipo-erro';
+      feedback.textContent = data.erro || 'Não consegui enviar agora.';
+      btn.disabled = false;
+      return;
+    }
+    feedback.className = 'modal-postar-feedback tipo-ok';
+    feedback.textContent = '✓ Recebemos seu relato! Em breve a equipe vai aprovar e ele aparece na comunidade.';
+    setTimeout(() => fecharModalPostarRelato(), 2200);
+  } catch {
+    feedback.className = 'modal-postar-feedback tipo-erro';
+    feedback.textContent = 'Falha na conexão. Tenta de novo daqui a pouco.';
+    btn.disabled = false;
+  }
+};
+
+// ════════════════════════════════════════════════════════════════════
+// BAÚ DE RELATOS (Sub-fase 2.2)
+// 4 abas: quero | ja_vivo | parabens | nao_e_pra_mim
+// ════════════════════════════════════════════════════════════════════
+let bauDados = null;
+let bauAbaAtual = 'quero';
+
+async function renderBau(){
+  const lista = document.getElementById('bau-lista');
+  if (!lista) return;
+  lista.innerHTML = '<div class="bau-empty">Carregando seu Baú…</div>';
+  try {
+    const r = await fetchAutenticado(`${API}/api/app/bau`);
+    if (!r) return;
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.erro || 'erro');
+    bauDados = data.abas || { quero: [], ja_vivo: [], nao_e_pra_mim: [], parabens: [] };
+    // Atualiza contadores nas abas
+    ['quero','ja_vivo','parabens','nao_e_pra_mim'].forEach(t => {
+      const el = document.getElementById(`bau-count-${t}`);
+      if (el) el.textContent = String((bauDados[t] || []).length);
+    });
+    renderAbaBau(bauAbaAtual);
+  } catch {
+    lista.innerHTML = '<div class="bau-empty">Não consegui carregar seu Baú agora.</div>';
+  }
+}
+
+window.trocarAbaBau = function(aba, btn){
+  bauAbaAtual = aba;
+  document.querySelectorAll('#bau-abas .bau-aba').forEach(b => b.classList.remove('ativa'));
+  btn?.classList.add('ativa');
+  renderAbaBau(aba);
+};
+
+function renderAbaBau(aba){
+  const lista = document.getElementById('bau-lista');
+  if (!lista || !bauDados) return;
+  const itens = bauDados[aba] || [];
+  if (!itens.length){
+    const msgs = {
+      quero:           { ic:'✨', txt:'Quando você marcar "Quero isso na minha vida" em algum relato, ele aparece aqui.' },
+      ja_vivo:         { ic:'💛', txt:'Marque "Já vivo isso" pra celebrar — e essas histórias ficam guardadas aqui.' },
+      nao_e_pra_mim:   { ic:'🌿', txt:'O que não é seu caminho fica respeitosamente guardado aqui.' },
+      parabens:        { ic:'🙏', txt:'Quando você honrar a transformação de outras alunas, fica registrado aqui.' },
+    };
+    const m = msgs[aba];
+    lista.innerHTML = `<div class="bau-empty"><div class="bau-empty-icone">${m.ic}</div>${m.txt}</div>`;
+    return;
+  }
+  lista.innerHTML = itens.map(d => `
+    <div class="bau-relato-card ${d.autora_era_assinante_clube ? 'relato-clube' : ''}"
+         onclick="abrirRelatoDoBau(${d.id})">
+      <div class="relato-card-autor">${escHtml(d.nome || '—')}</div>
+      ${(d.profissao || d.idade) ? `<div class="relato-card-meta">${escHtml([d.profissao, d.idade ? d.idade + ' anos' : null].filter(Boolean).join(' • '))}</div>` : ''}
+      <p class="relato-card-texto">${escHtml(d.texto || '')}</p>
+      ${d.tema_nome ? `<span class="relato-card-tema">${escHtml(d.tema_nome)}</span>` : ''}
+    </div>
+  `).join('');
+}
+
+window.abrirRelatoDoBau = function(id){
+  if (!bauDados) return;
+  const todos = Object.values(bauDados).flat();
+  const rel = todos.find(d => d.id === id);
+  if (rel && window.VmRelatos) window.VmRelatos.abrirModal(rel);
+};
+
+// ════════════════════════════════════════════════════════════════════
+// MEUS RELATOS (Sub-fase 2.1 — lista do que a aluna mandou + status)
+// ════════════════════════════════════════════════════════════════════
+async function renderMeusRelatos(){
+  const lista = document.getElementById('meus-relatos-lista');
+  if (!lista) return;
+  lista.innerHTML = '<div class="bau-empty">Carregando…</div>';
+  try {
+    const r = await fetchAutenticado(`${API}/api/app/meus-relatos`);
+    if (!r) return;
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.erro || 'erro');
+    const relatos = data.relatos || [];
+    if (!relatos.length){
+      lista.innerHTML = `
+        <div class="bau-empty">
+          <div class="bau-empty-icone">📝</div>
+          Você ainda não compartilhou nenhum relato.<br>
+          <button type="button" class="modal-postar-btn-enviar" style="margin-top:1rem;max-width:240px" onclick="abrirModalPostarRelato()">+ Compartilhar agora</button>
+        </div>`;
+      return;
+    }
+    lista.innerHTML = relatos.map(d => {
+      const status = d.status_moderacao || 'pendente';
+      const corStatus = status === 'aprovado' ? '#4a7a3f' : (status === 'rejeitado' ? '#a83838' : 'var(--ouro-fundo)');
+      const bgStatus = status === 'aprovado' ? 'rgba(139,200,122,0.15)' : (status === 'rejeitado' ? 'rgba(200,80,77,0.12)' : 'rgba(200,146,42,0.12)');
+      const labelStatus = status === 'aprovado' ? '✓ Aprovado' : (status === 'rejeitado' ? '✗ Não publicado' : '⏳ Em análise');
+      return `
+        <div class="bau-relato-card" style="cursor:default">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:0.6rem;margin-bottom:0.4rem">
+            <span style="font-size:0.7rem;font-weight:700;padding:3px 10px;border-radius:999px;background:${bgStatus};color:${corStatus}">${labelStatus}</span>
+            ${d.tema_nome ? `<span class="relato-card-tema" style="margin:0">${escHtml(d.tema_nome)}</span>` : ''}
+          </div>
+          <p class="relato-card-texto" style="-webkit-line-clamp:6">${escHtml(d.texto || '')}</p>
+        </div>
+      `;
+    }).join('');
+  } catch {
+    lista.innerHTML = '<div class="bau-empty">Não consegui carregar agora.</div>';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// RELATOS DA COMUNIDADE — Sub-fase 2.0 + algoritmo completo da 2.5
+// Feed horizontal abaixo do Tesouros da Su.
+// Estratégia: tenta GET /api/app/relatos-feed (algoritmo inteligente,
+// usa config do admin + anti-repetição). Se falhar, cai pro client-side
+// simples como fallback.
+// Click no card abre o modal universal (relatos-card.js → VmRelatos.abrirModal).
+// ════════════════════════════════════════════════════════════════════
+async function carregarRelatosComunidade(ctx) {
+  const track = document.getElementById('relatos-comunidade-track');
+  if (!track) return;
+
+  let ordenados = [];
+  // 1ª tentativa: feed inteligente do servidor (Fase 2.5)
+  try {
+    const r = await fetchAutenticado(`${API}/api/app/relatos-feed?limit=12`);
+    if (r && r.ok) {
+      const data = await r.json();
+      if (data.ok && Array.isArray(data.relatos)) ordenados = data.relatos;
+    }
+  } catch { /* cai no fallback */ }
+
+  // Fallback client-side (algoritmo simples) — usado se endpoint falhar
+  if (!ordenados.length) {
+    try {
+      const r2 = await fetch('/api/depoimentos', { headers: { 'Accept': 'application/json' } });
+      if (!r2.ok) throw new Error('HTTP ' + r2.status);
+      const relatos = await r2.json();
+      if (!Array.isArray(relatos) || !relatos.length) {
+        track.innerHTML = '<div class="relatos-comunidade-loading">Nenhum relato disponível ainda.</div>';
+        return;
+      }
+      const slugsJornada = new Set(
+        (ctx?.jornada_atual?.passos || []).map(p => p.produto_slug).filter(Boolean)
+      );
+      const agora = Date.now();
+      const _48h = 48 * 60 * 60 * 1000;
+      ordenados = relatos
+        .map(rel => {
+          const idadeMs = rel.criado_em ? (agora - new Date(rel.criado_em).getTime()) : Infinity;
+          const ehNovo = idadeMs <= _48h;
+          const ehJornada = rel.produto_slug && slugsJornada.has(rel.produto_slug);
+          const peso = Math.random() * (ehNovo ? 5 : 1) * (ehJornada ? 3 : 1);
+          return { rel, peso };
+        })
+        .sort((a, b) => b.peso - a.peso)
+        .slice(0, 12)
+        .map(x => x.rel);
+    } catch (err) {
+      console.error('❌ Erro ao carregar relatos da comunidade:', err);
+      track.innerHTML = '<div class="relatos-comunidade-loading">Não consegui carregar os relatos agora.</div>';
+      return;
+    }
+  }
+
+  // Daqui pra baixo é o render comum, vindo do feed inteligente OU do fallback
+  try {
+
+    // 1º card = botão "+ Compartilhar meu relato" (estilo story). Sempre primeiro.
+    const cardCompartilhar = `
+      <div class="relato-card relato-card-postar" onclick="abrirModalPostarRelato()" role="button" tabindex="0">
+        <div class="relato-postar-icone">＋</div>
+        <div class="relato-postar-titulo">Compartilhar<br>meu relato</div>
+        <div class="relato-postar-sub">Conte sua transformação</div>
+      </div>
+    `;
+
+    const cardsRelatos = ordenados.map((d, i) => {
+      const metaPartes = [];
+      if (d.profissao) metaPartes.push(escHtml(d.profissao));
+      if (d.idade) metaPartes.push(escHtml(d.idade + ' anos'));
+      const meta = metaPartes.join(' • ');
+      const ehClube = !!d.autora_era_assinante_clube;
+      return `
+        <div class="relato-card ${ehClube ? 'relato-clube' : ''}" data-relato-idx="${i}">
+          <div class="relato-card-autor">${escHtml(d.nome || '—')}</div>
+          ${meta ? `<div class="relato-card-meta">${meta}</div>` : ''}
+          <p class="relato-card-texto">${escHtml(d.texto || '')}</p>
+          ${d.tema_nome ? `<span class="relato-card-tema">${escHtml(d.tema_nome)}</span>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    track.innerHTML = cardCompartilhar + cardsRelatos;
+
+    // Ativa click → modal universal (reusa toda a UX do relatos-card.js)
+    // Exclui o card "+ Compartilhar" da marcação de índice (ele tem onclick próprio).
+    if (window.VmRelatos) {
+      window.VmRelatos.iniciar({
+        depoimentos: ordenados,
+        container: '#relatos-comunidade-track',
+        cardSelector: '.relato-card:not(.relato-card-postar)',
+      });
+    }
+  } catch (err) {
+    console.error('❌ Erro ao carregar relatos da comunidade:', err);
+    track.innerHTML = '<div class="relatos-comunidade-loading">Não consegui carregar os relatos agora.</div>';
+  }
+}

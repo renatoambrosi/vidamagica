@@ -92,6 +92,7 @@ function normalizarPayloadDep(body) {
     gerado_por_ia: safeBool(body.gerado_por_ia, false),
     status_moderacao: ['pendente','aprovado','rejeitado'].includes(body.status_moderacao)
       ? body.status_moderacao : 'aprovado',
+    autora_era_assinante_clube: safeBool(body.autora_era_assinante_clube, false),
     ordem: Number.isFinite(parseInt(body.ordem, 10)) ? parseInt(body.ordem, 10) : 0,
     ativo: safeBool(body.ativo, true),
     tags: Array.isArray(body.tags)
@@ -100,15 +101,53 @@ function normalizarPayloadDep(body) {
 }
 
 // SELECT canônico de depoimento + dados do tema/produto (JOIN simples).
+// `categorias_ids` é array agregado do pivot depoimento_categorias (Fase 2.1a).
 const SELECT_DEP_COMPLETO = `
   SELECT
     d.id, d.nome, d.profissao, d.idade, d.cidade, d.texto,
     d.tema_id, t.slug AS tema_slug, t.nome AS tema_nome, t.produto_slug,
     d.usuario_id, d.mostrar_no_ticker, d.gerado_por_ia, d.status_moderacao,
-    d.tags, d.ordem, d.ativo, d.criado_em, d.atualizado_em
+    d.autora_era_assinante_clube, d.motivo_rejeicao,
+    d.tags, d.ordem, d.ativo, d.criado_em, d.atualizado_em,
+    COALESCE(
+      (SELECT array_agg(dc.categoria_id ORDER BY dc.categoria_id)
+         FROM depoimento_categorias dc WHERE dc.depoimento_id = d.id),
+      '{}'::int[]
+    ) AS categorias_ids
   FROM depoimentos d
   LEFT JOIN temas t ON t.id = d.tema_id
 `;
+
+// Sincroniza o pivot depoimento_categorias com a lista de ids passada.
+// Aceita array (mesmo vazio). Apaga as antigas e insere as novas (transação local).
+async function sincronizarCategorias(depoimento_id, categorias_ids) {
+  if (!Array.isArray(categorias_ids)) return;
+  const client = await poolComunicacao.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(`DELETE FROM depoimento_categorias WHERE depoimento_id = $1`, [depoimento_id]);
+    if (categorias_ids.length) {
+      const valores = categorias_ids
+        .map(id => parseInt(id, 10))
+        .filter(n => Number.isFinite(n) && n > 0);
+      if (valores.length) {
+        const params = valores.map((_, i) => `($1, $${i + 2})`).join(',');
+        await client.query(
+          `INSERT INTO depoimento_categorias (depoimento_id, categoria_id)
+           VALUES ${params}
+           ON CONFLICT DO NOTHING`,
+          [depoimento_id, ...valores]
+        );
+      }
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
 
 // ─────────────────────────────────────────────────────────────
 // PÚBLICO — relatos
@@ -118,7 +157,7 @@ router.get('/depoimentos', async (req, res) => {
   try {
     const { tema, temas, tag, ticker } = req.query;
 
-    const where = [`d.ativo = TRUE`, `d.status_moderacao = 'aprovado'`];
+    const where = [`d.ativo = TRUE`, `d.status_moderacao = 'aprovado'`, `d.oculto_por_conta_inativa = FALSE`];
     const params = [];
 
     if (tema) {
@@ -177,6 +216,7 @@ router.get('/depoimentos/agrupados', async (req, res) => {
     const r = await poolComunicacao.query(
       `${SELECT_DEP_COMPLETO}
        WHERE d.ativo = TRUE AND d.status_moderacao = 'aprovado'
+         AND d.oculto_por_conta_inativa = FALSE
          AND d.tema_id IS NOT NULL
        ORDER BY t.ordem ASC, d.ordem ASC, d.id ASC`
     );
@@ -338,11 +378,13 @@ router.post('/admin/depoimentos', autenticarPainel('admin'), async (req, res) =>
     const r = await poolComunicacao.query(
       `INSERT INTO depoimentos
          (nome, profissao, idade, cidade, texto, tema_id, usuario_id,
-          mostrar_no_ticker, gerado_por_ia, status_moderacao, tags, ordem, ativo)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+          mostrar_no_ticker, gerado_por_ia, status_moderacao,
+          autora_era_assinante_clube, tags, ordem, ativo)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
        RETURNING id`,
       [p.nome, p.profissao, p.idade, p.cidade, p.texto, p.tema_id, p.usuario_id,
-       p.mostrar_no_ticker, p.gerado_por_ia, p.status_moderacao, p.tags, p.ordem, p.ativo]
+       p.mostrar_no_ticker, p.gerado_por_ia, p.status_moderacao,
+       p.autora_era_assinante_clube, p.tags, p.ordem, p.ativo]
     );
     const r2 = await poolComunicacao.query(`${SELECT_DEP_COMPLETO} WHERE d.id = $1`, [r.rows[0].id]);
     res.json(r2.rows[0]);
@@ -376,20 +418,36 @@ router.put('/admin/depoimentos/:id', autenticarPainel('admin'), async (req, res)
         && ['pendente','aprovado','rejeitado'].includes(b.status_moderacao)) {
       add('status_moderacao', b.status_moderacao);
     }
+    if (b.autora_era_assinante_clube !== undefined) {
+      add('autora_era_assinante_clube', !!b.autora_era_assinante_clube);
+    }
+    if (b.motivo_rejeicao !== undefined) {
+      add('motivo_rejeicao', b.motivo_rejeicao ? String(b.motivo_rejeicao).trim() : null);
+    }
     if (b.tags !== undefined && Array.isArray(b.tags)) {
       add('tags', b.tags.map(t => String(t).trim().toLowerCase()).filter(Boolean));
     }
     if (b.ordem !== undefined) add('ordem', parseInt(b.ordem, 10) || 0);
     if (b.ativo !== undefined) add('ativo', !!b.ativo);
 
-    if (!sets.length) return res.status(400).json({ error: 'Nada pra atualizar' });
-    sets.push(`atualizado_em = NOW()`);
-    params.push(id);
+    // categorias_ids é um array — não é coluna direta; gerencia o pivot depois do UPDATE.
+    const mexerCategorias = Array.isArray(b.categorias_ids);
 
-    await poolComunicacao.query(
-      `UPDATE depoimentos SET ${sets.join(', ')} WHERE id = $${params.length}`,
-      params
-    );
+    if (!sets.length && !mexerCategorias) return res.status(400).json({ error: 'Nada pra atualizar' });
+
+    if (sets.length) {
+      sets.push(`atualizado_em = NOW()`);
+      params.push(id);
+      await poolComunicacao.query(
+        `UPDATE depoimentos SET ${sets.join(', ')} WHERE id = $${params.length}`,
+        params
+      );
+    }
+
+    if (mexerCategorias) {
+      await sincronizarCategorias(id, b.categorias_ids);
+    }
+
     const r = await poolComunicacao.query(`${SELECT_DEP_COMPLETO} WHERE d.id = $1`, [id]);
     if (!r.rows[0]) return res.status(404).json({ error: 'Depoimento não encontrado' });
     res.json(r.rows[0]);

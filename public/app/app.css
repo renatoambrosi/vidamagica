@@ -2830,3 +2830,357 @@ body.chat-aberto .popup-clube { display: none; }
   border: 0; border-radius: var(--radius-md);
   cursor: pointer;
 }
+
+/* ════════════════════════════════════════════════════
+   RELATOS DA COMUNIDADE — bloco na home abaixo do Tesouro
+   Carrossel horizontal com cards. Click abre modal universal (VmRelatos).
+   ════════════════════════════════════════════════════ */
+.relatos-comunidade-wrap { padding: 0 0 1.5rem; margin-top: -0.3rem; }
+.relatos-comunidade-head { padding: 0 1.25rem 0.7rem; }
+.relatos-comunidade-titulo {
+  font-family: var(--font-display);
+  font-size: 0.95rem; font-weight: 800;
+  color: var(--ouro-fundo);
+  letter-spacing: 0.02em;
+  margin: 0 0 0.2rem;
+}
+.relatos-comunidade-sub {
+  display: block;
+  font-size: 0.74rem; color: var(--texto-mute);
+  letter-spacing: 0.02em;
+}
+.relatos-comunidade-carousel {
+  position: relative;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.relatos-comunidade-carousel::-webkit-scrollbar { display: none; }
+.relatos-comunidade-track {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.35rem 1.25rem 0.7rem;
+  min-height: 150px;
+}
+.relatos-comunidade-loading {
+  font-size: 0.78rem; color: var(--texto-mute);
+  padding: 1rem 0;
+}
+
+/* Card individual de relato no carrossel */
+.relato-card {
+  flex: 0 0 260px;
+  background: var(--vidro-forte);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--vidro-borda);
+  border-radius: var(--radius-lg);
+  padding: 0.95rem 1rem 1rem;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  box-shadow: var(--sombra-suave);
+  display: flex; flex-direction: column; gap: 0.5rem;
+  position: relative;
+}
+.relato-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sombra-media);
+  border-color: var(--vidro-borda-hi);
+}
+.relato-card:active { transform: scale(0.98); }
+.relato-card-autor {
+  font-family: var(--font-display);
+  font-size: 0.88rem; font-weight: 700;
+  color: var(--texto);
+  line-height: 1.2;
+}
+.relato-card-meta {
+  font-size: 0.7rem; color: var(--texto-mute);
+}
+.relato-card-texto {
+  font-size: 0.8rem; color: var(--texto-suave);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+}
+.relato-card-tema {
+  margin-top: auto;
+  font-size: 0.6rem; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ouro-fundo);
+  background: rgba(200,146,42,0.1);
+  border: 1px solid rgba(200,146,42,0.22);
+  padding: 3px 8px;
+  border-radius: 999px;
+  align-self: flex-start;
+}
+
+/* Brilho dourado: relato de assinante do Clube Vida Mágica */
+.relato-card.relato-clube {
+  border-color: rgba(200,146,42,0.55);
+  background:
+    radial-gradient(ellipse at top, rgba(244,217,152,0.35), transparent 70%),
+    var(--vidro-forte);
+  box-shadow:
+    0 0 0 1px rgba(232,201,122,0.4),
+    0 0 22px rgba(200,146,42,0.25),
+    var(--sombra-suave);
+}
+.relato-card.relato-clube::before {
+  content: '💛';
+  position: absolute;
+  top: 8px; right: 10px;
+  font-size: 0.9rem;
+  filter: drop-shadow(0 1px 2px rgba(200,146,42,0.5));
+}
+.relato-card.relato-clube .relato-card-autor { color: var(--ouro-fundo); }
+
+/* Card especial "+ Compartilhar meu relato" — sempre primeiro no carrossel */
+.relato-card-postar {
+  background: linear-gradient(160deg, rgba(200,146,42,0.18), rgba(255,250,240,0.4));
+  border: 2px dashed rgba(200,146,42,0.55);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.2rem 1rem;
+  min-height: 150px;
+}
+.relato-postar-icone {
+  font-size: 2.4rem; font-weight: 300;
+  color: var(--ouro-fundo);
+  line-height: 1;
+  margin-bottom: 0.3rem;
+}
+.relato-postar-titulo {
+  font-family: var(--font-display);
+  font-size: 0.88rem; font-weight: 800;
+  color: var(--ouro-fundo);
+  line-height: 1.2;
+}
+.relato-postar-sub {
+  font-size: 0.72rem; color: var(--texto-suave);
+}
+
+/* ════════════════════════════════════════════════════
+   MODAL DE POSTAR RELATO (Sub-fase 2.1)
+   ════════════════════════════════════════════════════ */
+.modal-postar-bg {
+  position: fixed; inset: 0;
+  background: rgba(13,8,0,0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9000;
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1.5rem 1rem;
+  overflow-y: auto;
+}
+.modal-postar-bg.aberto { display: flex; }
+.modal-postar-card {
+  background: var(--vidro-forte);
+  border: 1px solid var(--vidro-borda-hi);
+  border-radius: var(--radius-lg);
+  max-width: 520px; width: 100%;
+  padding: 1.4rem 1.4rem 1.6rem;
+  margin-top: 2rem; margin-bottom: 2rem;
+  box-shadow: var(--sombra-forte);
+}
+.modal-postar-topo {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 1rem; margin-bottom: 0.6rem;
+}
+.modal-postar-titulo {
+  font-family: var(--font-display);
+  font-size: 1.05rem; font-weight: 800;
+  color: var(--ouro-fundo);
+  letter-spacing: 0.02em;
+}
+.modal-postar-sub {
+  font-size: 0.78rem; color: var(--texto-suave);
+  margin-bottom: 1rem; line-height: 1.5;
+}
+.modal-postar-x {
+  background: none;
+  border: 1px solid var(--vidro-borda-hi);
+  color: var(--ouro-fundo);
+  width: 32px; height: 32px;
+  border-radius: 999px;
+  font-size: 0.95rem; cursor: pointer; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.modal-postar-textarea {
+  width: 100%; min-height: 140px;
+  background: rgba(255,250,240,0.6);
+  border: 1px solid var(--vidro-borda);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.92rem; color: var(--texto);
+  line-height: 1.55;
+  resize: vertical;
+  margin-bottom: 0.3rem;
+}
+.modal-postar-textarea:focus {
+  outline: none;
+  border-color: var(--ouro);
+}
+.modal-postar-counter {
+  font-size: 0.7rem; color: var(--texto-mute);
+  text-align: right; margin-bottom: 1rem;
+}
+.modal-postar-acoes {
+  display: flex; gap: 0.6rem;
+}
+.modal-postar-btn-enviar {
+  flex: 1;
+  background: linear-gradient(135deg, var(--ouro), var(--ouro-fundo));
+  color: #fff;
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  font-family: var(--font-display); font-size: 0.86rem; font-weight: 800;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+}
+.modal-postar-btn-enviar:disabled { opacity: 0.45; cursor: not-allowed; }
+.modal-postar-btn-cancelar {
+  background: transparent;
+  color: var(--ouro-fundo);
+  border: 1px solid var(--vidro-borda-hi);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.2rem;
+  font-size: 0.82rem; font-weight: 600;
+  cursor: pointer;
+}
+.modal-postar-feedback {
+  margin-top: 0.85rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  display: none;
+}
+.modal-postar-feedback.tipo-ok {
+  display: block;
+  background: rgba(139,200,122,0.15);
+  border: 1px solid rgba(139,200,122,0.35);
+  color: #4a7a3f;
+}
+.modal-postar-feedback.tipo-erro {
+  display: block;
+  background: rgba(200,80,77,0.12);
+  border: 1px solid rgba(200,80,77,0.3);
+  color: #a83838;
+}
+
+/* ════════════════════════════════════════════════════
+   VIEW BAÚ DE RELATOS (Sub-fase 2.2)
+   ════════════════════════════════════════════════════ */
+.bau-abas {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0 1.25rem;
+  margin-bottom: 0.85rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.bau-abas::-webkit-scrollbar { display: none; }
+.bau-aba {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.5rem 0.95rem;
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
+  border-radius: 999px;
+  font-size: 0.78rem; font-weight: 600;
+  color: var(--texto-suave);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.bau-aba:hover { border-color: var(--vidro-borda-hi); }
+.bau-aba.ativa {
+  background: linear-gradient(135deg, var(--ouro-pelicula), var(--vidro-forte));
+  border-color: var(--ouro);
+  color: var(--ouro-fundo);
+}
+.bau-aba-count {
+  font-size: 0.65rem; font-weight: 700;
+  padding: 1px 7px;
+  background: rgba(200,146,42,0.18);
+  border-radius: 999px;
+  color: var(--ouro-fundo);
+}
+.bau-lista {
+  padding: 0 1.25rem 2rem;
+  display: flex; flex-direction: column;
+  gap: 0.7rem;
+}
+.bau-relato-card {
+  background: var(--vidro-forte);
+  border: 1px solid var(--vidro-borda);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.1rem;
+  box-shadow: var(--sombra-suave);
+  cursor: pointer;
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.bau-relato-card:hover { transform: translateY(-1px); box-shadow: var(--sombra-media); }
+.bau-relato-card.relato-clube {
+  border-color: rgba(200,146,42,0.55);
+  background: radial-gradient(ellipse at top, rgba(244,217,152,0.3), transparent 70%), var(--vidro-forte);
+  box-shadow: 0 0 0 1px rgba(232,201,122,0.35), 0 0 18px rgba(200,146,42,0.2), var(--sombra-suave);
+  position: relative;
+}
+.bau-relato-card.relato-clube::after {
+  content: '💛';
+  position: absolute; top: 8px; right: 10px;
+  font-size: 0.85rem;
+}
+.bau-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--texto-mute);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.bau-empty-icone { font-size: 2.5rem; margin-bottom: 0.6rem; }
+
+/* Entrada do Baú no perfil */
+.perfil-bau-btn {
+  display: flex; align-items: center; gap: 0.85rem;
+  width: 100%;
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.2rem;
+  margin-bottom: 0.85rem;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s;
+}
+.perfil-bau-btn:hover {
+  border-color: var(--ouro);
+  background: var(--vidro-forte);
+}
+.perfil-bau-btn-icone {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+.perfil-bau-btn-info { flex: 1; min-width: 0; }
+.perfil-bau-btn-titulo {
+  font-family: var(--font-display);
+  font-size: 0.88rem; font-weight: 700;
+  color: var(--texto);
+  margin-bottom: 2px;
+}
+.perfil-bau-btn-sub {
+  font-size: 0.72rem; color: var(--texto-mute);
+}
+.perfil-bau-btn-seta {
+  font-size: 1.1rem;
+  color: var(--ouro-fundo);
+  flex-shrink: 0;
+}

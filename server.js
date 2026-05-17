@@ -171,6 +171,7 @@ app.use('/webhook',           require('./routes/webhook-evolution')); // Webhook
 app.use('/api',               require('./routes/produtos'));     // /api/produtos (canônico)
 app.use('/api',               require('./routes/precos'));       // /api/precos (alias legado — não remover)
 app.use('/api',               require('./routes/depoimentos'));
+app.use('/api',               require('./routes/categorias-relato')); // Fase 2.1a — categorias de vida
 app.use('/api',               require('./routes/feed'));
 app.use('/api',               require('./routes/config'));
 app.use('/api',               require('./routes/seed'));
@@ -331,6 +332,14 @@ server.listen(PORT, async () => {
       if (typeof depMod.seedDepoimentos === 'function') await depMod.seedDepoimentos();
     } catch (err) {
       console.error('⚠️ Seed de relatos não rodou:', err.message);
+    }
+
+    // Fase 2.1a — seed das 10 categorias de vida (idempotente via ON CONFLICT slug).
+    try {
+      const catMod = require('./routes/categorias-relato');
+      if (typeof catMod.seedCategoriasRelato === 'function') await catMod.seedCategoriasRelato();
+    } catch (err) {
+      console.error('⚠️ Seed de categorias-relato não rodou:', err.message);
     }
 
     // Liga o worker do gateway de WhatsApp DEPOIS dos bancos estarem prontos

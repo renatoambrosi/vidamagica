@@ -386,6 +386,14 @@ async function arquivarUsuario(id, { por = 'admin', motivo = null } = {}) {
     `UPDATE sessoes SET revogada=TRUE WHERE usuario_id=$1 AND revogada=FALSE`,
     [id]
   );
+  // Fase 2.4: relatos públicos da aluna somem do site (sem alarde, sem apagar dado).
+  // Cross-pool — depoimentos vive em poolComunicacao. Não pode estar na mesma tx.
+  try {
+    const { ocultarRelatosDeAluna } = require('./relatos');
+    await ocultarRelatosDeAluna(id, true);
+  } catch (err) {
+    console.warn('⚠️ Falha ao ocultar relatos da aluna arquivada:', err.message);
+  }
 }
 
 async function desarquivarUsuario(id) {
@@ -401,6 +409,13 @@ async function desarquivarUsuario(id) {
       WHERE id=$1`,
     [id]
   );
+  // Fase 2.4: relatos voltam a aparecer publicamente.
+  try {
+    const { ocultarRelatosDeAluna } = require('./relatos');
+    await ocultarRelatosDeAluna(id, false);
+  } catch (err) {
+    console.warn('⚠️ Falha ao reexibir relatos da aluna desarquivada:', err.message);
+  }
 }
 
 async function apagarUsuarioPermanente(id) {

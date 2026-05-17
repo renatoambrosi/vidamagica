@@ -1301,9 +1301,126 @@ async function initComunicacao() {
     await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS gerado_por_ia BOOLEAN DEFAULT FALSE`);
     await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS status_moderacao VARCHAR(20) DEFAULT 'aprovado'`);
     await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS atualizado_em TIMESTAMPTZ DEFAULT NOW()`);
+    // autora_era_assinante_clube: snapshot PERMANENTE no momento da postagem/aprovação.
+    // Uma vez TRUE, fica TRUE pra sempre (não rebaixa se aluna cancela assinatura depois).
+    // Liga brilho dourado no relato em todas as superfícies (LPs, /relatos, modal universal, home /app).
+    await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS autora_era_assinante_clube BOOLEAN DEFAULT FALSE`);
+    // oculto_por_conta_inativa (Fase 2.4): TRUE quando aluna arquivou a conta.
+    // Endpoints públicos filtram FALSE. Helper em core/relatos.js sincroniza com arquivar/desarquivar.
+    await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS oculto_por_conta_inativa BOOLEAN DEFAULT FALSE`);
+    // motivo_rejeicao (Fase 2.1): opcional, quando admin/atendimento rejeita o relato.
+    await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS motivo_rejeicao TEXT`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_depoimentos_tema ON depoimentos(tema_id)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_depoimentos_usuario ON depoimentos(usuario_id)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_depoimentos_status ON depoimentos(status_moderacao)`);
+
+    // ── CATEGORIAS DE VIDA (Fase 2.1a) ──
+    // O que o RELATO fala em termos de área da vida (filhos, renda, carreira...).
+    // Diferente de `tema_id` (que aponta pro produto que a aluna leu).
+    // Renato gerencia o catálogo via CRUD no admin. Slug fica congelado pra não quebrar histórico.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS categorias_relato (
+        id SERIAL PRIMARY KEY,
+        slug VARCHAR(40) UNIQUE NOT NULL,
+        nome VARCHAR(120) NOT NULL,
+        ordem INTEGER DEFAULT 0,
+        ativo BOOLEAN DEFAULT TRUE,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_cat_relato_ativo ON categorias_relato(ativo)`);
+
+    // Pivot M:N — cada relato pode ter N categorias.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS depoimento_categorias (
+        depoimento_id INTEGER NOT NULL REFERENCES depoimentos(id) ON DELETE CASCADE,
+        categoria_id INTEGER NOT NULL REFERENCES categorias_relato(id) ON DELETE CASCADE,
+        PRIMARY KEY (depoimento_id, categoria_id)
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_dep_cat_depoimento ON depoimento_categorias(depoimento_id)`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_dep_cat_categoria ON depoimento_categorias(categoria_id)`);
+
+    // ── REAÇÕES DE RELATO (Fase 2.2) ──
+    // 4 tipos de reação. "quero" e "ja_vivo" são mutuamente exclusivas (regra no app).
+    // "parabens" é independente. "nao_e_pra_mim" também é exclusiva com "quero" e "ja_vivo".
+    // UNIQUE(depoimento_id, usuario_id, tipo) — uma reação do tipo por par.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS depoimento_reacoes (
+        id BIGSERIAL PRIMARY KEY,
+        depoimento_id INTEGER NOT NULL REFERENCES depoimentos(id) ON DELETE CASCADE,
+        usuario_id UUID NOT NULL,
+        tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('quero','ja_vivo','nao_e_pra_mim','parabens')),
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(depoimento_id, usuario_id, tipo)
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_reacoes_depoimento ON depoimento_reacoes(depoimento_id)`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_reacoes_usuario ON depoimento_reacoes(usuario_id)`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_reacoes_tipo ON depoimento_reacoes(tipo)`);
+
+    // ── BAÚ DE RELATOS (Fase 2.2) ──
+    // Cada vez que aluna reage com quero/ja_vivo/nao_e_pra_mim/parabens, salva no baú.
+    // Mesmo se ela "tira" a reação depois, o registro do baú fica (histórico comportamental).
+    // Categoria do baú = tipo da reação (4 abas no /app).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS relatos_salvos_bau (
+        id BIGSERIAL PRIMARY KEY,
+        usuario_id UUID NOT NULL,
+        depoimento_id INTEGER NOT NULL REFERENCES depoimentos(id) ON DELETE CASCADE,
+        tipo_reacao VARCHAR(20) NOT NULL CHECK (tipo_reacao IN ('quero','ja_vivo','nao_e_pra_mim','parabens')),
+        salvo_em TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(usuario_id, depoimento_id, tipo_reacao)
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_bau_usuario ON relatos_salvos_bau(usuario_id)`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_bau_tipo ON relatos_salvos_bau(usuario_id, tipo_reacao)`);
+
+    // ── VISUALIZAÇÕES DE RELATO (Fase 2.5 — anti-repetição) ──
+    // "Visto" = aluna ABRIU o modal do relato (não basta passar no carrossel).
+    // O algoritmo usa pra despriorizar relatos já vistos sem reagir.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS depoimento_visualizacoes (
+        id BIGSERIAL PRIMARY KEY,
+        depoimento_id INTEGER NOT NULL REFERENCES depoimentos(id) ON DELETE CASCADE,
+        usuario_id UUID NOT NULL,
+        visto_em TIMESTAMPTZ DEFAULT NOW(),
+        vezes_visto INTEGER DEFAULT 1,
+        UNIQUE(depoimento_id, usuario_id)
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_views_usuario ON depoimento_visualizacoes(usuario_id)`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_views_dep_user ON depoimento_visualizacoes(depoimento_id, usuario_id)`);
+
+    // ── CONFIG DO ALGORITMO DE RELEVÂNCIA (Fase 2.5) ──
+    // Singleton (chave='relevancia'). Renato edita pelo admin via sliders.
+    // Score do relato R pra aluna V:
+    //   score = RANDOM
+    //         × (idade ≤ janela_horas ? mult_novidade : 1)
+    //         × (tema do R na jornada vigente da V ? mult_jornada : 1)
+    //         × (1 + mult_popularidade × log(1 + n_reacoes_publicas))
+    //         × (nunca viu ? 1 : viu_sem_reagir ? penalidade_visto : penalidade_reagido)
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS feed_relevancia_config (
+        chave VARCHAR(40) PRIMARY KEY,
+        dados JSONB NOT NULL,
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    // Defaults — preenchidos só se ainda não existir (idempotente).
+    await c.query(`
+      INSERT INTO feed_relevancia_config (chave, dados)
+      VALUES ('relevancia', $1::jsonb)
+      ON CONFLICT (chave) DO NOTHING
+    `, [JSON.stringify({
+      mult_novidade: 5.0,
+      mult_jornada: 3.0,
+      mult_popularidade: 0.5,
+      penalidade_visto: 0.4,
+      penalidade_reagido: 0.05,
+      janela_novidade_horas: 48,
+    })]);
 
     // ── SEED LOG — controla seeds idempotentes (rodam 1 vez) ──
     await c.query(`
