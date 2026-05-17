@@ -25,6 +25,59 @@ O servidor depende de `dotenv` (`.env` na raiz). Sem essas variáveis, partes do
 
 Deploy alvo: Railway (`vidamagica-production.up.railway.app`). Origins CORS estão hardcoded em `server.js:55-66` (Railway, Vercel, vidamagica.com.br + localhost 3000/5173).
 
+## 🧭 PADRÕES REUTILIZÁVEIS — use ao invés de criar paralelo
+
+**Regra de ouro:** antes de criar qualquer tabela, rota, pasta, função ou estrutura nova, **verifique se algo similar já existe**. O Renato construiu esse projeto com lógica robusta e cada peça tem casa. Criar paralelo destrói coerência e gera bug.
+
+**Como verificar:** `grep -rn "palavra-chave" routes/ core/ db.js` ou use Explore. Custo de procurar = baixo. Custo de criar paralelo = altíssimo (retrabalho + bug + perda de confiança).
+
+### Mapa do existente (use isso, não invente)
+
+| Se você precisar de... | USE isso que já existe | NÃO crie paralelo |
+|---|---|---|
+| **QUALQUER coisa que aluna "possui"** (curso, livro, análise, acesso a feature paga) | Tabela `usuario_produtos` (poolCore). Campos chave: `produto_id` (FK pra `produtos`), `origem_tipo` (`'pagamento'`/`'assinatura'`/`'cortesia'`/`'manual'`), `acesso_inicio`, `acesso_fim`, `ativo`. **Modelo universal.** Cadastrar a feature como PRODUTO em `routes/seed.js` (`PRECOS_INICIAIS`), Renato põe preço/link no admin, sistema insere em `usuario_produtos` quando aluna compra. | Tabela paralela tipo `chat_pacotes`, `creditos`, `acessos_v2`, etc. |
+| **Cobrança/preço de qualquer produto** | Tabela `precos` (alias `produtos`) — campo `preco_padrao`, `link_checkout_padrao`, etc. Renato edita pelo admin. | Hardcode em código (ex: `chat.js` linha 445 tem `9.90` hardcoded — débito técnico, NÃO replicar) |
+| **Verificar se aluna é membro do Clube** | `temClubeVidaMagica({plano})` em `core/jornadas.js`. Critério: `usuario.plano !== 'gratuito'`. | Outro check em outro lugar |
+| **Verificar se aluna comprou produto X** | Buscar em `usuario_produtos` por `produto_id` + `ativo=true`. `routes/app.js:43-50` mostra o padrão. | Flag em outro lugar |
+| **Moderação de conteúdo** | Coluna `status_moderacao VARCHAR(20)` enum `'pendente'/'aprovado'/'rejeitado'` (já existe em `depoimentos`). Endpoints públicos filtram automático. | Outro mecanismo de aprovação |
+| **Enviar WhatsApp pra aluna ou pro admin** | `core/gateway.js` (com cooldowns, fila, categorias). NUNCA usar `core/whatsapp.js` direto (bypass do gateway só em raras exceções) | Envio paralelo, hardcode |
+| **Criar celebração na Home (sino/banner/splash)** | Helpers em `core/atualizacoes.js`: `criarAtualizacaoCompra`, `criarAtualizacaoTeste`. Chamar logo após criar registro em `usuario_produtos`. | Lógica de "notificação" em outro lugar |
+| **Migration (coluna nova / tabela nova)** | `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` ou `CREATE TABLE IF NOT EXISTS` dentro de `db.js` (na função `initXxx` correta). Roda no boot. | Arquivos de migration separados |
+| **Seed idempotente de dados iniciais** | Tabela `seed_log` (poolComunicacao) + verificação `seed_key` no início da função. Ver `seedDepoimentos` em `routes/depoimentos.js` ou `seedPrecos` em `routes/seed.js`. | Seed sem proteção (roda toda vez) |
+| **Normalização de telefone (E.164 sem '+')** | `core/utils.js` (função `canonicalizarTelefone` ou similar) | Reimplementar regex |
+| **Autenticar aluna num endpoint** | Middleware `autenticar` de `middleware/autenticar.js` | Nova lógica de JWT |
+| **Autenticar admin ou atendimento** | `autenticarPainel('admin')` ou `autenticarPainel('atendimento')` ou `autenticarPainelHibrido` (aceita os dois) | Verificação custom |
+| **Slug de produto** (Ouro, LDA, etc.) | Coluna `key` da tabela `precos` (= produtos). Slugs canônicos em `core/jornadas.js` constante `SLUG`. | Slug paralelo em outra tabela |
+| **Tema de relato** (vínculo produto ↔ relato) | Tabela `temas` (poolComunicacao). Cada tema aponta pra `produto_slug`. Cada relato aponta pra `tema_id`. | Tag paralela, categoria nova |
+| **Imagem/preço/link checkout de um produto** | `/api/precos` (ou `/api/produtos` — alias). Frontend SEMPRE puxa de lá via `data-preco-key`. | Hardcode no HTML |
+| **Carrossel de relatos numa LP nova** | `<script src="/relatos-card.js"></script>` antes de `</body>`. Não reimplementar swipe/modal. | Reescrever interatividade |
+| **Cálculo de jornada da aluna** | `calcularJornadaVigente()` em `core/jornadas.js`. Fonte da verdade. | Outra lógica de "qual jornada" |
+| **Cálculo de resultado do teste** | `calcularResultado()` em `core/teste-resultado.js`. | Recalcular percentuais |
+| **Lista de livros do Passo 2** | `montarLivrosRecomendados()` em `core/teste-resultado.js`. Regra de tag (Urgente/Necessário/Útil/Complemento) já aplicada. | Filtragem custom |
+| **Sessão da aluna no frontend** | Helper global `VmSession` (localStorage/sessionStorage). | Cookie próprio |
+| **Cadastrar produto novo** | Adicionar em `PRECOS_INICIAIS` de `routes/seed.js`. Seed insere no próximo boot (sem sobrescrever). | INSERT manual no banco |
+
+### Antes de codar QUALQUER feature nova
+1. Pergunte: "isso já tem casa em algum padrão acima?"
+2. Se não tem certeza, faça `grep -rn` no projeto pra checar
+3. Se tem algo similar, **reuse a estrutura existente** (mesmo que precise estender)
+4. Só crie paralelo se houver justificativa técnica real — e nesse caso, documente o porquê neste CLAUDE.md
+
+## ⚠️ PENDÊNCIAS EM ABERTO (ler ANTES de mexer em coisas relacionadas)
+
+Este projeto tem frentes em construção. Antes de fazer qualquer alteração que toque uma destas áreas, **leia a memória correspondente** (em `~/.claude/projects/-Users-Renato1-Desktop-AQUIIIIIIII-vidamagica/memory/`):
+
+| Área do código | Memória a ler antes | O que está pendente |
+|---|---|---|
+| `core/jornadas.js` ou regras de jornada | `project_frente_4b_jornadas.md` | Jornada 2 vai virar 4 passos. Prosperidade + trava deixa de rebaixar pra Conhecer e Despertar. 6 decisões do Renato faltam. |
+| Sistema de análise/leitura inteligente do teste | `project_analise_renato.md` | Produto "Análise do Renato" (Sub-fase 1A) — backend + admin sem expor ao frontend ainda. Modelo PSN-com-cadeado. |
+| Tabela `depoimentos` ou UI de relatos | `project_relatos_fases234.md` | Fase 2 (aluna envia pelo /app), Fase 3 (moderação no admin), Fase 4 (auto-off por arquivamento). Infra já pronta. |
+| Criação de nova LP de produto | `project_lps_blueprint.md` | 4 LPs da Série Conhecer e Despertar + 1 LP "só dela" pendentes. NÃO mexer no esqueleto comum entre LPs. |
+| Vocabulário (produto/preço, depoimento/relato, perfis, jornadas) | `project_nomes_oficiais.md` | Regra crítica de nomenclatura — Renato corrige se trocar nome. |
+| Modo de trabalho com o Renato | `user_expertise_e_destino.md` | Modelo: rascunho + correção, não pergunta-por-pergunta. Tom positivo SEMPRE. |
+
+Se você não tem certeza se uma mudança afeta alguma dessas áreas, **leia a memória primeiro**. O custo de ler é baixo. O custo de fazer errado é alto.
+
 ## Fase atual e decisões deliberadas
 
 **Contexto operacional importante:**
