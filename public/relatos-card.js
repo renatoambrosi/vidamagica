@@ -724,7 +724,14 @@
     const parent = container.parentElement;  // .dep-carousel
     if (parent){
       parent.style.overflowX = 'hidden';
+      // Mobile: instrui o browser a só processar pan HORIZONTAL nesse container.
+      // Sem isso, swipe horizontal no carrossel arrasta a página vertical junto
+      // (iOS Safari faz scroll bidirecional ambíguo).
+      parent.style.touchAction = 'pan-x';
     }
+    // Mesma trava aplicada no track também — defensivo (caso a aluna comece o
+    // gesto em cima de um card e o evento "borbulhe" pra fora antes do parent capturar).
+    container.style.touchAction = 'pan-x';
 
     function pararAnimacao(){
       if (!estaAnimando) return;
@@ -743,8 +750,13 @@
         parent.style.overflowX = 'auto';
         parent.style.scrollbarWidth = 'none';     // Firefox
         parent.style.webkitOverflowScrolling = 'touch';
+        parent.style.touchAction = 'pan-x';       // reforça pan horizontal-only
+        parent.style.scrollSnapType = 'x proximity';  // cards "encaixam" no scroll — fluidez
         parent.scrollLeft = Math.abs(offsetX);
       }
+      // Cada card vira ponto de snap (suave, não obrigatório)
+      const cards = container.querySelectorAll('[data-relato-idx]');
+      cards.forEach(c => { c.style.scrollSnapAlign = 'start'; });
       container.classList.add('vmr-no-anim');
     }
 
