@@ -251,6 +251,94 @@ select option { background: #1a1205; }
   .sched-tel, .sched-data { display: none; }
   .feed-form-grid { grid-template-columns: 1fr; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   REDESIGN UX ADMIN (2026-05-16)
+   Objetivo: respiro, hierarquia, toggles com label colado,
+   botões com altura igual e ícone real.
+   Não toca em copy. Não muda lógica JS.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Botões com altura/padding consistentes ── */
+.btn { min-height: 36px; padding: 0 1.1rem; line-height: 1; }
+.btn-sm { min-height: 32px; padding: 0 0.9rem; font-size: 0.76rem; }
+
+/* ── Botão de ícone (lixeira, etc) — mesma altura visual de .btn-sm ── */
+.btn-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; padding: 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(200,80,77,0.25);
+  background: rgba(200,80,77,0.1);
+  color: #F09090;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.btn-icon:hover { background: rgba(200,80,77,0.2); border-color: rgba(200,80,77,0.45); }
+.btn-icon:focus-visible { outline: 2px solid rgba(240,144,144,0.6); outline-offset: 1px; }
+.btn-icon svg { width: 15px; height: 15px; }
+
+/* ── Toggle "pill": label colado no toggle, virou unidade visual ── */
+.toggle-pill {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 0.3rem 0.85rem 0.3rem 0.95rem;
+  cursor: pointer; user-select: none;
+  transition: border-color 0.18s, background 0.18s;
+  min-height: 32px;
+}
+.toggle-pill:hover { border-color: var(--border-hover); background: rgba(200,146,42,0.04); }
+.toggle-pill .toggle-pill-label {
+  font-size: 0.74rem; font-weight: 600; letter-spacing: 0.02em;
+  color: var(--text-light);
+  text-transform: none; margin: 0;
+}
+.toggle-pill .toggle { width: 34px; height: 19px; }
+.toggle-pill .toggle-slider { border-radius: 19px; }
+.toggle-pill .toggle-slider::before { width: 13px; height: 13px; }
+.toggle-pill .toggle input:checked + .toggle-slider::before { transform: translateX(15px); }
+.toggle-pill:has(input:checked) {
+  border-color: rgba(200,146,42,0.45);
+  background: rgba(200,146,42,0.07);
+}
+
+/* ── Card de relato: mais respiro, tipografia maior ── */
+.dep-grid { gap: 0.85rem; }
+.dep-card { padding: 1rem 1.15rem; gap: 0.95rem; }
+.dep-fields { gap: 0.7rem; }
+.dep-card label { font-size: 0.66rem; }
+.dep-card input,
+.dep-card select { padding: 0.5rem 0.7rem; font-size: 0.88rem; }
+.dep-card textarea { font-size: 0.88rem; line-height: 1.55; min-height: 76px; padding: 0.55rem 0.75rem; }
+
+/* Sobrescreve os overrides minúsculos antigos da aba Depoimentos */
+.tab-panel#tab-depoimentos .dep-card textarea { min-height: 76px; line-height: 1.55; font-size: 0.88rem; }
+.tab-panel#tab-depoimentos .dep-fields > .field label { font-size: 0.66rem; }
+.tab-panel#tab-depoimentos .dep-card input,
+.tab-panel#tab-depoimentos .dep-card select { padding: 0.5rem 0.7rem; font-size: 0.88rem; }
+
+/* ── Rodapé do card de relato: toggles à esquerda, ações à direita ── */
+.dep-footer {
+  display: flex; align-items: center; gap: 1.25rem;
+  padding-top: 0.7rem; margin-top: 0.25rem;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.dep-footer-toggles { display: flex; gap: 0.7rem; flex: 1; flex-wrap: wrap; }
+.dep-footer-actions { display: flex; gap: 0.5rem; align-items: center; }
+
+/* Remove a coluna lateral antiga de botões (substituída pelo rodapé) */
+.dep-card > .dep-actions { display: none; }
+
+/* ── Responsivo: rodapé empilha em mobile ── */
+@media (max-width: 768px) {
+  .dep-footer { flex-direction: column; align-items: stretch; gap: 0.7rem; }
+  .dep-footer-toggles { width: 100%; }
+  .dep-footer-actions { width: 100%; justify-content: flex-end; }
+  .toggle-pill { flex: 1; justify-content: space-between; }
+}
 </style>
 </head>
 <body>
@@ -1369,10 +1457,10 @@ function renderDeps(){
           <div class="field"><label>Nome ${placeholderBadge}</label>
             <input type="text" value="${escHtml(d.nome||'')}" data-field="nome">
           </div>
-          <div class="field" style="max-width:200px"><label>Profissão</label>
+          <div class="field" style="max-width:220px"><label>Profissão</label>
             <input type="text" value="${escHtml(d.profissao||'')}" data-field="profissao" placeholder="Ex: Designer">
           </div>
-          <div class="field" style="max-width:90px"><label>Idade</label>
+          <div class="field" style="max-width:100px"><label>Idade</label>
             <input type="number" value="${d.idade||''}" data-field="idade" min="1" max="120">
           </div>
         </div>
@@ -1380,21 +1468,29 @@ function renderDeps(){
           <div class="field"><label>Tema</label>
             <select data-field="tema_id">${dropdownTemaSelected(d.tema_id)}</select>
           </div>
-          <div class="field" style="max-width:160px"><label style="display:flex;align-items:center;gap:0.5rem;justify-content:space-between"><span>No ticker</span>
-            <label class="toggle"><input type="checkbox" data-field="mostrar_no_ticker" ${d.mostrar_no_ticker?'checked':''}><span class="toggle-slider"></span></label>
-          </label></div>
-          <div class="field" style="max-width:130px"><label style="display:flex;align-items:center;gap:0.5rem;justify-content:space-between"><span>Ativo</span>
-            <label class="toggle"><input type="checkbox" data-field="ativo" ${d.ativo?'checked':''}><span class="toggle-slider"></span></label>
-          </label></div>
         </div>
         <div class="field" style="margin-bottom:0.3rem">
           <label>Relato <span style="float:right;color:var(--text-muted);font-weight:400" id="${counterId}">${charCount} caracteres</span></label>
           <textarea id="${taId}" data-field="texto" oninput="updateCounter('${taId}','${counterId}')">${escHtml(d.texto||'')}</textarea>
         </div>
-      </div>
-      <div class="dep-actions">
-        <button class="btn btn-primary btn-sm" onclick="salvarDep(${d.id}, this)">Salvar</button>
-        <button class="btn btn-danger btn-sm" onclick="deletarDep(${d.id})">✕</button>
+        <div class="dep-footer">
+          <div class="dep-footer-toggles">
+            <label class="toggle-pill">
+              <span class="toggle-pill-label">Ticker</span>
+              <span class="toggle"><input type="checkbox" data-field="mostrar_no_ticker" ${d.mostrar_no_ticker?'checked':''}><span class="toggle-slider"></span></span>
+            </label>
+            <label class="toggle-pill">
+              <span class="toggle-pill-label">Ativo</span>
+              <span class="toggle"><input type="checkbox" data-field="ativo" ${d.ativo?'checked':''}><span class="toggle-slider"></span></span>
+            </label>
+          </div>
+          <div class="dep-footer-actions">
+            <button class="btn btn-primary btn-sm" onclick="salvarDep(${d.id}, this)">Salvar</button>
+            <button class="btn-icon" onclick="deletarDep(${d.id})" title="Excluir relato" aria-label="Excluir relato">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </button>
+          </div>
+        </div>
       </div>
     `;
     grid.appendChild(card);
