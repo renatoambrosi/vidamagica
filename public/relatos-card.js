@@ -504,18 +504,29 @@
         </div>
       </div>
     `;
+    // O template agora tem DOIS elementos no top-level (modal + animação do baú).
+    // firstElementChild só pegava o primeiro — apêndice o outro também.
     const div = document.createElement('div');
     div.innerHTML = html;
-    document.body.appendChild(div.firstElementChild);
+    // Materializa antes de iterar (childNodes muda quando movemos pra body)
+    Array.from(div.children).forEach(node => document.body.appendChild(node));
 
-    // Handlers
-    document.getElementById('vmr-x').addEventListener('click', fecharModal);
-    document.getElementById('vmr-modal').addEventListener('click', (e) => {
-      if (e.target.id === 'vmr-modal') fecharModal();
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && document.getElementById('vmr-modal').classList.contains('vmr-aberto')) fecharModal();
-    });
+    // Handlers — protegidos: se algum id sumir, não estoura o iniciar()
+    try {
+      const xBtn = document.getElementById('vmr-x');
+      if (xBtn) xBtn.addEventListener('click', fecharModal);
+      const modalEl = document.getElementById('vmr-modal');
+      if (modalEl) {
+        modalEl.addEventListener('click', (e) => {
+          if (e.target.id === 'vmr-modal') fecharModal();
+        });
+      }
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.getElementById('vmr-modal')?.classList.contains('vmr-aberto')) fecharModal();
+      });
+    } catch (err) {
+      console.warn('[VmRelatos] erro registrando handlers do modal:', err);
+    }
   }
 
   function abrirModal(relato){
@@ -793,13 +804,22 @@
       : opts.container;
     if (!container) return;
 
-    await carregarPrecos();
-    injetarModal();
+    // Cada passo é isolado em try/catch pra um erro em uma etapa NÃO
+    // impedir o swipe/click. Sem isso, se carregarPrecos OU injetarModal
+    // falhar (CORS, CSP, etc) o carrossel inteiro fica "morto".
+    try { await carregarPrecos(); }
+    catch (err) { console.warn('[VmRelatos] falha em carregarPrecos:', err); }
 
-    // Espera o próximo frame caso a LP ainda esteja renderizando cards
+    try { injetarModal(); }
+    catch (err) { console.warn('[VmRelatos] falha em injetarModal:', err); }
+
+    // Espera o próximo frame caso a LP ainda esteja renderizando cards.
+    // Mesmo se as etapas acima falharem, swipe + click DEVEM funcionar.
     requestAnimationFrame(() => {
-      marcarCards(container, depoimentosAtuais.length, opts.cardSelector);
-      tornarSwipeavel(container);
+      try { marcarCards(container, depoimentosAtuais.length, opts.cardSelector); }
+      catch (err) { console.warn('[VmRelatos] falha em marcarCards:', err); }
+      try { tornarSwipeavel(container); }
+      catch (err) { console.warn('[VmRelatos] falha em tornarSwipeavel:', err); }
     });
   }
 
