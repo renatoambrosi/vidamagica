@@ -193,19 +193,23 @@ function gerarTokenSolicitacao() {
   return 'VM' + s;
 }
 
-async function criarSolicitacaoAcesso(telefone, ttlMin = 5) {
+async function criarSolicitacaoAcesso(telefone, ttlMin = 5, dadosCadastro = null) {
   // Limpa tokens expirados de todos os usuários (housekeeping a cada chamada)
   await poolCore.query(`DELETE FROM acesso_solicitacoes WHERE expira_em < NOW()`);
+
+  // dadosCadastro: { nome, email, senha_hash } — opcional, usado no fluxo de
+  // cadastro pelo /auth. Webhook lê isso pra criar a conta JÁ completa.
+  const dadosJson = dadosCadastro ? JSON.stringify(dadosCadastro) : null;
 
   // Tenta gerar token único (raríssimo colidir, mas blindando)
   for (let tentativa = 0; tentativa < 5; tentativa++) {
     const token = gerarTokenSolicitacao();
     try {
       const r = await poolCore.query(
-        `INSERT INTO acesso_solicitacoes (token, telefone, expira_em)
-         VALUES ($1, $2, NOW() + $3::interval)
+        `INSERT INTO acesso_solicitacoes (token, telefone, expira_em, dados_cadastro)
+         VALUES ($1, $2, NOW() + $3::interval, $4::jsonb)
          RETURNING token, criado_em, expira_em`,
-        [token, telefone, `${ttlMin} minutes`]
+        [token, telefone, `${ttlMin} minutes`, dadosJson]
       );
       return r.rows[0];
     } catch (err) {

@@ -174,7 +174,7 @@ async function buscarUsuarioPorIdentificador(id) {
 
 router.post('/solicitar-otp', async (req, res) => {
   try {
-    const { telefone, modo, nome, email, senha } = req.body;
+    const { telefone } = req.body;
     if (!telefone) return res.status(400).json({ error: 'Telefone obrigatório' });
 
     const tel = formatarTelefone(telefone);
@@ -182,53 +182,13 @@ router.post('/solicitar-otp', async (req, res) => {
       return res.status(429).json({ error: 'Muitas tentativas. Aguarde 1 minuto.' });
     }
 
-    const ehCadastro = modo === 'cadastro';
-    let usuario = await buscarUsuarioPorTelefone(tel);
-
-    if (ehCadastro) {
-      // ── Fluxo de CRIAR CONTA NOVA ───────────────────────────────────────
-      // Aluna preencheu nome+email+senha no /auth e clicou "Confirmar pelo WhatsApp".
-      // Aqui criamos a conta incompleta + salvamos os dados que ela já forneceu.
-      // O magic link no zap é o ÚLTIMO passo: ao tocar, ela prova o número e entra.
-      if (usuario) {
-        return res.status(409).json({
-          error: 'Esse WhatsApp já tem uma conta. Faça login.',
-          code: 'CONTA_JA_EXISTE',
-        });
-      }
-      // Validações mínimas (frontend já faz, mas defesa em profundidade)
-      const nomeLimpo  = (nome  || '').toString().trim();
-      const emailLimpo = (email || '').toString().trim().toLowerCase();
-      const senhaLimpa = (senha || '').toString();
-      if (!nomeLimpo)  return res.status(400).json({ error: 'Nome obrigatório' });
-      if (!emailLimpo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLimpo)) {
-        return res.status(400).json({ error: 'E-mail inválido' });
-      }
-      if (!senhaLimpa || senhaLimpa.length < 6) {
-        return res.status(400).json({ error: 'Senha mínima: 6 caracteres' });
-      }
-
-      usuario = await criarOuAtualizarUsuario({
-        telefone: tel,
-        telefone_formatado: tel,
-        nome: nomeLimpo,
-        email: emailLimpo,
-        origem_cadastro: 'auth_direto',
+    // Busca usuário (NÃO cria se não existir — frontend mostra "criar conta")
+    const usuario = await buscarUsuarioPorTelefone(tel);
+    if (!usuario) {
+      return res.status(404).json({
+        error: 'Não encontramos sua conta com esse telefone.',
+        code: 'CONTA_NAO_EXISTE',
       });
-      // Hash da senha vai num passo separado (criarOuAtualizar não aceita senha)
-      const senha_hash = await bcrypt.hash(senhaLimpa, 12);
-      await atualizarUsuario(usuario.id, { senha_hash });
-      // Recarrega pra ter o estado completo
-      usuario = await buscarUsuarioPorTelefone(tel);
-    } else {
-      // ── Fluxo de LOGIN ───────────────────────────────────────────────────
-      // Se não tem conta, devolve 404 igual ao comportamento atual
-      if (!usuario) {
-        return res.status(404).json({
-          error: 'Não encontramos sua conta com esse telefone.',
-          code: 'CONTA_NAO_EXISTE',
-        });
-      }
     }
 
     // Decide template: primeiro acesso (boas-vindas) vs login normal
@@ -248,7 +208,7 @@ router.post('/solicitar-otp', async (req, res) => {
     await enfileirarAtendimento({
       telefone: tel,
       tipo: 'reativo',
-      origem: ehCadastro ? 'auth-cadastro' : 'auth-magic-link',
+      origem: 'auth-magic-link',
       nome: primeiroNome,
       mensagens: [
         { template: templateMsg1, variaveis: { nome: primeiroNome } },
@@ -446,7 +406,7 @@ const NUMERO_COMUNIDADE = process.env.WA_COMUNIDADE_NUMERO || '5562999884411';
 
 router.post('/preparar-acesso', async (req, res) => {
   try {
-    const { telefone } = req.body;
+    const { telefone, modo, nome, email, senha } = req.body;
     if (!telefone) return res.status(400).json({ error: 'Telefone obrigatório' });
 
     const tel = formatarTelefone(telefone);
@@ -459,11 +419,40 @@ router.post('/preparar-acesso', async (req, res) => {
       return res.status(429).json({ error: 'Muitas tentativas. Aguarde 1 minuto.' });
     }
 
-    const sol = await criarSolicitacaoAcesso(tel, 5);
+    const ehCadastro = modo === 'cadastro';
+    let dadosCadastro = null;
 
-    const mensagemPre =
-      `Quero entrar no Vida Mágica\n` +
-      `Solicitação de Magic Link · ${sol.token}`;
+    if (ehCadastro) {
+      // Telefone já cadastrado? Cai pra login normal.
+      const jaExiste = await buscarUsuarioPorTelefone(tel);
+      if (jaExiste) {
+        return res.status(409).json({
+          error: 'Esse WhatsApp já tem uma conta. Faça login.',
+          code: 'CONTA_JA_EXISTE',
+        });
+      }
+      // Validações mínimas (defesa em profundidade — frontend já valida)
+      const nomeLimpo  = (nome  || '').toString().trim();
+      const emailLimpo = (email || '').toString().trim().toLowerCase();
+      const senhaLimpa = (senha || '').toString();
+      if (!nomeLimpo)  return res.status(400).json({ error: 'Nome obrigatório' });
+      if (!emailLimpo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLimpo)) {
+        return res.status(400).json({ error: 'E-mail inválido' });
+      }
+      if (!senhaLimpa || senhaLimpa.length < 6) {
+        return res.status(400).json({ error: 'Senha mínima: 6 caracteres' });
+      }
+      // Hash da senha vai no payload da solicitação. Webhook usa quando criar
+      // a conta. Senha em claro NUNCA toca o banco.
+      const senha_hash = await bcrypt.hash(senhaLimpa, 12);
+      dadosCadastro = { nome: nomeLimpo, email: emailLimpo, senha_hash };
+    }
+
+    const sol = await criarSolicitacaoAcesso(tel, 5, dadosCadastro);
+
+    const mensagemPre = ehCadastro
+      ? `Quero criar minha conta no Vida Mágica\nCadastro · ${sol.token}`
+      : `Quero entrar no Vida Mágica\nSolicitação de Magic Link · ${sol.token}`;
 
     const waUrl = `https://wa.me/${NUMERO_COMUNIDADE}?text=${encodeURIComponent(mensagemPre)}`;
 

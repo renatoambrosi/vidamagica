@@ -436,19 +436,24 @@
   <!-- CADASTRO 2 — OTP -->
   <div class="tela" id="t-cad-2">
     <div class="progress"><div class="step-dot done"><span>1</span></div><div class="step-line done"></div><div class="step-dot active"><span>2</span></div><div class="step-line"></div><div class="step-dot"><span>3</span></div></div>
-    <p class="titulo">Confirme pelo <em>WhatsApp</em></p><div class="divisor"></div>
+    <p class="titulo">Mande o zap pra <em>Suellen</em></p><div class="divisor"></div>
     <div style="text-align:center;padding:1rem 0 0.5rem">
-      <div style="width:80px;height:80px;border-radius:50%;background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.28);display:inline-flex;align-items:center;justify-content:center;margin:0 auto 1.4rem;animation:pulse-wa 2s ease-in-out infinite">
+      <div style="width:80px;height:80px;border-radius:50%;background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.28);display:inline-flex;align-items:center;justify-content:center;margin:0 auto 1.2rem;animation:pulse-wa 2s ease-in-out infinite">
         <svg viewBox="0 0 24 24" width="40" height="40" fill="#4CAF50"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413"/></svg>
       </div>
-      <p class="otp-info" style="margin-bottom:0.8rem">Enviamos o link de confirmação para<br><strong id="c-tel-exibido"></strong></p>
-      <p style="font-size:0.88rem;color:var(--muted);line-height:1.5;max-width:320px;margin:0 auto 1.3rem">
-        Abra o WhatsApp e <strong style="color:var(--gold-light)">toque no link</strong> que a Suellen te enviou. Sua conta vai abrir automaticamente.
+      <p style="font-size:0.9rem;color:var(--pearl);line-height:1.55;max-width:340px;margin:0 auto 0.6rem">
+        Abrimos o WhatsApp com uma mensagem pronta. <strong style="color:var(--gold-light)">Só apertar enviar.</strong>
       </p>
+      <p style="font-size:0.8rem;color:var(--muted);line-height:1.5;max-width:320px;margin:0 auto 1.1rem">
+        Confirmamos pelo número <strong id="c-tel-exibido" style="color:var(--pearl)"></strong> e te enviamos um link de acesso pra entrar.
+      </p>
+      <div id="cad-timer" style="font-family:var(--font-h);font-size:1.6rem;font-weight:700;color:var(--gold-light);letter-spacing:0.04em;line-height:1;margin-bottom:0.4rem">5:00</div>
+      <div id="cad-aguardando-feedback" style="font-size:0.82rem;color:var(--muted);min-height:1.3rem;margin-bottom:0.6rem">Aguardando o seu envio…</div>
     </div>
     <div class="msg erro" id="erro-cad2"></div><div class="msg ok" id="ok-cad2"></div>
-    <div class="reenvio" style="margin-top:0.5rem"><span>Não chegou?</span><button class="btn-sec" id="btn-reenviar" onclick="cadastroReenviar()">Reenviar link</button><span id="timer-reenviar"></span></div>
-    <div class="card-foot" style="margin-top:.75rem"><button onclick="irTela('t-cad-1')">← Corrigir dados</button></div>
+    <div class="reenvio" style="margin-top:0.5rem;justify-content:center"><button class="btn-sec" id="btn-reabrir-wa" onclick="cadastroReabrirWhatsApp()" style="font-weight:700;color:var(--gold-light)">Abrir WhatsApp de novo</button></div>
+    <div class="reenvio" style="margin-top:0.4rem;justify-content:center"><button class="btn-sec" onclick="cadastroReenviar()">Gerar novo código</button></div>
+    <div class="card-foot" style="margin-top:.75rem"><button onclick="cadastroVoltar()">← Corrigir dados</button></div>
   </div>
 
   <!-- CADASTRO 3 — sucesso -->
@@ -1060,26 +1065,82 @@ async function cadastroStep1(){
   if(!senha||senha.length<8){mostrarErro('erro-cad1','A senha deve ter pelo menos 8 caracteres.');document.getElementById('c-senha').focus();return;}
 
   cTelFormatado=tel;
-  setLoad('btn-cad1','Enviando seu link…');
+  setLoad('btn-cad1','Preparando…');
   try{
-    // Backend cria conta incompleta + dispara magic link no WhatsApp.
-    // Quando aluna tocar no link, cai em /auth?magic=TOKEN, processarMagicLinkNaURL
-    // faz login e — como nome/email/senha já estão salvos — redireciona pro /app.
-    const r=await fetch(`${API}/api/auth/solicitar-otp`,{
+    // Fluxo:
+    // 1) Backend cria solicitação com nome+email+senha_hash atrelados ao token
+    // 2) Frontend abre wa.me pra aluna mandar o zap com token pra Suellen
+    // 3) Webhook recebe → cria conta JÁ COMPLETA com os dados + manda magic link
+    // 4) Polling em /aguardando/:token detecta "enviado" → mostra confirmação
+    // 5) Aluna toca no link no zap → /auth?magic=TOKEN → login → /app
+    const r=await fetch(`${API}/api/auth/preparar-acesso`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({telefone:tel, modo:'cadastro', nome, email, senha})
     });
-    const d=await r.json();
-    if(r.ok){
-      document.getElementById('c-tel-exibido').textContent=telExibir(rawTel,'cad');
-      irTela('t-cad-2');
-      iniciarTimer('btn-reenviar','timer-reenviar');
-    } else {
-      mostrarErro('erro-cad1', d.error || 'Erro ao enviar link.');
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok){
+      mostrarErro('erro-cad1', d.error || 'Não conseguimos preparar seu acesso. Tente novamente.');
+      resetBtn('btn-cad1','Confirmar pelo WhatsApp');
+      return;
     }
-  }catch{mostrarErro('erro-cad1','Falha de conexão.');}
-  finally{resetBtn('btn-cad1','Confirmar pelo WhatsApp');}
+    // Guarda contexto pra reenvio + polling
+    window._tokenAcesso = d.token;
+    window._ttlAcesso   = d.ttl_segundos || 300;
+    window._waUrl       = d.wa_url;
+    window._telPedido   = tel;
+    window._cadastroModo = true;
+
+    // Abre WhatsApp na hora (deeplink — mobile abre o app, desktop abre web)
+    window.location.href = d.wa_url;
+
+    // Depois de 3s, troca pra tela de aguardando + inicia polling
+    setTimeout(() => {
+      document.getElementById('c-tel-exibido').textContent = telExibir(rawTel,'cad');
+      irTela('t-cad-2');
+      iniciarPollingAguardandoCadastro(d.token, d.ttl_segundos || 300);
+      resetBtn('btn-cad1','Confirmar pelo WhatsApp');
+    }, 3000);
+  }catch{
+    mostrarErro('erro-cad1','Falha de conexão.');
+    resetBtn('btn-cad1','Confirmar pelo WhatsApp');
+  }
+}
+
+// Polling do cadastro — espelha iniciarPollingAguardando do login mas em cima
+// da tela t-cad-2. Quando recebe "enviado", mostra ✅ "Link enviado, abra seu
+// WhatsApp". Aluna toca no link e cai em /auth?magic= → processo já existe.
+function iniciarPollingAguardandoCadastro(token, ttlSegundos){
+  if (window._aguardandoTimerCad)  clearInterval(window._aguardandoTimerCad);
+  if (window._aguardandoTickerCad) clearInterval(window._aguardandoTickerCad);
+  let segundos = ttlSegundos;
+  const elTimer = document.getElementById('cad-timer');
+  const fmt = (s) => { const m=Math.floor(s/60); return `${m}:${String(s%60).padStart(2,'0')}`; };
+  if (elTimer) elTimer.textContent = fmt(segundos);
+
+  window._aguardandoTickerCad = setInterval(() => {
+    segundos--;
+    if (segundos <= 0) { clearInterval(window._aguardandoTickerCad); if (elTimer) elTimer.textContent = '0:00'; return; }
+    if (elTimer) elTimer.textContent = fmt(segundos);
+  }, 1000);
+
+  window._aguardandoTimerCad = setInterval(async () => {
+    try {
+      const r = await fetch(`${API}/api/auth/aguardando/${token}`);
+      const d = await r.json().catch(() => ({}));
+      if (d.status === 'enviado') {
+        clearInterval(window._aguardandoTimerCad); window._aguardandoTimerCad = null;
+        clearInterval(window._aguardandoTickerCad); window._aguardandoTickerCad = null;
+        const elFeedback = document.getElementById('cad-aguardando-feedback');
+        if (elFeedback) elFeedback.innerHTML = '✅ <strong>Link enviado!</strong> Abra seu WhatsApp e toque pra entrar.';
+      } else if (d.status === 'expirado' || d.status === 'invalido') {
+        clearInterval(window._aguardandoTimerCad); window._aguardandoTimerCad = null;
+        clearInterval(window._aguardandoTickerCad); window._aguardandoTickerCad = null;
+        const elFeedback = document.getElementById('cad-aguardando-feedback');
+        if (elFeedback) elFeedback.textContent = 'Tempo esgotou. Toque em "Reenviar link" pra tentar de novo.';
+      }
+    } catch (_) {}
+  }, 2000);
 }
 
 async function cadastroStep2(){
@@ -1108,35 +1169,48 @@ async function cadastroSalvarPerfil(accessToken){
   }catch{mostrarErro('erro-cad2','Falha de conexão.');}
 }
 
+// Gera nova solicitação (novo token) e reabre o WhatsApp com a mensagem pronta.
+// Útil quando o tempo esgotou ou a aluna não conseguiu enviar a 1ª vez.
 async function cadastroReenviar(){
   limparMsg('erro-cad2');
-  // Reenvia o magic link mantendo o modo='cadastro' + dados que a aluna já preencheu.
-  // Backend agora aceita reenvio mesmo se a conta já existe — usa os dados atuais.
   const nome  = (document.getElementById('c-nome').value||'').trim();
   const email = (document.getElementById('c-email').value||'').trim();
   const senha = document.getElementById('c-senha').value;
+  // Para polling anterior
+  if (window._aguardandoTimerCad)  { clearInterval(window._aguardandoTimerCad);  window._aguardandoTimerCad  = null; }
+  if (window._aguardandoTickerCad) { clearInterval(window._aguardandoTickerCad); window._aguardandoTickerCad = null; }
   try{
-    const r = await fetch(`${API}/api/auth/solicitar-otp`,{
+    const r = await fetch(`${API}/api/auth/preparar-acesso`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({telefone:cTelFormatado, modo:'cadastro', nome, email, senha})
     });
     const d = await r.json().catch(() => ({}));
-    if (r.ok || d.code === 'CONTA_JA_EXISTE') {
-      // Se a conta já foi criada na primeira chamada, refaz o reenvio em modo "login"
-      if (d.code === 'CONTA_JA_EXISTE') {
-        await fetch(`${API}/api/auth/solicitar-otp`,{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({telefone:cTelFormatado})
-        });
-      }
-      mostrarOk('ok-cad2','✅ Novo link enviado!');
-      iniciarTimer('btn-reenviar','timer-reenviar');
-    } else {
-      mostrarErro('erro-cad2', d.error || 'Erro ao reenviar.');
+    if (!r.ok) {
+      mostrarErro('erro-cad2', d.error || 'Erro ao gerar novo código.');
+      return;
     }
-  }catch{mostrarErro('erro-cad2','Erro ao reenviar.');}
+    window._tokenAcesso = d.token;
+    window._ttlAcesso   = d.ttl_segundos || 300;
+    window._waUrl       = d.wa_url;
+    window.location.href = d.wa_url;
+    setTimeout(() => {
+      mostrarOk('ok-cad2','✅ Novo código gerado!');
+      iniciarPollingAguardandoCadastro(d.token, d.ttl_segundos || 300);
+    }, 500);
+  }catch{mostrarErro('erro-cad2','Erro ao gerar novo código.');}
+}
+
+// Reabre o WhatsApp com o MESMO token (sem gerar outro)
+function cadastroReabrirWhatsApp(){
+  if (window._waUrl) window.location.href = window._waUrl;
+}
+
+// Cancela polling e volta pra tela de dados (t-cad-1).
+function cadastroVoltar(){
+  if (window._aguardandoTimerCad)  { clearInterval(window._aguardandoTimerCad);  window._aguardandoTimerCad  = null; }
+  if (window._aguardandoTickerCad) { clearInterval(window._aguardandoTickerCad); window._aguardandoTickerCad = null; }
+  irTela('t-cad-1');
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
