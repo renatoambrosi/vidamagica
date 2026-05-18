@@ -1126,11 +1126,11 @@ async function initComunicacao() {
       INSERT INTO templates_mensagens (chave, titulo, texto, categoria, ordem) VALUES
         ('magic_login_msg1',
          'Magic Link — Login (volta para casa)',
-         E'Que bom te ver de volta, {nome}. ✨\nSeu Magic Link está pronto!\nToque no caminho abaixo pra entrar:',
+         E'Que bom que você voltou, {nome}. ✦\nSua jornada estava te esperando.\nSeu Magic Link está pronto.\nToque abaixo para continuar:',
          'acesso', 1),
         ('magic_boas_vindas_msg1',
          'Magic Link — Primeiro acesso',
-         E'Bem-vinda, {nome}. 🌟\nEstávamos te esperando.\nSeu Magic Link está pronto.\nToque no caminho abaixo para acessar:',
+         E'Bem-vinda, {nome}. ✦\nVocê chegou até aqui — e isso já diz muito sobre você.\nSeu Magic Link está pronto.\nToque abaixo para acessar sua jornada:',
          'acesso', 2),
         ('reset_senha_msg1',
          'Reset de senha',
@@ -1173,6 +1173,24 @@ async function initComunicacao() {
          E'{nome}, seu acesso ao Painel de Atendimento do Vida Mágica está pronto.\nCódigo: *{codigo}*\nVálido por 10 minutos.',
          'otp_painel', 2)
       ON CONFLICT (chave) DO NOTHING
+    `);
+
+    // Refresh dos templates de Magic Link com a voz oficial do Vida Mágica (2026-05-18).
+    // Só atualiza se o texto AINDA é o antigo — preserva customizações que Renato
+    // tenha feito pela tela /admin → Templates.
+    await c.query(`
+      UPDATE templates_mensagens
+         SET texto = E'Que bom que você voltou, {nome}. ✦\nSua jornada estava te esperando.\nSeu Magic Link está pronto.\nToque abaixo para continuar:',
+             atualizado_em = NOW()
+       WHERE chave = 'magic_login_msg1'
+         AND texto = E'Que bom te ver de volta, {nome}. ✨\nSeu Magic Link está pronto!\nToque no caminho abaixo pra entrar:'
+    `);
+    await c.query(`
+      UPDATE templates_mensagens
+         SET texto = E'Bem-vinda, {nome}. ✦\nVocê chegou até aqui — e isso já diz muito sobre você.\nSeu Magic Link está pronto.\nToque abaixo para acessar sua jornada:',
+             atualizado_em = NOW()
+       WHERE chave = 'magic_boas_vindas_msg1'
+         AND texto = E'Bem-vinda, {nome}. 🌟\nEstávamos te esperando.\nSeu Magic Link está pronto.\nToque no caminho abaixo para acessar:'
     `);
 
     // Update categoria/ordem em templates JÁ existentes (caso tenham sido seedados antes do schema novo)

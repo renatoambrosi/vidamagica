@@ -433,13 +433,15 @@ function generoArtigoPorNome(nome) {
 // trilha. A Home agora não tem mais saudação própria (era acoplada à barra).
 function renderSaudacaoJornada(ctx) {
   const primeiroNome = ctx?.aluna?.primeiro_nome || '';
+  const nomeJornadaVigente = ctx?.jornada_vigente?.nome || '';
 
-  // Atualiza a view-sub "Jornada do/da NOME" no topo do view-jornada
+  // Atualiza a view-sub "Jornada de NOME — NOME_DA_JORNADA" no topo do view-jornada
   const subEl = document.getElementById('jornada-saudacao-sub');
   if (subEl) {
-    if (primeiroNome) {
-      const artigo = generoArtigoPorNome(primeiroNome);
-      subEl.textContent = `Jornada ${artigo} ${primeiroNome}`;
+    if (primeiroNome && nomeJornadaVigente) {
+      subEl.textContent = `Jornada de ${primeiroNome} — ${nomeJornadaVigente}`;
+    } else if (primeiroNome) {
+      subEl.textContent = `Jornada de ${primeiroNome}`;
     } else {
       subEl.textContent = 'Sua jornada';
     }
@@ -620,7 +622,7 @@ async function carregarTesouro() {
     if (!item) { document.getElementById('tesouro-sub').textContent='Nenhum tesouro hoje ainda'; return; }
     tesouroAtual = item;
     document.getElementById('tesouro-btn').classList.add('tem-novidade');
-    document.getElementById('tesouro-sub').textContent='Novo! Toque para resgatar ✨';
+    document.getElementById('tesouro-sub').textContent='Seu presente de hoje está aqui ✦';
   } catch {}
 }
 document.getElementById('tesouro-btn')?.addEventListener('click', () => {
@@ -631,6 +633,7 @@ document.getElementById('tesouro-btn')?.addEventListener('click', () => {
       <div class="feed-card-eyebrow" style="margin-bottom:0.4rem">${tesouroAtual.subtitulo||'Tesouro do Dia'}</div>
       <div class="feed-card-titulo" style="font-size:1.1rem;margin-bottom:0.6rem">${tesouroAtual.titulo}</div>
       ${tesouroAtual.corpo?`<p style="font-size:0.86rem;color:var(--texto-suave);line-height:1.6;margin-bottom:1rem">${tesouroAtual.corpo}</p>`:''}
+      <p style="font-size:0.82rem;color:var(--texto-suave);line-height:1.5;margin-bottom:0.75rem;font-style:italic">"Quando agradece, coisas boas acontecem. Quando acredita, coisas boas realiza."</p>
       <div style="font-size:0.75rem;color:var(--ouro-fundo);font-family:var(--font-display);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.2rem">Recompensa</div>
       <div style="font-size:1.4rem;font-family:var(--font-display);font-weight:900;color:var(--ouro-fundo);margin-bottom:1rem">+1 🌱 Semente</div>
     </div>`;
@@ -646,7 +649,7 @@ document.getElementById('modal-tesouro-resgatar')?.addEventListener('click', asy
   document.getElementById('perfil-sementes').textContent = usuario.sementes;
   fecharModal('modal-tesouro');
   document.getElementById('tesouro-btn').classList.remove('tem-novidade');
-  document.getElementById('tesouro-sub').textContent = 'Resgatado! Volte amanhã 🌱';
+  document.getElementById('tesouro-sub').textContent = 'Ouro resgatado. Volte amanhã ✦';
   tesouroAtual = null;
   btn.disabled = false; btn.textContent = '🌱 Resgatar Tesouro';
 });
@@ -654,8 +657,8 @@ document.getElementById('modal-tesouro-resgatar')?.addEventListener('click', asy
 // ── AVISOS ───────────────────────────────────────────────────
 const AVISOS_KEY = 'vm_avisos_lidos';
 const AVISOS_BASE = [
-  {id:'av1',tag:'Tesouro da Su',titulo:'Seu presente chegou! ✨',desc:'Um novo tesouro está disponível para você hoje.',data:'Hoje'},
-  {id:'av2',tag:'Comunidade',titulo:'Novo conteúdo disponível',desc:'A Suellen Seragi publicou um conteúdo exclusivo para membros.',data:'1 dia'},
+  {id:'av1',tag:'Tesouro da Su',titulo:'Seu ouro do dia chegou ✦',desc:'A Su deixou algo pra você hoje. Não deixa passar.',data:'Hoje'},
+  {id:'av2',tag:'Comunidade',titulo:'Conteúdo exclusivo disponível',desc:'Tem ouro novo esperando por você. Só pra quem está dentro.',data:'1 dia'},
 ];
 // Avisos dinâmicos (vindos do contexto da aluna). São injetados antes dos
 // avisos base porque costumam ser mais urgentes/personalizados.
@@ -2229,9 +2232,9 @@ function renderBannerAtualizarTrilha(ctx) {
   banner.innerHTML = `
     <div class="banner-atualizar-icone">✦</div>
     <div class="banner-atualizar-textos">
-      <div class="banner-atualizar-titulo">Seu novo perfil está pronto pra atualizar sua jornada.</div>
+      <div class="banner-atualizar-titulo">Você é outra pessoa agora. Sua jornada precisa refletir isso. ✦</div>
       <button class="banner-atualizar-btn" data-teste-id="${ctx.teste_aguardando_ativacao.id}">
-        Quero atualizar →
+        Atualizar minha jornada →
       </button>
     </div>
   `;
@@ -2271,7 +2274,7 @@ function renderBannerAtualizarPorCompra(ctx) {
   banner.innerHTML = `
     <div class="banner-atualizar-icone">✦</div>
     <div class="banner-atualizar-textos">
-      <div class="banner-atualizar-titulo">Sua jornada avançou! Veja como ficou.</div>
+      <div class="banner-atualizar-titulo">Pensou, falou, viveu — e avançou. ✦</div>
       <button class="banner-atualizar-btn" data-atualizacao-id="${a.id}">
         Ver minha trilha →
       </button>
@@ -2303,10 +2306,17 @@ function renderBannerAtualizarPorCompra(ctx) {
 // - jornadaInfo: { nome, passos_total, passos_concluidos, percentual }
 // - aoConcluir: callback chamado quando aluna clica em "Concluir →"
 
-function criarSplashJornada({ contexto = 'atualizando', jornadaInfo = null, aoConcluir = null } = {}) {
+function criarSplashJornada({ contexto = 'atualizando', jornadaInfo = null, primeiroNome = '', aoConcluir = null } = {}) {
   const ehCriando = contexto === 'criando';
-  const tituloFase1 = ehCriando ? 'Criando sua jornada' : 'Atualizando sua jornada';
-  const subFase1 = 'Estamos preparando sua trilha personalizada';
+  const nomeMostrar = (primeiroNome || '').trim();
+  const tituloFase1 = ehCriando
+    ? 'A vida é mágica!'
+    : 'Você avançou ✦';
+  const subFase1 = ehCriando
+    ? (nomeMostrar
+        ? `Jornada personalizada de ${nomeMostrar} está sendo criada.`
+        : 'Sua jornada personalizada está sendo criada.')
+    : 'Cada passo que você dá, a mente expande. Veja onde você está agora.';
 
   const splash = document.createElement('div');
   splash.className = 'jornada-splash';
@@ -2330,7 +2340,7 @@ function criarSplashJornada({ contexto = 'atualizando', jornadaInfo = null, aoCo
           <span class="pct-num" data-prog-pct>0</span><span class="pct-sym">%</span>
         </div>
       </div>
-      <button class="jornada-splash-botao" data-btn-concluir>Concluir →</button>
+      <button class="jornada-splash-botao" data-btn-concluir>${ehCriando ? 'Acessar minha jornada' : 'Concluir →'}</button>
     </div>
   `;
 
@@ -2347,13 +2357,15 @@ function criarSplashJornada({ contexto = 'atualizando', jornadaInfo = null, aoCo
 
 // Orquestra as fases da splash. Retorna Promise que resolve quando aluna
 // clica em "Concluir" (ou splash é fechada por outro motivo).
-function rodarSplashJornada({ contexto = 'atualizando', jornadaInfo = null } = {}) {
+function rodarSplashJornada({ contexto = 'atualizando', jornadaInfo = null, primeiroNome = '' } = {}) {
   return new Promise(resolve => {
-    const splash = criarSplashJornada({ contexto, aoConcluir: resolve });
+    const splash = criarSplashJornada({ contexto, jornadaInfo, primeiroNome, aoConcluir: resolve });
     document.body.appendChild(splash);
     requestAnimationFrame(() => splash.classList.add('visivel'));
 
-    const tituloFase2 = contexto === 'criando' ? 'Jornada criada com sucesso' : 'Jornada atualizada com sucesso';
+    const tituloFase2 = contexto === 'criando'
+      ? 'Sua jornada começou ✦'
+      : 'Sua jornada avançou ✦';
 
     // FASE 2 (em 2s): fade do título → trocar texto → fade in
     setTimeout(() => {
@@ -2361,7 +2373,7 @@ function rodarSplashJornada({ contexto = 'atualizando', jornadaInfo = null } = {
       setTimeout(() => {
         const titEl = splash.querySelector('.jornada-splash-titulo');
         const subEl = splash.querySelector('.jornada-splash-sub');
-        if (titEl) titEl.innerHTML = tituloFase2 + ' ✦';
+        if (titEl) titEl.innerHTML = tituloFase2;
         if (subEl) subEl.textContent = 'Sua trilha está pronta';
         splash.classList.remove('fase-transicao');
       }, 400);
@@ -2428,7 +2440,8 @@ async function ativarTrilhaComSplash(testeId) {
   const jornadaInfo = montarJornadaInfoSplash(novoCtx);
 
   // Roda splash (volta quando aluna clica Concluir)
-  await rodarSplashJornada({ contexto: 'atualizando', jornadaInfo });
+  const primeiroNomeSplash = novoCtx?.aluna?.primeiro_nome || '';
+  await rodarSplashJornada({ contexto: 'atualizando', jornadaInfo, primeiroNome: primeiroNomeSplash });
 
   // Atualiza UI com novo contexto
   if (novoCtx) hidratarHome(novoCtx);
@@ -2438,8 +2451,9 @@ async function ativarTrilhaComSplash(testeId) {
 async function dispararSplashAtualizacao(atualizacao, ctxAtual) {
   const contexto = (atualizacao.payload && atualizacao.payload.contexto) || 'atualizando';
   const jornadaInfo = montarJornadaInfoSplash(ctxAtual);
+  const primeiroNomeSplash = ctxAtual?.aluna?.primeiro_nome || '';
 
-  await rodarSplashJornada({ contexto, jornadaInfo });
+  await rodarSplashJornada({ contexto, jornadaInfo, primeiroNome: primeiroNomeSplash });
 
   // Marca consumida
   try {
@@ -2732,8 +2746,18 @@ function renderMateriais(ctx) {
         ? `<img src="${escHtml(p.produto_imagem)}" alt="" class="mat-capa" onerror="this.style.display='none'">`
         : '<div class="mat-capa-placeholder"></div>';
       const link = p.link_checkout_padrao || '';
+      // Texto do botão muda conforme o perfil dominante (M11).
+      const textosBotaoProximo = {
+        medo:          'Quero vencer esse padrão →',
+        desordem:      'Quero clareza e direção →',
+        validacao:     'Quero me libertar dessa busca →',
+        sobrevivencia: 'Quero soltar esse peso →',
+        prosperidade:  'Quero expandir ainda mais →',
+      };
+      const perfilDom = (ctx?.teste_atual?.perfil_dominante || '').toLowerCase();
+      const textoBotao = textosBotaoProximo[perfilDom] || 'Quero esse passo →';
       const btnHtml = link
-        ? `<a href="${escHtml(link)}" target="_blank" rel="noopener" class="mat-card-btn">Quero esse passo →</a>`
+        ? `<a href="${escHtml(link)}" target="_blank" rel="noopener" class="mat-card-btn">${textoBotao}</a>`
         : '';
       return `<div class="mat-card mat-card-h">
         ${capa}
@@ -2917,7 +2941,17 @@ function renderTrilhaJornada(ctx) {
     } else if (p.eh_proximo) {
       classe = 'trilha-ativo';
       const link = p.link_checkout_padrao || '#';
-      btnHtml = '<a class="trilha-btn" href="' + link + '" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:inline-block">Quero esse passo →</a>';
+      // Texto do botão muda conforme o perfil dominante da aluna no teste atual.
+      const textosBotaoProximo = {
+        medo:          'Quero vencer esse padrão →',
+        desordem:      'Quero clareza e direção →',
+        validacao:     'Quero me libertar dessa busca →',
+        sobrevivencia: 'Quero soltar esse peso →',
+        prosperidade:  'Quero expandir ainda mais →',
+      };
+      const perfilDom = (ctx?.teste_atual?.perfil_dominante || '').toLowerCase();
+      const textoBotao = textosBotaoProximo[perfilDom] || 'Quero esse passo →';
+      btnHtml = '<a class="trilha-btn" href="' + link + '" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:inline-block">' + textoBotao + '</a>';
     }
     // Capa do produto (60x60) à esquerda; se não tiver imagem, deixa o slot vazio
     const capa = p.produto_imagem
@@ -3017,12 +3051,12 @@ window.app = {
             <div class="vm-clube-beneficio"><span class="vm-clube-icone">🎥</span><div><strong>Encontro mensal ao vivo</strong><span>1 live por mês — troca direta com a Su e o Rê</span></div></div>\
             <div class="vm-clube-beneficio"><span class="vm-clube-icone">💬</span><div><strong>Grupo de WhatsApp</strong><span>Comunidade ativa — pessoas reais vencendo problemas reais</span></div></div>\
             <div class="vm-clube-beneficio"><span class="vm-clube-icone">💛</span><div><strong>Tesouros da Su</strong><span>Direcionamentos, insights e lembretes no momento certo</span></div></div>\
-            <div class="vm-clube-beneficio"><span class="vm-clube-icone">🌱</span><div><strong>Sementes de desconto</strong><span>Desconto exclusivo em todos os materiais Vida Mágica</span></div></div>\
-            <div class="vm-clube-beneficio"><span class="vm-clube-icone">🗺️</span><div><strong>Acompanhamento da jornada</strong><span>Animações de avanço, feed personalizado, notificações ativas</span></div></div>\
-            <div class="vm-clube-beneficio"><span class="vm-clube-icone">⚡</span><div><strong>Chat com resposta em até 5 dias</strong><span>Suporte direto comigo neste app</span></div></div>\
+            <div class="vm-clube-beneficio"><span class="vm-clube-icone">🌱</span><div><strong>Sementes de desconto</strong><span>Desconto real e exclusivo em todos os materiais Vida Mágica.</span></div></div>\
+            <div class="vm-clube-beneficio"><span class="vm-clube-icone">🗺️</span><div><strong>Acompanhamento da jornada</strong><span>Sua jornada ganha vida. Você vê onde está e pra onde vai.</span></div></div>\
+            <div class="vm-clube-beneficio"><span class="vm-clube-icone">⚡</span><div><strong>Chat com resposta em até 5 dias</strong><span>Resposta no chat em até 5 dias. Você não está sozinha nessa.</span></div></div>\
           </div>\
           <a href="https://www.vidamagica.com.br/assinar" target="_blank" rel="noopener" class="vm-clube-cta">Quero o Clube Vida Mágica</a>\
-          <button type="button" class="vm-clube-depois">Agora não</button>\
+          <button type="button" class="vm-clube-depois">Mais tarde</button>\
         </div>';
       document.body.appendChild(overlay);
 
