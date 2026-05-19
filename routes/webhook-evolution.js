@@ -16,14 +16,12 @@
 
 const express = require('express');
 const router = express.Router();
-const { poolCore } = require('../db');
 const { formatarTelefone } = require('../core/utils');
 const {
   detectarTokenNaMensagem,
   marcarSolicitacaoUsada,
   buscarUsuarioPorTelefoneComOrigem,
   criarOuAtualizarUsuario,
-  atualizarUsuario,
   criarMagicToken,
 } = require('../core/usuarios');
 const { enfileirarAtendimento } = require('../core/gateway');
@@ -212,39 +210,16 @@ router.post('/evolution', async (req, res) => {
       return;
     }
 
-    // 2. Não achou em lugar nenhum — cria conta com origem='whatsapp'.
-    //    Se a solicitação tem dados_cadastro (fluxo "Criar conta" do /auth),
-    //    cria JÁ COMPLETA com nome+email+senha_hash. Caso contrário, só
-    //    incompleta (aluna que mandou zap "vou entrar" sem nunca ter cadastrado).
+    // 2. Não achou em lugar nenhum — cria conta incompleta com origem='whatsapp'
+    //    e segue pro fluxo normal de boas-vindas (cai na branch 3 abaixo).
     let usuario = match?.usuario || null;
     if (!usuario) {
-      // Recarrega solicitação completa pra ler dados_cadastro
-      const solCompletaRow = await poolCore.query(
-        `SELECT dados_cadastro FROM acesso_solicitacoes WHERE token = $1 LIMIT 1`,
-        [sol.token]
-      );
-      const dadosCadastro = solCompletaRow.rows[0]?.dados_cadastro || null;
-
-      if (dadosCadastro && dadosCadastro.nome && dadosCadastro.email && dadosCadastro.senha_hash) {
-        console.log(`[webhook-evolution] cadastro completo via /auth — criando conta de ${dadosCadastro.nome}`);
-        usuario = await criarOuAtualizarUsuario({
-          telefone: telefoneFinal,
-          telefone_formatado: telefoneFinal,
-          nome: dadosCadastro.nome,
-          email: dadosCadastro.email,
-          origem_cadastro: 'auth_direto',
-        });
-        await atualizarUsuario(usuario.id, { senha_hash: dadosCadastro.senha_hash });
-        // Recarrega pra refletir o senha_hash no objeto retornado
-        usuario = (await buscarUsuarioPorTelefoneComOrigem(telefoneFinal))?.usuario || usuario;
-      } else {
-        console.log(`[webhook-evolution] sem cadastro — criando conta incompleta com origem='whatsapp'`);
-        usuario = await criarOuAtualizarUsuario({
-          telefone: telefoneFinal,
-          telefone_formatado: telefoneFinal,
-          origem_cadastro: 'whatsapp',
-        });
-      }
+      console.log(`[webhook-evolution] sem cadastro — criando conta incompleta com origem='whatsapp'`);
+      usuario = await criarOuAtualizarUsuario({
+        telefone: telefoneFinal,
+        telefone_formatado: telefoneFinal,
+        origem_cadastro: 'whatsapp',
+      });
     }
 
     // Decide entre magic_login (cadastro completo) ou magic_boas_vindas (incompleto)

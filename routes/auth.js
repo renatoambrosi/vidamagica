@@ -174,7 +174,7 @@ async function buscarUsuarioPorIdentificador(id) {
 
 router.post('/solicitar-otp', async (req, res) => {
   try {
-    const { telefone } = req.body;
+    const { telefone, modo, nome, email, senha } = req.body;
     if (!telefone) return res.status(400).json({ error: 'Telefone obrigatório' });
 
     const tel = formatarTelefone(telefone);
@@ -182,7 +182,77 @@ router.post('/solicitar-otp', async (req, res) => {
       return res.status(429).json({ error: 'Muitas tentativas. Aguarde 1 minuto.' });
     }
 
-    // Busca usuário (NÃO cria se não existir — frontend mostra "criar conta")
+    const ehCadastro = modo === 'cadastro';
+
+    // ─────────────────────────────────────────────────────────────
+    // MODO CADASTRO
+    // Aluna preencheu nome+email+tel+senha no /auth. AGORA:
+    //  1. Backend grava/agrega os dados em `usuarios` (camadas)
+    //  2. Backend gera um token de solicitação (acesso_solicitacoes)
+    //  3. Retorna wa_url pro frontend abrir o WhatsApp da aluna
+    //  4. Aluna manda o zap pra Suellen
+    //  5. Webhook recebe → vê que a conta existe → enfileira magic link
+    //  6. Aluna toca no link → /login-magic → marcarComoAtiva → /app
+    //
+    // BACKEND NÃO MANDA MENSAGEM AQUI. A aluna que inicia a conversa.
+    // ─────────────────────────────────────────────────────────────
+    if (ehCadastro) {
+      const nomeLimpo  = (nome  || '').toString().trim();
+      const emailLimpo = (email || '').toString().trim().toLowerCase();
+      const senhaLimpa = (senha || '').toString();
+      if (!nomeLimpo)  return res.status(400).json({ error: 'Nome obrigatório' });
+      if (!emailLimpo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLimpo)) {
+        return res.status(400).json({ error: 'E-mail inválido' });
+      }
+      if (!senhaLimpa || senhaLimpa.length < 6) {
+        return res.status(400).json({ error: 'Senha mínima: 6 caracteres' });
+      }
+
+      // 1. Grava/agrega usuário (modelo de camadas)
+      let usuario = await buscarUsuarioPorTelefone(tel);
+      if (!usuario) {
+        usuario = await criarOuAtualizarUsuario({
+          telefone: tel,
+          telefone_formatado: tel,
+          nome: nomeLimpo,
+          email: emailLimpo,
+          origem_cadastro: 'cadastro_direto',
+        });
+      } else {
+        const camposPraAtualizar = {};
+        if (!usuario.nome)  camposPraAtualizar.nome  = nomeLimpo;
+        if (!usuario.email) camposPraAtualizar.email = emailLimpo;
+        if (Object.keys(camposPraAtualizar).length) {
+          usuario = await atualizarUsuario(usuario.id, camposPraAtualizar);
+        }
+      }
+      if (!usuario.senha_hash) {
+        const senha_hash = await bcrypt.hash(senhaLimpa, 12);
+        usuario = await atualizarUsuario(usuario.id, { senha_hash });
+      }
+
+      // 2. Gera token de solicitação e wa_url (igual fluxo do "Solicite entrar pelo seu WhatsApp")
+      const sol = await criarSolicitacaoAcesso(tel, 5);
+      const mensagemPre =
+        `Quero criar minha conta no Vida Mágica\n` +
+        `Cadastro · ${sol.token}`;
+      const waUrl = `https://wa.me/${NUMERO_COMUNIDADE}?text=${encodeURIComponent(mensagemPre)}`;
+
+      return res.json({
+        success: true,
+        token: sol.token,
+        wa_url: waUrl,
+        expira_em: sol.expira_em,
+        ttl_segundos: 300,
+      });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // MODO LOGIN (modo ausente / qualquer outro)
+    // Comportamento legado: aluna informa só telefone, se a conta
+    // existir manda magic link via gateway. Se não, 404 (frontend
+    // direciona pra criar conta).
+    // ─────────────────────────────────────────────────────────────
     const usuario = await buscarUsuarioPorTelefone(tel);
     if (!usuario) {
       return res.status(404).json({
@@ -191,20 +261,15 @@ router.post('/solicitar-otp', async (req, res) => {
       });
     }
 
-    // Decide template: primeiro acesso (boas-vindas) vs login normal
-    // Critério: se usuário existe mas ainda não tem nome+email+senha = primeiro acesso
-    // (cadastro veio incompleto de Kiwify/teste e ela ainda não completou)
     const cadastroIncompleto = !usuario.nome || !usuario.email || !usuario.senha_hash;
     const tipoMagic = cadastroIncompleto ? 'magic_boas_vindas' : 'magic_login';
     const templateMsg1 = cadastroIncompleto ? 'magic_boas_vindas_msg1' : 'magic_login_msg1';
 
-    // Gera token de magic link (válido 10 min)
     const token = await criarMagicToken(tel, tipoMagic, 10);
     const baseUrl = process.env.APP_URL || 'https://www.vidamagica.com.br';
     const link = `${baseUrl}/auth?magic=${token}`;
     const primeiroNome = (usuario.nome || '').split(' ')[0] || '';
 
-    // Enfileira no gateway: 2 mensagens (saudação + link cru)
     await enfileirarAtendimento({
       telefone: tel,
       tipo: 'reativo',
@@ -406,7 +471,7 @@ const NUMERO_COMUNIDADE = process.env.WA_COMUNIDADE_NUMERO || '5562999884411';
 
 router.post('/preparar-acesso', async (req, res) => {
   try {
-    const { telefone, modo, nome, email, senha } = req.body;
+    const { telefone } = req.body;
     if (!telefone) return res.status(400).json({ error: 'Telefone obrigatório' });
 
     const tel = formatarTelefone(telefone);
@@ -419,40 +484,11 @@ router.post('/preparar-acesso', async (req, res) => {
       return res.status(429).json({ error: 'Muitas tentativas. Aguarde 1 minuto.' });
     }
 
-    const ehCadastro = modo === 'cadastro';
-    let dadosCadastro = null;
+    const sol = await criarSolicitacaoAcesso(tel, 5);
 
-    if (ehCadastro) {
-      // Telefone já cadastrado? Cai pra login normal.
-      const jaExiste = await buscarUsuarioPorTelefone(tel);
-      if (jaExiste) {
-        return res.status(409).json({
-          error: 'Esse WhatsApp já tem uma conta. Faça login.',
-          code: 'CONTA_JA_EXISTE',
-        });
-      }
-      // Validações mínimas (defesa em profundidade — frontend já valida)
-      const nomeLimpo  = (nome  || '').toString().trim();
-      const emailLimpo = (email || '').toString().trim().toLowerCase();
-      const senhaLimpa = (senha || '').toString();
-      if (!nomeLimpo)  return res.status(400).json({ error: 'Nome obrigatório' });
-      if (!emailLimpo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLimpo)) {
-        return res.status(400).json({ error: 'E-mail inválido' });
-      }
-      if (!senhaLimpa || senhaLimpa.length < 6) {
-        return res.status(400).json({ error: 'Senha mínima: 6 caracteres' });
-      }
-      // Hash da senha vai no payload da solicitação. Webhook usa quando criar
-      // a conta. Senha em claro NUNCA toca o banco.
-      const senha_hash = await bcrypt.hash(senhaLimpa, 12);
-      dadosCadastro = { nome: nomeLimpo, email: emailLimpo, senha_hash };
-    }
-
-    const sol = await criarSolicitacaoAcesso(tel, 5, dadosCadastro);
-
-    const mensagemPre = ehCadastro
-      ? `Quero criar minha conta no Vida Mágica\nCadastro · ${sol.token}`
-      : `Quero entrar no Vida Mágica\nSolicitação de Magic Link · ${sol.token}`;
+    const mensagemPre =
+      `Quero entrar no Vida Mágica\n` +
+      `Solicitação de Magic Link · ${sol.token}`;
 
     const waUrl = `https://wa.me/${NUMERO_COMUNIDADE}?text=${encodeURIComponent(mensagemPre)}`;
 

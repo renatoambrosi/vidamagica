@@ -223,11 +223,6 @@ async function initCore() {
     `);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_acesso_token ON acesso_solicitacoes(token) WHERE usado=FALSE`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_acesso_telefone ON acesso_solicitacoes(telefone, criado_em DESC)`);
-    // dados_cadastro: usado no fluxo de CADASTRO via WhatsApp. Quando aluna
-    // clica "Confirmar pelo WhatsApp" no /auth, os dados (nome+email+senha_hash)
-    // ficam atrelados ao token. O webhook lê isso pra criar a conta JÁ COMPLETA
-    // antes de gerar o magic link.
-    await c.query(`ALTER TABLE acesso_solicitacoes ADD COLUMN IF NOT EXISTS dados_cadastro JSONB`);
 
     await c.query(`
       CREATE TABLE IF NOT EXISTS otp_tokens (
