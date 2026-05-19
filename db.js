@@ -96,7 +96,17 @@ async function initCore() {
     // Status da conta:
     //   'incompleta' = criada por origem externa, ainda não validou telefone (não loga)
     //   'ativa'      = telefone validado pelo menos uma vez (pode logar)
-    //   'arquivada'  = aluna pediu pra apagar OU admin arquivou (não loga)
+    //   'arquivada'  = aluna desativou (arquivada_por='aluna') OU admin arquivou
+    //                  Desativada pela aluna: reativa silenciosamente via OTP.
+    //                  Arquivada pelo admin: só admin desarquiva.
+    //   'legado'     = excluída permanentemente (pela própria aluna no caminho C
+    //                  do modal de desativar OU pelo admin). Cadastro novo cria
+    //                  conta limpa; dados antigos ficam invisíveis pra aluna,
+    //                  visíveis só pro admin. Materiais comprados podem voltar
+    //                  via webhook Kiwify se a aluna reativar compra.
+    //   'banido'     = bloqueado de logar e cruzado por vínculos (telefone,
+    //                  email, CPF, fingerprint). Tentativas registradas em
+    //                  tentativas_banido pra auditoria.
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'incompleta'`);
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS telefone_validado_em TIMESTAMPTZ`);
 
@@ -259,7 +269,7 @@ async function initCore() {
       CREATE TABLE IF NOT EXISTS dispositivos (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-        tipo VARCHAR(10) NOT NULL CHECK (tipo IN ('mobile','desktop')),
+        tipo VARCHAR(10) NOT NULL CHECK (tipo IN ('mobile','tablet','desktop')),
         device_id TEXT NOT NULL,
         fingerprint JSONB,
         nome_amigavel VARCHAR(100),
@@ -270,6 +280,12 @@ async function initCore() {
         UNIQUE(usuario_id, tipo)
       )
     `);
+
+    // Migration idempotente: estender CHECK pra incluir 'tablet'.
+    // Bancos criados antes desta migração tinham só ('mobile','desktop').
+    // Roda no boot, é seguro rodar várias vezes.
+    await c.query(`ALTER TABLE dispositivos DROP CONSTRAINT IF EXISTS dispositivos_tipo_check`);
+    await c.query(`ALTER TABLE dispositivos ADD CONSTRAINT dispositivos_tipo_check CHECK (tipo IN ('mobile','tablet','desktop'))`);
 
     await c.query(`
       CREATE TABLE IF NOT EXISTS sessoes (
@@ -337,6 +353,13 @@ async function initCore() {
     `);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_uprod_telefone ON usuario_produtos(telefone_canonico)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_uprod_usuario ON usuario_produtos(usuario_id)`);
+
+    // Legado: produto comprado fica latente quando aluna excluiu a conta no
+    // caminho B/C do modal de desativar. Invisível pra aluna; admin vê na
+    // aba Legado. Webhook Kiwify pode reativar (eh_legado=FALSE) se ela
+    // comprar novamente com o mesmo telefone.
+    await c.query(`ALTER TABLE usuario_produtos ADD COLUMN IF NOT EXISTS eh_legado BOOLEAN DEFAULT FALSE`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_uprod_legado ON usuario_produtos(usuario_id, eh_legado)`);
 
     // ── ATUALIZAÇÕES PENDENTES DA JORNADA ──────────────────
     // Eventos que disparam um aviso de "sua jornada foi atualizada" no app
@@ -502,6 +525,50 @@ async function initCore() {
       )
     `);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_sementes_usuario ON sementes(usuario_id)`);
+
+    // ── BANIMENTOS ─────────────────────────────────────────
+    // Quando o admin marca alguém como banido, registra aqui os vínculos
+    // (telefone, email, CPF, fingerprints conhecidos). Qualquer tentativa
+    // de cadastro/login com um vínculo que bate vira tentativa_banido e
+    // a resposta na UI é a mensagem genérica de suporte (contato@vidamagica.com.br).
+    //
+    // O admin pode desconectar um vínculo específico (falso positivo) sem
+    // desbanir a conta inteira.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS banimentos (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        motivo TEXT,
+        banido_em TIMESTAMPTZ DEFAULT NOW(),
+        banido_por VARCHAR(80),
+        ativo BOOLEAN DEFAULT TRUE,
+        vinculos JSONB NOT NULL DEFAULT '{}'::jsonb,
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_banimentos_usuario ON banimentos(usuario_id) WHERE ativo=TRUE`);
+    // Para buscas rápidas pelos vínculos (cruzamento), indexes parciais GIN
+    // sobre o JSONB. Postgres consegue varrer rapidamente quando o app
+    // pergunta "tem banido com telefone X / email Y / cpf Z".
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_banimentos_vinculos ON banimentos USING GIN (vinculos) WHERE ativo=TRUE`);
+
+    // Auditoria — toda tentativa de login/cadastro que bate em vínculo
+    // de banimento cai aqui. Admin monitora padrão (mesmo banido tentando
+    // de 5 telefones diferentes → adiciona os 5 ao vínculo).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS tentativas_banido (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        banimento_id UUID NOT NULL REFERENCES banimentos(id) ON DELETE CASCADE,
+        rota VARCHAR(60),
+        vinculo_bateu VARCHAR(20),
+        valor_bateu TEXT,
+        ip VARCHAR(45),
+        user_agent TEXT,
+        fingerprint JSONB,
+        criado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_tentativas_banido_ban ON tentativas_banido(banimento_id, criado_em DESC)`);
 
     // ── SEED dos produtos do método ──
     // Os slugs aqui SÃO OS MESMOS de routes/seed.js (PRECOS_INICIAIS).
@@ -703,6 +770,10 @@ async function initTeste() {
     // Migrações aditivas: tabelas já criadas em deploys anteriores ganham as colunas novas
     await c.query(`ALTER TABLE testes ADD COLUMN IF NOT EXISTS visto_em TIMESTAMPTZ`);
     await c.query(`ALTER TABLE testes ADD COLUMN IF NOT EXISTS ativou_trilha BOOLEAN DEFAULT FALSE`);
+    // Legado: teste vai pra cá quando aluna excluiu conta no caminho B/C.
+    // Invisível pra aluna (frontend filtra), visível pro admin na aba Legado.
+    await c.query(`ALTER TABLE testes ADD COLUMN IF NOT EXISTS eh_legado BOOLEAN DEFAULT FALSE`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_testes_legado ON testes(usuario_id, eh_legado) WHERE usuario_id IS NOT NULL`);
 
     // ── MIGRAÇÃO INTELIGENTE: testes feitos ANTES dessa coluna existir ──
     // Antes, a aluna tinha 1 teste = era a trilha ativa por padrão. Após o
@@ -1328,6 +1399,11 @@ async function initComunicacao() {
     await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS gerado_por_ia BOOLEAN DEFAULT FALSE`);
     await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS status_moderacao VARCHAR(20) DEFAULT 'aprovado'`);
     await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS atualizado_em TIMESTAMPTZ DEFAULT NOW()`);
+    // Legado: relato vai pra cá quando aluna excluiu conta no caminho B/C
+    // (separado do `oculto_arquivamento` que é controlado por arquivar/desarquivar).
+    // Endpoints públicos filtram FALSE. Admin vê na aba Legado.
+    await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS eh_legado BOOLEAN DEFAULT FALSE`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_depoimentos_legado ON depoimentos(usuario_id, eh_legado) WHERE usuario_id IS NOT NULL`);
     // autora_era_assinante_clube: snapshot PERMANENTE no momento da postagem/aprovação.
     // Uma vez TRUE, fica TRUE pra sempre (não rebaixa se aluna cancela assinatura depois).
     // Liga brilho dourado no relato em todas as superfícies (LPs, /relatos, modal universal, home /app).

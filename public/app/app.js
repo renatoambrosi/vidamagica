@@ -51,10 +51,7 @@ function hidratarUI(u) {
   document.getElementById('badge-sementes').textContent = u.sementes || 0;
   document.getElementById('perfil-nome').textContent    = u.nome || '—';
   document.getElementById('perfil-sementes').textContent = u.sementes || 0;
-  if (u.foto_url) {
-    const av = document.getElementById('perfil-avatar');
-    if (av) av.innerHTML = `<img src="${u.foto_url}" alt="${u.nome}">`;
-  }
+  renderAvatarPerfil(u.foto_url, u.nome);
   // Selo de plano dinâmico. Fonte da verdade: usuario.plano !== 'gratuito'
   // (mesma regra de temClubeVidaMagica em core/jornadas.js).
   // Sem assinatura → "Plano grátis" off. Com assinatura → "Clube Vida Mágica"
@@ -243,6 +240,618 @@ document.getElementById('modal-sair-lembrar')?.addEventListener('click', () => {
 });
 document.getElementById('modal-sair-esquecer')?.addEventListener('click', () => {
   executarLogout({ esquecer: true });
+});
+
+// ── AVATAR DO PERFIL ─────────────────────────────────────────
+// Avatar editável. Fluxo:
+//   1. Aluna toca no avatar (ou no botão do modal de bloqueio do chat).
+//   2. Abre o seletor de arquivo nativo (input[type=file]).
+//   3. Upload pro Cloudinary via POST /api/upload/imagem (rota já existente,
+//      compartilhada com o chat — NÃO alterar).
+//   4. Persistência em usuarios.foto_url via PUT /api/auth/perfil (estendido
+//      pra aceitar foto_url).
+//   5. UI atualiza imediatamente (img + esconde hint).
+//
+// Avatar sem foto é hoje um BLOQUEADOR pra entrar no chat com a Suellen
+// (regra de produto). Veja o handler do canal "suellen" em
+// `document.querySelectorAll('.chat-canal-card')`.
+
+function renderAvatarPerfil(fotoUrl, nome) {
+  const av = document.getElementById('perfil-avatar');
+  const hint = document.getElementById('perfil-avatar-hint');
+  if (!av) return;
+  // Preserva o ícone de edição (câmera) e o spinner — só troca o "miolo"
+  // (SVG genérico OU <img>) por isso usamos um placeholder dedicado.
+  const slotInterno = av.querySelector('.perfil-avatar-miolo');
+  const miolo = slotInterno || document.createElement('span');
+  if (!slotInterno) {
+    miolo.className = 'perfil-avatar-miolo';
+    // Move o SVG default pra dentro do miolo (a primeira renderização).
+    const svgDefault = av.querySelector(':scope > svg');
+    if (svgDefault) miolo.appendChild(svgDefault);
+    av.insertBefore(miolo, av.firstChild);
+  }
+  if (fotoUrl) {
+    miolo.innerHTML = `<img src="${fotoUrl}" alt="${escAttr(nome || '')}">`;
+    if (hint) hint.classList.add('oculto');
+  } else {
+    miolo.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>`;
+    if (hint) hint.classList.remove('oculto');
+  }
+}
+
+async function uploadAvatar(file) {
+  if (!file) return;
+  if (!file.type || !file.type.startsWith('image/')) {
+    toast('Selecione uma imagem', 'erro');
+    return;
+  }
+  const av = document.getElementById('perfil-avatar');
+  av?.classList.add('enviando');
+  try {
+    const fd = new FormData();
+    fd.append('imagem', file);
+    const upRes = await fetch(`${API}/api/upload/imagem`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${VmSession.getAccess()}` },
+      body: fd,
+    });
+    if (!upRes.ok) throw new Error('upload falhou');
+    const { url } = await upRes.json();
+    if (!url) throw new Error('sem url');
+
+    const putRes = await fetch(`${API}/api/auth/perfil`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${VmSession.getAccess()}` },
+      body: JSON.stringify({ foto_url: url }),
+    });
+    if (!putRes.ok) throw new Error('persistência falhou');
+    const dados = await putRes.json();
+    const nova = dados?.usuario?.foto_url || url;
+    if (usuario) usuario.foto_url = nova;
+    renderAvatarPerfil(nova, usuario?.nome);
+    toast('Foto atualizada', 'ok');
+  } catch (err) {
+    console.error('[avatar] upload erro:', err);
+    toast('Não consegui salvar sua foto', 'erro');
+  } finally {
+    av?.classList.remove('enviando');
+  }
+}
+
+document.getElementById('perfil-avatar')?.addEventListener('click', () => {
+  document.getElementById('perfil-avatar-input')?.click();
+});
+document.getElementById('perfil-avatar-input')?.addEventListener('change', (e) => {
+  const file = e.target.files?.[0];
+  e.target.value = '';
+  if (file) uploadAvatar(file);
+});
+
+// Bloqueio do chat com a Suellen — só pra esse canal (suporte segue livre).
+// Quando a aluna ainda não tem foto, abre o modal-foto-obrigatoria em vez
+// de entrar no chat. O botão "Adicionar foto agora" do modal abre o file
+// picker do avatar (mesmo input, mesmo fluxo).
+document.getElementById('modal-foto-acao')?.addEventListener('click', () => {
+  fecharModal('modal-foto-obrigatoria');
+  document.getElementById('perfil-avatar-input')?.click();
+});
+
+// ── SUA CONTA / DESATIVAR CONTA ──────────────────────────────
+// Modal de 2 slides:
+//   Slide 1: "Deseja excluir o bloco (Jornada + Materiais + Relatos)?"
+//   Slide 2 (só se slide 1 = Sim): "Deletar seus dados pessoais?"
+//
+// 3 caminhos resultantes (ver core/usuarios.js arquivarUsuario):
+//   A: slide1=Não            → status='arquivada', nada apagado     | Desativar conta
+//   B: slide1=Sim, slide2=Não → status='arquivada', bloco vai pra legado | Desativar conta
+//   C: slide1=Sim, slide2=Sim → status='legado', tudo legado, cadastro novo no retorno | Excluir conta permanentemente
+//
+// Aluna nunca lê "arquivada"/"inativa"/"legado"/"reativada" — pra ela é
+// "desativar" ou "excluir permanentemente"; se voltar, é cadastro normal.
+
+const estadoDesativar = {
+  slide: 1,
+  deseja_excluir: null,      // null | true | false
+  deletar_dados_pessoais: null, // null | true | false (só aplica em slide 2)
+  motivo: '',
+};
+
+function irParaSlideDesativar(slide) {
+  estadoDesativar.slide = slide;
+  document.querySelectorAll('#modal-desativar-conta .modal-excluir-fase').forEach(el => {
+    el.classList.toggle('ativa', Number(el.dataset.slide) === slide);
+  });
+  document.querySelectorAll('#modal-desativar-passos .modal-excluir-passo').forEach(el => {
+    const n = Number(el.dataset.slide);
+    el.classList.toggle('ativa', n === slide);
+    el.classList.toggle('cumprido', n < slide);
+  });
+  atualizarBotaoDesativarSlide1();
+  atualizarBotaoDesativarSlide2();
+}
+
+// Slide 1: o botão tem dois jeitos:
+//   - Se aluna escolheu "Não, só desativar" (deseja_excluir=false), botão
+//     mostra "Desativar conta" e dispara a ação direto (caminho A).
+//   - Se escolheu "Sim, excluir esse bloco" (deseja_excluir=true), botão
+//     mostra "Próximo" e leva pro slide 2.
+//   - Se nada escolhido: desabilitado.
+function atualizarBotaoDesativarSlide1() {
+  const btn = document.getElementById('btn-desativar-acao');
+  if (!btn) return;
+  if (estadoDesativar.deseja_excluir === null) {
+    btn.disabled = true;
+    btn.textContent = 'Próximo';
+    btn.dataset.acao = 'aguardando';
+    return;
+  }
+  btn.disabled = false;
+  if (estadoDesativar.deseja_excluir === false) {
+    btn.textContent = 'Desativar conta';
+    btn.dataset.acao = 'desativar';
+  } else {
+    btn.textContent = 'Próximo';
+    btn.dataset.acao = 'proximo';
+  }
+}
+
+// Slide 2: o botão final muda conforme a resposta.
+//   - "Não, manter meus dados" → caminho B → "Desativar conta"
+//   - "Sim, excluir permanentemente" → caminho C → "Excluir conta permanentemente"
+function atualizarBotaoDesativarSlide2() {
+  const btn = document.getElementById('btn-desativar-confirmar');
+  if (!btn) return;
+  if (estadoDesativar.deletar_dados_pessoais === null) {
+    btn.disabled = true;
+    btn.textContent = 'Desativar conta';
+    return;
+  }
+  btn.disabled = false;
+  btn.textContent = estadoDesativar.deletar_dados_pessoais
+    ? 'Excluir conta permanentemente'
+    : 'Desativar conta';
+}
+
+function resetarModalDesativar() {
+  estadoDesativar.slide = 1;
+  estadoDesativar.deseja_excluir = null;
+  estadoDesativar.deletar_dados_pessoais = null;
+  estadoDesativar.motivo = '';
+  document.querySelectorAll('#modal-desativar-conta input[type="radio"]').forEach(i => { i.checked = false; });
+  const livre = document.getElementById('modal-desativar-motivo');
+  if (livre) livre.value = '';
+  const fb = document.getElementById('modal-desativar-feedback');
+  if (fb) { fb.textContent = ''; fb.className = 'modal-excluir-feedback'; }
+  irParaSlideDesativar(1);
+}
+
+document.getElementById('menu-conta')?.addEventListener('click', () => irPara('conta'));
+document.getElementById('conta-voltar')?.addEventListener('click', () => irPara('perfil'));
+
+document.getElementById('btn-desativar-conta')?.addEventListener('click', () => {
+  resetarModalDesativar();
+  abrirModal('modal-desativar-conta');
+});
+
+// Radios do Slide 1 (deseja excluir o bloco?)
+document.querySelectorAll('#modal-desativar-conta input[name="desativar-excluir"]').forEach(r => {
+  r.addEventListener('change', () => {
+    if (r.checked) {
+      estadoDesativar.deseja_excluir = r.value === 'sim';
+      // Se mudou pra "não", reseta o slide 2 (não vai mais ser usado).
+      if (!estadoDesativar.deseja_excluir) {
+        estadoDesativar.deletar_dados_pessoais = null;
+        document.querySelectorAll('#modal-desativar-conta input[name="desativar-permanente"]').forEach(x => { x.checked = false; });
+      }
+      atualizarBotaoDesativarSlide1();
+    }
+  });
+});
+
+// Textarea de motivo (opcional)
+document.getElementById('modal-desativar-motivo')?.addEventListener('input', (e) => {
+  estadoDesativar.motivo = String(e.target.value || '').slice(0, 500);
+});
+
+// Radios do Slide 2 (deletar dados pessoais?)
+document.querySelectorAll('#modal-desativar-conta input[name="desativar-permanente"]').forEach(r => {
+  r.addEventListener('change', () => {
+    if (r.checked) {
+      estadoDesativar.deletar_dados_pessoais = r.value === 'sim';
+      atualizarBotaoDesativarSlide2();
+    }
+  });
+});
+
+// Botão do Slide 1: ou avança pro Slide 2 (caminho B/C) ou executa
+// desativação direta (caminho A).
+document.getElementById('btn-desativar-acao')?.addEventListener('click', () => {
+  const acao = document.getElementById('btn-desativar-acao')?.dataset.acao;
+  if (acao === 'proximo') {
+    irParaSlideDesativar(2);
+  } else if (acao === 'desativar') {
+    executarDesativacao();
+  }
+});
+
+// Botão "Voltar" do Slide 2
+document.getElementById('btn-desativar-voltar')?.addEventListener('click', () => {
+  irParaSlideDesativar(1);
+});
+
+// Botão final do Slide 2 (caminho B ou C)
+document.getElementById('btn-desativar-confirmar')?.addEventListener('click', () => {
+  executarDesativacao();
+});
+
+async function executarDesativacao() {
+  const ehSlide2 = estadoDesativar.slide === 2;
+  const btn = ehSlide2
+    ? document.getElementById('btn-desativar-confirmar')
+    : document.getElementById('btn-desativar-acao');
+  const fb = document.getElementById('modal-desativar-feedback');
+  const textoOriginal = btn?.textContent || 'Desativar conta';
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Processando...'; }
+  if (fb) { fb.textContent = ''; fb.className = 'modal-excluir-feedback'; }
+
+  try {
+    const r = await fetch(`${API}/api/auth/excluir-conta`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${VmSession.getAccess()}` },
+      body: JSON.stringify({
+        motivo: estadoDesativar.motivo || null,
+        deseja_excluir: !!estadoDesativar.deseja_excluir,
+        deletar_dados_pessoais: !!estadoDesativar.deletar_dados_pessoais,
+      }),
+    });
+    if (!r.ok) throw new Error('falha');
+    // Sai sem rastro: limpa nome lembrado, destrói sessão local, redireciona.
+    // Aluna que voltar verá /auth como se nunca tivesse cadastrado.
+    try { VmSession.limparUsuarioLembrado(); } catch {}
+    try { limparCooldownPopupClube(); } catch {}
+    VmSession.destruir();
+    window.location.replace('/');
+  } catch (err) {
+    console.error('[desativar-conta] erro:', err);
+    if (fb) { fb.textContent = 'Não conseguimos processar agora. Tente de novo.'; fb.className = 'modal-excluir-feedback erro'; }
+    if (btn) { btn.disabled = false; btn.textContent = textoOriginal; }
+  }
+}
+
+// ── OVERLAY SINCRONIZAÇÃO (reativação silenciosa) ────────────
+// Quando o /api/app/contexto traz atualizacoes_pendentes com
+// payload.origem === 'reativacao', mostramos o overlay full-screen
+// "Sincronizando produtos Kiwify · Vida Mágica" por ~3s. A aluna
+// acabou de "criar conta" mas internamente é uma reativação. O overlay
+// cobre essa transição enquanto os produtos perpétuos "chegam".
+function exibirOverlaySincronizacao(produtos) {
+  const overlay = document.getElementById('overlay-sincronizacao');
+  const lista = document.getElementById('overlay-sincronizacao-lista');
+  if (!overlay) return;
+  if (lista) {
+    lista.innerHTML = (produtos || []).slice(0, 5).map((p, i) =>
+      `<div class="overlay-sincronizacao-produto" style="animation-delay:${0.25 + i * 0.25}s">${escHtml(p)}</div>`
+    ).join('');
+  }
+  overlay.classList.add('ativo');
+  overlay.setAttribute('aria-hidden', 'false');
+  setTimeout(() => {
+    overlay.classList.remove('ativo');
+    overlay.setAttribute('aria-hidden', 'true');
+  }, 3200);
+}
+
+function detectarEReativacao(contexto) {
+  const atualizacoes = contexto?.atualizacoes_pendentes || [];
+  const reativacoes = atualizacoes.filter(a => a.tipo === 'compra' && a.payload?.origem === 'reativacao');
+  if (!reativacoes.length) return false;
+  // Coleta nomes (ou slugs) dos produtos pra mostrar na lista do overlay
+  const nomes = reativacoes
+    .map(a => a.payload?.produto_nome || a.payload?.produto_slug || '')
+    .filter(Boolean);
+  exibirOverlaySincronizacao(nomes);
+  return true;
+}
+
+// ── MINHA JORNADA ────────────────────────────────────────────
+// A view-jornada já existe e é populada por renderSaudacaoJornada() +
+// renderTrilhaJornada() quando irPara('jornada') é chamado.
+document.getElementById('menu-jornada')?.addEventListener('click', () => irPara('jornada'));
+
+// ── INFORMAÇÕES PESSOAIS ─────────────────────────────────────
+// Sub-view do perfil. Edita nome + e-mail; telefone e data de cadastro
+// são leitura. Telefone exige fluxo de re-verificação (frente futura).
+function formatarDataPtBr(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  } catch { return '—'; }
+}
+
+function popularInfoPessoais() {
+  if (!usuario) return;
+  const nome = document.getElementById('form-info-nome');
+  const email = document.getElementById('form-info-email');
+  const emailStatus = document.getElementById('form-info-email-status');
+  const tel = document.getElementById('form-info-telefone');
+  const criado = document.getElementById('form-info-criado');
+  if (nome) nome.value = usuario.nome || '';
+  if (email) email.value = usuario.email || '';
+  if (emailStatus) {
+    if (!usuario.email) {
+      emailStatus.textContent = '';
+      emailStatus.className = 'form-perfil-hint';
+    } else if (usuario.email_verificado) {
+      emailStatus.textContent = '✓ E-mail verificado';
+      emailStatus.className = 'form-perfil-hint ok';
+    } else {
+      emailStatus.textContent = 'Ainda não verificado';
+      emailStatus.className = 'form-perfil-hint';
+    }
+  }
+  if (tel) tel.textContent = usuario.telefone_formatado || '—';
+  if (criado) criado.textContent = formatarDataPtBr(usuario.criado_em);
+  // Limpa feedback de tentativas anteriores
+  const fb = document.getElementById('form-info-feedback');
+  if (fb) { fb.textContent = ''; fb.className = 'form-perfil-feedback'; }
+}
+
+document.getElementById('menu-info-pessoais')?.addEventListener('click', () => {
+  popularInfoPessoais();
+  irPara('info-pessoais');
+});
+
+document.getElementById('info-pessoais-voltar')?.addEventListener('click', () => irPara('perfil'));
+
+// ── SENHA E SEGURANÇA ────────────────────────────────────────
+// Duas frentes na mesma view: trocar/criar senha + gerenciar dispositivos
+// autorizados (3 slots: 1 mobile · 1 tablet · 1 desktop).
+//
+// Regra do produto: aluna que NUNCA definiu senha (só OTP) vê "Crie sua
+// senha" (sem campo de senha atual); quem já tem senha vê "Trocar sua
+// senha" e precisa confirmar a atual. Backend valida do mesmo jeito.
+
+function detectarTipoDispositivoLocal() {
+  const ua = String(navigator.userAgent || '');
+  if (/ipad|tablet|kindle|silk|playbook|sm-t\d/i.test(ua)) return 'tablet';
+  if (/android(?!.*mobile)/i.test(ua)) return 'tablet';
+  if (/android|iphone|ipod|mobile|blackberry|opera mini/i.test(ua)) return 'mobile';
+  return 'desktop';
+}
+
+const TIPO_DISP_LABEL = { mobile: 'Celular', tablet: 'Tablet', desktop: 'Computador' };
+const TIPO_DISP_ICONE = {
+  mobile: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>',
+  tablet: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="12" y1="18.5" x2="12" y2="18.5"/></svg>',
+  desktop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><line x1="8" y1="20" x2="16" y2="20"/><line x1="12" y1="16" x2="12" y2="20"/></svg>',
+};
+
+function tempoRelativoPtBr(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
+  if (diffMin < 1) return 'agora há pouco';
+  if (diffMin < 60) return `há ${diffMin} min`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `há ${diffH} h`;
+  const diffD = Math.floor(diffH / 24);
+  if (diffD < 30) return `há ${diffD} ${diffD === 1 ? 'dia' : 'dias'}`;
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+async function carregarDispositivos() {
+  const slots = document.getElementById('dispositivos-slots');
+  if (!slots) return;
+  slots.innerHTML = '<div class="loading-inline">Carregando seus dispositivos...</div>';
+  try {
+    const r = await fetch(`${API}/api/auth/dispositivos`, {
+      headers: { Authorization: `Bearer ${VmSession.getAccess()}` },
+    });
+    if (!r.ok) throw new Error('falha ao buscar');
+    const lista = await r.json();
+    const tipoAtual = detectarTipoDispositivoLocal();
+    const ordem = ['mobile', 'tablet', 'desktop'];
+    const porTipo = {};
+    (lista || []).forEach(d => { if (d.ativo) porTipo[d.tipo] = d; });
+
+    slots.innerHTML = ordem.map(tipo => {
+      const d = porTipo[tipo];
+      const labelTipo = TIPO_DISP_LABEL[tipo];
+      const icone = TIPO_DISP_ICONE[tipo];
+      const ehAtual = tipo === tipoAtual && !!d;
+
+      if (!d) {
+        return `
+          <div class="dispositivo-slot vazio">
+            <div class="dispositivo-slot-icone">${icone}</div>
+            <div class="dispositivo-slot-info">
+              <span class="dispositivo-slot-tipo">${labelTipo}</span>
+              <span class="dispositivo-slot-nome">Nenhum ${labelTipo.toLowerCase()} conectado</span>
+              <span class="dispositivo-slot-sub">Você pode liberar este slot ao acessar de um ${labelTipo.toLowerCase()}.</span>
+            </div>
+          </div>`;
+      }
+      return `
+        <div class="dispositivo-slot${ehAtual ? ' atual' : ''}" data-id="${escAttr(d.id)}">
+          <div class="dispositivo-slot-icone">${icone}</div>
+          <div class="dispositivo-slot-info">
+            <span class="dispositivo-slot-tipo">${labelTipo}${ehAtual ? '<span class="dispositivo-slot-atual-tag">Este dispositivo</span>' : ''}</span>
+            <span class="dispositivo-slot-nome">${escHtml(d.nome || labelTipo)}</span>
+            <span class="dispositivo-slot-sub">Último acesso ${tempoRelativoPtBr(d.ultimo_acesso)}</span>
+          </div>
+          ${ehAtual ? '' : `<button type="button" class="dispositivo-slot-revogar" data-revogar="${escAttr(d.id)}" aria-label="Desautorizar este dispositivo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>`}
+        </div>`;
+    }).join('');
+
+    slots.querySelectorAll('[data-revogar]').forEach(btn => {
+      btn.addEventListener('click', () => revogarDispositivo(btn.dataset.revogar));
+    });
+  } catch (err) {
+    console.error('[seguranca] dispositivos:', err);
+    slots.innerHTML = '<div class="loading-inline">Não consegui carregar agora. Tente de novo.</div>';
+  }
+}
+
+async function revogarDispositivo(id) {
+  if (!id) return;
+  if (!confirm('Desautorizar este dispositivo? Ele vai precisar entrar de novo na próxima vez.')) return;
+  try {
+    const r = await fetch(`${API}/api/auth/dispositivos/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${VmSession.getAccess()}` },
+    });
+    if (!r.ok) throw new Error('falha ao revogar');
+    toast('Dispositivo desautorizado', 'ok');
+    carregarDispositivos();
+  } catch (err) {
+    console.error('[seguranca] revogar:', err);
+    toast('Não consegui desautorizar agora', 'erro');
+  }
+}
+
+function ajustarFormSenha() {
+  const temSenha = !!usuario?.tem_senha;
+  const titulo = document.getElementById('senha-secao-titulo');
+  const sub = document.getElementById('senha-secao-sub');
+  const wrapAtual = document.getElementById('form-senha-atual-wrap');
+  const inputAtual = document.getElementById('form-senha-atual');
+  if (titulo) titulo.textContent = temSenha ? 'Trocar sua senha' : 'Crie sua senha';
+  if (sub) sub.textContent = temSenha
+    ? 'Pra trocar, confirme primeiro a senha atual.'
+    : 'Você ainda usa só código por WhatsApp. Definir uma senha facilita o login no dia a dia.';
+  if (wrapAtual) wrapAtual.style.display = temSenha ? '' : 'none';
+  if (inputAtual) inputAtual.required = temSenha;
+  // Limpa todos os campos ao abrir
+  ['form-senha-atual', 'form-senha-nova', 'form-senha-confirma'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const fb = document.getElementById('form-senha-feedback');
+  if (fb) { fb.textContent = ''; fb.className = 'form-perfil-feedback'; }
+}
+
+document.getElementById('menu-seguranca')?.addEventListener('click', () => {
+  ajustarFormSenha();
+  irPara('seguranca');
+  carregarDispositivos();
+});
+
+document.getElementById('seguranca-voltar')?.addEventListener('click', () => irPara('perfil'));
+
+document.getElementById('form-senha')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('form-senha-salvar');
+  const fb = document.getElementById('form-senha-feedback');
+  const atual = document.getElementById('form-senha-atual')?.value || '';
+  const nova = document.getElementById('form-senha-nova')?.value || '';
+  const confirma = document.getElementById('form-senha-confirma')?.value || '';
+  const temSenha = !!usuario?.tem_senha;
+
+  if (nova.length < 6) {
+    if (fb) { fb.textContent = 'Sua nova senha precisa de pelo menos 6 caracteres.'; fb.className = 'form-perfil-feedback erro'; }
+    return;
+  }
+  if (nova !== confirma) {
+    if (fb) { fb.textContent = 'A confirmação não bate com a nova senha.'; fb.className = 'form-perfil-feedback erro'; }
+    return;
+  }
+  if (temSenha && !atual) {
+    if (fb) { fb.textContent = 'Informe sua senha atual pra trocar.'; fb.className = 'form-perfil-feedback erro'; }
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+  try {
+    const payload = { senha: nova };
+    if (temSenha) payload.senha_atual = atual;
+    const r = await fetch(`${API}/api/auth/perfil`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${VmSession.getAccess()}` },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) {
+      const data = await r.json().catch(() => ({}));
+      throw new Error(data?.error || 'erro');
+    }
+    if (usuario) usuario.tem_senha = true;
+    if (fb) { fb.textContent = temSenha ? 'Senha atualizada ✦' : 'Senha criada ✦'; fb.className = 'form-perfil-feedback ok'; }
+    // Limpa campos após sucesso
+    ['form-senha-atual', 'form-senha-nova', 'form-senha-confirma'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    ajustarFormSenha();
+    if (fb) { fb.textContent = 'Senha atualizada ✦'; fb.className = 'form-perfil-feedback ok'; }
+  } catch (err) {
+    console.error('[seguranca] senha:', err);
+    const msg = err?.message && err.message !== 'erro' ? err.message : 'Não consegui salvar. Tente novamente.';
+    if (fb) { fb.textContent = msg; fb.className = 'form-perfil-feedback erro'; }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Salvar nova senha'; }
+  }
+});
+
+document.getElementById('form-info-pessoais')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!usuario) return;
+  const btn = document.getElementById('form-info-salvar');
+  const fb = document.getElementById('form-info-feedback');
+  const nome = document.getElementById('form-info-nome')?.value?.trim();
+  const email = document.getElementById('form-info-email')?.value?.trim();
+
+  if (!nome) {
+    if (fb) { fb.textContent = 'Por favor, informe seu nome.'; fb.className = 'form-perfil-feedback erro'; }
+    return;
+  }
+
+  // Monta payload só com o que mudou — evita resetar email_verificado
+  // à toa quando o e-mail não foi tocado.
+  const payload = {};
+  if (nome !== (usuario.nome || '')) payload.nome = nome;
+  if ((email || '') !== (usuario.email || '')) payload.email = email || null;
+
+  if (!Object.keys(payload).length) {
+    if (fb) { fb.textContent = 'Nada para salvar.'; fb.className = 'form-perfil-feedback'; }
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+  if (fb) { fb.textContent = ''; fb.className = 'form-perfil-feedback'; }
+  try {
+    const r = await fetch(`${API}/api/auth/perfil`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${VmSession.getAccess()}` },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) {
+      const data = await r.json().catch(() => ({}));
+      throw new Error(data?.error || 'erro');
+    }
+    const data = await r.json();
+    const u = data?.usuario;
+    if (u) {
+      usuario = { ...usuario, ...u };
+      hidratarUI(usuario);
+      popularInfoPessoais();
+    }
+    if (fb) { fb.textContent = 'Alterações salvas ✦'; fb.className = 'form-perfil-feedback ok'; }
+  } catch (err) {
+    console.error('[info-pessoais] salvar:', err);
+    if (fb) { fb.textContent = 'Não consegui salvar. Tente novamente.'; fb.className = 'form-perfil-feedback erro'; }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Salvar alterações'; }
+  }
 });
 
 // ── PLAYER ───────────────────────────────────────────────────
@@ -2151,11 +2760,28 @@ document.getElementById('chat-rec-cancel')?.addEventListener('click', () => para
 document.getElementById('chat-rec-send')?.addEventListener('click', () => pararGravacao(true));
 
 // ── Tela de escolha + abas ──
+// Regra de produto (2026-05-19): pra iniciar conversa com a Suellen, a aluna
+// PRECISA ter foto. Sem foto, abrimos o modal pedindo a foto em vez de entrar
+// no chat. Canal "suporte" segue livre.
 document.querySelectorAll('.chat-canal-card').forEach(btn => {
-  btn.addEventListener('click', () => abrirCanal(btn.dataset.canal));
+  btn.addEventListener('click', () => {
+    const canal = btn.dataset.canal;
+    if (canal === 'suellen' && !usuario?.foto_url) {
+      abrirModal('modal-foto-obrigatoria');
+      return;
+    }
+    abrirCanal(canal);
+  });
 });
 document.querySelectorAll('.chat-aba').forEach(btn => {
-  btn.addEventListener('click', () => abrirCanal(btn.dataset.aba));
+  btn.addEventListener('click', () => {
+    const canal = btn.dataset.aba;
+    if (canal === 'suellen' && !usuario?.foto_url) {
+      abrirModal('modal-foto-obrigatoria');
+      return;
+    }
+    abrirCanal(canal);
+  });
 });
 document.getElementById('btn-back-escolha')?.addEventListener('click', abrirTelaEscolhaChat);
 
@@ -3144,7 +3770,14 @@ window.app = {
   // Carrega o contexto unificado (aluna + teste + jornada + comprados)
   // e hidrata a Home com base nele.
   const ctx = await carregarContexto();
-  if (ctx) hidratarHome(ctx);
+  if (ctx) {
+    // Reativação silenciosa: se a aluna acabou de validar OTP após ter
+    // excluído a conta, o backend criou atualizacoes_pendentes com
+    // origem='reativacao'. Mostramos o overlay "Sincronizando produtos
+    // Kiwify · Vida Mágica" antes da home aparecer.
+    detectarEReativacao(ctx);
+    hidratarHome(ctx);
+  }
 
   carregarTesouro();
   conectarChatWs();

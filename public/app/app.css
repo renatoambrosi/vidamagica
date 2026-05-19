@@ -797,9 +797,25 @@ body.chat-aberto .views {
 .empty-sub { font-size: 0.8rem; color: var(--texto-mute); line-height: 1.6; }
 
 .perfil-hero { display: flex; flex-direction: column; align-items: center; padding: 2rem 1.25rem 1.5rem; text-align: center; }
-.perfil-avatar { width: 84px; height: 84px; border-radius: 50%; background: var(--vidro); border: 2px solid var(--vidro-borda-hi); display: flex; align-items: center; justify-content: center; margin-bottom: 0.85rem; overflow: hidden; box-shadow: var(--sombra-media), var(--glow-ouro); }
+/* Avatar clicável (Fase 2). É um <button> pra ter hit area cheia + a11y.
+   Editável sempre: hover/active mostra ícone de câmera no canto.
+   Estado vazio: SVG genérico + hint "Toque para adicionar sua foto" abaixo.
+   Estado preenchido: <img> + ícone de câmera (some o hint).
+   Estado uploading: spinner sobreposto. */
+.perfil-avatar { position: relative; width: 84px; height: 84px; border-radius: 50%; background: var(--vidro); border: 2px solid var(--vidro-borda-hi); display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem; overflow: hidden; box-shadow: var(--sombra-media), var(--glow-ouro); padding: 0; }
+.perfil-avatar.editavel { cursor: pointer; transition: transform 0.15s, border-color 0.15s, box-shadow 0.2s; }
+.perfil-avatar.editavel:hover { border-color: var(--ouro-claro); transform: scale(1.02); box-shadow: var(--sombra-media), 0 0 18px rgba(244,217,152,0.35); }
+.perfil-avatar.editavel:active { transform: scale(0.98); }
 .perfil-avatar svg { width: 42px; height: 42px; stroke: var(--texto-mute); }
 .perfil-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.perfil-avatar-editar { position: absolute; right: -2px; bottom: -2px; width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--ouro), var(--ouro-fundo)); border: 2px solid rgba(13,8,0,0.92); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.35); }
+.perfil-avatar-editar svg { width: 14px; height: 14px; stroke: white; }
+.perfil-avatar-spinner { position: absolute; inset: 0; border-radius: 50%; background: rgba(13,8,0,0.55); display: none; align-items: center; justify-content: center; }
+.perfil-avatar-spinner::after { content: ''; width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.25); border-top-color: var(--ouro-brilho); border-radius: 50%; animation: avatar-spin 0.9s linear infinite; }
+.perfil-avatar.enviando .perfil-avatar-spinner { display: flex; }
+@keyframes avatar-spin { to { transform: rotate(360deg); } }
+.perfil-avatar-hint { font-size: 0.74rem; color: var(--texto-mute); margin-bottom: 0.6rem; font-style: italic; }
+.perfil-avatar-hint.oculto { display: none; }
 .perfil-nome { font-family: var(--font-display); font-size: 1.2rem; font-weight: 900; color: var(--texto); margin-bottom: 0.25rem; }
 /* Selo de plano — pill com contorno, sem fundo.
    Duas variantes: .gratuito (off, contorno branco apagado) e .clube (ligado,
@@ -1812,6 +1828,151 @@ body.antessala-ativa {
 .modal-sair-opcao-sub { display: block; font-size: 0.74rem; color: var(--texto-mute); margin-top: 2px; line-height: 1.4; }
 .modal-sair-cancelar { display: block; width: 100%; padding: 0.75rem; background: transparent; border: none; color: var(--texto-mute); font-family: var(--font-ui); font-size: 0.85rem; font-weight: 600; margin-top: 0.5rem; margin-bottom: 0.5rem; cursor: pointer; transition: color 0.15s; }
 .modal-sair-cancelar:hover { color: var(--texto); }
+
+/* Modal de foto obrigatória — bloqueia entrar no chat com a Suellen
+   antes da aluna adicionar uma foto de perfil. */
+.modal-foto-conteudo { padding: 1.5rem 1.5rem 0.5rem; text-align: center; }
+.modal-foto-icone { font-size: 2.6rem; margin-bottom: 0.6rem; }
+.modal-foto-titulo { font-family: var(--font-display); font-size: 1.05rem; font-weight: 800; color: var(--texto); margin-bottom: 0.55rem; line-height: 1.3; }
+.modal-foto-sub { font-size: 0.86rem; color: var(--texto-suave); line-height: 1.6; margin-bottom: 1.3rem; }
+.modal-foto-acao { display: block; width: 100%; padding: 0.95rem; background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro)); color: white; border: none; border-radius: var(--radius-md); font-family: var(--font-display); font-size: 0.92rem; font-weight: 800; letter-spacing: 0.06em; box-shadow: 0 4px 20px rgba(200,146,42,0.35); transition: opacity 0.15s, transform 0.15s; cursor: pointer; margin-bottom: 0.6rem; }
+.modal-foto-acao:hover { opacity: 0.92; transform: translateY(-1px); }
+.modal-foto-cancelar { display: block; width: 100%; padding: 0.7rem; background: transparent; border: none; color: var(--texto-mute); font-family: var(--font-ui); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.6rem; cursor: pointer; transition: color 0.15s; }
+.modal-foto-cancelar:hover { color: var(--texto); }
+
+/* View-topo com botão de voltar — usado pelas sub-views do perfil (info
+   pessoais, segurança, plano e assinatura). Botão fica à esquerda do título. */
+.view-topo-com-voltar { display: flex; align-items: center; gap: 0.5rem; padding-left: 0.5rem; }
+.view-voltar { width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-full); background: transparent; border: none; cursor: pointer; color: var(--texto-suave); transition: background 0.15s, color 0.15s; }
+.view-voltar:hover { background: var(--vidro); color: var(--texto); }
+.view-voltar svg { width: 22px; height: 22px; }
+.view-topo-com-voltar .view-titulo { margin-bottom: 0; font-size: 1.15rem; }
+
+/* Formulário do perfil — usado em "Informações Pessoais" e futuramente em
+   "Senha e Segurança". Campos editáveis com vidro/blur, campos só-leitura
+   sem background, hint discreto abaixo. */
+.form-perfil { padding: 0 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+.form-perfil-campo { display: flex; flex-direction: column; gap: 0.35rem; }
+.form-perfil-label { font-family: var(--font-display); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ouro-fundo); }
+.form-perfil-input { width: 100%; padding: 0.85rem 1rem; background: var(--vidro); backdrop-filter: blur(12px); border: 1px solid var(--vidro-borda); border-radius: var(--radius-md); color: var(--texto); font-family: var(--font-ui); font-size: 0.95rem; transition: border-color 0.15s, background 0.15s; }
+.form-perfil-input:focus { outline: none; border-color: var(--ouro-claro); background: var(--vidro-borda); }
+.form-perfil-input:disabled { opacity: 0.55; cursor: not-allowed; }
+.form-perfil-valor { padding: 0.85rem 1rem; background: transparent; border: 1px dashed var(--vidro-borda); border-radius: var(--radius-md); color: var(--texto-suave); font-family: var(--font-ui); font-size: 0.95rem; }
+.form-perfil-campo.somente-leitura .form-perfil-label { color: var(--texto-mute); }
+.form-perfil-hint { font-size: 0.74rem; color: var(--texto-mute); line-height: 1.45; }
+.form-perfil-hint.ok { color: var(--ouro-claro); }
+.form-perfil-hint.erro { color: #E47878; }
+.form-perfil-feedback { min-height: 1.2em; font-size: 0.82rem; text-align: center; margin-top: 0.25rem; }
+.form-perfil-feedback.ok { color: var(--ouro-claro); }
+.form-perfil-feedback.erro { color: #E47878; }
+.form-perfil-salvar { width: 100%; padding: 0.95rem; background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro)); color: white; border: none; border-radius: var(--radius-md); font-family: var(--font-display); font-size: 0.92rem; font-weight: 800; letter-spacing: 0.06em; box-shadow: 0 4px 20px rgba(200,146,42,0.35); cursor: pointer; transition: opacity 0.15s, transform 0.15s; margin-top: 0.5rem; }
+.form-perfil-salvar:hover { opacity: 0.92; transform: translateY(-1px); }
+.form-perfil-salvar:disabled { opacity: 0.45; transform: none; cursor: not-allowed; box-shadow: none; }
+
+/* Senha e Segurança — duas seções na mesma view (trocar senha + dispositivos
+   autorizados). Cada seção tem cabeçalho próprio. */
+.seguranca-secao { padding: 0 1.25rem 0.5rem; margin-bottom: 1.25rem; }
+.seguranca-secao-titulo { font-family: var(--font-display); font-size: 1rem; font-weight: 800; color: var(--texto); margin: 1.5rem 0 0.25rem; }
+.seguranca-secao-titulo:first-child { margin-top: 0.5rem; }
+.seguranca-secao-sub { font-size: 0.82rem; color: var(--texto-suave); line-height: 1.55; margin-bottom: 1rem; }
+
+/* Slots de dispositivo — 3 cards verticais (mobile, tablet, desktop).
+   Cada slot pode estar VAZIO (cinza, opacidade reduzida, sem ação) ou
+   OCUPADO (com nome, último acesso, e botão de desautorizar).
+   Slot do dispositivo ATUAL ganha borda dourada + selo "Este dispositivo". */
+.dispositivos-slots { display: flex; flex-direction: column; gap: 0.75rem; }
+.dispositivo-slot { display: flex; align-items: center; gap: 0.95rem; padding: 1rem; background: var(--vidro); backdrop-filter: blur(12px); border: 1px solid var(--vidro-borda); border-radius: var(--radius-md); transition: border-color 0.15s, opacity 0.2s; }
+.dispositivo-slot.vazio { opacity: 0.55; border-style: dashed; }
+.dispositivo-slot.atual { border-color: var(--ouro-claro); box-shadow: 0 0 14px rgba(244,217,152,0.18); }
+.dispositivo-slot-icone { width: 44px; height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--ouro-claro); }
+.dispositivo-slot-icone svg { width: 26px; height: 26px; }
+.dispositivo-slot.vazio .dispositivo-slot-icone { color: var(--texto-mute); }
+.dispositivo-slot-info { flex: 1; min-width: 0; }
+.dispositivo-slot-tipo { display: block; font-family: var(--font-display); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ouro-fundo); margin-bottom: 0.2rem; }
+.dispositivo-slot-nome { display: block; font-family: var(--font-ui); font-size: 0.92rem; font-weight: 600; color: var(--texto); margin-bottom: 0.15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dispositivo-slot-sub { display: block; font-size: 0.74rem; color: var(--texto-mute); }
+.dispositivo-slot-atual-tag { display: inline-block; margin-left: 0.4rem; padding: 0.15rem 0.5rem; border-radius: var(--radius-full); border: 1px solid var(--ouro-claro); color: var(--ouro-brilho); font-family: var(--font-display); font-size: 0.58rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; vertical-align: middle; }
+.dispositivo-slot-revogar { flex-shrink: 0; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: transparent; border: 1px solid var(--vidro-borda); border-radius: var(--radius-full); color: var(--texto-suave); cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.dispositivo-slot-revogar:hover { background: rgba(228,120,120,0.12); border-color: #E47878; color: #E47878; }
+.dispositivo-slot-revogar:disabled { opacity: 0.45; cursor: not-allowed; }
+.dispositivo-slot-revogar svg { width: 16px; height: 16px; }
+
+/* Sua conta — sub-view do perfil. Local pra ações sensíveis (excluir conta).
+   Botão destrutivo discreto mas claro: borda vermelha sobre fundo vidro. */
+.conta-secao { padding: 0 1.25rem 1.5rem; }
+.conta-secao-titulo { font-family: var(--font-display); font-size: 1rem; font-weight: 800; color: var(--texto); margin: 1rem 0 0.4rem; }
+.conta-secao-sub { font-size: 0.86rem; color: var(--texto-suave); line-height: 1.55; margin-bottom: 1.25rem; }
+.conta-acao-perigo { display: flex; align-items: center; justify-content: center; gap: 0.7rem; width: 100%; padding: 1rem 1.1rem; background: rgba(228,120,120,0.08); border: 1px solid rgba(228,120,120,0.45); border-radius: var(--radius-md); color: #E47878; font-family: var(--font-display); font-size: 0.92rem; font-weight: 700; letter-spacing: 0.05em; cursor: pointer; transition: background 0.15s, border-color 0.15s, transform 0.12s; }
+.conta-acao-perigo:hover { background: rgba(228,120,120,0.16); border-color: #E47878; }
+.conta-acao-perigo:active { transform: scale(0.99); }
+.conta-acao-perigo-icone { font-size: 1.15rem; }
+
+/* Modal de exclusão — 4 fases sequenciais. Cabeçalho fixo com 4 dots de
+   progresso. Cada .modal-excluir-fase tem display:none por default; .ativa
+   mostra. Botões "Voltar" e "Próximo" navegam; "Excluir conta" só na fase 4. */
+.modal-sheet-excluir { padding: 0; }
+.modal-excluir-header { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.25rem 0.25rem; }
+.modal-excluir-passos { display: flex; gap: 0.5rem; align-items: center; }
+.modal-excluir-passo { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.18); transition: background 0.2s, transform 0.2s; }
+.modal-excluir-passo.ativa { background: var(--ouro-claro); transform: scale(1.25); box-shadow: 0 0 8px rgba(244,217,152,0.5); }
+.modal-excluir-passo.cumprido { background: var(--ouro-fundo); }
+
+.modal-excluir-fase { display: none; padding: 0.5rem 1.25rem 1.25rem; }
+.modal-excluir-fase.ativa { display: block; }
+
+.modal-excluir-titulo { font-family: var(--font-display); font-size: 1.1rem; font-weight: 800; color: var(--texto); margin-bottom: 0.4rem; }
+.modal-excluir-sub { font-size: 0.86rem; color: var(--texto-suave); line-height: 1.6; margin-bottom: 1.1rem; }
+
+.modal-excluir-opcoes { display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 1.1rem; }
+.modal-excluir-opcao { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.85rem 0.95rem; background: var(--vidro); backdrop-filter: blur(12px); border: 1px solid var(--vidro-borda); border-radius: var(--radius-md); cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.modal-excluir-opcao:hover { border-color: var(--vidro-borda-hi); }
+.modal-excluir-opcao input[type="radio"] { display: none; }
+.modal-excluir-opcao-marker { flex-shrink: 0; width: 18px; height: 18px; margin-top: 2px; border-radius: 50%; border: 2px solid var(--vidro-borda-hi); background: transparent; position: relative; transition: border-color 0.15s, background 0.15s; }
+.modal-excluir-opcao input:checked + .modal-excluir-opcao-marker { border-color: var(--ouro-claro); }
+.modal-excluir-opcao input:checked + .modal-excluir-opcao-marker::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--ouro-claro); }
+.modal-excluir-opcao input:checked ~ .modal-excluir-opcao-texto strong { color: var(--ouro-brilho); }
+.modal-excluir-opcao-texto { flex: 1; font-family: var(--font-ui); font-size: 0.9rem; color: var(--texto); line-height: 1.5; }
+.modal-excluir-opcao-texto strong { display: block; font-weight: 700; margin-bottom: 1px; }
+.modal-excluir-opcao-sub { display: block; font-size: 0.76rem; color: var(--texto-mute); margin-top: 2px; line-height: 1.45; font-weight: 400; }
+
+.modal-excluir-textarea { width: 100%; min-height: 70px; padding: 0.8rem 1rem; background: var(--vidro); backdrop-filter: blur(12px); border: 1px solid var(--vidro-borda); border-radius: var(--radius-md); color: var(--texto); font-family: var(--font-ui); font-size: 0.9rem; resize: vertical; margin-bottom: 1rem; transition: border-color 0.15s; }
+.modal-excluir-textarea:focus { outline: none; border-color: var(--ouro-claro); }
+.modal-excluir-textarea::placeholder { color: var(--texto-mute); }
+
+.modal-excluir-resumo { padding: 0.95rem 1rem; background: var(--vidro); border: 1px solid var(--vidro-borda); border-radius: var(--radius-md); margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.modal-excluir-resumo-item { display: flex; justify-content: space-between; align-items: baseline; gap: 0.6rem; font-size: 0.84rem; }
+.modal-excluir-resumo-label { color: var(--texto-mute); font-family: var(--font-display); font-size: 0.65rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.modal-excluir-resumo-valor { color: var(--texto); font-weight: 600; text-align: right; }
+
+.modal-excluir-feedback { min-height: 1.2em; font-size: 0.82rem; text-align: center; margin-bottom: 0.5rem; }
+.modal-excluir-feedback.erro { color: #E47878; }
+
+.modal-excluir-acoes { display: flex; gap: 0.6rem; padding-top: 0.5rem; }
+.modal-excluir-voltar, .modal-excluir-cancelar { flex: 1; padding: 0.85rem; background: transparent; border: 1px solid var(--vidro-borda); border-radius: var(--radius-md); color: var(--texto-suave); font-family: var(--font-ui); font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; }
+.modal-excluir-voltar:hover, .modal-excluir-cancelar:hover { background: var(--vidro); border-color: var(--vidro-borda-hi); color: var(--texto); }
+.modal-excluir-proximo { flex: 1.4; padding: 0.85rem; background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro)); border: none; border-radius: var(--radius-md); color: white; font-family: var(--font-display); font-size: 0.9rem; font-weight: 800; letter-spacing: 0.06em; cursor: pointer; transition: opacity 0.15s, transform 0.12s; box-shadow: 0 4px 16px rgba(200,146,42,0.3); }
+.modal-excluir-proximo:hover { opacity: 0.92; transform: translateY(-1px); }
+.modal-excluir-proximo:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+.modal-excluir-confirmar { flex: 1.4; padding: 0.95rem; background: linear-gradient(135deg, #B04848, #7A2D2D); border: none; border-radius: var(--radius-md); color: white; font-family: var(--font-display); font-size: 0.92rem; font-weight: 800; letter-spacing: 0.06em; cursor: pointer; transition: opacity 0.15s, transform 0.12s; box-shadow: 0 4px 16px rgba(176,72,72,0.4); }
+.modal-excluir-confirmar:hover { opacity: 0.92; transform: translateY(-1px); }
+.modal-excluir-confirmar:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+/* Overlay full-screen "Sincronizando produtos Kiwify · Vida Mágica" que
+   aparece quando o /app detecta atualizações com origem='reativacao'.
+   Cobre a transição entre a sensação de "cadastro novo" e a chegada dos
+   produtos perpétuos. Anima por ~3s e some sozinho depois. */
+.overlay-sincronizacao { position: fixed; inset: 0; z-index: 9999; background: radial-gradient(ellipse at center, rgba(20,12,4,0.96), rgba(8,5,2,1)); display: none; align-items: center; justify-content: center; flex-direction: column; padding: 2rem; text-align: center; }
+.overlay-sincronizacao.ativo { display: flex; }
+.overlay-sincronizacao-logos { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1.6rem; }
+.overlay-sincronizacao-logo { font-family: var(--font-display); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ouro-brilho); padding: 0.45rem 0.95rem; border-radius: var(--radius-full); border: 1px solid var(--ouro-claro); text-shadow: 0 0 6px rgba(244,217,152,0.5); box-shadow: 0 0 12px rgba(244,217,152,0.25); }
+.overlay-sincronizacao-divisor { width: 24px; height: 1px; background: linear-gradient(90deg, transparent, var(--ouro-claro), transparent); }
+.overlay-sincronizacao-titulo { font-family: var(--font-display); font-size: 1.25rem; font-weight: 900; color: var(--texto); margin-bottom: 0.6rem; line-height: 1.3; max-width: 320px; }
+.overlay-sincronizacao-sub { font-size: 0.92rem; color: var(--texto-suave); margin-bottom: 1.8rem; max-width: 300px; line-height: 1.6; }
+.overlay-sincronizacao-spinner { width: 44px; height: 44px; border: 3px solid rgba(244,217,152,0.18); border-top-color: var(--ouro-brilho); border-radius: 50%; animation: avatar-spin 0.9s linear infinite; margin-bottom: 1.4rem; }
+.overlay-sincronizacao-lista { display: flex; flex-direction: column; gap: 0.5rem; align-items: center; max-width: 300px; width: 100%; }
+.overlay-sincronizacao-produto { display: flex; align-items: center; gap: 0.6rem; padding: 0.55rem 0.95rem; background: rgba(244,217,152,0.06); border: 1px solid rgba(244,217,152,0.25); border-radius: var(--radius-full); font-size: 0.82rem; color: var(--ouro-brilho); animation: produto-aparecer 0.4s ease-out both; }
+.overlay-sincronizacao-produto::before { content: '✓'; color: var(--ouro-claro); font-weight: 800; }
+@keyframes produto-aparecer { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
 .modal-sheet-player { max-height: 95vh; }
 .player-wrap { background: #000; flex-shrink: 0; }

@@ -25,6 +25,9 @@ const {
   upsertDispositivo, listarDispositivosUsuario, revogarDispositivo,
   criarSessao, buscarSessaoPorRefreshToken, renovarSessao,
   revogarSessao, revogarTodasSessoesUsuario,
+  arquivarUsuario, ehArquivadaPorAluna, reativarAlunaSilenciosa,
+  ehLegado, ehBanido, reativarContaLegado,
+  verificarBanimento, registrarTentativaBanido,
 } = require('../core/usuarios');
 const { enfileirarAtendimento } = require('../core/gateway');
 const { gerarAccessToken, autenticar } = require('../middleware/autenticar');
@@ -42,8 +45,18 @@ function gerarOTP() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
+// Detecta o tipo de dispositivo a partir do User-Agent.
+// Tipos suportados: 'mobile' | 'tablet' | 'desktop'.
+// Ordem importa: tablets primeiro (regras mais específicas) — Android tablet
+// é Android SEM a palavra "Mobile"; iPad/Kindle/Silk são tablets explícitos.
+// iPadOS 13+ em Safari mente identificando-se como Mac (caso de borda comum,
+// fica em 'desktop' sem detecção via touch-points no client).
 function detectarTipo(ua = '') {
-  return /android|iphone|ipad|ipod|mobile|blackberry|opera mini/i.test(ua) ? 'mobile' : 'desktop';
+  const s = String(ua);
+  if (/ipad|tablet|kindle|silk|playbook|sm-t\d/i.test(s)) return 'tablet';
+  if (/android(?!.*mobile)/i.test(s)) return 'tablet';
+  if (/android|iphone|ipod|mobile|blackberry|opera mini/i.test(s)) return 'mobile';
+  return 'desktop';
 }
 
 function nomearDispositivo(ua = '') {
@@ -112,6 +125,7 @@ function resUsuario(u) {
     email: u.email,
     telefone_formatado: u.telefone_formatado,
     email_verificado: u.email_verificado,
+    foto_url: u.foto_url || null,
     plano: u.plano,
     perfil_teste: u.perfil_teste,
     percentual_prosperidade: u.percentual_prosperidade,
@@ -206,9 +220,30 @@ router.post('/verificar-existencia', async (req, res) => {
       usuario = r.rows[0] || null;
     }
 
-    // Conta arquivada conta como "não existe" pra UX da tela /auth — a aluna
-    // não consegue logar mesmo, então não faz sentido mostrar "Olá, fulano".
-    const existe = !!(usuario && usuario.status !== 'arquivada');
+    // Verifica banimento pelos vínculos (telefone OU email digitado). Se
+    // bate, registra tentativa e retorna code BANIDO — front mostra mensagem
+    // de suporte (contato@vidamagica.com.br).
+    const banido = await verificarBanimento({
+      telefone: telefone ? formatarTelefone(telefone) : null,
+      email: email ? String(email).trim().toLowerCase() : null,
+    });
+    if (banido) {
+      await registrarTentativaBanido(banido.banimento_id, {
+        rota: '/verificar-existencia',
+        vinculo_bateu: banido.vinculo_bateu,
+        valor_bateu: banido.valor_bateu,
+        ip: getIP(req),
+        user_agent: req.headers['user-agent'],
+      });
+      return res.status(200).json({ existe: false, code: 'BANIDO' });
+    }
+
+    // Conta arquivada/legado conta como "não existe" pra UX da tela /auth —
+    // a aluna não consegue logar com fluxo de "Olá, fulano". Pra arquivada-
+    // por-aluna ou legado, ela passa pelo cadastro normal (que reativa
+    // silenciosamente OU cria conta limpa, respectivamente).
+    const escondida = usuario && (usuario.status === 'arquivada' || usuario.status === 'legado' || usuario.status === 'banido');
+    const existe = !!(usuario && !escondida);
     return res.json({ existe });
   } catch (err) {
     console.error('❌ /verificar-existencia:', err.message);
@@ -227,6 +262,25 @@ router.post('/solicitar-otp', async (req, res) => {
     }
 
     const ehCadastro = modo === 'cadastro';
+
+    // Verifica banimento por telefone (sempre) + email (se modo cadastro).
+    // Banido vê mensagem genérica de suporte na UI; registra tentativa.
+    const emailParaCheck = ehCadastro && email ? String(email).trim().toLowerCase() : null;
+    const banido = await verificarBanimento({ telefone: tel, email: emailParaCheck });
+    if (banido) {
+      await registrarTentativaBanido(banido.banimento_id, {
+        rota: '/solicitar-otp',
+        vinculo_bateu: banido.vinculo_bateu,
+        valor_bateu: banido.valor_bateu,
+        ip: getIP(req),
+        user_agent: req.headers['user-agent'],
+        fingerprint: device_fingerprint,
+      });
+      return res.status(403).json({
+        error: 'Conta excluída. Entre em contato com o suporte através de contato@vidamagica.com.br.',
+        code: 'BANIDO',
+      });
+    }
 
     // ─────────────────────────────────────────────────────────────
     // MODO CADASTRO
@@ -261,6 +315,18 @@ router.post('/solicitar-otp', async (req, res) => {
           nome: nomeLimpo,
           email: emailLimpo,
           origem_cadastro: 'cadastro_direto',
+        });
+      } else if (usuario.status === 'legado') {
+        // Aluna em legado voltando pelo cadastro — pra ela é conta nova.
+        // Sobrescreve nome/email/senha com os novos que ela digitou. Os dados
+        // antigos (jornada, relatos, materiais) seguem com eh_legado=TRUE,
+        // invisíveis pra ela.
+        const senha_hash = await bcrypt.hash(senhaLimpa, 12);
+        usuario = await atualizarUsuario(usuario.id, {
+          nome: nomeLimpo,
+          email: emailLimpo,
+          email_verificado: false,
+          senha_hash,
         });
       } else {
         const camposPraAtualizar = {};
@@ -300,6 +366,17 @@ router.post('/solicitar-otp', async (req, res) => {
     // ─────────────────────────────────────────────────────────────
     const usuario = await buscarUsuarioPorTelefone(tel);
     if (!usuario) {
+      return res.status(404).json({
+        error: 'Não encontramos sua conta com esse telefone.',
+        code: 'CONTA_NAO_EXISTE',
+      });
+    }
+    // Aluna que desativou/excluiu aparece como "não existe" no MODO LOGIN —
+    // front direciona pra criar conta nova:
+    //   - arquivada-por-aluna: /verificar-otp e /login-magic reativam silencioso
+    //     quando ela completar cadastro
+    //   - legado: cadastro novo reaproveita o registro com dados limpos
+    if (ehArquivadaPorAluna(usuario) || ehLegado(usuario)) {
       return res.status(404).json({
         error: 'Não encontramos sua conta com esse telefone.',
         code: 'CONTA_NAO_EXISTE',
@@ -382,8 +459,48 @@ router.post('/verificar-otp', async (req, res) => {
     const valido = await validarOTP(tel, codigo);
     if (!valido) return res.status(401).json({ error: 'Código inválido ou expirado' });
 
-    const usuario = await buscarUsuarioPorTelefone(tel);
+    // Banimento na entrada do telefone (raro chegar até aqui se a UI bloqueia,
+    // mas defesa em profundidade).
+    const banido = await verificarBanimento({ telefone: tel });
+    if (banido) {
+      await registrarTentativaBanido(banido.banimento_id, {
+        rota: '/verificar-otp',
+        vinculo_bateu: banido.vinculo_bateu,
+        valor_bateu: banido.valor_bateu,
+        ip: getIP(req),
+        user_agent: req.headers['user-agent'],
+        fingerprint: device_fingerprint,
+      });
+      return res.status(403).json({
+        error: 'Conta excluída. Entre em contato com o suporte através de contato@vidamagica.com.br.',
+        code: 'BANIDO',
+      });
+    }
+
+    let usuario = await buscarUsuarioPorTelefone(tel);
     if (!usuario) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    // Status='banido' (sem cair em vínculo extra mas registro está banido):
+    if (ehBanido(usuario)) {
+      return res.status(403).json({
+        error: 'Conta excluída. Entre em contato com o suporte através de contato@vidamagica.com.br.',
+        code: 'BANIDO',
+      });
+    }
+
+    // Reativação silenciosa: aluna que desativou (caminho A/B) validou
+    // telefone. Restaura status + relatos + re-entrega produtos não-legado
+    // via atualizacoes_pendentes (animação "Sincronizando produtos Kiwify ·
+    // Vida Mágica" no /app). A aluna NÃO vê nada disso — fluxo normal.
+    if (ehArquivadaPorAluna(usuario)) {
+      await reativarAlunaSilenciosa(usuario.id);
+      usuario = await buscarUsuarioPorTelefone(tel);
+    } else if (ehLegado(usuario)) {
+      // Caminho C: muda status pra 'ativa' sem mexer em mais nada. Pra aluna
+      // é cadastro novo; dados antigos seguem com eh_legado=TRUE (invisíveis).
+      await reativarContaLegado(usuario.id);
+      usuario = await buscarUsuarioPorTelefone(tel);
+    }
 
     const ua = req.headers['user-agent'] || '';
     const tipo = detectarTipo(ua);
@@ -467,9 +584,38 @@ router.post('/login-magic', async (req, res) => {
     }
 
     const tel = registro.telefone;
-    const usuario = await buscarUsuarioPorTelefone(tel);
+    let usuario = await buscarUsuarioPorTelefone(tel);
     if (!usuario) return res.status(404).json({ error: 'Usuário não encontrado' });
-    if (usuario.arquivada || usuario.status === 'arquivada') {
+
+    // Banido: bloqueia (mensagem de suporte).
+    const banido = await verificarBanimento({ telefone: tel });
+    if (banido || ehBanido(usuario)) {
+      if (banido) {
+        await registrarTentativaBanido(banido.banimento_id, {
+          rota: '/login-magic',
+          vinculo_bateu: banido.vinculo_bateu,
+          valor_bateu: banido.valor_bateu,
+          ip: getIP(req),
+          user_agent: req.headers['user-agent'],
+          fingerprint: device_fingerprint,
+        });
+      }
+      return res.status(403).json({
+        error: 'Conta excluída. Entre em contato com o suporte através de contato@vidamagica.com.br.',
+        code: 'BANIDO',
+      });
+    }
+
+    // Aluna que desativou (caminho A/B): reativa silenciosamente.
+    // Legado (caminho C): muda status pra ativa, dados antigos seguem invisíveis.
+    // Arquivamento pelo admin: segue bloqueado (só admin desarquiva).
+    if (ehArquivadaPorAluna(usuario)) {
+      await reativarAlunaSilenciosa(usuario.id);
+      usuario = await buscarUsuarioPorTelefone(tel);
+    } else if (ehLegado(usuario)) {
+      await reativarContaLegado(usuario.id);
+      usuario = await buscarUsuarioPorTelefone(tel);
+    } else if (usuario.arquivada || usuario.status === 'arquivada') {
       return res.status(403).json({
         error: 'Esta conta está inativa. Entre em contato com a Comunidade pra reativar.',
         code: 'CONTA_ARQUIVADA',
@@ -548,6 +694,25 @@ router.post('/preparar-acesso', async (req, res) => {
     // Rate limit por telefone (impede abuse)
     if (!checarRate(`prep-acesso:${tel}`, 5, 60000)) {
       return res.status(429).json({ error: 'Muitas tentativas. Aguarde 1 minuto.' });
+    }
+
+    // Banido: bloqueia antes de gerar token (evita mandar a aluna pro
+    // WhatsApp pensando que vai acontecer algo). Webhook tb tem proteção,
+    // mas falhar cedo é melhor UX.
+    const banidoPrep = await verificarBanimento({ telefone: tel });
+    if (banidoPrep) {
+      await registrarTentativaBanido(banidoPrep.banimento_id, {
+        rota: '/preparar-acesso',
+        vinculo_bateu: banidoPrep.vinculo_bateu,
+        valor_bateu: banidoPrep.valor_bateu,
+        ip: getIP(req),
+        user_agent: req.headers['user-agent'],
+        fingerprint: device_fingerprint,
+      });
+      return res.status(403).json({
+        error: 'Conta excluída. Entre em contato com o suporte através de contato@vidamagica.com.br.',
+        code: 'BANIDO',
+      });
     }
 
     // Salva fingerprint do dispositivo que está pedindo. Magic link gerado
@@ -683,15 +848,28 @@ router.post('/renovar', async (req, res) => {
 
 router.put('/perfil', autenticar, async (req, res) => {
   try {
-    const { nome, email, senha } = req.body;
+    const { nome, email, senha, senha_atual, foto_url } = req.body;
     const campos = {};
 
     if (nome) campos.nome = nome.trim();
     if (email) campos.email = email.trim().toLowerCase();
     if (senha) {
       if (senha.length < 6) return res.status(400).json({ error: 'Senha mínima: 6 caracteres' });
+      // Se aluna já tem senha, exige `senha_atual` pra trocar (anti-sequestro
+      // de sessão). Aluna que só usa OTP pode definir senha pela primeira vez
+      // sem confirmar — senha_hash é null, então não há o que confirmar.
+      const r = await poolCore.query(`SELECT senha_hash FROM usuarios WHERE id=$1`, [req.usuario.sub]);
+      const hashAtual = r.rows[0]?.senha_hash || null;
+      if (hashAtual) {
+        if (!senha_atual) return res.status(400).json({ error: 'Informe sua senha atual' });
+        const ok = await bcrypt.compare(senha_atual, hashAtual);
+        if (!ok) return res.status(400).json({ error: 'Senha atual incorreta' });
+      }
       campos.senha_hash = await bcrypt.hash(senha, 12);
     }
+    // foto_url: aceita URL do Cloudinary (do POST /api/upload/imagem) ou null pra remover.
+    // Não valida formato — confiança no token de upload já autenticado.
+    if (foto_url !== undefined) campos.foto_url = foto_url || null;
 
     if (!Object.keys(campos).length) return res.status(400).json({ error: 'Nada para atualizar' });
     if (campos.email) campos.email_verificado = false;
@@ -721,7 +899,7 @@ router.post('/login-senha', async (req, res) => {
       return res.status(429).json({ error: 'Muitas tentativas. Aguarde 2 minutos.' });
     }
 
-    const usuario = await buscarUsuarioPorIdentificador(id);
+    let usuario = await buscarUsuarioPorIdentificador(id);
 
     if (!usuario) {
       return res.status(401).json({ error: 'Dados incorretos. Verifique seu WhatsApp/e-mail e a senha.' });
@@ -742,7 +920,39 @@ router.post('/login-senha', async (req, res) => {
       return res.status(401).json({ error: 'Dados incorretos. Verifique seu WhatsApp/e-mail e a senha.' });
     }
 
-    if (usuario.arquivada || usuario.status === 'arquivada') {
+    // Banido: mensagem de suporte.
+    const banidoLogin = await verificarBanimento({
+      telefone: usuario.telefone,
+      email: usuario.email,
+      cpf: usuario.cpf,
+    });
+    if (banidoLogin || ehBanido(usuario)) {
+      if (banidoLogin) {
+        await registrarTentativaBanido(banidoLogin.banimento_id, {
+          rota: '/login-senha',
+          vinculo_bateu: banidoLogin.vinculo_bateu,
+          valor_bateu: banidoLogin.valor_bateu,
+          ip: getIP(req),
+          user_agent: req.headers['user-agent'],
+          fingerprint: device_fingerprint,
+        });
+      }
+      return res.status(403).json({
+        error: 'Conta excluída. Entre em contato com o suporte através de contato@vidamagica.com.br.',
+        code: 'BANIDO',
+      });
+    }
+
+    // Aluna que desativou (caminho A/B) sabe a senha → reativa silenciosa.
+    // Legado (caminho C) → reativa silencioso pra legado (sem animação).
+    // Arquivamento pelo admin segue bloqueado.
+    if (ehArquivadaPorAluna(usuario)) {
+      await reativarAlunaSilenciosa(usuario.id);
+      usuario = await buscarUsuarioPorIdentificador(id);
+    } else if (ehLegado(usuario)) {
+      await reativarContaLegado(usuario.id);
+      usuario = await buscarUsuarioPorIdentificador(id);
+    } else if (usuario.arquivada || usuario.status === 'arquivada') {
       return res.status(403).json({
         error: 'Esta conta está inativa. Entre em contato com a Comunidade pra reativar.',
         code: 'CONTA_ARQUIVADA',
@@ -932,6 +1142,36 @@ router.post('/logout', async (req, res) => {
     if (refresh_token) await revogarSessao(refresh_token);
     res.json({ success: true });
   } catch (err) {
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// ──────────────────────────────────────────────────────────
+// 11. EXCLUIR CONTA (vocabulário pra aluna)
+// Aluna NUNCA apaga de verdade — arquiva (caminho A/B) ou vai pra legado
+// (caminho C). Apenas admin tem "Apagar permanentemente" (DELETE em cascata).
+//
+// Body (espelha os 2 slides do modal de "Desativar conta"):
+//   - deseja_excluir: boolean (slide 1 — "Deseja excluir [Jornada, Materiais,
+//     Relatos]?"). Se TRUE, dispara legado nesses blocos.
+//   - deletar_dados_pessoais: boolean (slide 2 — só faz sentido com slide 1=Sim).
+//     TRUE = status='legado' (cadastro novo no retorno). FALSE = status=
+//     'arquivada' (reativa silenciosa via OTP).
+//   - motivo: string opcional, vem do textarea/rádio do slide 1.
+// ──────────────────────────────────────────────────────────
+
+router.post('/excluir-conta', autenticar, async (req, res) => {
+  try {
+    const { motivo, deseja_excluir, deletar_dados_pessoais } = req.body || {};
+    await arquivarUsuario(req.usuario.sub, {
+      por: 'aluna',
+      motivo: motivo ? String(motivo).slice(0, 500) : null,
+      deseja_excluir: !!deseja_excluir,
+      deletar_dados_pessoais: !!deletar_dados_pessoais,
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ /excluir-conta:', err.message);
     res.status(500).json({ error: 'Erro interno' });
   }
 });

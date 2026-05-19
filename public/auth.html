@@ -613,6 +613,23 @@ function irTela(id){ document.querySelectorAll('.tela').forEach(t=>t.classList.r
 function getOTP(p){ return[0,1,2,3,4,5].map(i=>document.getElementById(`${p}${i}`).value).join(''); }
 function limparOTP(p){ for(let i=0;i<6;i++)document.getElementById(`${p}${i}`).value=''; }
 function mostrarErro(id,msg){const e=document.getElementById(id);e.textContent=msg;e.className='msg erro show';}
+
+// Mensagem única pra contas banidas. Aparece em qualquer fluxo onde o
+// backend retornar code='BANIDO'. Não revela motivo nem dá pista — UX
+// genérica de suporte é a regra.
+const MSG_BANIDO = 'Conta excluída. Entre em contato com o suporte através de contato@vidamagica.com.br.';
+
+// Helper: se a resposta indica banimento, limpa qualquer rastro local e
+// mostra a mensagem genérica no campo de erro. Retorna true se tratou.
+function tratarBanido(resposta, dados, idErro) {
+  if (resposta.status === 403 && dados && dados.code === 'BANIDO') {
+    try { VmSession.limparUsuarioLembrado(); } catch {}
+    try { VmSession.destruir(); } catch {}
+    if (idErro) mostrarErro(idErro, MSG_BANIDO);
+    return true;
+  }
+  return false;
+}
 function mostrarOk(id,msg){const e=document.getElementById(id);e.textContent=msg;e.className='msg ok show';}
 function limparMsg(id){const e=document.getElementById(id);if(e)e.className='msg';}
 function setLoad(id,lbl){const b=document.getElementById(id);b.disabled=true;b.innerHTML=`<span>${lbl}</span><span class="btn-arrow"><div class="spin"></div></span>`;}
@@ -814,6 +831,10 @@ async function solicitarAcesso(){
     });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) {
+      if (tratarBanido(r, d, 'erro-login')) {
+        resetBtn('btn-magic','Solicite entrar pelo seu Whatsapp');
+        return;
+      }
       mostrarErro('erro-login', d.error || 'Não conseguimos preparar seu acesso. Tente novamente.');
       resetBtn('btn-magic','Solicite entrar pelo seu Whatsapp');
       return;
@@ -868,7 +889,15 @@ async function solicitarNovamente() {
       body: JSON.stringify({ telefone: tel, device_fingerprint: getDeviceFingerprint() }),
     });
     const d = await r.json().catch(() => ({}));
-    if (!r.ok) return;
+    if (!r.ok) {
+      // Se virou BANIDO entre o pedido original e este novo, tira a aluna
+      // da tela de aguardando e mostra a mensagem de suporte.
+      if (tratarBanido(r, d, 'erro-login')) {
+        document.getElementById('modo-aguardando').style.display = 'none';
+        document.getElementById('modo-magic').style.display = '';
+      }
+      return;
+    }
     window._tokenAcesso = d.token;
     window._ttlAcesso   = d.ttl_segundos || 300;
     window._waUrl       = d.wa_url;
@@ -957,11 +986,16 @@ function iniciarPollingAguardando(token, ttlSegundos){
       document.getElementById('overlay').classList.remove('show');
       // Limpa o magic da URL pra aluna não ficar presa
       window.history.replaceState({}, '', '/auth');
-      // Se a conta não existe mais (apagada/arquivada), apaga a "lembrança"
-      // local pra a tela não mostrar "Olá, Fulano" pra alguém que não existe.
-      if (r.status === 404 || d.code === 'CONTA_NAO_EXISTE' || d.code === 'CONTA_ARQUIVADA') {
+      // Se a conta não existe mais (apagada/arquivada/legado/banido), apaga
+      // a "lembrança" local pra a tela não mostrar "Olá, Fulano" pra alguém
+      // que não existe ou foi banida.
+      if (r.status === 404 || d.code === 'CONTA_NAO_EXISTE' || d.code === 'CONTA_ARQUIVADA' || d.code === 'BANIDO') {
         VmSession.limparUsuarioLembrado();
         VmSession.destruir();
+      }
+      if (d.code === 'BANIDO') {
+        setTimeout(() => mostrarErro('erro-login', MSG_BANIDO), 100);
+        return;
       }
       setTimeout(() => mostrarErro('erro-login', d.error || 'Link inválido ou expirado. Solicite outro.'), 100);
       return;
@@ -1058,13 +1092,17 @@ async function fazerLogin(){
       setTimeout(() => alternarModoLogin('magic'), 800);
     }
     else {
-      // Conta apagada/arquivada → limpa a lembrança local antes de exibir erro.
-      if (r.status === 404 || d.code === 'CONTA_NAO_EXISTE' || d.code === 'CONTA_ARQUIVADA') {
+      // Conta apagada/arquivada/legado/banido → limpa a lembrança local antes de exibir erro.
+      if (r.status === 404 || d.code === 'CONTA_NAO_EXISTE' || d.code === 'CONTA_ARQUIVADA' || d.code === 'BANIDO') {
         VmSession.limparUsuarioLembrado();
         VmSession.destruir();
         trocarUsuario();
       }
-      mostrarErro('erro-login', d.error||'Dados incorretos.');
+      if (d.code === 'BANIDO') {
+        mostrarErro('erro-login', MSG_BANIDO);
+      } else {
+        mostrarErro('erro-login', d.error||'Dados incorretos.');
+      }
     }
   } catch { mostrarErro('erro-login','Falha de conexão. Tente novamente.'); }
   finally { resetBtn('btn-login','Entrar'); }
@@ -1145,6 +1183,10 @@ async function cadastroStep1(){
     });
     const d=await r.json().catch(()=>({}));
     if(!r.ok){
+      if (tratarBanido(r, d, 'erro-cad1')) {
+        resetBtn('btn-cad1','Confirmar pelo WhatsApp');
+        return;
+      }
       mostrarErro('erro-cad1', d.error || 'Não conseguimos preparar seu cadastro. Tente novamente.');
       resetBtn('btn-cad1','Confirmar pelo WhatsApp');
       return;
@@ -1256,6 +1298,7 @@ async function cadastroReenviar(){
     });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) {
+      if (tratarBanido(r, d, 'erro-cad2')) return;
       mostrarErro('erro-cad2', d.error || 'Erro ao gerar novo código.');
       return;
     }

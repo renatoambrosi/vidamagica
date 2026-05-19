@@ -375,34 +375,438 @@ async function historicoSementes(usuario_id) {
   return r.rows;
 }
 
-// ── ARQUIVAR / APAGAR CONTA ──────────────────────────────
-// Princípio: aluna NUNCA apaga de verdade. Pedido dela = arquiva.
-// Apenas admin tem o botão "Apagar permanentemente" (DELETE em cascata).
+// ── ARQUIVAR / DESATIVAR / EXCLUIR CONTA / LEGADO ────────
+// Princípio: aluna NUNCA apaga de verdade. Pedido dela = arquiva
+// (caminho A/B) ou vira legado (caminho C). Apenas admin tem o botão
+// "Apagar permanentemente" (DELETE em cascata, em apagarUsuarioPermanente).
+//
+// Vocabulário pra aluna:
+//   - "Desativar conta"             (caminho A: slide 1 = Não)
+//   - "Desativar conta"             (caminho B: slide 1 = Sim, slide 2 = Não)
+//   - "Excluir conta permanentemente" (caminho C: slide 1 = Sim, slide 2 = Sim)
+//
+// Internamente:
+//   - A: status='arquivada', nada mais. Reativa silenciosa via OTP → tudo volta.
+//   - B: status='arquivada', + tornarLegado(Jornada+Materiais+Relatos). Reativa
+//        via OTP → identidade volta, bloco legado permanece invisível pra aluna.
+//   - C: status='legado'. Reativação NÃO é silenciosa: ela faz cadastro novo,
+//        sistema reaproveita o registro existente (atualiza nome/email novos)
+//        mas os dados antigos permanecem com eh_legado=TRUE (invisíveis pra
+//        ela; admin vê na aba Legado). Materiais só voltam via Kiwify futuro.
+//
+// Opções:
+//   - por: 'admin' | 'aluna' (default 'admin'). arquivada_por='aluna' permite
+//     reativação silenciosa. arquivada_por='admin' segue bloqueada (só admin
+//     desarquiva).
+//   - motivo: texto livre.
+//   - deseja_excluir: slide 1 do modal. Se TRUE, dispara tornarLegado do bloco.
+//   - deletar_dados_pessoais: slide 2 do modal. Se TRUE (e deseja_excluir TRUE),
+//     muda status pra 'legado' e tornarLegado é total.
 
-async function arquivarUsuario(id, { por = 'admin', motivo = null } = {}) {
-  // Marca arquivada=TRUE + status='arquivada'. Revoga todas as sessões.
+async function arquivarUsuario(id, opts = {}) {
+  const {
+    por = 'admin',
+    motivo = null,
+    deseja_excluir = false,
+    deletar_dados_pessoais = false,
+  } = opts;
+
+  // Caminho C exige caminho B antes: deletar_dados_pessoais só faz sentido
+  // se deseja_excluir for TRUE. Defensivo — se vier inconsistente, segue B.
+  const ehCaminhoC = !!(deseja_excluir && deletar_dados_pessoais);
+  const ehCaminhoB = !!deseja_excluir && !ehCaminhoC;
+  const statusAlvo = ehCaminhoC ? 'legado' : 'arquivada';
+
   await poolCore.query(
     `UPDATE usuarios
         SET arquivada=TRUE,
-            status='arquivada',
+            status=$4,
             arquivada_em=NOW(),
             arquivada_por=$2,
             arquivada_motivo=$3,
             atualizado_em=NOW()
       WHERE id=$1`,
-    [id, por, motivo]
+    [id, por, motivo, statusAlvo]
   );
+
+  // Revoga todas as sessões — sai imediato de todos os dispositivos
   await poolCore.query(
     `UPDATE sessoes SET revogada=TRUE WHERE usuario_id=$1 AND revogada=FALSE`,
     [id]
   );
-  // Fase 2.4: relatos públicos da aluna somem do site (sem alarde, sem apagar dado).
-  // Cross-pool — depoimentos vive em poolComunicacao. Não pode estar na mesma tx.
+
+  // Caminho B ou C: dispara legado do bloco (Jornada + Materiais + Relatos).
+  // Caminho C: também marca tudo agressivamente (libera fingerprint/sessões/
+  // sementes/atualizações pra que reativação pareça realmente cadastro novo).
+  if (ehCaminhoB || ehCaminhoC) {
+    await tornarLegado(id, {
+      jornada: true,
+      materiais: true,
+      relatos: true,
+      apagar_consumiveis: ehCaminhoC,
+    });
+  }
+}
+
+// Move blocos da aluna pra LEGADO (eh_legado=TRUE). Dados ficam no banco
+// invisíveis pra aluna; admin vê na aba Legado.
+//
+// Blocos:
+//   - jornada:  zera campos derivados em usuarios (perfil_teste, % prosperidade,
+//               estagio_arvore, sementes) + marca testes.eh_legado=TRUE.
+//   - materiais: marca usuario_produtos.eh_legado=TRUE. Webhook Kiwify futuro
+//                pode reativar (eh_legado=FALSE) quando aluna comprar de novo.
+//   - relatos:   marca depoimentos.eh_legado=TRUE.
+//   - apagar_consumiveis: limpa dispositivos/sementes/atualizações_pendentes
+//                         (caminho C, pra reativação parecer cadastro novo).
+async function tornarLegado(usuarioId, opts = {}) {
+  const {
+    jornada = false,
+    materiais = false,
+    relatos = false,
+    apagar_consumiveis = false,
+  } = opts;
+
+  if (jornada) {
+    await poolCore.query(
+      `UPDATE usuarios
+          SET perfil_teste=NULL,
+              percentual_prosperidade=0,
+              sementes=0,
+              estagio_arvore='semente',
+              atualizado_em=NOW()
+        WHERE id=$1`,
+      [usuarioId]
+    );
+    try {
+      const { poolTeste } = require('../db');
+      await poolTeste.query(`UPDATE testes SET eh_legado=TRUE WHERE usuario_id=$1`, [usuarioId]);
+    } catch (err) {
+      console.warn('⚠️ tornarLegado testes:', err.message);
+    }
+  }
+
+  if (materiais) {
+    await poolCore.query(
+      `UPDATE usuario_produtos SET eh_legado=TRUE, atualizado_em=NOW() WHERE usuario_id=$1`,
+      [usuarioId]
+    );
+  }
+
+  if (relatos) {
+    try {
+      const { poolComunicacao } = require('../db');
+      await poolComunicacao.query(
+        `UPDATE depoimentos SET eh_legado=TRUE, atualizado_em=NOW() WHERE usuario_id=$1`,
+        [usuarioId]
+      );
+    } catch (err) {
+      console.warn('⚠️ tornarLegado relatos:', err.message);
+    }
+  }
+
+  if (apagar_consumiveis) {
+    // Itens consumíveis (sem valor histórico): limpa pra reativação ficar limpa.
+    await poolCore.query(`DELETE FROM sementes WHERE usuario_id=$1`, [usuarioId]);
+    await poolCore.query(`DELETE FROM atualizacoes_pendentes WHERE usuario_id=$1`, [usuarioId]);
+    await poolCore.query(`DELETE FROM dispositivos WHERE usuario_id=$1`, [usuarioId]);
+  }
+}
+
+// Helper — aluna que excluiu/desativou a própria conta (vs. arquivada
+// pelo admin). Só essas alunas têm reativação silenciosa via OTP de telefone.
+function ehArquivadaPorAluna(usuario) {
+  if (!usuario) return false;
+  const arquivada = !!usuario.arquivada || usuario.status === 'arquivada';
+  if (!arquivada) return false;
+  return usuario.arquivada_por === 'aluna';
+}
+
+function ehLegado(usuario) {
+  return usuario?.status === 'legado';
+}
+
+function ehBanido(usuario) {
+  return usuario?.status === 'banido';
+}
+
+// Reativa silenciosamente uma aluna que ela mesma desativou (status='arquivada'
+// com arquivada_por='aluna'), no momento em que ela valida OTP de telefone
+// num /auth. Funciona pros caminhos A e B do modal:
+//   - A: tudo volta visível, animação Kiwify roda com produtos perpétuos ativos.
+//   - B: identidade volta, bloco legado permanece invisível (eh_legado filtra).
+//
+// Aluna nunca vê "bem-vinda de volta" — pra ela é login normal.
+async function reativarAlunaSilenciosa(id) {
+  await poolCore.query(
+    `UPDATE usuarios
+        SET arquivada=FALSE,
+            status='ativa',
+            arquivada_em=NULL,
+            arquivada_por=NULL,
+            arquivada_motivo=NULL,
+            atualizado_em=NOW()
+      WHERE id=$1 AND status='arquivada'`,
+    [id]
+  );
+
+  // Restaura relatos ocultados por arquivamento (oculto_arquivamento).
+  // Relatos em legado (eh_legado=TRUE) seguem ocultos — flag separada.
   try {
     const { ocultarRelatosDeAluna } = require('./relatos');
-    await ocultarRelatosDeAluna(id, true);
+    await ocultarRelatosDeAluna(id, false);
   } catch (err) {
-    console.warn('⚠️ Falha ao ocultar relatos da aluna arquivada:', err.message);
+    console.warn('⚠️ Falha ao restaurar relatos na reativação:', err.message);
+  }
+
+  // Re-entrega produtos perpétuos ATIVOS e NÃO-legado. Caminho A traz tudo;
+  // caminho B traz só o que não foi pro legado (que = vazio, porque B move
+  // todos os materiais pro legado; mas o filtro mantém o código correto se
+  // a composição variar no futuro).
+  try {
+    const { criarAtualizacaoCompra } = require('./atualizacoes');
+    const r = await poolCore.query(
+      `SELECT up.produto_id, p.slug FROM usuario_produtos up
+         LEFT JOIN produtos p ON p.id = up.produto_id
+        WHERE up.usuario_id = $1 AND up.ativo = TRUE AND up.eh_legado = FALSE`,
+      [id]
+    );
+    for (const row of r.rows) {
+      try {
+        await criarAtualizacaoCompra(id, {
+          produto_slug: row.slug,
+          origem: 'reativacao',
+        });
+      } catch (e) {
+        console.warn('⚠️ Falha ao criar atualização de reativação:', e.message);
+      }
+    }
+  } catch (err) {
+    console.warn('⚠️ Falha ao re-entregar produtos na reativação:', err.message);
+  }
+}
+
+// Reativa uma conta em LEGADO (caminho C). Diferente da silenciosa: NÃO
+// restaura relatos nem cria animação Kiwify dos produtos antigos. Apenas
+// muda status pra 'ativa' — pra aluna parece cadastro novo. Dados antigos
+// permanecem com eh_legado=TRUE (invisíveis); Materiais voltam só via
+// webhook Kiwify reconhecendo o telefone (eh_legado=FALSE pelo gateway).
+async function reativarContaLegado(id) {
+  await poolCore.query(
+    `UPDATE usuarios
+        SET arquivada=FALSE,
+            status='ativa',
+            arquivada_em=NULL,
+            arquivada_por=NULL,
+            arquivada_motivo=NULL,
+            atualizado_em=NOW()
+      WHERE id=$1 AND status='legado'`,
+    [id]
+  );
+}
+
+// ── BANIMENTO ────────────────────────────────────────────
+// Banir = bloqueio total de retorno pra esse usuário. O cruzamento por
+// vínculos (telefone, email, CPF, fingerprint) impede que ela crie conta
+// nova com qualquer dado pessoal já registrado no banimento.
+//
+// Vínculos coletados automaticamente:
+//   - CPF atual
+//   - Email atual
+//   - Telefone atual + telefones_historicos
+//   - Fingerprints dos dispositivos conhecidos
+// Admin pode estender via `vinculos_extra` ou desconectar vínculos
+// específicos (falso positivo).
+
+async function banirUsuario(usuarioId, { motivo = null, banido_por = 'admin', vinculos_extra = {} } = {}) {
+  // Coleta vínculos do usuário
+  const r = await poolCore.query(
+    `SELECT telefone, email, cpf FROM usuarios WHERE id=$1`,
+    [usuarioId]
+  );
+  const u = r.rows[0];
+  if (!u) throw new Error('usuário não encontrado');
+
+  const tels = await poolCore.query(
+    `SELECT DISTINCT telefone FROM telefones_historicos WHERE usuario_id=$1`,
+    [usuarioId]
+  );
+  const todosTelefones = [u.telefone, ...tels.rows.map(t => t.telefone)]
+    .filter((v, i, a) => v && a.indexOf(v) === i);
+
+  const fps = await poolCore.query(
+    `SELECT fingerprint FROM dispositivos WHERE usuario_id=$1 AND fingerprint IS NOT NULL`,
+    [usuarioId]
+  );
+  const fingerprints = fps.rows
+    .map(row => {
+      const fp = row.fingerprint;
+      // device_id é o vínculo forte fingerprint. UA bate frequente entre
+      // dispositivos diferentes (não usa sozinho).
+      return fp?.device_id || null;
+    })
+    .filter(Boolean);
+
+  const vinculos = {
+    cpf: vinculos_extra.cpf || u.cpf || null,
+    emails: [...new Set([
+      ...(u.email ? [String(u.email).toLowerCase()] : []),
+      ...((vinculos_extra.emails || []).map(e => String(e).toLowerCase())),
+    ])],
+    telefones: [...new Set([
+      ...todosTelefones,
+      ...(vinculos_extra.telefones || []),
+    ])],
+    fingerprints: [...new Set([
+      ...fingerprints,
+      ...(vinculos_extra.fingerprints || []),
+    ])],
+  };
+
+  // Marca usuário como banido
+  await poolCore.query(
+    `UPDATE usuarios SET status='banido', atualizado_em=NOW() WHERE id=$1`,
+    [usuarioId]
+  );
+
+  // Revoga sessões ativas
+  await poolCore.query(
+    `UPDATE sessoes SET revogada=TRUE WHERE usuario_id=$1 AND revogada=FALSE`,
+    [usuarioId]
+  );
+
+  // Cria o registro de banimento
+  const b = await poolCore.query(
+    `INSERT INTO banimentos (usuario_id, motivo, banido_por, vinculos)
+     VALUES ($1, $2, $3, $4) RETURNING id`,
+    [usuarioId, motivo, banido_por, JSON.stringify(vinculos)]
+  );
+  return b.rows[0].id;
+}
+
+async function desbanirUsuario(banimentoId) {
+  const r = await poolCore.query(
+    `UPDATE banimentos SET ativo=FALSE, atualizado_em=NOW() WHERE id=$1 AND ativo=TRUE
+     RETURNING usuario_id`,
+    [banimentoId]
+  );
+  const userId = r.rows[0]?.usuario_id;
+  if (!userId) return false;
+
+  // Restaura status (volta pra 'ativa' se telefone já foi validado, senão 'incompleta')
+  await poolCore.query(
+    `UPDATE usuarios SET
+        status=CASE WHEN telefone_validado_em IS NOT NULL THEN 'ativa' ELSE 'incompleta' END,
+        atualizado_em=NOW()
+      WHERE id=$1 AND status='banido'`,
+    [userId]
+  );
+  return true;
+}
+
+// Remove um vínculo específico do JSONB (falso positivo). Não desbane —
+// só libera o vínculo. Tipo: 'cpf' (escalar) | 'emails' | 'telefones' | 'fingerprints' (arrays).
+async function desconectarVinculoBanimento(banimentoId, tipo, valor) {
+  if (tipo === 'cpf') {
+    await poolCore.query(
+      `UPDATE banimentos SET vinculos = vinculos - 'cpf', atualizado_em=NOW() WHERE id=$1`,
+      [banimentoId]
+    );
+    return;
+  }
+  if (!['emails', 'telefones', 'fingerprints'].includes(tipo)) {
+    throw new Error(`tipo inválido: ${tipo}`);
+  }
+  await poolCore.query(
+    `UPDATE banimentos
+        SET vinculos = jsonb_set(
+              vinculos,
+              ARRAY[$2::text],
+              COALESCE((
+                SELECT jsonb_agg(v)
+                  FROM jsonb_array_elements_text(vinculos->$2) AS v
+                 WHERE v <> $3
+              ), '[]'::jsonb)
+            ),
+            atualizado_em=NOW()
+      WHERE id=$1`,
+    [banimentoId, tipo, String(valor).toLowerCase()]
+  );
+}
+
+// Verifica se algum vínculo bate com banimento ativo. Retorna info pro
+// registrar tentativa OU null. Chamada em /verificar-existencia, /solicitar-otp
+// (modo cadastro), webhook Evolution, e no webhook Kiwify futuro.
+async function verificarBanimento({ telefone, email, cpf, fingerprint } = {}) {
+  const condicoes = [];
+  const valores = [];
+  if (telefone) {
+    valores.push(telefone);
+    condicoes.push(`vinculos->'telefones' ? $${valores.length}`);
+  }
+  if (email) {
+    valores.push(String(email).toLowerCase());
+    condicoes.push(`vinculos->'emails' ? $${valores.length}`);
+  }
+  if (cpf) {
+    valores.push(cpf);
+    condicoes.push(`vinculos->>'cpf' = $${valores.length}`);
+  }
+  // Device fingerprint é só um vínculo secundário — pra evitar falso positivo
+  // com família/escritório, só conta quando combinada com outro vínculo
+  // forte (cpf/email/telefone). Se vier só fingerprint, ignora.
+  // (Implementação simples: não inclui fingerprint na query principal aqui.)
+  // Admin pode estender vínculos manualmente se quiser que o fingerprint pegue.
+
+  if (!condicoes.length) return null;
+
+  const r = await poolCore.query(
+    `SELECT id, usuario_id, motivo, vinculos FROM banimentos
+      WHERE ativo=TRUE AND (${condicoes.join(' OR ')})
+      LIMIT 1`,
+    valores
+  );
+  const banimento = r.rows[0];
+  if (!banimento) return null;
+
+  // Identifica qual vínculo bateu pra log
+  let vinculo_bateu = null, valor_bateu = null;
+  const v = banimento.vinculos || {};
+  if (telefone && Array.isArray(v.telefones) && v.telefones.includes(telefone)) {
+    vinculo_bateu = 'telefone'; valor_bateu = telefone;
+  } else if (email && Array.isArray(v.emails) && v.emails.includes(String(email).toLowerCase())) {
+    vinculo_bateu = 'email'; valor_bateu = String(email).toLowerCase();
+  } else if (cpf && v.cpf === cpf) {
+    vinculo_bateu = 'cpf'; valor_bateu = cpf;
+  }
+
+  return {
+    banimento_id: banimento.id,
+    usuario_id: banimento.usuario_id,
+    motivo: banimento.motivo,
+    vinculo_bateu,
+    valor_bateu,
+  };
+}
+
+async function registrarTentativaBanido(banimentoId, { rota, vinculo_bateu, valor_bateu, ip, user_agent, fingerprint } = {}) {
+  if (!banimentoId) return;
+  try {
+    await poolCore.query(
+      `INSERT INTO tentativas_banido (banimento_id, rota, vinculo_bateu, valor_bateu, ip, user_agent, fingerprint)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        banimentoId,
+        rota || null,
+        vinculo_bateu || null,
+        valor_bateu || null,
+        ip || null,
+        user_agent ? String(user_agent).slice(0, 1000) : null,
+        fingerprint ? JSON.stringify(fingerprint) : null,
+      ]
+    );
+  } catch (err) {
+    console.warn('⚠️ Falha ao registrar tentativa banido:', err.message);
   }
 }
 
@@ -678,6 +1082,17 @@ module.exports = {
   arquivarUsuario,
   desarquivarUsuario,
   apagarUsuarioPermanente,
+  reativarAlunaSilenciosa,
+  reativarContaLegado,
+  tornarLegado,
+  ehArquivadaPorAluna,
+  ehLegado,
+  ehBanido,
+  banirUsuario,
+  desbanirUsuario,
+  desconectarVinculoBanimento,
+  verificarBanimento,
+  registrarTentativaBanido,
   marcarComoAtiva,
   trocarTelefonePrincipal,
   // identidade

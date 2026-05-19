@@ -24,6 +24,8 @@ const {
   criarMagicToken,
   normalizarCpf, validarCpf, verificarDuplicidade,
   listarEnderecos, criarEndereco, atualizarEndereco, deletarEndereco,
+  banirUsuario, desbanirUsuario, desconectarVinculoBanimento,
+  tornarLegado,
 } = require('../core/usuarios');
 const { enfileirarAtendimento } = require('../core/gateway');
 const { formatarTelefone } = require('../core/utils');
@@ -642,6 +644,15 @@ router.post('/usuarios/:id/arquivar', async (req, res) => {
     if (u.rows[0].arquivada) return res.status(400).json({ error: 'Conta já está arquivada' });
 
     await arquivarUsuario(id, { por: 'admin', motivo: motivo || null });
+    // Comportamento histórico do botão "Arquivar" do admin: também oculta
+    // os relatos públicos da aluna (separado do legado, controlado pelo
+    // par arquivar/desarquivar). Composição explícita pra deixar visível.
+    try {
+      const { ocultarRelatosDeAluna } = require('../core/relatos');
+      await ocultarRelatosDeAluna(id, true);
+    } catch (err) {
+      console.warn('⚠️ Falha ao ocultar relatos do admin/arquivar:', err.message);
+    }
     res.json({ success: true });
   } catch (err) {
     console.error('❌ /usuarios/arquivar:', err.message);
@@ -665,6 +676,223 @@ router.post('/usuarios/:id/desarquivar', async (req, res) => {
   } catch (err) {
     console.error('❌ /usuarios/desarquivar:', err.message);
     res.status(500).json({ error: 'Erro ao desarquivar' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 12.5. USUÁRIOS — BANIR / DESBANIR / VÍNCULOS
+// Banir = bloqueia retorno por qualquer vínculo cadastral (telefone, email,
+// CPF, fingerprint). Tentativas registradas em tentativas_banido pra
+// monitoramento. Admin pode desbanir ou desconectar vínculo específico
+// (falso positivo).
+// ════════════════════════════════════════════════════════════
+
+router.post('/usuarios/:id/banir', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { motivo, vinculos_extra } = req.body || {};
+    const u = await poolCore.query(`SELECT id, status FROM usuarios WHERE id=$1`, [id]);
+    if (!u.rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
+    if (u.rows[0].status === 'banido') return res.status(400).json({ error: 'Conta já está banida' });
+
+    const banimentoId = await banirUsuario(id, {
+      motivo: motivo ? String(motivo).slice(0, 1000) : null,
+      banido_por: req.usuario?.nome || 'admin',
+      vinculos_extra: vinculos_extra && typeof vinculos_extra === 'object' ? vinculos_extra : {},
+    });
+    res.json({ success: true, banimento_id: banimentoId });
+  } catch (err) {
+    console.error('❌ /usuarios/banir:', err.message);
+    res.status(500).json({ error: 'Erro ao banir' });
+  }
+});
+
+router.post('/banimentos/:id/desbanir', async (req, res) => {
+  try {
+    const ok = await desbanirUsuario(req.params.id);
+    if (!ok) return res.status(404).json({ error: 'Banimento não encontrado ou já inativo' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ /banimentos/desbanir:', err.message);
+    res.status(500).json({ error: 'Erro ao desbanir' });
+  }
+});
+
+router.post('/banimentos/:id/desconectar-vinculo', async (req, res) => {
+  try {
+    const { tipo, valor } = req.body || {};
+    if (!['cpf', 'emails', 'telefones', 'fingerprints'].includes(tipo)) {
+      return res.status(400).json({ error: 'Tipo de vínculo inválido' });
+    }
+    if (tipo !== 'cpf' && !valor) {
+      return res.status(400).json({ error: 'Valor obrigatório pra arrays de vínculo' });
+    }
+    await desconectarVinculoBanimento(req.params.id, tipo, valor);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ /banimentos/desconectar-vinculo:', err.message);
+    res.status(500).json({ error: 'Erro ao desconectar vínculo' });
+  }
+});
+
+router.get('/banimentos', async (req, res) => {
+  try {
+    const r = await poolCore.query(
+      `SELECT b.id, b.usuario_id, b.motivo, b.banido_em, b.banido_por, b.ativo, b.vinculos,
+              u.nome, u.telefone_formatado, u.email
+         FROM banimentos b
+         LEFT JOIN usuarios u ON u.id = b.usuario_id
+        WHERE b.ativo = TRUE
+        ORDER BY b.banido_em DESC
+        LIMIT 200`
+    );
+    res.json({ ok: true, banimentos: r.rows });
+  } catch (err) {
+    console.error('❌ /banimentos:', err.message);
+    res.status(500).json({ error: 'Erro ao listar banimentos' });
+  }
+});
+
+router.get('/banimentos/:id/tentativas', async (req, res) => {
+  try {
+    const r = await poolCore.query(
+      `SELECT id, rota, vinculo_bateu, valor_bateu, ip, user_agent, criado_em
+         FROM tentativas_banido
+        WHERE banimento_id = $1
+        ORDER BY criado_em DESC
+        LIMIT 200`,
+      [req.params.id]
+    );
+    res.json({ ok: true, tentativas: r.rows });
+  } catch (err) {
+    console.error('❌ /banimentos/tentativas:', err.message);
+    res.status(500).json({ error: 'Erro ao listar tentativas' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 12.6. USUÁRIOS — LEGADO GRANULAR
+// Admin pode marcar blocos específicos de uma aluna como legado (eh_legado=
+// TRUE), tornando-os invisíveis pra ela mas preservados pra auditoria/
+// admin. Também pode listar/apagar dados em legado de toda a base.
+// ════════════════════════════════════════════════════════════
+
+router.post('/usuarios/:id/legado', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { jornada, materiais, relatos, apagar_consumiveis } = req.body || {};
+    const u = await poolCore.query(`SELECT id FROM usuarios WHERE id=$1`, [id]);
+    if (!u.rows.length) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    await tornarLegado(id, {
+      jornada: !!jornada,
+      materiais: !!materiais,
+      relatos: !!relatos,
+      apagar_consumiveis: !!apagar_consumiveis,
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ /usuarios/legado:', err.message);
+    res.status(500).json({ error: 'Erro ao marcar legado' });
+  }
+});
+
+// Lista tudo em legado pra montar a aba "Legado" no admin.
+router.get('/legado', async (req, res) => {
+  try {
+    const usuariosLegado = await poolCore.query(
+      `SELECT id, nome, telefone_formatado, email, status, arquivada_em, arquivada_por, arquivada_motivo
+         FROM usuarios
+        WHERE status = 'legado'
+        ORDER BY arquivada_em DESC NULLS LAST
+        LIMIT 200`
+    );
+    const materiaisLegado = await poolCore.query(
+      `SELECT up.id, up.usuario_id, up.produto_id, p.slug, p.nome AS produto_nome,
+              up.acesso_inicio, up.atualizado_em, u.nome AS usuario_nome, u.telefone_formatado
+         FROM usuario_produtos up
+         LEFT JOIN produtos p ON p.id = up.produto_id
+         LEFT JOIN usuarios u ON u.id = up.usuario_id
+        WHERE up.eh_legado = TRUE
+        ORDER BY up.atualizado_em DESC
+        LIMIT 200`
+    );
+    let relatosLegado = [];
+    try {
+      const { poolComunicacao } = require('../db');
+      const r = await poolComunicacao.query(
+        `SELECT id, usuario_id, texto, criado_em, atualizado_em
+           FROM depoimentos
+          WHERE eh_legado = TRUE
+          ORDER BY atualizado_em DESC NULLS LAST
+          LIMIT 200`
+      );
+      relatosLegado = r.rows;
+    } catch (err) {
+      console.warn('⚠️ /legado relatos:', err.message);
+    }
+    let testesLegado = [];
+    try {
+      const { poolTeste } = require('../db');
+      const r = await poolTeste.query(
+        `SELECT id, usuario_id, perfil_dominante, percentual_prosperidade, feito_em
+           FROM testes
+          WHERE eh_legado = TRUE
+          ORDER BY feito_em DESC NULLS LAST
+          LIMIT 200`
+      );
+      testesLegado = r.rows;
+    } catch (err) {
+      console.warn('⚠️ /legado testes:', err.message);
+    }
+    res.json({
+      ok: true,
+      usuarios: usuariosLegado.rows,
+      materiais: materiaisLegado.rows,
+      relatos: relatosLegado,
+      testes: testesLegado,
+    });
+  } catch (err) {
+    console.error('❌ /legado:', err.message);
+    res.status(500).json({ error: 'Erro ao listar legado' });
+  }
+});
+
+// Apagar pra sempre um item específico de legado (DELETE real). Admin
+// recebe na aba "Legado" o botão "Apagar pra sempre" por linha.
+router.delete('/legado/:tabela/:id', async (req, res) => {
+  try {
+    const { tabela, id } = req.params;
+    if (tabela === 'materiais') {
+      const r = await poolCore.query(
+        `DELETE FROM usuario_produtos WHERE id=$1 AND eh_legado=TRUE RETURNING id`,
+        [id]
+      );
+      if (!r.rowCount) return res.status(404).json({ error: 'Item não encontrado em legado' });
+      return res.json({ success: true });
+    }
+    if (tabela === 'relatos') {
+      const { poolComunicacao } = require('../db');
+      const r = await poolComunicacao.query(
+        `DELETE FROM depoimentos WHERE id=$1 AND eh_legado=TRUE RETURNING id`,
+        [id]
+      );
+      if (!r.rowCount) return res.status(404).json({ error: 'Item não encontrado em legado' });
+      return res.json({ success: true });
+    }
+    if (tabela === 'testes') {
+      const { poolTeste } = require('../db');
+      const r = await poolTeste.query(
+        `DELETE FROM testes WHERE id=$1 AND eh_legado=TRUE RETURNING id`,
+        [id]
+      );
+      if (!r.rowCount) return res.status(404).json({ error: 'Item não encontrado em legado' });
+      return res.json({ success: true });
+    }
+    return res.status(400).json({ error: 'Tabela inválida' });
+  } catch (err) {
+    console.error('❌ DELETE /legado:', err.message);
+    res.status(500).json({ error: 'Erro ao apagar legado' });
   }
 });
 

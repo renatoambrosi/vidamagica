@@ -518,6 +518,12 @@ select option { background: #1a1205; }
   <div class="nav-item" id="nav-usuarios" onclick="goTab('usuarios', this)">
     <span class="nav-icon">👤</span> Usuários
   </div>
+  <div class="nav-item" id="nav-banimentos" onclick="goTab('banimentos', this)">
+    <span class="nav-icon">🚫</span> Banimentos
+  </div>
+  <div class="nav-item" id="nav-legado" onclick="goTab('legado', this)">
+    <span class="nav-icon">📦</span> Legado
+  </div>
 
   <div class="sidebar-section-label" style="margin-top:0.5rem">Teste do Subconsciente</div>
   <div class="nav-item" id="nav-teste" onclick="goTab('teste', this)">
@@ -1079,6 +1085,92 @@ select option { background: #1a1205; }
       </div>
     </div>
 
+    <!-- ════════════════════ BANIMENTOS ════════════════════
+         Lista todas as contas banidas. Cada linha tem:
+         - Identificação (nome/telefone/email)
+         - Motivo + data + quem baniu
+         - Vínculos cruzados (telefones, emails, CPF, fingerprints)
+         - Botão "Tentativas" pra ver log de tentativas bloqueadas
+         - Botão "Desconectar vínculo" pra falso positivo
+         - Botão "Desbanir" -->
+    <div class="tab-panel" id="tab-banimentos">
+      <div class="wz-section">
+        <div class="wz-section-header">
+          <div>
+            <div class="wz-section-title">🚫 Banimentos</div>
+            <div class="wz-section-sub">Contas banidas + vínculos cruzados + log de tentativas</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="carregarBanimentos()">↺ Atualizar</button>
+        </div>
+        <div id="ban-lista"><div class="loading">Carregando banimentos...</div></div>
+      </div>
+
+      <!-- Modal de log de tentativas -->
+      <div id="ban-tentativas-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);max-width:780px;width:100%;padding:1.5rem;color:var(--text-light)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+            <h3 style="margin:0;font-family:var(--font-display);color:var(--color-gold-light)">Tentativas bloqueadas</h3>
+            <button class="btn btn-ghost btn-sm" onclick="fecharTentativasModal()">✕ Fechar</button>
+          </div>
+          <div id="ban-tentativas-body"><div class="loading">Carregando...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════ LEGADO ════════════════════
+         Mostra tudo marcado eh_legado=TRUE: usuários em status='legado',
+         materiais comprados, relatos, testes. Admin pode apagar pra sempre
+         (DELETE real) cada item daqui. -->
+    <div class="tab-panel" id="tab-legado">
+      <div class="wz-section">
+        <div class="wz-section-header">
+          <div>
+            <div class="wz-section-title">📦 Legado</div>
+            <div class="wz-section-sub">Dados invisíveis pra aluna · visíveis só pra você</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="carregarLegado()">↺ Atualizar</button>
+        </div>
+        <div id="legado-container"><div class="loading">Carregando legado...</div></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════ MODAL BANIR ════════════════════
+         Modal único pra banir um usuário. Coleta motivo e mostra os vínculos
+         que serão cruzados (auto-coletados do registro: telefone, email, CPF,
+         telefones_historicos, fingerprints de dispositivos). Admin pode
+         adicionar vínculos manuais. -->
+    <div id="ban-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto">
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);max-width:560px;width:100%;padding:1.5rem;color:var(--text-light)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+          <h3 style="margin:0;font-family:var(--font-display);color:#F09090">🚫 Banir <span id="ban-modal-nome"></span></h3>
+          <button class="btn btn-ghost btn-sm" onclick="fecharBanirModal()">✕ Fechar</button>
+        </div>
+        <div style="display:grid;gap:0.85rem">
+          <div>
+            <label class="field-label">Motivo (obrigatório)</label>
+            <textarea id="ban-motivo" class="field-input" rows="3" placeholder="Ex: enviou conteúdo pornográfico via chat em DD/MM/AAAA"></textarea>
+          </div>
+          <div style="padding:0.75rem;background:rgba(176,72,72,0.08);border:1px solid rgba(176,72,72,0.25);border-radius:var(--radius-md);font-size:0.78rem;color:var(--text-muted);line-height:1.55">
+            <strong style="color:#F09090">Vínculos coletados automaticamente:</strong><br>
+            Telefone atual + histórico, e-mail, CPF e fingerprints dos dispositivos conhecidos. Qualquer cadastro novo que bata em algum desses cai com a mensagem de suporte.
+          </div>
+          <details style="font-size:0.78rem;color:var(--text-muted)">
+            <summary style="cursor:pointer;color:var(--color-gold-light)">+ Adicionar vínculos extras (opcional)</summary>
+            <div style="display:grid;gap:0.5rem;margin-top:0.5rem">
+              <input id="ban-extra-tel" type="text" class="field-input" placeholder="Telefone extra (E.164 sem +)">
+              <input id="ban-extra-email" type="email" class="field-input" placeholder="E-mail extra">
+              <input id="ban-extra-cpf" type="text" class="field-input" placeholder="CPF extra">
+            </div>
+          </details>
+        </div>
+        <div id="ban-modal-erro" style="margin-top:0.85rem;font-size:0.78rem;color:#F09090;min-height:1.1rem"></div>
+        <div style="display:flex;gap:0.5rem;margin-top:1rem">
+          <button class="btn btn-danger" id="btn-confirmar-banir" onclick="confirmarBanir()">🚫 Confirmar banimento</button>
+          <button class="btn btn-ghost" onclick="fecharBanirModal()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ════════════════════ TESTE DO SUBCONSCIENTE ════════════════════ -->
     <div class="tab-panel" id="tab-teste">
       <!-- Lista de versões -->
@@ -1267,6 +1359,8 @@ const tabMeta = {
   feed:        { title: 'Feed do App',          sub: 'Conteúdo publicado no app — vídeos, textos, imagens e links' },
   whatsapp:    { title: 'Gateway WhatsApp',    sub: 'Cooldowns, categorias, fila ao vivo e templates' },
   usuarios:    { title: 'Usuários',             sub: 'Cadastros, telefones, sessões e dispositivos' },
+  banimentos:  { title: 'Banimentos',           sub: 'Contas banidas, vínculos cruzados e log de tentativas' },
+  legado:      { title: 'Legado',               sub: 'Dados invisíveis pra aluna · visíveis só pra você' },
   teste:        { title: 'Teste do Subconsciente', sub: 'Versões do questionário — perguntas, alternativas e publicação' },
   'teste-perfis': { title: 'Conteúdo dos Resultados', sub: 'Textos, vídeos e produtos exibidos pra cada perfil dominante' },
 };
@@ -1302,6 +1396,8 @@ function goTab(id, el) {
   }
   if (id === 'feed' && !feedCarregado) { feedCarregado = true; carregarFeedAdmin(); }
   if (id === 'usuarios' && !usuariosCarregado) { usuariosCarregado = true; carregarUsuarios(); }
+  if (id === 'banimentos') { carregarBanimentos(); }
+  if (id === 'legado') { carregarLegado(); }
   if (id === 'teste') { testeAdmin.carregar(); }
   if (id === 'teste-perfis') { perfisAdmin.carregar(); }
 }
@@ -2789,8 +2885,14 @@ async function abrirDetalheUsuario(id) {
         ${d.usuario.status==='arquivada'
           ? `<button class="btn btn-success btn-sm" onclick="desarquivarUsuario('${id}')" style="background:rgba(76,175,80,0.18);color:#7DD87E;border:1px solid rgba(76,175,80,0.3)">↺ Desarquivar</button>
              <div style="flex-basis:100%;font-size:0.72rem;color:#F09090;margin-top:0.3rem">⚠ Arquivada por ${d.usuario.arquivada_por||'?'} em ${dataFmt(d.usuario.arquivada_em)}${d.usuario.arquivada_motivo?(' — '+escHtml(d.usuario.arquivada_motivo)):''}</div>`
+          : d.usuario.status==='legado'
+          ? `<div style="flex-basis:100%;font-size:0.72rem;color:#A8A0F0;margin-top:0.3rem">📦 Em legado desde ${dataFmt(d.usuario.arquivada_em)}${d.usuario.arquivada_motivo?(' — '+escHtml(d.usuario.arquivada_motivo)):''}. Dados antigos invisíveis pra aluna.</div>`
+          : d.usuario.status==='banido'
+          ? `<button class="btn btn-success btn-sm" onclick="abrirDesbanirModal('${id}')" style="background:rgba(76,175,80,0.18);color:#7DD87E;border:1px solid rgba(76,175,80,0.3)">↺ Desbanir</button>
+             <div style="flex-basis:100%;font-size:0.72rem;color:#F09090;margin-top:0.3rem">🚫 Conta banida. Vínculos cruzados bloqueiam retorno por telefone/email/CPF.</div>`
           : `<button class="btn btn-warn btn-sm" onclick="arquivarUsuario('${id}')">🗄️ Arquivar</button>`
         }
+        ${d.usuario.status!=='banido' ? `<button class="btn btn-sm" onclick="abrirBanirModal('${id}','${escHtml(d.usuario.nome||d.usuario.telefone||'')}')" style="background:rgba(176,72,72,0.18);color:#F09090;border:1px solid rgba(176,72,72,0.35)">🚫 Banir</button>` : ''}
         <button class="btn btn-danger btn-sm" onclick="apagarUsuarioPermanente('${id}','${escHtml(d.usuario.nome||d.usuario.telefone||'')}')">💥 Apagar permanentemente</button>
       </div>`;
 
@@ -2919,6 +3021,308 @@ async function apagarUsuarioPermanente(id, nomeOuTel) {
       carregarUsuarios(document.getElementById('us-busca').value.trim());
     } else toast(d.error||'Erro','error');
   } catch { toast('Erro de conexão','error'); }
+}
+
+// ════════════════════ BANIMENTO ════════════════════
+// Botão "Banir" no modal de detalhe → abre modal de confirmação com motivo
+// e vínculos extras opcionais. Confirmação chama POST /usuarios/:id/banir.
+
+let _banUsuarioAlvo = null;
+
+function abrirBanirModal(id, nomeOuTel) {
+  _banUsuarioAlvo = id;
+  document.getElementById('ban-modal-nome').textContent = nomeOuTel || '';
+  document.getElementById('ban-motivo').value = '';
+  document.getElementById('ban-extra-tel').value = '';
+  document.getElementById('ban-extra-email').value = '';
+  document.getElementById('ban-extra-cpf').value = '';
+  document.getElementById('ban-modal-erro').textContent = '';
+  document.getElementById('ban-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('ban-motivo').focus(), 50);
+}
+
+function fecharBanirModal() {
+  document.getElementById('ban-modal').style.display = 'none';
+  _banUsuarioAlvo = null;
+}
+
+async function confirmarBanir() {
+  const id = _banUsuarioAlvo;
+  if (!id) return;
+  const motivo = (document.getElementById('ban-motivo').value || '').trim();
+  if (!motivo) {
+    document.getElementById('ban-modal-erro').textContent = 'Informe o motivo.';
+    return;
+  }
+  const extraTel = (document.getElementById('ban-extra-tel').value || '').trim();
+  const extraEmail = (document.getElementById('ban-extra-email').value || '').trim().toLowerCase();
+  const extraCpf = (document.getElementById('ban-extra-cpf').value || '').trim();
+  const vinculos_extra = {};
+  if (extraTel) vinculos_extra.telefones = [extraTel];
+  if (extraEmail) vinculos_extra.emails = [extraEmail];
+  if (extraCpf) vinculos_extra.cpf = extraCpf;
+
+  const btn = document.getElementById('btn-confirmar-banir');
+  btn.disabled = true; btn.textContent = 'Banindo...';
+  try {
+    const r = await fetch(`${API}/api/admin/usuarios/${id}/banir`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': authHeader() },
+      body: JSON.stringify({ motivo, vinculos_extra }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro ao banir');
+    toast('🚫 Conta banida');
+    fecharBanirModal();
+    fecharModalUsuario();
+    carregarUsuarios(document.getElementById('us-busca').value.trim());
+  } catch (err) {
+    document.getElementById('ban-modal-erro').textContent = err.message || 'Erro ao banir';
+  } finally {
+    btn.disabled = false; btn.textContent = '🚫 Confirmar banimento';
+  }
+}
+
+async function abrirDesbanirModal(usuarioId) {
+  // Busca o banimento ativo desse usuário pra obter banimento_id
+  try {
+    const r = await fetch(`${API}/api/admin/banimentos`, {
+      headers: { 'Authorization': authHeader() },
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error('Falha ao carregar banimentos');
+    const ativo = (d.banimentos || []).find(b => b.usuario_id === usuarioId);
+    if (!ativo) {
+      toast('Nenhum banimento ativo encontrado', 'error');
+      return;
+    }
+    if (!confirm(`Desbanir esta conta?\n\nA aluna volta a poder acessar normalmente.`)) return;
+    await desbanirBanimento(ativo.id);
+    fecharModalUsuario();
+  } catch (err) {
+    toast(err.message || 'Erro', 'error');
+  }
+}
+
+async function desbanirBanimento(banimentoId) {
+  try {
+    const r = await fetch(`${API}/api/admin/banimentos/${banimentoId}/desbanir`, {
+      method: 'POST',
+      headers: { 'Authorization': authHeader() },
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro');
+    toast('↺ Conta desbanida');
+    // Atualiza ambas as listas se estiverem visíveis
+    if (document.getElementById('tab-banimentos').classList.contains('active')) carregarBanimentos();
+    if (typeof carregarUsuarios === 'function') carregarUsuarios(document.getElementById('us-busca').value.trim());
+  } catch (err) {
+    toast(err.message || 'Erro ao desbanir', 'error');
+  }
+}
+
+async function desconectarVinculo(banimentoId, tipo, valor) {
+  const rotulo = tipo === 'cpf' ? 'CPF' : (tipo === 'emails' ? 'e-mail' : (tipo === 'telefones' ? 'telefone' : 'fingerprint'));
+  if (!confirm(`Soltar ${rotulo} "${valor || ''}" deste banimento?\n\nSe alguém cadastrar com esse dado depois, NÃO será bloqueado.`)) return;
+  try {
+    const r = await fetch(`${API}/api/admin/banimentos/${banimentoId}/desconectar-vinculo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': authHeader() },
+      body: JSON.stringify({ tipo, valor }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro');
+    toast('✓ Vínculo desconectado');
+    carregarBanimentos();
+  } catch (err) {
+    toast(err.message || 'Erro', 'error');
+  }
+}
+
+async function carregarBanimentos() {
+  const wrap = document.getElementById('ban-lista');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="loading">Carregando banimentos...</div>';
+  try {
+    const r = await fetch(`${API}/api/admin/banimentos`, {
+      headers: { 'Authorization': authHeader() },
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro');
+    const banimentos = d.banimentos || [];
+    if (!banimentos.length) {
+      wrap.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--text-muted);font-size:0.88rem">Nenhuma conta banida.</div>';
+      return;
+    }
+    wrap.innerHTML = banimentos.map(b => {
+      const v = b.vinculos || {};
+      const tels = Array.isArray(v.telefones) ? v.telefones : [];
+      const emails = Array.isArray(v.emails) ? v.emails : [];
+      const fps = Array.isArray(v.fingerprints) ? v.fingerprints : [];
+      const vinculosHtml = `
+        <div style="display:flex;flex-direction:column;gap:0.35rem;font-size:0.78rem">
+          ${v.cpf ? `<div><strong style="color:var(--text-muted)">CPF:</strong> ${escHtml(v.cpf)} <button class="btn btn-ghost" style="padding:0.05rem 0.35rem;font-size:0.7rem;margin-left:0.3rem" onclick="desconectarVinculo('${b.id}','cpf','${escHtml(v.cpf)}')">soltar</button></div>` : ''}
+          ${tels.length ? `<div><strong style="color:var(--text-muted)">Telefones:</strong> ${tels.map(t => `<span style="display:inline-block;background:rgba(255,255,255,0.04);padding:0.1rem 0.45rem;border-radius:6px;margin:2px 4px 2px 0">${escHtml(t)} <button class="btn btn-ghost" style="padding:0;font-size:0.68rem;margin-left:0.2rem;color:#F09090" onclick="desconectarVinculo('${b.id}','telefones','${escHtml(t)}')">×</button></span>`).join('')}</div>` : ''}
+          ${emails.length ? `<div><strong style="color:var(--text-muted)">E-mails:</strong> ${emails.map(e => `<span style="display:inline-block;background:rgba(255,255,255,0.04);padding:0.1rem 0.45rem;border-radius:6px;margin:2px 4px 2px 0">${escHtml(e)} <button class="btn btn-ghost" style="padding:0;font-size:0.68rem;margin-left:0.2rem;color:#F09090" onclick="desconectarVinculo('${b.id}','emails','${escHtml(e)}')">×</button></span>`).join('')}</div>` : ''}
+          ${fps.length ? `<div><strong style="color:var(--text-muted)">Fingerprints:</strong> ${fps.length} dispositivo${fps.length>1?'s':''}</div>` : ''}
+        </div>
+      `;
+      return `
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:1rem 1.2rem;margin-bottom:0.85rem">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:0.6rem">
+            <div>
+              <div style="font-weight:700;color:#F09090;font-size:1rem;display:flex;align-items:center;gap:0.45rem">🚫 ${escHtml(b.nome || '(sem nome)')}</div>
+              <div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.15rem">${escHtml(b.telefone_formatado || '')} ${b.email ? '· '+escHtml(b.email) : ''}</div>
+            </div>
+            <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+              <button class="btn btn-ghost btn-sm" onclick="verTentativasBanimento('${b.id}')">📊 Tentativas</button>
+              <button class="btn btn-success btn-sm" onclick="desbanirBanimento('${b.id}')" style="background:rgba(76,175,80,0.18);color:#7DD87E;border:1px solid rgba(76,175,80,0.3)">↺ Desbanir</button>
+            </div>
+          </div>
+          ${b.motivo ? `<div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.5rem;font-style:italic">"${escHtml(b.motivo)}"</div>` : ''}
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:0.55rem">Banido por ${escHtml(b.banido_por||'?')} em ${dataFmt(b.banido_em)}</div>
+          ${vinculosHtml}
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    wrap.innerHTML = `<div style="color:#F09090;padding:1rem">Erro: ${escHtml(err.message || 'falha')}</div>`;
+  }
+}
+
+async function verTentativasBanimento(banimentoId) {
+  const modal = document.getElementById('ban-tentativas-modal');
+  const body = document.getElementById('ban-tentativas-body');
+  body.innerHTML = '<div class="loading">Carregando...</div>';
+  modal.style.display = 'flex';
+  try {
+    const r = await fetch(`${API}/api/admin/banimentos/${banimentoId}/tentativas`, {
+      headers: { 'Authorization': authHeader() },
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro');
+    const tentativas = d.tentativas || [];
+    if (!tentativas.length) {
+      body.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--text-muted)">Nenhuma tentativa registrada.</div>';
+      return;
+    }
+    body.innerHTML = `
+      <div style="display:grid;gap:0.55rem;font-size:0.82rem">
+        ${tentativas.map(t => `
+          <div style="padding:0.7rem 0.9rem;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px">
+            <div style="display:flex;justify-content:space-between;gap:0.6rem;margin-bottom:0.25rem">
+              <span style="font-weight:600;color:var(--color-gold-light)">${escHtml(t.rota || '?')}</span>
+              <span style="color:var(--text-muted);font-size:0.74rem">${dataFmt(t.criado_em)}</span>
+            </div>
+            <div style="color:var(--text-muted);font-size:0.78rem">
+              ${t.vinculo_bateu ? `Bateu em <strong>${escHtml(t.vinculo_bateu)}</strong>: ${escHtml(t.valor_bateu||'')}` : ''}
+              ${t.ip ? ` · IP ${escHtml(t.ip)}` : ''}
+            </div>
+            ${t.user_agent ? `<div style="color:var(--text-muted);font-size:0.7rem;margin-top:0.25rem;word-break:break-all">${escHtml(t.user_agent)}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } catch (err) {
+    body.innerHTML = `<div style="color:#F09090">Erro: ${escHtml(err.message || 'falha')}</div>`;
+  }
+}
+
+function fecharTentativasModal() {
+  document.getElementById('ban-tentativas-modal').style.display = 'none';
+}
+
+// ════════════════════ LEGADO ════════════════════
+// Lista usuários (status='legado') + materiais + relatos + testes
+// com eh_legado=TRUE. Cada item tem botão "Apagar pra sempre".
+
+async function carregarLegado() {
+  const wrap = document.getElementById('legado-container');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="loading">Carregando legado...</div>';
+  try {
+    const r = await fetch(`${API}/api/admin/legado`, {
+      headers: { 'Authorization': authHeader() },
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro');
+
+    const sec = (titulo, count, html) => `
+      <div style="margin-bottom:1.5rem">
+        <h3 style="font-family:var(--font-display);color:var(--color-gold-light);margin:0 0 0.6rem;font-size:1rem;display:flex;align-items:center;gap:0.5rem">
+          ${escHtml(titulo)} <span style="background:rgba(255,255,255,0.06);padding:0.1rem 0.5rem;border-radius:999px;font-size:0.74rem;color:var(--text-muted)">${count}</span>
+        </h3>
+        ${count ? html : '<div style="padding:0.85rem;color:var(--text-muted);font-size:0.82rem;background:rgba(255,255,255,0.02);border:1px dashed var(--border);border-radius:8px">Nada por aqui.</div>'}
+      </div>
+    `;
+
+    const usuariosHtml = (d.usuarios||[]).map(u => `
+      <div style="padding:0.75rem 0.95rem;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;gap:0.8rem">
+        <div>
+          <div style="font-weight:600">${escHtml(u.nome || '(sem nome)')}</div>
+          <div style="font-size:0.74rem;color:var(--text-muted)">${escHtml(u.telefone_formatado||'')} ${u.email ? '· '+escHtml(u.email) : ''}</div>
+          ${u.arquivada_motivo ? `<div style="font-size:0.74rem;color:var(--text-muted);font-style:italic;margin-top:0.2rem">"${escHtml(u.arquivada_motivo)}"</div>` : ''}
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.2rem">Em legado desde ${dataFmt(u.arquivada_em)} · por ${escHtml(u.arquivada_por||'?')}</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="abrirUsuarioDetalhe('${u.id}')">Ver</button>
+      </div>
+    `).join('');
+
+    const materiaisHtml = (d.materiais||[]).map(m => `
+      <div style="padding:0.75rem 0.95rem;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;gap:0.8rem">
+        <div>
+          <div style="font-weight:600">${escHtml(m.produto_nome || m.slug || '?')}</div>
+          <div style="font-size:0.74rem;color:var(--text-muted)">Aluna: ${escHtml(m.usuario_nome || '(sem nome)')} ${m.telefone_formatado ? '· '+escHtml(m.telefone_formatado) : ''}</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.2rem">Acesso: ${dataFmt(m.acesso_inicio)}</div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="apagarLegado('materiais','${m.id}','${escHtml(m.produto_nome||m.slug||'')}')">💥 Apagar</button>
+      </div>
+    `).join('');
+
+    const relatosHtml = (d.relatos||[]).map(r => `
+      <div style="padding:0.75rem 0.95rem;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:flex-start;gap:0.8rem">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.84rem;color:var(--text-light);line-height:1.5">"${escHtml((r.texto||'').slice(0,180))}${(r.texto||'').length>180?'…':''}"</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem">Criado: ${dataFmt(r.criado_em)}</div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="apagarLegado('relatos','${r.id}','relato')">💥 Apagar</button>
+      </div>
+    `).join('');
+
+    const testesHtml = (d.testes||[]).map(t => `
+      <div style="padding:0.75rem 0.95rem;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;gap:0.8rem">
+        <div>
+          <div style="font-weight:600">${escHtml(t.perfil_dominante || '?')} · ${t.percentual_prosperidade ?? '?'}% prosperidade</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.2rem">Feito em ${dataFmt(t.feito_em)}</div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="apagarLegado('testes','${t.id}','teste')">💥 Apagar</button>
+      </div>
+    `).join('');
+
+    wrap.innerHTML =
+      sec('👤 Usuários em legado', (d.usuarios||[]).length, usuariosHtml) +
+      sec('📦 Materiais em legado', (d.materiais||[]).length, materiaisHtml) +
+      sec('💬 Relatos em legado', (d.relatos||[]).length, relatosHtml) +
+      sec('🧠 Testes em legado', (d.testes||[]).length, testesHtml);
+  } catch (err) {
+    wrap.innerHTML = `<div style="color:#F09090;padding:1rem">Erro: ${escHtml(err.message || 'falha')}</div>`;
+  }
+}
+
+async function apagarLegado(tabela, id, descricao) {
+  if (!confirm(`Apagar pra sempre ${descricao ? '"'+descricao+'"' : 'este item'}?\n\nDELETE real no banco. Irreversível.`)) return;
+  try {
+    const r = await fetch(`${API}/api/admin/legado/${tabela}/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': authHeader() },
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro');
+    toast('💥 Item apagado pra sempre');
+    carregarLegado();
+  } catch (err) {
+    toast(err.message || 'Erro', 'error');
+  }
 }
 
 // ── CRIAR USUÁRIO MANUAL ────────────────────────────────────

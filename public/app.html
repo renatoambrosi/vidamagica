@@ -16,6 +16,22 @@
 
   <div id="particulas" class="particulas"></div>
 
+  <!-- Overlay full-screen exibido quando contexto traz atualizacoes_pendentes
+       com origem='reativacao' (aluna acabou de validar OTP após ter excluído
+       a própria conta). Pra aluna parece um cadastro novo recebendo produtos
+       da Kiwify; internamente é só re-entrega dos perpétuos. -->
+  <div class="overlay-sincronizacao" id="overlay-sincronizacao" aria-hidden="true">
+    <div class="overlay-sincronizacao-logos">
+      <span class="overlay-sincronizacao-logo">Kiwify</span>
+      <span class="overlay-sincronizacao-divisor"></span>
+      <span class="overlay-sincronizacao-logo">Vida Mágica</span>
+    </div>
+    <div class="overlay-sincronizacao-titulo">Sincronizando seus produtos</div>
+    <div class="overlay-sincronizacao-sub">Estamos preparando tudo que é seu. Só um instante…</div>
+    <div class="overlay-sincronizacao-spinner"></div>
+    <div class="overlay-sincronizacao-lista" id="overlay-sincronizacao-lista"></div>
+  </div>
+
   <!-- TOPO (esconde quando o chat está ativo) -->
   <header class="topo" id="topo">
     <div class="topo-logo">
@@ -334,12 +350,21 @@
     <!-- PERFIL -->
     <section class="view" id="view-perfil">
       <div class="perfil-hero" id="perfil-hero">
-        <div class="perfil-avatar" id="perfil-avatar">
+        <button type="button" class="perfil-avatar editavel" id="perfil-avatar" aria-label="Alterar foto de perfil">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
             <circle cx="12" cy="7" r="4"/>
           </svg>
-        </div>
+          <span class="perfil-avatar-editar" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+          </span>
+          <span class="perfil-avatar-spinner" id="perfil-avatar-spinner" aria-hidden="true"></span>
+        </button>
+        <input type="file" id="perfil-avatar-input" accept="image/*" hidden>
+        <p class="perfil-avatar-hint" id="perfil-avatar-hint">Toque para adicionar sua foto</p>
         <h2 class="perfil-nome" id="perfil-nome">—</h2>
         <div class="perfil-plano-selo gratuito" id="perfil-plano-selo">Plano grátis</div>
         <div class="perfil-sementes-row">
@@ -407,12 +432,221 @@
           </div>
           <span class="perfil-item-arrow">›</span>
         </li>
+        <li class="perfil-item" id="menu-conta">
+          <span class="perfil-item-icone">🗂️</span>
+          <div class="perfil-item-info">
+            <span class="perfil-item-titulo">Sua conta</span>
+            <span class="perfil-item-sub">Excluir e ações da sua conta</span>
+          </div>
+          <span class="perfil-item-arrow">›</span>
+        </li>
         <li class="perfil-item perfil-item-danger" id="menu-logout">
           <span class="perfil-item-icone">→</span>
           <div class="perfil-item-info"><span class="perfil-item-titulo">Sair</span></div>
         </li>
       </ul>
     </section>
+
+    <!-- INFORMAÇÕES PESSOAIS — sub-view do perfil. Editar nome e e-mail.
+         Telefone e data de cadastro em leitura (telefone exige fluxo
+         próprio de re-verificação, fica pra frente futura). -->
+    <section class="view" id="view-info-pessoais">
+      <div class="view-topo view-topo-com-voltar">
+        <button type="button" class="view-voltar" id="info-pessoais-voltar" aria-label="Voltar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <h2 class="view-titulo">Informações Pessoais</h2>
+      </div>
+
+      <form class="form-perfil" id="form-info-pessoais" autocomplete="off">
+        <label class="form-perfil-campo">
+          <span class="form-perfil-label">Nome</span>
+          <input type="text" name="nome" id="form-info-nome" class="form-perfil-input" required maxlength="120">
+        </label>
+
+        <label class="form-perfil-campo">
+          <span class="form-perfil-label">E-mail</span>
+          <input type="email" name="email" id="form-info-email" class="form-perfil-input" maxlength="180">
+          <span class="form-perfil-hint" id="form-info-email-status"></span>
+        </label>
+
+        <div class="form-perfil-campo somente-leitura">
+          <span class="form-perfil-label">Telefone</span>
+          <div class="form-perfil-valor" id="form-info-telefone">—</div>
+          <span class="form-perfil-hint">Pra alterar seu telefone, fale com a Suellen no chat.</span>
+        </div>
+
+        <div class="form-perfil-campo somente-leitura">
+          <span class="form-perfil-label">Data de cadastro</span>
+          <div class="form-perfil-valor" id="form-info-criado">—</div>
+        </div>
+
+        <div class="form-perfil-feedback" id="form-info-feedback"></div>
+
+        <button type="submit" class="form-perfil-salvar" id="form-info-salvar">Salvar alterações</button>
+      </form>
+    </section>
+
+    <!-- SENHA E SEGURANÇA — sub-view do perfil. Trocar senha + gerenciar
+         os 3 dispositivos autorizados (1 mobile · 1 tablet · 1 desktop). -->
+    <section class="view" id="view-seguranca">
+      <div class="view-topo view-topo-com-voltar">
+        <button type="button" class="view-voltar" id="seguranca-voltar" aria-label="Voltar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <h2 class="view-titulo">Senha e Segurança</h2>
+      </div>
+
+      <div class="seguranca-secao">
+        <h3 class="seguranca-secao-titulo" id="senha-secao-titulo">Trocar sua senha</h3>
+        <p class="seguranca-secao-sub" id="senha-secao-sub">Mantém sua conta segura.</p>
+
+        <form class="form-perfil" id="form-senha" autocomplete="off">
+          <label class="form-perfil-campo" id="form-senha-atual-wrap">
+            <span class="form-perfil-label">Senha atual</span>
+            <input type="password" name="senha_atual" id="form-senha-atual" class="form-perfil-input" autocomplete="current-password">
+          </label>
+          <label class="form-perfil-campo">
+            <span class="form-perfil-label">Nova senha</span>
+            <input type="password" name="senha" id="form-senha-nova" class="form-perfil-input" autocomplete="new-password" minlength="6" required>
+            <span class="form-perfil-hint">Mínimo 6 caracteres.</span>
+          </label>
+          <label class="form-perfil-campo">
+            <span class="form-perfil-label">Confirmar nova senha</span>
+            <input type="password" name="senha_confirma" id="form-senha-confirma" class="form-perfil-input" autocomplete="new-password" minlength="6" required>
+          </label>
+
+          <div class="form-perfil-feedback" id="form-senha-feedback"></div>
+
+          <button type="submit" class="form-perfil-salvar" id="form-senha-salvar">Salvar nova senha</button>
+        </form>
+      </div>
+
+      <div class="seguranca-secao">
+        <h3 class="seguranca-secao-titulo">Dispositivos autorizados</h3>
+        <p class="seguranca-secao-sub">Você pode estar conectada em até 3 dispositivos: 1 celular, 1 tablet e 1 computador.</p>
+
+        <div class="dispositivos-slots" id="dispositivos-slots">
+          <div class="loading-inline">Carregando seus dispositivos...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUA CONTA — sub-view do perfil. Aluna pode excluir a conta a partir
+         daqui. "Excluir" pra aluna; internamente arquiva com arquivada_por
+         ='aluna' (permite reativação silenciosa quando ela voltar). -->
+    <section class="view" id="view-conta">
+      <div class="view-topo view-topo-com-voltar">
+        <button type="button" class="view-voltar" id="conta-voltar" aria-label="Voltar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <h2 class="view-titulo">Sua conta</h2>
+      </div>
+
+      <div class="conta-secao">
+        <h3 class="conta-secao-titulo">Desativar conta</h3>
+        <p class="conta-secao-sub">Se você não quer mais estar com a gente, tudo bem. Vamos respeitar sua escolha.</p>
+
+        <button type="button" class="conta-acao-perigo" id="btn-desativar-conta">
+          <span class="conta-acao-perigo-icone">🗂️</span>
+          <span class="conta-acao-perigo-texto">Desativar conta</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- MODAL DE DESATIVAR CONTA — 2 slides + confirmação final
+         Slide 1: "Deseja excluir [Jornada + Materiais + Relatos]?"
+         Slide 2: aparece só se Slide 1 = Sim. "Deletar seus dados pessoais?"
+         Botão final muda conforme caminho:
+           - A (slide1=Não):           "Desativar conta"
+           - B (slide1=Sim, slide2=Não):  "Desativar conta"
+           - C (slide1=Sim, slide2=Sim): "Excluir conta permanentemente" -->
+    <div class="modal" id="modal-desativar-conta" aria-hidden="true">
+      <div class="modal-overlay" data-close></div>
+      <div class="modal-sheet modal-sheet-excluir">
+        <div class="modal-handle"></div>
+
+        <!-- Cabeçalho com indicador de progresso (2 bolinhas; a segunda só
+             ilumina quando entrar no slide 2) -->
+        <header class="modal-excluir-header">
+          <div class="modal-excluir-passos" id="modal-desativar-passos">
+            <span class="modal-excluir-passo ativa" data-slide="1"></span>
+            <span class="modal-excluir-passo" data-slide="2"></span>
+          </div>
+          <button class="modal-fechar" data-close aria-label="Fechar">✕</button>
+        </header>
+
+        <!-- SLIDE 1 — Deseja excluir o bloco? -->
+        <div class="modal-excluir-fase ativa" data-slide="1">
+          <h3 class="modal-excluir-titulo">Deseja excluir o que você criou aqui?</h3>
+          <p class="modal-excluir-sub">Esse bloco é tudo ou nada: <strong>Dados de Jornada · Materiais Comprados · Relatos Públicos</strong>. Se você escolher "Não", tudo fica guardado e volta quando você voltar.</p>
+
+          <div class="modal-excluir-opcoes">
+            <label class="modal-excluir-opcao">
+              <input type="radio" name="desativar-excluir" value="nao">
+              <span class="modal-excluir-opcao-marker"></span>
+              <span class="modal-excluir-opcao-texto">
+                <strong>Não, só desativar</strong>
+                <span class="modal-excluir-opcao-sub">Guarda tudo. Se você voltar, encontra do jeitinho que deixou.</span>
+              </span>
+            </label>
+            <label class="modal-excluir-opcao">
+              <input type="radio" name="desativar-excluir" value="sim">
+              <span class="modal-excluir-opcao-marker"></span>
+              <span class="modal-excluir-opcao-texto">
+                <strong>Sim, excluir esse bloco</strong>
+                <span class="modal-excluir-opcao-sub">Jornada, Materiais e Relatos saem da sua conta.</span>
+              </span>
+            </label>
+          </div>
+
+          <textarea class="modal-excluir-textarea" id="modal-desativar-motivo" placeholder="Quer contar o motivo? (opcional)" rows="3" maxlength="500"></textarea>
+
+          <div class="modal-excluir-acoes">
+            <button type="button" class="modal-excluir-cancelar" data-close>Cancelar</button>
+            <button type="button" class="modal-excluir-proximo" id="btn-desativar-acao" disabled>Próximo</button>
+          </div>
+        </div>
+
+        <!-- SLIDE 2 — Deletar dados pessoais? (só aparece se slide 1 = sim) -->
+        <div class="modal-excluir-fase" data-slide="2">
+          <h3 class="modal-excluir-titulo">Deseja deletar seus dados pessoais?</h3>
+          <p class="modal-excluir-sub">Se sim, sua conta será <strong>excluída permanentemente</strong>. Se um dia voltar, será um cadastro novo. Seus Materiais comprados podem voltar quando você se conectar ao Kiwify de novo.</p>
+
+          <div class="modal-excluir-opcoes">
+            <label class="modal-excluir-opcao">
+              <input type="radio" name="desativar-permanente" value="nao">
+              <span class="modal-excluir-opcao-marker"></span>
+              <span class="modal-excluir-opcao-texto">
+                <strong>Não, manter meus dados</strong>
+                <span class="modal-excluir-opcao-sub">Sua conta fica desativada; identidade preservada.</span>
+              </span>
+            </label>
+            <label class="modal-excluir-opcao">
+              <input type="radio" name="desativar-permanente" value="sim">
+              <span class="modal-excluir-opcao-marker"></span>
+              <span class="modal-excluir-opcao-texto">
+                <strong>Sim, excluir permanentemente</strong>
+                <span class="modal-excluir-opcao-sub">Conta apagada da sua vista. Pra voltar, você cadastra do zero.</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="modal-excluir-feedback" id="modal-desativar-feedback"></div>
+
+          <div class="modal-excluir-acoes">
+            <button type="button" class="modal-excluir-voltar" id="btn-desativar-voltar">Voltar</button>
+            <button type="button" class="modal-excluir-confirmar" id="btn-desativar-confirmar" disabled>Desativar conta</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- BAÚ DE RELATOS -->
     <section class="view" id="view-bau">
@@ -565,6 +799,20 @@
       </header>
       <div class="modal-corpo" id="testes-corpo">
         <div class="loading-inline">Carregando...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-foto-obrigatoria" aria-hidden="true">
+    <div class="modal-overlay" data-close></div>
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-foto-conteudo">
+        <div class="modal-foto-icone" aria-hidden="true">📷</div>
+        <h3 class="modal-foto-titulo">Adicione sua foto antes de começar</h3>
+        <p class="modal-foto-sub">A Suellen gosta de te ver enquanto conversa. Coloca uma foto sua pra que esse momento fique mais próximo de verdade.</p>
+        <button type="button" class="modal-foto-acao" id="modal-foto-acao">Adicionar foto agora</button>
+        <button type="button" class="modal-foto-cancelar" data-close>Agora não</button>
       </div>
     </div>
   </div>

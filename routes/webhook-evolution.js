@@ -23,6 +23,11 @@ const {
   buscarUsuarioPorTelefoneComOrigem,
   criarOuAtualizarUsuario,
   criarMagicToken,
+  ehArquivadaPorAluna,
+  ehLegado,
+  ehBanido,
+  verificarBanimento,
+  registrarTentativaBanido,
 } = require('../core/usuarios');
 const { enfileirarAtendimento } = require('../core/gateway');
 
@@ -204,10 +209,35 @@ router.post('/evolution', async (req, res) => {
       return;
     }
 
-    // 1b. Conta arquivada — sistema não responde nada. Conversa humana se ela quiser.
-    if (match && match.usuario && (match.usuario.arquivada || match.usuario.status === 'arquivada')) {
-      console.log(`[webhook-evolution] conta arquivada (${match.usuario.id}) — ignorando`);
+    // 1b. Verifica banimento (vínculo de telefone). Banido NÃO recebe magic
+    // link — sistema responde nada (silêncio também é resposta).
+    const banidoMatch = await verificarBanimento({ telefone: telefoneFinal });
+    if (banidoMatch || (match?.usuario && ehBanido(match.usuario))) {
+      if (banidoMatch) {
+        await registrarTentativaBanido(banidoMatch.banimento_id, {
+          rota: '/webhook-evolution',
+          vinculo_bateu: banidoMatch.vinculo_bateu,
+          valor_bateu: banidoMatch.valor_bateu,
+        });
+      }
+      console.log(`[webhook-evolution] telefone banido (${telefoneFinal}) — ignorando`);
       return;
+    }
+
+    // 1c. Conta arquivada/legado:
+    //  - Arquivada pelo ADMIN: sistema não responde nada. Conversa humana se ela quiser.
+    //  - Desativada pela ALUNA (arquivada_por='aluna'): processa normalmente.
+    //    O magic link gerado abaixo, ao ser tocado, reativa silenciosamente via
+    //    /login-magic. Pra aluna parece um cadastro novo natural.
+    //  - Legado (excluiu permanentemente): processa normalmente. /login-magic
+    //    reativa o registro com dados antigos em eh_legado=TRUE.
+    if (match && match.usuario && (match.usuario.arquivada || match.usuario.status === 'arquivada' || match.usuario.status === 'legado')) {
+      if (!ehArquivadaPorAluna(match.usuario) && !ehLegado(match.usuario)) {
+        console.log(`[webhook-evolution] conta arquivada por admin (${match.usuario.id}) — ignorando`);
+        return;
+      }
+      const tipo = ehLegado(match.usuario) ? 'legado' : 'desativada pela aluna';
+      console.log(`[webhook-evolution] conta ${tipo} (${match.usuario.id}) — processando como reativação`);
     }
 
     // 2. Não achou em lugar nenhum — cria conta incompleta com origem='whatsapp'

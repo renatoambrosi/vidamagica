@@ -31,8 +31,9 @@ router.get('/contexto', autenticar, async (req, res) => {
 
     // ── 1. Aluna ─────────────────────────────────────────────
     const uRows = await poolCore.query(
-      `SELECT id, nome, telefone, telefone_formatado, email, plano, sementes,
-              perfil_teste, percentual_prosperidade
+      `SELECT id, nome, telefone, telefone_formatado, email, email_verificado,
+              foto_url, plano, sementes, perfil_teste, percentual_prosperidade,
+              criado_em, senha_hash
          FROM usuarios WHERE id = $1`,
       [usuarioId]
     );
@@ -300,8 +301,14 @@ router.get('/contexto', autenticar, async (req, res) => {
         primeiro_nome: primeiroNome,
         telefone_formatado: aluna.telefone_formatado,
         email: aluna.email,
+        email_verificado: !!aluna.email_verificado,
+        foto_url: aluna.foto_url || null,
         plano: aluna.plano,
         sementes: aluna.sementes || 0,
+        criado_em: aluna.criado_em,
+        // Aluna que NUNCA definiu senha (só usa OTP) vê "Crie sua senha";
+        // quem já definiu vê "Trocar sua senha" (com senha atual obrigatória).
+        tem_senha: !!aluna.senha_hash,
       },
       teste_atual: testeAtual,
       teste_em_andamento: testeEmAndamento,
