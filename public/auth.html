@@ -653,9 +653,34 @@ function iniciarTimer(btnId,timerId,seg=60){const btn=document.getElementById(bt
 (function(){const c=document.getElementById('particles');for(let i=0;i<20;i++){const p=document.createElement('div');p.className='p';const s=Math.random()*4+2;p.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;animation-duration:${Math.random()*16+9}s;animation-delay:${Math.random()*14}s;background:${Math.random()>.5?'rgba(248,220,150,.7)':'rgba(255,255,255,.55)'};`;c.appendChild(p);}})();
 
 // ── USUÁRIO LEMBRADO ─────────────────────────────────────────────────────────
-function carregarUsuarioLembrado(){
+// Verifica COM O BACKEND se a conta ainda existe antes de mostrar "Olá, Fulano".
+// Sem essa checagem, se Renato apaga a conta no admin (ou aluna pede exclusão),
+// o cache local do navegador continua exibindo dados de conta deletada.
+async function carregarUsuarioLembrado(){
   const u = VmSession.getUsuarioLembrado();
   if (!u?.nome) return;
+
+  // Tenta verificar com o backend. Se ainda existe → mostra lembrança.
+  // Se NÃO existe → limpa o cache local imediatamente.
+  // Em caso de erro de rede, mantém a lembrança (UX preserva oferta de login).
+  try {
+    const body = u.telefone_formatado
+      ? { telefone: u.telefone_formatado }
+      : { email: u.email };
+    if (!body.telefone && !body.email) return;
+    const r = await fetch(`${API}/api/auth/verificar-existencia`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.existe === false) {
+      VmSession.limparUsuarioLembrado();
+      VmSession.destruir();  // remove sessões inválidas que tenham sobrado
+      return;
+    }
+  } catch (_) { /* falha de rede — mantém lembrança como fallback */ }
+
   const iniciais = u.nome.split(' ').slice(0,2).map(p=>p[0]).join('').toUpperCase();
   document.getElementById('avatar-iniciais').textContent = iniciais;
   document.getElementById('usuario-nome').textContent    = `Olá, ${u.nome.split(' ')[0]}! 👋`;
@@ -932,6 +957,12 @@ function iniciarPollingAguardando(token, ttlSegundos){
       document.getElementById('overlay').classList.remove('show');
       // Limpa o magic da URL pra aluna não ficar presa
       window.history.replaceState({}, '', '/auth');
+      // Se a conta não existe mais (apagada/arquivada), apaga a "lembrança"
+      // local pra a tela não mostrar "Olá, Fulano" pra alguém que não existe.
+      if (r.status === 404 || d.code === 'CONTA_NAO_EXISTE' || d.code === 'CONTA_ARQUIVADA') {
+        VmSession.limparUsuarioLembrado();
+        VmSession.destruir();
+      }
       setTimeout(() => mostrarErro('erro-login', d.error || 'Link inválido ou expirado. Solicite outro.'), 100);
       return;
     }
@@ -1026,7 +1057,15 @@ async function fazerLogin(){
       if (_vmTelMagic && identificador) _vmTelMagic.preencher(identificador);
       setTimeout(() => alternarModoLogin('magic'), 800);
     }
-    else mostrarErro('erro-login', d.error||'Dados incorretos.');
+    else {
+      // Conta apagada/arquivada → limpa a lembrança local antes de exibir erro.
+      if (r.status === 404 || d.code === 'CONTA_NAO_EXISTE' || d.code === 'CONTA_ARQUIVADA') {
+        VmSession.limparUsuarioLembrado();
+        VmSession.destruir();
+        trocarUsuario();
+      }
+      mostrarErro('erro-login', d.error||'Dados incorretos.');
+    }
   } catch { mostrarErro('erro-login','Falha de conexão. Tente novamente.'); }
   finally { resetBtn('btn-login','Entrar'); }
 }
@@ -1261,7 +1300,7 @@ function cadastroVoltar(){
 
   // 2. Acesso intencional — não redireciona
   if (params.has('intencional') || params.has('cadastro')){
-    carregarUsuarioLembrado();
+    await carregarUsuarioLembrado();
     if (params.has('cadastro')) irTela('t-cad-1');
     return;
   }
@@ -1292,7 +1331,7 @@ function cadastroVoltar(){
   }
 
   // 5. Sem sessão — mostra login
-  carregarUsuarioLembrado();
+  await carregarUsuarioLembrado();
 })();
 </script>
 </body>

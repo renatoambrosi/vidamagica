@@ -172,6 +172,50 @@ async function buscarUsuarioPorIdentificador(id) {
 // 1. SOLICITAR OTP (WhatsApp)
 // ──────────────────────────────────────────────────────────
 
+// ──────────────────────────────────────────────────────────
+// 0. VERIFICAR EXISTÊNCIA (público, sem expor dados sensíveis)
+// Usado pelo /auth pra checar se a "lembrança" do navegador (vm_u no
+// localStorage) ainda corresponde a uma conta válida. Se Renato apaga
+// a conta no admin OU se a aluna pediu exclusão, o cache local do
+// navegador continua mostrando "Olá, Fulano" — sem essa verificação.
+// ──────────────────────────────────────────────────────────
+router.post('/verificar-existencia', async (req, res) => {
+  try {
+    const { telefone, email } = req.body || {};
+    if (!telefone && !email) {
+      return res.status(400).json({ error: 'Telefone ou email obrigatório' });
+    }
+
+    let usuario = null;
+    if (telefone) {
+      const tel = formatarTelefone(telefone);
+      // Rate limit (impede abuse de descoberta em massa)
+      if (!checarRate(`verif-exist:${tel}`, 10, 60000)) {
+        return res.status(429).json({ error: 'Muitas tentativas' });
+      }
+      usuario = await buscarUsuarioPorTelefone(tel);
+    } else if (email) {
+      const emailLimpo = String(email).trim().toLowerCase();
+      if (!checarRate(`verif-exist:${emailLimpo}`, 10, 60000)) {
+        return res.status(429).json({ error: 'Muitas tentativas' });
+      }
+      const r = await poolCore.query(
+        `SELECT id, status FROM usuarios WHERE LOWER(email) = $1 LIMIT 1`,
+        [emailLimpo]
+      );
+      usuario = r.rows[0] || null;
+    }
+
+    // Conta arquivada conta como "não existe" pra UX da tela /auth — a aluna
+    // não consegue logar mesmo, então não faz sentido mostrar "Olá, fulano".
+    const existe = !!(usuario && usuario.status !== 'arquivada');
+    return res.json({ existe });
+  } catch (err) {
+    console.error('❌ /verificar-existencia:', err.message);
+    return res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
 router.post('/solicitar-otp', async (req, res) => {
   try {
     const { telefone, modo, nome, email, senha, device_fingerprint } = req.body;
