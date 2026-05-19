@@ -617,6 +617,34 @@ function mostrarOk(id,msg){const e=document.getElementById(id);e.textContent=msg
 function limparMsg(id){const e=document.getElementById(id);if(e)e.className='msg';}
 function setLoad(id,lbl){const b=document.getElementById(id);b.disabled=true;b.innerHTML=`<span>${lbl}</span><span class="btn-arrow"><div class="spin"></div></span>`;}
 function resetBtn(id,lbl){const b=document.getElementById(id);b.disabled=false;b.innerHTML=`<span>${lbl}</span><span class="btn-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>`;}
+
+// ── DEVICE FINGERPRINT ─────────────────────────────────────────────
+// Identificador estável por navegador/dispositivo. device_id persistido em
+// localStorage (sobrevive a reloads e fechar/abrir a aba). Usado pelo backend
+// pra amarrar magic link ao dispositivo que pediu — link encaminhado pra outro
+// dispositivo não funciona.
+function getDeviceFingerprint(){
+  let device_id;
+  try {
+    device_id = localStorage.getItem('vm_device_id');
+    if (!device_id) {
+      device_id = (window.crypto && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : 'd_' + Date.now().toString(36) + Math.random().toString(36).slice(2);
+      localStorage.setItem('vm_device_id', device_id);
+    }
+  } catch (_) {
+    // Modo anônimo / localStorage bloqueado: gera ad-hoc (sem persistência)
+    device_id = 'd_session_' + Math.random().toString(36).slice(2);
+  }
+  return {
+    device_id,
+    ua: (navigator.userAgent || '').slice(0, 200),
+    lang: navigator.language || '',
+    tz: (Intl.DateTimeFormat().resolvedOptions().timeZone || ''),
+    screen: (typeof screen !== 'undefined') ? `${screen.width}x${screen.height}` : '',
+  };
+}
 function toggleOlho(inp,ico){const i=document.getElementById(inp),ic=document.getElementById(ico);if(i.type==='password'){i.type='text';ic.innerHTML=`<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`;}else{i.type='password';ic.innerHTML=`<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;}}
 function avaliarSenha(v,wId,lId,bPref){const w=document.getElementById(wId),l=document.getElementById(lId);if(!v){w.style.display='none';return;}w.style.display='flex';let s=0;if(v.length>=8)s++;if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;const c=['','fraca','media','forte','forte'],lb=['','Fraca','Média','Forte','Forte'],co=['','#e05555','#e0a855','#55c87a','#55c87a'];for(let i=1;i<=4;i++){document.getElementById(`${bPref}${i}`).className='forca-bar'+(i<=s?` ${c[s]}`:'');}l.textContent=lb[s];l.style.color=co[s];}
 function iniciarTimer(btnId,timerId,seg=60){const btn=document.getElementById(btnId),tmr=document.getElementById(timerId);btn.disabled=true;btn.style.opacity='.4';let t=seg;clearInterval(timerReenviar);timerReenviar=setInterval(()=>{tmr.textContent=`(${t}s)`;t--;if(t<0){clearInterval(timerReenviar);tmr.textContent='';btn.disabled=false;btn.style.opacity='1';}},1000);}
@@ -757,7 +785,7 @@ async function solicitarAcesso(){
   try {
     const r = await fetch(`${API}/api/auth/preparar-acesso`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ telefone: tel }),
+      body: JSON.stringify({ telefone: tel, device_fingerprint: getDeviceFingerprint() }),
     });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) {
@@ -812,7 +840,7 @@ async function solicitarNovamente() {
   try {
     const r = await fetch(`${API}/api/auth/preparar-acesso`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ telefone: tel }),
+      body: JSON.stringify({ telefone: tel, device_fingerprint: getDeviceFingerprint() }),
     });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) return;
@@ -895,7 +923,7 @@ function iniciarPollingAguardando(token, ttlSegundos){
 
     const r = await fetch(`${API}/api/auth/login-magic`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ token: magicToken }),
+      body: JSON.stringify({ token: magicToken, device_fingerprint: getDeviceFingerprint() }),
     });
     const d = await r.json().catch(() => ({}));
 
@@ -987,7 +1015,7 @@ async function fazerLogin(){
 
   setLoad('btn-login','Entrando…');
   try {
-    const r = await fetch(`${API}/api/auth/login-senha`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identificador,senha})});
+    const r = await fetch(`${API}/api/auth/login-senha`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identificador,senha,device_fingerprint:getDeviceFingerprint()})});
     const d = await r.json();
     if (r.ok){ VmSession.salvar(d, lembrar); mostrarOverlay(d.usuario?.nome); }
     else if (d.code === 'SEM_SENHA' || d.code === 'CONTA_INCOMPLETA') {
@@ -1074,7 +1102,7 @@ async function cadastroStep1(){
     const r=await fetch(`${API}/api/auth/solicitar-otp`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({telefone:tel, modo:'cadastro', nome, email, senha})
+      body:JSON.stringify({telefone:tel, modo:'cadastro', nome, email, senha, device_fingerprint:getDeviceFingerprint()})
     });
     const d=await r.json().catch(()=>({}));
     if(!r.ok){
@@ -1185,7 +1213,7 @@ async function cadastroReenviar(){
     const r = await fetch(`${API}/api/auth/solicitar-otp`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({telefone:cTelFormatado, modo:'cadastro', nome, email, senha})
+      body:JSON.stringify({telefone:cTelFormatado, modo:'cadastro', nome, email, senha, device_fingerprint:getDeviceFingerprint()})
     });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) {

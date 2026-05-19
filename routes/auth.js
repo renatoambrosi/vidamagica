@@ -174,7 +174,7 @@ async function buscarUsuarioPorIdentificador(id) {
 
 router.post('/solicitar-otp', async (req, res) => {
   try {
-    const { telefone, modo, nome, email, senha } = req.body;
+    const { telefone, modo, nome, email, senha, device_fingerprint } = req.body;
     if (!telefone) return res.status(400).json({ error: 'Telefone obrigatório' });
 
     const tel = formatarTelefone(telefone);
@@ -231,8 +231,9 @@ router.post('/solicitar-otp', async (req, res) => {
         usuario = await atualizarUsuario(usuario.id, { senha_hash });
       }
 
-      // 2. Gera token de solicitação e wa_url (igual fluxo do "Solicite entrar pelo seu WhatsApp")
-      const sol = await criarSolicitacaoAcesso(tel, 5);
+      // 2. Gera token de solicitação com fingerprint do dispositivo que pediu.
+      //    Magic link gerado pelo webhook herda esse fingerprint — só funciona aqui.
+      const sol = await criarSolicitacaoAcesso(tel, 5, device_fingerprint || null);
       const mensagemPre =
         `Quero criar minha conta no Vida Mágica\n` +
         `Cadastro · ${sol.token}`;
@@ -400,6 +401,27 @@ router.post('/login-magic', async (req, res) => {
       });
     }
 
+    // ── VALIDAÇÃO DE DISPOSITIVO ────────────────────────────────────
+    // Magic link só vale no MESMO dispositivo que solicitou o acesso.
+    // Compara device_id do request com device_id salvo no token (herdado da
+    // solicitação original via webhook). Se aluna encaminhou o link pra outro
+    // dispositivo, esse outro NÃO entra.
+    //
+    // Se o magic token foi gerado SEM fingerprint (ex: admin disparou manual
+    // via "📲 Enviar magic link"), aceita qualquer dispositivo — a aluna está
+    // recebendo o link de cortesia, não amarrado a hardware.
+    if (registro.device_fingerprint && registro.device_fingerprint.device_id) {
+      const fpEsperado = registro.device_fingerprint.device_id;
+      const fpRecebido = device_fingerprint?.device_id;
+      if (!fpRecebido || fpRecebido !== fpEsperado) {
+        console.warn(`[login-magic] device_id não bate (esperado=${fpEsperado} recebido=${fpRecebido || 'nenhum'}) — recusando`);
+        return res.status(403).json({
+          error: 'Esse link foi gerado pra outro dispositivo. Volte ao /auth no dispositivo original e peça acesso de novo.',
+          code: 'DISPOSITIVO_INCORRETO',
+        });
+      }
+    }
+
     const tel = registro.telefone;
     const usuario = await buscarUsuarioPorTelefone(tel);
     if (!usuario) return res.status(404).json({ error: 'Usuário não encontrado' });
@@ -471,7 +493,7 @@ const NUMERO_COMUNIDADE = process.env.WA_COMUNIDADE_NUMERO || '5562999884411';
 
 router.post('/preparar-acesso', async (req, res) => {
   try {
-    const { telefone } = req.body;
+    const { telefone, device_fingerprint } = req.body;
     if (!telefone) return res.status(400).json({ error: 'Telefone obrigatório' });
 
     const tel = formatarTelefone(telefone);
@@ -484,7 +506,10 @@ router.post('/preparar-acesso', async (req, res) => {
       return res.status(429).json({ error: 'Muitas tentativas. Aguarde 1 minuto.' });
     }
 
-    const sol = await criarSolicitacaoAcesso(tel, 5);
+    // Salva fingerprint do dispositivo que está pedindo. Magic link gerado
+    // pelo webhook herda isso. /login-magic valida match — link só funciona
+    // no dispositivo que pediu.
+    const sol = await criarSolicitacaoAcesso(tel, 5, device_fingerprint || null);
 
     const mensagemPre =
       `Quero entrar no Vida Mágica\n` +

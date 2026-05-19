@@ -151,21 +151,27 @@ function gerarTokenMagico() {
   return crypto.randomBytes(32).toString('hex');
 }
 
-async function criarMagicToken(telefone, tipo, ttlMin = 10) {
+async function criarMagicToken(telefone, tipo, ttlMin = 10, deviceFingerprint = null) {
   if (!['magic_login', 'magic_boas_vindas', 'reset_senha'].includes(tipo)) {
     throw new Error(`tipo inválido: ${tipo}`);
   }
   const token = gerarTokenMagico();
+  // deviceFingerprint herdado da solicitação de acesso (acesso_solicitacoes.device_fingerprint).
+  // Quando aluna clicar no link, /login-magic compara fingerprint do request com este.
+  const fpJson = deviceFingerprint ? JSON.stringify(deviceFingerprint) : null;
   await poolCore.query(
-    `INSERT INTO otp_tokens (telefone, codigo, canal, token, tipo, expira_em)
-     VALUES ($1, '', 'whatsapp', $2, $3, NOW() + $4::interval)`,
-    [telefone, token, tipo, `${ttlMin} minutes`]
+    `INSERT INTO otp_tokens (telefone, codigo, canal, token, tipo, expira_em, device_fingerprint)
+     VALUES ($1, '', 'whatsapp', $2, $3, NOW() + $4::interval, $5::jsonb)`,
+    [telefone, token, tipo, `${ttlMin} minutes`, fpJson]
   );
   return token;
 }
 
+// Validação one-time: marca usado=TRUE, retorna a linha completa (incluindo
+// device_fingerprint pra quem chamou comparar). NÃO compara aqui — quem chama
+// (/login-magic) decide se valida fingerprint ou aceita qualquer dispositivo
+// (ex: reset_senha pode ser flexível).
 async function validarMagicToken(token, tiposPermitidos) {
-  // tiposPermitidos = ['magic_login','magic_boas_vindas'] etc
   const tipos = Array.isArray(tiposPermitidos) ? tiposPermitidos : [tiposPermitidos];
   const r = await poolCore.query(
     `SELECT * FROM otp_tokens
@@ -177,7 +183,7 @@ async function validarMagicToken(token, tiposPermitidos) {
   );
   if (!r.rows.length) return null;
   await poolCore.query(`UPDATE otp_tokens SET usado=TRUE WHERE id=$1`, [r.rows[0].id]);
-  return r.rows[0];  // tem .telefone e .tipo
+  return r.rows[0];  // tem .telefone, .tipo, .device_fingerprint
 }
 
 // ── ACESSO_SOLICITACOES ──────────────────────────────────
@@ -193,19 +199,23 @@ function gerarTokenSolicitacao() {
   return 'VM' + s;
 }
 
-async function criarSolicitacaoAcesso(telefone, ttlMin = 5) {
+async function criarSolicitacaoAcesso(telefone, ttlMin = 5, deviceFingerprint = null) {
   // Limpa tokens expirados de todos os usuários (housekeeping a cada chamada)
   await poolCore.query(`DELETE FROM acesso_solicitacoes WHERE expira_em < NOW()`);
+
+  // deviceFingerprint: objeto { device_id, ua, lang, tz, screen } do dispositivo
+  // que pediu o acesso. Salva em JSONB pra magic token herdar depois.
+  const fpJson = deviceFingerprint ? JSON.stringify(deviceFingerprint) : null;
 
   // Tenta gerar token único (raríssimo colidir, mas blindando)
   for (let tentativa = 0; tentativa < 5; tentativa++) {
     const token = gerarTokenSolicitacao();
     try {
       const r = await poolCore.query(
-        `INSERT INTO acesso_solicitacoes (token, telefone, expira_em)
-         VALUES ($1, $2, NOW() + $3::interval)
+        `INSERT INTO acesso_solicitacoes (token, telefone, expira_em, device_fingerprint)
+         VALUES ($1, $2, NOW() + $3::interval, $4::jsonb)
          RETURNING token, criado_em, expira_em`,
-        [token, telefone, `${ttlMin} minutes`]
+        [token, telefone, `${ttlMin} minutes`, fpJson]
       );
       return r.rows[0];
     } catch (err) {

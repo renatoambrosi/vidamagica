@@ -223,6 +223,11 @@ async function initCore() {
     `);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_acesso_token ON acesso_solicitacoes(token) WHERE usado=FALSE`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_acesso_telefone ON acesso_solicitacoes(telefone, criado_em DESC)`);
+    // device_fingerprint: amarra a solicitação ao dispositivo que pediu acesso.
+    // Quando webhook gera magic token, herda esse fingerprint. /login-magic
+    // valida que o request vem do MESMO dispositivo. Bloqueia compartilhamento
+    // de link entre dispositivos.
+    await c.query(`ALTER TABLE acesso_solicitacoes ADD COLUMN IF NOT EXISTS device_fingerprint JSONB`);
 
     await c.query(`
       CREATE TABLE IF NOT EXISTS otp_tokens (
@@ -242,6 +247,10 @@ async function initCore() {
     // Migrations idempotentes
     await c.query(`ALTER TABLE otp_tokens ADD COLUMN IF NOT EXISTS token TEXT`);
     await c.query(`ALTER TABLE otp_tokens ADD COLUMN IF NOT EXISTS tipo VARCHAR(20) DEFAULT 'codigo'`);
+    // device_fingerprint: magic tokens herdam o fingerprint do dispositivo que
+    // pediu o acesso (acesso_solicitacoes). /login-magic valida match — bloqueia
+    // que aluna encaminhe o link e outra pessoa entre em outro dispositivo.
+    await c.query(`ALTER TABLE otp_tokens ADD COLUMN IF NOT EXISTS device_fingerprint JSONB`);
     // tipo: 'codigo' (OTP painel) | 'magic_login' | 'magic_boas_vindas' | 'reset_senha'
     await c.query(`CREATE INDEX IF NOT EXISTS idx_otp_token ON otp_tokens(token) WHERE token IS NOT NULL AND usado=FALSE`);
 

@@ -227,7 +227,11 @@ router.post('/evolution', async (req, res) => {
     const tipoMagic    = cadastroIncompleto ? 'magic_boas_vindas'     : 'magic_login';
     const templateMsg1 = cadastroIncompleto ? 'magic_boas_vindas_msg1' : 'magic_login_msg1';
 
-    const magicToken = await criarMagicToken(telefoneFinal, tipoMagic, 10);
+    // Propaga o fingerprint do dispositivo que SOLICITOU (gravado em
+    // acesso_solicitacoes.device_fingerprint). Magic link só vai funcionar
+    // no mesmo dispositivo via /login-magic.
+    const fingerprintSolicitante = sol.device_fingerprint || null;
+    const magicToken = await criarMagicToken(telefoneFinal, tipoMagic, 10, fingerprintSolicitante);
     const magicUrl = `${APP_URL}/auth?magic=${magicToken}`;
     const primeiroNome = (usuario.nome || '').split(' ')[0] || '';
 
