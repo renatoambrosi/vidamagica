@@ -75,6 +75,8 @@ Este projeto tem frentes em construção. Antes de fazer qualquer alteração qu
 | Criação de nova LP de produto | `project_lps_blueprint.md` | 4 LPs da Série Conhecer e Despertar + 1 LP "só dela" pendentes. NÃO mexer no esqueleto comum entre LPs. |
 | Vocabulário (produto/preço, depoimento/relato, perfis, jornadas) | `project_nomes_oficiais.md` | Regra crítica de nomenclatura — Renato corrige se trocar nome. |
 | Modo de trabalho com o Renato | `user_expertise_e_destino.md` | Modelo: rascunho + correção, não pergunta-por-pergunta. Tom positivo SEMPRE. |
+| Perfil do `/app` (reconstrução) | `project_perfil_app_reconstrucao.md` (+ `project_regras_auth_completas.md` pra regras de cadastro) | **Frente aberta (2026-05-18).** A view de perfil (`view-perfil` em `public/app.html` + handlers em `public/app/app.js`) precisa ser **reconstruída com base no que já existe** — não jogar fora, refazer em cima. Spec aprovada na memória. Inclui selo de plano dinâmico (Clube com brilho vs "Plano grátis" off), avatar editável obrigatório pra iniciar chat com a Suellen, 6 itens de menu, Sair com mini-modal (lembrar/esquecer). |
+| Plano, assinaturas, pagamentos, cortesia, integração Kiwify/Railway | `project_plano_assinatura_arquitetura.md` | **Regra crítica:** aplicação Railway é quem escreve em `assinaturas`/`pagamentos`/`eventos_financeiros`/`membros` (poolCore). Vida Mágica **só lê**. Cortesia do atendimento passa pela mesma Railway (não pela Kiwify), grava como venda de valor 0. Schemas e templates já estão aqui; regras de execução ainda vivem só na aplicação Railway do Renato. |
 
 Se você não tem certeza se uma mudança afeta alguma dessas áreas, **leia a memória primeiro**. O custo de ler é baixo. O custo de fazer errado é alto.
 

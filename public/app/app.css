@@ -801,7 +801,52 @@ body.chat-aberto .views {
 .perfil-avatar svg { width: 42px; height: 42px; stroke: var(--texto-mute); }
 .perfil-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .perfil-nome { font-family: var(--font-display); font-size: 1.2rem; font-weight: 900; color: var(--texto); margin-bottom: 0.25rem; }
-.perfil-plano { font-size: 0.7rem; color: var(--ouro-fundo); font-family: var(--font-display); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.85rem; }
+/* Selo de plano — pill com contorno, sem fundo.
+   Duas variantes: .gratuito (off, contorno branco apagado) e .clube (ligado,
+   contorno dourado luminoso com halo). Mesma forma, sensação oposta:
+   ausência de luz no grátis convida a "acender" virando assinante. */
+.perfil-plano-selo {
+  display: inline-block;
+  padding: 0.38rem 1rem;
+  border-radius: var(--radius-full);
+  border: 1px solid currentColor;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 0.85rem;
+  background: transparent;
+  transition: color 0.3s, border-color 0.3s, box-shadow 0.3s, text-shadow 0.3s;
+}
+.perfil-plano-selo.gratuito {
+  color: rgba(255,255,255,0.72);
+  border-color: rgba(255,255,255,0.32);
+}
+.perfil-plano-selo.clube {
+  color: var(--ouro-brilho);
+  border-color: var(--ouro-claro);
+  text-shadow: 0 0 8px rgba(244,217,152,0.65);
+  box-shadow:
+    0 0 14px rgba(244,217,152,0.40),
+    0 0 28px rgba(244,217,152,0.18),
+    inset 0 0 8px rgba(244,217,152,0.16);
+  animation: selo-clube-pulse 3.2s ease-in-out infinite;
+}
+@keyframes selo-clube-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 14px rgba(244,217,152,0.40),
+      0 0 28px rgba(244,217,152,0.18),
+      inset 0 0 8px rgba(244,217,152,0.16);
+  }
+  50% {
+    box-shadow:
+      0 0 20px rgba(244,217,152,0.55),
+      0 0 42px rgba(244,217,152,0.28),
+      inset 0 0 10px rgba(244,217,152,0.22);
+  }
+}
 .perfil-sementes-row { display: flex; align-items: center; gap: 0.4rem; }
 .perfil-sementes-num { font-family: var(--font-display); font-size: 1.1rem; font-weight: 900; color: var(--ouro-fundo); }
 .perfil-sementes-label { font-size: 0.72rem; color: var(--texto-mute); }
@@ -1752,6 +1797,21 @@ body.antessala-ativa {
 .modal-tesouro-resgatar { margin: 1rem 1.25rem 1.25rem; width: calc(100% - 2.5rem); padding: 0.85rem; background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro)); color: white; border-radius: var(--radius-md); font-family: var(--font-display); font-size: 0.85rem; font-weight: 800; letter-spacing: 0.06em; box-shadow: 0 4px 20px rgba(200,146,42,0.35); transition: opacity 0.15s, transform 0.15s; }
 .modal-tesouro-resgatar:hover { opacity: 0.9; transform: translateY(-1px); }
 .modal-tesouro-resgatar:disabled { opacity: 0.45; transform: none; cursor: not-allowed; }
+
+/* Modal de Sair — 2 opções: lembrar (volta saudação na próxima visita) ou
+   esquecer (limpa o nome lembrado deste dispositivo). */
+.modal-sair-conteudo { padding: 1.25rem 1.25rem 0.5rem; text-align: center; }
+.modal-sair-titulo { font-family: var(--font-display); font-size: 1.05rem; font-weight: 800; color: var(--texto); margin-bottom: 0.5rem; }
+.modal-sair-sub { font-size: 0.84rem; color: var(--texto-suave); line-height: 1.55; margin-bottom: 1.25rem; }
+.modal-sair-opcao { display: flex; align-items: center; gap: 0.9rem; width: 100%; padding: 0.95rem 1rem; background: var(--vidro); backdrop-filter: blur(12px); border: 1px solid var(--vidro-borda); border-radius: var(--radius-md); margin-bottom: 0.6rem; text-align: left; cursor: pointer; transition: border-color 0.15s, transform 0.12s; }
+.modal-sair-opcao:hover { border-color: var(--vidro-borda-hi); }
+.modal-sair-opcao:active { transform: scale(0.99); }
+.modal-sair-opcao-icone { font-size: 1.4rem; flex-shrink: 0; }
+.modal-sair-opcao-info { flex: 1; min-width: 0; }
+.modal-sair-opcao-titulo { display: block; font-family: var(--font-ui); font-size: 0.9rem; font-weight: 700; color: var(--texto); }
+.modal-sair-opcao-sub { display: block; font-size: 0.74rem; color: var(--texto-mute); margin-top: 2px; line-height: 1.4; }
+.modal-sair-cancelar { display: block; width: 100%; padding: 0.75rem; background: transparent; border: none; color: var(--texto-mute); font-family: var(--font-ui); font-size: 0.85rem; font-weight: 600; margin-top: 0.5rem; margin-bottom: 0.5rem; cursor: pointer; transition: color 0.15s; }
+.modal-sair-cancelar:hover { color: var(--texto); }
 
 .modal-sheet-player { max-height: 95vh; }
 .player-wrap { background: #000; flex-shrink: 0; }

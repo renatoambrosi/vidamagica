@@ -341,7 +341,7 @@
           </svg>
         </div>
         <h2 class="perfil-nome" id="perfil-nome">—</h2>
-        <div class="perfil-plano" id="perfil-plano">Comunidade Vida Mágica</div>
+        <div class="perfil-plano-selo gratuito" id="perfil-plano-selo">Plano grátis</div>
         <div class="perfil-sementes-row">
           <span>🌱</span>
           <span class="perfil-sementes-num" id="perfil-sementes">0</span>
@@ -375,19 +375,35 @@
           </div>
           <span class="perfil-item-arrow">›</span>
         </li>
-        <li class="perfil-item">
-          <span class="perfil-item-icone">🔐</span>
+        <li class="perfil-item" id="menu-jornada">
+          <span class="perfil-item-icone">🧭</span>
           <div class="perfil-item-info">
-            <span class="perfil-item-titulo">Segurança</span>
-            <span class="perfil-item-sub">Senha e dispositivos</span>
+            <span class="perfil-item-titulo">Minha Jornada</span>
+            <span class="perfil-item-sub">Onde você está e o próximo passo</span>
           </div>
           <span class="perfil-item-arrow">›</span>
         </li>
-        <li class="perfil-item">
+        <li class="perfil-item" id="menu-info-pessoais">
+          <span class="perfil-item-icone">👤</span>
+          <div class="perfil-item-info">
+            <span class="perfil-item-titulo">Informações Pessoais</span>
+            <span class="perfil-item-sub">Seus dados de cadastro</span>
+          </div>
+          <span class="perfil-item-arrow">›</span>
+        </li>
+        <li class="perfil-item" id="menu-seguranca">
+          <span class="perfil-item-icone">🔐</span>
+          <div class="perfil-item-info">
+            <span class="perfil-item-titulo">Senha e Segurança</span>
+            <span class="perfil-item-sub">Sua senha e dispositivos autorizados</span>
+          </div>
+          <span class="perfil-item-arrow">›</span>
+        </li>
+        <li class="perfil-item" id="menu-plano">
           <span class="perfil-item-icone">💳</span>
           <div class="perfil-item-info">
             <span class="perfil-item-titulo">Plano e Assinatura</span>
-            <span class="perfil-item-sub">Gerencie sua comunidade</span>
+            <span class="perfil-item-sub">Status, pagamentos e renovação</span>
           </div>
           <span class="perfil-item-arrow">›</span>
         </li>
@@ -549,6 +565,32 @@
       </header>
       <div class="modal-corpo" id="testes-corpo">
         <div class="loading-inline">Carregando...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-sair" aria-hidden="true">
+    <div class="modal-overlay" data-close></div>
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-sair-conteudo">
+        <h3 class="modal-sair-titulo">Como você quer sair?</h3>
+        <p class="modal-sair-sub">Você pode voltar mais rápido na próxima vez ou sair sem deixar rastro neste dispositivo.</p>
+        <button type="button" class="modal-sair-opcao" id="modal-sair-lembrar">
+          <span class="modal-sair-opcao-icone">💛</span>
+          <div class="modal-sair-opcao-info">
+            <span class="modal-sair-opcao-titulo">Sair e ser lembrada</span>
+            <span class="modal-sair-opcao-sub">Na próxima visita, te recebemos pelo nome</span>
+          </div>
+        </button>
+        <button type="button" class="modal-sair-opcao" id="modal-sair-esquecer">
+          <span class="modal-sair-opcao-icone">🚪</span>
+          <div class="modal-sair-opcao-info">
+            <span class="modal-sair-opcao-titulo">Sair e ser esquecida</span>
+            <span class="modal-sair-opcao-sub">Limpa seu nome desta tela neste dispositivo</span>
+          </div>
+        </button>
+        <button type="button" class="modal-sair-cancelar" data-close>Cancelar</button>
       </div>
     </div>
   </div>

@@ -55,6 +55,21 @@ function hidratarUI(u) {
     const av = document.getElementById('perfil-avatar');
     if (av) av.innerHTML = `<img src="${u.foto_url}" alt="${u.nome}">`;
   }
+  // Selo de plano dinâmico. Fonte da verdade: usuario.plano !== 'gratuito'
+  // (mesma regra de temClubeVidaMagica em core/jornadas.js).
+  // Sem assinatura → "Plano grátis" off. Com assinatura → "Clube Vida Mágica"
+  // com brilho dourado, halo e pulse.
+  const selo = document.getElementById('perfil-plano-selo');
+  if (selo) {
+    const plano = String(u.plano || 'gratuito').toLowerCase();
+    if (plano === 'gratuito') {
+      selo.className = 'perfil-plano-selo gratuito';
+      selo.textContent = 'Plano grátis';
+    } else {
+      selo.className = 'perfil-plano-selo clube';
+      selo.textContent = 'Clube Vida Mágica';
+    }
+  }
 }
 
 // ── PARTÍCULAS ──────────────────────────────────────────────
@@ -197,12 +212,37 @@ document.addEventListener('keydown', e => { if (e.key==='Escape') document.query
 document.getElementById('btn-avisos')?.addEventListener('click', () => { renderAvisos(); abrirModal('modal-avisos'); setTimeout(() => { AVISOS().forEach(a => marcarLido(a.id)); atualizarBadgeAvisos(); }, 2000); });
 document.getElementById('btn-sementes')?.addEventListener('click', () => irPara('perfil'));
 document.getElementById('menu-testes')?.addEventListener('click',  () => { carregarTestes(); abrirModal('modal-testes'); });
-document.getElementById('menu-logout')?.addEventListener('click',  async () => {
+
+// Sair: abre mini-modal com 2 opções (ser lembrada / ser esquecida neste
+// dispositivo). O logout real acontece nos handlers das opções abaixo.
+document.getElementById('menu-logout')?.addEventListener('click', () => {
+  abrirModal('modal-sair');
+});
+
+async function executarLogout({ esquecer }) {
   const refresh = VmSession.getRefresh();
-  try { await fetch(`${API}/api/auth/logout`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({refresh_token:refresh}) }); } catch {}
+  try {
+    await fetch(`${API}/api/auth/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refresh }),
+    });
+  } catch {}
   try { limparCooldownPopupClube(); } catch {}
+  // "Esquecer" limpa o nome lembrado do localStorage — sem isso, /auth
+  // continua mostrando "Olá, Fulano" mesmo depois do sair.
+  if (esquecer) {
+    try { VmSession.limparUsuarioLembrado(); } catch {}
+  }
   VmSession.destruir();
   window.location.replace('/');
+}
+
+document.getElementById('modal-sair-lembrar')?.addEventListener('click', () => {
+  executarLogout({ esquecer: false });
+});
+document.getElementById('modal-sair-esquecer')?.addEventListener('click', () => {
+  executarLogout({ esquecer: true });
 });
 
 // ── PLAYER ───────────────────────────────────────────────────
