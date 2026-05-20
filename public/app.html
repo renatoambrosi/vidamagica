@@ -351,10 +351,12 @@
     <section class="view" id="view-perfil">
       <div class="perfil-hero" id="perfil-hero">
         <button type="button" class="perfil-avatar editavel" id="perfil-avatar" aria-label="Alterar foto de perfil">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-          </svg>
+          <span class="perfil-avatar-miolo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </span>
           <span class="perfil-avatar-editar" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
@@ -373,23 +375,18 @@
           <span class="perfil-sementes-label">sementes</span>
         </div>
       </div>
-      <button type="button" class="perfil-bau-btn" onclick="irPara('bau')">
-        <span class="perfil-bau-btn-icone">🧰</span>
-        <div class="perfil-bau-btn-info">
-          <div class="perfil-bau-btn-titulo">Meu Baú de Relatos</div>
-          <div class="perfil-bau-btn-sub">Tudo que ressoou em você</div>
-        </div>
-        <span class="perfil-bau-btn-seta">›</span>
-      </button>
-
-      <button type="button" class="perfil-bau-btn" onclick="irPara('meus-relatos')">
-        <span class="perfil-bau-btn-icone">📝</span>
-        <div class="perfil-bau-btn-info">
-          <div class="perfil-bau-btn-titulo">Meus Relatos</div>
-          <div class="perfil-bau-btn-sub">Seus envios e o status de cada um</div>
-        </div>
-        <span class="perfil-bau-btn-seta">›</span>
-      </button>
+      <div class="perfil-atalhos">
+        <button type="button" class="perfil-atalho" onclick="irPara('bau')">
+          <span class="perfil-atalho-icone">🧰</span>
+          <span class="perfil-atalho-titulo">Meu Baú</span>
+          <span class="perfil-atalho-sub">de Relatos</span>
+        </button>
+        <button type="button" class="perfil-atalho" onclick="irPara('meus-relatos')">
+          <span class="perfil-atalho-icone">📝</span>
+          <span class="perfil-atalho-titulo">Meus</span>
+          <span class="perfil-atalho-sub">Relatos</span>
+        </button>
+      </div>
 
       <ul class="perfil-menu">
         <li class="perfil-item" id="menu-testes">

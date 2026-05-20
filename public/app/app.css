@@ -796,42 +796,45 @@ body.chat-aberto .views {
 .empty-titulo { font-family: var(--font-display); font-size: 0.9rem; font-weight: 700; color: var(--texto-suave); margin-bottom: 0.4rem; }
 .empty-sub { font-size: 0.8rem; color: var(--texto-mute); line-height: 1.6; }
 
-.perfil-hero { display: flex; flex-direction: column; align-items: center; padding: 2rem 1.25rem 1.5rem; text-align: center; }
+.perfil-hero { display: flex; flex-direction: column; align-items: center; padding: 1.4rem 1.25rem 0.85rem; text-align: center; }
 /* Avatar clicável (Fase 2). É um <button> pra ter hit area cheia + a11y.
-   Editável sempre: hover/active mostra ícone de câmera no canto.
+   Editável sempre: ícone de câmera no canto inferior direito.
    Estado vazio: SVG genérico + hint "Toque para adicionar sua foto" abaixo.
    Estado preenchido: <img> + ícone de câmera (some o hint).
-   Estado uploading: spinner sobreposto. */
-.perfil-avatar { position: relative; width: 84px; height: 84px; border-radius: 50%; background: var(--vidro); border: 2px solid var(--vidro-borda-hi); display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem; overflow: hidden; box-shadow: var(--sombra-media), var(--glow-ouro); padding: 0; }
-.perfil-avatar.editavel { cursor: pointer; transition: transform 0.15s, border-color 0.15s, box-shadow 0.2s; }
-.perfil-avatar.editavel:hover { border-color: var(--ouro-claro); transform: scale(1.02); box-shadow: var(--sombra-media), 0 0 18px rgba(244,217,152,0.35); }
-.perfil-avatar.editavel:active { transform: scale(0.98); }
-.perfil-avatar svg { width: 42px; height: 42px; stroke: var(--texto-mute); }
-.perfil-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.perfil-avatar-editar { position: absolute; right: -2px; bottom: -2px; width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--ouro), var(--ouro-fundo)); border: 2px solid rgba(13,8,0,0.92); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.35); }
-.perfil-avatar-editar svg { width: 14px; height: 14px; stroke: white; }
-.perfil-avatar-spinner { position: absolute; inset: 0; border-radius: 50%; background: rgba(13,8,0,0.55); display: none; align-items: center; justify-content: center; }
-.perfil-avatar-spinner::after { content: ''; width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.25); border-top-color: var(--ouro-brilho); border-radius: 50%; animation: avatar-spin 0.9s linear infinite; }
+   Estado uploading: spinner sobreposto no miolo.
+   IMPORTANTE: o overflow:hidden mora no .perfil-avatar-miolo (não no botão)
+   pra que o ícone de câmera (posicionado em -2px) não seja recortado. */
+.perfil-avatar { position: relative; width: 72px; height: 72px; border-radius: 50%; background: transparent; border: none; display: flex; align-items: center; justify-content: center; margin-bottom: 0.4rem; padding: 0; }
+.perfil-avatar-miolo { width: 100%; height: 100%; border-radius: 50%; background: var(--vidro); border: 2px solid var(--vidro-borda-hi); display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: var(--sombra-media), var(--glow-ouro); transition: border-color 0.15s, transform 0.15s, box-shadow 0.2s; }
+.perfil-avatar.editavel { cursor: pointer; }
+.perfil-avatar.editavel:hover .perfil-avatar-miolo { border-color: var(--ouro-claro); transform: scale(1.02); box-shadow: var(--sombra-media), 0 0 18px rgba(244,217,152,0.35); }
+.perfil-avatar.editavel:active .perfil-avatar-miolo { transform: scale(0.98); }
+.perfil-avatar-miolo svg { width: 36px; height: 36px; stroke: var(--texto-mute); }
+.perfil-avatar-miolo img { width: 100%; height: 100%; object-fit: cover; }
+.perfil-avatar-editar { position: absolute; right: -3px; bottom: -3px; width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, var(--ouro), var(--ouro-fundo)); border: 2px solid rgba(13,8,0,0.92); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.35); pointer-events: none; }
+.perfil-avatar-editar svg { width: 13px; height: 13px; stroke: white; }
+.perfil-avatar-spinner { position: absolute; inset: 0; border-radius: 50%; background: rgba(13,8,0,0.55); display: none; align-items: center; justify-content: center; pointer-events: none; }
+.perfil-avatar-spinner::after { content: ''; width: 26px; height: 26px; border: 3px solid rgba(255,255,255,0.25); border-top-color: var(--ouro-brilho); border-radius: 50%; animation: avatar-spin 0.9s linear infinite; }
 .perfil-avatar.enviando .perfil-avatar-spinner { display: flex; }
 @keyframes avatar-spin { to { transform: rotate(360deg); } }
-.perfil-avatar-hint { font-size: 0.74rem; color: var(--texto-mute); margin-bottom: 0.6rem; font-style: italic; }
+.perfil-avatar-hint { font-size: 0.72rem; color: var(--texto-mute); margin-bottom: 0.5rem; font-style: italic; }
 .perfil-avatar-hint.oculto { display: none; }
-.perfil-nome { font-family: var(--font-display); font-size: 1.2rem; font-weight: 900; color: var(--texto); margin-bottom: 0.25rem; }
+.perfil-nome { font-family: var(--font-display); font-size: 1.1rem; font-weight: 900; color: var(--texto); margin-bottom: 0.2rem; }
 /* Selo de plano — pill com contorno, sem fundo.
    Duas variantes: .gratuito (off, contorno branco apagado) e .clube (ligado,
    contorno dourado luminoso com halo). Mesma forma, sensação oposta:
    ausência de luz no grátis convida a "acender" virando assinante. */
 .perfil-plano-selo {
   display: inline-block;
-  padding: 0.38rem 1rem;
+  padding: 0.32rem 0.9rem;
   border-radius: var(--radius-full);
   border: 1px solid currentColor;
   font-family: var(--font-display);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.65rem;
   background: transparent;
   transition: color 0.3s, border-color 0.3s, box-shadow 0.3s, text-shadow 0.3s;
 }
@@ -863,18 +866,29 @@ body.chat-aberto .views {
       inset 0 0 10px rgba(244,217,152,0.22);
   }
 }
-.perfil-sementes-row { display: flex; align-items: center; gap: 0.4rem; }
-.perfil-sementes-num { font-family: var(--font-display); font-size: 1.1rem; font-weight: 900; color: var(--ouro-fundo); }
-.perfil-sementes-label { font-size: 0.72rem; color: var(--texto-mute); }
-.perfil-menu { padding: 0 1.25rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
-.perfil-item { display: flex; align-items: center; gap: 0.9rem; padding: 0.9rem 1rem; background: var(--vidro); backdrop-filter: blur(12px); border: 1px solid var(--vidro-borda); border-radius: var(--radius-md); cursor: pointer; transition: border-color 0.15s, transform 0.12s; }
+.perfil-sementes-row { display: flex; align-items: center; gap: 0.35rem; }
+.perfil-sementes-num { font-family: var(--font-display); font-size: 1rem; font-weight: 900; color: var(--ouro-fundo); }
+.perfil-sementes-label { font-size: 0.7rem; color: var(--texto-mute); }
+/* Atalhos rápidos do perfil — Baú + Meus Relatos lado a lado.
+   Substitui o .perfil-bau-btn antigo (empilhado, ocupava muito espaço).
+   Cards compactos em grid 2 colunas, leem da esquerda pra direita. */
+.perfil-atalhos { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; padding: 0 1.25rem 0.75rem; }
+.perfil-atalho { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; padding: 0.9rem 0.5rem; background: var(--vidro); backdrop-filter: blur(12px); border: 1px solid var(--vidro-borda); border-radius: var(--radius-md); cursor: pointer; transition: border-color 0.15s, transform 0.12s, background 0.15s; text-align: center; }
+.perfil-atalho:hover { border-color: var(--ouro); background: var(--vidro-forte); }
+.perfil-atalho:active { transform: scale(0.99); }
+.perfil-atalho-icone { font-size: 1.5rem; line-height: 1; margin-bottom: 0.2rem; }
+.perfil-atalho-titulo { font-family: var(--font-display); font-size: 0.84rem; font-weight: 700; color: var(--texto); }
+.perfil-atalho-sub { font-size: 0.72rem; color: var(--texto-mute); }
+
+.perfil-menu { padding: 0 1.25rem 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.perfil-item { display: flex; align-items: center; gap: 0.8rem; padding: 0.72rem 0.95rem; background: var(--vidro); backdrop-filter: blur(12px); border: 1px solid var(--vidro-borda); border-radius: var(--radius-md); cursor: pointer; transition: border-color 0.15s, transform 0.12s; }
 .perfil-item:hover { border-color: var(--vidro-borda-hi); }
 .perfil-item:active { transform: scale(0.99); }
-.perfil-item-icone { font-size: 1.1rem; flex-shrink: 0; }
+.perfil-item-icone { font-size: 1.05rem; flex-shrink: 0; }
 .perfil-item-info { flex: 1; min-width: 0; }
-.perfil-item-titulo { display: block; font-family: var(--font-ui); font-size: 0.88rem; font-weight: 600; color: var(--texto); }
-.perfil-item-sub { display: block; font-size: 0.72rem; color: var(--texto-mute); margin-top: 1px; }
-.perfil-item-arrow { font-size: 1.2rem; color: var(--texto-fraco); font-weight: 300; }
+.perfil-item-titulo { display: block; font-family: var(--font-ui); font-size: 0.86rem; font-weight: 600; color: var(--texto); line-height: 1.3; }
+.perfil-item-sub { display: block; font-size: 0.7rem; color: var(--texto-mute); margin-top: 1px; }
+.perfil-item-arrow { font-size: 1.15rem; color: var(--texto-fraco); font-weight: 300; }
 .perfil-item-danger .perfil-item-titulo { color: #B04848; }
 
 /* ════════════════════════════════════════════════
