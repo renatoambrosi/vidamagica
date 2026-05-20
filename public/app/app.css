@@ -876,20 +876,33 @@ body.chat-aberto .views {
 .perfil-atalho { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; padding: 0.9rem 0.5rem; background: var(--vidro); backdrop-filter: blur(12px); border: 1px solid var(--vidro-borda); border-radius: var(--radius-md); cursor: pointer; transition: border-color 0.15s, transform 0.12s, background 0.15s; text-align: center; }
 .perfil-atalho:hover { border-color: var(--ouro); background: var(--vidro-forte); }
 .perfil-atalho:active { transform: scale(0.99); }
-.perfil-atalho-icone { font-size: 1.5rem; line-height: 1; margin-bottom: 0.2rem; }
+.perfil-atalho-icone { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: var(--ouro-claro); margin-bottom: 0.3rem; }
+.perfil-atalho-icone svg { width: 24px; height: 24px; }
 .perfil-atalho-titulo { font-family: var(--font-display); font-size: 0.84rem; font-weight: 700; color: var(--texto); }
 .perfil-atalho-sub { font-size: 0.72rem; color: var(--texto-mute); }
 
 .perfil-menu { padding: 0 1.25rem 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
-.perfil-item { display: flex; align-items: center; gap: 0.8rem; padding: 0.72rem 0.95rem; background: var(--vidro); backdrop-filter: blur(12px); border: 1px solid var(--vidro-borda); border-radius: var(--radius-md); cursor: pointer; transition: border-color 0.15s, transform 0.12s; }
+.perfil-item { display: flex; align-items: center; gap: 0.8rem; padding: 0.72rem 0.95rem; background: var(--vidro); backdrop-filter: blur(12px); border: 1px solid var(--vidro-borda); border-radius: var(--radius-md); cursor: pointer; transition: border-color 0.15s, transform 0.12s, background 0.15s; }
 .perfil-item:hover { border-color: var(--vidro-borda-hi); }
 .perfil-item:active { transform: scale(0.99); }
-.perfil-item-icone { font-size: 1.05rem; flex-shrink: 0; }
+/* Ícone do item — agora SVG (linha monoline dourada). Antes era emoji,
+   trocou em 2026-05-20 pra ficar coerente com o resto do app. */
+.perfil-item-icone { width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md); background: rgba(244,217,152,0.08); color: var(--ouro-claro); border: 1px solid rgba(244,217,152,0.18); }
+.perfil-item-icone svg { width: 18px; height: 18px; }
 .perfil-item-info { flex: 1; min-width: 0; }
 .perfil-item-titulo { display: block; font-family: var(--font-ui); font-size: 0.86rem; font-weight: 600; color: var(--texto); line-height: 1.3; }
 .perfil-item-sub { display: block; font-size: 0.7rem; color: var(--texto-mute); margin-top: 1px; }
 .perfil-item-arrow { font-size: 1.15rem; color: var(--texto-fraco); font-weight: 300; }
-.perfil-item-danger .perfil-item-titulo { color: #B04848; }
+/* Variantes — aviso (laranja/dourado) e perigo (vermelho).
+   Aplicam tonalidade ao ícone e ao título; o fundo da pílula segue neutro
+   pra não poluir. */
+.perfil-item-aviso .perfil-item-icone { color: #E8B05A; background: rgba(232,176,90,0.10); border-color: rgba(232,176,90,0.28); }
+.perfil-item-danger .perfil-item-titulo { color: #C66262; }
+.perfil-item-danger .perfil-item-icone { color: #C66262; background: rgba(198,98,98,0.08); border-color: rgba(198,98,98,0.25); }
+/* Hub "Sua conta": espaçamento extra acima pra respirar dos demais itens
+   do perfil. As 3 ações (Sair · Desativar · Excluir permanente) ficam no
+   mesmo padrão do menu principal. */
+.conta-acoes { padding-top: 0.5rem; }
 
 /* ════════════════════════════════════════════════
    CHAT — fullscreen com dvh para teclado fluido

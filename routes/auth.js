@@ -1240,9 +1240,10 @@ router.get('/testes', autenticar, async (req, res) => {
 
     // O teste pode ter sido feito ANTES do cadastro (lead anônimo, identificado
     // só por telefone). Pra cobrir esses casos, busca por usuario_id OU pelo
-    // telefone canônico do usuário logado.
+    // telefone canônico do usuário logado. Em `usuarios`, o telefone JÁ é o
+    // canônico (E.164 sem +) — a coluna é só `telefone`, não `telefone_canonico`.
     const usuario = await buscarUsuarioPorId(req.usuario.sub);
-    const telefone = (usuario && usuario.telefone_canonico) ? usuario.telefone_canonico : null;
+    const telefone = usuario?.telefone || null;
 
     const r = await poolTeste.query(
       `SELECT id, perfil_dominante, percentual_prosperidade, nivel_prosperidade,

@@ -377,12 +377,25 @@
       </div>
       <div class="perfil-atalhos">
         <button type="button" class="perfil-atalho" onclick="irPara('bau')">
-          <span class="perfil-atalho-icone">🧰</span>
+          <span class="perfil-atalho-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9h18v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9z"/>
+              <path d="M3 9V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/>
+              <line x1="10" y1="13" x2="14" y2="13"/>
+            </svg>
+          </span>
           <span class="perfil-atalho-titulo">Meu Baú</span>
           <span class="perfil-atalho-sub">de Relatos</span>
         </button>
         <button type="button" class="perfil-atalho" onclick="irPara('meus-relatos')">
-          <span class="perfil-atalho-icone">📝</span>
+          <span class="perfil-atalho-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="9" y1="13" x2="15" y2="13"/>
+              <line x1="9" y1="17" x2="13" y2="17"/>
+            </svg>
+          </span>
           <span class="perfil-atalho-titulo">Meus</span>
           <span class="perfil-atalho-sub">Relatos</span>
         </button>
@@ -390,7 +403,14 @@
 
       <ul class="perfil-menu">
         <li class="perfil-item" id="menu-testes">
-          <span class="perfil-item-icone">📊</span>
+          <span class="perfil-item-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"/>
+              <line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6" y1="20" x2="6" y2="14"/>
+              <line x1="3" y1="20" x2="21" y2="20"/>
+            </svg>
+          </span>
           <div class="perfil-item-info">
             <span class="perfil-item-titulo">Meus Testes do Subconsciente</span>
             <span class="perfil-item-sub">Veja seu histórico e resultados</span>
@@ -398,7 +418,12 @@
           <span class="perfil-item-arrow">›</span>
         </li>
         <li class="perfil-item" id="menu-jornada">
-          <span class="perfil-item-icone">🧭</span>
+          <span class="perfil-item-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+            </svg>
+          </span>
           <div class="perfil-item-info">
             <span class="perfil-item-titulo">Minha Jornada</span>
             <span class="perfil-item-sub">Onde você está e o próximo passo</span>
@@ -406,7 +431,12 @@
           <span class="perfil-item-arrow">›</span>
         </li>
         <li class="perfil-item" id="menu-info-pessoais">
-          <span class="perfil-item-icone">👤</span>
+          <span class="perfil-item-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </span>
           <div class="perfil-item-info">
             <span class="perfil-item-titulo">Informações Pessoais</span>
             <span class="perfil-item-sub">Seus dados de cadastro</span>
@@ -414,7 +444,12 @@
           <span class="perfil-item-arrow">›</span>
         </li>
         <li class="perfil-item" id="menu-seguranca">
-          <span class="perfil-item-icone">🔐</span>
+          <span class="perfil-item-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </span>
           <div class="perfil-item-info">
             <span class="perfil-item-titulo">Senha e Segurança</span>
             <span class="perfil-item-sub">Sua senha e dispositivos autorizados</span>
@@ -422,7 +457,13 @@
           <span class="perfil-item-arrow">›</span>
         </li>
         <li class="perfil-item" id="menu-plano">
-          <span class="perfil-item-icone">💳</span>
+          <span class="perfil-item-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="2"/>
+              <line x1="2" y1="10" x2="22" y2="10"/>
+              <line x1="6" y1="15" x2="10" y2="15"/>
+            </svg>
+          </span>
           <div class="perfil-item-info">
             <span class="perfil-item-titulo">Plano e Assinatura</span>
             <span class="perfil-item-sub">Status, pagamentos e renovação</span>
@@ -430,16 +471,17 @@
           <span class="perfil-item-arrow">›</span>
         </li>
         <li class="perfil-item" id="menu-conta">
-          <span class="perfil-item-icone">🗂️</span>
+          <span class="perfil-item-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </span>
           <div class="perfil-item-info">
             <span class="perfil-item-titulo">Sua conta</span>
-            <span class="perfil-item-sub">Excluir e ações da sua conta</span>
+            <span class="perfil-item-sub">Sair, desativar e excluir conta</span>
           </div>
           <span class="perfil-item-arrow">›</span>
-        </li>
-        <li class="perfil-item perfil-item-danger" id="menu-logout">
-          <span class="perfil-item-icone">→</span>
-          <div class="perfil-item-info"><span class="perfil-item-titulo">Sair</span></div>
         </li>
       </ul>
     </section>
@@ -546,15 +588,52 @@
         <h2 class="view-titulo">Sua conta</h2>
       </div>
 
-      <div class="conta-secao">
-        <h3 class="conta-secao-titulo">Desativar conta</h3>
-        <p class="conta-secao-sub">Se você não quer mais estar com a gente, tudo bem. Vamos respeitar sua escolha.</p>
-
-        <button type="button" class="conta-acao-perigo" id="btn-desativar-conta">
-          <span class="conta-acao-perigo-icone">🗂️</span>
-          <span class="conta-acao-perigo-texto">Desativar conta</span>
-        </button>
-      </div>
+      <ul class="perfil-menu conta-acoes">
+        <li class="perfil-item" id="btn-sair-conta">
+          <span class="perfil-item-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </span>
+          <div class="perfil-item-info">
+            <span class="perfil-item-titulo">Sair</span>
+            <span class="perfil-item-sub">Encerre sua sessão neste dispositivo</span>
+          </div>
+          <span class="perfil-item-arrow">›</span>
+        </li>
+        <li class="perfil-item perfil-item-aviso" id="btn-desativar-conta">
+          <span class="perfil-item-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 8v13H3V8"/>
+              <path d="M1 3h22v5H1z"/>
+              <line x1="10" y1="12" x2="14" y2="12"/>
+            </svg>
+          </span>
+          <div class="perfil-item-info">
+            <span class="perfil-item-titulo">Desativar conta</span>
+            <span class="perfil-item-sub">Pausa sua presença · seus dados ficam guardados</span>
+          </div>
+          <span class="perfil-item-arrow">›</span>
+        </li>
+        <li class="perfil-item perfil-item-danger" id="btn-excluir-permanente">
+          <span class="perfil-item-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6"/>
+              <path d="M14 11v6"/>
+              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </span>
+          <div class="perfil-item-info">
+            <span class="perfil-item-titulo">Excluir conta permanentemente</span>
+            <span class="perfil-item-sub">Sai do sistema · se voltar, é cadastro novo</span>
+          </div>
+          <span class="perfil-item-arrow">›</span>
+        </li>
+      </ul>
     </section>
 
     <!-- MODAL DE DESATIVAR CONTA — 2 slides + confirmação final

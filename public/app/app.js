@@ -210,9 +210,11 @@ document.getElementById('btn-avisos')?.addEventListener('click', () => { renderA
 document.getElementById('btn-sementes')?.addEventListener('click', () => irPara('perfil'));
 document.getElementById('menu-testes')?.addEventListener('click',  () => { carregarTestes(); abrirModal('modal-testes'); });
 
-// Sair: abre mini-modal com 2 opções (ser lembrada / ser esquecida neste
-// dispositivo). O logout real acontece nos handlers das opções abaixo.
-document.getElementById('menu-logout')?.addEventListener('click', () => {
+// Sair: agora vive dentro do hub "Sua conta" (view-conta). O botão antigo
+// solto no menu principal foi removido. O click abre o mini-modal com 2
+// opções (ser lembrada / ser esquecida neste dispositivo). Logout real
+// acontece nos handlers de #modal-sair-lembrar / #modal-sair-esquecer.
+document.getElementById('btn-sair-conta')?.addEventListener('click', () => {
   abrirModal('modal-sair');
 });
 
@@ -435,6 +437,26 @@ document.getElementById('conta-voltar')?.addEventListener('click', () => irPara(
 
 document.getElementById('btn-desativar-conta')?.addEventListener('click', () => {
   resetarModalDesativar();
+  abrirModal('modal-desativar-conta');
+});
+
+// Atalho "Excluir conta permanentemente" (no hub Sua conta): abre o modal
+// já pré-configurado pro caminho C — slide 1 marcado "Sim" + slide 2 marcado
+// "Sim" — e vai direto pro slide 2 (confirmação). Mesmo fluxo do modal de
+// 2 slides, só pula a navegação pra aluna que JÁ escolheu o caminho mais
+// agressivo no hub.
+document.getElementById('btn-excluir-permanente')?.addEventListener('click', () => {
+  resetarModalDesativar();
+  estadoDesativar.deseja_excluir = true;
+  estadoDesativar.deletar_dados_pessoais = true;
+  // Marca os radios pra refletir o estado (caso a aluna clique Voltar)
+  const rExcluirSim = document.querySelector('#modal-desativar-conta input[name="desativar-excluir"][value="sim"]');
+  if (rExcluirSim) rExcluirSim.checked = true;
+  const rPermSim = document.querySelector('#modal-desativar-conta input[name="desativar-permanente"][value="sim"]');
+  if (rPermSim) rPermSim.checked = true;
+  // Atualiza textos dos botões e vai direto pro slide 2 (confirmação)
+  atualizarBotaoDesativarSlide1();
+  irParaSlideDesativar(2);
   abrirModal('modal-desativar-conta');
 });
 
