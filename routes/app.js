@@ -31,15 +31,21 @@ router.get('/contexto', autenticar, async (req, res) => {
 
     // ── 1. Aluna ─────────────────────────────────────────────
     const uRows = await poolCore.query(
-      `SELECT id, nome, telefone, telefone_formatado, email, email_verificado,
-              foto_url, plano, sementes, perfil_teste, percentual_prosperidade,
-              criado_em, senha_hash
+      `SELECT id, nome, nome_preferencia, genero, ocupacao, cpf, data_nascimento,
+              telefone, telefone_formatado, telefone_validado_em,
+              email, email_verificado, foto_url, plano, sementes,
+              perfil_teste, percentual_prosperidade, criado_em, senha_hash
          FROM usuarios WHERE id = $1`,
       [usuarioId]
     );
     if (!uRows.rows[0]) return res.status(404).json({ ok: false, erro: 'usuário não encontrado' });
     const aluna = uRows.rows[0];
-    const primeiroNome = (aluna.nome || '').split(' ')[0] || 'Você';
+    // Como ela quer ser chamada: usa nome_preferencia se houver, senão
+    // primeiro nome do canônico. Aluna pode editar em "Informações do
+    // meu perfil".
+    const primeiroNome = (aluna.nome_preferencia && aluna.nome_preferencia.trim())
+      || (aluna.nome || '').split(' ')[0]
+      || 'Você';
 
     // ── 2. Produtos comprados (usuario_produtos) ─────────────
     // Cruzamento por usuario_id OU telefone_canonico (caso ela tenha comprado
@@ -298,8 +304,14 @@ router.get('/contexto', autenticar, async (req, res) => {
       aluna: {
         id: aluna.id,
         nome: aluna.nome,
+        nome_preferencia: aluna.nome_preferencia || null,
         primeiro_nome: primeiroNome,
+        genero: aluna.genero || null,
+        ocupacao: aluna.ocupacao || null,
+        cpf: aluna.cpf || null,
+        data_nascimento: aluna.data_nascimento || null,
         telefone_formatado: aluna.telefone_formatado,
+        telefone_verificado: !!aluna.telefone_validado_em,
         email: aluna.email,
         email_verificado: !!aluna.email_verificado,
         foto_url: aluna.foto_url || null,

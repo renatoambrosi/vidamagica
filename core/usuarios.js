@@ -152,7 +152,7 @@ function gerarTokenMagico() {
 }
 
 async function criarMagicToken(telefone, tipo, ttlMin = 10, deviceFingerprint = null) {
-  if (!['magic_login', 'magic_boas_vindas', 'reset_senha'].includes(tipo)) {
+  if (!['magic_login', 'magic_boas_vindas', 'reset_senha', 'magic_trocar_telefone'].includes(tipo)) {
     throw new Error(`tipo inválido: ${tipo}`);
   }
   const token = gerarTokenMagico();
@@ -199,7 +199,7 @@ function gerarTokenSolicitacao() {
   return 'VM' + s;
 }
 
-async function criarSolicitacaoAcesso(telefone, ttlMin = 5, deviceFingerprint = null) {
+async function criarSolicitacaoAcesso(telefone, ttlMin = 5, deviceFingerprint = null, opts = {}) {
   // Limpa tokens expirados de todos os usuários (housekeeping a cada chamada)
   await poolCore.query(`DELETE FROM acesso_solicitacoes WHERE expira_em < NOW()`);
 
@@ -207,15 +207,22 @@ async function criarSolicitacaoAcesso(telefone, ttlMin = 5, deviceFingerprint = 
   // que pediu o acesso. Salva em JSONB pra magic token herdar depois.
   const fpJson = deviceFingerprint ? JSON.stringify(deviceFingerprint) : null;
 
+  // opts:
+  //   - intent: 'login' (default) | 'trocar_telefone'
+  //   - usuario_id: UUID da aluna que pediu (preenche apenas em trocar_telefone)
+  const intent = opts.intent || 'login';
+  const usuarioId = opts.usuario_id || null;
+
   // Tenta gerar token único (raríssimo colidir, mas blindando)
   for (let tentativa = 0; tentativa < 5; tentativa++) {
     const token = gerarTokenSolicitacao();
     try {
       const r = await poolCore.query(
-        `INSERT INTO acesso_solicitacoes (token, telefone, expira_em, device_fingerprint)
-         VALUES ($1, $2, NOW() + $3::interval, $4::jsonb)
-         RETURNING token, criado_em, expira_em`,
-        [token, telefone, `${ttlMin} minutes`, fpJson]
+        `INSERT INTO acesso_solicitacoes
+            (token, telefone, expira_em, device_fingerprint, intent, usuario_id)
+         VALUES ($1, $2, NOW() + $3::interval, $4::jsonb, $5, $6)
+         RETURNING token, criado_em, expira_em, intent, usuario_id`,
+        [token, telefone, `${ttlMin} minutes`, fpJson, intent, usuarioId]
       );
       return r.rows[0];
     } catch (err) {

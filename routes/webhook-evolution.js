@@ -16,6 +16,7 @@
 
 const express = require('express');
 const router = express.Router();
+const { poolCore } = require('../db');
 const { formatarTelefone } = require('../core/utils');
 const {
   detectarTokenNaMensagem,
@@ -190,7 +191,38 @@ router.post('/evolution', async (req, res) => {
     // for chamado novamente pelo mesmo evento.
     await marcarSolicitacaoUsada(sol.token);
 
-    // ── Decidir cenário ─────────────────────────────────────
+    // ── Branch 0: Solicitação de TROCA DE TELEFONE ──────────
+    // Aluna logada pediu pra mudar o número principal. A solicitação trouxe
+    // intent='trocar_telefone' + usuario_id. Geramos um magic link específico
+    // (tipo='magic_trocar_telefone') pro NOVO número. Quando ela toca, o
+    // endpoint /perfil/trocar-telefone-confirmar executa trocarTelefonePrincipal.
+    if (sol.intent === 'trocar_telefone' && sol.usuario_id) {
+      const fingerprintSolicitante = sol.device_fingerprint || null;
+      const magicToken = await criarMagicToken(telefoneFinal, 'magic_trocar_telefone', 10, fingerprintSolicitante);
+      const magicUrl = `${APP_URL}/app?trocar_tel=${magicToken}`;
+      // Busca nome da aluna pra personalizar mensagem
+      let primeiroNomeTroca = '';
+      try {
+        const r = await poolCore.query(`SELECT nome, nome_preferencia FROM usuarios WHERE id=$1`, [sol.usuario_id]);
+        const u = r.rows[0];
+        primeiroNomeTroca = (u?.nome_preferencia || (u?.nome || '').split(' ')[0] || '');
+      } catch {}
+      await enfileirarAtendimento({
+        telefone: telefoneFinal,
+        tipo: 'reativo',
+        origem: 'webhook-evolution-trocar-telefone',
+        nome: primeiroNomeTroca,
+        mensagens: [
+          { texto: `Toque pra confirmar que este número passa a ser o seu no Vida Mágica.` },
+          { texto: magicUrl },
+        ],
+      });
+      await marcarSolicitacaoUsada(sol.token, magicToken);
+      console.log(`[webhook-evolution] ✅ magic de troca de telefone enfileirado pra ${primeiroNomeTroca || telefoneFinal}`);
+      return;
+    }
+
+    // ── Decidir cenário (login/cadastro normal) ─────────────
     const match = await buscarUsuarioPorTelefoneComOrigem(telefoneFinal);
 
     // 1. Telefone bate com HISTÓRICO (aluna trocou de número, mas histórico ativo).

@@ -122,9 +122,17 @@ function resUsuario(u) {
   return {
     id: u.id,
     nome: u.nome,
+    nome_preferencia: u.nome_preferencia || null,
+    genero: u.genero || null,
+    ocupacao: u.ocupacao || null,
+    cpf: u.cpf || null,
+    data_nascimento: u.data_nascimento || null,
     email: u.email,
     telefone_formatado: u.telefone_formatado,
-    email_verificado: u.email_verificado,
+    email_verificado: !!u.email_verificado,
+    // Telefone verificado: deriva de telefone_validado_em IS NOT NULL.
+    // A conta só vai pra status='ativa' depois de validar telefone via magic.
+    telefone_verificado: !!u.telefone_validado_em,
     foto_url: u.foto_url || null,
     plano: u.plano,
     perfil_teste: u.perfil_teste,
@@ -848,10 +856,13 @@ router.post('/renovar', async (req, res) => {
 
 router.put('/perfil', autenticar, async (req, res) => {
   try {
-    const { nome, email, senha, senha_atual, foto_url } = req.body;
+    const {
+      nome, email, senha, senha_atual, foto_url,
+      nome_preferencia, genero, ocupacao, cpf, data_nascimento,
+    } = req.body;
     const campos = {};
 
-    if (nome) campos.nome = nome.trim();
+    if (nome !== undefined) campos.nome = (nome || '').trim() || null;
     if (email) campos.email = email.trim().toLowerCase();
     if (senha) {
       if (senha.length < 6) return res.status(400).json({ error: 'Senha mínima: 6 caracteres' });
@@ -868,10 +879,31 @@ router.put('/perfil', autenticar, async (req, res) => {
       campos.senha_hash = await bcrypt.hash(senha, 12);
     }
     // foto_url: aceita URL do Cloudinary (do POST /api/upload/imagem) ou null pra remover.
-    // Não valida formato — confiança no token de upload já autenticado.
     if (foto_url !== undefined) campos.foto_url = foto_url || null;
 
+    // Campos do perfil pessoal — Informações do meu perfil (Seção 2026-05-20).
+    if (nome_preferencia !== undefined) campos.nome_preferencia = (nome_preferencia || '').trim() || null;
+    if (genero !== undefined) {
+      const g = (genero || '').toLowerCase();
+      if (g && !['feminino', 'masculino', 'outro'].includes(g)) {
+        return res.status(400).json({ error: 'Gênero inválido' });
+      }
+      campos.genero = g || null;
+    }
+    if (ocupacao !== undefined) campos.ocupacao = (ocupacao || '').trim().slice(0, 500) || null;
+    if (cpf !== undefined) {
+      // Aceita vazio (limpa) OU com formato. Normaliza pra dígitos puros.
+      const c = (cpf || '').replace(/\D/g, '');
+      campos.cpf = c || null;
+    }
+    if (data_nascimento !== undefined) {
+      // Aceita YYYY-MM-DD ou vazio
+      const d = (data_nascimento || '').trim();
+      campos.data_nascimento = d || null;
+    }
+
     if (!Object.keys(campos).length) return res.status(400).json({ error: 'Nada para atualizar' });
+    // Mudou email? Reseta verificação (precisa re-verificar via OTP por email)
     if (campos.email) campos.email_verificado = false;
 
     const usuario = await atualizarUsuario(req.usuario.sub, campos);
@@ -1142,6 +1174,133 @@ router.post('/logout', async (req, res) => {
     if (refresh_token) await revogarSessao(refresh_token);
     res.json({ success: true });
   } catch (err) {
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// ──────────────────────────────────────────────────────────
+// 10.5. TROCAR TELEFONE (aluna logada)
+// Reusa o trilho de magic link via WhatsApp que já existe:
+//  1. Aluna logada chama POST /perfil/trocar-telefone-iniciar { novo_telefone }
+//  2. Backend cria acesso_solicitacoes com intent='trocar_telefone',
+//     usuario_id=aluna, telefone=NOVO_telefone, gera wa_url
+//  3. Aluna abre wa.me do NOVO número, envia zap pra Suellen com o token
+//  4. Webhook (routes/webhook-evolution.js) reconhece intent='trocar_telefone'
+//     e gera magic link tipo='magic_trocar_telefone' pro NOVO número
+//  5. Aluna toca link → POST /perfil/trocar-telefone-confirmar
+//  6. Backend valida e executa trocarTelefonePrincipal — telefone antigo
+//     vai pra telefones_historicos.ativo=TRUE (preserva histórico)
+// ──────────────────────────────────────────────────────────
+
+router.post('/perfil/trocar-telefone-iniciar', autenticar, async (req, res) => {
+  try {
+    const { novo_telefone, device_fingerprint } = req.body || {};
+    if (!novo_telefone) return res.status(400).json({ error: 'Novo telefone obrigatório' });
+
+    const novoTel = formatarTelefone(novo_telefone);
+    if (!novoTel || novoTel.length < 12 || novoTel.length > 14) {
+      return res.status(400).json({ error: 'Telefone inválido' });
+    }
+
+    // Não deixar trocar pro mesmo número
+    const u = await poolCore.query(`SELECT telefone FROM usuarios WHERE id=$1`, [req.usuario.sub]);
+    if (!u.rows[0]) return res.status(404).json({ error: 'Usuário não encontrado' });
+    if (u.rows[0].telefone === novoTel) {
+      return res.status(400).json({ error: 'Esse já é seu telefone atual' });
+    }
+
+    // Banimento por vínculo no novo número
+    const banido = await verificarBanimento({ telefone: novoTel });
+    if (banido) {
+      await registrarTentativaBanido(banido.banimento_id, {
+        rota: '/perfil/trocar-telefone-iniciar',
+        vinculo_bateu: banido.vinculo_bateu,
+        valor_bateu: banido.valor_bateu,
+        ip: getIP(req),
+        user_agent: req.headers['user-agent'],
+        fingerprint: device_fingerprint,
+      });
+      return res.status(403).json({
+        error: 'Não conseguimos validar esse telefone. Entre em contato com o suporte.',
+        code: 'BANIDO',
+      });
+    }
+
+    // Telefone novo já pertence a OUTRA conta ativa? bloqueia
+    const dono = await poolCore.query(
+      `SELECT id FROM usuarios WHERE telefone=$1 AND id<>$2`,
+      [novoTel, req.usuario.sub]
+    );
+    if (dono.rows.length) {
+      return res.status(409).json({
+        error: 'Esse telefone já está vinculado a outra conta.',
+        code: 'TELEFONE_EM_USO',
+      });
+    }
+
+    if (!checarRate(`troca-tel:${req.usuario.sub}`, 5, 60000)) {
+      return res.status(429).json({ error: 'Muitas tentativas. Aguarde 1 minuto.' });
+    }
+
+    // Cria solicitação com intent específico — webhook reconhece pela coluna intent
+    const sol = await criarSolicitacaoAcesso(novoTel, 5, device_fingerprint || null, {
+      intent: 'trocar_telefone',
+      usuario_id: req.usuario.sub,
+    });
+
+    const mensagemPre =
+      `Quero alterar meu telefone no Vida Mágica\n` +
+      `Confirmação · ${sol.token}`;
+    const waUrl = `https://wa.me/${NUMERO_COMUNIDADE}?text=${encodeURIComponent(mensagemPre)}`;
+
+    res.json({
+      success: true,
+      token: sol.token,
+      wa_url: waUrl,
+      expira_em: sol.expira_em,
+      ttl_segundos: 300,
+      novo_telefone: novoTel,
+    });
+  } catch (err) {
+    console.error('❌ /perfil/trocar-telefone-iniciar:', err.message);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+router.post('/perfil/trocar-telefone-confirmar', autenticar, async (req, res) => {
+  try {
+    const { token, device_fingerprint } = req.body || {};
+    if (!token) return res.status(400).json({ error: 'Token obrigatório' });
+
+    const registro = await validarMagicToken(token, ['magic_trocar_telefone']);
+    if (!registro) {
+      return res.status(401).json({
+        error: 'Link inválido, já usado ou expirado.',
+        code: 'TOKEN_INVALIDO',
+      });
+    }
+
+    // Confere fingerprint (mesma regra do /login-magic)
+    if (registro.device_fingerprint && registro.device_fingerprint.device_id) {
+      const fpEsperado = registro.device_fingerprint.device_id;
+      const fpRecebido = device_fingerprint?.device_id;
+      if (!fpRecebido || fpRecebido !== fpEsperado) {
+        return res.status(403).json({
+          error: 'Esse link foi gerado pra outro dispositivo.',
+          code: 'DISPOSITIVO_INCORRETO',
+        });
+      }
+    }
+
+    const novoTel = registro.telefone;
+    // Executa a troca usando o helper existente — preserva histórico
+    const { trocarTelefonePrincipal } = require('../core/usuarios');
+    await trocarTelefonePrincipal(req.usuario.sub, novoTel, novoTel);
+
+    const usuario = await buscarUsuarioPorId(req.usuario.sub);
+    res.json({ success: true, usuario: resUsuario(usuario) });
+  } catch (err) {
+    console.error('❌ /perfil/trocar-telefone-confirmar:', err.message);
     res.status(500).json({ error: 'Erro interno' });
   }
 });

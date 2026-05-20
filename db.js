@@ -115,6 +115,13 @@ async function initCore() {
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS cpf VARCHAR(14)`);
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS data_nascimento DATE`);
 
+    // Perfil pessoal: nome de preferência (como ela quer ser chamada — usado
+    // na saudação "Olá, X"), gênero (feminino/masculino/outro), e ocupação
+    // (texto livre). `nome` segue sendo o canônico (nome completo civil).
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS nome_preferencia VARCHAR(120)`);
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS genero VARCHAR(20)`);
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS ocupacao TEXT`);
+
     // Antes de criar índices únicos, normalizar strings vazias pra NULL.
     // Cadastros antigos gravavam email='' quando vazio — isso quebra o índice
     // porque o WHERE email IS NOT NULL não filtra string vazia.
@@ -238,6 +245,12 @@ async function initCore() {
     // valida que o request vem do MESMO dispositivo. Bloqueia compartilhamento
     // de link entre dispositivos.
     await c.query(`ALTER TABLE acesso_solicitacoes ADD COLUMN IF NOT EXISTS device_fingerprint JSONB`);
+    // intent: 'login' (default) ou 'trocar_telefone' (aluna logada quer mudar
+    // o número principal). Em troca, usuario_id aponta pra aluna logada e
+    // telefone é o NOVO número que ela está provando posse. Webhook reconhece
+    // pelo intent e gera magic link pro novo número confirmando a troca.
+    await c.query(`ALTER TABLE acesso_solicitacoes ADD COLUMN IF NOT EXISTS intent VARCHAR(20) DEFAULT 'login'`);
+    await c.query(`ALTER TABLE acesso_solicitacoes ADD COLUMN IF NOT EXISTS usuario_id UUID`);
 
     await c.query(`
       CREATE TABLE IF NOT EXISTS otp_tokens (
