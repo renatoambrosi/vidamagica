@@ -457,62 +457,22 @@
           </div>
           <span class="perfil-item-arrow">›</span>
         </li>
-        <li class="perfil-item" id="menu-conta">
+        <li class="perfil-item" id="menu-minha-conta">
           <span class="perfil-item-icone" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+              <path d="M19 21l3-3"/>
+              <path d="M22 21h-3v-3"/>
             </svg>
           </span>
           <div class="perfil-item-info">
-            <span class="perfil-item-titulo">Sua conta</span>
-            <span class="perfil-item-sub">Sair, desativar e excluir conta</span>
+            <span class="perfil-item-titulo">Minha conta</span>
+            <span class="perfil-item-sub">Dados pessoais, conta e ações</span>
           </div>
           <span class="perfil-item-arrow">›</span>
         </li>
       </ul>
-    </section>
-
-    <!-- INFORMAÇÕES PESSOAIS — sub-view do perfil. Editar nome e e-mail.
-         Telefone e data de cadastro em leitura (telefone exige fluxo
-         próprio de re-verificação, fica pra frente futura). -->
-    <section class="view" id="view-info-pessoais">
-      <div class="view-topo view-topo-com-voltar">
-        <button type="button" class="view-voltar" id="info-pessoais-voltar" aria-label="Voltar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-        </button>
-        <h2 class="view-titulo">Informações Pessoais</h2>
-      </div>
-
-      <form class="form-perfil" id="form-info-pessoais" autocomplete="off">
-        <label class="form-perfil-campo">
-          <span class="form-perfil-label">Nome</span>
-          <input type="text" name="nome" id="form-info-nome" class="form-perfil-input" required maxlength="120">
-        </label>
-
-        <label class="form-perfil-campo">
-          <span class="form-perfil-label">E-mail</span>
-          <input type="email" name="email" id="form-info-email" class="form-perfil-input" maxlength="180">
-          <span class="form-perfil-hint" id="form-info-email-status"></span>
-        </label>
-
-        <div class="form-perfil-campo somente-leitura">
-          <span class="form-perfil-label">Telefone</span>
-          <div class="form-perfil-valor" id="form-info-telefone">—</div>
-          <span class="form-perfil-hint">Pra alterar seu telefone, fale com a Suellen no chat.</span>
-        </div>
-
-        <div class="form-perfil-campo somente-leitura">
-          <span class="form-perfil-label">Data de cadastro</span>
-          <div class="form-perfil-valor" id="form-info-criado">—</div>
-        </div>
-
-        <div class="form-perfil-feedback" id="form-info-feedback"></div>
-
-        <button type="submit" class="form-perfil-salvar" id="form-info-salvar">Salvar alterações</button>
-      </form>
     </section>
 
     <!-- SENHA E SEGURANÇA — sub-view do perfil. Trocar senha + gerenciar
@@ -565,17 +525,30 @@
     <!-- SUA CONTA — sub-view do perfil. Aluna pode excluir a conta a partir
          daqui. "Excluir" pra aluna; internamente arquiva com arquivada_por
          ='aluna' (permite reativação silenciosa quando ela voltar). -->
-    <section class="view" id="view-conta">
+    <section class="view" id="view-minha-conta">
       <div class="view-topo view-topo-com-voltar">
-        <button type="button" class="view-voltar" id="conta-voltar" aria-label="Voltar">
+        <button type="button" class="view-voltar" id="minha-conta-voltar" aria-label="Voltar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
-        <h2 class="view-titulo">Sua conta</h2>
+        <h2 class="view-titulo">Minha conta</h2>
       </div>
 
       <ul class="perfil-menu conta-acoes">
+        <li class="perfil-item" id="btn-info-perfil">
+          <span class="perfil-item-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="4"/>
+              <path d="M4 20c0-4 4-6 8-6s8 2 8 6"/>
+            </svg>
+          </span>
+          <div class="perfil-item-info">
+            <span class="perfil-item-titulo">Informações do meu perfil</span>
+            <span class="perfil-item-sub">Dados pessoais, ocupação e dados da conta</span>
+          </div>
+          <span class="perfil-item-arrow">›</span>
+        </li>
         <li class="perfil-item" id="btn-sair-conta">
           <span class="perfil-item-icone" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -621,6 +594,118 @@
           <span class="perfil-item-arrow">›</span>
         </li>
       </ul>
+    </section>
+
+    <!-- INFORMAÇÕES DO MEU PERFIL — sub-view dentro de "Minha conta".
+         3 subseções:
+         1. INFORMAÇÕES PESSOAIS — nome completo (canônico), CPF, nome de
+            preferência (como ser chamada), gênero (feminino/masculino/outro)
+         2. OCUPAÇÃO E ATIVIDADE — texto livre
+         3. DADOS DA CONTA — e-mail e telefone, cada um com selo "verificado"
+            (verde quando confirmado) ou link "Verificar" (abre modal de OTP
+            por email ou trilho de magic link via WhatsApp pro telefone). -->
+    <section class="view" id="view-info-perfil">
+      <div class="view-topo view-topo-com-voltar">
+        <button type="button" class="view-voltar" id="info-perfil-voltar" aria-label="Voltar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <h2 class="view-titulo">Informações do meu perfil</h2>
+      </div>
+
+      <form class="form-perfil" id="form-info-perfil" autocomplete="off">
+
+        <!-- ── SUBSEÇÃO 1: INFORMAÇÕES PESSOAIS ── -->
+        <div class="form-subsecao">
+          <h3 class="form-subsecao-titulo">Informações pessoais</h3>
+
+          <label class="form-perfil-campo">
+            <span class="form-perfil-label">Nome completo</span>
+            <input type="text" name="nome" id="ip-nome" class="form-perfil-input" maxlength="180" placeholder="Como aparece no seu documento">
+          </label>
+
+          <label class="form-perfil-campo">
+            <span class="form-perfil-label">CPF</span>
+            <input type="text" name="cpf" id="ip-cpf" class="form-perfil-input" inputmode="numeric" placeholder="000.000.000-00" maxlength="14">
+          </label>
+
+          <label class="form-perfil-campo">
+            <span class="form-perfil-label">Nome de preferência</span>
+            <input type="text" name="nome_preferencia" id="ip-nome-pref" class="form-perfil-input" maxlength="120" placeholder="Como você deseja ser chamada">
+          </label>
+
+          <div class="form-perfil-campo">
+            <span class="form-perfil-label">Gênero</span>
+            <div class="form-radio-grupo" id="ip-genero-grupo">
+              <label class="form-radio">
+                <input type="radio" name="genero" value="feminino">
+                <span class="form-radio-marker"></span>
+                <span>Feminino</span>
+              </label>
+              <label class="form-radio">
+                <input type="radio" name="genero" value="masculino">
+                <span class="form-radio-marker"></span>
+                <span>Masculino</span>
+              </label>
+              <label class="form-radio">
+                <input type="radio" name="genero" value="outro">
+                <span class="form-radio-marker"></span>
+                <span>Outro</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SUBSEÇÃO 2: OCUPAÇÃO E ATIVIDADE ── -->
+        <div class="form-subsecao">
+          <h3 class="form-subsecao-titulo">Ocupação e atividade</h3>
+          <label class="form-perfil-campo">
+            <span class="form-perfil-label">Sua ocupação</span>
+            <textarea name="ocupacao" id="ip-ocupacao" class="form-perfil-input form-perfil-textarea" rows="2" maxlength="500" placeholder="Conta um pouco sobre o que você faz hoje"></textarea>
+          </label>
+        </div>
+
+        <!-- ── SUBSEÇÃO 3: DADOS DA CONTA ── -->
+        <div class="form-subsecao">
+          <h3 class="form-subsecao-titulo">Dados da conta</h3>
+
+          <button type="button" class="form-perfil-campo form-perfil-clicavel" id="ip-email-card">
+            <div class="form-perfil-clicavel-info">
+              <span class="form-perfil-label">E-mail</span>
+              <span class="form-perfil-descritivo">E-mail pelo qual você recebe as comunicações</span>
+              <span class="form-perfil-valor" id="ip-email-valor">—</span>
+            </div>
+            <span class="form-perfil-verif" id="ip-email-verif" data-verificado="false">
+              <span class="form-perfil-verif-check" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </span>
+              <span class="form-perfil-verif-label"></span>
+            </span>
+          </button>
+
+          <button type="button" class="form-perfil-campo form-perfil-clicavel" id="ip-tel-card">
+            <div class="form-perfil-clicavel-info">
+              <span class="form-perfil-label">Número de telefone</span>
+              <span class="form-perfil-descritivo">Número pelo qual você recebe os links de verificação e as comunicações</span>
+              <span class="form-perfil-valor" id="ip-tel-valor">—</span>
+            </div>
+            <span class="form-perfil-verif" id="ip-tel-verif" data-verificado="false">
+              <span class="form-perfil-verif-check" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </span>
+              <span class="form-perfil-verif-label"></span>
+            </span>
+          </button>
+        </div>
+
+        <div class="form-perfil-feedback" id="ip-feedback"></div>
+        <button type="submit" class="form-perfil-salvar" id="ip-salvar">Salvar alterações</button>
+      </form>
     </section>
 
     <!-- MODAL DE DESATIVAR CONTA — 2 slides + confirmação final
@@ -902,6 +987,97 @@
           </div>
         </button>
         <button type="button" class="modal-sair-cancelar" data-close>Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL VERIFICAR/TROCAR E-MAIL — duas etapas.
+       Etapa 1: aluna digita o novo e-mail (ou confirma o atual) → backend envia código por e-mail.
+       Etapa 2: aluna digita o código de 6 dígitos recebido → verifica e atualiza. -->
+  <div class="modal" id="modal-email-verif" aria-hidden="true">
+    <div class="modal-overlay" data-close></div>
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-email-conteudo">
+        <div class="modal-email-icone" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </div>
+        <h3 class="modal-email-titulo" id="modal-email-titulo">Verificar e-mail</h3>
+        <p class="modal-email-sub" id="modal-email-sub">Confirme o e-mail que vai receber suas comunicações.</p>
+
+        <!-- Etapa 1: e-mail -->
+        <div class="modal-email-etapa ativa" data-etapa="email">
+          <label class="form-perfil-campo">
+            <span class="form-perfil-label">E-mail</span>
+            <input type="email" id="modal-email-input" class="form-perfil-input" placeholder="voce@email.com" maxlength="180">
+          </label>
+          <div class="form-perfil-feedback" id="modal-email-feedback-1"></div>
+          <button type="button" class="form-perfil-salvar" id="modal-email-enviar">Enviar código</button>
+          <button type="button" class="modal-email-cancelar" data-close>Cancelar</button>
+        </div>
+
+        <!-- Etapa 2: código -->
+        <div class="modal-email-etapa" data-etapa="codigo">
+          <p class="modal-email-info">Enviamos um código de 6 dígitos para <strong id="modal-email-destino">—</strong>. Cole abaixo:</p>
+          <label class="form-perfil-campo">
+            <span class="form-perfil-label">Código</span>
+            <input type="text" id="modal-email-codigo" class="form-perfil-input modal-email-codigo-input" inputmode="numeric" maxlength="6" placeholder="000000">
+          </label>
+          <div class="form-perfil-feedback" id="modal-email-feedback-2"></div>
+          <button type="button" class="form-perfil-salvar" id="modal-email-confirmar">Confirmar e-mail</button>
+          <button type="button" class="modal-email-reenviar" id="modal-email-reenviar">Reenviar código</button>
+          <button type="button" class="modal-email-cancelar" data-close>Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TROCAR TELEFONE — fluxo Magic Link via WhatsApp.
+       Etapa 1: aluna digita o NOVO número → backend gera token + wa_url.
+       Etapa 2: aluna abre WhatsApp, manda o zap do novo número, recebe
+                magic link, toca pra confirmar. App escuta polling e mostra
+                "Aguardando..." → "Confirmado!". -->
+  <div class="modal" id="modal-trocar-tel" aria-hidden="true">
+    <div class="modal-overlay" data-close></div>
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-email-conteudo">
+        <div class="modal-email-icone" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+        </div>
+        <h3 class="modal-email-titulo">Trocar número de telefone</h3>
+        <p class="modal-email-sub">Pra trocar o número, você precisa provar que ele é seu — envie um WhatsApp do novo número.</p>
+
+        <!-- Etapa 1: novo número -->
+        <div class="modal-email-etapa ativa" data-etapa="numero">
+          <label class="form-perfil-campo">
+            <span class="form-perfil-label">Novo número de WhatsApp</span>
+            <input type="tel" id="modal-tel-novo" class="form-perfil-input" placeholder="(62) 9 9988-7766" maxlength="20">
+            <span class="form-perfil-hint">Com DDD. Mesmo número que você usa no WhatsApp.</span>
+          </label>
+          <div class="form-perfil-feedback" id="modal-tel-feedback-1"></div>
+          <button type="button" class="form-perfil-salvar" id="modal-tel-iniciar">Continuar</button>
+          <button type="button" class="modal-email-cancelar" data-close>Cancelar</button>
+        </div>
+
+        <!-- Etapa 2: aguardando confirmação via WhatsApp -->
+        <div class="modal-email-etapa" data-etapa="aguardando">
+          <p class="modal-email-info">
+            Abra o WhatsApp <strong>do novo número</strong> (<span id="modal-tel-novo-display">—</span>) e envie a mensagem que abrir. Depois toque no link que a gente devolver.
+          </p>
+          <div class="modal-tel-status" id="modal-tel-status">
+            <span class="modal-tel-spinner"></span>
+            <span class="modal-tel-status-texto">Aguardando você enviar o WhatsApp…</span>
+          </div>
+          <div class="form-perfil-feedback" id="modal-tel-feedback-2"></div>
+          <a href="#" target="_blank" class="form-perfil-salvar modal-tel-abrir-wa" id="modal-tel-abrir-wa">Abrir WhatsApp novamente</a>
+          <button type="button" class="modal-email-cancelar" data-close>Cancelar</button>
+        </div>
       </div>
     </div>
   </div>

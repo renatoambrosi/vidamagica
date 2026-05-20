@@ -1895,6 +1895,71 @@ body.antessala-ativa {
 .form-perfil-salvar:hover { opacity: 0.92; transform: translateY(-1px); }
 .form-perfil-salvar:disabled { opacity: 0.45; transform: none; cursor: not-allowed; box-shadow: none; }
 
+/* Subseções dentro de "Informações do meu perfil" — 3 blocos visualmente
+   separados (Informações pessoais · Ocupação · Dados da conta). Cada bloco
+   tem título dourado pequeno + campos. */
+.form-subsecao { margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--vidro-borda); }
+.form-subsecao:last-of-type { border-bottom: none; padding-bottom: 0.5rem; margin-bottom: 1rem; }
+.form-subsecao-titulo { font-family: var(--font-display); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ouro-fundo); margin: 0 0 0.85rem; }
+.form-perfil-textarea { resize: vertical; min-height: 64px; font-family: inherit; line-height: 1.45; }
+
+/* Grupo de radios (Gênero) — pills compactas em linha */
+.form-radio-grupo { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.form-radio { flex: 1; min-width: 90px; display: flex; align-items: center; gap: 0.45rem; padding: 0.6rem 0.75rem; background: var(--vidro); backdrop-filter: blur(10px); border: 1px solid var(--vidro-borda); border-radius: var(--radius-md); cursor: pointer; font-size: 0.85rem; color: var(--texto); transition: border-color 0.15s, background 0.15s; }
+.form-radio:hover { border-color: var(--vidro-borda-hi); }
+.form-radio input[type="radio"] { display: none; }
+.form-radio-marker { flex-shrink: 0; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--vidro-borda-hi); position: relative; transition: border-color 0.15s; }
+.form-radio input:checked + .form-radio-marker { border-color: var(--ouro-claro); }
+.form-radio input:checked + .form-radio-marker::after { content: ''; position: absolute; inset: 2px; border-radius: 50%; background: var(--ouro-claro); }
+.form-radio:has(input:checked) { border-color: var(--ouro-claro); background: var(--vidro-forte); }
+
+/* Campo clicável — usado pra Email e Telefone em Dados da conta. Vira um
+   "botão card": layout flex com texto à esquerda, selo de verificação à
+   direita. Click abre o modal correspondente. */
+.form-perfil-clicavel { display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 0.95rem; background: var(--vidro); backdrop-filter: blur(10px); border: 1px solid var(--vidro-borda); border-radius: var(--radius-md); cursor: pointer; text-align: left; transition: border-color 0.15s, background 0.15s; width: 100%; }
+.form-perfil-clicavel:hover { border-color: var(--ouro); background: var(--vidro-forte); }
+.form-perfil-clicavel-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
+.form-perfil-descritivo { display: block; font-size: 0.7rem; color: var(--texto-mute); line-height: 1.4; margin-top: 1px; }
+.form-perfil-clicavel .form-perfil-valor { background: none; border: none; padding: 0; color: var(--texto); font-weight: 600; font-size: 0.92rem; margin-top: 0.25rem; word-break: break-word; }
+
+/* Selo de verificação à direita do campo clicável. Quando data-verificado=
+   "true" mostra check verde "Verificado"; quando "false" mostra link
+   "Verificar →" em laranja-dourado convidativo. */
+.form-perfil-verif { display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0; padding: 0.3rem 0.6rem; border-radius: var(--radius-full); font-family: var(--font-display); font-size: 0.66rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; transition: background 0.15s, color 0.15s, border-color 0.15s; border: 1px solid currentColor; }
+.form-perfil-verif[data-verificado="true"] { color: #4BD78C; background: rgba(75,215,140,0.10); border-color: rgba(75,215,140,0.45); }
+.form-perfil-verif[data-verificado="true"] .form-perfil-verif-label::after { content: 'Verificado'; }
+.form-perfil-verif[data-verificado="false"] { color: var(--ouro-claro); background: transparent; }
+.form-perfil-verif[data-verificado="false"] .form-perfil-verif-label::after { content: 'Verificar'; }
+.form-perfil-verif[data-verificado="false"] .form-perfil-verif-check { display: none; }
+.form-perfil-verif-check { width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; }
+.form-perfil-verif-check svg { width: 14px; height: 14px; }
+
+/* Modal de verificar/trocar e-mail e trocar telefone — etapas sequenciais.
+   .modal-email-etapa[data-etapa="email|codigo|numero|aguardando"] são
+   alternadas via .ativa pelo JS. */
+.modal-email-conteudo { padding: 1.25rem 1.25rem 0.75rem; text-align: center; }
+.modal-email-icone { width: 48px; height: 48px; margin: 0 auto 0.6rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--vidro); border: 1px solid var(--vidro-borda-hi); color: var(--ouro-claro); }
+.modal-email-icone svg { width: 24px; height: 24px; }
+.modal-email-titulo { font-family: var(--font-display); font-size: 1.05rem; font-weight: 800; color: var(--texto); margin-bottom: 0.4rem; }
+.modal-email-sub { font-size: 0.85rem; color: var(--texto-suave); line-height: 1.55; margin-bottom: 1.1rem; }
+.modal-email-info { font-size: 0.86rem; color: var(--texto-suave); line-height: 1.55; margin-bottom: 1rem; padding: 0 0.2rem; }
+.modal-email-info strong { color: var(--ouro-brilho); word-break: break-all; }
+.modal-email-etapa { display: none; text-align: left; }
+.modal-email-etapa.ativa { display: block; }
+.modal-email-etapa .form-perfil-campo { margin-bottom: 0.85rem; }
+.modal-email-codigo-input { text-align: center; letter-spacing: 0.5rem; font-family: var(--font-display); font-size: 1.4rem; font-weight: 800; }
+.modal-email-cancelar { display: block; width: 100%; padding: 0.7rem; background: transparent; border: none; color: var(--texto-mute); font-family: var(--font-ui); font-size: 0.85rem; font-weight: 600; margin-top: 0.5rem; cursor: pointer; transition: color 0.15s; }
+.modal-email-cancelar:hover { color: var(--texto); }
+.modal-email-reenviar { display: block; width: 100%; padding: 0.55rem; background: transparent; border: none; color: var(--ouro-claro); font-family: var(--font-ui); font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: color 0.15s; margin-top: 0.35rem; }
+.modal-email-reenviar:hover { color: var(--ouro-brilho); }
+
+.modal-tel-status { display: flex; align-items: center; gap: 0.6rem; padding: 0.85rem 1rem; background: var(--vidro); border: 1px solid var(--vidro-borda); border-radius: var(--radius-md); margin-bottom: 0.85rem; font-size: 0.86rem; color: var(--texto); }
+.modal-tel-status.ok { border-color: rgba(75,215,140,0.5); background: rgba(75,215,140,0.08); }
+.modal-tel-status.ok .modal-tel-spinner { display: none; }
+.modal-tel-status.ok::before { content: '✓'; color: #4BD78C; font-size: 1.2rem; font-weight: 900; }
+.modal-tel-spinner { width: 18px; height: 18px; border: 2px solid rgba(244,217,152,0.2); border-top-color: var(--ouro-brilho); border-radius: 50%; animation: avatar-spin 0.9s linear infinite; flex-shrink: 0; }
+.modal-tel-abrir-wa { display: block; text-decoration: none; text-align: center; }
+
 /* Senha e Segurança — duas seções na mesma view (trocar senha + dispositivos
    autorizados). Cada seção tem cabeçalho próprio. */
 .seguranca-secao { padding: 0 1.25rem 0.5rem; margin-bottom: 1.25rem; }

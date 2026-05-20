@@ -432,8 +432,16 @@ function resetarModalDesativar() {
   irParaSlideDesativar(1);
 }
 
-document.getElementById('menu-conta')?.addEventListener('click', () => irPara('conta'));
-document.getElementById('conta-voltar')?.addEventListener('click', () => irPara('perfil'));
+// "Minha conta" — hub agregador (substitui o antigo "Sua conta" + "Informações
+// Pessoais"). Reúne: Informações do meu perfil + Sair + Desativar + Excluir.
+document.getElementById('menu-minha-conta')?.addEventListener('click', () => irPara('minha-conta'));
+document.getElementById('minha-conta-voltar')?.addEventListener('click', () => irPara('perfil'));
+// Dentro de "Minha conta" há o atalho pra "Informações do meu perfil".
+document.getElementById('btn-info-perfil')?.addEventListener('click', () => {
+  popularInfoPerfil();
+  irPara('info-perfil');
+});
+document.getElementById('info-perfil-voltar')?.addEventListener('click', () => irPara('minha-conta'));
 
 document.getElementById('btn-desativar-conta')?.addEventListener('click', () => {
   resetarModalDesativar();
@@ -586,9 +594,11 @@ function detectarEReativacao(contexto) {
 // renderTrilhaJornada() quando irPara('jornada') é chamado.
 document.getElementById('menu-jornada')?.addEventListener('click', () => irPara('jornada'));
 
-// ── INFORMAÇÕES PESSOAIS ─────────────────────────────────────
-// Sub-view do perfil. Edita nome + e-mail; telefone e data de cadastro
-// são leitura. Telefone exige fluxo de re-verificação (frente futura).
+// ── INFORMAÇÕES DO MEU PERFIL ────────────────────────────────
+// Sub-view dentro de "Minha conta". 3 subseções: Informações pessoais
+// (nome completo, CPF, nome de preferência, gênero) + Ocupação (texto
+// livre) + Dados da conta (e-mail e telefone como cards clicáveis com
+// selo verificado). E-mail/telefone abrem modal de verificação.
 function formatarDataPtBr(iso) {
   if (!iso) return '—';
   try {
@@ -598,40 +608,65 @@ function formatarDataPtBr(iso) {
   } catch { return '—'; }
 }
 
-function popularInfoPessoais() {
-  if (!usuario) return;
-  const nome = document.getElementById('form-info-nome');
-  const email = document.getElementById('form-info-email');
-  const emailStatus = document.getElementById('form-info-email-status');
-  const tel = document.getElementById('form-info-telefone');
-  const criado = document.getElementById('form-info-criado');
-  if (nome) nome.value = usuario.nome || '';
-  if (email) email.value = usuario.email || '';
-  if (emailStatus) {
-    if (!usuario.email) {
-      emailStatus.textContent = '';
-      emailStatus.className = 'form-perfil-hint';
-    } else if (usuario.email_verificado) {
-      emailStatus.textContent = '✓ E-mail verificado';
-      emailStatus.className = 'form-perfil-hint ok';
-    } else {
-      emailStatus.textContent = 'Ainda não verificado';
-      emailStatus.className = 'form-perfil-hint';
-    }
+function formatarCpfDisplay(cpf) {
+  const c = String(cpf || '').replace(/\D/g, '');
+  if (c.length !== 11) return c;
+  return `${c.slice(0,3)}.${c.slice(3,6)}.${c.slice(6,9)}-${c.slice(9)}`;
+}
+
+function formatarTelDisplayBR(tel) {
+  // tel é canônico E.164 sem +. Ex: 5562999887766
+  const t = String(tel || '').replace(/\D/g, '');
+  if (!t) return '—';
+  // BR: 55 + DDD(2) + 9 dígitos
+  if (t.startsWith('55') && t.length >= 12) {
+    const ddd = t.slice(2, 4);
+    const corpo = t.slice(4);
+    if (corpo.length === 9) return `+55 (${ddd}) ${corpo.slice(0,5)}-${corpo.slice(5)}`;
+    if (corpo.length === 8) return `+55 (${ddd}) ${corpo.slice(0,4)}-${corpo.slice(4)}`;
   }
-  if (tel) tel.textContent = usuario.telefone_formatado || '—';
-  if (criado) criado.textContent = formatarDataPtBr(usuario.criado_em);
-  // Limpa feedback de tentativas anteriores
-  const fb = document.getElementById('form-info-feedback');
+  return `+${t}`;
+}
+
+function popularInfoPerfil() {
+  if (!usuario) return;
+  // Subseção 1 — Informações pessoais
+  const nome = document.getElementById('ip-nome');
+  const cpf = document.getElementById('ip-cpf');
+  const pref = document.getElementById('ip-nome-pref');
+  if (nome) nome.value = usuario.nome || '';
+  if (cpf) cpf.value = formatarCpfDisplay(usuario.cpf || '');
+  if (pref) pref.value = usuario.nome_preferencia || '';
+  // Gênero — radios
+  const generoAtual = (usuario.genero || '').toLowerCase();
+  document.querySelectorAll('#ip-genero-grupo input[name="genero"]').forEach(r => {
+    r.checked = (r.value === generoAtual);
+  });
+  // Subseção 2 — Ocupação
+  const ocup = document.getElementById('ip-ocupacao');
+  if (ocup) ocup.value = usuario.ocupacao || '';
+  // Subseção 3 — Dados da conta (email + telefone)
+  const emailVal = document.getElementById('ip-email-valor');
+  const emailVerif = document.getElementById('ip-email-verif');
+  const telVal = document.getElementById('ip-tel-valor');
+  const telVerif = document.getElementById('ip-tel-verif');
+  if (emailVal) emailVal.textContent = usuario.email || 'Adicione seu e-mail';
+  if (emailVerif) emailVerif.dataset.verificado = usuario.email && usuario.email_verificado ? 'true' : 'false';
+  if (telVal) telVal.textContent = formatarTelDisplayBR(usuario.telefone_formatado);
+  if (telVerif) telVerif.dataset.verificado = usuario.telefone_verificado ? 'true' : 'false';
+  // Limpa feedback
+  const fb = document.getElementById('ip-feedback');
   if (fb) { fb.textContent = ''; fb.className = 'form-perfil-feedback'; }
 }
 
-document.getElementById('menu-info-pessoais')?.addEventListener('click', () => {
-  popularInfoPessoais();
-  irPara('info-pessoais');
+// Máscara visual leve de CPF enquanto digita (não impede colar)
+document.getElementById('ip-cpf')?.addEventListener('input', (e) => {
+  const v = String(e.target.value || '').replace(/\D/g, '').slice(0, 11);
+  e.target.value = v.length > 9 ? `${v.slice(0,3)}.${v.slice(3,6)}.${v.slice(6,9)}-${v.slice(9)}`
+                 : v.length > 6 ? `${v.slice(0,3)}.${v.slice(3,6)}.${v.slice(6)}`
+                 : v.length > 3 ? `${v.slice(0,3)}.${v.slice(3)}`
+                 : v;
 });
-
-document.getElementById('info-pessoais-voltar')?.addEventListener('click', () => irPara('perfil'));
 
 // ── SENHA E SEGURANÇA ────────────────────────────────────────
 // Duas frentes na mesma view: trocar/criar senha + gerenciar dispositivos
@@ -824,24 +859,36 @@ document.getElementById('form-senha')?.addEventListener('submit', async (e) => {
   }
 });
 
-document.getElementById('form-info-pessoais')?.addEventListener('submit', async (e) => {
+// Submit do form de Informações do meu perfil — salva os campos
+// editáveis (nome, cpf, nome_preferencia, genero, ocupacao). E-mail e
+// telefone NÃO entram aqui — eles têm fluxo de verificação próprio nos
+// modais abaixo.
+document.getElementById('form-info-perfil')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!usuario) return;
-  const btn = document.getElementById('form-info-salvar');
-  const fb = document.getElementById('form-info-feedback');
-  const nome = document.getElementById('form-info-nome')?.value?.trim();
-  const email = document.getElementById('form-info-email')?.value?.trim();
+  const btn = document.getElementById('ip-salvar');
+  const fb = document.getElementById('ip-feedback');
 
-  if (!nome) {
-    if (fb) { fb.textContent = 'Por favor, informe seu nome.'; fb.className = 'form-perfil-feedback erro'; }
+  const nome = document.getElementById('ip-nome')?.value?.trim() || '';
+  const cpfRaw = document.getElementById('ip-cpf')?.value || '';
+  const cpfNum = cpfRaw.replace(/\D/g, '');
+  const pref = document.getElementById('ip-nome-pref')?.value?.trim() || '';
+  const ocup = document.getElementById('ip-ocupacao')?.value?.trim() || '';
+  const generoChecked = document.querySelector('#ip-genero-grupo input[name="genero"]:checked');
+  const genero = generoChecked ? generoChecked.value : '';
+
+  if (cpfNum && cpfNum.length !== 11) {
+    if (fb) { fb.textContent = 'CPF precisa ter 11 dígitos.'; fb.className = 'form-perfil-feedback erro'; }
     return;
   }
 
-  // Monta payload só com o que mudou — evita resetar email_verificado
-  // à toa quando o e-mail não foi tocado.
+  // Diff — envia só o que mudou
   const payload = {};
   if (nome !== (usuario.nome || '')) payload.nome = nome;
-  if ((email || '') !== (usuario.email || '')) payload.email = email || null;
+  if ((cpfNum || '') !== (usuario.cpf || '')) payload.cpf = cpfNum;
+  if (pref !== (usuario.nome_preferencia || '')) payload.nome_preferencia = pref;
+  if (ocup !== (usuario.ocupacao || '')) payload.ocupacao = ocup;
+  if ((genero || '') !== (usuario.genero || '')) payload.genero = genero;
 
   if (!Object.keys(payload).length) {
     if (fb) { fb.textContent = 'Nada para salvar.'; fb.className = 'form-perfil-feedback'; }
@@ -856,25 +903,281 @@ document.getElementById('form-info-pessoais')?.addEventListener('submit', async 
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${VmSession.getAccess()}` },
       body: JSON.stringify(payload),
     });
-    if (!r.ok) {
-      const data = await r.json().catch(() => ({}));
-      throw new Error(data?.error || 'erro');
-    }
-    const data = await r.json();
-    const u = data?.usuario;
-    if (u) {
-      usuario = { ...usuario, ...u };
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data?.error || 'erro');
+    if (data?.usuario) {
+      usuario = { ...usuario, ...data.usuario };
       hidratarUI(usuario);
-      popularInfoPessoais();
+      popularInfoPerfil();
     }
     if (fb) { fb.textContent = 'Alterações salvas ✦'; fb.className = 'form-perfil-feedback ok'; }
   } catch (err) {
-    console.error('[info-pessoais] salvar:', err);
-    if (fb) { fb.textContent = 'Não consegui salvar. Tente novamente.'; fb.className = 'form-perfil-feedback erro'; }
+    console.error('[info-perfil] salvar:', err);
+    const msg = err?.message && err.message !== 'erro' ? err.message : 'Não consegui salvar. Tente novamente.';
+    if (fb) { fb.textContent = msg; fb.className = 'form-perfil-feedback erro'; }
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Salvar alterações'; }
   }
 });
+
+// ── MODAL VERIFICAR/TROCAR E-MAIL ────────────────────────────
+// Fluxo de 2 etapas:
+//   1. Aluna digita (ou confirma) o e-mail. Backend manda código por email.
+//   2. Aluna digita o código de 6 dígitos. Backend confirma e marca verificado.
+// Usa endpoints já existentes: /solicitar-otp-email + /verificar-otp-email.
+
+function irParaEtapaModal(modalId, etapa) {
+  document.querySelectorAll(`#${modalId} .modal-email-etapa`).forEach(el => {
+    el.classList.toggle('ativa', el.dataset.etapa === etapa);
+  });
+}
+
+function abrirVerificarEmail() {
+  if (!usuario) return;
+  const input = document.getElementById('modal-email-input');
+  if (input) input.value = usuario.email || '';
+  const fb1 = document.getElementById('modal-email-feedback-1');
+  const fb2 = document.getElementById('modal-email-feedback-2');
+  if (fb1) { fb1.textContent = ''; fb1.className = 'form-perfil-feedback'; }
+  if (fb2) { fb2.textContent = ''; fb2.className = 'form-perfil-feedback'; }
+  const codigo = document.getElementById('modal-email-codigo');
+  if (codigo) codigo.value = '';
+  // Título dinâmico: se já tem email, é "Verificar"; se vai trocar, é "Trocar"
+  const titulo = document.getElementById('modal-email-titulo');
+  const sub = document.getElementById('modal-email-sub');
+  if (titulo) titulo.textContent = usuario.email && !usuario.email_verificado ? 'Verificar e-mail' : (usuario.email ? 'Trocar e-mail' : 'Adicionar e-mail');
+  if (sub) sub.textContent = 'Confirme o e-mail que vai receber suas comunicações.';
+  irParaEtapaModal('modal-email-verif', 'email');
+  abrirModal('modal-email-verif');
+}
+
+document.getElementById('ip-email-card')?.addEventListener('click', abrirVerificarEmail);
+
+document.getElementById('modal-email-enviar')?.addEventListener('click', async () => {
+  const input = document.getElementById('modal-email-input');
+  const fb = document.getElementById('modal-email-feedback-1');
+  const btn = document.getElementById('modal-email-enviar');
+  const email = (input?.value || '').trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (fb) { fb.textContent = 'Informe um e-mail válido.'; fb.className = 'form-perfil-feedback erro'; }
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+  try {
+    // Se o email é DIFERENTE do atual, primeiro salva no perfil (que reseta
+    // email_verificado=false). Depois solicita OTP. Se for o mesmo, apenas
+    // solicita OTP pra confirmar.
+    if (email !== (usuario?.email || '')) {
+      const putRes = await fetch(`${API}/api/auth/perfil`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${VmSession.getAccess()}` },
+        body: JSON.stringify({ email }),
+      });
+      const putData = await putRes.json().catch(() => ({}));
+      if (!putRes.ok) throw new Error(putData?.error || 'Erro ao atualizar e-mail');
+      if (putData?.usuario) {
+        usuario = { ...usuario, ...putData.usuario };
+        hidratarUI(usuario);
+        popularInfoPerfil();
+      }
+    }
+    // Solicita o código por e-mail
+    const r = await fetch(`${API}/api/auth/solicitar-otp-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${VmSession.getAccess()}` },
+      body: JSON.stringify({ email }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data?.error || 'Falha ao enviar código');
+    document.getElementById('modal-email-destino').textContent = email;
+    irParaEtapaModal('modal-email-verif', 'codigo');
+    setTimeout(() => document.getElementById('modal-email-codigo')?.focus(), 100);
+  } catch (err) {
+    console.error('[email-verif] enviar:', err);
+    if (fb) { fb.textContent = err.message || 'Erro ao enviar.'; fb.className = 'form-perfil-feedback erro'; }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Enviar código'; }
+  }
+});
+
+document.getElementById('modal-email-confirmar')?.addEventListener('click', async () => {
+  const codigo = (document.getElementById('modal-email-codigo')?.value || '').replace(/\D/g, '');
+  const fb = document.getElementById('modal-email-feedback-2');
+  const btn = document.getElementById('modal-email-confirmar');
+  const email = document.getElementById('modal-email-destino')?.textContent || '';
+  if (codigo.length !== 6) {
+    if (fb) { fb.textContent = 'O código tem 6 dígitos.'; fb.className = 'form-perfil-feedback erro'; }
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = 'Confirmando...'; }
+  try {
+    const r = await fetch(`${API}/api/auth/verificar-otp-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${VmSession.getAccess()}` },
+      body: JSON.stringify({ email, codigo }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data?.error || 'Código inválido');
+    if (data?.usuario) {
+      usuario = { ...usuario, ...data.usuario };
+      hidratarUI(usuario);
+      popularInfoPerfil();
+    }
+    toast('✓ E-mail verificado');
+    fecharModal('modal-email-verif');
+  } catch (err) {
+    console.error('[email-verif] confirmar:', err);
+    if (fb) { fb.textContent = err.message || 'Código incorreto.'; fb.className = 'form-perfil-feedback erro'; }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Confirmar e-mail'; }
+  }
+});
+
+document.getElementById('modal-email-reenviar')?.addEventListener('click', async () => {
+  const email = document.getElementById('modal-email-destino')?.textContent || '';
+  const fb = document.getElementById('modal-email-feedback-2');
+  try {
+    const r = await fetch(`${API}/api/auth/solicitar-otp-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${VmSession.getAccess()}` },
+      body: JSON.stringify({ email }),
+    });
+    if (!r.ok) throw new Error('Falha ao reenviar');
+    if (fb) { fb.textContent = 'Novo código enviado ✦'; fb.className = 'form-perfil-feedback ok'; }
+  } catch (err) {
+    if (fb) { fb.textContent = err.message || 'Erro ao reenviar.'; fb.className = 'form-perfil-feedback erro'; }
+  }
+});
+
+// ── MODAL TROCAR TELEFONE ────────────────────────────────────
+// Fluxo Magic Link via WhatsApp (usa a regra existente do projeto):
+//   1. Aluna digita o NOVO número → POST /perfil/trocar-telefone-iniciar
+//      retorna wa_url + token. App abre wa.me do novo número.
+//   2. Aluna envia o zap → webhook reconhece intent='trocar_telefone' e
+//      enfileira magic link pro NOVO número.
+//   3. Aluna toca o link → cai em /app?trocar_tel=TOKEN → app detecta
+//      e chama /perfil/trocar-telefone-confirmar → trocarTelefonePrincipal.
+// O polling monitora se o webhook já recebeu (acesso_solicitacoes.usado).
+
+let _trocaTelToken = null;
+let _trocaTelPollTimer = null;
+
+function pararPollTrocaTel() {
+  if (_trocaTelPollTimer) { clearInterval(_trocaTelPollTimer); _trocaTelPollTimer = null; }
+}
+
+function abrirTrocarTelefone() {
+  pararPollTrocaTel();
+  _trocaTelToken = null;
+  const input = document.getElementById('modal-tel-novo');
+  if (input) input.value = '';
+  ['modal-tel-feedback-1','modal-tel-feedback-2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = ''; el.className = 'form-perfil-feedback'; }
+  });
+  irParaEtapaModal('modal-trocar-tel', 'numero');
+  abrirModal('modal-trocar-tel');
+}
+
+document.getElementById('ip-tel-card')?.addEventListener('click', abrirTrocarTelefone);
+
+// Fecha modal de telefone → para o polling
+document.querySelectorAll('#modal-trocar-tel [data-close]').forEach(el => {
+  el.addEventListener('click', pararPollTrocaTel);
+});
+
+document.getElementById('modal-tel-iniciar')?.addEventListener('click', async () => {
+  const input = document.getElementById('modal-tel-novo');
+  const fb = document.getElementById('modal-tel-feedback-1');
+  const btn = document.getElementById('modal-tel-iniciar');
+  const novoTel = (input?.value || '').trim();
+  if (!novoTel) {
+    if (fb) { fb.textContent = 'Informe o novo número.'; fb.className = 'form-perfil-feedback erro'; }
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = 'Preparando...'; }
+  try {
+    const r = await fetch(`${API}/api/auth/perfil/trocar-telefone-iniciar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${VmSession.getAccess()}` },
+      body: JSON.stringify({ novo_telefone: novoTel, device_fingerprint: { device_id: navigator.userAgent.slice(0, 60) } }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data?.error || 'Falha ao iniciar');
+    _trocaTelToken = data.token;
+    document.getElementById('modal-tel-novo-display').textContent = formatarTelDisplayBR(data.novo_telefone);
+    const link = document.getElementById('modal-tel-abrir-wa');
+    if (link) link.href = data.wa_url;
+    irParaEtapaModal('modal-trocar-tel', 'aguardando');
+    // Abre WhatsApp na hora
+    window.location.href = data.wa_url;
+    // Inicia polling
+    iniciarPollTrocaTel();
+  } catch (err) {
+    console.error('[trocar-tel] iniciar:', err);
+    if (fb) { fb.textContent = err.message || 'Erro ao iniciar.'; fb.className = 'form-perfil-feedback erro'; }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Continuar'; }
+  }
+});
+
+function iniciarPollTrocaTel() {
+  pararPollTrocaTel();
+  if (!_trocaTelToken) return;
+  _trocaTelPollTimer = setInterval(async () => {
+    try {
+      const r = await fetch(`${API}/api/auth/aguardando/${_trocaTelToken}`);
+      const data = await r.json();
+      if (data.status === 'enviado') {
+        pararPollTrocaTel();
+        const statusEl = document.getElementById('modal-tel-status');
+        if (statusEl) {
+          statusEl.classList.add('ok');
+          const t = statusEl.querySelector('.modal-tel-status-texto');
+          if (t) t.textContent = 'Confirmado! Toque no link que recebemos no novo número.';
+        }
+      } else if (data.status === 'expirado' || data.status === 'invalido') {
+        pararPollTrocaTel();
+        const fb = document.getElementById('modal-tel-feedback-2');
+        if (fb) { fb.textContent = 'Tempo esgotado. Tente novamente.'; fb.className = 'form-perfil-feedback erro'; }
+      }
+    } catch {}
+  }, 2500);
+}
+
+// Detecção do magic link de troca de telefone na URL (?trocar_tel=...)
+// Quando aluna clica no link recebido no WhatsApp do novo número, cai aqui.
+(async function detectarMagicTrocaTel() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('trocar_tel');
+    if (!token) return;
+    // Limpa da URL antes de continuar pra evitar repetir caso recarregue
+    window.history.replaceState({}, '', window.location.pathname);
+    if (!VmSession.getAccess()) {
+      toast('Você precisa estar logada pra confirmar a troca.', 'erro');
+      return;
+    }
+    const r = await fetch(`${API}/api/auth/perfil/trocar-telefone-confirmar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${VmSession.getAccess()}` },
+      body: JSON.stringify({ token, device_fingerprint: { device_id: navigator.userAgent.slice(0, 60) } }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      toast(data?.error || 'Link inválido ou expirado.', 'erro');
+      return;
+    }
+    if (data?.usuario) {
+      usuario = { ...usuario, ...data.usuario };
+      hidratarUI(usuario);
+      if (typeof popularInfoPerfil === 'function') popularInfoPerfil();
+    }
+    toast('✓ Telefone trocado com sucesso');
+  } catch (err) {
+    console.error('[trocar-tel] confirmar URL:', err);
+  }
+})();
 
 // ── PLAYER ───────────────────────────────────────────────────
 // Embed usado pelo modal-player (aberto via "Assista mais vídeos").
