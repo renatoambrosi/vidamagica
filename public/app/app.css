@@ -213,6 +213,11 @@ body.chat-aberto .views {
   padding: 0.5rem 0 0.25rem;
   position: relative;
   transition: transform 0.35s cubic-bezier(.34,1.4,.64,1);
+  /* Remove o retângulo cinza/escuro que iOS Safari aplica em buttons no
+     toque (tap highlight). O feedback visual já é dado pelo .abrindo. */
+  -webkit-tap-highlight-color: transparent;
+  tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 .tesouro-btn:hover { transform: translateY(-2px); }
 .tesouro-btn:active { transform: scale(0.97); }
@@ -426,21 +431,30 @@ body.tesouro-modal-aberto .tesouro-bau.flutuante {
   transition: opacity 0.5s;
 }
 
-/* RELÓGIO sobreposto — só aparece no estado resgatado */
+/* RELÓGIO sobreposto — só aparece no estado resgatado.
+   Estado normal: invisível, sem ocupar espaço de hit-testing.
+   Quando .resgatado é adicionado: roda @keyframes uma vez (não transition —
+   transition reinicia se o transform interno muda, causando aquele pulinho
+   x1→x3→x1 que aluna percebia). */
 .tesouro-relogio {
   position: absolute;
   top: 50%; left: 50%;
   width: 110px; height: 110px;
-  transform: translate(-50%, -50%) scale(0.7);
+  transform: translate(-50%, -50%) scale(1);
   opacity: 0;
-  transition: opacity 0.5s ease-out, transform 0.5s cubic-bezier(.34,1.4,.64,1);
   pointer-events: none;
   z-index: 3;
 }
 .tesouro-btn.resgatado .tesouro-relogio {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
+  animation: relogio-entra 0.5s ease-out forwards;
 }
+@keyframes relogio-entra {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1);    }
+}
+/* Ponteiro de segundos foi descartado — visualmente o tempo é dado pelo
+   setor que cresce + ponteiro hora avançando + texto regressivo. */
+.relogio-ponteiro-segundo { display: none; }
 .relogio-face {
   fill: rgba(247, 235, 200, 0.95);
   stroke: rgba(140, 90, 20, 0.85);
@@ -490,39 +504,39 @@ body.tesouro-modal-aberto .tesouro-bau.flutuante {
   fill: #4A3416;
 }
 
-/* SETOR PERCORRIDO — preenchimento dourado dentro do espaço já consumido
-   do ciclo de 24h. O `d` do path é atualizado por JS a cada segundo.
-   O `background-position` do gradient interno move pra criar REFLEXOS
-   MÓVEIS dentro do setor, dando vida ao preenchimento. */
+/* SETOR PERCORRIDO — preenchimento dourado VIVO dentro do espaço já
+   consumido do ciclo de 24h. Cores saturadas, glow dourado externo
+   (filter no SVG path) e shimmer rápido (2.2s). Tempo está PASSANDO,
+   e dá pra perceber. */
 .relogio-setor {
-  /* Animação de pulsação sutil pra reforçar "tempo está passando" */
-  animation: relogio-setor-pulsa 3.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 5px rgba(255, 220, 120, 0.85));
+  animation: relogio-setor-pulsa 2.2s ease-in-out infinite;
 }
 @keyframes relogio-setor-pulsa {
-  0%, 100% { opacity: 0.75; }
+  0%, 100% { opacity: 0.85; }
   50%      { opacity: 1;    }
 }
-/* Os stops do linearGradient animam de offset pra criar shimmer interno */
+/* Os stops do linearGradient animam de cor — shimmer interno + brilhante */
 #relogio-setor-grad stop:nth-child(1) {
-  animation: setor-shimmer-1 4s ease-in-out infinite;
+  animation: setor-shimmer-1 2.2s ease-in-out infinite;
 }
 #relogio-setor-grad stop:nth-child(2) {
-  animation: setor-shimmer-2 4s ease-in-out infinite;
+  animation: setor-shimmer-2 2.2s ease-in-out infinite;
 }
 #relogio-setor-grad stop:nth-child(3) {
-  animation: setor-shimmer-3 4s ease-in-out infinite;
+  animation: setor-shimmer-3 2.2s ease-in-out infinite;
 }
 @keyframes setor-shimmer-1 {
-  0%, 100% { stop-color: rgba(244,208,96,0.40); }
-  50%      { stop-color: rgba(255,235,150,0.55); }
+  0%, 100% { stop-color: rgba(244,180,70,0.85); }
+  50%      { stop-color: rgba(255,235,150,0.95); }
 }
 @keyframes setor-shimmer-2 {
-  0%, 100% { stop-color: rgba(255,235,150,0.70); }
-  50%      { stop-color: rgba(244,208,96,0.45); }
+  0%, 100% { stop-color: rgba(255,245,190,1);   }
+  50%      { stop-color: rgba(244,200,80,0.85); }
 }
 @keyframes setor-shimmer-3 {
-  0%, 100% { stop-color: rgba(244,208,96,0.40); }
-  50%      { stop-color: rgba(255,245,180,0.65); }
+  0%, 100% { stop-color: rgba(244,180,70,0.85); }
+  50%      { stop-color: rgba(255,250,210,1);   }
 }
 
 .tesouro-info { width: 100%; text-align: center; position: relative; z-index: 2; margin-top: -1.4rem; }
