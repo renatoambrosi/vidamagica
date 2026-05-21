@@ -203,12 +203,39 @@ body.chat-aberto .views {
 .saudacao-frase { font-size: 0.92rem; font-style: italic; color: var(--texto-suave); }
 
 .tesouro-wrap { padding: 0 1.25rem 1.5rem; }
-.tesouro-btn { width: 100%; display: flex; align-items: center; gap: 1rem; background: var(--vidro); backdrop-filter: blur(14px); border: 1px solid var(--vidro-borda-hi); border-radius: var(--radius-lg); padding: 1rem 1.25rem; position: relative; overflow: hidden; box-shadow: var(--sombra-media), var(--glow-ouro); transition: transform 0.35s cubic-bezier(.34,1.4,.64,1), box-shadow 0.2s; }
+.tesouro-btn {
+  width: 100%;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 0.6rem;
+  background: var(--vidro); backdrop-filter: blur(14px);
+  border: 1px solid var(--vidro-borda-hi);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem 1.25rem 1.25rem;
+  position: relative; overflow: hidden;
+  box-shadow: var(--sombra-media), var(--glow-ouro);
+  transition: transform 0.35s cubic-bezier(.34,1.4,.64,1), box-shadow 0.2s;
+}
 .tesouro-btn:hover { transform: translateY(-2px); box-shadow: var(--sombra-forte), var(--glow-ouro); }
 .tesouro-btn:active { transform: scale(0.98); }
-.tesouro-glow { position: absolute; top: -20px; left: -20px; width: 80px; height: 80px; background: radial-gradient(circle, rgba(244,208,96,0.3) 0%, transparent 70%); border-radius: 50%; animation: tesouro-pulsa 2.5s ease-in-out infinite; pointer-events: none; }
-@keyframes tesouro-pulsa { 0%, 100% { transform: scale(0.9); opacity: 0.6; } 50% { transform: scale(1.2); opacity: 1; } }
-.tesouro-bau { flex-shrink: 0; width: 72px; height: 72px; position: relative; z-index: 2; filter: drop-shadow(0 4px 8px rgba(161,117,35,0.3)); transform-origin: center bottom; }
+.tesouro-glow {
+  position: absolute; top: 50%; left: 50%; width: 220px; height: 220px;
+  transform: translate(-50%, -55%);
+  background: radial-gradient(circle, rgba(244,208,96,0.35) 0%, transparent 65%);
+  border-radius: 50%;
+  animation: tesouro-pulsa 2.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes tesouro-pulsa {
+  0%, 100% { transform: translate(-50%, -55%) scale(0.9); opacity: 0.55; }
+  50%      { transform: translate(-50%, -55%) scale(1.15); opacity: 1; }
+}
+.tesouro-bau {
+  flex-shrink: 0;
+  width: 160px; height: 160px;
+  position: relative; z-index: 2;
+  filter: drop-shadow(0 8px 16px rgba(161,117,35,0.4));
+  transform-origin: center bottom;
+}
 .tesouro-bau svg { width: 100%; height: 100%; display: block; }
 
 /* Estado "chacoalhando" = tem tesouro novo. Baú pula/balança chamando atenção.
@@ -225,12 +252,20 @@ body.chat-aberto .views {
 }
 
 /* Estado "abrindo" = aluna clicou. Baú aumenta na tela enquanto o Lottie roda. */
-.tesouro-btn.abrindo { transform: scale(1.06); box-shadow: var(--sombra-forte), 0 0 36px rgba(244,208,96,0.45); }
-.tesouro-btn.abrindo .tesouro-bau { animation: bau-pop 0.9s cubic-bezier(.34,1.4,.64,1) forwards; }
+.tesouro-btn.abrindo {
+  transform: scale(1.04);
+  box-shadow: var(--sombra-forte), 0 0 48px rgba(244,208,96,0.55);
+}
+.tesouro-btn.abrindo .tesouro-glow { animation: tesouro-glow-intenso 1s ease-in-out infinite; }
+@keyframes tesouro-glow-intenso {
+  0%, 100% { transform: translate(-50%, -55%) scale(1.1); opacity: 0.85; }
+  50%      { transform: translate(-50%, -55%) scale(1.4); opacity: 1; }
+}
+.tesouro-btn.abrindo .tesouro-bau { animation: bau-pop 1s cubic-bezier(.34,1.4,.64,1) forwards; }
 @keyframes bau-pop {
-  0%   { transform: scale(1) rotate(0deg); }
-  40%  { transform: scale(1.35) rotate(-3deg); }
-  100% { transform: scale(1.25) rotate(0deg); }
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.15); }
+  100% { transform: scale(1.1); }
 }
 
 /* Estado "resgatado" = aluna já pegou o tesouro do dia. Quieto. */
@@ -238,9 +273,9 @@ body.chat-aberto .views {
 .tesouro-btn.resgatado .tesouro-glow { animation: none; opacity: 0.18; }
 .tesouro-btn.resgatado .tesouro-bau { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)) grayscale(0.25); }
 
-.tesouro-info { flex: 1; text-align: left; position: relative; z-index: 2; }
-.tesouro-label { font-family: var(--font-display); font-size: 0.9rem; font-weight: 800; color: var(--ouro-fundo); display: block; margin-bottom: 0.2rem; }
-.tesouro-sub { font-size: 0.75rem; color: var(--texto-mute); }
+.tesouro-info { width: 100%; text-align: center; position: relative; z-index: 2; }
+.tesouro-label { font-family: var(--font-display); font-size: 1.05rem; font-weight: 800; color: var(--ouro-fundo); display: block; margin-bottom: 0.25rem; letter-spacing: 0.01em; }
+.tesouro-sub { font-size: 0.8rem; color: var(--texto-mute); }
 
 .feed { margin-bottom: 0.5rem; }
 .feed-carrossel-wrap { position: relative; margin-bottom: 0.5rem; }
@@ -1902,6 +1937,27 @@ body.antessala-ativa {
   transition: transform 220ms cubic-bezier(.34,1.4,.64,1);
   filter: drop-shadow(0 4px 10px rgba(94,184,80,0.55));
   will-change: transform, opacity;
+}
+
+/* Carta voadora — clone visual que sai do botão "Eu quero viver isso" e voa
+   pro ícone Perfil no bottom-nav (onde mora o Meu Baú). */
+.carta-voadora {
+  position: fixed; z-index: 9999; pointer-events: none;
+  font-size: 1.8rem; line-height: 1;
+  transform: translate(-50%, -50%) scale(0.7);
+  transition: transform 280ms cubic-bezier(.34,1.4,.64,1);
+  filter: drop-shadow(0 4px 12px rgba(244,208,96,0.7));
+  will-change: transform, opacity;
+}
+
+/* Pulse no ícone Perfil ao receber a carta */
+.nav-tab.nav-tab-pulsa {
+  animation: nav-tab-recebe 0.7s cubic-bezier(.34,1.4,.64,1);
+}
+@keyframes nav-tab-recebe {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.25); filter: drop-shadow(0 0 12px rgba(244,208,96,0.8)); }
+  100% { transform: scale(1); }
 }
 
 /* Badge de sementes pulsa quando chega uma nova */

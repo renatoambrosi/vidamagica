@@ -1755,26 +1755,49 @@ function abrirModalTesouro() {
   abrirModal('modal-tesouro');
 }
 
-// Click no baú → animação de abrir (Lottie + scale) → modal sobe quando termina.
+// Click no baú → animação completa do Lottie → modal sobe quando termina de abrir.
+let _handlerCompletaBau = null;
 document.getElementById('tesouro-btn')?.addEventListener('click', () => {
   if (tesouroAnimando) return;
   if (!tesouroAtual) {
-    // Sem tesouro: ainda abre o modal mostrando o último estado, ou simplesmente nada
     if (tesouroJaResgatadoHoje) return; // baú quieto, não faz nada
     return;
   }
   tesouroAnimando = true;
   setEstadoBau('abrindo');
-  // Tempo da animação do Lottie até a tampa abrir totalmente (~900ms na curva atual).
-  // Se a lib não tiver carregado, abre o modal direto sem esperar.
-  const espera = (tesouroLottie && typeof lottie !== 'undefined') ? 900 : 0;
-  setTimeout(() => {
+
+  // Aguarda a animação do Lottie terminar pra subir o modal. Usa o evento
+  // 'complete' do Lottie (preciso) com fallback de timeout caso a lib não
+  // dispare (CDN falhou, etc).
+  let modalSubiu = false;
+  const subirModal = () => {
+    if (modalSubiu) return;
+    modalSubiu = true;
     abrirModalTesouro();
     tesouroAnimando = false;
-  }, espera);
+    if (tesouroLottie && _handlerCompletaBau) {
+      try { tesouroLottie.removeEventListener('complete', _handlerCompletaBau); } catch {}
+    }
+  };
+
+  if (tesouroLottie && typeof lottie !== 'undefined') {
+    if (_handlerCompletaBau) {
+      try { tesouroLottie.removeEventListener('complete', _handlerCompletaBau); } catch {}
+    }
+    _handlerCompletaBau = subirModal;
+    tesouroLottie.addEventListener('complete', _handlerCompletaBau);
+    // Fallback: se o evento não disparar em 3s, sobe modal mesmo assim
+    setTimeout(subirModal, 3000);
+  } else {
+    // Sem Lottie: sobe modal direto (sem animação)
+    subirModal();
+  }
 });
 
-// Reagir ✨ Quero viver isso — toggle (POST/DELETE)
+// Reagir ✨ Quero viver isso — toggle (POST/DELETE).
+// Quando MARCA (primeira vez ou re-marca), dispara animação de carta voando
+// pro ícone Perfil no bottom-nav (onde mora o Meu Baú). Quando desmarca,
+// não anima — só atualiza visual.
 document.getElementById('modal-tesouro-quero')?.addEventListener('click', async () => {
   if (!tesouroAtual) return;
   const btn = document.getElementById('modal-tesouro-quero');
@@ -1790,12 +1813,58 @@ document.getElementById('modal-tesouro-quero')?.addEventListener('click', async 
     tesouroAtual._ja_marcou_quero = !jaMarcado;
     btn.setAttribute('aria-pressed', tesouroAtual._ja_marcou_quero ? 'true' : 'false');
     btn.classList.toggle('ativo', tesouroAtual._ja_marcou_quero);
+    // Anima só quando MARCA (não quando desmarca)
+    if (!jaMarcado) voarCartaProBau(btn);
   } catch (e) {
     console.warn('[tesouro] quero-viver:', e);
   } finally {
     btn.disabled = false;
   }
 });
+
+// ── Animação: carta voa do botão "Eu quero viver isso" até o ícone Perfil ─
+// Espelha a animação da semente, mas com emoji ✨ e destino diferente.
+// O Baú de Relatos da aluna mora em Perfil → Meu Baú, então a carta voa
+// em direção ao ícone Perfil no bottom-nav.
+function voarCartaProBau(origemEl) {
+  const destino = document.querySelector('.nav-tab[data-view="perfil"]');
+  if (!origemEl || !destino) return;
+
+  const origemRect = origemEl.getBoundingClientRect();
+  const destinoRect = destino.getBoundingClientRect();
+
+  const x0 = origemRect.left + origemRect.width / 2;
+  const y0 = origemRect.top + origemRect.height / 2;
+  const x1 = destinoRect.left + destinoRect.width / 2;
+  const y1 = destinoRect.top + destinoRect.height / 2;
+
+  const flutuante = document.createElement('span');
+  flutuante.className = 'carta-voadora';
+  flutuante.textContent = '✨';
+  flutuante.style.left = `${x0}px`;
+  flutuante.style.top = `${y0}px`;
+  document.body.appendChild(flutuante);
+  void flutuante.offsetWidth;
+
+  // Fase 1 (0-280ms): cresce no lugar (chama atenção)
+  flutuante.style.transform = 'translate(-50%, -50%) scale(1.5)';
+
+  // Fase 2 (280-1000ms): voa pro destino diminuindo
+  setTimeout(() => {
+    const dx = x1 - x0;
+    const dy = y1 - y0;
+    flutuante.style.transition = 'transform 720ms cubic-bezier(.55,.05,.6,1), opacity 720ms ease-in';
+    flutuante.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.4)`;
+    flutuante.style.opacity = '0';
+  }, 280);
+
+  // Chegou: ícone Perfil pulsa
+  setTimeout(() => {
+    destino.classList.add('nav-tab-pulsa');
+    setTimeout(() => destino.classList.remove('nav-tab-pulsa'), 700);
+    flutuante.remove();
+  }, 1000);
+}
 
 // Resgatar semente — chama backend (atômico+idempotente), depois anima
 document.getElementById('modal-tesouro-resgatar')?.addEventListener('click', async () => {
