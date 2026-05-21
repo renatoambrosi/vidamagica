@@ -2106,15 +2106,74 @@ body.antessala-ativa {
   will-change: transform, opacity;
 }
 
-/* Pulse no ícone Perfil ao receber a carta */
+/* ── Destino da estrela (Perfil no bottom-nav) ───────────────────
+   Duas fases visuais pra aluna entender claramente PRA ONDE a estrela
+   está indo: */
+
+/* FASE 1: AGUARDANDO — enquanto a estrela está voando, o ícone Perfil
+   já começa a brilhar suavemente, sinalizando "vou receber algo". */
+.nav-tab.nav-tab-aguardando {
+  animation: nav-tab-aguarda 1.4s ease-out forwards;
+}
+.nav-tab.nav-tab-aguardando::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(244,208,96,0.45) 0%, rgba(244,208,96,0.18) 50%, transparent 80%);
+  animation: nav-tab-halo-cresce 1.4s ease-out forwards;
+  pointer-events: none;
+  z-index: -1;
+}
+@keyframes nav-tab-aguarda {
+  0%   { filter: none; }
+  100% { filter: drop-shadow(0 0 12px rgba(244,208,96,0.7)); }
+}
+@keyframes nav-tab-halo-cresce {
+  0%   { opacity: 0; width: 8px; height: 8px; }
+  100% { opacity: 1; width: 56px; height: 56px; }
+}
+
+/* FASE 2: RECEBEU — quando a estrela chega, EXPLOSÃO dourada forte:
+   scale grande do ícone + halo radial expandindo + glow saturado.
+   Não dá pra confundir com qualquer outro ícone. */
 .nav-tab.nav-tab-pulsa {
-  animation: nav-tab-recebe 0.7s cubic-bezier(.34,1.4,.64,1);
+  animation: nav-tab-recebe 0.9s cubic-bezier(.34,1.4,.64,1);
+  z-index: 5;
+}
+.nav-tab.nav-tab-pulsa::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle,
+                rgba(255,235,150,0.85) 0%,
+                rgba(244,208,96,0.55) 35%,
+                rgba(244,208,96,0.2) 60%,
+                transparent 80%);
+  animation: nav-tab-explosao 0.9s ease-out forwards;
+  pointer-events: none;
+  z-index: -1;
 }
 @keyframes nav-tab-recebe {
-  0%   { transform: scale(1); }
-  35%  { transform: scale(1.25); filter: drop-shadow(0 0 12px rgba(244,208,96,0.8)); }
-  100% { transform: scale(1); }
+  0%   { transform: scale(1); filter: none; }
+  20%  { transform: scale(1.5); filter: drop-shadow(0 0 24px rgba(255,235,150,1)) drop-shadow(0 0 40px rgba(244,208,96,0.9)); }
+  60%  { transform: scale(1.15); filter: drop-shadow(0 0 12px rgba(244,208,96,0.6)); }
+  100% { transform: scale(1); filter: none; }
 }
+@keyframes nav-tab-explosao {
+  0%   { opacity: 0; width: 20px; height: 20px; }
+  35%  { opacity: 1; width: 100px; height: 100px; }
+  100% { opacity: 0; width: 140px; height: 140px; }
+}
+
+/* Durante a recepção, o ícone Perfil também ganha cor dourada quente */
+.nav-tab.nav-tab-pulsa svg { stroke: var(--ouro-claro); transition: stroke 0.2s; }
+.nav-tab.nav-tab-pulsa .nav-tab-label { color: var(--ouro-claro); transition: color 0.2s; }
 
 /* Badge de sementes pulsa quando chega uma nova */
 .topo-badge.badge-pulsa { animation: badge-pulsa 0.6s cubic-bezier(.34,1.4,.64,1); }

@@ -1938,10 +1938,15 @@ function voarCartaProBau(origemEl) {
   document.body.appendChild(flutuante);
   void flutuante.offsetWidth;
 
-  // Fase 1 (0-400ms): cresce no lugar, bem visível
+  // ANTECIPAÇÃO: destino começa a brilhar imediatamente, indicando
+  // claramente PRA ONDE a estrela está indo. O halo cresce em sincronia
+  // com o voo (1.4s — mesma duração total da animação da estrela).
+  destino.classList.add('nav-tab-aguardando');
+
+  // Fase 1 (0-400ms): estrela cresce no lugar de origem, bem visível
   flutuante.style.transform = 'translate(-50%, -50%) scale(2)';
 
-  // Fase 2 (400-1400ms): voa pro destino diminuindo, mantém visível mais tempo
+  // Fase 2 (400-1400ms): voa pro destino diminuindo
   setTimeout(() => {
     const dx = x1 - x0;
     const dy = y1 - y0;
@@ -1950,10 +1955,11 @@ function voarCartaProBau(origemEl) {
     flutuante.style.opacity = '0';
   }, 400);
 
-  // Chegou: ícone Perfil pulsa
+  // Chegou: RECEPÇÃO forte — explosão dourada + ícone pulsa
   setTimeout(() => {
+    destino.classList.remove('nav-tab-aguardando');
     destino.classList.add('nav-tab-pulsa');
-    setTimeout(() => destino.classList.remove('nav-tab-pulsa'), 700);
+    setTimeout(() => destino.classList.remove('nav-tab-pulsa'), 900);
     flutuante.remove();
   }, 1400);
 }
