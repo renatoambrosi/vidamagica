@@ -2497,19 +2497,36 @@ body.antessala-ativa {
 /* Modal de crop circular do avatar — aluna ajusta enquadramento antes
    do upload. Palco quadrado com a imagem por baixo e uma máscara escura
    por cima com um "buraco" circular. Imagem pode ser arrastada (pan) e
-   redimensionada via slider de zoom. O JS faz o crop final via canvas. */
-.avatar-crop-conteudo { padding: 1.25rem 1.25rem 0.5rem; text-align: center; }
-.avatar-crop-titulo { font-family: var(--font-display); font-size: 1.05rem; font-weight: 800; color: var(--texto); margin-bottom: 0.35rem; line-height: 1.3; }
-.avatar-crop-sub { font-size: 0.82rem; color: var(--texto-suave); line-height: 1.5; margin-bottom: 1rem; }
-/* Palco quadrado — proporção 1:1, ocupa toda a largura disponível.
-   overflow:hidden trava a imagem dentro. touch-action:none impede scroll
-   da página enquanto a aluna arrasta a foto. */
+   redimensionada via slider de zoom. O JS faz o crop final via canvas.
+
+   Esse modal cresce mais que o padrão (até ~95vh) pra dar uma área de
+   edição grande e confortável. Mantém as bordas arredondadas só no topo
+   (mesmo estilo de sheet). Conteúdo centralizado verticalmente dentro
+   do sheet. */
+#modal-avatar-crop .modal-sheet {
+  max-height: 95vh;
+  height: 95vh;
+}
+#modal-avatar-crop .avatar-crop-conteudo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.6rem;
+}
+.avatar-crop-conteudo { padding: 1rem 1.25rem 0.75rem; text-align: center; }
+.avatar-crop-titulo { font-family: var(--font-display); font-size: 1.1rem; font-weight: 800; color: var(--texto); margin-bottom: 0.2rem; line-height: 1.3; }
+.avatar-crop-sub { font-size: 0.82rem; color: var(--texto-suave); line-height: 1.5; margin-bottom: 0.3rem; }
+/* Palco quadrado — proporção 1:1. Ocupa o máximo disponível, limitado
+   só pra não estourar a viewport em telas largas. overflow:hidden trava
+   a imagem dentro. touch-action:none impede scroll da página enquanto
+   a aluna arrasta a foto. */
 .avatar-crop-palco {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  max-width: 320px;
-  margin: 0 auto 1rem;
+  max-width: 460px;
+  margin: 0 auto;
   background: #000;
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -2549,7 +2566,7 @@ body.antessala-ativa {
   align-items: center;
   gap: 0.7rem;
   padding: 0 0.25rem;
-  margin-bottom: 1rem;
+  margin: 0.3rem 0;
 }
 .avatar-crop-zoom-icone {
   font-family: var(--font-display);
