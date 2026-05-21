@@ -1938,10 +1938,26 @@ function voarCartaProBau(origemEl) {
   document.body.appendChild(flutuante);
   void flutuante.offsetWidth;
 
-  // ANTECIPAÇÃO: destino começa a brilhar imediatamente, indicando
-  // claramente PRA ONDE a estrela está indo. O halo cresce em sincronia
-  // com o voo (1.4s — mesma duração total da animação da estrela).
-  destino.classList.add('nav-tab-aguardando');
+  // ── CLONE do ícone Perfil em cima do fume dourado ───────────────
+  // O destino real fica ATRÁS do overlay fumê (z-index 80), invisível
+  // pra aluna. Pra ela ver claramente PRA ONDE a estrela está indo,
+  // clonamos o nav-tab e posicionamos na mesma coordenada — mas com
+  // z-index altíssimo (acima do fume, abaixo só da estrela).
+  const cloneDestino = destino.cloneNode(true);
+  cloneDestino.classList.remove('active');         // estado neutro pra animação não conflitar
+  cloneDestino.classList.add('nav-tab-clone-overlay');
+  cloneDestino.style.position = 'fixed';
+  cloneDestino.style.left = `${destinoRect.left}px`;
+  cloneDestino.style.top = `${destinoRect.top}px`;
+  cloneDestino.style.width = `${destinoRect.width}px`;
+  cloneDestino.style.height = `${destinoRect.height}px`;
+  cloneDestino.style.margin = '0';
+  cloneDestino.style.zIndex = '1500';              // acima do fume (80) e do baú flutuante (1000)
+  cloneDestino.style.pointerEvents = 'none';
+  document.body.appendChild(cloneDestino);
+
+  // ANTECIPAÇÃO aplicada NO CLONE (não no original — original está atrás do fume)
+  cloneDestino.classList.add('nav-tab-aguardando');
 
   // Fase 1 (0-400ms): estrela cresce no lugar de origem, bem visível
   flutuante.style.transform = 'translate(-50%, -50%) scale(2)';
@@ -1955,12 +1971,14 @@ function voarCartaProBau(origemEl) {
     flutuante.style.opacity = '0';
   }, 400);
 
-  // Chegou: RECEPÇÃO forte — explosão dourada + ícone pulsa
+  // Chegou: RECEPÇÃO forte aplicada no CLONE — explosão dourada + pulse
   setTimeout(() => {
-    destino.classList.remove('nav-tab-aguardando');
-    destino.classList.add('nav-tab-pulsa');
-    setTimeout(() => destino.classList.remove('nav-tab-pulsa'), 900);
+    cloneDestino.classList.remove('nav-tab-aguardando');
+    cloneDestino.classList.add('nav-tab-pulsa');
     flutuante.remove();
+    // Depois da animação da explosão, remove o clone — destino real
+    // volta a aparecer normalmente quando o modal fechar.
+    setTimeout(() => cloneDestino.remove(), 1000);
   }, 1400);
 }
 
