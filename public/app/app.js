@@ -1872,9 +1872,25 @@ document.getElementById('tesouro-btn')?.addEventListener('click', () => {
 // pro ícone Perfil no bottom-nav (onde mora o Meu Baú). Quando desmarca,
 // não anima — só atualiza visual.
 document.getElementById('modal-tesouro-quero')?.addEventListener('click', async () => {
-  if (!tesouroAtual) return;
   const btn = document.getElementById('modal-tesouro-quero');
+
+  // ── DEBUG: feedback IMEDIATO antes de qualquer lógica ─────────────
+  // Se você vê o botão pulsar + estrela voando, o handler ESTÁ rodando.
+  // Se nada disso aparece, o handler NÃO está conectado (cache JS antigo
+  // ou seletor não pega). Esses 2 disparos rodam SEMPRE, sem condição.
+  btn.classList.add('clicou');
+  setTimeout(() => btn.classList.remove('clicou'), 400);
+  try { voarCartaProBau(btn); } catch (e) { console.error('[tesouro] erro carta:', e); }
+  // ──────────────────────────────────────────────────────────────────
+
+  console.log('[tesouro] click no Eu Quero', { temAtual: !!tesouroAtual, jaMarcado: tesouroAtual?._ja_marcou_quero });
+  if (!tesouroAtual) {
+    console.warn('[tesouro] sem tesouroAtual — click ignorado');
+    return;
+  }
   const jaMarcado = tesouroAtual._ja_marcou_quero;
+  if (!jaMarcado) tocarAudio(audioEuQuero);
+
   btn.disabled = true;
   try {
     const url = `${API}/api/app/tesouro/${tesouroAtual.id}/quero-viver`;
@@ -1882,17 +1898,15 @@ document.getElementById('modal-tesouro-quero')?.addEventListener('click', async 
       method: jaMarcado ? 'DELETE' : 'POST',
       headers: authHeader(),
     });
-    if (!r.ok) throw new Error('rede');
+    if (!r.ok) {
+      console.warn('[tesouro] quero-viver falhou:', r.status, await r.text().catch(() => ''));
+      throw new Error('rede ' + r.status);
+    }
     tesouroAtual._ja_marcou_quero = !jaMarcado;
     btn.setAttribute('aria-pressed', tesouroAtual._ja_marcou_quero ? 'true' : 'false');
     btn.classList.toggle('ativo', tesouroAtual._ja_marcou_quero);
-    // Animação sempre roda em click bem-sucedido (visual de feedback).
-    // O SOM emocional de "guardei" só toca quando o estado virou MARCADO
-    // (entrar no baú). Desmarcar não toca som.
-    voarCartaProBau(btn);
-    if (!jaMarcado) tocarAudio(audioEuQuero);   // 🔊 som de "guardei no baú"
   } catch (e) {
-    console.warn('[tesouro] quero-viver:', e);
+    console.warn('[tesouro] quero-viver erro:', e);
   } finally {
     btn.disabled = false;
   }

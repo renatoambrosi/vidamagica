@@ -309,14 +309,12 @@ body.tesouro-abrindo .tesouro-glow { opacity: 0; transition: opacity 0.3s; }
   60%  { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
   100% { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
 }
-/* Quando o modal pergaminho sobe, o baú flutuante some suavemente
-   (não competir com o pergaminho que vai ocupar o centro).
-   IMPORTANTE: !important pq a animação `bau-flutua` tem `forwards`,
-   que trava opacity:1 no fim e sobrescreve esta regra sem o !important. */
+/* Quando o modal pergaminho sobe, o baú flutuante SOME COMPLETAMENTE.
+   `display: none` garante que ele não fica no fluxo de hit-testing —
+   antes (apenas opacity:0 + pointer-events:none) o iOS Safari ainda
+   interceptava clicks através dele em alguns casos. */
 body.tesouro-modal-aberto .tesouro-bau.flutuante {
-  opacity: 0 !important;
-  transition: opacity 0.4s ease-out !important;
-  animation: none !important;
+  display: none !important;
 }
 
 /* Estado "resgatado" = aluna já pegou o tesouro do dia. Quieto. */
@@ -1965,6 +1963,8 @@ body.antessala-ativa {
 #modal-tesouro .modal-overlay { background: transparent; backdrop-filter: none; }
 #modal-tesouro .modal-sheet {
   max-width: 440px;
+  z-index: 2000;             /* garantia absoluta de ficar acima de qualquer baú/overlay */
+  pointer-events: auto;
   border-radius: 14px 18px 16px 20px / 16px 14px 20px 14px; /* irregularidade leve, lembra papel artesanal */
   border: 1px solid rgba(120, 80, 30, 0.35);
   border-bottom: 1px solid rgba(120, 80, 30, 0.35);
@@ -2057,6 +2057,15 @@ body.antessala-ativa {
   box-shadow: 0 4px 16px rgba(200,146,42,0.22);
 }
 .modal-tesouro-quero:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+/* Pulse visual instantâneo no click — confirma que o handler está rodando */
+.modal-tesouro-quero.clicou {
+  animation: btn-quero-pulse 0.4s ease-out;
+}
+@keyframes btn-quero-pulse {
+  0%   { transform: scale(1); box-shadow: none; }
+  40%  { transform: scale(1.06); box-shadow: 0 0 24px rgba(244,208,96,0.7); }
+  100% { transform: scale(1); box-shadow: none; }
+}
 
 /* 🌱 "Resgatar Semente" — botão principal */
 .modal-tesouro-resgatar {
