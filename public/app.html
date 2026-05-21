@@ -92,8 +92,15 @@
             <line class="relogio-marca" x1="90" y1="50" x2="84" y2="50"/>
             <line class="relogio-marca" x1="50" y1="90" x2="50" y2="84"/>
             <line class="relogio-marca" x1="10" y1="50" x2="16" y2="50"/>
-            <line class="relogio-ponteiro-hora" x1="50" y1="50" x2="50" y2="26"/>
-            <line class="relogio-ponteiro-minuto" x1="50" y1="50" x2="50" y2="18"/>
+            <!-- Ponteiros refletem hora atual de Brasília (atualizam a cada
+                 segundo via JS — atualizarRelogioTesouro). -->
+            <!-- MÓVEL (principal): mais curto e grosso. Marca tempo decorrido. -->
+            <line class="relogio-ponteiro-hora"   id="relogio-pont-hora"   x1="50" y1="50" x2="50" y2="26"/>
+            <!-- FIXO em 12h (alvo do reset): comprido, com bolinha dourada na ponta. -->
+            <line class="relogio-ponteiro-minuto" id="relogio-pont-minuto" x1="50" y1="50" x2="50" y2="14"/>
+            <circle class="relogio-ponteiro-fixo-bolinha" cx="50" cy="14" r="2.6"/>
+            <!-- SEGUNDOS: tic-tac discreto. -->
+            <line class="relogio-ponteiro-segundo" id="relogio-pont-segundo" x1="50" y1="50" x2="50" y2="16"/>
             <circle class="relogio-centro" cx="50" cy="50" r="3.5"/>
           </svg>
           <div class="tesouro-info">

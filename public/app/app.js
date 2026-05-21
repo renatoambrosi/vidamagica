@@ -1703,11 +1703,88 @@ function initBauLottie(tentativasRestantes = 30) {
   }
 }
 
+// ── Relógio do estado "resgatado" — mostra hora atual de Brasília + contagem
+// regressiva até as 5h da manhã (quando o próximo tesouro fica disponível). ─
+const TESOURO_HORA_RESET = 5;   // 5h da manhã horário de Brasília
+let _relogioInterval = null;
+
+function getHoraBrasilia() {
+  // Usa Intl pra extrair h/m/s no timezone de São Paulo, independente do
+  // fuso horário do aparelho da aluna.
+  try {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Sao_Paulo',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    });
+    const parts = fmt.formatToParts(new Date());
+    const h = parseInt(parts.find(p => p.type === 'hour').value, 10);
+    const m = parseInt(parts.find(p => p.type === 'minute').value, 10);
+    const s = parseInt(parts.find(p => p.type === 'second').value, 10);
+    return { h: h === 24 ? 0 : h, m, s }; // alguns navegadores devolvem 24 em vez de 0
+  } catch {
+    const d = new Date();
+    return { h: d.getHours(), m: d.getMinutes(), s: d.getSeconds() };
+  }
+}
+
+function atualizarRelogioTesouro() {
+  const { h, m, s } = getHoraBrasilia();
+
+  // O relógio é uma AMPULHETA CIRCULAR — não mostra hora atual, mostra
+  // QUANTO DO CICLO de 24h já passou desde o último reset (5h da manhã).
+  //
+  // - Ponteiro FIXO (minuto, mais comprido) aponta pra 12h = ALVO do reset.
+  // - Ponteiro MÓVEL (hora, mais curto e grosso) percorre 360° em 24h
+  //   exatas. Começa em 12h após o reset, vai dando a volta toda durante
+  //   o dia. Quando reencontra o fixo (24h depois) = é hora do próximo.
+  // - Ponteiro de SEGUNDOS gira 360° por minuto pra dar vida visual.
+  const totalAgora = h * 3600 + m * 60 + s;
+  const alvoReset = TESOURO_HORA_RESET * 3600;
+  const segDesdeReset = totalAgora >= alvoReset
+    ? totalAgora - alvoReset                       // depois das 5h: tempo desde reset de hoje
+    : (24 * 3600) - alvoReset + totalAgora;         // antes das 5h: tempo desde reset de ontem
+  const restante = (24 * 3600) - segDesdeReset;
+
+  const angMovel = (segDesdeReset / (24 * 3600)) * 360;
+  const angSegundo = s * 6;
+
+  const elMovel   = document.getElementById('relogio-pont-hora');
+  const elFixo    = document.getElementById('relogio-pont-minuto');
+  const elSegundo = document.getElementById('relogio-pont-segundo');
+  if (elMovel)   elMovel.style.transform   = `rotate(${angMovel}deg)`;
+  if (elFixo)    elFixo.style.transform    = `rotate(0deg)`;       // sempre apontando pra 12h
+  if (elSegundo) elSegundo.style.transform = `rotate(${angSegundo}deg)`;
+
+  // Sub-label com contagem regressiva textual
+  const horas = Math.floor(restante / 3600);
+  const minutos = Math.floor((restante % 3600) / 60);
+  const sub = document.getElementById('tesouro-sub');
+  if (sub) {
+    sub.textContent = `Próximo presente em ${horas}h ${String(minutos).padStart(2, '0')}m`;
+  }
+}
+
+function iniciarRelogioTesouro() {
+  if (_relogioInterval) clearInterval(_relogioInterval);
+  atualizarRelogioTesouro();
+  _relogioInterval = setInterval(atualizarRelogioTesouro, 1000);
+}
+
+function pararRelogioTesouro() {
+  if (_relogioInterval) {
+    clearInterval(_relogioInterval);
+    _relogioInterval = null;
+  }
+}
+
 function setEstadoBau(estado) {
   const btn = document.getElementById('tesouro-btn');
   const sub = document.getElementById('tesouro-sub');
   if (!btn) return;
   btn.classList.remove('chacoalhando', 'abrindo', 'resgatado', 'aberto-aguardando');
+  // Estado anterior pode ter relógio rodando — para o interval por padrão;
+  // o case 'resgatado' liga de novo.
+  pararRelogioTesouro();
   if (estado === 'chacoalhando') {
     btn.classList.add('chacoalhando');
     if (sub) sub.textContent = 'Seu presente de hoje está aqui ✦';
@@ -1727,8 +1804,9 @@ function setEstadoBau(estado) {
     }
   } else if (estado === 'resgatado') {
     btn.classList.add('resgatado');
-    if (sub) sub.textContent = 'Você já resgatou o seu tesouro de hoje ✦';
     if (tesouroLottie) { try { tesouroLottie.goToAndStop(0, true); } catch {} }
+    // Liga relógio ao vivo — sub-label vira "Próximo presente em XXh YYm"
+    iniciarRelogioTesouro();
   } else if (estado === 'vazio') {
     if (sub) sub.textContent = 'Nenhum tesouro hoje ainda ✦';
     if (tesouroLottie) { try { tesouroLottie.goToAndStop(0, true); } catch {} }

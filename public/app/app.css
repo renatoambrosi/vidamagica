@@ -448,25 +448,39 @@ body.tesouro-modal-aberto .tesouro-bau.flutuante {
   stroke-width: 2;
   stroke-linecap: round;
 }
-/* Ponteiro de hora — FIXO apontando pra meio-dia (12h, pra cima) */
+/* Os ponteiros são setados por JS (atualizarRelogioTesouro). O relógio é
+   AMPULHETA CIRCULAR — não hora atual. Papéis:
+   - ponteiro-hora    → MÓVEL principal, gira 360° em 24h (tempo decorrido)
+   - ponteiro-minuto  → FIXO em 12h (alvo do reset diário das 5h)
+   - ponteiro-segundo → tic-tac discreto pra dar vida visual */
+
+/* MÓVEL — protagonista: marrom escuro, mais grosso e curto */
 .relogio-ponteiro-hora {
   stroke: #4A3416;
-  stroke-width: 4;
+  stroke-width: 4.5;
   stroke-linecap: round;
   transform-origin: 50px 50px;
-  /* sem animação — fica parado em 12h */
+  transition: transform 1s linear;     /* avanço suave a cada segundo */
 }
-/* Ponteiro de minutos — gira infinitamente (mais fino, mais comprido) */
+/* FIXO em 12h — visualmente o "alvo": dourado claro, mais comprido e fino */
 .relogio-ponteiro-minuto {
-  stroke: #8B6520;
-  stroke-width: 2.5;
+  stroke: #C8922A;
+  stroke-width: 2;
   stroke-linecap: round;
   transform-origin: 50px 50px;
-  animation: relogio-girar 5s linear infinite;
+  filter: drop-shadow(0 0 4px rgba(244,208,96,0.7));
 }
-@keyframes relogio-girar {
-  from { transform: rotate(0deg);   }
-  to   { transform: rotate(360deg); }
+/* Bolinha dourada na ponta do ponteiro fixo, reforçando "alvo" */
+.relogio-ponteiro-fixo-bolinha {
+  fill: #C8922A;
+  filter: drop-shadow(0 0 4px rgba(244,208,96,0.85));
+}
+/* Segundos — tic discreto, vermelho-tijolo desbotado */
+.relogio-ponteiro-segundo {
+  stroke: rgba(200, 60, 40, 0.65);
+  stroke-width: 1;
+  stroke-linecap: round;
+  transform-origin: 50px 50px;
 }
 .relogio-centro {
   fill: #4A3416;
