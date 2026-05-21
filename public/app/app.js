@@ -248,6 +248,12 @@ function fecharModal(el) {
   if (el.id === 'modal-player') pararPlayer();
   el.setAttribute('aria-hidden','true');
   document.body.style.overflow = '';
+  // Cleanup DEFENSIVO do tesouro — se o modal que fecha é o modal-tesouro
+  // (ou qualquer outro modal por garantia), remove as classes que aplicam
+  // overlay fumê e baú flutuante. Sem isso, o overlay position:fixed pode
+  // ficar grudado na tela e impedir scroll/interação.
+  document.body.classList.remove('tesouro-abrindo', 'tesouro-modal-aberto');
+  document.querySelector('.tesouro-bau.flutuante')?.classList.remove('flutuante');
 }
 document.querySelectorAll('[data-close]').forEach(btn => {
   btn.addEventListener('click', e => fecharModal(e.target.closest('.modal')));

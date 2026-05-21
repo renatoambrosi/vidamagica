@@ -428,7 +428,30 @@ body.tesouro-modal-aberto .tesouro-bau.flutuante {
 .tesouro-btn.resgatado .tesouro-bau {
   filter: drop-shadow(0 8px 14px rgba(140,90,20,0.35));
   opacity: 0.45;            /* baú recua suavemente — relógio é protagonista */
-  transition: opacity 0.5s;
+  transition: opacity 0.5s ease-out;
+}
+
+/* ── Silhueta sólida do baú ──────────────────────────────────────
+   Atrás do Lottie (z-index 2 vs Lottie 3). Mostra-se SOMENTE no estado
+   resgatado, EM PAR com a transição de opacity do Lottie:
+   - Mesma duração (0.5s)
+   - Mesma curva (ease-out)
+   - Mesmo trigger (.tesouro-btn.resgatado)
+   Resultado: os dois entram e saem JUNTOS, sem aparecer um sem o outro. */
+.tesouro-bau-silhueta {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 220px;
+  height: 220px;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 2;
+  transition: opacity 0.5s ease-out;
+  filter: drop-shadow(0 10px 20px rgba(140,90,20,0.45));
+}
+.tesouro-btn.resgatado .tesouro-bau-silhueta {
+  opacity: 1;
 }
 
 /* RELÓGIO sobreposto — só aparece no estado resgatado.
