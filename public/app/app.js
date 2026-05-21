@@ -350,7 +350,9 @@ async function uploadAvatar(file) {
   av?.classList.add('enviando');
   try {
     const fd = new FormData();
-    fd.append('imagem', file);
+    // Filename explícito pro multer aceitar Blob também (vindo do crop).
+    const nome = file.name || ('avatar.' + (file.type === 'image/png' ? 'png' : 'jpg'));
+    fd.append('imagem', file, nome);
     const upRes = await fetch(`${API}/api/upload/imagem`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${VmSession.getAccess()}` },
@@ -385,8 +387,230 @@ document.getElementById('perfil-avatar')?.addEventListener('click', () => {
 document.getElementById('perfil-avatar-input')?.addEventListener('change', (e) => {
   const file = e.target.files?.[0];
   e.target.value = '';
-  if (file) uploadAvatar(file);
+  if (file) abrirCropAvatar(file);
 });
+
+// ── CROP CIRCULAR DO AVATAR ──────────────────────────────────
+// Etapa intermediária entre o file picker e o upload. A aluna pode
+// arrastar a foto e dar zoom até o rosto ficar dentro do círculo.
+// O crop real acontece no canvas no momento de salvar — gera um blob
+// quadrado 512×512 já enquadrado, que é o que sobe pro Cloudinary.
+
+const cropState = {
+  imgNaturalW: 0,
+  imgNaturalH: 0,
+  baseW: 0,       // largura "100% zoom" — imagem cobrindo o palco inteiro
+  baseH: 0,
+  zoom: 1,        // 1.0 a 3.0
+  tx: 0,          // translação X (centro da imagem em px do centro do palco)
+  ty: 0,
+  palcoSize: 0,
+  dragging: false,
+  lastX: 0,
+  lastY: 0,
+  pinchDist: 0,
+  zoomInicial: 1,
+  fileType: 'image/jpeg',
+};
+
+function abrirCropAvatar(file) {
+  if (!file.type || !file.type.startsWith('image/')) {
+    toast('Selecione uma imagem', 'erro');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const dataUrl = ev.target.result;
+    const img = document.getElementById('avatar-crop-img');
+    if (!img) return;
+    cropState.fileType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+    img.onload = () => {
+      cropState.imgNaturalW = img.naturalWidth;
+      cropState.imgNaturalH = img.naturalHeight;
+      configurarPalcoCrop();
+      // Reset: zoom 1.0, centralizado
+      cropState.zoom = 1;
+      cropState.tx = 0;
+      cropState.ty = 0;
+      document.getElementById('avatar-crop-zoom').value = '100';
+      aplicarTransformCrop();
+    };
+    img.src = dataUrl;
+    abrirModal('modal-avatar-crop');
+  };
+  reader.readAsDataURL(file);
+}
+
+function configurarPalcoCrop() {
+  const palco = document.getElementById('avatar-crop-palco');
+  const img = document.getElementById('avatar-crop-img');
+  if (!palco || !img || !cropState.imgNaturalW) return;
+  const rect = palco.getBoundingClientRect();
+  cropState.palcoSize = rect.width;
+  // Imagem em "zoom 1" cobre o palco inteiro (cover). Pega a dimensão
+  // MAIOR da imagem natural pra que ambos os lados >= palco.
+  const ratio = cropState.imgNaturalW / cropState.imgNaturalH;
+  if (ratio >= 1) {
+    cropState.baseH = cropState.palcoSize;
+    cropState.baseW = cropState.palcoSize * ratio;
+  } else {
+    cropState.baseW = cropState.palcoSize;
+    cropState.baseH = cropState.palcoSize / ratio;
+  }
+  img.style.width = cropState.baseW + 'px';
+  img.style.height = cropState.baseH + 'px';
+  // Centro da imagem coincide com centro do palco — translate(-50%, -50%)
+  // é aplicado dentro de aplicarTransformCrop().
+}
+
+function limitarTranslacao() {
+  // Mantém as bordas da imagem cobrindo o palco inteiro. Calcula o overflow
+  // de cada lado e clampa tx/ty pra que nada de transparente apareça.
+  const w = cropState.baseW * cropState.zoom;
+  const h = cropState.baseH * cropState.zoom;
+  const maxX = Math.max(0, (w - cropState.palcoSize) / 2);
+  const maxY = Math.max(0, (h - cropState.palcoSize) / 2);
+  cropState.tx = Math.max(-maxX, Math.min(maxX, cropState.tx));
+  cropState.ty = Math.max(-maxY, Math.min(maxY, cropState.ty));
+}
+
+function aplicarTransformCrop() {
+  const img = document.getElementById('avatar-crop-img');
+  if (!img) return;
+  limitarTranslacao();
+  img.style.transform =
+    `translate(-50%, -50%) translate(${cropState.tx}px, ${cropState.ty}px) scale(${cropState.zoom})`;
+}
+
+// Slider de zoom (100 a 300 → escala 1.0 a 3.0)
+document.getElementById('avatar-crop-zoom')?.addEventListener('input', (e) => {
+  cropState.zoom = parseInt(e.target.value, 10) / 100;
+  aplicarTransformCrop();
+});
+
+// Pan via mouse + touch no palco
+(function setupPanCrop() {
+  const palco = document.getElementById('avatar-crop-palco');
+  if (!palco) return;
+
+  const inicio = (x, y) => {
+    cropState.dragging = true;
+    cropState.lastX = x;
+    cropState.lastY = y;
+  };
+  const mover = (x, y) => {
+    if (!cropState.dragging) return;
+    cropState.tx += (x - cropState.lastX);
+    cropState.ty += (y - cropState.lastY);
+    cropState.lastX = x;
+    cropState.lastY = y;
+    aplicarTransformCrop();
+  };
+  const fim = () => { cropState.dragging = false; };
+
+  palco.addEventListener('mousedown', (e) => { e.preventDefault(); inicio(e.clientX, e.clientY); });
+  window.addEventListener('mousemove', (e) => mover(e.clientX, e.clientY));
+  window.addEventListener('mouseup', fim);
+
+  palco.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      inicio(e.touches[0].clientX, e.touches[0].clientY);
+    } else if (e.touches.length === 2) {
+      // Pinch-to-zoom inicial: guarda distância e zoom atual
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      cropState.pinchDist = Math.hypot(dx, dy);
+      cropState.zoomInicial = cropState.zoom;
+      cropState.dragging = false;
+    }
+  }, { passive: true });
+
+  palco.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1) {
+      mover(e.touches[0].clientX, e.touches[0].clientY);
+    } else if (e.touches.length === 2 && cropState.pinchDist > 0) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      const novoZoom = Math.max(1, Math.min(3, cropState.zoomInicial * (dist / cropState.pinchDist)));
+      cropState.zoom = novoZoom;
+      document.getElementById('avatar-crop-zoom').value = String(Math.round(novoZoom * 100));
+      aplicarTransformCrop();
+    }
+  }, { passive: true });
+
+  palco.addEventListener('touchend', () => {
+    cropState.dragging = false;
+    cropState.pinchDist = 0;
+  });
+})();
+
+// Salvar: gera o canvas com a região visível dentro do círculo e faz upload.
+document.getElementById('avatar-crop-salvar')?.addEventListener('click', async () => {
+  const btn = document.getElementById('avatar-crop-salvar');
+  const img = document.getElementById('avatar-crop-img');
+  if (!btn || !img || !cropState.palcoSize) return;
+  btn.disabled = true;
+  try {
+    const blob = await gerarCropBlob();
+    fecharModal('modal-avatar-crop');
+    await uploadAvatar(blob);
+  } catch (err) {
+    console.error('[avatar-crop] erro ao gerar blob:', err);
+    toast('Não consegui processar a foto', 'erro');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+function gerarCropBlob() {
+  // O palco é quadrado (palcoSize × palcoSize). A imagem natural está
+  // sendo exibida em baseW × baseH * zoom px, com translação (tx, ty).
+  // Convertendo "px do palco" pra "px da imagem natural":
+  //   escala = (baseW * zoom) / imgNaturalW   ← mesmo nos dois eixos (cover)
+  // O recorte é a área do palco mapeada de volta pra coordenadas naturais.
+  return new Promise((resolve, reject) => {
+    const escala = (cropState.baseW * cropState.zoom) / cropState.imgNaturalW;
+    // Origem (0,0 do palco) em coords naturais:
+    //   centroImgPalco_x = palcoSize/2 + tx
+    //   ladoEsq_palco_em_natural = (0 - centroImgPalco_x + imgNaturalW*escala/2) / escala
+    const naturalW = cropState.imgNaturalW;
+    const naturalH = cropState.imgNaturalH;
+    const escalaW = (cropState.baseW * cropState.zoom);
+    const escalaH = (cropState.baseH * cropState.zoom);
+    // Posição do TOPO ESQUERDO da imagem (em px do palco):
+    const imgLeftPalco = cropState.palcoSize / 2 + cropState.tx - escalaW / 2;
+    const imgTopPalco  = cropState.palcoSize / 2 + cropState.ty - escalaH / 2;
+    // O palco vai de (0,0) a (palcoSize, palcoSize). Convertendo pra
+    // coords naturais da imagem:
+    const sx = (0 - imgLeftPalco) / escala;
+    const sy = (0 - imgTopPalco) / escala;
+    const sSize = cropState.palcoSize / escala;
+    // Clampa nos limites da imagem (defensivo — limitarTranslacao já garante)
+    const sxC = Math.max(0, Math.min(naturalW - 1, sx));
+    const syC = Math.max(0, Math.min(naturalH - 1, sy));
+    const sSizeC = Math.min(sSize, naturalW - sxC, naturalH - syC);
+
+    const OUT = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = OUT;
+    canvas.height = OUT;
+    const ctx = canvas.getContext('2d');
+    // Fundo branco (caso PNG com transparência seja exportado como JPEG)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, OUT, OUT);
+
+    const fonte = document.getElementById('avatar-crop-img');
+    ctx.drawImage(fonte, sxC, syC, sSizeC, sSizeC, 0, 0, OUT, OUT);
+
+    canvas.toBlob((blob) => {
+      if (!blob) return reject(new Error('toBlob falhou'));
+      // Nome amigável + tipo conforme original
+      blob.name = 'avatar.' + (cropState.fileType === 'image/png' ? 'png' : 'jpg');
+      resolve(blob);
+    }, cropState.fileType, 0.92);
+  });
+}
 
 // Bloqueio do chat com a Suellen — só pra esse canal (suporte segue livre).
 // Quando a aluna ainda não tem foto, abre o modal-foto-obrigatoria em vez
