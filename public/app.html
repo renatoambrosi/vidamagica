@@ -75,6 +75,13 @@
         <button class="tesouro-btn" id="tesouro-btn" aria-label="Tesouro da Su">
           <div class="tesouro-glow"></div>
           <div class="tesouro-bau" id="tesouro-bau-lottie" aria-hidden="true"></div>
+          <!-- Sparkles em loop quando o baú está em estado 'aberto-aguardando'
+               (aluna viu o tesouro mas ainda não resgatou). Invisíveis nos
+               outros estados. Decorativos — pointer-events none herdado. -->
+          <span class="tesouro-sparkle s1" aria-hidden="true">✦</span>
+          <span class="tesouro-sparkle s2" aria-hidden="true">✧</span>
+          <span class="tesouro-sparkle s3" aria-hidden="true">✦</span>
+          <span class="tesouro-sparkle s4" aria-hidden="true">✧</span>
           <div class="tesouro-info">
             <span class="tesouro-label" id="tesouro-label">Tesouro da Su</span>
             <span class="tesouro-sub" id="tesouro-sub">Seu presente de hoje está aqui ✦</span>

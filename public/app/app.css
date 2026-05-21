@@ -317,10 +317,70 @@ body.tesouro-modal-aberto .tesouro-bau.flutuante {
   display: none !important;
 }
 
-/* Estado "resgatado" = aluna já pegou o tesouro do dia. Quieto. */
-.tesouro-btn.resgatado { opacity: 0.78; box-shadow: var(--sombra-media); }
-.tesouro-btn.resgatado .tesouro-glow { animation: none; opacity: 0.18; }
-.tesouro-btn.resgatado .tesouro-bau { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)) grayscale(0.25); }
+/* Estado "aberto-aguardando" = aluna clicou no baú, viu o tesouro,
+   mas FECHOU o modal sem resgatar. Baú permanece ABERTO (Lottie no
+   último frame) com glow forte pulsante + sparkles em loop discreto,
+   lembrando visualmente que ainda tem algo pra pegar. */
+.tesouro-btn.aberto-aguardando .tesouro-glow {
+  animation: tesouro-radia 2.6s ease-in-out infinite;
+}
+@keyframes tesouro-radia {
+  0%, 100% { transform: translate(-50%, -55%) scale(0.95); opacity: 0.55; }
+  50%      { transform: translate(-50%, -55%) scale(1.3);  opacity: 1;    }
+}
+.tesouro-btn.aberto-aguardando .tesouro-bau {
+  filter: drop-shadow(0 10px 20px rgba(140,90,20,0.45))
+          drop-shadow(0 0 22px rgba(244,208,96,0.55));
+  animation: bau-respira-sutil 3.5s ease-in-out infinite;
+}
+@keyframes bau-respira-sutil {
+  0%, 100% { transform: translateY(0) scale(1);    }
+  50%      { transform: translateY(-3px) scale(1.015); }
+}
+
+/* Sparkles em loop ao redor do baú — só visíveis no estado aberto-aguardando */
+.tesouro-sparkle {
+  position: absolute;
+  pointer-events: none;
+  font-size: 1rem;
+  color: rgba(244,208,96,0.95);
+  text-shadow: 0 0 10px rgba(244,208,96,1), 0 0 18px rgba(255,235,150,0.7);
+  opacity: 0;
+  z-index: 3;
+  user-select: none;
+}
+.tesouro-sparkle.s1 { top: 16%; left: 18%; }
+.tesouro-sparkle.s2 { top: 26%; right: 18%; font-size: 0.85rem; }
+.tesouro-sparkle.s3 { top: 52%; left: 6%;  font-size: 1.15rem; }
+.tesouro-sparkle.s4 { top: 58%; right: 8%; font-size: 0.95rem; }
+.tesouro-btn.aberto-aguardando .tesouro-sparkle {
+  animation: tesouro-sparkle-loop 2.6s ease-in-out infinite;
+}
+.tesouro-btn.aberto-aguardando .s1 { animation-delay: 0s;     }
+.tesouro-btn.aberto-aguardando .s2 { animation-delay: 0.65s;  }
+.tesouro-btn.aberto-aguardando .s3 { animation-delay: 1.3s;   }
+.tesouro-btn.aberto-aguardando .s4 { animation-delay: 1.95s;  }
+@keyframes tesouro-sparkle-loop {
+  0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg);   }
+  40%      { opacity: 1; transform: scale(1.15) rotate(90deg);  }
+  60%      { opacity: 1; transform: scale(1.15) rotate(180deg); }
+  100%     { opacity: 0; transform: scale(0.4) rotate(270deg);  }
+}
+
+/* Estado "resgatado" = aluna já pegou o tesouro do dia. Calmo,
+   cores vivas (sem grayscale), opacity 100% — só sem o glow grande
+   nem chacoalho. Comunica "feito" sem deixar o baú morto. */
+.tesouro-btn.resgatado .tesouro-glow {
+  animation: tesouro-resgatado-pulsa 4s ease-in-out infinite;
+}
+@keyframes tesouro-resgatado-pulsa {
+  0%, 100% { transform: translate(-50%, -55%) scale(0.85); opacity: 0.28; }
+  50%      { transform: translate(-50%, -55%) scale(1.0);  opacity: 0.42; }
+}
+.tesouro-btn.resgatado .tesouro-bau {
+  filter: drop-shadow(0 8px 14px rgba(140,90,20,0.35));
+  /* mantém cores vivas — SEM grayscale */
+}
 
 .tesouro-info { width: 100%; text-align: center; position: relative; z-index: 2; margin-top: -1.4rem; }
 .tesouro-label {

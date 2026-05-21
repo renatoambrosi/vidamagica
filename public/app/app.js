@@ -1707,7 +1707,7 @@ function setEstadoBau(estado) {
   const btn = document.getElementById('tesouro-btn');
   const sub = document.getElementById('tesouro-sub');
   if (!btn) return;
-  btn.classList.remove('chacoalhando', 'abrindo', 'resgatado');
+  btn.classList.remove('chacoalhando', 'abrindo', 'resgatado', 'aberto-aguardando');
   if (estado === 'chacoalhando') {
     btn.classList.add('chacoalhando');
     if (sub) sub.textContent = 'Seu presente de hoje está aqui ✦';
@@ -1715,6 +1715,16 @@ function setEstadoBau(estado) {
   } else if (estado === 'abrindo') {
     btn.classList.add('abrindo');
     if (tesouroLottie) { try { tesouroLottie.goToAndPlay(0, true); } catch {} }
+  } else if (estado === 'aberto-aguardando') {
+    // Baú permanece aberto (último frame do Lottie) + glow pulsante + sparkles
+    btn.classList.add('aberto-aguardando');
+    if (sub) sub.textContent = 'Volte e pegue seu presente ✦';
+    if (tesouroLottie) {
+      try {
+        const ultimoFrame = (tesouroLottie.totalFrames || 90) - 1;
+        tesouroLottie.goToAndStop(ultimoFrame, true);
+      } catch {}
+    }
   } else if (estado === 'resgatado') {
     btn.classList.add('resgatado');
     if (sub) sub.textContent = 'Você já resgatou o seu tesouro de hoje ✦';
@@ -1861,6 +1871,13 @@ document.getElementById('tesouro-btn')?.addEventListener('click', () => {
             bauPaiOriginal.appendChild(bauEl);
           }
         }
+      }
+      // Se aluna fechou SEM resgatar a semente, baú vai pro estado
+      // "aberto-aguardando" — fica aberto, glow pulsante e sparkles em loop,
+      // mostrando que ainda tem coisa pra pegar. Só vira "resgatado" quando
+      // o handler de resgatar a semente roda (ele já chama setEstadoBau direto).
+      if (tesouroAtual && !tesouroJaResgatadoHoje) {
+        setEstadoBau('aberto-aguardando');
       }
     }
   });
