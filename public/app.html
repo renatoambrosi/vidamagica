@@ -74,14 +74,12 @@
       <div class="tesouro-wrap" id="tesouro-wrap">
         <button class="tesouro-btn" id="tesouro-btn" aria-label="Tesouro da Su">
           <div class="tesouro-glow"></div>
-          <!-- Silhueta sólida do baú — entra em par com o Lottie no estado
-               "resgatado". Fica ATRÁS do Lottie (z-index 2) e tapa o brilho
-               radiante atrás, dando peso visual sem matar o ânimo da página.
-               REGRA: nunca aparece sem o Lottie. Mesma transition garante isso. -->
-          <svg class="tesouro-bau-silhueta" viewBox="0 0 100 100" aria-hidden="true">
-            <path d="M 18 48 Q 18 22 50 22 Q 82 22 82 48 L 82 78 Q 82 82 78 82 L 22 82 Q 18 82 18 78 Z"
-                  fill="#E0B070"/>
-          </svg>
+          <!-- Silhueta do baú — SEGUNDA instância do MESMO Lottie, posicionada
+               atrás do principal (z-index 2). Filter CSS deixa em cor sólida
+               dourada uniforme, tapando o brilho radiante atrás.
+               REGRA: nunca aparece sem o Lottie principal. Sincronia via
+               setEstadoBau (mesma classe, mesma transition). -->
+          <div class="tesouro-bau-silhueta" id="tesouro-bau-silhueta-lottie" aria-hidden="true"></div>
           <div class="tesouro-bau" id="tesouro-bau-lottie" aria-hidden="true"></div>
           <!-- Sparkles em loop quando o baú está em estado 'aberto-aguardando'
                (aluna viu o tesouro mas ainda não resgatou). Invisíveis nos
