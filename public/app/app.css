@@ -295,12 +295,15 @@ body.tesouro-abrindo .tesouro-glow { opacity: 0; transition: opacity 0.3s; }
   z-index: 1000;
   /* CRÍTICO: baú flutuante NUNCA recebe click. Senão, mesmo invisível
      (opacity 0 quando o modal sobe), ele bloqueia clicks nos botões do
-     pergaminho que ficam embaixo no centro da tela. */
+     pergaminho que ficam embaixo no centro da tela. O `*` garante que
+     o SVG renderizado pelo Lottie (e suas <path>/<g> filhas) também
+     não captura clicks. */
   pointer-events: none;
   filter: drop-shadow(0 20px 40px rgba(0,0,0,0.4))
           drop-shadow(0 0 60px rgba(244,208,96,0.6));
   animation: bau-flutua 0.6s cubic-bezier(.34,1.4,.64,1) forwards;
 }
+.tesouro-bau.flutuante * { pointer-events: none !important; }
 @keyframes bau-flutua {
   0%   { transform: translate(-50%, -50%) scale(0.45); opacity: 0.5; }
   60%  { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
