@@ -1756,6 +1756,42 @@ body.antessala-ativa {
 .msg-wrap.aluna   { align-self: flex-end;   align-items: flex-end; }
 .msg-wrap.suellen { align-self: flex-start; align-items: flex-start; }
 
+/* ── AVATAR GRANDE NA PRIMEIRA MSG DO BLOCO ──
+   Bola de 40px ao lado da bolha — esquerda pra Suellen, direita pra aluna.
+   Aparece SÓ no primeiro msg-wrap de cada bloco (a classe é adicionada
+   pelo JS via ehPrimeiraDoBlocoChat). Subsequentes do mesmo remetente
+   não têm avatar: só a bolha.
+
+   Pra que a bolha de "subsequente sem avatar" fique alinhada com a de
+   "primeira com avatar", todos os msg-wraps recebem margin do lado do
+   avatar — assim a COLUNA da bolha não muda de posição entre primeira
+   e subsequentes do mesmo bloco. */
+.chat-msgs .msg-wrap.suellen { margin-left: 48px; }
+.chat-msgs .msg-wrap.aluna   { margin-right: 48px; }
+.msg-avatar {
+  position: absolute;
+  top: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--vidro);
+  border: 1.5px solid var(--vidro-borda);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.10);
+  z-index: 1;
+}
+.msg-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.msg-wrap.suellen .msg-avatar { left: -48px; }
+.msg-wrap.aluna   .msg-avatar { right: -48px; }
+/* Respiro vertical entre blocos diferentes (quando o remetente trocou). */
+.msg-wrap.primeira-do-bloco { margin-top: 0.4rem; }
+.chat-msgs > .msg-wrap.primeira-do-bloco:first-child { margin-top: 0; }
+
 /* Indicador de swipe (seta de reply) */
 .msg-wrap::before {
   content: '';

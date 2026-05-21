@@ -3019,6 +3019,45 @@ function renderReacoesEl(reacoes) {
   return wrap;
 }
 
+// Avatar grande aparece APENAS na primeira mensagem de cada "bloco" — ou seja,
+// quando o remetente da mensagem que está sendo renderizada é diferente do
+// remetente da última mensagem já presente em #chat-msgs. Subsequentes do mesmo
+// remetente NÃO recebem avatar (só a bolha).
+//
+// O critério é apenas "remetente mudou": não considera intervalo de tempo.
+// Sempre olha o último .msg-wrap presente em #chat-msgs ANTES do append do
+// novo wrap — funciona tanto no carregamento inicial (forEach com append no
+// fim do loop) quanto no fluxo de "chegou mensagem nova" (append único).
+function ehPrimeiraDoBlocoChat(isAluna) {
+  const msgsEl = document.getElementById('chat-msgs');
+  const last = msgsEl?.lastElementChild;
+  if (!last || !last.classList || !last.classList.contains('msg-wrap')) return true;
+  const lastIsAluna = last.classList.contains('aluna');
+  return lastIsAluna !== isAluna;
+}
+
+// Cria o elemento .msg-avatar (círculo 40px com a foto do remetente).
+// - Aluna: foto pessoal (usuario.foto_url). Como a entrada do chat com a
+//   Suellen exige foto, sempre existe. No canal "suporte", se faltar, o
+//   onerror esconde o img e mostra o miolo vazio (fundo de vidro).
+// - Suellen / Equipe: assets fixos do projeto.
+function criarMsgAvatarChat(msg, isAluna) {
+  const div = document.createElement('div');
+  div.className = 'msg-avatar';
+  const img = document.createElement('img');
+  if (isAluna) {
+    img.src = usuario?.foto_url || '';
+    img.alt = usuario?.nome || 'Você';
+  } else {
+    const ident = msg.identidade || 'suellen';
+    img.src = ident === 'equipe' ? '/assets/logo-equipe.png' : '/assets/avatar-suellen.jpg';
+    img.alt = ident === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen Seragi';
+  }
+  img.onerror = () => { img.style.display = 'none'; };
+  div.appendChild(img);
+  return div;
+}
+
 function renderMensagem(msg) {
   if (msg.tipo === 'audio' && msg.url) return criarBolhaAudio(msg);
 
@@ -3026,6 +3065,14 @@ function renderMensagem(msg) {
   const wrap = document.createElement('div');
   wrap.className = `msg-wrap ${isAluna ? 'aluna' : 'suellen'}`;
   wrap.dataset.id = msg.id;
+
+  // Avatar grande SÓ se for a primeira do bloco. Anexa ANTES da bolha pro
+  // CSS posicionar absoluto sem alterar a ordem natural dos outros filhos.
+  const primeira = ehPrimeiraDoBlocoChat(isAluna);
+  if (primeira) {
+    wrap.classList.add('primeira-do-bloco');
+    wrap.appendChild(criarMsgAvatarChat(msg, isAluna));
+  }
 
   const ident = msg.identidade || 'suellen';
   const nomeIdent = ident === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen Seragi';
@@ -3111,6 +3158,13 @@ function criarBolhaAudio(msg) {
   const wrap = document.createElement('div');
   wrap.className = `msg-wrap ${isAluna ? 'aluna' : 'suellen'}`;
   wrap.dataset.id = msg.id;
+
+  // Avatar grande SÓ se for a primeira do bloco — mesma regra de renderMensagem.
+  const primeiraAudio = ehPrimeiraDoBlocoChat(isAluna);
+  if (primeiraAudio) {
+    wrap.classList.add('primeira-do-bloco');
+    wrap.appendChild(criarMsgAvatarChat(msg, isAluna));
+  }
 
   const ident = msg.identidade || 'suellen';
   const nomeIdent = ident === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen Seragi';
