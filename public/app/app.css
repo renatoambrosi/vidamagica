@@ -206,66 +206,88 @@ body.chat-aberto .views {
 .tesouro-btn {
   width: 100%;
   display: flex; flex-direction: column; align-items: center;
-  gap: 0.6rem;
-  background: var(--vidro); backdrop-filter: blur(14px);
-  border: 1px solid var(--vidro-borda-hi);
-  border-radius: var(--radius-lg);
-  padding: 1.75rem 1.25rem 1.25rem;
-  position: relative; overflow: hidden;
-  box-shadow: var(--sombra-media), var(--glow-ouro);
-  transition: transform 0.35s cubic-bezier(.34,1.4,.64,1), box-shadow 0.2s;
+  gap: 0.3rem;
+  background: transparent;
+  border: none;
+  padding: 0.5rem 0 0.25rem;
+  position: relative;
+  transition: transform 0.35s cubic-bezier(.34,1.4,.64,1);
 }
-.tesouro-btn:hover { transform: translateY(-2px); box-shadow: var(--sombra-forte), var(--glow-ouro); }
-.tesouro-btn:active { transform: scale(0.98); }
+.tesouro-btn:hover { transform: translateY(-2px); }
+.tesouro-btn:active { transform: scale(0.97); }
 .tesouro-glow {
-  position: absolute; top: 50%; left: 50%; width: 220px; height: 220px;
+  position: absolute; top: 50%; left: 50%; width: 280px; height: 280px;
   transform: translate(-50%, -55%);
-  background: radial-gradient(circle, rgba(244,208,96,0.35) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(244,208,96,0.4) 0%, transparent 65%);
   border-radius: 50%;
-  animation: tesouro-pulsa 2.5s ease-in-out infinite;
+  animation: tesouro-pulsa 2.8s ease-in-out infinite;
   pointer-events: none;
+  z-index: 1;
 }
 @keyframes tesouro-pulsa {
-  0%, 100% { transform: translate(-50%, -55%) scale(0.9); opacity: 0.55; }
-  50%      { transform: translate(-50%, -55%) scale(1.15); opacity: 1; }
+  0%, 100% { transform: translate(-50%, -55%) scale(0.92); opacity: 0.5; }
+  50%      { transform: translate(-50%, -55%) scale(1.12); opacity: 0.95; }
 }
 .tesouro-bau {
   flex-shrink: 0;
-  width: 160px; height: 160px;
+  width: 220px; height: 220px;
   position: relative; z-index: 2;
-  filter: drop-shadow(0 8px 16px rgba(161,117,35,0.4));
+  filter: drop-shadow(0 10px 20px rgba(140,90,20,0.45));
   transform-origin: center bottom;
 }
 .tesouro-bau svg { width: 100%; height: 100%; display: block; }
 
-/* Estado "chacoalhando" = tem tesouro novo. Baú pula/balança chamando atenção.
-   NÃO abre (a abertura só acontece no click). */
-.tesouro-btn.chacoalhando .tesouro-bau { animation: bau-chacoalha 1.6s ease-in-out infinite; }
+/* Estado "chacoalhando" = tem tesouro novo. Baú balança suavemente chamando
+   atenção. NÃO abre (a abertura só acontece no click).
+   Curva mais lenta e menos angular pra parecer respiração, não tremor. */
+.tesouro-btn.chacoalhando .tesouro-bau { animation: bau-chacoalha 3.2s ease-in-out infinite; }
 @keyframes bau-chacoalha {
-  0%, 100%      { transform: translateY(0) rotate(0deg) scale(1); }
-  10%           { transform: translateY(-3px) rotate(-4deg) scale(1.03); }
-  20%           { transform: translateY(-1px) rotate(4deg)  scale(1.02); }
-  30%           { transform: translateY(-4px) rotate(-3deg) scale(1.04); }
-  40%           { transform: translateY(0)    rotate(2deg)  scale(1.02); }
-  50%           { transform: translateY(-2px) rotate(0deg)  scale(1.03); }
-  60%, 100%     { transform: translateY(0)    rotate(0deg)  scale(1); }
+  0%, 100% { transform: translateY(0)    rotate(0deg)   scale(1);    }
+  20%      { transform: translateY(-2px) rotate(-1.5deg) scale(1.015); }
+  40%      { transform: translateY(0)    rotate(1.5deg)  scale(1.01);  }
+  60%      { transform: translateY(-3px) rotate(-1deg)   scale(1.02);  }
+  80%      { transform: translateY(0)    rotate(0.8deg)  scale(1.01);  }
 }
 
-/* Estado "abrindo" = aluna clicou. Baú aumenta na tela enquanto o Lottie roda. */
-.tesouro-btn.abrindo {
-  transform: scale(1.04);
-  box-shadow: var(--sombra-forte), 0 0 48px rgba(244,208,96,0.55);
+/* Estado "abrindo" = aluna clicou.
+   - body.tesouro-abrindo ativa o overlay fumê dourado (vidro dourado em
+     toda a tela, blur leve atrás).
+   - O baú sai do fluxo, vai pro CENTRO da viewport (position: fixed) com
+     scale grande, atraindo o olhar. O Lottie continua rodando dentro dele.
+   - O texto da label some durante a animação pra não competir visualmente. */
+body.tesouro-abrindo::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at center,
+                rgba(212, 165, 50, 0.32) 0%,
+                rgba(94, 68, 20, 0.55) 100%);
+  backdrop-filter: blur(10px) saturate(1.15);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  z-index: 90;
+  opacity: 0;
+  animation: tesouro-fume-in 0.45s ease-out forwards;
+  pointer-events: none;
 }
-.tesouro-btn.abrindo .tesouro-glow { animation: tesouro-glow-intenso 1s ease-in-out infinite; }
-@keyframes tesouro-glow-intenso {
-  0%, 100% { transform: translate(-50%, -55%) scale(1.1); opacity: 0.85; }
-  50%      { transform: translate(-50%, -55%) scale(1.4); opacity: 1; }
+@keyframes tesouro-fume-in {
+  to { opacity: 1; }
 }
-.tesouro-btn.abrindo .tesouro-bau { animation: bau-pop 1s cubic-bezier(.34,1.4,.64,1) forwards; }
-@keyframes bau-pop {
-  0%   { transform: scale(1); }
-  50%  { transform: scale(1.15); }
-  100% { transform: scale(1.1); }
+body.tesouro-abrindo .tesouro-info,
+body.tesouro-abrindo .tesouro-glow { opacity: 0; transition: opacity 0.3s; }
+
+.tesouro-bau.flutuante {
+  position: fixed !important;
+  top: 50%; left: 50%;
+  width: min(70vw, 360px); height: min(70vw, 360px);
+  transform: translate(-50%, -50%) scale(0.8);
+  z-index: 95;
+  filter: drop-shadow(0 20px 40px rgba(0,0,0,0.4))
+          drop-shadow(0 0 60px rgba(244,208,96,0.6));
+  animation: bau-flutua 0.6s cubic-bezier(.34,1.4,.64,1) forwards;
+}
+@keyframes bau-flutua {
+  0%   { transform: translate(-50%, -50%) scale(0.45); opacity: 0.5; }
+  60%  { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
 }
 
 /* Estado "resgatado" = aluna já pegou o tesouro do dia. Quieto. */
@@ -273,9 +295,20 @@ body.chat-aberto .views {
 .tesouro-btn.resgatado .tesouro-glow { animation: none; opacity: 0.18; }
 .tesouro-btn.resgatado .tesouro-bau { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)) grayscale(0.25); }
 
-.tesouro-info { width: 100%; text-align: center; position: relative; z-index: 2; }
-.tesouro-label { font-family: var(--font-display); font-size: 1.05rem; font-weight: 800; color: var(--ouro-fundo); display: block; margin-bottom: 0.25rem; letter-spacing: 0.01em; }
-.tesouro-sub { font-size: 0.8rem; color: var(--texto-mute); }
+.tesouro-info { width: 100%; text-align: center; position: relative; z-index: 2; margin-top: -0.3rem; }
+.tesouro-label {
+  font-family: var(--font-display); font-size: 1.15rem; font-weight: 900;
+  color: #3D2810; /* marrom escuro pra contrastar com o fundo creme da página */
+  display: block; margin-bottom: 0.15rem;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 2px rgba(255, 245, 220, 0.7);
+}
+.tesouro-sub {
+  font-size: 0.82rem;
+  color: #6B4A20; /* marrom médio, ainda legível sem o card branco */
+  font-weight: 500;
+  text-shadow: 0 1px 1px rgba(255, 245, 220, 0.5);
+}
 
 .feed { margin-bottom: 0.5rem; }
 .feed-carrossel-wrap { position: relative; margin-bottom: 0.5rem; }
@@ -1895,6 +1928,53 @@ body.antessala-ativa {
 .modal-tesouro-conteudo { padding: 1rem 1.25rem 0; }
 .modal-tesouro-acoes { display: flex; flex-direction: column; gap: 0.55rem; margin: 1rem 1.25rem 1.25rem; }
 
+/* ── Modal-tesouro como PERGAMINHO no centro da tela ───────────────
+   Sobrepõe os defaults do .modal-sheet (bottom-sheet) só pra esse modal:
+   centraliza vertical+horizontal, fundo creme/pergaminho, sem handle. */
+#modal-tesouro { align-items: center; padding: 0 1.25rem; }
+#modal-tesouro .modal-overlay { background: transparent; backdrop-filter: none; }
+#modal-tesouro .modal-sheet {
+  max-width: 440px;
+  border-radius: var(--radius-xl);
+  border: 1.5px solid rgba(161, 117, 35, 0.45);
+  border-bottom: 1.5px solid rgba(161, 117, 35, 0.45);
+  background: linear-gradient(155deg,
+                #F7ECCC 0%,
+                #EBDCAF 50%,
+                #DFC987 100%);
+  box-shadow:
+    0 25px 60px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 235, 180, 0.4) inset,
+    0 0 40px rgba(244, 208, 96, 0.35);
+  padding-bottom: 0;
+  transform: scale(0.4) translateY(20px);
+  opacity: 0;
+  transition:
+    transform 0.5s cubic-bezier(.34, 1.4, .64, 1),
+    opacity 0.35s ease-out;
+}
+#modal-tesouro[aria-hidden="false"] .modal-sheet {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+#modal-tesouro .modal-handle { display: none; }
+#modal-tesouro .modal-tesouro-conteudo {
+  padding: 1.5rem 1.5rem 0.5rem;
+  color: #4A3416; /* marrom escuro pra contrastar com o pergaminho */
+}
+#modal-tesouro .feed-card-eyebrow {
+  color: #8B6520 !important;
+  letter-spacing: 0.14em;
+}
+#modal-tesouro .feed-card-titulo {
+  color: #2D1F0A !important;
+  font-size: 1.25rem !important;
+  line-height: 1.3;
+}
+#modal-tesouro p {
+  color: #4A3416 !important;
+}
+
 /* ✨ "Eu quero viver isso" — toggle. Outline quando off, preenchido quando ativo. */
 .modal-tesouro-quero {
   width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.55rem;
@@ -1940,13 +2020,16 @@ body.antessala-ativa {
 }
 
 /* Carta voadora — clone visual que sai do botão "Eu quero viver isso" e voa
-   pro ícone Perfil no bottom-nav (onde mora o Meu Baú). */
+   pro ícone Perfil no bottom-nav (onde mora o Meu Baú).
+   Tamanho e glow generosos pra ser visível mesmo sobre fundo dourado. */
 .carta-voadora {
-  position: fixed; z-index: 9999; pointer-events: none;
-  font-size: 1.8rem; line-height: 1;
-  transform: translate(-50%, -50%) scale(0.7);
-  transition: transform 280ms cubic-bezier(.34,1.4,.64,1);
-  filter: drop-shadow(0 4px 12px rgba(244,208,96,0.7));
+  position: fixed; z-index: 99999; pointer-events: none;
+  font-size: 2.4rem; line-height: 1;
+  transform: translate(-50%, -50%) scale(0.8);
+  transition: transform 400ms cubic-bezier(.34,1.4,.64,1);
+  filter:
+    drop-shadow(0 0 18px rgba(255, 230, 100, 0.95))
+    drop-shadow(0 4px 14px rgba(244,208,96,0.8));
   will-change: transform, opacity;
 }
 

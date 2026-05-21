@@ -1755,20 +1755,23 @@ function abrirModalTesouro() {
   abrirModal('modal-tesouro');
 }
 
-// Click no baú → animação completa do Lottie → modal sobe quando termina de abrir.
+// Click no baú → baú vai pro centro grande, vidro fumê dourado cobre a tela,
+// Lottie roda. Quando termina de abrir, modal pergaminho aparece no centro.
 let _handlerCompletaBau = null;
+const bauEl = document.querySelector('.tesouro-bau');
 document.getElementById('tesouro-btn')?.addEventListener('click', () => {
   if (tesouroAnimando) return;
   if (!tesouroAtual) {
-    if (tesouroJaResgatadoHoje) return; // baú quieto, não faz nada
+    if (tesouroJaResgatadoHoje) return;
     return;
   }
   tesouroAnimando = true;
   setEstadoBau('abrindo');
 
-  // Aguarda a animação do Lottie terminar pra subir o modal. Usa o evento
-  // 'complete' do Lottie (preciso) com fallback de timeout caso a lib não
-  // dispare (CDN falhou, etc).
+  // Ativa overlay fumê dourado + manda o baú pro centro da viewport
+  document.body.classList.add('tesouro-abrindo');
+  bauEl?.classList.add('flutuante');
+
   let modalSubiu = false;
   const subirModal = () => {
     if (modalSubiu) return;
@@ -1786,13 +1789,26 @@ document.getElementById('tesouro-btn')?.addEventListener('click', () => {
     }
     _handlerCompletaBau = subirModal;
     tesouroLottie.addEventListener('complete', _handlerCompletaBau);
-    // Fallback: se o evento não disparar em 3s, sobe modal mesmo assim
     setTimeout(subirModal, 3000);
   } else {
-    // Sem Lottie: sobe modal direto (sem animação)
     subirModal();
   }
 });
+
+// Quando o modal-tesouro fecha (overlay ou ESC), limpamos o estado fumê.
+// Hook ao listener genérico de fechar modal — adiciona um observer ao
+// atributo aria-hidden do #modal-tesouro.
+(function observarFechamentoTesouro() {
+  const modal = document.getElementById('modal-tesouro');
+  if (!modal) return;
+  const obs = new MutationObserver(() => {
+    if (modal.getAttribute('aria-hidden') === 'true') {
+      document.body.classList.remove('tesouro-abrindo');
+      bauEl?.classList.remove('flutuante');
+    }
+  });
+  obs.observe(modal, { attributes: true, attributeFilter: ['aria-hidden'] });
+})();
 
 // Reagir ✨ Quero viver isso — toggle (POST/DELETE).
 // Quando MARCA (primeira vez ou re-marca), dispara animação de carta voando
@@ -1823,12 +1839,14 @@ document.getElementById('modal-tesouro-quero')?.addEventListener('click', async 
 });
 
 // ── Animação: carta voa do botão "Eu quero viver isso" até o ícone Perfil ─
-// Espelha a animação da semente, mas com emoji ✨ e destino diferente.
 // O Baú de Relatos da aluna mora em Perfil → Meu Baú, então a carta voa
-// em direção ao ícone Perfil no bottom-nav.
+// em direção ao ícone Perfil no bottom-nav. Total: ~1.5s pra ser bem visível.
 function voarCartaProBau(origemEl) {
   const destino = document.querySelector('.nav-tab[data-view="perfil"]');
-  if (!origemEl || !destino) return;
+  if (!origemEl || !destino) {
+    console.warn('[carta] destino Perfil não encontrado no bottom-nav');
+    return;
+  }
 
   const origemRect = origemEl.getBoundingClientRect();
   const destinoRect = destino.getBoundingClientRect();
@@ -1846,24 +1864,24 @@ function voarCartaProBau(origemEl) {
   document.body.appendChild(flutuante);
   void flutuante.offsetWidth;
 
-  // Fase 1 (0-280ms): cresce no lugar (chama atenção)
-  flutuante.style.transform = 'translate(-50%, -50%) scale(1.5)';
+  // Fase 1 (0-400ms): cresce no lugar, bem visível
+  flutuante.style.transform = 'translate(-50%, -50%) scale(2)';
 
-  // Fase 2 (280-1000ms): voa pro destino diminuindo
+  // Fase 2 (400-1400ms): voa pro destino diminuindo, mantém visível mais tempo
   setTimeout(() => {
     const dx = x1 - x0;
     const dy = y1 - y0;
-    flutuante.style.transition = 'transform 720ms cubic-bezier(.55,.05,.6,1), opacity 720ms ease-in';
-    flutuante.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.4)`;
+    flutuante.style.transition = 'transform 1000ms cubic-bezier(.55,.05,.6,1), opacity 1000ms ease-in';
+    flutuante.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.5)`;
     flutuante.style.opacity = '0';
-  }, 280);
+  }, 400);
 
   // Chegou: ícone Perfil pulsa
   setTimeout(() => {
     destino.classList.add('nav-tab-pulsa');
     setTimeout(() => destino.classList.remove('nav-tab-pulsa'), 700);
     flutuante.remove();
-  }, 1000);
+  }, 1400);
 }
 
 // Resgatar semente — chama backend (atômico+idempotente), depois anima
