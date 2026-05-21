@@ -293,6 +293,10 @@ body.tesouro-abrindo .tesouro-glow { opacity: 0; transition: opacity 0.3s; }
   width: min(70vw, 360px); height: min(70vw, 360px);
   transform: translate(-50%, -50%) scale(0.8);
   z-index: 1000;
+  /* CRÍTICO: baú flutuante NUNCA recebe click. Senão, mesmo invisível
+     (opacity 0 quando o modal sobe), ele bloqueia clicks nos botões do
+     pergaminho que ficam embaixo no centro da tela. */
+  pointer-events: none;
   filter: drop-shadow(0 20px 40px rgba(0,0,0,0.4))
           drop-shadow(0 0 60px rgba(244,208,96,0.6));
   animation: bau-flutua 0.6s cubic-bezier(.34,1.4,.64,1) forwards;
