@@ -1646,6 +1646,32 @@ let tesouroLottie = null;          // instância do lottie player
 let tesouroJaResgatadoHoje = false;
 let tesouroAnimando = false;
 
+// ── Áudios do Tesouro ─────────────────────────────────────────
+// Pré-carrega os 3 sons assim que o módulo é avaliado. Como Audio() é
+// instanciado mas não toca, não há barreira de "autoplay" — o browser
+// só exige interação do usuário NA HORA do .play(), que ocorre em
+// resposta aos clicks (gesto direto, aceito por iOS Safari/Android Chrome).
+function criarAudio(src, volume = 0.7) {
+  try {
+    const a = new Audio(src);
+    a.preload = 'auto';
+    a.volume = volume;
+    return a;
+  } catch { return null; }
+}
+const audioBau       = criarAudio('/assets/som-bau.mp3',       0.7);
+const audioEuQuero   = criarAudio('/assets/som-eu-quero.mp3',  0.7);
+const audioSemente   = criarAudio('/assets/som-semente.mp3',   0.7);
+
+function tocarAudio(audio) {
+  if (!audio) return;
+  try {
+    audio.currentTime = 0;
+    const p = audio.play();
+    if (p && typeof p.catch === 'function') p.catch(() => {});
+  } catch {}
+}
+
 // Inicializa o player Lottie quando o container existe e a lib carregou.
 // O <script defer> do bodymovin é carregado em paralelo com o app.js. Se a
 // inicialização rolar antes da lib estar disponível, fica tentando até 3s.
@@ -1772,6 +1798,7 @@ document.getElementById('tesouro-btn')?.addEventListener('click', () => {
     return;
   }
   tesouroAnimando = true;
+  tocarAudio(audioBau);   // 🔊 som de abrir o baú (creak + sparkle)
   setEstadoBau('abrindo');
 
   // Ativa overlay fumê dourado + manda o baú pro centro da viewport.
@@ -1859,8 +1886,11 @@ document.getElementById('modal-tesouro-quero')?.addEventListener('click', async 
     tesouroAtual._ja_marcou_quero = !jaMarcado;
     btn.setAttribute('aria-pressed', tesouroAtual._ja_marcou_quero ? 'true' : 'false');
     btn.classList.toggle('ativo', tesouroAtual._ja_marcou_quero);
-    // Anima só quando MARCA (não quando desmarca)
-    if (!jaMarcado) voarCartaProBau(btn);
+    // Anima E toca som SÓ quando MARCA (não quando desmarca)
+    if (!jaMarcado) {
+      tocarAudio(audioEuQuero);   // 🔊 som de "guardei no baú"
+      voarCartaProBau(btn);
+    }
   } catch (e) {
     console.warn('[tesouro] quero-viver:', e);
   } finally {
@@ -1932,6 +1962,9 @@ document.getElementById('modal-tesouro-resgatar')?.addEventListener('click', asy
     // Atualiza saldo canônico (servidor é a verdade)
     if (usuario) usuario.sementes = Number(data.saldo) || 0;
     tesouroJaResgatadoHoje = true;
+
+    // 🔊 som de coleta da semente, sincronizado com a animação
+    tocarAudio(audioSemente);
 
     // Anima semente voando do botão até o badge no header
     voarSementeProHeader(btn, Number(data.saldo) || 0);
