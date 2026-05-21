@@ -655,6 +655,43 @@ async function initCore() {
       ON CONFLICT (slug) DO NOTHING
     `);
 
+    // ── SEMENTES — LEDGER (livro-razão de movimentações) ─────
+    // Sementes são MOEDA real (vão poder comprar produtos). Toda alteração
+    // de saldo é gravada aqui pra auditoria. Saldo em `usuarios.sementes` =
+    // soma dos deltas no ledger (discrepância = bug crítico).
+    // Toda escrita passa por core/sementes.js (helper centralizado).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS sementes_movimentacoes (
+        id BIGSERIAL PRIMARY KEY,
+        usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        delta INTEGER NOT NULL CHECK (delta <> 0),
+        motivo VARCHAR(40) NOT NULL,
+        origem_tipo VARCHAR(40),
+        origem_id VARCHAR(80),
+        saldo_apos INTEGER NOT NULL CHECK (saldo_apos >= 0),
+        criado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_sm_usuario ON sementes_movimentacoes(usuario_id, criado_em DESC)`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_sm_motivo ON sementes_movimentacoes(motivo)`);
+
+    // ── TESOUROS RESGATADOS — IDEMPOTÊNCIA do resgate diário ─
+    // Garante que o mesmo tesouro (item do feed) não pode ser resgatado 2x
+    // pela mesma aluna. Tabela vive aqui em poolCore (mesma transação do
+    // crédito de sementes). feed_id é referência LÓGICA pra feed (poolComunicacao).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS tesouros_resgatados (
+        id BIGSERIAL PRIMARY KEY,
+        usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        feed_id INTEGER NOT NULL,
+        movimentacao_id BIGINT REFERENCES sementes_movimentacoes(id),
+        sementes_creditadas INTEGER NOT NULL DEFAULT 0,
+        resgatado_em TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(usuario_id, feed_id)
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_tr_usuario ON tesouros_resgatados(usuario_id, resgatado_em DESC)`);
+
     console.log('✅ Banco Core iniciado');
   } finally {
     c.release();
@@ -1492,6 +1529,8 @@ async function initComunicacao() {
     `);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_bau_usuario ON relatos_salvos_bau(usuario_id)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_bau_tipo ON relatos_salvos_bau(usuario_id, tipo_reacao)`);
+    // Migration pra acomodar tesouros: feita ABAIXO, após CREATE da tabela feed
+    // (porque tesouro_feed_id é FK pra feed.id).
 
     // ── VISUALIZAÇÕES DE RELATO (Fase 2.5 — anti-repetição) ──
     // "Visto" = aluna ABRIU o modal do relato (não basta passar no carrossel).
@@ -1570,6 +1609,35 @@ async function initComunicacao() {
         criado_em TIMESTAMPTZ DEFAULT NOW(),
         atualizado_em TIMESTAMPTZ DEFAULT NOW()
       )
+    `);
+
+    // ── BAÚ: migration pra acomodar TESOUROS (item do feed) ──
+    // Agora o baú guarda relatos OU tesouros — exatamente UM dos dois IDs
+    // é preenchido. Roda DEPOIS de CREATE TABLE feed (FK depende dela).
+    await c.query(`ALTER TABLE relatos_salvos_bau ALTER COLUMN depoimento_id DROP NOT NULL`);
+    await c.query(`ALTER TABLE relatos_salvos_bau ADD COLUMN IF NOT EXISTS tesouro_feed_id INTEGER REFERENCES feed(id) ON DELETE CASCADE`);
+    // CHECK XOR — exatamente UM ID preenchido. PG não tem IF NOT EXISTS pra CHECK,
+    // então usa DO block pra ser idempotente.
+    await c.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'bau_origem_xor' AND conrelid = 'relatos_salvos_bau'::regclass
+        ) THEN
+          ALTER TABLE relatos_salvos_bau
+            ADD CONSTRAINT bau_origem_xor CHECK (
+              (depoimento_id IS NOT NULL AND tesouro_feed_id IS NULL) OR
+              (depoimento_id IS NULL AND tesouro_feed_id IS NOT NULL)
+            );
+        END IF;
+      END $$;
+    `);
+    // UNIQUE parcial pra tesouros (espelha o UNIQUE de relatos)
+    await c.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS uniq_bau_tesouro
+        ON relatos_salvos_bau (usuario_id, tesouro_feed_id, tipo_reacao)
+        WHERE tesouro_feed_id IS NOT NULL
     `);
 
     await c.query(`

@@ -42,6 +42,54 @@ async function checarAuth() {
 
 function authHeader() { return { Authorization: `Bearer ${VmSession.getAccess()}` }; }
 
+// Wrapper de fetch que injeta o Authorization automaticamente. Se receber 401,
+// tenta renovar o token com o refresh e refaz a request. Se nem isso funciona,
+// limpa a sessão e manda pra /auth, retornando null pro chamador.
+//
+// Padrão de uso: `const r = await fetchAutenticado(url, opts); if (!r) return;`
+// Os chamadores tratam !r como "sessão expirou, já redirecionei, desiste".
+async function fetchAutenticado(url, opts = {}) {
+  const access = VmSession.getAccess();
+  if (!access) { VmSession.destruir(); window.location.replace('/auth?intencional'); return null; }
+
+  const fazerRequest = (token) => {
+    const headers = Object.assign({}, opts.headers || {}, { Authorization: `Bearer ${token}` });
+    return fetch(url, Object.assign({}, opts, { headers }));
+  };
+
+  try {
+    let r = await fazerRequest(access);
+    if (r.status !== 401) return r;
+
+    // 401 — tenta renovar
+    const refresh = VmSession.getRefresh();
+    if (!refresh) {
+      try { limparCooldownPopupClube(); } catch {}
+      VmSession.destruir();
+      window.location.replace('/auth?intencional');
+      return null;
+    }
+    const rRen = await fetch(`${API}/api/auth/renovar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refresh }),
+    });
+    if (!rRen.ok) {
+      try { limparCooldownPopupClube(); } catch {}
+      VmSession.destruir();
+      window.location.replace('/auth?intencional');
+      return null;
+    }
+    const novo = await rRen.json();
+    VmSession.salvar(novo, VmSession.getLembrar());
+    // Refaz a request original com o token renovado
+    return await fazerRequest(novo.access_token);
+  } catch (e) {
+    console.warn('[fetchAutenticado] erro de rede:', e);
+    return null;
+  }
+}
+
 function hidratarUI(u) {
   if (!u) return;
   usuario = u;
@@ -1583,50 +1631,259 @@ async function renderViewVideos(ctx) {
   });
 }
 
-// ── TESOURO ──────────────────────────────────────────────────
-const TESOURO_KEY = 'vm_tesouro_resgatado';
-function tesouroJaResgatado(id) { try { return JSON.parse(localStorage.getItem(TESOURO_KEY)||'[]').includes(id); } catch { return false; } }
-function marcarTesouroResgatado(id) { try { const l=JSON.parse(localStorage.getItem(TESOURO_KEY)||'[]'); if(!l.includes(id)){l.push(id);localStorage.setItem(TESOURO_KEY,JSON.stringify(l));} } catch {} }
+// ── TESOURO DA SU ─────────────────────────────────────────────
+// 3 estados visuais no baú (Home):
+//   - "chacoalhando"    → tem tesouro novo, baú fechado pulando/tremendo
+//   - "abrindo"         → click — Lottie toca, modal abre quando lid sobe
+//   - "resgatado"       → quieto, baú fechado, mensagem "já resgatou"
+//
+// Lottie: public/assets/treasure-chest.json (animação completa do baú abrindo)
+// Servidor = fonte da verdade. Sementes NUNCA são incrementadas no cliente
+// (são moeda real — passam pelo helper core/sementes.js no backend).
+
 let tesouroAtual = null;
-async function carregarTesouro() {
+let tesouroLottie = null;          // instância do lottie player
+let tesouroJaResgatadoHoje = false;
+let tesouroAnimando = false;
+
+// Inicializa o player Lottie quando o container existe e a lib carregou.
+// O <script defer> do bodymovin é carregado em paralelo com o app.js. Se a
+// inicialização rolar antes da lib estar disponível, fica tentando até 3s.
+function initBauLottie(tentativasRestantes = 30) {
+  const container = document.getElementById('tesouro-bau-lottie');
+  if (!container || tesouroLottie) return;
+  if (typeof lottie === 'undefined') {
+    if (tentativasRestantes > 0) {
+      setTimeout(() => initBauLottie(tentativasRestantes - 1), 100);
+    } else {
+      console.warn('[tesouro] Lottie não carregou em 3s — baú ficará sem animação.');
+    }
+    return;
+  }
   try {
-    const r = await fetch(`${API}/api/feed`); if(!r.ok) return;
-    const itens = await r.json();
-    const item = itens.find(i => i.ativo && !tesouroJaResgatado(String(i.id)));
-    if (!item) { document.getElementById('tesouro-sub').textContent='Nenhum tesouro hoje ainda'; return; }
-    tesouroAtual = item;
-    document.getElementById('tesouro-btn').classList.add('tem-novidade');
-    document.getElementById('tesouro-sub').textContent='Seu presente de hoje está aqui ✦';
+    tesouroLottie = lottie.loadAnimation({
+      container,
+      renderer: 'svg',
+      loop: false,
+      autoplay: false,
+      path: '/assets/treasure-chest.json',
+    });
+    // Garante frame inicial (baú fechado) ao terminar de carregar
+    tesouroLottie.addEventListener('DOMLoaded', () => {
+      try { tesouroLottie.goToAndStop(0, true); } catch {}
+    });
+  } catch (e) {
+    console.warn('[tesouro] Lottie não inicializou:', e);
+  }
+}
+
+function setEstadoBau(estado) {
+  const btn = document.getElementById('tesouro-btn');
+  const sub = document.getElementById('tesouro-sub');
+  if (!btn) return;
+  btn.classList.remove('chacoalhando', 'abrindo', 'resgatado');
+  if (estado === 'chacoalhando') {
+    btn.classList.add('chacoalhando');
+    if (sub) sub.textContent = 'Seu presente de hoje está aqui ✦';
+    if (tesouroLottie) { try { tesouroLottie.goToAndStop(0, true); } catch {} }
+  } else if (estado === 'abrindo') {
+    btn.classList.add('abrindo');
+    if (tesouroLottie) { try { tesouroLottie.goToAndPlay(0, true); } catch {} }
+  } else if (estado === 'resgatado') {
+    btn.classList.add('resgatado');
+    if (sub) sub.textContent = 'Você já resgatou o seu tesouro de hoje ✦';
+    if (tesouroLottie) { try { tesouroLottie.goToAndStop(0, true); } catch {} }
+  } else if (estado === 'vazio') {
+    if (sub) sub.textContent = 'Nenhum tesouro hoje ainda ✦';
+    if (tesouroLottie) { try { tesouroLottie.goToAndStop(0, true); } catch {} }
+  }
+}
+
+async function carregarTesouro() {
+  initBauLottie();
+  try {
+    const r = await fetch(`${API}/api/app/tesouro/disponivel`, { headers: authHeader() });
+    if (!r.ok) return;
+    const data = await r.json();
+    if (!data.ok) return;
+    tesouroAtual = data.tesouro || null;
+    tesouroJaResgatadoHoje = !tesouroAtual && (data.total_resgatados || 0) > 0;
+    if (tesouroAtual) {
+      tesouroAtual._ja_marcou_quero = !!data.ja_marcou_quero;
+      setEstadoBau('chacoalhando');
+    } else if (tesouroJaResgatadoHoje) {
+      setEstadoBau('resgatado');
+    } else {
+      setEstadoBau('vazio');
+    }
   } catch {}
 }
-document.getElementById('tesouro-btn')?.addEventListener('click', () => {
-  if (!tesouroAtual) return;
+
+function renderConteudoTesouro(tes) {
   const conteudo = document.getElementById('modal-tesouro-conteudo');
+  if (!conteudo) return;
   conteudo.innerHTML = `
     <div style="padding:1rem 1.25rem 0">
-      <div class="feed-card-eyebrow" style="margin-bottom:0.4rem">${tesouroAtual.subtitulo||'Tesouro do Dia'}</div>
-      <div class="feed-card-titulo" style="font-size:1.1rem;margin-bottom:0.6rem">${tesouroAtual.titulo}</div>
-      ${tesouroAtual.corpo?`<p style="font-size:0.86rem;color:var(--texto-suave);line-height:1.6;margin-bottom:1rem">${tesouroAtual.corpo}</p>`:''}
-      <p style="font-size:0.82rem;color:var(--texto-suave);line-height:1.5;margin-bottom:0.75rem;font-style:italic">"Quando agradece, coisas boas acontecem. Quando acredita, coisas boas realiza."</p>
+      <div class="feed-card-eyebrow" style="margin-bottom:0.4rem">${escHtml(tes.subtitulo || 'Tesouro do Dia')}</div>
+      <div class="feed-card-titulo" style="font-size:1.1rem;margin-bottom:0.6rem">${escHtml(tes.titulo || '')}</div>
+      ${tes.corpo ? `<p style="font-size:0.86rem;color:var(--texto-suave);line-height:1.6;margin-bottom:1rem">${escHtml(tes.corpo)}</p>` : ''}
       <div style="font-size:0.75rem;color:var(--ouro-fundo);font-family:var(--font-display);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.2rem">Recompensa</div>
       <div style="font-size:1.4rem;font-family:var(--font-display);font-weight:900;color:var(--ouro-fundo);margin-bottom:1rem">+1 🌱 Semente</div>
     </div>`;
+}
+
+function hidratarBotoesTesouro() {
+  const btnQuero = document.getElementById('modal-tesouro-quero');
+  const btnResgatar = document.getElementById('modal-tesouro-resgatar');
+  if (btnQuero) {
+    btnQuero.disabled = false;
+    btnQuero.setAttribute('aria-pressed', tesouroAtual?._ja_marcou_quero ? 'true' : 'false');
+    btnQuero.classList.toggle('ativo', !!tesouroAtual?._ja_marcou_quero);
+  }
+  if (btnResgatar) {
+    btnResgatar.disabled = !!tesouroJaResgatadoHoje;
+    btnResgatar.classList.toggle('resgatado', !!tesouroJaResgatadoHoje);
+    const label = btnResgatar.querySelector('.label');
+    if (label) label.textContent = tesouroJaResgatadoHoje ? 'Já resgatado hoje' : 'Resgatar Semente';
+  }
+}
+
+function abrirModalTesouro() {
+  if (!tesouroAtual) return;
+  renderConteudoTesouro(tesouroAtual);
+  hidratarBotoesTesouro();
   abrirModal('modal-tesouro');
+}
+
+// Click no baú → animação de abrir (Lottie + scale) → modal sobe quando termina.
+document.getElementById('tesouro-btn')?.addEventListener('click', () => {
+  if (tesouroAnimando) return;
+  if (!tesouroAtual) {
+    // Sem tesouro: ainda abre o modal mostrando o último estado, ou simplesmente nada
+    if (tesouroJaResgatadoHoje) return; // baú quieto, não faz nada
+    return;
+  }
+  tesouroAnimando = true;
+  setEstadoBau('abrindo');
+  // Tempo da animação do Lottie até a tampa abrir totalmente (~900ms na curva atual).
+  // Se a lib não tiver carregado, abre o modal direto sem esperar.
+  const espera = (tesouroLottie && typeof lottie !== 'undefined') ? 900 : 0;
+  setTimeout(() => {
+    abrirModalTesouro();
+    tesouroAnimando = false;
+  }, espera);
 });
+
+// Reagir ✨ Quero viver isso — toggle (POST/DELETE)
+document.getElementById('modal-tesouro-quero')?.addEventListener('click', async () => {
+  if (!tesouroAtual) return;
+  const btn = document.getElementById('modal-tesouro-quero');
+  const jaMarcado = tesouroAtual._ja_marcou_quero;
+  btn.disabled = true;
+  try {
+    const url = `${API}/api/app/tesouro/${tesouroAtual.id}/quero-viver`;
+    const r = await fetch(url, {
+      method: jaMarcado ? 'DELETE' : 'POST',
+      headers: authHeader(),
+    });
+    if (!r.ok) throw new Error('rede');
+    tesouroAtual._ja_marcou_quero = !jaMarcado;
+    btn.setAttribute('aria-pressed', tesouroAtual._ja_marcou_quero ? 'true' : 'false');
+    btn.classList.toggle('ativo', tesouroAtual._ja_marcou_quero);
+  } catch (e) {
+    console.warn('[tesouro] quero-viver:', e);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// Resgatar semente — chama backend (atômico+idempotente), depois anima
 document.getElementById('modal-tesouro-resgatar')?.addEventListener('click', async () => {
-  if (!tesouroAtual || !usuario) return;
+  if (!tesouroAtual || tesouroJaResgatadoHoje) return;
   const btn = document.getElementById('modal-tesouro-resgatar');
-  btn.disabled = true; btn.textContent = 'Resgatando...';
-  marcarTesouroResgatado(String(tesouroAtual.id));
-  usuario.sementes = (usuario.sementes||0) + 1;
-  document.getElementById('badge-sementes').textContent = usuario.sementes;
-  document.getElementById('perfil-sementes').textContent = usuario.sementes;
-  fecharModal('modal-tesouro');
-  document.getElementById('tesouro-btn').classList.remove('tem-novidade');
-  document.getElementById('tesouro-sub').textContent = 'Ouro resgatado. Volte amanhã ✦';
-  tesouroAtual = null;
-  btn.disabled = false; btn.textContent = '🌱 Resgatar Tesouro';
+  btn.disabled = true;
+  const labelEl = btn.querySelector('.label');
+  if (labelEl) labelEl.textContent = 'Resgatando…';
+  try {
+    const r = await fetch(`${API}/api/app/tesouro/${tesouroAtual.id}/resgatar`, {
+      method: 'POST',
+      headers: { ...authHeader(), 'Content-Type': 'application/json' },
+    });
+    const data = await r.json();
+    if (!r.ok || !data.ok) throw new Error(data.erro || 'falha');
+
+    // Atualiza saldo canônico (servidor é a verdade)
+    if (usuario) usuario.sementes = Number(data.saldo) || 0;
+    tesouroJaResgatadoHoje = true;
+
+    // Anima semente voando do botão até o badge no header
+    voarSementeProHeader(btn, Number(data.saldo) || 0);
+
+    // Fecha o modal e marca o baú como resgatado depois da animação chegar lá
+    setTimeout(() => {
+      fecharModal('modal-tesouro');
+      setEstadoBau('resgatado');
+      tesouroAtual = null;
+      hidratarBotoesTesouro();
+    }, 700);
+  } catch (e) {
+    console.warn('[tesouro] resgatar:', e);
+    if (labelEl) labelEl.textContent = 'Tente de novo';
+    setTimeout(() => { btn.disabled = false; if (labelEl) labelEl.textContent = 'Resgatar Semente'; }, 1500);
+  }
 });
+
+// ── Animação: semente voa do botão "Resgatar" até o badge do header ────
+// Cria um span flutuante com 🌱, posiciona em coordenadas do botão e
+// anima translate+scale até o centro do #btn-sementes. Quando chega lá,
+// o badge pulsa e o número incrementa.
+function voarSementeProHeader(origemEl, saldoFinal) {
+  const destino = document.getElementById('btn-sementes');
+  const badge = document.getElementById('badge-sementes');
+  if (!origemEl || !destino) return;
+
+  const origemRect = origemEl.getBoundingClientRect();
+  const destinoRect = destino.getBoundingClientRect();
+
+  const x0 = origemRect.left + origemRect.width / 2;
+  const y0 = origemRect.top + origemRect.height / 2;
+  const x1 = destinoRect.left + destinoRect.width / 2;
+  const y1 = destinoRect.top + destinoRect.height / 2;
+
+  const flutuante = document.createElement('span');
+  flutuante.className = 'semente-voadora';
+  flutuante.textContent = '🌱';
+  flutuante.style.left = `${x0}px`;
+  flutuante.style.top = `${y0}px`;
+  document.body.appendChild(flutuante);
+
+  // Força reflow pra que a transition inicial funcione
+  void flutuante.offsetWidth;
+
+  // Fase 1 (0-250ms): cresce no lugar
+  flutuante.style.transform = 'translate(-50%, -50%) scale(1.6)';
+
+  // Fase 2 (250-900ms): voa até o destino diminuindo
+  setTimeout(() => {
+    const dx = x1 - x0;
+    const dy = y1 - y0;
+    flutuante.style.transition = 'transform 650ms cubic-bezier(.55,.05,.6,1), opacity 650ms ease-in';
+    flutuante.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.4)`;
+    flutuante.style.opacity = '0';
+  }, 250);
+
+  // Chegou: badge pulsa + número atualiza
+  setTimeout(() => {
+    if (badge) {
+      badge.textContent = String(saldoFinal);
+      badge.classList.add('badge-pulsa');
+      setTimeout(() => badge.classList.remove('badge-pulsa'), 600);
+    }
+    const perfilSem = document.getElementById('perfil-sementes');
+    if (perfilSem) perfilSem.textContent = String(saldoFinal);
+    flutuante.remove();
+  }, 900);
+}
 
 // ── AVISOS ───────────────────────────────────────────────────
 const AVISOS_KEY = 'vm_avisos_lidos';
@@ -4230,7 +4487,7 @@ function renderAbaBau(aba){
   const itens = bauDados[aba] || [];
   if (!itens.length){
     const msgs = {
-      quero:           { ic:'✨', txt:'Quando você marcar "Quero isso na minha vida" em algum relato, ele aparece aqui.' },
+      quero:           { ic:'✨', txt:'Quando você marcar "Quero isso na minha vida" em algum relato ou tesouro, ele aparece aqui.' },
       ja_vivo:         { ic:'💛', txt:'Marque "Já vivo isso" pra celebrar — e essas histórias ficam guardadas aqui.' },
       nao_e_pra_mim:   { ic:'🌿', txt:'O que não é seu caminho fica respeitosamente guardado aqui.' },
       parabens:        { ic:'🙏', txt:'Quando você honrar a transformação de outras alunas, fica registrado aqui.' },
@@ -4239,22 +4496,67 @@ function renderAbaBau(aba){
     lista.innerHTML = `<div class="bau-empty"><div class="bau-empty-icone">${m.ic}</div>${m.txt}</div>`;
     return;
   }
-  lista.innerHTML = itens.map(d => `
-    <div class="bau-relato-card ${d.autora_era_assinante_clube ? 'relato-clube' : ''}"
-         onclick="abrirRelatoDoBau(${d.id})">
-      <div class="relato-card-autor">${escHtml(d.nome || '—')}</div>
-      ${(d.profissao || d.idade) ? `<div class="relato-card-meta">${escHtml([d.profissao, d.idade ? d.idade + ' anos' : null].filter(Boolean).join(' • '))}</div>` : ''}
-      <p class="relato-card-texto">${escHtml(d.texto || '')}</p>
-      ${d.tema_nome ? `<span class="relato-card-tema">${escHtml(d.tema_nome)}</span>` : ''}
-    </div>
-  `).join('');
+  lista.innerHTML = itens.map(d => {
+    if (d.origem === 'tesouro') {
+      return `
+        <div class="bau-relato-card bau-tesouro-card" onclick="abrirTesouroDoBau(${d.id})">
+          <div class="bau-tesouro-eyebrow"><span aria-hidden="true">🎁</span> Tesouro da Su</div>
+          ${d.subtitulo ? `<div class="relato-card-meta">${escHtml(d.subtitulo)}</div>` : ''}
+          <div class="bau-tesouro-titulo">${escHtml(d.titulo || '')}</div>
+          ${d.corpo ? `<p class="relato-card-texto">${escHtml(d.corpo)}</p>` : ''}
+        </div>`;
+    }
+    return `
+      <div class="bau-relato-card ${d.autora_era_assinante_clube ? 'relato-clube' : ''}"
+           onclick="abrirRelatoDoBau(${d.id})">
+        <div class="relato-card-autor">${escHtml(d.nome || '—')}</div>
+        ${(d.profissao || d.idade) ? `<div class="relato-card-meta">${escHtml([d.profissao, d.idade ? d.idade + ' anos' : null].filter(Boolean).join(' • '))}</div>` : ''}
+        <p class="relato-card-texto">${escHtml(d.texto || '')}</p>
+        ${d.tema_nome ? `<span class="relato-card-tema">${escHtml(d.tema_nome)}</span>` : ''}
+      </div>`;
+  }).join('');
 }
 
 window.abrirRelatoDoBau = function(id){
   if (!bauDados) return;
   const todos = Object.values(bauDados).flat();
-  const rel = todos.find(d => d.id === id);
+  const rel = todos.find(d => d.id === id && d.origem !== 'tesouro');
   if (rel && window.VmRelatos) window.VmRelatos.abrirModal(rel);
+};
+
+// Reabre o modal do Tesouro a partir do baú. Como o tesouro pode já ter sido
+// resgatado (não aparece mais em /tesouro/disponivel), montamos o estado a
+// partir dos dados que estão no próprio baú e renderizamos read-only.
+window.abrirTesouroDoBau = function(feedId){
+  if (!bauDados) return;
+  const todos = Object.values(bauDados).flat();
+  const t = todos.find(d => d.id === feedId && d.origem === 'tesouro');
+  if (!t) return;
+  tesouroAtual = {
+    id: t.id,
+    subtitulo: t.subtitulo,
+    titulo: t.titulo,
+    corpo: t.corpo,
+    _ja_marcou_quero: true, // está no baú aba "quero", então é true por definição
+    _ja_resgatado_visualizacao: true,
+  };
+  renderConteudoTesouro(tesouroAtual);
+  // Estado visual do modal: o "Quero" fica marcado e desmarcável; o "Resgatar"
+  // não é relevante aqui (semente já foi creditada ou nunca foi) — desabilita.
+  const btnQuero = document.getElementById('modal-tesouro-quero');
+  const btnResgatar = document.getElementById('modal-tesouro-resgatar');
+  if (btnQuero) {
+    btnQuero.classList.add('ativo');
+    btnQuero.setAttribute('aria-pressed', 'true');
+    btnQuero.disabled = false;
+  }
+  if (btnResgatar) {
+    btnResgatar.disabled = true;
+    btnResgatar.classList.add('resgatado');
+    const label = btnResgatar.querySelector('.label');
+    if (label) label.textContent = 'Já fora do dia';
+  }
+  abrirModal('modal-tesouro');
 };
 
 // ════════════════════════════════════════════════════════════════════

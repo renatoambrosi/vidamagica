@@ -394,11 +394,12 @@ select option { background: #1a1205; }
 }
 .algo-slider-valor {
   font-family: var(--font-display);
-  font-size: 0.95rem; font-weight: 800;
+  font-size: 0.88rem; font-weight: 800;
   color: var(--color-gold-light);
   flex-shrink: 0;
-  min-width: 70px;
+  min-width: 160px;
   text-align: right;
+  letter-spacing: 0.01em;
 }
 .algo-slider input[type="range"] {
   width: 100%;
@@ -439,6 +440,30 @@ select option { background: #1a1205; }
   font-size: 0.74rem; color: var(--text-muted);
   line-height: 1.5;
 }
+.algo-preview {
+  margin: 1rem 0 0.85rem;
+  padding: 0.9rem 1rem;
+  background: linear-gradient(135deg, rgba(200,146,42,0.07), rgba(244,208,96,0.04));
+  border: 1px solid rgba(200,146,42,0.22);
+  border-left: 3px solid var(--color-gold-light);
+  border-radius: var(--radius-sm);
+}
+.algo-preview-titulo {
+  font-family: var(--font-display);
+  font-size: 0.68rem; font-weight: 800;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--color-gold-light);
+  margin-bottom: 0.4rem;
+}
+.algo-preview-frase {
+  font-size: 0.82rem; line-height: 1.6;
+  color: var(--text);
+  margin: 0;
+}
+.algo-preview-frase strong {
+  color: var(--color-gold-light); font-weight: 700;
+}
+
 .algo-acoes {
   display: flex; align-items: center;
   gap: 0.55rem; flex-wrap: wrap;
@@ -725,83 +750,89 @@ select option { background: #1a1205; }
       <!-- ╚════════════════════════════════════════════════════════════╝ -->
       <div class="subtab-panel" id="subtab-algoritmo">
         <div class="section-header">
-          <span class="section-title">Algoritmo do feed de relatos</span>
+          <span class="section-title">Como o feed de relatos é organizado</span>
           <button class="btn btn-ghost btn-sm" onclick="carregarAlgoritmo()">↻ Recarregar</button>
         </div>
-        <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:1.2rem;line-height:1.55">
-          Controla quais relatos aparecem primeiro no feed da home do <strong>/app</strong>. A fórmula é:
-          <br><code style="background:rgba(200,146,42,0.08);padding:2px 6px;border-radius:4px;font-size:0.72rem">score = RANDOM × novidade × jornada × popularidade × penalidade_visto</code>
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1.3rem;line-height:1.6">
+          Aqui você define o que cada aluna vê primeiro no carrossel <strong>Relatos da Comunidade</strong> da home do app.
+          Cada controle abaixo responde uma pergunta de negócio — e o efeito é aplicado na próxima vez que ela abre o app.
         </p>
 
         <div class="dep-card" style="display:block">
           <div class="algo-grupo">
-            <div class="algo-grupo-titulo">📈 Boosts (multiplicadores positivos)</div>
+            <div class="algo-grupo-titulo">⬆ O que você quer empurrar pra cima</div>
 
             <div class="algo-slider">
               <div class="algo-slider-row">
-                <label>Boost de novidade <span class="algo-slider-hint">(relatos dentro da janela ganham × este valor)</span></label>
+                <label>Destaque de relatos recém-aprovados <span class="algo-slider-hint">o quanto um relato novo "fura" a fila</span></label>
                 <span class="algo-slider-valor" id="vmult_novidade">—</span>
               </div>
-              <input type="range" min="0" max="20" step="0.5" id="mult_novidade" oninput="document.getElementById('vmult_novidade').textContent='× ' + (+this.value).toFixed(1)">
-              <div class="algo-slider-min-max"><span>0 (sem boost)</span><span>20 (extremo)</span></div>
+              <input type="range" min="0" max="20" step="0.5" id="mult_novidade" oninput="atualizarVisorAlgoritmo()">
+              <div class="algo-slider-min-max"><span>Não destaca</span><span>Domina o feed</span></div>
             </div>
 
             <div class="algo-slider">
               <div class="algo-slider-row">
-                <label>Janela de novidade <span class="algo-slider-hint">(quantas horas o relato é considerado "novo")</span></label>
-                <span class="algo-slider-valor" id="vjanela_novidade_horas">— h</span>
+                <label>Por quantos dias um relato é considerado "novidade" <span class="algo-slider-hint">depois desse prazo, ele para de receber o destaque acima</span></label>
+                <span class="algo-slider-valor" id="vjanela_novidade_horas">—</span>
               </div>
-              <input type="range" min="1" max="168" step="1" id="janela_novidade_horas" oninput="document.getElementById('vjanela_novidade_horas').textContent=this.value + ' h'">
-              <div class="algo-slider-min-max"><span>1h</span><span>168h (1 semana)</span></div>
+              <input type="range" min="24" max="336" step="24" id="janela_novidade_horas" oninput="atualizarVisorAlgoritmo()">
+              <div class="algo-slider-min-max"><span>1 dia</span><span>14 dias</span></div>
             </div>
 
             <div class="algo-slider">
               <div class="algo-slider-row">
-                <label>Boost de jornada vigente <span class="algo-slider-hint">(relato do produto que a aluna deve consumir agora)</span></label>
+                <label>Priorizar relatos do produto que ela precisa comprar agora <span class="algo-slider-hint">o "motor de venda": relatos do produto da jornada vigente sobem</span></label>
                 <span class="algo-slider-valor" id="vmult_jornada">—</span>
               </div>
-              <input type="range" min="0" max="20" step="0.5" id="mult_jornada" oninput="document.getElementById('vmult_jornada').textContent='× ' + (+this.value).toFixed(1)">
-              <div class="algo-slider-min-max"><span>0 (ignora jornada)</span><span>20 (motor de venda forte)</span></div>
+              <input type="range" min="0" max="20" step="0.5" id="mult_jornada" oninput="atualizarVisorAlgoritmo()">
+              <div class="algo-slider-min-max"><span>Ignora jornada</span><span>Venda agressiva</span></div>
             </div>
 
             <div class="algo-slider">
               <div class="algo-slider-row">
-                <label>Boost de popularidade <span class="algo-slider-hint">(relato com muitas reações sobe — fórmula: 1 + valor × log(1 + reações))</span></label>
+                <label>Peso das reações de outras alunas <span class="algo-slider-hint">relatos com muitas reações sobem mais — efeito "boca a boca"</span></label>
                 <span class="algo-slider-valor" id="vmult_popularidade">—</span>
               </div>
-              <input type="range" min="0" max="5" step="0.1" id="mult_popularidade" oninput="document.getElementById('vmult_popularidade').textContent='× ' + (+this.value).toFixed(2)">
-              <div class="algo-slider-min-max"><span>0 (não conta)</span><span>5 (popular domina)</span></div>
+              <input type="range" min="0" max="5" step="0.1" id="mult_popularidade" oninput="atualizarVisorAlgoritmo()">
+              <div class="algo-slider-min-max"><span>Não conta</span><span>Domina o feed</span></div>
             </div>
           </div>
 
           <div class="algo-grupo">
-            <div class="algo-grupo-titulo">📉 Penalidades (anti-repetição)</div>
+            <div class="algo-grupo-titulo">⬇ O que você quer evitar repetir</div>
 
             <div class="algo-slider">
               <div class="algo-slider-row">
-                <label>Penalidade quando aluna já viu <span class="algo-slider-hint">(abriu o modal mas não reagiu)</span></label>
+                <label>Mostrar de novo relatos que ela já abriu mas não reagiu <span class="algo-slider-hint">se ela leu e seguiu sem reagir, com que frequência o relato volta?</span></label>
                 <span class="algo-slider-valor" id="vpenalidade_visto">—</span>
               </div>
-              <input type="range" min="0" max="1" step="0.05" id="penalidade_visto" oninput="document.getElementById('vpenalidade_visto').textContent='× ' + (+this.value).toFixed(2)">
-              <div class="algo-slider-min-max"><span>0 (esconde sempre)</span><span>1 (não penaliza)</span></div>
+              <input type="range" min="0" max="1" step="0.05" id="penalidade_visto" oninput="atualizarVisorAlgoritmo()">
+              <div class="algo-slider-min-max"><span>Quase nunca</span><span>Repete normal</span></div>
             </div>
 
             <div class="algo-slider">
               <div class="algo-slider-row">
-                <label>Penalidade quando aluna já reagiu <span class="algo-slider-hint">(curtiu/marcou — quase exilado, volta só quando esgotar)</span></label>
+                <label>Mostrar de novo relatos que ela já reagiu <span class="algo-slider-hint">se ela já marcou alguma reação, esse relato volta ao feed dela?</span></label>
                 <span class="algo-slider-valor" id="vpenalidade_reagido">—</span>
               </div>
-              <input type="range" min="0" max="1" step="0.05" id="penalidade_reagido" oninput="document.getElementById('vpenalidade_reagido').textContent='× ' + (+this.value).toFixed(2)">
-              <div class="algo-slider-min-max"><span>0 (esconde sempre)</span><span>1 (não penaliza)</span></div>
+              <input type="range" min="0" max="1" step="0.05" id="penalidade_reagido" oninput="atualizarVisorAlgoritmo()">
+              <div class="algo-slider-min-max"><span>Só quando esgotar</span><span>Repete normal</span></div>
             </div>
             <p class="algo-explicacao">
-              💡 Quando <strong>todos</strong> os relatos disponíveis já foram reagidos pela aluna, o sistema <strong>ignora automaticamente</strong> a penalidade — assim ela volta a ver tudo sem o feed ficar vazio.
+              💡 Quando a aluna <strong>já reagiu em todos os relatos disponíveis</strong>, o sistema solta automaticamente essa trava — assim o carrossel nunca fica vazio.
             </p>
           </div>
 
+          <!-- Pré-visualização ao vivo — fala em uma frase o que esses ajustes geram -->
+          <div class="algo-preview" id="algo-preview">
+            <div class="algo-preview-titulo">Como isso aparece pra aluna</div>
+            <p class="algo-preview-frase" id="algo-preview-frase">Ajuste os controles acima pra ver uma descrição.</p>
+          </div>
+
           <div class="algo-acoes">
-            <button class="btn btn-primary btn-sm" onclick="salvarAlgoritmo(this)">💾 Salvar configuração</button>
-            <button class="btn btn-ghost btn-sm" onclick="restaurarAlgoritmoDefaults()">↺ Restaurar padrões</button>
+            <button class="btn btn-primary btn-sm" onclick="salvarAlgoritmo(this)">Salvar mudanças</button>
+            <button class="btn btn-ghost btn-sm" onclick="restaurarAlgoritmoDefaults()">Voltar pros padrões</button>
             <span class="algo-status" id="algo-status"></span>
           </div>
         </div>
@@ -2276,13 +2307,23 @@ const ALGO_DEFAULTS = {
   mult_novidade: 5.0, mult_jornada: 3.0, mult_popularidade: 0.5,
   penalidade_visto: 0.4, penalidade_reagido: 0.05, janela_novidade_horas: 48,
 };
+
+// Cada slider tem um rótulo qualitativo ("Pouco / Forte / Muito forte") em função
+// do valor numérico. O empresário vê o número + a palavra lado a lado.
+function rotularNovidade(v){ v=+v; if (v===0) return 'Não destaca'; if (v<=1.5) return 'Pouco'; if (v<=4) return 'Moderado'; if (v<=8) return 'Forte'; return 'Muito forte'; }
+function rotularJornada(v){ v=+v; if (v===0) return 'Ignora jornada'; if (v<=1.5) return 'Pouco'; if (v<=4) return 'Moderado'; if (v<=8) return 'Forte'; return 'Venda agressiva'; }
+function rotularPopularidade(v){ v=+v; if (v===0) return 'Não conta'; if (v<=0.4) return 'Conta pouco'; if (v<=1.5) return 'Moderado'; if (v<=3) return 'Conta muito'; return 'Domina'; }
+function rotularPenalidadeVisto(v){ v=+v; if (v===0) return 'Quase nunca'; if (v<=0.3) return 'Raramente'; if (v<=0.7) return 'Eventualmente'; return 'Frequentemente'; }
+function rotularPenalidadeReagido(v){ v=+v; if (v===0) return 'Só quando esgotar'; if (v<=0.3) return 'Raramente'; if (v<=0.7) return 'Eventualmente'; return 'Frequentemente'; }
+function rotularJanela(h){ const d = Math.round(h/24); return d + ' dia' + (d===1 ? '' : 's'); }
+
 const ALGO_FORMATS = {
-  mult_novidade:        v => '× ' + (+v).toFixed(1),
-  mult_jornada:         v => '× ' + (+v).toFixed(1),
-  mult_popularidade:    v => '× ' + (+v).toFixed(2),
-  penalidade_visto:     v => '× ' + (+v).toFixed(2),
-  penalidade_reagido:   v => '× ' + (+v).toFixed(2),
-  janela_novidade_horas: v => v + ' h',
+  mult_novidade:         v => '× ' + (+v).toFixed(1) + ' · ' + rotularNovidade(v),
+  mult_jornada:          v => '× ' + (+v).toFixed(1) + ' · ' + rotularJornada(v),
+  mult_popularidade:     v => '× ' + (+v).toFixed(2) + ' · ' + rotularPopularidade(v),
+  penalidade_visto:      v => '× ' + (+v).toFixed(2) + ' · ' + rotularPenalidadeVisto(v),
+  penalidade_reagido:    v => '× ' + (+v).toFixed(2) + ' · ' + rotularPenalidadeReagido(v),
+  janela_novidade_horas: v => rotularJanela(v),
 };
 
 function aplicarAlgoritmoNaUI(dados){
@@ -2292,6 +2333,76 @@ function aplicarAlgoritmoNaUI(dados){
     if (input) input.value = dados[k];
     if (visor) visor.textContent = ALGO_FORMATS[k](dados[k]);
   });
+  atualizarPreviewAlgoritmo();
+}
+
+// Atualiza os visores dos sliders ao mover (e a frase de pré-visualização).
+function atualizarVisorAlgoritmo(){
+  ALGO_CHAVES.forEach(k => {
+    const input = document.getElementById(k);
+    const visor = document.getElementById('v' + k);
+    if (input && visor) visor.textContent = ALGO_FORMATS[k](input.value);
+  });
+  atualizarPreviewAlgoritmo();
+}
+
+// Frase de pré-visualização — descreve em português comum o que esses ajustes
+// fazem com o feed da aluna. Reage ao vivo quando você mexe nos sliders.
+function atualizarPreviewAlgoritmo(){
+  const frase = document.getElementById('algo-preview-frase');
+  if (!frase) return;
+  const val = k => {
+    const el = document.getElementById(k);
+    return el ? +el.value : ALGO_DEFAULTS[k];
+  };
+  const novidade   = val('mult_novidade');
+  const jornada    = val('mult_jornada');
+  const popular    = val('mult_popularidade');
+  const pVisto     = val('penalidade_visto');
+  const pReagido   = val('penalidade_reagido');
+  const janelaDias = Math.round(val('janela_novidade_horas') / 24);
+
+  const partes = [];
+
+  // Novidade
+  if (novidade === 0) partes.push('relatos novos <strong>não recebem destaque</strong>');
+  else if (novidade <= 1.5) partes.push('relatos novos sobem <strong>um pouquinho</strong> nos primeiros ' + janelaDias + ' dia' + (janelaDias===1?'':'s'));
+  else if (novidade <= 4) partes.push('relatos novos sobem <strong>de forma moderada</strong> nos primeiros ' + janelaDias + ' dia' + (janelaDias===1?'':'s'));
+  else if (novidade <= 8) partes.push('relatos novos <strong>aparecem com força</strong> nos primeiros ' + janelaDias + ' dia' + (janelaDias===1?'':'s'));
+  else partes.push('relatos novos <strong>dominam o feed</strong> por ' + janelaDias + ' dia' + (janelaDias===1?'':'s'));
+
+  // Jornada
+  if (jornada === 0) partes.push('a jornada da aluna <strong>não influencia</strong> a ordem');
+  else if (jornada <= 1.5) partes.push('o produto da jornada vigente recebe <strong>uma leve prioridade</strong>');
+  else if (jornada <= 4) partes.push('o produto da jornada vigente <strong>fica em destaque</strong>');
+  else if (jornada <= 8) partes.push('o produto da jornada vigente <strong>domina a vitrine</strong> dela');
+  else partes.push('quase só aparecem relatos do produto que ela <strong>precisa comprar agora</strong>');
+
+  // Popularidade
+  if (popular === 0) partes.push('as reações de outras alunas <strong>não contam</strong>');
+  else if (popular <= 0.4) partes.push('reações de outras alunas têm <strong>peso pequeno</strong>');
+  else if (popular <= 1.5) partes.push('reações de outras alunas têm <strong>peso moderado</strong>');
+  else if (popular <= 3) partes.push('relatos <strong>muito reagidos sobem bastante</strong>');
+  else partes.push('relatos <strong>muito reagidos dominam</strong>');
+
+  // Já visto
+  let visto;
+  if (pVisto === 0) visto = 'já abriu sem reagir <strong>quase nunca volta</strong>';
+  else if (pVisto <= 0.3) visto = 'já abriu sem reagir <strong>raramente volta</strong>';
+  else if (pVisto <= 0.7) visto = 'já abriu sem reagir <strong>volta eventualmente</strong>';
+  else visto = 'já abriu sem reagir <strong>continua aparecendo normal</strong>';
+
+  // Já reagiu
+  let reagiu;
+  if (pReagido === 0) reagiu = 'já reagiu <strong>só volta quando esgotar o resto</strong>';
+  else if (pReagido <= 0.3) reagiu = 'já reagiu <strong>raramente volta</strong>';
+  else if (pReagido <= 0.7) reagiu = 'já reagiu <strong>volta eventualmente</strong>';
+  else reagiu = 'já reagiu <strong>continua aparecendo normal</strong>';
+
+  const ordem = partes.join('; ');
+  const repeticao = 'Relato que ela ' + visto + '. Relato que ela ' + reagiu + '.';
+
+  frase.innerHTML = 'Com esses ajustes: ' + ordem + '. ' + repeticao;
 }
 
 async function carregarAlgoritmo(){
@@ -2335,7 +2446,7 @@ async function salvarAlgoritmo(btn){
 }
 
 function restaurarAlgoritmoDefaults(){
-  if (!confirm('Voltar todos os pesos pros valores padrão?\n\n• Novidade × 5\n• Jornada × 3\n• Popularidade × 0.5\n• Penalidade visto × 0.4\n• Penalidade reagido × 0.05\n• Janela 48h')) return;
+  if (!confirm('Voltar todos os controles para a configuração padrão?\n\n• Destaque de relatos novos: Forte\n• Janela de novidade: 2 dias\n• Prioridade da jornada vigente: Moderado\n• Peso das reações: Conta pouco\n• Já viu sem reagir: Eventualmente repete\n• Já reagiu: Só volta quando esgotar o resto')) return;
   aplicarAlgoritmoNaUI(ALGO_DEFAULTS);
   const status = document.getElementById('algo-status');
   if (status) { status.textContent = 'Padrões carregados — clique em Salvar pra aplicar'; status.className = 'algo-status'; }

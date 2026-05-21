@@ -23,6 +23,7 @@ const {
   montarJornada,
 } = require('../core/teste-resultado');
 const { calcularJornadaVigente, temClubeVidaMagica } = require('../core/jornadas');
+const { creditarSementes } = require('../core/sementes');
 
 // ── GET /api/app/contexto ───────────────────────────────────
 router.get('/contexto', autenticar, async (req, res) => {
@@ -797,11 +798,199 @@ router.get('/relatos-feed', autenticar, async (req, res) => {
   }
 });
 
-// GET /api/app/bau  → todos os relatos salvos da aluna, agrupados por tipo de reação
+// ── TESOURO DA SU — REAÇÃO ✨ "QUERO VIVER ISSO" ──────────────────────
+// Salva o tesouro (item do feed) no Baú da aluna, mesma tabela dos relatos.
+// Tipo de reação aceito: 'quero' (única reação do tesouro hoje).
+
+const TIPOS_REACAO_TESOURO = ['quero'];
+
+// POST /api/app/tesouro/:id/quero-viver — marca no baú
+router.post('/tesouro/:id/quero-viver', autenticar, async (req, res) => {
+  try {
+    const usuarioId = req.usuario.sub;
+    const feedId = parseInt(req.params.id, 10);
+    if (!Number.isFinite(feedId)) return res.status(400).json({ ok: false, erro: 'id inválido' });
+
+    // Confere se o tesouro existe e está ativo
+    const f = await poolComunicacao.query(
+      `SELECT id FROM feed WHERE id = $1 AND ativo = TRUE LIMIT 1`,
+      [feedId]
+    );
+    if (!f.rows[0]) return res.status(404).json({ ok: false, erro: 'tesouro não encontrado' });
+
+    // Insere no baú — idempotente (UNIQUE parcial garante)
+    await poolComunicacao.query(
+      `INSERT INTO relatos_salvos_bau (usuario_id, tesouro_feed_id, tipo_reacao)
+       VALUES ($1, $2, 'quero')
+       ON CONFLICT (usuario_id, tesouro_feed_id, tipo_reacao) DO NOTHING`,
+      [usuarioId, feedId]
+    );
+
+    return res.json({ ok: true, marcado: true });
+  } catch (err) {
+    console.error('[app/tesouro/quero-viver POST] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// DELETE /api/app/tesouro/:id/quero-viver — desmarca (remove do baú)
+router.delete('/tesouro/:id/quero-viver', autenticar, async (req, res) => {
+  try {
+    const usuarioId = req.usuario.sub;
+    const feedId = parseInt(req.params.id, 10);
+    if (!Number.isFinite(feedId)) return res.status(400).json({ ok: false, erro: 'id inválido' });
+
+    await poolComunicacao.query(
+      `DELETE FROM relatos_salvos_bau
+        WHERE usuario_id = $1 AND tesouro_feed_id = $2 AND tipo_reacao = 'quero'`,
+      [usuarioId, feedId]
+    );
+    return res.json({ ok: true, marcado: false });
+  } catch (err) {
+    console.error('[app/tesouro/quero-viver DELETE] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// POST /api/app/tesouro/:id/resgatar — credita semente (transação atômica + idempotência)
+// ⚠️  Sementes são MOEDA REAL. Tudo passa pelo helper core/sementes.js.
+router.post('/tesouro/:id/resgatar', autenticar, async (req, res) => {
+  const usuarioId = req.usuario.sub;
+  const feedId = parseInt(req.params.id, 10);
+  if (!Number.isFinite(feedId)) return res.status(400).json({ ok: false, erro: 'id inválido' });
+
+  // 1. Valida que o tesouro existe e está ativo (poolComunicacao, fora da transação)
+  try {
+    const f = await poolComunicacao.query(
+      `SELECT id FROM feed WHERE id = $1 AND ativo = TRUE LIMIT 1`,
+      [feedId]
+    );
+    if (!f.rows[0]) return res.status(404).json({ ok: false, erro: 'tesouro não encontrado' });
+  } catch (err) {
+    console.error('[app/tesouro/resgatar] erro validação feed:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+
+  // 2. Recompensa: por enquanto fixo em 1 semente.
+  // (Se um dia virar configurável por item do feed, troca por leitura da coluna.)
+  const SEMENTES_TESOURO = 1;
+
+  // 3. Transação na poolCore: idempotência + crédito atômico
+  const client = await poolCore.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Tenta inserir o registro de resgate. UNIQUE(usuario_id, feed_id) garante
+    // que mesmo tesouro nunca dá semente 2x. Se já existe, retornamos saldo
+    // atual sem creditar (idempotente do ponto de vista do cliente).
+    const ins = await client.query(
+      `INSERT INTO tesouros_resgatados (usuario_id, feed_id)
+       VALUES ($1, $2)
+       ON CONFLICT (usuario_id, feed_id) DO NOTHING
+       RETURNING id`,
+      [usuarioId, feedId]
+    );
+
+    if (!ins.rows[0]) {
+      // Já resgatado — retorna saldo atual
+      const u = await client.query(`SELECT sementes FROM usuarios WHERE id = $1`, [usuarioId]);
+      await client.query('COMMIT');
+      return res.json({
+        ok: true,
+        ja_resgatado: true,
+        sementes_creditadas: 0,
+        saldo: u.rows[0] ? Number(u.rows[0].sementes) || 0 : 0,
+      });
+    }
+
+    // Credita semente via helper (lock + ledger + update atômicos)
+    const { saldo_atual, movimentacao_id } = await creditarSementes({
+      client,
+      usuario_id: usuarioId,
+      delta: SEMENTES_TESOURO,
+      motivo: 'resgate_tesouro',
+      origem_tipo: 'feed',
+      origem_id: feedId,
+    });
+
+    // Atualiza a linha de resgate com referência à movimentação e quantia creditada
+    await client.query(
+      `UPDATE tesouros_resgatados
+          SET movimentacao_id = $1, sementes_creditadas = $2
+        WHERE id = $3`,
+      [movimentacao_id, SEMENTES_TESOURO, ins.rows[0].id]
+    );
+
+    await client.query('COMMIT');
+    return res.json({
+      ok: true,
+      ja_resgatado: false,
+      sementes_creditadas: SEMENTES_TESOURO,
+      saldo: saldo_atual,
+    });
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch {}
+    console.error('[app/tesouro/resgatar] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  } finally {
+    client.release();
+  }
+});
+
+// GET /api/app/tesouro/disponivel — devolve o tesouro de hoje (se houver) com o estado da aluna
+// Estado: já resgatou? já marcou ✨? Tudo num só payload pra hidratar a Home.
+router.get('/tesouro/disponivel', autenticar, async (req, res) => {
+  try {
+    const usuarioId = req.usuario.sub;
+
+    // Pega o que serve como "tesouro": primeiro item ativo do feed ainda não
+    // resgatado pela aluna. Cruza poolCore (resgates) e poolComunicacao (feed)
+    // em código JS (regra: sem JOIN entre bancos).
+    const resgatadosR = await poolCore.query(
+      `SELECT feed_id FROM tesouros_resgatados WHERE usuario_id = $1`,
+      [usuarioId]
+    );
+    const jaResgatados = new Set(resgatadosR.rows.map(r => r.feed_id));
+
+    const itensR = await poolComunicacao.query(
+      `SELECT id, tipo, titulo, subtitulo, corpo, url, imagem_url
+         FROM feed
+        WHERE ativo = TRUE
+        ORDER BY ordem ASC, publicado_em DESC`
+    );
+    const tesouro = itensR.rows.find(i => !jaResgatados.has(i.id)) || null;
+
+    let jaQuero = false;
+    if (tesouro) {
+      const q = await poolComunicacao.query(
+        `SELECT 1 FROM relatos_salvos_bau
+          WHERE usuario_id = $1 AND tesouro_feed_id = $2 AND tipo_reacao = 'quero' LIMIT 1`,
+        [usuarioId, tesouro.id]
+      );
+      jaQuero = q.rows.length > 0;
+    }
+
+    return res.json({
+      ok: true,
+      tesouro,                       // null se aluna já resgatou tudo do dia
+      ja_marcou_quero: jaQuero,
+      total_resgatados: jaResgatados.size,
+    });
+  } catch (err) {
+    console.error('[app/tesouro/disponivel] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// GET /api/app/bau — todos os itens salvos da aluna, agrupados por tipo_reacao.
+// Unifica relatos (depoimento_id) + tesouros (tesouro_feed_id). Cada item carrega
+// `origem: 'relato' | 'tesouro'` pra UI diferenciar o card.
 router.get('/bau', autenticar, async (req, res) => {
   try {
     const usuarioId = req.usuario.sub;
-    const r = await poolComunicacao.query(
+
+    // Relatos salvos
+    const rRelatos = await poolComunicacao.query(
       `SELECT b.tipo_reacao, b.salvo_em,
               d.id, d.nome, d.profissao, d.idade, d.texto,
               d.autora_era_assinante_clube,
@@ -810,16 +999,43 @@ router.get('/bau', autenticar, async (req, res) => {
          JOIN depoimentos d ON d.id = b.depoimento_id
          LEFT JOIN temas t ON t.id = d.tema_id
         WHERE b.usuario_id = $1
+          AND b.depoimento_id IS NOT NULL
           AND d.ativo = TRUE AND d.status_moderacao = 'aprovado'
           AND d.oculto_por_conta_inativa = FALSE
         ORDER BY b.salvo_em DESC`,
       [usuarioId]
     );
-    // Agrupa por tipo_reacao
+
+    // Tesouros salvos
+    const rTesouros = await poolComunicacao.query(
+      `SELECT b.tipo_reacao, b.salvo_em,
+              f.id, f.tipo AS feed_tipo, f.titulo, f.subtitulo, f.corpo, f.url, f.imagem_url
+         FROM relatos_salvos_bau b
+         JOIN feed f ON f.id = b.tesouro_feed_id
+        WHERE b.usuario_id = $1
+          AND b.tesouro_feed_id IS NOT NULL
+          AND f.ativo = TRUE
+        ORDER BY b.salvo_em DESC`,
+      [usuarioId]
+    );
+
     const abas = { quero: [], ja_vivo: [], nao_e_pra_mim: [], parabens: [] };
-    for (const row of r.rows) {
-      if (abas[row.tipo_reacao]) abas[row.tipo_reacao].push(row);
+
+    for (const row of rRelatos.rows) {
+      if (!abas[row.tipo_reacao]) continue;
+      abas[row.tipo_reacao].push({ origem: 'relato', ...row });
     }
+
+    for (const row of rTesouros.rows) {
+      if (!abas[row.tipo_reacao]) continue;
+      abas[row.tipo_reacao].push({ origem: 'tesouro', ...row });
+    }
+
+    // Reordena cada aba pela data de salvamento (DESC) já que misturamos as fontes.
+    for (const aba of Object.keys(abas)) {
+      abas[aba].sort((a, b) => new Date(b.salvo_em) - new Date(a.salvo_em));
+    }
+
     return res.json({ ok: true, abas });
   } catch (err) {
     console.error('[app/bau] erro:', err);

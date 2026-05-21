@@ -11,6 +11,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/app/app.css">
+  <!-- Lottie player (Bodymovin) — usado pela animação do Baú do Tesouro da Su -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
 <body>
 
@@ -72,42 +74,7 @@
       <div class="tesouro-wrap" id="tesouro-wrap">
         <button class="tesouro-btn" id="tesouro-btn" aria-label="Tesouro da Su">
           <div class="tesouro-glow"></div>
-          <div class="tesouro-bau">
-            <svg class="bau-svg" viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <ellipse cx="60" cy="86" rx="36" ry="4" fill="rgba(0,0,0,0.18)"/>
-              <rect x="8" y="42" width="104" height="44" rx="6" fill="url(#bauGrad)"/>
-              <rect x="8" y="56" width="104" height="8" fill="rgba(0,0,0,0.12)"/>
-              <g class="bau-tampa" style="transform-origin:60px 42px">
-                <path d="M8 42 Q8 16 60 16 Q112 16 112 42 Z" fill="url(#tampaGrad)"/>
-                <rect x="8" y="36" width="104" height="7" fill="rgba(0,0,0,0.1)" rx="2"/>
-                <circle cx="28" cy="42" r="4" fill="#C8922A"/>
-                <circle cx="92" cy="42" r="4" fill="#C8922A"/>
-              </g>
-              <rect x="50" y="58" width="20" height="14" rx="3" fill="#C8922A"/>
-              <rect x="54" y="52" width="12" height="10" rx="6" fill="none" stroke="#C8922A" stroke-width="3"/>
-              <circle cx="20" cy="50" r="3" fill="rgba(255,220,120,0.4)"/>
-              <circle cx="100" cy="50" r="3" fill="rgba(255,220,120,0.4)"/>
-              <circle cx="20" cy="72" r="3" fill="rgba(255,220,120,0.4)"/>
-              <circle cx="100" cy="72" r="3" fill="rgba(255,220,120,0.4)"/>
-              <g class="bau-brilhos" id="bau-brilhos">
-                <line x1="60" y1="2" x2="60" y2="10" stroke="#F4D060" stroke-width="2" stroke-linecap="round"/>
-                <line x1="88" y1="8" x2="84" y2="14" stroke="#F4D060" stroke-width="2" stroke-linecap="round"/>
-                <line x1="32" y1="8" x2="36" y2="14" stroke="#F4D060" stroke-width="2" stroke-linecap="round"/>
-                <line x1="104" y1="22" x2="98" y2="25" stroke="#F4D060" stroke-width="2" stroke-linecap="round"/>
-                <line x1="16" y1="22" x2="22" y2="25" stroke="#F4D060" stroke-width="2" stroke-linecap="round"/>
-              </g>
-              <defs>
-                <linearGradient id="bauGrad" x1="8" y1="42" x2="112" y2="86" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stop-color="#8B6520"/>
-                  <stop offset="100%" stop-color="#5C3F0A"/>
-                </linearGradient>
-                <linearGradient id="tampaGrad" x1="8" y1="16" x2="112" y2="42" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stop-color="#C8922A"/>
-                  <stop offset="100%" stop-color="#8B6520"/>
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
+          <div class="tesouro-bau" id="tesouro-bau-lottie" aria-hidden="true"></div>
           <div class="tesouro-info">
             <span class="tesouro-label" id="tesouro-label">Tesouro da Su</span>
             <span class="tesouro-sub" id="tesouro-sub">Seu presente de hoje está aqui ✦</span>
@@ -901,7 +868,16 @@
     <div class="modal-sheet">
       <div class="modal-handle"></div>
       <div class="modal-tesouro-conteudo" id="modal-tesouro-conteudo"></div>
-      <button class="modal-tesouro-resgatar" id="modal-tesouro-resgatar">🌱 Resgatar Tesouro</button>
+      <div class="modal-tesouro-acoes">
+        <button class="modal-tesouro-quero" id="modal-tesouro-quero" type="button" aria-pressed="false">
+          <span class="emoji" aria-hidden="true">✨</span>
+          <span class="label">Eu quero viver isso</span>
+        </button>
+        <button class="modal-tesouro-resgatar" id="modal-tesouro-resgatar" type="button">
+          <span class="emoji" aria-hidden="true">🌱</span>
+          <span class="label">Resgatar Semente</span>
+        </button>
+      </div>
     </div>
   </div>
 

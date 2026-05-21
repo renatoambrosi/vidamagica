@@ -203,19 +203,41 @@ body.chat-aberto .views {
 .saudacao-frase { font-size: 0.92rem; font-style: italic; color: var(--texto-suave); }
 
 .tesouro-wrap { padding: 0 1.25rem 1.5rem; }
-.tesouro-btn { width: 100%; display: flex; align-items: center; gap: 1rem; background: var(--vidro); backdrop-filter: blur(14px); border: 1px solid var(--vidro-borda-hi); border-radius: var(--radius-lg); padding: 1rem 1.25rem; position: relative; overflow: hidden; box-shadow: var(--sombra-media), var(--glow-ouro); transition: transform 0.2s, box-shadow 0.2s; }
+.tesouro-btn { width: 100%; display: flex; align-items: center; gap: 1rem; background: var(--vidro); backdrop-filter: blur(14px); border: 1px solid var(--vidro-borda-hi); border-radius: var(--radius-lg); padding: 1rem 1.25rem; position: relative; overflow: hidden; box-shadow: var(--sombra-media), var(--glow-ouro); transition: transform 0.35s cubic-bezier(.34,1.4,.64,1), box-shadow 0.2s; }
 .tesouro-btn:hover { transform: translateY(-2px); box-shadow: var(--sombra-forte), var(--glow-ouro); }
 .tesouro-btn:active { transform: scale(0.98); }
 .tesouro-glow { position: absolute; top: -20px; left: -20px; width: 80px; height: 80px; background: radial-gradient(circle, rgba(244,208,96,0.3) 0%, transparent 70%); border-radius: 50%; animation: tesouro-pulsa 2.5s ease-in-out infinite; pointer-events: none; }
 @keyframes tesouro-pulsa { 0%, 100% { transform: scale(0.9); opacity: 0.6; } 50% { transform: scale(1.2); opacity: 1; } }
-.tesouro-bau { flex-shrink: 0; width: 72px; position: relative; z-index: 2; }
-.bau-svg { width: 72px; height: auto; filter: drop-shadow(0 4px 8px rgba(161,117,35,0.3)); }
-.bau-tampa { transition: transform 0.4s ease; transform-box: fill-box; transform-origin: bottom center; }
-.tesouro-btn.tem-novidade .bau-tampa { animation: bau-abre 2.4s ease-in-out infinite; }
-@keyframes bau-abre { 0%, 100% { transform: rotateX(0deg); } 35%, 65% { transform: rotateX(-28deg); } }
-.bau-brilhos { opacity: 0; transition: opacity 0.3s; }
-.tesouro-btn.tem-novidade .bau-brilhos { opacity: 1; animation: brilhos-pisca 1.6s ease-in-out infinite; }
-@keyframes brilhos-pisca { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+.tesouro-bau { flex-shrink: 0; width: 72px; height: 72px; position: relative; z-index: 2; filter: drop-shadow(0 4px 8px rgba(161,117,35,0.3)); transform-origin: center bottom; }
+.tesouro-bau svg { width: 100%; height: 100%; display: block; }
+
+/* Estado "chacoalhando" = tem tesouro novo. Baú pula/balança chamando atenção.
+   NÃO abre (a abertura só acontece no click). */
+.tesouro-btn.chacoalhando .tesouro-bau { animation: bau-chacoalha 1.6s ease-in-out infinite; }
+@keyframes bau-chacoalha {
+  0%, 100%      { transform: translateY(0) rotate(0deg) scale(1); }
+  10%           { transform: translateY(-3px) rotate(-4deg) scale(1.03); }
+  20%           { transform: translateY(-1px) rotate(4deg)  scale(1.02); }
+  30%           { transform: translateY(-4px) rotate(-3deg) scale(1.04); }
+  40%           { transform: translateY(0)    rotate(2deg)  scale(1.02); }
+  50%           { transform: translateY(-2px) rotate(0deg)  scale(1.03); }
+  60%, 100%     { transform: translateY(0)    rotate(0deg)  scale(1); }
+}
+
+/* Estado "abrindo" = aluna clicou. Baú aumenta na tela enquanto o Lottie roda. */
+.tesouro-btn.abrindo { transform: scale(1.06); box-shadow: var(--sombra-forte), 0 0 36px rgba(244,208,96,0.45); }
+.tesouro-btn.abrindo .tesouro-bau { animation: bau-pop 0.9s cubic-bezier(.34,1.4,.64,1) forwards; }
+@keyframes bau-pop {
+  0%   { transform: scale(1) rotate(0deg); }
+  40%  { transform: scale(1.35) rotate(-3deg); }
+  100% { transform: scale(1.25) rotate(0deg); }
+}
+
+/* Estado "resgatado" = aluna já pegou o tesouro do dia. Quieto. */
+.tesouro-btn.resgatado { opacity: 0.78; box-shadow: var(--sombra-media); }
+.tesouro-btn.resgatado .tesouro-glow { animation: none; opacity: 0.18; }
+.tesouro-btn.resgatado .tesouro-bau { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)) grayscale(0.25); }
+
 .tesouro-info { flex: 1; text-align: left; position: relative; z-index: 2; }
 .tesouro-label { font-family: var(--font-display); font-size: 0.9rem; font-weight: 800; color: var(--ouro-fundo); display: block; margin-bottom: 0.2rem; }
 .tesouro-sub { font-size: 0.75rem; color: var(--texto-mute); }
@@ -1836,9 +1858,80 @@ body.antessala-ativa {
 .modal-corpo { overflow-y: auto; flex: 1; padding: 1rem 1.25rem 1.25rem; }
 
 .modal-tesouro-conteudo { padding: 1rem 1.25rem 0; }
-.modal-tesouro-resgatar { margin: 1rem 1.25rem 1.25rem; width: calc(100% - 2.5rem); padding: 0.85rem; background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro)); color: white; border-radius: var(--radius-md); font-family: var(--font-display); font-size: 0.85rem; font-weight: 800; letter-spacing: 0.06em; box-shadow: 0 4px 20px rgba(200,146,42,0.35); transition: opacity 0.15s, transform 0.15s; }
-.modal-tesouro-resgatar:hover { opacity: 0.9; transform: translateY(-1px); }
-.modal-tesouro-resgatar:disabled { opacity: 0.45; transform: none; cursor: not-allowed; }
+.modal-tesouro-acoes { display: flex; flex-direction: column; gap: 0.55rem; margin: 1rem 1.25rem 1.25rem; }
+
+/* ✨ "Eu quero viver isso" — toggle. Outline quando off, preenchido quando ativo. */
+.modal-tesouro-quero {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.55rem;
+  padding: 0.8rem; background: transparent; color: var(--ouro-fundo);
+  border: 1.5px solid var(--ouro); border-radius: var(--radius-md);
+  font-family: var(--font-display); font-size: 0.82rem; font-weight: 800;
+  letter-spacing: 0.05em; transition: background 0.2s, color 0.2s, transform 0.15s, box-shadow 0.2s;
+  cursor: pointer;
+}
+.modal-tesouro-quero .emoji { font-size: 1.1rem; line-height: 1; }
+.modal-tesouro-quero:hover { transform: translateY(-1px); }
+.modal-tesouro-quero.ativo {
+  background: linear-gradient(135deg, rgba(244,208,96,0.18), rgba(200,146,42,0.10));
+  color: var(--ouro-fundo);
+  border-color: var(--ouro-fundo);
+  box-shadow: 0 4px 16px rgba(200,146,42,0.22);
+}
+.modal-tesouro-quero:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+/* 🌱 "Resgatar Semente" — botão principal */
+.modal-tesouro-resgatar {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.55rem;
+  padding: 0.85rem; background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
+  color: white; border-radius: var(--radius-md);
+  font-family: var(--font-display); font-size: 0.85rem; font-weight: 800; letter-spacing: 0.06em;
+  box-shadow: 0 4px 20px rgba(200,146,42,0.35);
+  transition: opacity 0.15s, transform 0.15s;
+  cursor: pointer;
+}
+.modal-tesouro-resgatar .emoji { font-size: 1.1rem; line-height: 1; }
+.modal-tesouro-resgatar:hover { opacity: 0.92; transform: translateY(-1px); }
+.modal-tesouro-resgatar:disabled, .modal-tesouro-resgatar.resgatado { opacity: 0.45; transform: none; cursor: not-allowed; box-shadow: none; }
+
+/* Semente voadora — clone visual que sai do botão Resgatar e voa até o badge
+   #btn-sementes no header. Z-index alto pra ficar acima do modal-overlay. */
+.semente-voadora {
+  position: fixed; z-index: 9999; pointer-events: none;
+  font-size: 1.6rem; line-height: 1;
+  transform: translate(-50%, -50%) scale(0.6);
+  transition: transform 220ms cubic-bezier(.34,1.4,.64,1);
+  filter: drop-shadow(0 4px 10px rgba(94,184,80,0.55));
+  will-change: transform, opacity;
+}
+
+/* Badge de sementes pulsa quando chega uma nova */
+.topo-badge.badge-pulsa { animation: badge-pulsa 0.6s cubic-bezier(.34,1.4,.64,1); }
+@keyframes badge-pulsa {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.55); box-shadow: 0 0 0 6px rgba(244,208,96,0.35); }
+  100% { transform: scale(1); }
+}
+
+/* Card de tesouro dentro do view-bau (aba "Quero manifestar") */
+.bau-tesouro-card {
+  background: linear-gradient(135deg, rgba(244,208,96,0.12), rgba(200,146,42,0.06));
+  border-color: var(--ouro);
+  position: relative;
+}
+.bau-tesouro-card::before {
+  content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+  background: linear-gradient(180deg, var(--ouro), var(--ouro-fundo));
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+.bau-tesouro-eyebrow {
+  font-family: var(--font-display); font-size: 0.68rem; font-weight: 800;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--ouro-fundo);
+  margin-bottom: 0.35rem;
+}
+.bau-tesouro-titulo {
+  font-family: var(--font-display); font-size: 1rem; font-weight: 800;
+  color: var(--texto); margin-bottom: 0.4rem;
+}
 
 /* Modal de Sair — 2 opções: lembrar (volta saudação na próxima visita) ou
    esquecer (limpa o nome lembrado deste dispositivo). */
