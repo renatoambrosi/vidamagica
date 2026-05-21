@@ -425,33 +425,56 @@ body.tesouro-modal-aberto .tesouro-bau.flutuante {
   0%, 100% { transform: translate(-50%, -55%) scale(0.85); opacity: 0.28; }
   50%      { transform: translate(-50%, -55%) scale(1.0);  opacity: 0.42; }
 }
+/* ── ENCHIMENTO DO BAÚ NO ESTADO RESGATADO ──────────────────────
+   Em vez de 1 opacity uniforme, o baú tem uma "linha d'água" vertical:
+   parte cheia (de baixo) em opacity 100%, parte vazia (de cima) em
+   opacity 35%. A linha sobe conforme o tempo passa em direção ao reset
+   das 5h (--enchimento vai de 0% a 100% em 24h).
+   Transition no enchimento dá movimento suave a cada update.
+   filter: drop-shadow mantém a sensação de peso/sombra do baú. */
 .tesouro-btn.resgatado .tesouro-bau {
   filter: drop-shadow(0 8px 14px rgba(140,90,20,0.35));
-  opacity: 0.45;            /* baú recua suavemente — relógio é protagonista */
-  transition: opacity 0.5s ease-out;
+  -webkit-mask-image: linear-gradient(to top,
+                        rgba(0,0,0,1) 0%,
+                        rgba(0,0,0,1) calc(var(--enchimento, 0%) - 4%),
+                        rgba(0,0,0,0.35) calc(var(--enchimento, 0%) + 6%),
+                        rgba(0,0,0,0.35) 100%);
+  mask-image: linear-gradient(to top,
+                        rgba(0,0,0,1) 0%,
+                        rgba(0,0,0,1) calc(var(--enchimento, 0%) - 4%),
+                        rgba(0,0,0,0.35) calc(var(--enchimento, 0%) + 6%),
+                        rgba(0,0,0,0.35) 100%);
+  transition: -webkit-mask-image 1s linear, mask-image 1s linear;
 }
 
-/* ── Silhueta sólida do baú ──────────────────────────────────────
-   Atrás do Lottie (z-index 2 vs Lottie 3). Mostra-se SOMENTE no estado
-   resgatado, EM PAR com a transição de opacity do Lottie:
-   - Mesma duração (0.5s)
-   - Mesma curva (ease-out)
-   - Mesmo trigger (.tesouro-btn.resgatado)
-   Resultado: os dois entram e saem JUNTOS, sem aparecer um sem o outro. */
-.tesouro-bau-silhueta {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 220px;
-  height: 220px;
+/* ── ORBES — partículas voando até o centro do baú ──────────────
+   Pequenos pontos dourados aparecem em pontos aleatórios da tela e
+   voam em curva (waypoint randômico) até o centro do baú. Criadas e
+   removidas por JS em loop enquanto estado é "resgatado". */
+.tesouro-orbe {
+  position: fixed;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+                rgba(255,245,180,1)  0%,
+                rgba(255,220,120,0.85) 35%,
+                rgba(244,208,96,0.45) 65%,
+                transparent 100%);
+  box-shadow: 0 0 14px rgba(255,220,120,0.85),
+              0 0 28px rgba(244,208,96,0.4);
   pointer-events: none;
+  z-index: 50;
   opacity: 0;
-  z-index: 2;
-  transition: opacity 0.5s ease-out;
-  filter: drop-shadow(0 10px 20px rgba(140,90,20,0.45));
+  will-change: transform, opacity;
+  animation: tesouro-orbe-viaja var(--dur, 2.2s) cubic-bezier(.4,0,.4,1) forwards;
 }
-.tesouro-btn.resgatado .tesouro-bau-silhueta {
-  opacity: 1;
+@keyframes tesouro-orbe-viaja {
+  0%   { opacity: 0;   transform: translate(0, 0) scale(0.5); }
+  15%  { opacity: 0.95; transform: translate(calc(var(--dx) * 0.12 + var(--ox) * 0.5),
+                                             calc(var(--dy) * 0.12 + var(--oy) * 0.5)) scale(1); }
+  55%  { opacity: 1;    transform: translate(calc(var(--dx) * 0.55 + var(--ox)),
+                                             calc(var(--dy) * 0.55 + var(--oy))) scale(1.15); }
+  90%  { opacity: 0.7;  transform: translate(calc(var(--dx) * 0.95), calc(var(--dy) * 0.95)) scale(0.55); }
+  100% { opacity: 0;    transform: translate(var(--dx), var(--dy)) scale(0.1); }
 }
 
 /* RELÓGIO sobreposto — só aparece no estado resgatado.

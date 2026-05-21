@@ -1789,6 +1789,82 @@ function atualizarRelogioTesouro() {
   if (sub) {
     sub.textContent = `Próximo presente em ${horas}h ${String(minutos).padStart(2, '0')}m`;
   }
+
+  // ── ENCHIMENTO DO BAÚ — linha-d'água sobe conforme o ciclo de 24h
+  // O CSS `mask-image: linear-gradient(...)` no `.tesouro-btn.resgatado .tesouro-bau`
+  // lê esta variável e desenha a transição entre "parte cheia" (opacity 1)
+  // e "parte vazia" (opacity 0.35). 0% = baú vazio. 100% = baú cheio.
+  const enchimento = (segDesdeReset / (24 * 3600)) * 100;
+  const bauEl2 = document.querySelector('.tesouro-bau');
+  if (bauEl2) bauEl2.style.setProperty('--enchimento', `${enchimento.toFixed(2)}%`);
+}
+
+// ── ORBES — sistema de partículas voando até o baú no estado resgatado ─
+// Cada orbe nasce em um ponto aleatório do viewport e voa em curva
+// (waypoint random) até o centro do baú. Animação CSS forwards; o JS
+// só posiciona, define variáveis e remove ao fim da vida.
+let _orbeInterval = null;
+function criarOrbeTesouro() {
+  const btn = document.getElementById('tesouro-btn');
+  if (!btn || !btn.classList.contains('resgatado')) return;
+  const alvo = document.querySelector('.tesouro-bau');
+  if (!alvo) return;
+  const alvoRect = alvo.getBoundingClientRect();
+  if (!alvoRect.width) return; // ainda não renderizou
+
+  const orbe = document.createElement('span');
+  orbe.className = 'tesouro-orbe';
+
+  // Tamanho aleatório (4-16px) — orbes pequenas misturadas com médias
+  const tam = 4 + Math.random() * 12;
+  orbe.style.width  = `${tam}px`;
+  orbe.style.height = `${tam}px`;
+
+  // Posição inicial: borda externa aleatória (sai "de fora" do viewport)
+  // pra criar sensação de "energia vindo do nada".
+  const lado = Math.floor(Math.random() * 4); // 0=top, 1=right, 2=bottom, 3=left
+  let x0, y0;
+  const margemFora = 30;
+  if (lado === 0)      { x0 = Math.random() * window.innerWidth;  y0 = -margemFora; }
+  else if (lado === 1) { x0 = window.innerWidth + margemFora;    y0 = Math.random() * window.innerHeight; }
+  else if (lado === 2) { x0 = Math.random() * window.innerWidth;  y0 = window.innerHeight + margemFora; }
+  else                 { x0 = -margemFora;                        y0 = Math.random() * window.innerHeight; }
+  orbe.style.left = `${x0}px`;
+  orbe.style.top  = `${y0}px`;
+
+  // Destino: centro do baú
+  const cx = alvoRect.left + alvoRect.width / 2;
+  const cy = alvoRect.top  + alvoRect.height / 2;
+  const dx = cx - x0;
+  const dy = cy - y0;
+
+  // Waypoint aleatório pra rota curva (não linear) — desvia até ±180px
+  const ox = (Math.random() - 0.5) * 360;
+  const oy = (Math.random() - 0.5) * 360;
+
+  // Duração aleatória pra orbes variarem velocidade
+  const dur = 1.8 + Math.random() * 1.2; // 1.8s a 3s
+
+  orbe.style.setProperty('--dx',  `${dx}px`);
+  orbe.style.setProperty('--dy',  `${dy}px`);
+  orbe.style.setProperty('--ox',  `${ox}px`);
+  orbe.style.setProperty('--oy',  `${oy}px`);
+  orbe.style.setProperty('--dur', `${dur}s`);
+
+  document.body.appendChild(orbe);
+  setTimeout(() => orbe.remove(), dur * 1000 + 200);
+}
+
+function iniciarOrbesTesouro() {
+  if (_orbeInterval) clearInterval(_orbeInterval);
+  // Cria uma orbe a cada ~650ms (uns 4-5 simultâneos no ar).
+  criarOrbeTesouro();
+  _orbeInterval = setInterval(criarOrbeTesouro, 650);
+}
+
+function pararOrbesTesouro() {
+  if (_orbeInterval) { clearInterval(_orbeInterval); _orbeInterval = null; }
+  document.querySelectorAll('.tesouro-orbe').forEach(o => o.remove());
 }
 
 function iniciarRelogioTesouro() {
@@ -1809,9 +1885,10 @@ function setEstadoBau(estado) {
   const sub = document.getElementById('tesouro-sub');
   if (!btn) return;
   btn.classList.remove('chacoalhando', 'abrindo', 'resgatado', 'aberto-aguardando');
-  // Estado anterior pode ter relógio rodando — para o interval por padrão;
+  // Estado anterior pode ter relógio + orbes rodando — para por padrão;
   // o case 'resgatado' liga de novo.
   pararRelogioTesouro();
+  pararOrbesTesouro();
   if (estado === 'chacoalhando') {
     btn.classList.add('chacoalhando');
     if (sub) sub.textContent = 'Seu presente de hoje está aqui ✦';
@@ -1833,7 +1910,11 @@ function setEstadoBau(estado) {
     btn.classList.add('resgatado');
     if (tesouroLottie) { try { tesouroLottie.goToAndStop(0, true); } catch {} }
     // Liga relógio ao vivo — sub-label vira "Próximo presente em XXh YYm"
+    // (relógio também é responsável por atualizar a variável --enchimento
+    // do baú a cada segundo, criando a "linha-d'água" que sobe.)
     iniciarRelogioTesouro();
+    // Inicia orbes voando do viewport até o centro do baú (energias boas)
+    iniciarOrbesTesouro();
   } else if (estado === 'vazio') {
     if (sub) sub.textContent = 'Nenhum tesouro hoje ainda ✦';
     if (tesouroLottie) { try { tesouroLottie.goToAndStop(0, true); } catch {} }
