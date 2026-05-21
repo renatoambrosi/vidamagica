@@ -1759,6 +1759,12 @@ function abrirModalTesouro() {
 // Lottie roda. Quando termina de abrir, modal pergaminho aparece no centro.
 let _handlerCompletaBau = null;
 const bauEl = document.querySelector('.tesouro-bau');
+// Guarda o lugar de origem do baú pra devolver depois (sem isso, o baú fica
+// no body pra sempre). O `.tesouro-info` é o vizinho que vem DEPOIS do baú
+// no DOM — usaremos insertBefore na hora de voltar.
+const bauPaiOriginal = bauEl?.parentNode || null;
+const bauVizinhoOriginal = bauEl?.nextElementSibling || null;
+
 document.getElementById('tesouro-btn')?.addEventListener('click', () => {
   if (tesouroAnimando) return;
   if (!tesouroAtual) {
@@ -1768,9 +1774,14 @@ document.getElementById('tesouro-btn')?.addEventListener('click', () => {
   tesouroAnimando = true;
   setEstadoBau('abrindo');
 
-  // Ativa overlay fumê dourado + manda o baú pro centro da viewport
+  // Ativa overlay fumê dourado + manda o baú pro centro da viewport.
+  // O baú é MOVIDO pro <body> pra escapar do stacking context do .tesouro-btn
+  // (que tem transform e prenderia o z-index do baú abaixo do overlay).
   document.body.classList.add('tesouro-abrindo');
-  bauEl?.classList.add('flutuante');
+  if (bauEl) {
+    document.body.appendChild(bauEl);
+    bauEl.classList.add('flutuante');
+  }
 
   let modalSubiu = false;
   const subirModal = () => {
@@ -1798,9 +1809,8 @@ document.getElementById('tesouro-btn')?.addEventListener('click', () => {
   }
 });
 
-// Quando o modal-tesouro fecha (overlay ou ESC), limpamos o estado fumê.
-// Hook ao listener genérico de fechar modal — adiciona um observer ao
-// atributo aria-hidden do #modal-tesouro.
+// Quando o modal-tesouro fecha (overlay ou ESC), limpamos o estado fumê
+// e DEVOLVEMOS o baú pro lugar de origem (dentro do .tesouro-btn da home).
 (function observarFechamentoTesouro() {
   const modal = document.getElementById('modal-tesouro');
   if (!modal) return;
@@ -1808,7 +1818,17 @@ document.getElementById('tesouro-btn')?.addEventListener('click', () => {
     if (modal.getAttribute('aria-hidden') === 'true') {
       document.body.classList.remove('tesouro-abrindo');
       document.body.classList.remove('tesouro-modal-aberto');
-      bauEl?.classList.remove('flutuante');
+      if (bauEl) {
+        bauEl.classList.remove('flutuante');
+        // Devolve o baú pro pai original, na posição original (antes do .tesouro-info)
+        if (bauPaiOriginal && bauEl.parentNode !== bauPaiOriginal) {
+          if (bauVizinhoOriginal && bauVizinhoOriginal.parentNode === bauPaiOriginal) {
+            bauPaiOriginal.insertBefore(bauEl, bauVizinhoOriginal);
+          } else {
+            bauPaiOriginal.appendChild(bauEl);
+          }
+        }
+      }
     }
   });
   obs.observe(modal, { attributes: true, attributeFilter: ['aria-hidden'] });

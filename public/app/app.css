@@ -277,7 +277,15 @@ body.tesouro-abrindo::before {
 }
 body.tesouro-abrindo .tesouro-info,
 body.tesouro-abrindo .tesouro-glow { opacity: 0; transition: opacity 0.3s; }
-.tesouro-btn.abrindo { box-shadow: none !important; background: transparent !important; }
+/* IMPORTANTE: o .tesouro-btn NÃO pode ter transform/box-shadow/background
+   durante .abrindo, senão (a) cria stacking context que prende o baú
+   atrás do overlay; (b) deixa um "retângulo fantasma" no lugar onde o
+   baú estava. O baú foi movido pro body via JS — esse botão fica vazio. */
+.tesouro-btn.abrindo {
+  transform: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
 
 .tesouro-bau.flutuante {
   position: fixed !important;
