@@ -82,6 +82,20 @@
           <span class="tesouro-sparkle s2" aria-hidden="true">✧</span>
           <span class="tesouro-sparkle s3" aria-hidden="true">✦</span>
           <span class="tesouro-sparkle s4" aria-hidden="true">✧</span>
+          <!-- Relógio sobreposto quando o baú está em estado 'resgatado'.
+               Ponteiro de hora fixo apontando pra meio-dia (12h), ponteiro
+               de minutos rotacionando infinitamente. Visualmente comunica
+               "aguardando o próximo ciclo". Invisível nos outros estados. -->
+          <svg class="tesouro-relogio" viewBox="0 0 100 100" aria-hidden="true">
+            <circle class="relogio-face" cx="50" cy="50" r="42"/>
+            <line class="relogio-marca" x1="50" y1="10" x2="50" y2="16"/>
+            <line class="relogio-marca" x1="90" y1="50" x2="84" y2="50"/>
+            <line class="relogio-marca" x1="50" y1="90" x2="50" y2="84"/>
+            <line class="relogio-marca" x1="10" y1="50" x2="16" y2="50"/>
+            <line class="relogio-ponteiro-hora" x1="50" y1="50" x2="50" y2="26"/>
+            <line class="relogio-ponteiro-minuto" x1="50" y1="50" x2="50" y2="18"/>
+            <circle class="relogio-centro" cx="50" cy="50" r="3.5"/>
+          </svg>
           <div class="tesouro-info">
             <span class="tesouro-label" id="tesouro-label">Tesouro da Su</span>
             <span class="tesouro-sub" id="tesouro-sub">Seu presente de hoje está aqui ✦</span>

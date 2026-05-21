@@ -1807,6 +1807,19 @@ document.getElementById('tesouro-btn')?.addEventListener('click', () => {
     if (tesouroJaResgatadoHoje) return;
     return;
   }
+
+  // REGRA: aluna já "desbloqueou" a abertura. Se o baú está em estado
+  // 'aberto-aguardando' (aluna já viu o tesouro antes mas não resgatou),
+  // o click vai DIRETO pro pergaminho — sem repetir a animação Lottie de
+  // abertura, sem baú flutuante. Só o fume dourado entra e o modal sobe.
+  const btnEl = document.getElementById('tesouro-btn');
+  if (btnEl && btnEl.classList.contains('aberto-aguardando')) {
+    document.body.classList.add('tesouro-abrindo');
+    document.body.classList.add('tesouro-modal-aberto');
+    abrirModalTesouro();
+    return;
+  }
+
   tesouroAnimando = true;
   tocarAudio(audioBau);   // 🔊 som de abrir o baú (creak + sparkle)
   setEstadoBau('abrindo');
