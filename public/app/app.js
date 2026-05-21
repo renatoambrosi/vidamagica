@@ -1797,13 +1797,19 @@ document.getElementById('tesouro-btn')?.addEventListener('click', () => {
     }
   };
 
+  // Quando o Lottie termina de abrir, esperamos mais 700ms antes de subir
+  // o modal — dá ao olho tempo de "absorver" o baú aberto antes do papel
+  // surgir no centro. Sensação de respiro entre os dois momentos.
+  const subirComAtraso = () => setTimeout(subirModal, 700);
+
   if (tesouroLottie && typeof lottie !== 'undefined') {
     if (_handlerCompletaBau) {
       try { tesouroLottie.removeEventListener('complete', _handlerCompletaBau); } catch {}
     }
-    _handlerCompletaBau = subirModal;
+    _handlerCompletaBau = subirComAtraso;
     tesouroLottie.addEventListener('complete', _handlerCompletaBau);
-    setTimeout(subirModal, 3000);
+    // Fallback: se evento não disparar em 3.5s, sobe modal (com atraso)
+    setTimeout(subirComAtraso, 3500);
   } else {
     subirModal();
   }
