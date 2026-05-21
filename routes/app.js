@@ -25,6 +25,35 @@ const {
 const { calcularJornadaVigente, temClubeVidaMagica } = require('../core/jornadas');
 const { creditarSementes } = require('../core/sementes');
 
+/* ============================================================
+   ⚠️  MODO DEV — TESOURO INFINITO  ⚠️   (NÃO é bug, é proposital)
+   ============================================================
+   Enquanto o sistema está em fase de validação (só o Renato usa
+   antes de abrir pra alunas reais), o Baú do Tesouro permite
+   resgatar várias vezes — pra validar animação, modal, semente
+   voando, etc., sem precisar de painel admin nem múltiplas contas.
+
+   Quando estiver `true`:
+   - GET /api/app/tesouro/disponivel ignora histórico de resgates
+     da aluna e SEMPRE devolve o primeiro item ativo do feed.
+   - POST /api/app/tesouro/:id/resgatar deleta o registro anterior
+     de `tesouros_resgatados` antes do INSERT, permitindo crédito
+     repetido da semente (passa pelo helper normalmente).
+
+   ROTAS AFETADAS (procurar TESOURO_INFINITO_DEV neste arquivo):
+   - GET  /tesouro/disponivel        — bloco do `tesouro = ...`
+   - POST /tesouro/:id/resgatar      — bloco do DELETE antes do INSERT
+
+   COMO REVERTER quando abrir pra alunas reais:
+   ► Trocar a constante abaixo de `true` pra `false`. Só isso.
+   ► O comportamento volta a ser 1 resgate por aluna por tesouro,
+     com idempotência forte no ledger de sementes.
+
+   Mesmo padrão do `|| true` em /relatos:164 e :337 (gateway de
+   pagamento). Não tratar como bug nem sugerir remover — é decisão.
+   ============================================================ */
+const TESOURO_INFINITO_DEV = true;
+
 // ── GET /api/app/contexto ───────────────────────────────────
 router.get('/contexto', autenticar, async (req, res) => {
   try {
@@ -880,6 +909,18 @@ router.post('/tesouro/:id/resgatar', autenticar, async (req, res) => {
   try {
     await client.query('BEGIN');
 
+    // ⚠️ TESOURO_INFINITO_DEV ⚠️ (ver banner no topo do arquivo).
+    // Quando true, deleta o registro anterior pra que o INSERT seguinte
+    // (que tem UNIQUE(usuario_id, feed_id)) nunca caia em conflito —
+    // aluna re-resgata e ganha sementes a cada vez. Pra desligar e
+    // voltar à idempotência real: TESOURO_INFINITO_DEV = false (topo do arquivo).
+    if (TESOURO_INFINITO_DEV) {
+      await client.query(
+        `DELETE FROM tesouros_resgatados WHERE usuario_id = $1 AND feed_id = $2`,
+        [usuarioId, feedId]
+      );
+    }
+
     // Tenta inserir o registro de resgate. UNIQUE(usuario_id, feed_id) garante
     // que mesmo tesouro nunca dá semente 2x. Se já existe, retornamos saldo
     // atual sem creditar (idempotente do ponto de vista do cliente).
@@ -958,7 +999,13 @@ router.get('/tesouro/disponivel', autenticar, async (req, res) => {
         WHERE ativo = TRUE
         ORDER BY ordem ASC, publicado_em DESC`
     );
-    const tesouro = itensR.rows.find(i => !jaResgatados.has(i.id)) || null;
+    // ⚠️ TESOURO_INFINITO_DEV ⚠️ (ver banner no topo do arquivo).
+    // Quando true, ignora histórico de resgates — primeiro item ativo do feed
+    // SEMPRE vem como tesouro disponível. Quando false (produção real),
+    // só vem item que a aluna ainda NÃO resgatou.
+    const tesouro = TESOURO_INFINITO_DEV
+      ? (itensR.rows[0] || null)
+      : (itensR.rows.find(i => !jaResgatados.has(i.id)) || null);
 
     let jaQuero = false;
     if (tesouro) {
