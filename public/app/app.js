@@ -1812,6 +1812,15 @@ function criarOrbeTesouro() {
   const alvoRect = alvo.getBoundingClientRect();
   if (!alvoRect.width) return; // ainda não renderizou
 
+  // Faixa SEGURA pras orbes — abaixo do player e acima do bottom-nav.
+  // Sem isso, orbes nasceriam/passariam por cima do player de vídeo
+  // (Renato pediu pra ficarem só na região do baú).
+  const player = document.getElementById('player-topo');
+  const bottomNav = document.getElementById('bottom-nav');
+  const yMin = (player ? player.getBoundingClientRect().bottom : 60) + 10;
+  const yMax = (bottomNav ? bottomNav.getBoundingClientRect().top : window.innerHeight - 60) - 10;
+  const yRange = Math.max(40, yMax - yMin);
+
   const orbe = document.createElement('span');
   orbe.className = 'tesouro-orbe';
 
@@ -1820,15 +1829,15 @@ function criarOrbeTesouro() {
   orbe.style.width  = `${tam}px`;
   orbe.style.height = `${tam}px`;
 
-  // Posição inicial: borda externa aleatória (sai "de fora" do viewport)
-  // pra criar sensação de "energia vindo do nada".
-  const lado = Math.floor(Math.random() * 4); // 0=top, 1=right, 2=bottom, 3=left
+  // Posição inicial: borda externa aleatória DENTRO da faixa segura.
+  // Lados: 0=direita, 1=baixo, 2=esquerda (sem topo — orbes não vêm de cima
+  // pra não passar atrás/em cima do player de vídeo).
+  const lado = Math.floor(Math.random() * 3);
   let x0, y0;
   const margemFora = 30;
-  if (lado === 0)      { x0 = Math.random() * window.innerWidth;  y0 = -margemFora; }
-  else if (lado === 1) { x0 = window.innerWidth + margemFora;    y0 = Math.random() * window.innerHeight; }
-  else if (lado === 2) { x0 = Math.random() * window.innerWidth;  y0 = window.innerHeight + margemFora; }
-  else                 { x0 = -margemFora;                        y0 = Math.random() * window.innerHeight; }
+  if (lado === 0)      { x0 = window.innerWidth + margemFora;    y0 = yMin + Math.random() * yRange; }      // direita
+  else if (lado === 1) { x0 = Math.random() * window.innerWidth;  y0 = yMax + margemFora; }                  // baixo (entre baú e bottom-nav)
+  else                 { x0 = -margemFora;                        y0 = yMin + Math.random() * yRange; }      // esquerda
   orbe.style.left = `${x0}px`;
   orbe.style.top  = `${y0}px`;
 

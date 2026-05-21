@@ -448,9 +448,10 @@ body.tesouro-modal-aberto .tesouro-bau.flutuante {
 }
 
 /* ── ORBES — partículas voando até o centro do baú ──────────────
-   Pequenos pontos dourados aparecem em pontos aleatórios da tela e
-   voam em curva (waypoint randômico) até o centro do baú. Criadas e
-   removidas por JS em loop enquanto estado é "resgatado". */
+   z-index 15: acima do conteúdo (.views=10), na FRENTE do baú,
+   atrás do header e bottom-nav (=50). O JS limita o ponto de
+   spawn pra que orbes não nasçam acima do player nem voem por
+   cima dele — ficam só na faixa entre player.bottom e bottom-nav.top. */
 .tesouro-orbe {
   position: fixed;
   border-radius: 50%;
@@ -462,7 +463,7 @@ body.tesouro-modal-aberto .tesouro-bau.flutuante {
   box-shadow: 0 0 14px rgba(255,220,120,0.85),
               0 0 28px rgba(244,208,96,0.4);
   pointer-events: none;
-  z-index: 50;
+  z-index: 15;
   opacity: 0;
   will-change: transform, opacity;
   animation: tesouro-orbe-viaja var(--dur, 2.2s) cubic-bezier(.4,0,.4,1) forwards;
