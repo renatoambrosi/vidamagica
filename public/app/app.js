@@ -1727,6 +1727,24 @@ function getHoraBrasilia() {
   }
 }
 
+// Descreve o `d` de um arco SVG (setor de pizza) começando em 12h (cima)
+// e terminando no ângulo dado, com vértice no centro. Usado pra preencher
+// visualmente o "tempo percorrido" do ciclo de 24h dentro do relógio.
+// Centro do relógio: (50, 50). Raio interno (até a borda do mostrador): 38.
+function descreverSetorRelogio(anguloFimGraus) {
+  if (anguloFimGraus <= 0.01) return '';                              // setor ainda vazio (acabou de resetar)
+  if (anguloFimGraus >= 359.99) {
+    // Setor cheio — desenha um círculo via 2 arcos (SVG não suporta arco de 360° num só comando)
+    return 'M 50,12 A 38,38 0 1,1 49.99,12 Z';
+  }
+  const rad = (anguloFimGraus - 90) * Math.PI / 180;
+  const x2 = 50 + 38 * Math.cos(rad);
+  const y2 = 50 + 38 * Math.sin(rad);
+  const largeArc = anguloFimGraus > 180 ? 1 : 0;
+  // M centro → L topo (12h) → A arco curvo até (x2,y2) → Z fecha de volta ao centro
+  return `M 50,50 L 50,12 A 38,38 0 ${largeArc},1 ${x2.toFixed(3)},${y2.toFixed(3)} Z`;
+}
+
 function atualizarRelogioTesouro() {
   const { h, m, s } = getHoraBrasilia();
 
@@ -1751,9 +1769,12 @@ function atualizarRelogioTesouro() {
   const elMovel   = document.getElementById('relogio-pont-hora');
   const elFixo    = document.getElementById('relogio-pont-minuto');
   const elSegundo = document.getElementById('relogio-pont-segundo');
+  const elSetor   = document.getElementById('relogio-setor');
   if (elMovel)   elMovel.style.transform   = `rotate(${angMovel}deg)`;
   if (elFixo)    elFixo.style.transform    = `rotate(0deg)`;       // sempre apontando pra 12h
   if (elSegundo) elSegundo.style.transform = `rotate(${angSegundo}deg)`;
+  // Setor percorrido — arco SVG de 12h até a posição do ponteiro móvel
+  if (elSetor) elSetor.setAttribute('d', descreverSetorRelogio(angMovel));
 
   // Sub-label com contagem regressiva textual
   const horas = Math.floor(restante / 3600);
@@ -2105,13 +2126,24 @@ document.getElementById('modal-tesouro-resgatar')?.addEventListener('click', asy
   btn.disabled = true;
   const labelEl = btn.querySelector('.label');
   if (labelEl) labelEl.textContent = 'Resgatando…';
+
+  let respostaTexto = '';
+  let respostaStatus = null;
   try {
     const r = await fetch(`${API}/api/app/tesouro/${tesouroAtual.id}/resgatar`, {
       method: 'POST',
       headers: { ...authHeader(), 'Content-Type': 'application/json' },
     });
-    const data = await r.json();
-    if (!r.ok || !data.ok) throw new Error(data.erro || 'falha');
+    respostaStatus = r.status;
+    respostaTexto = await r.text();
+    let data;
+    try { data = JSON.parse(respostaTexto); } catch { data = null; }
+    console.log('[tesouro] resgatar status', r.status, 'body', respostaTexto);
+
+    if (!r.ok || !data || !data.ok) {
+      const erro = (data && data.erro) || `HTTP ${r.status}`;
+      throw new Error(erro);
+    }
 
     // Atualiza saldo canônico (servidor é a verdade)
     if (usuario) usuario.sementes = Number(data.saldo) || 0;
@@ -2131,9 +2163,13 @@ document.getElementById('modal-tesouro-resgatar')?.addEventListener('click', asy
       hidratarBotoesTesouro();
     }, 700);
   } catch (e) {
-    console.warn('[tesouro] resgatar:', e);
-    if (labelEl) labelEl.textContent = 'Tente de novo';
-    setTimeout(() => { btn.disabled = false; if (labelEl) labelEl.textContent = 'Resgatar Semente'; }, 1500);
+    console.error('[tesouro] resgatar FALHOU:', { erro: e.message, status: respostaStatus, body: respostaTexto });
+    if (labelEl) {
+      // Mostra a mensagem real do servidor (curta) no botão pra dar pista
+      const msg = String(e.message || '').slice(0, 28);
+      labelEl.textContent = msg ? `Erro: ${msg}` : 'Tente de novo';
+    }
+    setTimeout(() => { btn.disabled = false; if (labelEl) labelEl.textContent = 'Resgatar Semente'; }, 2200);
   }
 });
 

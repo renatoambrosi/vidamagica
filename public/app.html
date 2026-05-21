@@ -87,7 +87,19 @@
                de minutos rotacionando infinitamente. Visualmente comunica
                "aguardando o próximo ciclo". Invisível nos outros estados. -->
           <svg class="tesouro-relogio" viewBox="0 0 100 100" aria-hidden="true">
+            <defs>
+              <!-- Gradient com stops que animam — cria reflexos móveis dentro do setor. -->
+              <linearGradient id="relogio-setor-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%"  stop-color="rgba(244,208,96,0.40)"/>
+                <stop offset="50%" stop-color="rgba(255,235,150,0.70)"/>
+                <stop offset="100%" stop-color="rgba(244,208,96,0.40)"/>
+              </linearGradient>
+            </defs>
             <circle class="relogio-face" cx="50" cy="50" r="42"/>
+            <!-- SETOR PERCORRIDO: preenchimento dourado entre o ponteiro fixo
+                 (12h) e o ponteiro móvel. Cresce ao longo do dia.
+                 Path desenhado e atualizado por JS (atualizarRelogioTesouro). -->
+            <path class="relogio-setor" id="relogio-setor" d="" fill="url(#relogio-setor-grad)"/>
             <line class="relogio-marca" x1="50" y1="10" x2="50" y2="16"/>
             <line class="relogio-marca" x1="90" y1="50" x2="84" y2="50"/>
             <line class="relogio-marca" x1="50" y1="90" x2="50" y2="84"/>

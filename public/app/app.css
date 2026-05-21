@@ -332,7 +332,9 @@ body.tesouro-modal-aberto .tesouro-bau.flutuante {
 
 /* RAIOS DE LUZ giratórios atrás do baú aberto.
    Conic-gradient cria "pizza fatiada" de transparência↔dourado, e a
-   rotação contínua dá impressão de raios saindo do interior do baú. */
+   rotação contínua dá impressão de raios saindo do interior do baú.
+   A máscara radial define o ANEL onde os raios são visíveis — janela
+   estreita pra que os raios fiquem CURTOS (35% do tamanho anterior). */
 .tesouro-btn.aberto-aguardando .tesouro-glow::after {
   content: '';
   position: absolute;
@@ -356,8 +358,10 @@ body.tesouro-modal-aberto .tesouro-bau.flutuante {
     rgba(255, 230, 130, 0.35) 296deg,
     transparent 310deg
   );
-  mask: radial-gradient(circle, transparent 18%, black 30%, black 78%, transparent 90%);
-  -webkit-mask: radial-gradient(circle, transparent 18%, black 30%, black 78%, transparent 90%);
+  /* Janela mais estreita = raios mais curtos. Antes: 30%→78% (anel de 48%).
+     Agora: 32%→49% (anel de ~17%, que é ~35% do tamanho antigo). */
+  mask: radial-gradient(circle, transparent 28%, black 32%, black 49%, transparent 56%);
+  -webkit-mask: radial-gradient(circle, transparent 28%, black 32%, black 49%, transparent 56%);
   animation: bau-rays-girar 9s linear infinite;
   z-index: 0;
   opacity: 0.85;
@@ -484,6 +488,41 @@ body.tesouro-modal-aberto .tesouro-bau.flutuante {
 }
 .relogio-centro {
   fill: #4A3416;
+}
+
+/* SETOR PERCORRIDO — preenchimento dourado dentro do espaço já consumido
+   do ciclo de 24h. O `d` do path é atualizado por JS a cada segundo.
+   O `background-position` do gradient interno move pra criar REFLEXOS
+   MÓVEIS dentro do setor, dando vida ao preenchimento. */
+.relogio-setor {
+  /* Animação de pulsação sutil pra reforçar "tempo está passando" */
+  animation: relogio-setor-pulsa 3.5s ease-in-out infinite;
+}
+@keyframes relogio-setor-pulsa {
+  0%, 100% { opacity: 0.75; }
+  50%      { opacity: 1;    }
+}
+/* Os stops do linearGradient animam de offset pra criar shimmer interno */
+#relogio-setor-grad stop:nth-child(1) {
+  animation: setor-shimmer-1 4s ease-in-out infinite;
+}
+#relogio-setor-grad stop:nth-child(2) {
+  animation: setor-shimmer-2 4s ease-in-out infinite;
+}
+#relogio-setor-grad stop:nth-child(3) {
+  animation: setor-shimmer-3 4s ease-in-out infinite;
+}
+@keyframes setor-shimmer-1 {
+  0%, 100% { stop-color: rgba(244,208,96,0.40); }
+  50%      { stop-color: rgba(255,235,150,0.55); }
+}
+@keyframes setor-shimmer-2 {
+  0%, 100% { stop-color: rgba(255,235,150,0.70); }
+  50%      { stop-color: rgba(244,208,96,0.45); }
+}
+@keyframes setor-shimmer-3 {
+  0%, 100% { stop-color: rgba(244,208,96,0.40); }
+  50%      { stop-color: rgba(255,245,180,0.65); }
 }
 
 .tesouro-info { width: 100%; text-align: center; position: relative; z-index: 2; margin-top: -1.4rem; }

@@ -886,7 +886,11 @@ router.delete('/tesouro/:id/quero-viver', autenticar, async (req, res) => {
 router.post('/tesouro/:id/resgatar', autenticar, async (req, res) => {
   const usuarioId = req.usuario.sub;
   const feedId = parseInt(req.params.id, 10);
-  if (!Number.isFinite(feedId)) return res.status(400).json({ ok: false, erro: 'id inválido' });
+  console.log('[resgatar] INICIO', { usuarioId, feedId, raw_id: req.params.id, modo_dev: TESOURO_INFINITO_DEV });
+  if (!Number.isFinite(feedId)) {
+    console.warn('[resgatar] id inválido:', req.params.id);
+    return res.status(400).json({ ok: false, erro: 'id inválido' });
+  }
 
   // 1. Valida que o tesouro existe e está ativo (poolComunicacao, fora da transação)
   try {
@@ -894,10 +898,11 @@ router.post('/tesouro/:id/resgatar', autenticar, async (req, res) => {
       `SELECT id FROM feed WHERE id = $1 AND ativo = TRUE LIMIT 1`,
       [feedId]
     );
-    if (!f.rows[0]) return res.status(404).json({ ok: false, erro: 'tesouro não encontrado' });
+    console.log('[resgatar] feed encontrado:', !!f.rows[0]);
+    if (!f.rows[0]) return res.status(404).json({ ok: false, erro: 'tesouro não encontrado no feed' });
   } catch (err) {
-    console.error('[app/tesouro/resgatar] erro validação feed:', err);
-    return res.status(500).json({ ok: false, erro: 'erro interno' });
+    console.error('[resgatar] ERRO validação feed:', err.message, err.stack);
+    return res.status(500).json({ ok: false, erro: 'feed: ' + (err.message || 'erro') });
   }
 
   // 2. Recompensa: por enquanto fixo em 1 semente.
@@ -905,9 +910,18 @@ router.post('/tesouro/:id/resgatar', autenticar, async (req, res) => {
   const SEMENTES_TESOURO = 1;
 
   // 3. Transação na poolCore: idempotência + crédito atômico
-  const client = await poolCore.connect();
+  let client;
+  try {
+    client = await poolCore.connect();
+    console.log('[resgatar] poolCore.connect OK');
+  } catch (err) {
+    console.error('[resgatar] ERRO conectando poolCore:', err.message, err.stack);
+    return res.status(500).json({ ok: false, erro: 'poolCore: ' + (err.message || 'erro') });
+  }
+
   try {
     await client.query('BEGIN');
+    console.log('[resgatar] BEGIN OK');
 
     // ⚠️ TESOURO_INFINITO_DEV ⚠️ (ver banner no topo do arquivo).
     // Quando true, deleta o registro anterior pra que o INSERT seguinte
@@ -915,10 +929,11 @@ router.post('/tesouro/:id/resgatar', autenticar, async (req, res) => {
     // aluna re-resgata e ganha sementes a cada vez. Pra desligar e
     // voltar à idempotência real: TESOURO_INFINITO_DEV = false (topo do arquivo).
     if (TESOURO_INFINITO_DEV) {
-      await client.query(
+      const del = await client.query(
         `DELETE FROM tesouros_resgatados WHERE usuario_id = $1 AND feed_id = $2`,
         [usuarioId, feedId]
       );
+      console.log('[resgatar] DELETE dev rows afetadas:', del.rowCount);
     }
 
     // Tenta inserir o registro de resgate. UNIQUE(usuario_id, feed_id) garante
@@ -931,11 +946,13 @@ router.post('/tesouro/:id/resgatar', autenticar, async (req, res) => {
        RETURNING id`,
       [usuarioId, feedId]
     );
+    console.log('[resgatar] INSERT tesouros_resgatados id:', ins.rows[0]?.id || 'CONFLICT');
 
     if (!ins.rows[0]) {
       // Já resgatado — retorna saldo atual
       const u = await client.query(`SELECT sementes FROM usuarios WHERE id = $1`, [usuarioId]);
       await client.query('COMMIT');
+      console.log('[resgatar] FIM ja_resgatado, saldo:', u.rows[0]?.sementes);
       return res.json({
         ok: true,
         ja_resgatado: true,
@@ -945,6 +962,7 @@ router.post('/tesouro/:id/resgatar', autenticar, async (req, res) => {
     }
 
     // Credita semente via helper (lock + ledger + update atômicos)
+    console.log('[resgatar] chamando creditarSementes...');
     const { saldo_atual, movimentacao_id } = await creditarSementes({
       client,
       usuario_id: usuarioId,
@@ -953,6 +971,7 @@ router.post('/tesouro/:id/resgatar', autenticar, async (req, res) => {
       origem_tipo: 'feed',
       origem_id: feedId,
     });
+    console.log('[resgatar] creditarSementes OK, saldo:', saldo_atual, 'mov:', movimentacao_id);
 
     // Atualiza a linha de resgate com referência à movimentação e quantia creditada
     await client.query(
@@ -963,6 +982,7 @@ router.post('/tesouro/:id/resgatar', autenticar, async (req, res) => {
     );
 
     await client.query('COMMIT');
+    console.log('[resgatar] FIM creditado, saldo:', saldo_atual);
     return res.json({
       ok: true,
       ja_resgatado: false,
@@ -971,10 +991,20 @@ router.post('/tesouro/:id/resgatar', autenticar, async (req, res) => {
     });
   } catch (err) {
     try { await client.query('ROLLBACK'); } catch {}
-    console.error('[app/tesouro/resgatar] erro:', err);
-    return res.status(500).json({ ok: false, erro: 'erro interno' });
+    console.error('[resgatar] ERRO no fluxo principal:');
+    console.error('  message:', err.message);
+    console.error('  code:', err.code);
+    console.error('  stack:', err.stack);
+    // Devolve mensagem detalhada pro frontend (modo dev — sem alunas reais ainda)
+    return res.status(500).json({
+      ok: false,
+      erro: err.message || 'erro interno',
+      codigo: err.code || null,
+    });
   } finally {
-    client.release();
+    if (client) {
+      try { client.release(); } catch {}
+    }
   }
 });
 
