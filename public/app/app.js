@@ -1976,9 +1976,17 @@ function voarCartaProBau(origemEl) {
     cloneDestino.classList.remove('nav-tab-aguardando');
     cloneDestino.classList.add('nav-tab-pulsa');
     flutuante.remove();
-    // Depois da animação da explosão, remove o clone — destino real
-    // volta a aparecer normalmente quando o modal fechar.
-    setTimeout(() => cloneDestino.remove(), 1000);
+    // Fade em 2 fases pra acompanhar o pulse (~0.9s):
+    //  Fase A (0→900ms): opacity cai linearmente de 1 → 0.3 (acompanha o pulse)
+    //  Fase B (900→1000ms): opacity 0.3 → 0 (queda rápida final)
+    //  Remove o clone aos 1050ms.
+    cloneDestino.style.transition = 'opacity 0.9s linear';
+    cloneDestino.style.opacity = '0.3';
+    setTimeout(() => {
+      cloneDestino.style.transition = 'opacity 0.1s linear';
+      cloneDestino.style.opacity = '0';
+    }, 900);
+    setTimeout(() => cloneDestino.remove(), 1050);
   }, 1400);
 }
 
