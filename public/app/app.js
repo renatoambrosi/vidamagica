@@ -1827,7 +1827,7 @@ document.getElementById('tesouro-btn')?.addEventListener('click', () => {
   // Quando o Lottie termina de abrir, esperamos mais 700ms antes de subir
   // o modal — dá ao olho tempo de "absorver" o baú aberto antes do papel
   // surgir no centro. Sensação de respiro entre os dois momentos.
-  const subirComAtraso = () => setTimeout(subirModal, 700);
+  const subirComAtraso = () => setTimeout(subirModal, 400);
 
   if (tesouroLottie && typeof lottie !== 'undefined') {
     if (_handlerCompletaBau) {
@@ -1886,11 +1886,11 @@ document.getElementById('modal-tesouro-quero')?.addEventListener('click', async 
     tesouroAtual._ja_marcou_quero = !jaMarcado;
     btn.setAttribute('aria-pressed', tesouroAtual._ja_marcou_quero ? 'true' : 'false');
     btn.classList.toggle('ativo', tesouroAtual._ja_marcou_quero);
-    // Anima E toca som SÓ quando MARCA (não quando desmarca)
-    if (!jaMarcado) {
-      tocarAudio(audioEuQuero);   // 🔊 som de "guardei no baú"
-      voarCartaProBau(btn);
-    }
+    // Animação sempre roda em click bem-sucedido (visual de feedback).
+    // O SOM emocional de "guardei" só toca quando o estado virou MARCADO
+    // (entrar no baú). Desmarcar não toca som.
+    voarCartaProBau(btn);
+    if (!jaMarcado) tocarAudio(audioEuQuero);   // 🔊 som de "guardei no baú"
   } catch (e) {
     console.warn('[tesouro] quero-viver:', e);
   } finally {

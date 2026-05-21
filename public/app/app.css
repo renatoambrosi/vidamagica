@@ -1993,6 +1993,31 @@ body.antessala-ativa {
   opacity: 1;
 }
 #modal-tesouro .modal-handle { display: none; }
+/* Botão X no canto superior direito do pergaminho. Cor sépia coerente
+   com o resto do modal. Click fecha o modal (data-close já é tratado pelo
+   listener genérico em app.js). */
+.modal-tesouro-fechar {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.85rem;
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: 1px solid rgba(120, 80, 30, 0.35);
+  border-radius: 50%;
+  color: #6B4A20;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 3;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+}
+.modal-tesouro-fechar:hover {
+  background: rgba(120, 80, 30, 0.12);
+  color: #3D2810;
+  transform: scale(1.08);
+}
+.modal-tesouro-fechar:active { transform: scale(0.95); }
 #modal-tesouro .modal-tesouro-conteudo {
   padding: 1.5rem 1.5rem 0.5rem;
   color: #3D2810; /* marrom escuro pra contrastar com o pergaminho */
