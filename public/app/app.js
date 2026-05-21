@@ -1776,6 +1776,9 @@ document.getElementById('tesouro-btn')?.addEventListener('click', () => {
   const subirModal = () => {
     if (modalSubiu) return;
     modalSubiu = true;
+    // Sinaliza pro CSS que o modal vai aparecer — o baú flutuante começa a
+    // sumir suavemente pra dar espaço ao pergaminho que vai ocupar o centro.
+    document.body.classList.add('tesouro-modal-aberto');
     abrirModalTesouro();
     tesouroAnimando = false;
     if (tesouroLottie && _handlerCompletaBau) {
@@ -1804,6 +1807,7 @@ document.getElementById('tesouro-btn')?.addEventListener('click', () => {
   const obs = new MutationObserver(() => {
     if (modal.getAttribute('aria-hidden') === 'true') {
       document.body.classList.remove('tesouro-abrindo');
+      document.body.classList.remove('tesouro-modal-aberto');
       bauEl?.classList.remove('flutuante');
     }
   });

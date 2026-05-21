@@ -206,9 +206,10 @@ body.chat-aberto .views {
 .tesouro-btn {
   width: 100%;
   display: flex; flex-direction: column; align-items: center;
-  gap: 0.3rem;
+  gap: 0;
   background: transparent;
   border: none;
+  box-shadow: none;
   padding: 0.5rem 0 0.25rem;
   position: relative;
   transition: transform 0.35s cubic-bezier(.34,1.4,.64,1);
@@ -254,7 +255,10 @@ body.chat-aberto .views {
      toda a tela, blur leve atrás).
    - O baú sai do fluxo, vai pro CENTRO da viewport (position: fixed) com
      scale grande, atraindo o olhar. O Lottie continua rodando dentro dele.
-   - O texto da label some durante a animação pra não competir visualmente. */
+   - O texto da label some durante a animação pra não competir visualmente.
+   - O .tesouro-btn original (vazio agora, já que o baú flutuou) NÃO pode
+     mostrar box-shadow nem outline — senão fica um "retângulo escuro"
+     pulsando no lugar onde o baú estava. */
 body.tesouro-abrindo::before {
   content: '';
   position: fixed; inset: 0;
@@ -263,7 +267,7 @@ body.tesouro-abrindo::before {
                 rgba(94, 68, 20, 0.55) 100%);
   backdrop-filter: blur(10px) saturate(1.15);
   -webkit-backdrop-filter: blur(10px) saturate(1.15);
-  z-index: 90;
+  z-index: 80;
   opacity: 0;
   animation: tesouro-fume-in 0.45s ease-out forwards;
   pointer-events: none;
@@ -273,13 +277,14 @@ body.tesouro-abrindo::before {
 }
 body.tesouro-abrindo .tesouro-info,
 body.tesouro-abrindo .tesouro-glow { opacity: 0; transition: opacity 0.3s; }
+.tesouro-btn.abrindo { box-shadow: none !important; background: transparent !important; }
 
 .tesouro-bau.flutuante {
   position: fixed !important;
   top: 50%; left: 50%;
   width: min(70vw, 360px); height: min(70vw, 360px);
   transform: translate(-50%, -50%) scale(0.8);
-  z-index: 95;
+  z-index: 1000;
   filter: drop-shadow(0 20px 40px rgba(0,0,0,0.4))
           drop-shadow(0 0 60px rgba(244,208,96,0.6));
   animation: bau-flutua 0.6s cubic-bezier(.34,1.4,.64,1) forwards;
@@ -289,13 +294,19 @@ body.tesouro-abrindo .tesouro-glow { opacity: 0; transition: opacity 0.3s; }
   60%  { transform: translate(-50%, -50%) scale(1.05); opacity: 1; }
   100% { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
 }
+/* Quando o modal pergaminho sobe, o baú flutuante some suavemente
+   (não competir com o pergaminho que vai ocupar o centro). */
+body.tesouro-modal-aberto .tesouro-bau.flutuante {
+  opacity: 0;
+  transition: opacity 0.35s ease-out;
+}
 
 /* Estado "resgatado" = aluna já pegou o tesouro do dia. Quieto. */
 .tesouro-btn.resgatado { opacity: 0.78; box-shadow: var(--sombra-media); }
 .tesouro-btn.resgatado .tesouro-glow { animation: none; opacity: 0.18; }
 .tesouro-btn.resgatado .tesouro-bau { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)) grayscale(0.25); }
 
-.tesouro-info { width: 100%; text-align: center; position: relative; z-index: 2; margin-top: -0.3rem; }
+.tesouro-info { width: 100%; text-align: center; position: relative; z-index: 2; margin-top: -1.4rem; }
 .tesouro-label {
   font-family: var(--font-display); font-size: 1.15rem; font-weight: 900;
   color: #3D2810; /* marrom escuro pra contrastar com o fundo creme da página */
