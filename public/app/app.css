@@ -2494,6 +2494,134 @@ body.antessala-ativa {
 .modal-foto-cancelar { display: block; width: 100%; padding: 0.7rem; background: transparent; border: none; color: var(--texto-mute); font-family: var(--font-ui); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.6rem; cursor: pointer; transition: color 0.15s; }
 .modal-foto-cancelar:hover { color: var(--texto); }
 
+/* Modal de crop circular do avatar — aluna ajusta enquadramento antes
+   do upload. Palco quadrado com a imagem por baixo e uma máscara escura
+   por cima com um "buraco" circular. Imagem pode ser arrastada (pan) e
+   redimensionada via slider de zoom. O JS faz o crop final via canvas. */
+.avatar-crop-conteudo { padding: 1.25rem 1.25rem 0.5rem; text-align: center; }
+.avatar-crop-titulo { font-family: var(--font-display); font-size: 1.05rem; font-weight: 800; color: var(--texto); margin-bottom: 0.35rem; line-height: 1.3; }
+.avatar-crop-sub { font-size: 0.82rem; color: var(--texto-suave); line-height: 1.5; margin-bottom: 1rem; }
+/* Palco quadrado — proporção 1:1, ocupa toda a largura disponível.
+   overflow:hidden trava a imagem dentro. touch-action:none impede scroll
+   da página enquanto a aluna arrasta a foto. */
+.avatar-crop-palco {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 320px;
+  margin: 0 auto 1rem;
+  background: #000;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.avatar-crop-img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: center center;
+  will-change: transform;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+/* Máscara: overlay escuro com um círculo "vazado" no centro via
+   radial-gradient. Mostra o que está dentro do círculo sem cortar; o
+   crop real acontece no canvas no momento de salvar. */
+.avatar-crop-mascara {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at center,
+    transparent 0,
+    transparent calc(50% - 1px),
+    rgba(0,0,0,0.55) 50%,
+    rgba(0,0,0,0.65) 100%
+  );
+  box-shadow: inset 0 0 0 2px rgba(244,217,152,0.55);
+  border-radius: var(--radius-md);
+}
+.avatar-crop-zoom {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0 0.25rem;
+  margin-bottom: 1rem;
+}
+.avatar-crop-zoom-icone {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--texto-suave);
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.avatar-crop-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--vidro-borda);
+  border-radius: var(--radius-full);
+  outline: none;
+}
+.avatar-crop-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--ouro-claro), var(--ouro-fundo));
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  cursor: pointer;
+}
+.avatar-crop-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--ouro-claro), var(--ouro-fundo));
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  cursor: pointer;
+}
+.avatar-crop-acoes { display: flex; gap: 0.6rem; padding-bottom: 0.4rem; }
+.avatar-crop-cancelar {
+  flex: 1;
+  padding: 0.85rem;
+  background: transparent;
+  border: 1px solid var(--vidro-borda);
+  color: var(--texto-suave);
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.avatar-crop-cancelar:hover { color: var(--texto); border-color: var(--vidro-borda-hi); background: var(--vidro); }
+.avatar-crop-salvar {
+  flex: 2;
+  padding: 0.85rem;
+  background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  box-shadow: 0 4px 20px rgba(200,146,42,0.32);
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.avatar-crop-salvar:hover { opacity: 0.93; transform: translateY(-1px); }
+.avatar-crop-salvar:disabled { opacity: 0.55; cursor: wait; transform: none; }
+
 /* View-topo com botão de voltar — usado pelas sub-views do perfil (info
    pessoais, segurança, plano e assinatura). Botão fica à esquerda do título. */
 .view-topo-com-voltar { display: flex; align-items: center; gap: 0.5rem; padding-left: 0.5rem; }

@@ -375,7 +375,7 @@
         <input type="file" id="perfil-avatar-input" accept="image/*" hidden>
         <p class="perfil-avatar-hint" id="perfil-avatar-hint">Toque para adicionar sua foto</p>
         <h2 class="perfil-nome" id="perfil-nome">—</h2>
-        <div class="perfil-plano-selo gratuito" id="perfil-plano-selo">Plano grátis</div>
+        <div class="perfil-plano-selo gratuito" id="perfil-plano-selo">Grátis</div>
         <div class="perfil-sementes-row">
           <span>🌱</span>
           <span class="perfil-sementes-num" id="perfil-sementes">0</span>
@@ -978,6 +978,37 @@
         <p class="modal-foto-sub">A Suellen gosta de te ver enquanto conversa. Coloca uma foto sua pra que esse momento fique mais próximo de verdade.</p>
         <button type="button" class="modal-foto-acao" id="modal-foto-acao">Adicionar foto agora</button>
         <button type="button" class="modal-foto-cancelar" data-close>Agora não</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CROP DO AVATAR — máscara circular pra aluna ajustar foto.
+       Fluxo: file picker → modal abre com a imagem → aluna arrasta (pan) e
+       usa o slider de zoom pra enquadrar o rosto no círculo → confirma →
+       canvas gera um blob 512×512 já cropado → upload pro Cloudinary. -->
+  <div class="modal" id="modal-avatar-crop" aria-hidden="true">
+    <div class="modal-overlay" data-close></div>
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="avatar-crop-conteudo">
+        <h3 class="avatar-crop-titulo">Centralize seu rosto</h3>
+        <p class="avatar-crop-sub">Arraste a foto e use o controle pra dar zoom. O que estiver dentro do círculo será sua foto.</p>
+
+        <div class="avatar-crop-palco" id="avatar-crop-palco">
+          <img class="avatar-crop-img" id="avatar-crop-img" alt="" draggable="false">
+          <div class="avatar-crop-mascara" aria-hidden="true"></div>
+        </div>
+
+        <div class="avatar-crop-zoom">
+          <span class="avatar-crop-zoom-icone" aria-hidden="true">−</span>
+          <input type="range" id="avatar-crop-zoom" min="100" max="300" step="1" value="100" class="avatar-crop-slider">
+          <span class="avatar-crop-zoom-icone" aria-hidden="true">+</span>
+        </div>
+
+        <div class="avatar-crop-acoes">
+          <button type="button" class="avatar-crop-cancelar" data-close>Cancelar</button>
+          <button type="button" class="avatar-crop-salvar" id="avatar-crop-salvar">Usar esta foto</button>
+        </div>
       </div>
     </div>
   </div>

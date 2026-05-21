@@ -109,7 +109,7 @@ function hidratarUI(u) {
     const plano = String(u.plano || 'gratuito').toLowerCase();
     if (plano === 'gratuito') {
       selo.className = 'perfil-plano-selo gratuito';
-      selo.textContent = 'Plano grátis';
+      selo.textContent = 'Grátis';
     } else {
       selo.className = 'perfil-plano-selo clube';
       selo.textContent = 'Clube Vida Mágica';
