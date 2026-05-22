@@ -1013,70 +1013,49 @@
     </div>
   </div>
 
-  <!-- MODAL DE AÇÕES DO AVATAR — substitui o clique direto no botão de
-       editar foto. Em vez de abrir o file picker do iOS direto, mostra
-       primeiro um menuzinho com Trocar foto / Excluir foto.
-       Se "Trocar foto" → 2º passo: Câmera (capture direto) ou Dispositivo
-       (file picker tradicional, que no iOS ainda mostra "Tirar foto /
-       Biblioteca / Arquivos" — isso é controlado pelo iOS, não tem como
-       contornar). O modal é 1 só, com 2 "passos" (data-passo). -->
-  <div class="modal" id="modal-avatar-acao" aria-hidden="true" data-passo="inicio">
+  <!-- MODAL DE AÇÕES DO AVATAR — antes de abrir o file picker, mostra
+       menuzinho com Trocar foto / Excluir foto. "Trocar foto" dispara o
+       file picker do sistema (que no iOS mostra "Tirar foto / Biblioteca
+       / Arquivos" — controlado pelo iOS). "Excluir foto" remove via
+       PUT /api/auth/perfil foto_url:null.
+
+       Ícones em SVG stroke dourado seguindo o padrão de .perfil-item-icone
+       (não usar emoji frio aqui — ver feedback_sem_emoji_em_icones). -->
+  <div class="modal" id="modal-avatar-acao" aria-hidden="true">
     <div class="modal-overlay" data-close></div>
     <div class="modal-sheet">
       <div class="modal-handle"></div>
       <div class="modal-sair-conteudo">
-
-        <!-- PASSO 1 — escolha principal: trocar ou excluir -->
-        <div class="avatar-acao-passo" data-passo="inicio">
-          <h3 class="modal-sair-titulo">Sua foto de perfil</h3>
-          <p class="modal-sair-sub">O que você quer fazer?</p>
-          <button type="button" class="modal-sair-opcao" id="avatar-acao-trocar">
-            <span class="modal-sair-opcao-icone">📷</span>
-            <div class="modal-sair-opcao-info">
-              <span class="modal-sair-opcao-titulo">Trocar foto</span>
-              <span class="modal-sair-opcao-sub">Escolha câmera ou da galeria do dispositivo</span>
-            </div>
-          </button>
-          <button type="button" class="modal-sair-opcao" id="avatar-acao-excluir">
-            <span class="modal-sair-opcao-icone">🗑️</span>
-            <div class="modal-sair-opcao-info">
-              <span class="modal-sair-opcao-titulo">Excluir foto</span>
-              <span class="modal-sair-opcao-sub">Remove sua foto e volta pro avatar vazio</span>
-            </div>
-          </button>
-          <button type="button" class="modal-sair-cancelar" data-close>Cancelar</button>
-        </div>
-
-        <!-- PASSO 2 — origem da nova foto: câmera ou galeria -->
-        <div class="avatar-acao-passo" data-passo="origem">
-          <h3 class="modal-sair-titulo">De onde vem a foto?</h3>
-          <p class="modal-sair-sub">Escolha como vai mandar a foto.</p>
-          <button type="button" class="modal-sair-opcao" id="avatar-origem-camera">
-            <span class="modal-sair-opcao-icone">📸</span>
-            <div class="modal-sair-opcao-info">
-              <span class="modal-sair-opcao-titulo">Tirar foto agora</span>
-              <span class="modal-sair-opcao-sub">Abre a câmera do seu celular</span>
-            </div>
-          </button>
-          <button type="button" class="modal-sair-opcao" id="avatar-origem-dispositivo">
-            <span class="modal-sair-opcao-icone">🖼️</span>
-            <div class="modal-sair-opcao-info">
-              <span class="modal-sair-opcao-titulo">Galeria do dispositivo</span>
-              <span class="modal-sair-opcao-sub">Escolha uma foto que você já tem</span>
-            </div>
-          </button>
-          <button type="button" class="modal-sair-cancelar" id="avatar-origem-voltar">Voltar</button>
-        </div>
-
+        <h3 class="modal-sair-titulo">Sua foto de perfil</h3>
+        <button type="button" class="modal-sair-opcao" id="avatar-acao-trocar">
+          <span class="modal-sair-opcao-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+          </span>
+          <div class="modal-sair-opcao-info">
+            <span class="modal-sair-opcao-titulo">Trocar foto</span>
+          </div>
+        </button>
+        <button type="button" class="modal-sair-opcao" id="avatar-acao-excluir">
+          <span class="modal-sair-opcao-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6"/>
+              <path d="M14 11v6"/>
+              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </span>
+          <div class="modal-sair-opcao-info">
+            <span class="modal-sair-opcao-titulo">Excluir foto</span>
+          </div>
+        </button>
+        <button type="button" class="modal-sair-cancelar" data-close>Cancelar</button>
       </div>
     </div>
   </div>
-
-  <!-- INPUT DE CÂMERA — usado pelo "Tirar foto agora" do modal de avatar.
-       `capture="environment"` força ir direto pra câmera, sem passar pelo
-       menu nativo. No iOS, abre a câmera traseira; pra selfie a aluna
-       inverte na própria câmera. -->
-  <input type="file" id="perfil-avatar-input-camera" accept="image/*" capture="environment" hidden>
 
   <div class="modal" id="modal-sair" aria-hidden="true">
     <div class="modal-overlay" data-close></div>
