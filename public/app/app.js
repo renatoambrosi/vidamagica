@@ -353,21 +353,30 @@ async function uploadAvatar(file) {
     // Filename explícito pro multer aceitar Blob também (vindo do crop).
     const nome = file.name || ('avatar.' + (file.type === 'image/png' ? 'png' : 'jpg'));
     fd.append('imagem', file, nome);
-    const upRes = await fetch(`${API}/api/upload/imagem`, {
+    // Usa fetchAutenticado pra fazer refresh automático se o access token
+    // de 15min expirou entre escolher a foto e clicar em salvar.
+    const upRes = await fetchAutenticado(`${API}/api/upload/imagem`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${VmSession.getAccess()}` },
       body: fd,
     });
-    if (!upRes.ok) throw new Error('upload falhou');
+    if (!upRes) return; // fetchAutenticado já redirecionou
+    if (!upRes.ok) {
+      const txt = await upRes.text().catch(() => '');
+      throw new Error(`upload falhou [${upRes.status}] ${txt.slice(0, 200)}`);
+    }
     const { url } = await upRes.json();
-    if (!url) throw new Error('sem url');
+    if (!url) throw new Error('upload retornou sem URL');
 
-    const putRes = await fetch(`${API}/api/auth/perfil`, {
+    const putRes = await fetchAutenticado(`${API}/api/auth/perfil`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${VmSession.getAccess()}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ foto_url: url }),
     });
-    if (!putRes.ok) throw new Error('persistência falhou');
+    if (!putRes) return;
+    if (!putRes.ok) {
+      const txt = await putRes.text().catch(() => '');
+      throw new Error(`persistência falhou [${putRes.status}] ${txt.slice(0, 200)}`);
+    }
     const dados = await putRes.json();
     const nova = dados?.usuario?.foto_url || url;
     if (usuario) usuario.foto_url = nova;
@@ -496,15 +505,19 @@ function configurarPalcoCrop() {
   if (!palco || !img || !cropState.imgNaturalW) return;
   const rect = palco.getBoundingClientRect();
   cropState.palcoSize = rect.width;
-  // Imagem em "zoom 1" cobre o palco inteiro (cover). Pega a dimensão
-  // MAIOR da imagem natural pra que ambos os lados >= palco.
+  // Imagem em "zoom 1" CABE inteira no palco (contain). Pega a dimensão
+  // MAIOR da imagem natural e faz ela igualar palcoSize — a outra fica
+  // menor, com sobra de espaço dos dois lados. Decisão de design: deixa
+  // a aluna decidir se quer dar zoom pra cortar mais ou manter assim.
   const ratio = cropState.imgNaturalW / cropState.imgNaturalH;
   if (ratio >= 1) {
-    cropState.baseH = cropState.palcoSize;
-    cropState.baseW = cropState.palcoSize * ratio;
-  } else {
+    // Imagem mais larga que alta → encosta nos lados, sobra em cima/baixo
     cropState.baseW = cropState.palcoSize;
     cropState.baseH = cropState.palcoSize / ratio;
+  } else {
+    // Imagem mais alta que larga → encosta em cima/baixo, sobra nos lados
+    cropState.baseH = cropState.palcoSize;
+    cropState.baseW = cropState.palcoSize * ratio;
   }
   img.style.width = cropState.baseW + 'px';
   img.style.height = cropState.baseH + 'px';
@@ -513,12 +526,15 @@ function configurarPalcoCrop() {
 }
 
 function limitarTranslacao() {
-  // Mantém as bordas da imagem cobrindo o palco inteiro. Calcula o overflow
-  // de cada lado e clampa tx/ty pra que nada de transparente apareça.
+  // Em modo "contain", quando a imagem cabe inteira no palco (zoom 1.0),
+  // não tem por que travar pan — a aluna pode mover livremente, mesmo
+  // que apareça borda branca (gerada pelo canvas no momento de salvar).
+  // Limitamos só o suficiente pra evitar a imagem sumir completamente:
+  // pelo menos metade dela tem que continuar dentro do palco.
   const w = cropState.baseW * cropState.zoom;
   const h = cropState.baseH * cropState.zoom;
-  const maxX = Math.max(0, (w - cropState.palcoSize) / 2);
-  const maxY = Math.max(0, (h - cropState.palcoSize) / 2);
+  const maxX = (cropState.palcoSize + w) / 2;
+  const maxY = (cropState.palcoSize + h) / 2;
   cropState.tx = Math.max(-maxX, Math.min(maxX, cropState.tx));
   cropState.ty = Math.max(-maxY, Math.min(maxY, cropState.ty));
 }
@@ -613,49 +629,50 @@ document.getElementById('avatar-crop-salvar')?.addEventListener('click', async (
 });
 
 function gerarCropBlob() {
-  // O palco é quadrado (palcoSize × palcoSize). A imagem natural está
-  // sendo exibida em baseW × baseH * zoom px, com translação (tx, ty).
-  // Convertendo "px do palco" pra "px da imagem natural":
-  //   escala = (baseW * zoom) / imgNaturalW   ← mesmo nos dois eixos (cover)
-  // O recorte é a área do palco mapeada de volta pra coordenadas naturais.
+  // O palco é quadrado (palcoSize × palcoSize) e o canvas final é 512×512.
+  // A imagem está posicionada em (imgLeftPalco, imgTopPalco) com tamanho
+  // (escalaW, escalaH) em coordenadas do palco. Como agora o modo é
+  // CONTAIN, a imagem pode ser MENOR que o palco — desenhar com posição
+  // e tamanho exatos preserva o branco em volta (fillRect inicial cobre
+  // toda área não desenhada). NÃO recortamos+esticamos como antes; só
+  // desenhamos a imagem inteira no lugar certo dentro do canvas 512×512.
   return new Promise((resolve, reject) => {
-    const escala = (cropState.baseW * cropState.zoom) / cropState.imgNaturalW;
-    // Origem (0,0 do palco) em coords naturais:
-    //   centroImgPalco_x = palcoSize/2 + tx
-    //   ladoEsq_palco_em_natural = (0 - centroImgPalco_x + imgNaturalW*escala/2) / escala
     const naturalW = cropState.imgNaturalW;
     const naturalH = cropState.imgNaturalH;
-    const escalaW = (cropState.baseW * cropState.zoom);
-    const escalaH = (cropState.baseH * cropState.zoom);
-    // Posição do TOPO ESQUERDO da imagem (em px do palco):
+    const escalaW = cropState.baseW * cropState.zoom;
+    const escalaH = cropState.baseH * cropState.zoom;
+    // Topo-esquerdo da imagem em coords do palco
     const imgLeftPalco = cropState.palcoSize / 2 + cropState.tx - escalaW / 2;
     const imgTopPalco  = cropState.palcoSize / 2 + cropState.ty - escalaH / 2;
-    // O palco vai de (0,0) a (palcoSize, palcoSize). Convertendo pra
-    // coords naturais da imagem:
-    const sx = (0 - imgLeftPalco) / escala;
-    const sy = (0 - imgTopPalco) / escala;
-    const sSize = cropState.palcoSize / escala;
-    // Clampa nos limites da imagem (defensivo — limitarTranslacao já garante)
-    const sxC = Math.max(0, Math.min(naturalW - 1, sx));
-    const syC = Math.max(0, Math.min(naturalH - 1, sy));
-    const sSizeC = Math.min(sSize, naturalW - sxC, naturalH - syC);
 
     const OUT = 512;
     const canvas = document.createElement('canvas');
     canvas.width = OUT;
     canvas.height = OUT;
     const ctx = canvas.getContext('2d');
-    // Fundo branco (caso PNG com transparência seja exportado como JPEG)
+    // Fundo branco: cobre área fora da imagem (modo contain) e também
+    // o caso de PNG com transparência exportado como JPEG.
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, OUT, OUT);
 
+    // Mapeia palco-coords pro canvas (escala uniforme palcoSize → 512).
+    const escalaCanvas = OUT / cropState.palcoSize;
+    const dx = imgLeftPalco * escalaCanvas;
+    const dy = imgTopPalco  * escalaCanvas;
+    const dw = escalaW * escalaCanvas;
+    const dh = escalaH * escalaCanvas;
+
     const fonte = document.getElementById('avatar-crop-img');
-    ctx.drawImage(fonte, sxC, syC, sSizeC, sSizeC, 0, 0, OUT, OUT);
+    // Desenha a imagem INTEIRA (0,0,naturalW,naturalH) no lugar certo do
+    // canvas — partes fora do canvas são cortadas automaticamente pelo
+    // próprio drawImage, e o que sobra fora da imagem fica branco.
+    ctx.drawImage(fonte, 0, 0, naturalW, naturalH, dx, dy, dw, dh);
 
     canvas.toBlob((blob) => {
       if (!blob) return reject(new Error('toBlob falhou'));
-      // Nome amigável + tipo conforme original
-      blob.name = 'avatar.' + (cropState.fileType === 'image/png' ? 'png' : 'jpg');
+      // Nome amigável + tipo conforme original (best-effort; .name é
+      // read-only em alguns browsers, mas fd.append usa filename explícito).
+      try { blob.name = 'avatar.' + (cropState.fileType === 'image/png' ? 'png' : 'jpg'); } catch {}
       resolve(blob);
     }, cropState.fileType, 0.92);
   });
