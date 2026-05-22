@@ -2236,9 +2236,14 @@ function criarBolha(msg) {
   // Avatar grande SÓ na primeira mensagem do bloco. Mesma regra do app:
   // se o remetente da mensagem anterior é o mesmo desta, NÃO renderiza.
   // Aluna → foto pessoal (convAtual.foto_url). Suellen/Equipe → assets fixos.
-  if (ehPrimeiraDoBlocoAtend(isAluna)) {
-    wrap.classList.add('primeira-do-bloco');
-    wrap.appendChild(criarMsgAvatarAtend(msg, isAluna));
+  // Try/catch defensivo: se falhar, a bolha continua sendo criada normal.
+  try {
+    if (ehPrimeiraDoBlocoAtend(isAluna)) {
+      wrap.classList.add('primeira-do-bloco');
+      wrap.appendChild(criarMsgAvatarAtend(msg, isAluna));
+    }
+  } catch (e) {
+    console.warn('[msg-avatar] falhou em criarBolha:', e);
   }
 
   if (!isAluna) {
@@ -2365,9 +2370,14 @@ function criarAudioBolha(msg) {
   wrap.dataset.id = msg.id;
 
   // Avatar grande SÓ na primeira mensagem do bloco — mesma regra do criarBolha.
-  if (ehPrimeiraDoBlocoAtend(isAluna)) {
-    wrap.classList.add('primeira-do-bloco');
-    wrap.appendChild(criarMsgAvatarAtend(msg, isAluna));
+  // Try/catch defensivo (mesmo motivo que em criarBolha).
+  try {
+    if (ehPrimeiraDoBlocoAtend(isAluna)) {
+      wrap.classList.add('primeira-do-bloco');
+      wrap.appendChild(criarMsgAvatarAtend(msg, isAluna));
+    }
+  } catch (e) {
+    console.warn('[msg-avatar] falhou em criarAudioBolha:', e);
   }
 
   const alturas = gerarWaveform(28);

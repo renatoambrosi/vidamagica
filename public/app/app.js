@@ -3068,10 +3068,16 @@ function renderMensagem(msg) {
 
   // Avatar grande SÓ se for a primeira do bloco. Anexa ANTES da bolha pro
   // CSS posicionar absoluto sem alterar a ordem natural dos outros filhos.
-  const primeira = ehPrimeiraDoBlocoChat(isAluna);
-  if (primeira) {
-    wrap.classList.add('primeira-do-bloco');
-    wrap.appendChild(criarMsgAvatarChat(msg, isAluna));
+  // Try/catch defensivo: se o avatar falhar por qualquer motivo, o chat
+  // continua carregando normalmente (sem o avatar nesta msg).
+  try {
+    const primeira = ehPrimeiraDoBlocoChat(isAluna);
+    if (primeira) {
+      wrap.classList.add('primeira-do-bloco');
+      wrap.appendChild(criarMsgAvatarChat(msg, isAluna));
+    }
+  } catch (e) {
+    console.warn('[msg-avatar] falhou em renderMensagem:', e);
   }
 
   const ident = msg.identidade || 'suellen';
@@ -3160,10 +3166,15 @@ function criarBolhaAudio(msg) {
   wrap.dataset.id = msg.id;
 
   // Avatar grande SÓ se for a primeira do bloco — mesma regra de renderMensagem.
-  const primeiraAudio = ehPrimeiraDoBlocoChat(isAluna);
-  if (primeiraAudio) {
-    wrap.classList.add('primeira-do-bloco');
-    wrap.appendChild(criarMsgAvatarChat(msg, isAluna));
+  // Try/catch defensivo (mesmo motivo que em renderMensagem).
+  try {
+    const primeiraAudio = ehPrimeiraDoBlocoChat(isAluna);
+    if (primeiraAudio) {
+      wrap.classList.add('primeira-do-bloco');
+      wrap.appendChild(criarMsgAvatarChat(msg, isAluna));
+    }
+  } catch (e) {
+    console.warn('[msg-avatar] falhou em criarBolhaAudio:', e);
   }
 
   const ident = msg.identidade || 'suellen';
