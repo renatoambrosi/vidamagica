@@ -1347,6 +1347,20 @@ body.antessala-ativa {
   overflow: hidden;
 }
 
+/* Desktop: a antessala precisa do position:fixed pelo iOS, mas no
+   desktop os cards ficam estourando full-width porque `max-width: none`
+   acima removeu a constraint padrão de var(--content-max). Aqui
+   devolvemos as margens laterais centralizando o .views fixo via
+   left:50% + translateX(-50%), mantendo a trava de scroll. */
+@media (min-width: 720px) {
+  body.antessala-ativa .views {
+    max-width: var(--content-max);
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+  }
+}
+
 /* Tela de conversa: aparece SOBRE a tela de escolha com vidro real branco.
    A escolha continua renderizada por baixo, borrada — dá sensação de
    modal flutuante (estética iOS). O #view-chat já é position:fixed,
@@ -2615,6 +2629,26 @@ body.antessala-ativa {
   flex-direction: column;
   justify-content: center;
   gap: 0.6rem;
+}
+
+/* Desktop: o modal de crop volta a se comportar como modal normal
+   (sem ocupar 95vh) e tem palco menor pra que todos os controles
+   (slider + botões) fiquem visíveis sem rolar. As regras mobile acima
+   continuam intactas — só sobrescrevemos aqui pra desktop. */
+@media (min-width: 640px) {
+  #modal-avatar-crop .modal-sheet {
+    max-height: 88vh;
+    height: auto;
+    max-width: 480px;
+  }
+  #modal-avatar-crop .avatar-crop-conteudo {
+    flex: 0 1 auto;
+    justify-content: flex-start;
+    padding: 1.25rem 1.5rem 1rem;
+  }
+  #modal-avatar-crop .avatar-crop-palco {
+    max-width: 360px;
+  }
 }
 .avatar-crop-conteudo { padding: 1rem 1.25rem 0.75rem; text-align: center; }
 .avatar-crop-titulo { font-family: var(--font-display); font-size: 1.1rem; font-weight: 800; color: var(--texto); margin-bottom: 0.2rem; line-height: 1.3; }
