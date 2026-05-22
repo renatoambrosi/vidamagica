@@ -1349,12 +1349,14 @@ body.antessala-ativa {
 
 /* Desktop: a antessala precisa do position:fixed pelo iOS, mas no
    desktop os cards ficam estourando full-width porque `max-width: none`
-   acima removeu a constraint padrão de var(--content-max). Aqui
-   devolvemos as margens laterais centralizando o .views fixo via
-   left:50% + translateX(-50%), mantendo a trava de scroll. */
+   acima removeu a constraint padrão. Aqui devolvemos margem lateral
+   centralizando o .views fixo via left:50% + translateX(-50%), mantendo
+   a trava de scroll. Largura um pouco maior que --content-max porque
+   a antessala visualmente pede mais respiração (só 2 cards centralizados
+   no meio da viewport). */
 @media (min-width: 720px) {
   body.antessala-ativa .views {
-    max-width: var(--content-max);
+    max-width: 920px;
     left: 50%;
     right: auto;
     transform: translateX(-50%);
@@ -2619,31 +2621,32 @@ body.antessala-ativa {
    edição grande e confortável. Mantém as bordas arredondadas só no topo
    (mesmo estilo de sheet). Conteúdo centralizado verticalmente dentro
    do sheet. */
-#modal-avatar-crop .modal-sheet {
-  max-height: 95vh;
-  height: 95vh;
-}
-#modal-avatar-crop .avatar-crop-conteudo {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.6rem;
+/* Mobile (até 639px): o modal de crop OCUPA quase a viewport inteira pra
+   dar área grande de manipulação com o dedo. Desktop usa o padrão da
+   .modal-sheet (centralizado, max-height: 80vh) — fica fora deste @media. */
+@media (max-width: 639px) {
+  #modal-avatar-crop .modal-sheet {
+    max-height: 95vh;
+    height: 95vh;
+  }
+  #modal-avatar-crop .avatar-crop-conteudo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.6rem;
+  }
 }
 
-/* Desktop: o modal de crop volta a se comportar como modal normal
-   (sem ocupar 95vh) e tem palco menor pra que todos os controles
-   (slider + botões) fiquem visíveis sem rolar. As regras mobile acima
-   continuam intactas — só sobrescrevemos aqui pra desktop. */
+/* Desktop: palco menor e padding mais confortável. Sem mexer em max-height
+   (deixa o default .modal-sheet { max-height: 80vh } valer) e sem forçar
+   height — o conteúdo determina a altura, e todos os controles ficam
+   visíveis dentro do modal. */
 @media (min-width: 640px) {
   #modal-avatar-crop .modal-sheet {
-    max-height: 88vh;
-    height: auto;
     max-width: 480px;
   }
   #modal-avatar-crop .avatar-crop-conteudo {
-    flex: 0 1 auto;
-    justify-content: flex-start;
     padding: 1.25rem 1.5rem 1rem;
   }
   #modal-avatar-crop .avatar-crop-palco {
