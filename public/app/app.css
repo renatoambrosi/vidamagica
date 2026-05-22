@@ -2524,6 +2524,15 @@ body.antessala-ativa {
 .modal-sair-cancelar { display: block; width: 100%; padding: 0.75rem; background: transparent; border: none; color: var(--texto-mute); font-family: var(--font-ui); font-size: 0.85rem; font-weight: 600; margin-top: 0.5rem; margin-bottom: 0.5rem; cursor: pointer; transition: color 0.15s; }
 .modal-sair-cancelar:hover { color: var(--texto); }
 
+/* Modal de ações do avatar — reusa o esqueleto visual do modal-sair
+   (mesmas classes .modal-sair-titulo / .modal-sair-opcao / etc), só
+   adicionando o controle de "passo" via data-passo no container do
+   modal: cada .avatar-acao-passo aparece só quando o data-passo bate
+   com seu próprio atributo. JS faz o flip entre 'inicio' e 'origem'. */
+.avatar-acao-passo { display: none; }
+#modal-avatar-acao[data-passo="inicio"] .avatar-acao-passo[data-passo="inicio"],
+#modal-avatar-acao[data-passo="origem"] .avatar-acao-passo[data-passo="origem"] { display: block; }
+
 /* Modal de foto obrigatória — bloqueia entrar no chat com a Suellen
    antes da aluna adicionar uma foto de perfil. */
 .modal-foto-conteudo { padding: 1.5rem 1.5rem 0.5rem; text-align: center; }

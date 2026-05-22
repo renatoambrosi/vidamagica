@@ -381,10 +381,88 @@ async function uploadAvatar(file) {
   }
 }
 
+// ── MENU DE AÇÕES DO AVATAR ──
+// Em vez de abrir o file picker do iOS direto (que mostra um menu
+// confuso "Tirar foto / Biblioteca / Arquivos"), abrimos primeiro um
+// modal nosso: Trocar foto | Excluir foto. Se "Trocar foto", 2º passo:
+// Câmera (capture direto) ou Dispositivo (file picker tradicional).
+//
+// Importante: o file picker SEMPRE será do sistema. No iOS, o input sem
+// capture ainda mostra "Tirar foto / Biblioteca / Arquivos" — isso é
+// regra do iOS, não tem como desativar. O nosso menu filtra a intenção
+// antes; o input com capture="environment" abre câmera direto.
+function abrirModalAvatarAcao() {
+  const modal = document.getElementById('modal-avatar-acao');
+  if (!modal) return;
+  modal.dataset.passo = 'inicio';
+  abrirModal('modal-avatar-acao');
+}
+
 document.getElementById('perfil-avatar')?.addEventListener('click', () => {
+  // Se aluna AINDA não tem foto, vai direto pro picker (não faz sentido
+  // mostrar "Excluir foto" quando não tem o que excluir).
+  if (!usuario?.foto_url) {
+    document.getElementById('perfil-avatar-input')?.click();
+    return;
+  }
+  abrirModalAvatarAcao();
+});
+
+// Passo 1 → "Trocar foto" abre o passo 2 (Câmera/Dispositivo)
+document.getElementById('avatar-acao-trocar')?.addEventListener('click', () => {
+  const modal = document.getElementById('modal-avatar-acao');
+  if (modal) modal.dataset.passo = 'origem';
+});
+
+// Passo 1 → "Excluir foto" remove a foto (PUT foto_url:null). Confirma
+// com confirm() simples — se quiser modal próprio, dá pra evoluir depois.
+document.getElementById('avatar-acao-excluir')?.addEventListener('click', async () => {
+  if (!confirm('Excluir sua foto de perfil?')) return;
+  try {
+    const r = await fetch(`${API}/api/auth/perfil`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${VmSession.getAccess()}` },
+      body: JSON.stringify({ foto_url: null }),
+    });
+    if (!r.ok) throw new Error();
+    if (usuario) usuario.foto_url = null;
+    renderAvatarPerfil(null, usuario?.nome);
+    fecharModal('modal-avatar-acao');
+    toast('Foto removida', 'ok');
+  } catch (err) {
+    console.error('[avatar-excluir]', err);
+    toast('Não consegui remover sua foto', 'erro');
+  }
+});
+
+// Passo 2 → "Voltar" volta pro passo 1 (não fecha o modal)
+document.getElementById('avatar-origem-voltar')?.addEventListener('click', () => {
+  const modal = document.getElementById('modal-avatar-acao');
+  if (modal) modal.dataset.passo = 'inicio';
+});
+
+// Passo 2 → "Tirar foto agora" dispara o input com capture (vai direto
+// pra câmera, sem passar pelo menu do iOS)
+document.getElementById('avatar-origem-camera')?.addEventListener('click', () => {
+  fecharModal('modal-avatar-acao');
+  document.getElementById('perfil-avatar-input-camera')?.click();
+});
+
+// Passo 2 → "Galeria do dispositivo" dispara o input tradicional. No
+// iOS isso ainda abre o menu nativo ("Tirar foto / Biblioteca /
+// Arquivos") — limitação do iOS, sem workaround.
+document.getElementById('avatar-origem-dispositivo')?.addEventListener('click', () => {
+  fecharModal('modal-avatar-acao');
   document.getElementById('perfil-avatar-input')?.click();
 });
+
+// Ambos inputs (tradicional + câmera) entregam o file pro crop circular.
 document.getElementById('perfil-avatar-input')?.addEventListener('change', (e) => {
+  const file = e.target.files?.[0];
+  e.target.value = '';
+  if (file) abrirCropAvatar(file);
+});
+document.getElementById('perfil-avatar-input-camera')?.addEventListener('change', (e) => {
   const file = e.target.files?.[0];
   e.target.value = '';
   if (file) abrirCropAvatar(file);
