@@ -1401,6 +1401,79 @@ ul, ol { list-style: none; }
 .modal-acoes .cancel { background: transparent; color: var(--texto-mute); border: 1px solid var(--vidro-borda); }
 .modal-acoes .cancel:hover { background: var(--vidro); }
 
+/* ── LIGHTBOX DA FOTO DA ALUNA ──
+   Reusa o overlay/abrir do padrão (.modal-overlay + .aberto). A caixa
+   da foto tem borda branca grossa e cantos arredondados — parece uma
+   foto emoldurada centralizada. Pinch-zoom é só com os dedos (touch),
+   gerenciado pelo JS via transform: scale + translate na .modal-foto-img.
+   touch-action: none no palco impede o scroll/zoom nativo da página
+   enquanto a aluna pinça. */
+#modal-foto-lightbox.aberto { display: flex; }
+.modal-foto-fechar {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid var(--vidro-borda-hi);
+  color: var(--texto);
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--sombra-suave);
+  transition: background 0.15s, transform 0.12s;
+}
+.modal-foto-fechar:hover { background: #fff; }
+.modal-foto-fechar:active { transform: scale(0.94); }
+.modal-foto-box {
+  background: #fff;
+  border: 6px solid #fff;
+  border-radius: var(--r-lg);
+  box-shadow: var(--sombra-forte);
+  max-width: min(92vw, 540px);
+  max-height: min(92vh, 720px);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-foto-palco {
+  width: min(86vw, 520px);
+  height: min(86vw, 520px);
+  max-height: min(86vh, 700px);
+  background: #f4ede0;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  position: relative;
+}
+.modal-foto-img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: translate(-50%, -50%) scale(1);
+  transform-origin: center center;
+  will-change: transform;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+/* Pista visual: cursor "zoom-in" nas fotos da aluna que abrem o lightbox */
+.conv-avatar.foto-ampliavel,
+.chat-header-avatar.foto-ampliavel,
+.painel-foto.foto-ampliavel,
+.msg-wrap.aluna .msg-avatar.foto-ampliavel { cursor: zoom-in; }
+
 .loading-dots {
   display: flex; gap: 6px; align-items: center; justify-content: center;
   padding: 3rem;
@@ -1600,6 +1673,19 @@ ul, ol { list-style: none; }
     <div class="modal-acoes">
       <button class="cancel" id="modal-cancelar">Cancelar</button>
       <button class="ok" id="modal-ok">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX DA FOTO DA ALUNA — mesmo padrão .modal-overlay/.modal-box do
+     sistema, com .modal-foto-box pra envolver a imagem com borda branca
+     e cantos arredondados. Pinch-zoom só com os dedos (sem botão de zoom).
+     X no canto pra fechar. Clicar no overlay também fecha. -->
+<div class="modal-overlay" id="modal-foto-lightbox">
+  <button type="button" class="modal-foto-fechar" id="modal-foto-fechar" aria-label="Fechar">✕</button>
+  <div class="modal-foto-box">
+    <div class="modal-foto-palco" id="modal-foto-palco">
+      <img class="modal-foto-img" id="modal-foto-img" alt="" draggable="false">
     </div>
   </div>
 </div>
@@ -1900,9 +1986,15 @@ function itemHtml(c) {
   const naoLidaCls = naoLida ? ' tem-nao-lida' : '';
   const tagCanal = `<span class="conv-canal-tag${tipo==='suporte'?' suporte':''}">${canalLabel(tipo)}</span>`;
 
+  // Avatar fica clicável (foto-ampliavel) somente se a aluna tem foto_url.
+  // Clique abre o lightbox via delegated handler em capture: true (não
+  // dispara abrirConversa porque pára a propagação antes do bubble).
+  const avatarCls = c.foto_url ? 'conv-avatar foto-ampliavel' : 'conv-avatar';
+  const avatarUrlAttr = c.foto_url ? ` data-foto-url="${esc(c.foto_url)}"` : '';
+
   return `
     <div class="conv-item${ativaCls}${priorCls}${naoLidaCls}" data-id="${c.id}">
-      <div class="conv-avatar">
+      <div class="${avatarCls}"${avatarUrlAttr}>
         ${fotoHtml}
         <div class="conv-canal-mark"><img src="${canalImg(tipo)}" onerror="this.style.display='none'"></div>
         ${c.tier === 'prioritario' ? '<div class="conv-prior-mark">⭐</div>' : ''}
@@ -2055,7 +2147,7 @@ function renderChat() {
       <button class="chat-header-back" id="btn-back-chat">
         <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <div class="chat-header-avatar" id="header-avatar">
+      <div class="chat-header-avatar${c.foto_url ? ' foto-ampliavel' : ''}" id="header-avatar"${c.foto_url ? ` data-foto-url="${esc(c.foto_url)}"` : ''}>
         ${fotoHtml}
         <div class="chat-header-canal-mark"><img src="${canalImg(tipo)}" onerror="this.style.display='none'"></div>
       </div>
@@ -2222,6 +2314,11 @@ function criarMsgAvatarAtend(msg, isAluna) {
   if (isAluna) {
     img.src = convAtual?.foto_url || '';
     img.alt = convAtual?.nome || 'Aluna';
+    // Avatar da aluna abre lightbox ao clicar. Suellen/Equipe não.
+    if (convAtual?.foto_url) {
+      div.classList.add('foto-ampliavel');
+      div.dataset.fotoUrl = convAtual.foto_url;
+    }
   } else {
     const ident = msg.identidade || 'suellen';
     img.src = ident === 'equipe' ? '/assets/logo-equipe.png' : '/assets/avatar-suellen.jpg';
@@ -2730,7 +2827,7 @@ function carregarPainel() {
 
   scroll.innerHTML = `
     <div class="painel-hero">
-      <div class="painel-foto">${fotoHtml}</div>
+      <div class="painel-foto${c.foto_url ? ' foto-ampliavel' : ''}"${c.foto_url ? ` data-foto-url="${esc(c.foto_url)}"` : ''}>${fotoHtml}</div>
       <div class="painel-nome">${esc(c.nome || '—')}</div>
       <div class="painel-tel">${esc(c.telefone_formatado || c.email || '—')}</div>
       <div class="painel-tags">
@@ -3649,6 +3746,107 @@ const metodoAtendimento = (function(){
   });
 
   return { carregar, revogar, abrirLiberar };
+})();
+
+// ── LIGHTBOX DA FOTO DA ALUNA ──
+// Modal central com borda branca. Pinch-zoom só com os dedos. X pra fechar.
+// Reusa o overlay padrão (.modal-overlay.aberto). Aplicado em QUALQUER foto
+// da aluna no painel: lista de conversas, header do chat, painel lateral,
+// avatar grande das mensagens. Os elementos clicáveis recebem a classe
+// `.foto-ampliavel` + `data-foto-url` quando são renderizados.
+(function setupFotoLightbox() {
+  const overlay = document.getElementById('modal-foto-lightbox');
+  const palco = document.getElementById('modal-foto-palco');
+  const img = document.getElementById('modal-foto-img');
+  const btnFechar = document.getElementById('modal-foto-fechar');
+  if (!overlay || !palco || !img || !btnFechar) return;
+
+  // Estado do zoom/pan — escala 1.0 (cabe inteiro) até 4.0 (pinçado).
+  let scale = 1, tx = 0, ty = 0;
+  let pinchInicial = 0, scaleInicial = 1;
+  let arrastando = false, lastX = 0, lastY = 0;
+
+  function aplicar() {
+    img.style.transform =
+      `translate(-50%, -50%) translate(${tx}px, ${ty}px) scale(${scale})`;
+  }
+  function resetar() { scale = 1; tx = 0; ty = 0; aplicar(); }
+
+  function abrir(url) {
+    if (!url) return;
+    img.src = url;
+    resetar();
+    overlay.classList.add('aberto');
+  }
+  function fechar() {
+    overlay.classList.remove('aberto');
+    img.src = '';
+    resetar();
+  }
+  window.abrirFotoLightbox = abrir;
+
+  btnFechar.addEventListener('click', fechar);
+  overlay.addEventListener('click', (e) => {
+    // Clique no overlay (fora da foto) fecha. Cliques dentro da
+    // .modal-foto-box não devem propagar pra cá.
+    if (e.target === overlay) fechar();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.classList.contains('aberto')) fechar();
+  });
+
+  // ── Pinch-to-zoom + pan ──
+  // 2 dedos: calcula razão de distância pra ajustar escala (clamp 1.0–4.0).
+  // 1 dedo (só quando scale > 1): pan livre. Se o zoom voltar pra ≤ 1.0 ao
+  // soltar, snapa pra escala 1 e re-centraliza.
+  palco.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      pinchInicial = Math.hypot(dx, dy);
+      scaleInicial = scale;
+      arrastando = false;
+    } else if (e.touches.length === 1 && scale > 1) {
+      arrastando = true;
+      lastX = e.touches[0].clientX;
+      lastY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+
+  palco.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && pinchInicial > 0) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      scale = Math.max(1, Math.min(4, scaleInicial * (dist / pinchInicial)));
+      aplicar();
+    } else if (e.touches.length === 1 && arrastando) {
+      tx += (e.touches[0].clientX - lastX);
+      ty += (e.touches[0].clientY - lastY);
+      lastX = e.touches[0].clientX;
+      lastY = e.touches[0].clientY;
+      aplicar();
+    }
+  }, { passive: true });
+
+  palco.addEventListener('touchend', () => {
+    pinchInicial = 0;
+    arrastando = false;
+    if (scale <= 1.01) { scale = 1; tx = 0; ty = 0; aplicar(); }
+  });
+
+  // ── Captura clique em QUALQUER foto da aluna marcada como ampliável ──
+  // Usa capture:true pra rodar ANTES do bubble — assim conv-item não dispara
+  // abrirConversa quando a aluna clica especificamente no avatar.
+  document.addEventListener('click', (e) => {
+    const alvo = e.target.closest('.foto-ampliavel');
+    if (!alvo) return;
+    const url = alvo.dataset.fotoUrl;
+    if (!url) return;
+    e.preventDefault();
+    e.stopPropagation();
+    abrir(url);
+  }, true);
 })();
 
 </script>
