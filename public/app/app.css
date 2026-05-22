@@ -2532,6 +2532,59 @@ body.antessala-ativa {
   color: var(--ouro-claro);
 }
 
+/* Modal de confirmação genérica — substitui o confirm() nativo do
+   navegador. Título + sub + 2 botões lado a lado. Botão "excluir" usa
+   o vermelho-terra do .perfil-item-danger (#C66262) pra indicar ação
+   destrutiva sem ser agressivo. */
+.modal-confirm-conteudo { padding: 1.25rem 1.5rem 0.6rem; text-align: center; }
+.modal-confirm-titulo {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--texto);
+  margin-bottom: 0.45rem;
+}
+.modal-confirm-sub {
+  font-size: 0.82rem;
+  color: var(--texto-suave);
+  line-height: 1.5;
+  margin-bottom: 1.1rem;
+}
+.modal-confirm-acoes {
+  display: flex;
+  gap: 0.6rem;
+  padding-bottom: 0.4rem;
+}
+.modal-confirm-btn {
+  flex: 1;
+  padding: 0.85rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.12s, background 0.15s, border-color 0.15s;
+}
+.modal-confirm-btn.cancelar {
+  background: transparent;
+  border: 1px solid var(--vidro-borda);
+  color: var(--texto-suave);
+}
+.modal-confirm-btn.cancelar:hover {
+  color: var(--texto);
+  border-color: var(--vidro-borda-hi);
+  background: var(--vidro);
+}
+.modal-confirm-btn.excluir {
+  background: #C66262;
+  border: 1px solid #C66262;
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(198,98,98,0.32);
+}
+.modal-confirm-btn.excluir:hover { opacity: 0.93; transform: translateY(-1px); }
+.modal-confirm-btn:active { transform: scale(0.99); }
+
 /* Modal de foto obrigatória — bloqueia entrar no chat com a Suellen
    antes da aluna adicionar uma foto de perfil. */
 .modal-foto-conteudo { padding: 1.5rem 1.5rem 0.5rem; text-align: center; }

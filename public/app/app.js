@@ -401,8 +401,19 @@ document.getElementById('avatar-acao-trocar')?.addEventListener('click', () => {
   document.getElementById('perfil-avatar-input')?.click();
 });
 
-document.getElementById('avatar-acao-excluir')?.addEventListener('click', async () => {
-  if (!confirm('Excluir sua foto de perfil?')) return;
+// "Excluir foto" no menu principal abre o modal de confirmação. O
+// confirm() nativo do navegador (com URL feia "vidamagica diz...") foi
+// trocado pelo modal-avatar-excluir-confirm — modal-sheet padrão.
+document.getElementById('avatar-acao-excluir')?.addEventListener('click', () => {
+  fecharModal('modal-avatar-acao');
+  abrirModal('modal-avatar-excluir-confirm');
+});
+
+// Confirmação dispara o PUT foto_url:null. Em erro mantém modal aberto
+// e mostra toast — aluna pode tentar de novo sem reabrir o menu.
+document.getElementById('avatar-excluir-confirmar')?.addEventListener('click', async () => {
+  const btn = document.getElementById('avatar-excluir-confirmar');
+  if (btn) btn.disabled = true;
   try {
     const r = await fetch(`${API}/api/auth/perfil`, {
       method: 'PUT',
@@ -412,11 +423,13 @@ document.getElementById('avatar-acao-excluir')?.addEventListener('click', async 
     if (!r.ok) throw new Error();
     if (usuario) usuario.foto_url = null;
     renderAvatarPerfil(null, usuario?.nome);
-    fecharModal('modal-avatar-acao');
+    fecharModal('modal-avatar-excluir-confirm');
     toast('Foto removida', 'ok');
   } catch (err) {
     console.error('[avatar-excluir]', err);
     toast('Não consegui remover sua foto', 'erro');
+  } finally {
+    if (btn) btn.disabled = false;
   }
 });
 

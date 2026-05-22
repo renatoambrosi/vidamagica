@@ -1016,8 +1016,8 @@
   <!-- MODAL DE AÇÕES DO AVATAR — antes de abrir o file picker, mostra
        menuzinho com Trocar foto / Excluir foto. "Trocar foto" dispara o
        file picker do sistema (que no iOS mostra "Tirar foto / Biblioteca
-       / Arquivos" — controlado pelo iOS). "Excluir foto" remove via
-       PUT /api/auth/perfil foto_url:null.
+       / Arquivos" — controlado pelo iOS). "Excluir foto" abre o modal
+       de confirmação abaixo (modal-avatar-excluir-confirm).
 
        Ícones em SVG stroke dourado seguindo o padrão de .perfil-item-icone
        (não usar emoji frio aqui — ver feedback_sem_emoji_em_icones). -->
@@ -1053,6 +1053,25 @@
           </div>
         </button>
         <button type="button" class="modal-sair-cancelar" data-close>Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRMAÇÃO DE EXCLUSÃO DA FOTO — substitui o confirm() nativo do
+       browser (que mostra a URL feia e fora da identidade). Modal-sheet
+       padrão, título + 2 botões lado a lado: Cancelar (neutro) e Excluir
+       (destrutivo, tom avermelhado já presente em .perfil-item-danger). -->
+  <div class="modal" id="modal-avatar-excluir-confirm" aria-hidden="true">
+    <div class="modal-overlay" data-close></div>
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-confirm-conteudo">
+        <h3 class="modal-confirm-titulo">Excluir sua foto?</h3>
+        <p class="modal-confirm-sub">Você pode adicionar uma nova depois quando quiser.</p>
+        <div class="modal-confirm-acoes">
+          <button type="button" class="modal-confirm-btn cancelar" data-close>Cancelar</button>
+          <button type="button" class="modal-confirm-btn excluir" id="avatar-excluir-confirmar">Excluir</button>
+        </div>
       </div>
     </div>
   </div>
