@@ -606,16 +606,21 @@ ul, ol { list-style: none; }
 
 /* ── AVATAR GRANDE NA PRIMEIRA MSG DO BLOCO ──
    No painel de atendimento, aluna fica à esquerda e Suellen à direita
-   (inverso do app). Avatar 40px sai do lado correspondente.
+   (inverso do app). Avatar 48px sai do lado correspondente.
    Todos os msg-wraps reservam o espaço do lado do avatar (margin) pra
-   manter a coluna da bolha alinhada entre primeira e subsequentes. */
-.chat-msgs .msg-wrap.aluna   { margin-left: 48px; }
-.chat-msgs .msg-wrap.suellen { margin-right: 48px; }
+   manter a coluna da bolha alinhada entre primeira e subsequentes.
+
+   Alinhamento vertical: `bottom: 0` ancora o avatar na BASE do msg-wrap
+   (estilo WhatsApp/iMessage). Pra mensagens curtas, o avatar fica
+   visualmente "encostado" no chão da bolha. Pra mensagens longas, ele
+   acompanha o canto inferior — mesma regra do app. */
+.chat-msgs .msg-wrap.aluna   { margin-left: 56px; }
+.chat-msgs .msg-wrap.suellen { margin-right: 56px; }
 .msg-avatar {
   position: absolute;
-  top: 0;
-  width: 40px;
-  height: 40px;
+  bottom: 0;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   overflow: hidden;
   background: var(--vidro);
@@ -629,8 +634,8 @@ ul, ol { list-style: none; }
   object-fit: cover;
   display: block;
 }
-.msg-wrap.aluna   .msg-avatar { left: -48px; }
-.msg-wrap.suellen .msg-avatar { right: -48px; }
+.msg-wrap.aluna   .msg-avatar { left: -56px; }
+.msg-wrap.suellen .msg-avatar { right: -56px; }
 /* Respiro vertical entre blocos diferentes (remetente trocou). */
 .msg-wrap.primeira-do-bloco { margin-top: 0.4rem; }
 .chat-msgs > .msg-wrap.primeira-do-bloco:first-child { margin-top: 0; }
