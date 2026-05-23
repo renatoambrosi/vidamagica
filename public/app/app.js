@@ -629,13 +629,19 @@ document.getElementById('avatar-crop-salvar')?.addEventListener('click', async (
 });
 
 function gerarCropBlob() {
-  // O palco é quadrado (palcoSize × palcoSize) e o canvas final é 512×512.
-  // A imagem está posicionada em (imgLeftPalco, imgTopPalco) com tamanho
-  // (escalaW, escalaH) em coordenadas do palco. Como agora o modo é
-  // CONTAIN, a imagem pode ser MENOR que o palco — desenhar com posição
-  // e tamanho exatos preserva o branco em volta (fillRect inicial cobre
-  // toda área não desenhada). NÃO recortamos+esticamos como antes; só
-  // desenhamos a imagem inteira no lugar certo dentro do canvas 512×512.
+  // O palco é quadrado (palcoSize × palcoSize) MAS a bolinha visível (que
+  // a aluna vê no editor) é MENOR que o palco — o radial-gradient padrão
+  // da máscara usa farthest-corner @ 50%, o que dá raio = palco/2 * √2/2.
+  // Logo: bolinha_diametro = palco * √2/2 ≈ 0.7071 * palco.
+  //
+  // O que a aluna vê na bolinha é EXATAMENTE o que vai no avatar. Pra
+  // garantir isso, salvamos só o quadrado que circunscreve a bolinha
+  // (não o palco inteiro), aplicamos o clip circular dentro dele, e
+  // deixamos área não-coberta TRANSPARENTE — o fundo creme do próprio
+  // avatar (.perfil-avatar-miolo) aparece atrás quando renderizado.
+  //
+  // ⚠️ SE o radial-gradient da máscara mudar, ATUALIZAR BOLINHA_RATIO.
+  const BOLINHA_RATIO = Math.SQRT1_2; // √2/2 ≈ 0.7071
   return new Promise((resolve, reject) => {
     const naturalW = cropState.imgNaturalW;
     const naturalH = cropState.imgNaturalH;
@@ -645,36 +651,46 @@ function gerarCropBlob() {
     const imgLeftPalco = cropState.palcoSize / 2 + cropState.tx - escalaW / 2;
     const imgTopPalco  = cropState.palcoSize / 2 + cropState.ty - escalaH / 2;
 
+    // Tamanho e posição da bolinha (em coords do palco):
+    const bolinhaSize = cropState.palcoSize * BOLINHA_RATIO;
+    const bolinhaLeft = (cropState.palcoSize - bolinhaSize) / 2;
+    const bolinhaTop  = (cropState.palcoSize - bolinhaSize) / 2;
+
     const OUT = 512;
     const canvas = document.createElement('canvas');
     canvas.width = OUT;
     canvas.height = OUT;
     const ctx = canvas.getContext('2d');
-    // Fundo branco: cobre área fora da imagem (modo contain) e também
-    // o caso de PNG com transparência exportado como JPEG.
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, OUT, OUT);
 
-    // Mapeia palco-coords pro canvas (escala uniforme palcoSize → 512).
-    const escalaCanvas = OUT / cropState.palcoSize;
-    const dx = imgLeftPalco * escalaCanvas;
-    const dy = imgTopPalco  * escalaCanvas;
+    // Clip circular — o que ficar fora do círculo no canvas é descartado
+    // (transparente no PNG). Como o canvas 512×512 representa a bolinha
+    // inteira, o círculo de raio OUT/2 = a borda da bolinha.
+    ctx.beginPath();
+    ctx.arc(OUT / 2, OUT / 2, OUT / 2, 0, Math.PI * 2);
+    ctx.clip();
+
+    // Mapeia palco-coords pro canvas, mas usando bolinhaSize como base:
+    // o canvas inteiro (512px) representa a BOLINHA inteira, não o palco.
+    const escalaCanvas = OUT / bolinhaSize;
+    const dx = (imgLeftPalco - bolinhaLeft) * escalaCanvas;
+    const dy = (imgTopPalco  - bolinhaTop)  * escalaCanvas;
     const dw = escalaW * escalaCanvas;
     const dh = escalaH * escalaCanvas;
 
     const fonte = document.getElementById('avatar-crop-img');
-    // Desenha a imagem INTEIRA (0,0,naturalW,naturalH) no lugar certo do
-    // canvas — partes fora do canvas são cortadas automaticamente pelo
-    // próprio drawImage, e o que sobra fora da imagem fica branco.
+    // Desenha a imagem inteira no lugar certo. O clip circular acima
+    // garante que pixels fora do círculo são descartados, e pixels onde
+    // a imagem não chega ficam TRANSPARENTES (sem fillRect branco).
     ctx.drawImage(fonte, 0, 0, naturalW, naturalH, dx, dy, dw, dh);
 
+    // Salva como PNG pra preservar a transparência. Cloudinary aceita PNG
+    // com alpha e o avatar (border-radius:50% + bg vidro) mostra o creme
+    // atrás onde for transparente.
     canvas.toBlob((blob) => {
       if (!blob) return reject(new Error('toBlob falhou'));
-      // Nome amigável + tipo conforme original (best-effort; .name é
-      // read-only em alguns browsers, mas fd.append usa filename explícito).
-      try { blob.name = 'avatar.' + (cropState.fileType === 'image/png' ? 'png' : 'jpg'); } catch {}
+      try { blob.name = 'avatar.png'; } catch {}
       resolve(blob);
-    }, cropState.fileType, 0.92);
+    }, 'image/png');
   });
 }
 
