@@ -67,8 +67,6 @@ async function initCore() {
         percentual_prosperidade INTEGER DEFAULT 0,
         sementes INTEGER DEFAULT 0,
         estagio_arvore VARCHAR(30) DEFAULT 'semente',
-        reset_token TEXT,
-        reset_token_expira TIMESTAMPTZ,
         criado_em TIMESTAMPTZ DEFAULT NOW(),
         atualizado_em TIMESTAMPTZ DEFAULT NOW()
       )
@@ -79,8 +77,12 @@ async function initCore() {
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS email_verificado BOOLEAN DEFAULT FALSE`);
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_hash TEXT`);
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_url TEXT`);
-    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS reset_token TEXT`);
-    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS reset_token_expira TIMESTAMPTZ`);
+    // Limpeza de legado (2026-05-23): o fluxo antigo de reset de senha
+    // gravava token + expira em usuarios. Foi substituído pelo fluxo
+    // zap-first com magic token em otp_tokens (tipo='reset_senha').
+    // Ninguém lê/escreve essas colunas mais — DROP idempotente.
+    await c.query(`ALTER TABLE usuarios DROP COLUMN IF EXISTS reset_token`);
+    await c.query(`ALTER TABLE usuarios DROP COLUMN IF EXISTS reset_token_expira`);
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS origem_cadastro VARCHAR(30)`);
     // valores possíveis: 'kiwify', 'teste', 'cadastro_direto', 'manual_admin', 'whatsapp', null
 
