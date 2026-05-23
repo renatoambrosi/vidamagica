@@ -359,14 +359,13 @@
     <div class="divisor"></div>
     <div class="msg erro" id="erro-esqueci"></div>
 
-    <!-- ESTADO INICIAL: form -->
+    <!-- ESTADO INICIAL: form. Estrutura do input idêntica ao #input-tel-magic
+         pra VmTelInput.aplicar montar o country select corretamente sozinho.
+         NÃO envolver em pais-tel-wrap nem pré-criar pais-select-wrap. -->
     <div id="esqueci-form">
       <div class="campo">
-        <label>WhatsApp</label>
-        <div class="pais-tel-wrap">
-          <div class="pais-select-wrap"></div>
-          <div class="input-wrap" style="flex:1"><input id="input-tel-esqueci" type="tel" placeholder="WhatsApp" autocomplete="tel"></div>
-        </div>
+        <label>Seu WhatsApp</label>
+        <div class="input-wrap"><input id="input-tel-esqueci" type="tel" placeholder="WhatsApp" autocomplete="tel"></div>
       </div>
       <button class="btn-cta" id="btn-esqueci" onclick="solicitarRecuperacao()"><span>Solicitar pelo WhatsApp</span><span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span></button>
     </div>

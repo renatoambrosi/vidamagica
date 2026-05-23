@@ -170,6 +170,7 @@ router.post('/evolution', async (req, res) => {
       console.log('[webhook-evolution] sem token válido — ignorando (conversa humana)');
       return;
     }
+    console.log(`[webhook-evolution] token ${sol.token} encontrado | intent=${sol.intent} | tel_token=${sol.telefone} | usado=${sol.usado}`);
 
     // ── Validar telefone bate ───────────────────────────────
     // Token foi gerado pra um telefone específico (digitado no /auth).
@@ -202,11 +203,13 @@ router.post('/evolution', async (req, res) => {
     // Conta inexistente: silencioso. Se ela mandou zap pedindo reset mas
     // não tem conta, nada acontece — política de não confirmar existência.
     if (sol.intent === 'reset_senha') {
+      console.log(`[webhook-evolution] entrou no branch reset_senha pra ${telefoneFinal}`);
       const matchReset = await buscarUsuarioPorTelefoneComOrigem(telefoneFinal);
       if (!matchReset || !matchReset.usuario) {
         console.log(`[webhook-evolution] reset_senha sem conta pra ${telefoneFinal} — ignorando`);
         return;
       }
+      console.log(`[webhook-evolution] reset_senha achou usuario id=${matchReset.usuario.id} origem=${matchReset.origem}`);
       const usuarioReset = matchReset.usuario;
       // Mesmas proteções do branch normal (banimento, arquivada-por-admin)
       const banidoR = await verificarBanimento({ telefone: telefoneFinal });
