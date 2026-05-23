@@ -1356,7 +1356,7 @@ body.antessala-ativa {
    no meio da viewport). */
 @media (min-width: 720px) {
   body.antessala-ativa .views {
-    max-width: 920px;
+    max-width: 1200px;
     left: 50%;
     right: auto;
     transform: translateX(-50%);
@@ -2638,21 +2638,45 @@ body.antessala-ativa {
   }
 }
 
-/* Desktop: palco menor e padding mais confortável. Sem mexer em max-height
-   (deixa o default .modal-sheet { max-height: 80vh } valer) e sem forçar
-   height — o conteúdo determina a altura, e todos os controles ficam
-   visíveis dentro do modal. */
+/* Desktop: palco bem menor, padding confortável, todos os controles
+   garantidos dentro do modal sem rolar. Note que NÃO setamos height —
+   só max-width — pra deixar o conteúdo determinar a altura, junto com
+   max-height: 80vh herdado do .modal-sheet do sistema. */
 @media (min-width: 640px) {
   #modal-avatar-crop .modal-sheet {
-    max-width: 480px;
+    max-width: 460px;
   }
   #modal-avatar-crop .avatar-crop-conteudo {
-    padding: 1.25rem 1.5rem 1rem;
+    padding: 1.5rem 1.5rem 1.25rem;
   }
   #modal-avatar-crop .avatar-crop-palco {
-    max-width: 360px;
+    max-width: 320px;
   }
 }
+
+/* X de fechar no canto superior direito do modal de crop — substitui o
+   botão "Cancelar" de texto. SVG dourado claro com fundo de vidro suave.
+   Posicionado absoluto no canto do .modal-sheet (acima do .modal-handle). */
+.avatar-crop-fechar {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.6rem;
+  z-index: 3;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
+  color: var(--texto-suave);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.12s;
+}
+.avatar-crop-fechar:hover { background: var(--vidro-forte); color: var(--texto); }
+.avatar-crop-fechar:active { transform: scale(0.94); }
+.avatar-crop-fechar svg { width: 18px; height: 18px; }
 .avatar-crop-conteudo { padding: 1rem 1.25rem 0.75rem; text-align: center; }
 .avatar-crop-titulo { font-family: var(--font-display); font-size: 1.1rem; font-weight: 800; color: var(--texto); margin-bottom: 0.2rem; line-height: 1.3; }
 .avatar-crop-sub { font-size: 0.82rem; color: var(--texto-suave); line-height: 1.5; margin-bottom: 0.3rem; }
@@ -2761,8 +2785,9 @@ body.antessala-ativa {
 }
 .avatar-crop-cancelar:hover { color: var(--texto); border-color: var(--vidro-borda-hi); background: var(--vidro); }
 .avatar-crop-salvar {
-  flex: 2;
-  padding: 0.85rem;
+  flex: 1;
+  width: 100%;
+  padding: 0.95rem;
   background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
   color: #fff;
   border: none;

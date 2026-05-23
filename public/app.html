@@ -985,10 +985,19 @@
   <!-- MODAL DE CROP DO AVATAR — máscara circular pra aluna ajustar foto.
        Fluxo: file picker → modal abre com a imagem → aluna arrasta (pan) e
        usa o slider de zoom pra enquadrar o rosto no círculo → confirma →
-       canvas gera um blob 512×512 já cropado → upload pro Cloudinary. -->
+       canvas gera um blob 512×512 já cropado → upload pro Cloudinary.
+
+       X no canto pra fechar (substitui o botão "Cancelar" de texto que
+       estava embaixo). Único botão de ação: "Usar esta foto" full width. -->
   <div class="modal" id="modal-avatar-crop" aria-hidden="true">
     <div class="modal-overlay" data-close></div>
     <div class="modal-sheet">
+      <button type="button" class="avatar-crop-fechar" data-close aria-label="Fechar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
       <div class="modal-handle"></div>
       <div class="avatar-crop-conteudo">
         <h3 class="avatar-crop-titulo">Centralize seu rosto</h3>
@@ -1006,7 +1015,6 @@
         </div>
 
         <div class="avatar-crop-acoes">
-          <button type="button" class="avatar-crop-cancelar" data-close>Cancelar</button>
           <button type="button" class="avatar-crop-salvar" id="avatar-crop-salvar">Usar esta foto</button>
         </div>
       </div>
