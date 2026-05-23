@@ -347,28 +347,60 @@
   </style>
 
   <!-- ESQUECI -->
+  <!-- RECUPERAR SENHA — fluxo zap-first (mesma regra do "Solicite entrar
+       pelo seu WhatsApp"): a aluna SEMPRE inicia a conversa. Backend só
+       prepara o token; a mensagem de recuperação só sai DEPOIS que o
+       webhook recebe o zap dela.
+       3 estados: form (input + botão) → aguardando (timer + polling) →
+       enviado (recebemos!). -->
   <div class="tela" id="t-esqueci">
     <p class="titulo">Recuperar <em>acesso</em></p>
-    <p class="subtitulo" id="esqueci-subtitulo">Informe seu WhatsApp ou e-mail.<br>Enviaremos um link pelo WhatsApp.</p>
+    <p class="subtitulo" id="esqueci-subtitulo">Confirme seu WhatsApp.<br>Vamos te ajudar a redefinir sua senha por lá.</p>
     <div class="divisor"></div>
     <div class="msg erro" id="erro-esqueci"></div>
 
     <!-- ESTADO INICIAL: form -->
     <div id="esqueci-form">
-      <div class="campo"><label>WhatsApp ou e-mail</label><div class="input-wrap"><input id="input-esqueci" type="text" placeholder="(11) 99999-9999 ou seu@email.com"></div></div>
-      <button class="btn-cta" id="btn-esqueci" onclick="solicitarRecuperacao()"><span>Enviar link pelo WhatsApp</span><span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span></button>
+      <div class="campo">
+        <label>WhatsApp</label>
+        <div class="pais-tel-wrap">
+          <div class="pais-select-wrap"></div>
+          <div class="input-wrap" style="flex:1"><input id="input-tel-esqueci" type="tel" placeholder="WhatsApp" autocomplete="tel"></div>
+        </div>
+      </div>
+      <button class="btn-cta" id="btn-esqueci" onclick="solicitarRecuperacao()"><span>Solicitar pelo WhatsApp</span><span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span></button>
     </div>
 
-    <!-- ESTADO SUCESSO: confirmação grande -->
-    <div id="esqueci-sucesso" style="display:none;text-align:center;padding:1.5rem 0 .5rem">
-      <div style="width:64px;height:64px;border-radius:50%;background:rgba(200,146,42,0.12);border:1px solid var(--border);display:inline-flex;align-items:center;justify-content:center;margin-bottom:1.1rem">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--gold-light)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+    <!-- ESTADO AGUARDANDO: aluna abriu wa.me, agora esperamos o zap chegar -->
+    <div id="esqueci-aguardando" style="display:none;text-align:center;padding:1.5rem 0 .5rem">
+      <div style="width:80px;height:80px;border-radius:50%;background:rgba(76,175,80,0.12);border:1px solid rgba(76,175,80,0.28);display:inline-flex;align-items:center;justify-content:center;margin:0 auto 1.4rem;animation:pulse-wa 2s ease-in-out infinite">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#7DD87E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
         </svg>
       </div>
-      <p style="font-family:var(--font-h);font-size:1.05rem;color:var(--gold-light);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:0 0 .8rem">Pronto!</p>
-      <p style="font-family:var(--font-b);font-size:.88rem;color:var(--pearl);line-height:1.6;margin:0 0 .4rem;opacity:.9">Se encontrarmos sua conta, você receberá um link de recuperação <strong style="color:var(--gold-light)">pelo WhatsApp</strong>.</p>
-      <p style="font-family:var(--font-b);font-size:.75rem;color:var(--muted);margin:1rem 0 0;line-height:1.5">O link expira em 30 minutos.<br>Verifique também o WhatsApp Business.</p>
+      <p style="font-family:var(--font-h);font-size:1.1rem;color:#7DD87E;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 .9rem">Te esperamos no WhatsApp</p>
+      <p style="font-family:var(--font-b);font-size:.92rem;color:var(--pearl);line-height:1.65;margin:0 0 1.5rem;opacity:.92">Assim que recebermos sua mensagem, te mandamos o link pra criar a nova senha.</p>
+
+      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:14px;padding:1.1rem 1rem;margin:0 0 1.3rem">
+        <div style="font-family:var(--font-b);font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:.35rem">Tempo restante</div>
+        <div id="esqueci-aguardando-timer" style="font-family:var(--font-h);font-size:2.2rem;font-weight:700;color:var(--gold-light);letter-spacing:0.04em;line-height:1">5:00</div>
+      </div>
+
+      <button class="btn-cta" onclick="solicitarRecuperacaoNovamente()" type="button" id="btn-esqueci-novamente">
+        <span>Solicitar novamente</span>
+        <span class="btn-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </button>
+    </div>
+
+    <!-- ESTADO ENVIADO: webhook recebeu o zap, link enfileirado no gateway -->
+    <div id="esqueci-enviado" style="display:none;text-align:center;padding:1.5rem 0 .5rem">
+      <div style="width:80px;height:80px;border-radius:50%;background:radial-gradient(circle, rgba(232,201,122,0.25) 0%, rgba(200,146,42,0.05) 70%);border:1px solid var(--gold);display:inline-flex;align-items:center;justify-content:center;margin-bottom:1.2rem;animation:glow-gold 1.4s ease-in-out infinite">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--gold-light)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <p style="font-family:var(--font-h);font-size:1.15rem;color:var(--gold-light);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 .9rem">Recebemos sua mensagem ✨</p>
+      <p style="font-family:var(--font-b);font-size:.9rem;color:var(--pearl);line-height:1.65;margin:0;opacity:.92">Em instantes você recebe o link de recuperação no WhatsApp.<br>Toque no caminho que vai chegar pra criar sua nova senha.</p>
     </div>
 
     <div class="card-foot"><button onclick="irTela('t-login');resetEsqueciTela()">← Voltar ao login</button></div>
@@ -1108,33 +1140,156 @@ async function fazerLogin(){
   finally { resetBtn('btn-login','Entrar'); }
 }
 
-// ── ESQUECI SENHA ─────────────────────────────────────────────────────────────
+// ── ESQUECI SENHA — fluxo zap-first ──────────────────────────────────────────
+// Espelho do /preparar-acesso. A aluna inicia a conversa: backend só prepara
+// o token, retorna wa.me deeplink, abrimos o WhatsApp e ficamos em polling.
+// Quando o webhook recebe o zap dela, gera magic token tipo 'reset_senha'
+// e enfileira o link no gateway. O polling detecta e mostra "Recebemos!".
+//
+// Input do telefone usa o mesmo VmTelInput (com país-select) do /magic, e
+// helper getTelEsqueciCanonico padroniza a leitura.
+const _vmTelEsqueci = VmTelInput.aplicar('#input-tel-esqueci', { paisDefault: 'br' });
+function getTelEsqueciCanonico(){
+  return _vmTelEsqueci ? _vmTelEsqueci.canonico()
+       : (document.getElementById('input-tel-esqueci').value || '').replace(/\D/g, '');
+}
+document.getElementById('input-tel-esqueci').addEventListener('keydown', e => {
+  if (e.key === 'Enter') solicitarRecuperacao();
+});
+
 async function solicitarRecuperacao(){
   limparMsg('erro-esqueci');
-  const valor=(document.getElementById('input-esqueci').value||'').trim();
-  if(!valor){mostrarErro('erro-esqueci','Informe seu WhatsApp ou e-mail.');return;}
-  setLoad('btn-esqueci','Enviando…');
-  try{
-    const r=await fetch(`${API}/api/auth/esqueci-senha`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identificador:valor})});
-    const d=await r.json();
-    if(r.ok){
-      // Esconde o form, mostra a confirmação grande
-      document.getElementById('esqueci-form').style.display='none';
-      document.getElementById('esqueci-sucesso').style.display='block';
-      document.getElementById('esqueci-subtitulo').style.display='none';
-    } else {
-      mostrarErro('erro-esqueci',d.error||'Erro ao processar.');
+  const tel = getTelEsqueciCanonico();
+  if (!tel || tel.length < 8){
+    mostrarErro('erro-esqueci','Informe seu WhatsApp.');
+    document.getElementById('input-tel-esqueci').focus();
+    return;
+  }
+  setLoad('btn-esqueci','Preparando…');
+  try {
+    const r = await fetch(`${API}/api/auth/preparar-recuperacao`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ telefone: tel, device_fingerprint: getDeviceFingerprint() }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      if (tratarBanido(r, d, 'erro-esqueci')) {
+        resetBtn('btn-esqueci','Solicitar pelo WhatsApp');
+        return;
+      }
+      mostrarErro('erro-esqueci', d.error || 'Não conseguimos preparar a recuperação. Tente novamente.');
+      resetBtn('btn-esqueci','Solicitar pelo WhatsApp');
+      return;
     }
-  }catch{mostrarErro('erro-esqueci','Falha de conexão.');}
-  finally{resetBtn('btn-esqueci','Enviar link pelo WhatsApp');}
+
+    // Guarda dados pro estado aguardando + retry
+    window._tokenEsqueci = d.token;
+    window._ttlEsqueci   = d.ttl_segundos || 300;
+    window._waUrlEsqueci = d.wa_url;
+    window._telEsqueci   = tel;
+
+    // Abre WhatsApp NA HORA (deeplink, funciona em mobile)
+    window.location.href = d.wa_url;
+
+    // Após 3s, troca pra tela aguardando + inicia polling
+    setTimeout(() => {
+      document.getElementById('esqueci-form').style.display = 'none';
+      document.getElementById('esqueci-subtitulo').style.display = 'none';
+      document.getElementById('esqueci-aguardando').style.display = '';
+      iniciarPollingEsqueci(d.token, d.ttl_segundos || 300);
+      resetBtn('btn-esqueci','Solicitar pelo WhatsApp');
+    }, 3000);
+  } catch (err) {
+    mostrarErro('erro-esqueci','Falha de conexão. Tente novamente.');
+    resetBtn('btn-esqueci','Solicitar pelo WhatsApp');
+  }
 }
 
-// Volta a tela "Esqueci" pro estado inicial (chamada quando clica "Voltar ao login")
+// "Solicitar novamente" na tela aguardando — pede token novo, abre wa.me
+// e reinicia polling. Mesmo padrão do solicitarNovamente() do /magic.
+async function solicitarRecuperacaoNovamente(){
+  const tel = window._telEsqueci || getTelEsqueciCanonico();
+  if (!tel) return;
+  if (window._esqueciTimer)  { clearInterval(window._esqueciTimer);  window._esqueciTimer  = null; }
+  if (window._esqueciTicker) { clearInterval(window._esqueciTicker); window._esqueciTicker = null; }
+  try {
+    const r = await fetch(`${API}/api/auth/preparar-recuperacao`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ telefone: tel, device_fingerprint: getDeviceFingerprint() }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      if (tratarBanido(r, d, 'erro-esqueci')) {
+        document.getElementById('esqueci-aguardando').style.display = 'none';
+        document.getElementById('esqueci-form').style.display = '';
+        document.getElementById('esqueci-subtitulo').style.display = '';
+      }
+      return;
+    }
+    window._tokenEsqueci = d.token;
+    window._ttlEsqueci   = d.ttl_segundos || 300;
+    window._waUrlEsqueci = d.wa_url;
+    window.location.href = d.wa_url;
+    setTimeout(() => iniciarPollingEsqueci(d.token, d.ttl_segundos || 300), 500);
+  } catch (_) {}
+}
+
+// Polling em /api/auth/aguardando/:token — espelho do iniciarPollingAguardando
+// do fluxo /magic. Quando status='enviado', mostra estado "Recebemos!".
+function iniciarPollingEsqueci(token, ttlSegundos){
+  if (window._esqueciTimer)  clearInterval(window._esqueciTimer);
+  if (window._esqueciTicker) clearInterval(window._esqueciTicker);
+
+  let segundosRestantes = ttlSegundos;
+  const elTimer = document.getElementById('esqueci-aguardando-timer');
+  const fmtTimer = (s) => {
+    const m = Math.floor(s/60), sec = s%60;
+    return `${m}:${String(sec).padStart(2,'0')}`;
+  };
+  if (elTimer) elTimer.textContent = fmtTimer(segundosRestantes);
+
+  window._esqueciTicker = setInterval(() => {
+    segundosRestantes--;
+    if (segundosRestantes <= 0) {
+      clearInterval(window._esqueciTicker);
+      if (elTimer) elTimer.textContent = '0:00';
+      return;
+    }
+    if (elTimer) elTimer.textContent = fmtTimer(segundosRestantes);
+  }, 1000);
+
+  window._esqueciTimer = setInterval(async () => {
+    try {
+      const r = await fetch(`${API}/api/auth/aguardando/${encodeURIComponent(token)}`);
+      const d = await r.json().catch(() => ({}));
+      if (d.status === 'enviado') {
+        clearInterval(window._esqueciTimer);  window._esqueciTimer = null;
+        clearInterval(window._esqueciTicker); window._esqueciTicker = null;
+        document.getElementById('esqueci-aguardando').style.display = 'none';
+        document.getElementById('esqueci-enviado').style.display = '';
+      } else if (d.status === 'expirado' || d.status === 'invalido') {
+        clearInterval(window._esqueciTimer);  window._esqueciTimer = null;
+        clearInterval(window._esqueciTicker); window._esqueciTicker = null;
+        // Volta pra tela de formulário com aviso suave
+        document.getElementById('esqueci-aguardando').style.display = 'none';
+        document.getElementById('esqueci-form').style.display = '';
+        document.getElementById('esqueci-subtitulo').style.display = '';
+        mostrarErro('erro-esqueci','Sua solicitação expirou. Tente de novo.');
+      }
+    } catch (_) { /* erro de rede — continua tentando */ }
+  }, 2000);
+}
+
+// Reset da tela ao voltar pro login (cancela polling + esconde estados)
 function resetEsqueciTela(){
-  document.getElementById('esqueci-form').style.display='';
-  document.getElementById('esqueci-sucesso').style.display='none';
-  document.getElementById('esqueci-subtitulo').style.display='';
-  document.getElementById('input-esqueci').value='';
+  if (window._esqueciTimer)  { clearInterval(window._esqueciTimer);  window._esqueciTimer  = null; }
+  if (window._esqueciTicker) { clearInterval(window._esqueciTicker); window._esqueciTicker = null; }
+  document.getElementById('esqueci-form').style.display = '';
+  document.getElementById('esqueci-aguardando').style.display = 'none';
+  document.getElementById('esqueci-enviado').style.display = 'none';
+  document.getElementById('esqueci-subtitulo').style.display = '';
+  if (_vmTelEsqueci) _vmTelEsqueci.preencher('');
+  else document.getElementById('input-tel-esqueci').value = '';
   limparMsg('erro-esqueci');
 }
 
@@ -1147,7 +1302,7 @@ async function redefinirSenha(){
   if(nova!==conf){mostrarErro('erro-nova-senha','As senhas não coincidem.');return;}
   setLoad('btn-nova-senha','Salvando…');
   try{
-    const r=await fetch(`${API}/api/auth/redefinir-senha`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:tokenReset,nova_senha:nova})});
+    const r=await fetch(`${API}/api/auth/redefinir-senha`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:tokenReset,nova_senha:nova,device_fingerprint:getDeviceFingerprint()})});
     const d=await r.json();
     if(r.ok){VmSession.salvar(d,true);mostrarOverlay(d.usuario?.nome);}
     else mostrarErro('erro-nova-senha',d.error||'Link inválido ou expirado.');

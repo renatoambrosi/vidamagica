@@ -689,6 +689,75 @@ router.post('/login-magic', async (req, res) => {
 
 const NUMERO_COMUNIDADE = process.env.WA_COMUNIDADE_NUMERO || '5562999884411';
 
+// ──────────────────────────────────────────────────────────
+// 3.6.b. PREPARAR RECUPERAÇÃO DE SENHA (botão "Esqueci minha senha")
+//
+// Espelho do /preparar-acesso. A única diferença é que grava intent=
+// 'reset_senha' na solicitação. Quando o webhook receber o zap dela, vai
+// gerar magic token tipo 'reset_senha' (em vez de magic_login) e enviar
+// template reset_senha_msg1 com URL `?token=...` que cai na tela de
+// definir nova senha (t-nova-senha), não no /app direto.
+//
+// IMPORTANTE: NÃO envia mensagem via gateway aqui. A aluna SEMPRE inicia
+// a conversa (regra inviolável de auth). O backend só prepara o token.
+// ──────────────────────────────────────────────────────────
+router.post('/preparar-recuperacao', async (req, res) => {
+  try {
+    const { telefone, device_fingerprint } = req.body;
+    if (!telefone) return res.status(400).json({ error: 'Telefone obrigatório' });
+
+    const tel = formatarTelefone(telefone);
+    if (!tel || tel.length < 12 || tel.length > 14) {
+      return res.status(400).json({ error: 'Telefone inválido' });
+    }
+
+    // Rate limit dedicado pra recuperação (mais restritivo, 3 em 5min).
+    if (!checarRate(`prep-recuperacao:${tel}`, 3, 300000)) {
+      return res.status(429).json({ error: 'Muitas tentativas. Aguarde 5 minutos.' });
+    }
+
+    // Banido: bloqueia antes (mesma proteção do /preparar-acesso).
+    const banidoPrep = await verificarBanimento({ telefone: tel });
+    if (banidoPrep) {
+      await registrarTentativaBanido(banidoPrep.banimento_id, {
+        rota: '/preparar-recuperacao',
+        vinculo_bateu: banidoPrep.vinculo_bateu,
+        valor_bateu: banidoPrep.valor_bateu,
+        ip: getIP(req),
+        user_agent: req.headers['user-agent'],
+        fingerprint: device_fingerprint,
+      });
+      return res.status(403).json({
+        error: 'Conta excluída. Entre em contato com o suporte através de contato@vidamagica.com.br.',
+        code: 'BANIDO',
+      });
+    }
+
+    // ⚠️ NÃO confirma se a conta existe. Resposta sempre genérica por
+    // segurança. Mesmo se telefone não tem conta, gera o token e o wa_url
+    // normalmente. Quando ela mandar o zap, o webhook simplesmente não
+    // vai achar conta e ignora — silencioso.
+    const sol = await criarSolicitacaoAcesso(tel, 5, device_fingerprint || null, { intent: 'reset_senha' });
+
+    const mensagemPre =
+      `Esqueci minha senha\n` +
+      `Solicitação de Recuperação · ${sol.token}`;
+
+    const waUrl = `https://wa.me/${NUMERO_COMUNIDADE}?text=${encodeURIComponent(mensagemPre)}`;
+
+    res.json({
+      success: true,
+      token: sol.token,
+      wa_url: waUrl,
+      expira_em: sol.expira_em,
+      ttl_segundos: 300,
+    });
+  } catch (err) {
+    console.error('❌ /preparar-recuperacao:', err.message);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
 router.post('/preparar-acesso', async (req, res) => {
   try {
     const { telefone, device_fingerprint } = req.body;
@@ -1043,80 +1112,42 @@ router.post('/login-senha', async (req, res) => {
 });
 
 // ──────────────────────────────────────────────────────────
-// 8. ESQUECI SENHA — envia link pelo WhatsApp
-// ──────────────────────────────────────────────────────────
-
-router.post('/esqueci-senha', async (req, res) => {
-  try {
-    const { identificador } = req.body;
-    if (!identificador) return res.status(400).json({ error: 'Identificador obrigatório' });
-
-    if (!checarRate(`reset:${identificador}`, 3, 300000)) {
-      return res.status(429).json({ error: 'Muitas tentativas. Aguarde 5 minutos.' });
-    }
-
-    const usuario = await buscarUsuarioPorIdentificador(identificador.trim());
-
-    // Resposta sempre genérica por segurança
-    if (!usuario || !usuario.telefone_formatado) {
-      return res.json({ success: true });
-    }
-
-    const resetToken = uuidv4();
-    const expira = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-
-    try {
-      await poolCore.query(
-        `UPDATE usuarios SET reset_token=$1, reset_token_expira=$2, atualizado_em=NOW() WHERE id=$3`,
-        [resetToken, expira, usuario.id]
-      );
-    } catch (_) {
-      console.warn('⚠️  Coluna reset_token não encontrada.');
-      return res.json({ success: true });
-    }
-
-    const baseUrl = process.env.APP_URL || 'https://www.vidamagica.com.br';
-    const link = `${baseUrl}/auth?token=${resetToken}`;
-    const primeiroNome = usuario.nome ? usuario.nome.split(' ')[0] : '';
-
-    // Enfileira no gateway: 2 mensagens (saudação via template + link cru)
-    try {
-      await enfileirarAtendimento({
-        telefone: usuario.telefone_formatado,
-        tipo: 'reativo',
-        origem: 'auth-reset-senha',
-        nome: primeiroNome,
-        mensagens: [
-          { template: 'reset_senha_msg1', variaveis: { nome: primeiroNome } },
-          { texto: link },
-        ],
-      });
-    } catch (e) {
-      console.error('❌ Erro ao enfileirar reset:', e.message);
-    }
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error('❌ /esqueci-senha:', err.message);
-    res.status(500).json({ error: 'Erro interno' });
-  }
-});
-
-// ──────────────────────────────────────────────────────────
-// 9. REDEFINIR SENHA (via token do link)
+// 9. REDEFINIR SENHA (via magic token tipo 'reset_senha')
+//
+// Fluxo único: a aluna passou pelo /preparar-recuperacao → mandou zap →
+// webhook gerou magic token reset_senha em otp_tokens → ela toca no link
+// → cai em /auth?token=... → tela t-nova-senha → POST aqui.
 // ──────────────────────────────────────────────────────────
 
 router.post('/redefinir-senha', async (req, res) => {
   try {
-    const { token, nova_senha } = req.body;
+    const { token, nova_senha, device_fingerprint } = req.body;
     if (!token || !nova_senha) return res.status(400).json({ error: 'Token e nova senha obrigatórios' });
     if (nova_senha.length < 8) return res.status(400).json({ error: 'Senha mínima: 8 caracteres' });
+
+    // Magic token reset_senha em otp_tokens. Tem device_fingerprint herdado
+    // da solicitação — link só vale no MESMO dispositivo que pediu.
+    const magic = await validarMagicToken(token, ['reset_senha']);
+    if (!magic) {
+      return res.status(401).json({ error: 'Link inválido ou expirado. Solicite um novo.' });
+    }
+    if (magic.device_fingerprint && magic.device_fingerprint.device_id) {
+      const fpEsperado = magic.device_fingerprint.device_id;
+      const fpRecebido = device_fingerprint?.device_id;
+      if (!fpRecebido || fpRecebido !== fpEsperado) {
+        console.warn(`[redefinir-senha] device_id não bate — recusando`);
+        return res.status(403).json({
+          error: 'Esse link foi gerado pra outro dispositivo. Volte ao /auth no dispositivo original e peça recuperação de novo.',
+          code: 'DISPOSITIVO_INCORRETO',
+        });
+      }
+    }
 
     let usuario = null;
     try {
       const r = await poolCore.query(
-        `SELECT * FROM usuarios WHERE reset_token=$1 AND reset_token_expira > NOW()`,
-        [token]
+        `SELECT * FROM usuarios WHERE telefone=$1 OR telefone_formatado=$1 LIMIT 1`,
+        [magic.telefone]
       );
       usuario = r.rows[0] || null;
     } catch (_) {
@@ -1127,11 +1158,6 @@ router.post('/redefinir-senha', async (req, res) => {
 
     const senha_hash = await bcrypt.hash(nova_senha, 12);
     const updated = await atualizarUsuario(usuario.id, { senha_hash });
-
-    await poolCore.query(
-      `UPDATE usuarios SET reset_token=NULL, reset_token_expira=NULL WHERE id=$1`,
-      [usuario.id]
-    );
 
     await revogarTodasSessoesUsuario(usuario.id);
 

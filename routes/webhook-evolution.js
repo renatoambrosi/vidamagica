@@ -191,6 +191,61 @@ router.post('/evolution', async (req, res) => {
     // for chamado novamente pelo mesmo evento.
     await marcarSolicitacaoUsada(sol.token);
 
+    // ── Branch -1: Solicitação de RECUPERAÇÃO DE SENHA ──────
+    // Solicitação foi criada por POST /api/auth/preparar-recuperacao com
+    // intent='reset_senha'. Geramos magic token tipo 'reset_senha' (sem
+    // logar a aluna direto) e mandamos via template reset_senha_msg1.
+    // A URL é /auth?token=... — auth.html detecta esse query string e
+    // leva pra tela t-nova-senha. Aluna define senha → /redefinir-senha
+    // valida o magic token e completa o reset.
+    //
+    // Conta inexistente: silencioso. Se ela mandou zap pedindo reset mas
+    // não tem conta, nada acontece — política de não confirmar existência.
+    if (sol.intent === 'reset_senha') {
+      const matchReset = await buscarUsuarioPorTelefoneComOrigem(telefoneFinal);
+      if (!matchReset || !matchReset.usuario) {
+        console.log(`[webhook-evolution] reset_senha sem conta pra ${telefoneFinal} — ignorando`);
+        return;
+      }
+      const usuarioReset = matchReset.usuario;
+      // Mesmas proteções do branch normal (banimento, arquivada-por-admin)
+      const banidoR = await verificarBanimento({ telefone: telefoneFinal });
+      if (banidoR || ehBanido(usuarioReset)) {
+        if (banidoR) {
+          await registrarTentativaBanido(banidoR.banimento_id, {
+            rota: '/webhook-evolution-reset',
+            vinculo_bateu: banidoR.vinculo_bateu,
+            valor_bateu: banidoR.valor_bateu,
+          });
+        }
+        console.log(`[webhook-evolution] reset_senha bloqueado por banimento`);
+        return;
+      }
+      if (usuarioReset.arquivada || usuarioReset.status === 'arquivada' || usuarioReset.status === 'legado') {
+        if (!ehArquivadaPorAluna(usuarioReset) && !ehLegado(usuarioReset)) {
+          console.log(`[webhook-evolution] reset_senha bloqueado: conta arquivada por admin`);
+          return;
+        }
+      }
+      const fingerprintSolicitanteR = sol.device_fingerprint || null;
+      const magicTokenR = await criarMagicToken(telefoneFinal, 'reset_senha', 10, fingerprintSolicitanteR);
+      const magicUrlR = `${APP_URL}/auth?token=${magicTokenR}`;
+      const primeiroNomeR = (usuarioReset.nome || '').split(' ')[0] || '';
+      await enfileirarAtendimento({
+        telefone: telefoneFinal,
+        tipo: 'reativo',
+        origem: 'webhook-evolution-reset-senha',
+        nome: primeiroNomeR,
+        mensagens: [
+          { template: 'reset_senha_msg1', variaveis: { nome: primeiroNomeR } },
+          { texto: magicUrlR },
+        ],
+      });
+      await marcarSolicitacaoUsada(sol.token, magicTokenR);
+      console.log(`[webhook-evolution] ✅ magic de reset_senha enfileirado pra ${primeiroNomeR || telefoneFinal}`);
+      return;
+    }
+
     // ── Branch 0: Solicitação de TROCA DE TELEFONE ──────────
     // Aluna logada pediu pra mudar o número principal. A solicitação trouxe
     // intent='trocar_telefone' + usuario_id. Geramos um magic link específico
