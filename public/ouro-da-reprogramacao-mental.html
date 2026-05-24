@@ -390,11 +390,6 @@
   <div class="scroll-progress" id="scroll-progress"></div>
 
   <div class="bg-base"></div>
-  <div class="orbs">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-  </div>
   <div class="bokeh" id="bokeh"></div>
 
   <!-- NAVBAR — IDÊNTICA AO TESTE.HTML/INDEX.HTML -->
@@ -882,20 +877,6 @@
       });
     });
 
-    /* ═══ PARALLAX ORBES — IDÊNTICO (desktop só) ═══ */
-    (function(){
-      if(window.matchMedia('(hover: none)').matches) return;
-      const orbs=document.querySelectorAll('.orb');
-      let rafId;
-      window.addEventListener('mousemove',(e)=>{
-        cancelAnimationFrame(rafId);
-        rafId=requestAnimationFrame(()=>{
-          const x=(e.clientX/window.innerWidth-0.5)*2;
-          const y=(e.clientY/window.innerHeight-0.5)*2;
-          orbs.forEach((o,i)=>{const sp=(i+1)*8;o.style.transform=`translate(${x*sp}px,${y*sp}px)`;});
-        });
-      });
-    })();
   </script>
 
   <!-- Modal + swipe dos cards de relatos (compartilhado entre as 7 LPs) -->

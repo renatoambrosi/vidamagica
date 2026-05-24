@@ -170,12 +170,6 @@
       radial-gradient(ellipse 60% 50% at 80% 95%,  rgba(255,214,107,0.20) 0%, transparent 55%),
       linear-gradient(180deg, #FFF4D6 0%, #FFE9A8 50%, #F4D998 100%); }
     /* Orbs simplificados — blur menor + sem animação infinita (Safari iOS estava matando a aba) */
-    .orbs { position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; }
-    .orb { position: absolute; border-radius: 50%; filter: blur(50px); opacity: 0.4; }
-    .orb-1 { width: 320px; height: 320px; top: 8%;  right: -80px;  background: radial-gradient(circle, var(--gold-bright), transparent 60%); }
-    .orb-2 { width: 380px; height: 380px; bottom: 12%; left: -120px; background: radial-gradient(circle, var(--gold-radiant), transparent 60%); }
-    .orb-3 { width: 220px; height: 220px; top: 50%; left: 55%; background: radial-gradient(circle, var(--sky-soft), transparent 60%); opacity: 0.18; }
-
     /* Sparkles — cor branca pura pra contrastar com o fundo dourado claro.
        O fundo creme-dourado da Mágica do Fluir não dá contraste pra sparkles
        dourados (como nas outras LPs com fundo escuro/sépia). Brancas brilhantes
@@ -330,11 +324,6 @@
   <div class="scroll-progress" id="scroll-progress"></div>
 
   <div class="bg-base"></div>
-  <div class="orbs">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-  </div>
   <div class="sparkles" id="sparkles"></div>
 
   <!-- NAVBAR -->

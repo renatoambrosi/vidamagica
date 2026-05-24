@@ -158,13 +158,6 @@
       radial-gradient(ellipse 60% 50% at 80% 30%, rgba(200,146,42,0.16) 0%, transparent 55%),
       radial-gradient(ellipse 70% 50% at 20% 80%, rgba(10,39,72,0.6)  0%, transparent 55%),
       linear-gradient(180deg, #051a35 0%, #0a2748 35%, #14365c 65%, #0a2748 100%); }
-    .orbs { position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; }
-    .orb { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.5; animation: orbFloat 14s ease-in-out infinite; will-change: transform; }
-    .orb-1 { width: 380px; height: 380px; top: 8%;  right: -80px;  background: radial-gradient(circle, var(--marine-light), transparent 60%); animation-delay: 0s; }
-    .orb-2 { width: 460px; height: 460px; bottom: 12%; left: -120px; background: radial-gradient(circle, var(--marine-mid), transparent 60%); animation-delay: -5s; }
-    .orb-3 { width: 280px; height: 280px; top: 50%; left: 50%; background: radial-gradient(circle, var(--gold), transparent 60%); opacity: 0.22; animation-delay: -8s; }
-    @keyframes orbFloat { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(40px,-30px) scale(1.05); } 66% { transform: translate(-30px,40px) scale(0.95); } }
-
     /* Sparkles douradas/peroladas — atmosfera 'céu noturno' */
     /* Sparkles brancos com halo dourado intenso — reforçados pra destacar
        sobre o fundo marinho-profundo (estavam tímidos com cor dourada clara). */
@@ -363,11 +356,6 @@
   <div class="scroll-progress" id="scroll-progress"></div>
 
   <div class="bg-base"></div>
-  <div class="orbs">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-  </div>
   <div class="stars" id="stars"></div>
 
   <!-- NAVBAR — IDÊNTICA AO TESTE.HTML/OURO/INDEX.HTML -->
@@ -923,20 +911,6 @@
       });
     });
 
-    /* ═══ PARALLAX ORBES — desktop só ═══ */
-    (function(){
-      if(window.matchMedia('(hover: none)').matches) return;
-      const orbs=document.querySelectorAll('.orb');
-      let rafId;
-      window.addEventListener('mousemove',(e)=>{
-        cancelAnimationFrame(rafId);
-        rafId=requestAnimationFrame(()=>{
-          const x=(e.clientX/window.innerWidth-0.5)*2;
-          const y=(e.clientY/window.innerHeight-0.5)*2;
-          orbs.forEach((o,i)=>{const sp=(i+1)*8;o.style.transform=`translate(${x*sp}px,${y*sp}px)`;});
-        });
-      });
-    })();
   </script>
 
   <!-- Modal + swipe dos cards de relatos (compartilhado entre as 7 LPs) -->
