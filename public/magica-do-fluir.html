@@ -9,6 +9,7 @@
 
   <link rel="icon" href="/assets/favicon.webp">
   <link rel="stylesheet" href="/assets/fonts/fonts.css">
+  <link rel="stylesheet" href="/navbar-account.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
 
   <style>
@@ -77,69 +78,7 @@
     a { color: inherit; text-decoration: none; }
     img { max-width: 100%; display: block; }
 
-    /* ═══ NAVBAR — fundo dourado (mesma cor do botão "Criar conta") pra destacar a logo ═══ */
-    .navbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.6rem 1.25rem;
-      background: linear-gradient(135deg, var(--gold), var(--gold-deep));
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(61,40,20,0.18);
-      height: 52px;
-      box-shadow: 0 2px 14px rgba(61,40,20,0.18);
-    }
-    .navbar-logo { height: 32px; width: auto; }
-    .navbar-actions { display: flex; align-items: center; gap: 0.5rem; }
-    /* Entrar: outline branco */
-    .btn-login {
-      font-family: var(--font-body);
-      font-size: 0.78rem; font-weight: 600;
-      color: #FFFFFF;
-      background: none;
-      border: 1px solid rgba(255,255,255,0.55);
-      border-radius: var(--r-full);
-      padding: 0.38rem 1rem;
-      cursor: pointer; transition: all 0.2s;
-      text-decoration: none; letter-spacing: 0.05em;
-    }
-    .btn-login:hover { background: rgba(255,255,255,0.15); border-color: #FFFFFF; }
-    /* Criar conta: invertido (fundo branco, texto dourado) */
-    .btn-cadastro-nav {
-      font-family: var(--font-body);
-      font-size: 0.78rem; font-weight: 700;
-      color: var(--gold-deep);
-      background: #FFFFFF;
-      border: none;
-      border-radius: var(--r-full);
-      padding: 0.42rem 1.1rem;
-      cursor: pointer; transition: all 0.2s;
-      text-decoration: none; letter-spacing: 0.04em;
-      box-shadow: 0 2px 8px rgba(61,40,20,0.25);
-    }
-    .btn-cadastro-nav:hover { transform: translateY(-1px); background: var(--bg-cream); box-shadow: 0 4px 14px rgba(61,40,20,0.35); }
-
-    /* AVATAR NAVBAR — contraste com fundo dourado */
-    .nav-avatar-wrap { position: relative; }
-    .nav-avatar-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,.6); background: rgba(255,255,255,.2); cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0; transition: border-color .2s, box-shadow .2s; }
-    .nav-avatar-btn:hover { border-color: #FFFFFF; box-shadow: 0 0 0 3px rgba(255,255,255,.2); }
-    .nav-avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-    .nav-avatar-iniciais { font-family: var(--font-display); font-size: .72rem; font-weight: 800; color: #FFFFFF; letter-spacing: .05em; text-transform: uppercase; pointer-events: none; }
-    .nav-drop { position: absolute; top: calc(100% + 10px); right: 0; min-width: 200px; background: #FFFAEC; border: 1px solid rgba(61,40,20,0.1); border-radius: 14px; box-shadow: 0 16px 48px rgba(61,40,20,0.15); backdrop-filter: blur(20px); overflow: hidden; opacity: 0; transform: translateY(-6px) scale(.97); pointer-events: none; transition: opacity .2s, transform .2s; z-index: 300; }
-    .nav-drop.aberto { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
-    .nav-drop-header { padding: .9rem 1.1rem .7rem; border-bottom: 1px solid rgba(61,40,20,.1); }
-    .nav-drop-nome { font-family: var(--font-display); font-size: .78rem; font-weight: 800; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .nav-drop-sub { font-size: .67rem; color: var(--text-mute); margin-top: 2px; }
-    .nav-drop-item { display: flex; align-items: center; gap: .65rem; padding: .65rem 1.1rem; font-size: .8rem; font-weight: 500; color: var(--text-mid); cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: background .15s, color .15s; text-decoration: none; }
-    .nav-drop-item:hover { background: rgba(232,184,92,.12); color: var(--gold-deep); }
-    .nav-drop-item.danger { color: #c44; }
-    .nav-drop-item.danger:hover { background: rgba(200,60,60,.08); color: #a33; }
-    .nav-drop-sep { height: 1px; background: rgba(61,40,20,.1); margin: .2rem 0; }
-    .nav-drop-icon { font-size: .9rem; width: 16px; text-align: center; flex-shrink: 0; }
+    /* Header (navbar, botões, dropdown, avatar) vive em /navbar-account.css */
 
     /* SCROLL PROGRESS */
     .scroll-progress { position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: 2px; background: linear-gradient(90deg, var(--gold-radiant), var(--gold), var(--gold-deep)); transform-origin: 0 0; transform: scaleX(0); transition: transform 0.05s linear; box-shadow: 0 0 12px var(--gold-glow); }
@@ -319,7 +258,7 @@
     @keyframes rippleAnim { to { transform: scale(2.5); opacity: 0; } }
   </style>
 </head>
-<body>
+<body class="lp-magica">
 
   <div class="scroll-progress" id="scroll-progress"></div>
 
@@ -533,7 +472,7 @@
       }
     })();
 
-    /* ═══ NAVBAR AUTH — IDÊNTICO às outras LPs ═══ */
+    /* ═══ VmSession — lê sessão da aluna. Render do header vive em /navbar-account.js ═══ */
     window.VmSession = window.VmSession || (function(){
       const K='vm_s',P='vm_lembrar',U='vm_u';
       function salvar(d,l){const p=l!==undefined?l:getLembrar();localStorage.setItem(P,p?'1':'0');const s=p?localStorage:sessionStorage,o=p?sessionStorage:localStorage;o.removeItem(K);s.setItem(K,JSON.stringify(d));if(p&&d.usuario?.nome){localStorage.setItem(U,JSON.stringify({nome:d.usuario.nome,email:d.usuario.email||null,telefone_formatado:d.usuario.telefone_formatado||null,foto_url:d.usuario.foto_url||null}));}else if(!p){localStorage.removeItem(U);}}
@@ -545,61 +484,6 @@
       function getUsuarioLembrado(){try{return JSON.parse(localStorage.getItem(U)||'null');}catch{return null;}}
       function limparUsuarioLembrado(){localStorage.removeItem(U);}
       return{salvar,carregar,destruir,getAccess,getRefresh,getLembrar,getUsuarioLembrado,limparUsuarioLembrado};
-    })();
-
-    (async function navbarAuth(){
-      const actions = document.getElementById('navbar-actions');
-      if (!actions) return;
-      function renderBotoes(){
-        actions.innerHTML = `<a href="/auth?intencional" class="btn-login">Entrar</a><a href="/auth?cadastro" class="btn-cadastro-nav">Criar conta</a>`;
-      }
-      function renderAvatar(usuario){
-        const iniciais = (usuario.nome||'?').split(' ').slice(0,2).map(p=>p[0]).join('').toUpperCase();
-        const fotoHtml = usuario.foto_url
-          ? `<img src="${usuario.foto_url}" alt="${usuario.nome}" class="nav-avatar-img">`
-          : `<span class="nav-avatar-iniciais">${iniciais}</span>`;
-        actions.innerHTML = `
-          <div class="nav-avatar-wrap" id="nav-avatar-wrap">
-            <button class="nav-avatar-btn" onclick="toggleNavDrop()" aria-label="Menu">${fotoHtml}</button>
-            <div class="nav-drop" id="nav-drop">
-              <div class="nav-drop-header">
-                <div class="nav-drop-nome">${usuario.nome||'Minha conta'}</div>
-                <div class="nav-drop-sub">${usuario.email||usuario.telefone_formatado||''}</div>
-              </div>
-              <a href="/app" class="nav-drop-item"><span class="nav-drop-icon">🌱</span> Minha área</a>
-              <div class="nav-drop-sep"></div>
-              <button class="nav-drop-item danger" onclick="navLogout()"><span class="nav-drop-icon">🚪</span> Sair</button>
-            </div>
-          </div>`;
-        document.addEventListener('click', function(e){
-          const wrap = document.getElementById('nav-avatar-wrap');
-          if (wrap && !wrap.contains(e.target)) document.getElementById('nav-drop')?.classList.remove('aberto');
-        });
-      }
-      window.toggleNavDrop = function(){ document.getElementById('nav-drop')?.classList.toggle('aberto'); };
-      window.navLogout = async function(){
-        try{ await fetch(`${API_BASE}/api/auth/logout`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:VmSession.getRefresh()})}); }catch{}
-        VmSession.destruir(); renderBotoes();
-      };
-      const access = VmSession.getAccess();
-      if (!access){ renderBotoes(); return; }
-      try{
-        const r = await fetch(`${API_BASE}/api/auth/me`,{headers:{Authorization:`Bearer ${access}`}});
-        if (r.ok){ renderAvatar(await r.json()); return; }
-      }catch{}
-      const refresh = VmSession.getRefresh();
-      if (refresh){
-        try{
-          const r2 = await fetch(`${API_BASE}/api/auth/renovar`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refresh})});
-          if (r2.ok){
-            const d = await r2.json();
-            VmSession.salvar(d, VmSession.getLembrar());
-            const r3 = await fetch(`${API_BASE}/api/auth/me`,{headers:{Authorization:`Bearer ${d.access_token}`}});
-            if (r3.ok){ renderAvatar(await r3.json()); return; }
-          }
-        }catch{}
-      }
-      VmSession.destruir(); renderBotoes();
     })();
 
     /* ═══ PREÇO + CHECKOUT — fonte única /api/precos ═══ */
@@ -764,6 +648,7 @@
 
   <!-- Modal + swipe dos cards de relatos (compartilhado entre as 7 LPs) -->
   <script src="/relatos-card.js"></script>
+  <script src="/navbar-account.js" defer></script>
 
 </body>
 </html>

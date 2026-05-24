@@ -151,55 +151,8 @@
       background: var(--color-brown-dark);
     }
 
-    /* ===== NAVBAR ===== */
-    .navbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.6rem 1.25rem;
-      background: rgba(13,8,0,0.92);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(200,146,42,0.12);
-      height: 52px;
-    }
+    /* Header (navbar, botões, dropdown, avatar) vive em /navbar-account.css */
 
-    .navbar-logo { height: 32px; width: auto; }
-
-    .navbar-actions { display: flex; align-items: center; gap: 0.5rem; }
-    .btn-login {
-      font-family: var(--font-body);
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--color-gold-amber);
-      background: none;
-      border: 1px solid rgba(200,146,42,0.4);
-      border-radius: var(--radius-full);
-      padding: 0.38rem 1rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-decoration: none;
-      letter-spacing: 0.05em;
-    }
-    .btn-login:hover { background: rgba(200,146,42,0.1); border-color: var(--color-gold-amber); }
-    .btn-cadastro-nav {
-      font-family: var(--font-body);
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: var(--color-brown-dark);
-      background: var(--color-gold-amber);
-      border: none;
-      border-radius: var(--radius-full);
-      padding: 0.42rem 1.1rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-decoration: none;
-      letter-spacing: 0.04em;
-    }
-    .btn-cadastro-nav:hover { background: var(--color-gold-deep); }
     .btn-entrar-hero {
       display: inline-flex;
       align-items: center;
@@ -999,28 +952,10 @@
     }
 
     /* ===== ACESSIBILIDADE ===== */
-    .btn-entry:focus, .btn-cta-drop:focus, .btn-login:focus {
+    .btn-entry:focus, .btn-cta-drop:focus {
       outline: 3px solid var(--color-gold-light);
       outline-offset: 3px;
     }
-
-    /* ===== NAVBAR ACTIONS (2 botões) ===== */
-    .navbar-actions { display: flex; align-items: center; gap: 0.5rem; }
-    .btn-cadastro-nav {
-      font-family: var(--font-body);
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: var(--color-brown-dark);
-      background: var(--color-gold-amber);
-      border: none;
-      border-radius: var(--radius-full);
-      padding: 0.42rem 1.1rem;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-decoration: none;
-      letter-spacing: 0.04em;
-    }
-    .btn-cadastro-nav:hover { background: var(--color-gold-deep); }
 
     /* ===== BOTÃO ENTRAR NO HERO ===== */
     .btn-entrar-hero {
@@ -1067,7 +1002,6 @@
       .social-icons a i { font-size: 18px; }
       .validacao-destaque { font-size: 0.98rem; padding: 1.25rem; }
       .depoimento-card { flex: 0 0 280px; }
-      .btn-cadastro-nav { display: none; }
     }
 
     @media (min-width: 1024px) {
@@ -1082,7 +1016,7 @@
 
   </style>
 </head>
-<body>
+<body class="lp-index">
 
   <!-- NAVBAR -->
   <nav class="navbar">

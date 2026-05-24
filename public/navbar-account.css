@@ -1,187 +1,713 @@
-/* ============================================================
-   VIDA MÁGICA — public/navbar-account.css
-   Componente compartilhado: botão "Minha área" + avatar + dropdown
-   de conta. Usado em index.html + 6 LPs públicas.
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║  HEADER PADRONIZADO — navbar-account.css                         ║
+   ║                                                                   ║
+   ║  Estrutura/tamanho fixo nas REGRAS BASE.                         ║
+   ║  Cor/opacidade/blur/sombra por LP via variáveis.                 ║
+   ║                                                                   ║
+   ║  ─── LEI DE OURO ─────────────────────────────────────────────── ║
+   ║  Só pode escrever 3 coisas neste arquivo:                        ║
+   ║    1. Variável nova em :root                                      ║
+   ║    2. Override de variáveis em body.lp-NOME                       ║
+   ║    3. Override de variáveis em body.page-NOME                     ║
+   ║                                                                   ║
+   ║  PROIBIDO:                                                        ║
+   ║    - Regra CSS nova fora das REGRAS BASE / :root / lp-* / page-* ║
+   ║    - !important                                                    ║
+   ║    - style="" inline no HTML pra customizar header                ║
+   ║                                                                   ║
+   ║  ─── COMO CRIAR LP NOVA ──────────────────────────────────────── ║
+   ║  Copia o bloco :root, renomeia pra body.lp-NOME, ajusta SÓ os    ║
+   ║  valores. Estrutura nunca muda. Toda LP DECLARA todas as 32      ║
+   ║  variáveis — default no :root é template neutro, não fallback    ║
+   ║  silencioso de página real.                                       ║
+   ║                                                                   ║
+   ║  ─── COMO USAR NO HTML DA PÁGINA ─────────────────────────────── ║
+   ║    <head>                                                          ║
+   ║      <link rel="stylesheet" href="/navbar-account.css">           ║
+   ║    </head>                                                         ║
+   ║    <body class="lp-NOME">                                         ║
+   ║      <nav class="navbar">                                          ║
+   ║        <a href="/"><img class="navbar-logo" src="..."></a>        ║
+   ║        <div class="navbar-actions" id="navbar-actions"></div>     ║
+   ║      </nav>                                                        ║
+   ║      ...                                                           ║
+   ║      <script>window.VmSession=...</script>                        ║
+   ║      <script src="/navbar-account.js" defer></script>             ║
+   ║    </body>                                                         ║
+   ╚══════════════════════════════════════════════════════════════════╝
 
-   ┌──────────────────────────────────────────────────────────┐
-   │ COMO CUSTOMIZAR POR LP                                   │
-   │                                                          │
-   │ O componente respeita variáveis CSS sobrescritas no       │
-   │ :root da LP. Pra mudar a paleta em uma LP específica,     │
-   │ adicione no :root da LP:                                  │
-   │                                                          │
-   │   :root {                                                │
-   │     --vm-na-accent:       #E8B85C;  /* botão+borda */    │
-   │     --vm-na-accent-deep:  #C8922A;                       │
-   │     --vm-na-accent-light: #E8C97A;  /* texto destaque */ │
-   │     --vm-na-bg:           rgba(20,10,2,0.92); /* opc */  │
-   │   }                                                      │
-   │                                                          │
-   │ Se a LP NÃO sobrescrever, usa os defaults dourados        │
-   │ abaixo. O fundo do dropdown sempre é escuro/translúcido    │
-   │ por padrão (pra garantir leitura). LP que quiser fundo    │
-   │ light pode trocar --vm-na-bg.                             │
-   └──────────────────────────────────────────────────────────┘
+   CATÁLOGO COMPLETO DE VARIÁVEIS (5 regras, 32 variáveis):
 
-   ÍCONES: SVGs canônicos COPIADOS de public/app.html (.topo-btn
-   e .bottom-nav). NÃO inventar paralelo.
+   R1 — NAVBAR (4)
+     --navbar-fundo                cor sólida rgba() OU linear-gradient()
+     --navbar-borda-cor
+     --navbar-blur                 px (intensidade do vidro fosco)
+     --navbar-sombra               box-shadow ou none
 
-   Pareado com /navbar-account.js (lógica de auth/render/logout).
-   ============================================================ */
+   R2 — BOTÃO "ENTRAR" (4)
+     --btn-entrar-texto-cor
+     --btn-entrar-borda-cor
+     --btn-entrar-hover-fundo
+     --btn-entrar-hover-borda-cor
 
-/* ── DEFAULTS (Vida Mágica — dourado padrão) ────────────────
-   Cada LP pode sobrescrever esses valores no próprio :root pra
-   adaptar à paleta. */
-:root {
-  /* Acento — botão "Minha área", borda do drop, hover */
-  --vm-na-accent:        #C8922A;
-  --vm-na-accent-deep:   #A17523;
-  --vm-na-accent-light:  #E8C97A;
-  --vm-na-accent-bright: #F4D998;
-  /* Estrutura */
-  --vm-na-bg:            rgba(13,8,0,0.88);   /* fundo do drop — opaco o suficiente pra leitura */
-  --vm-na-bg-soft:       rgba(20,12,4,0.70);  /* hover sutil */
-  --vm-na-text:          #F5F0E8;
-  --vm-na-text-mute:     rgba(245,240,232,0.45);
-  --vm-na-on-accent:     #1A1205;             /* cor do texto SOBRE o acento (botão) */
-  /* Tipografia */
-  --vm-na-font-display:  'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
-  --vm-na-font-body:     'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+   R3 — BOTÃO "CRIAR CONTA" (5)
+     --btn-criar-texto-cor
+     --btn-criar-fundo             cor sólida OU gradient
+     --btn-criar-hover-fundo       cor sólida OU gradient
+     --btn-criar-sombra
+     --btn-criar-hover-sombra
+
+   R4 — BOTÃO "MINHA ÁREA" + AVATAR (8)
+     --btn-minha-area-texto-cor
+     --btn-minha-area-fundo
+     --btn-minha-area-hover-fundo
+     --btn-minha-area-sombra
+     --btn-minha-area-hover-sombra
+     --avatar-borda-cor
+     --avatar-fundo-cor
+     --avatar-iniciais-cor
+
+   R5 — DROPDOWN (11)
+     --dropdown-fundo              (cor sólida)
+     --dropdown-blur               px
+     --dropdown-borda-cor
+     --dropdown-nome-cor
+     --dropdown-texto-cor
+     --dropdown-texto-mute-cor     (e-mail/telefone embaixo do nome)
+     --dropdown-hover-fundo
+     --dropdown-hover-texto-cor
+     --dropdown-separador-cor
+     --dropdown-perigo-texto-cor   (Sair)
+     --dropdown-perigo-hover-fundo
+
+   ──────────────────────────────────────────────────────────────────
+   ÍCONES: SVGs copiados de public/app.html (.topo-btn, .bottom-nav).
+   NÃO inventar paths. Pareado com /navbar-account.js (auth/render).
+   ────────────────────────────────────────────────────────────────── */
+
+
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║  NÍVEL 1 — REGRAS BASE                                            ║
+   ║  Estrutura, tamanho, fontes, espaçamento. Igual pra todas as LPs.║
+   ║  Cor/opacidade/blur/sombra consumidos via var().                 ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
+
+/* ── NAVBAR (barra fixa do topo) ── */
+.navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1.25rem;
+  height: 52px;
+  background: var(--navbar-fundo);
+  border-bottom: 1px solid var(--navbar-borda-cor);
+  backdrop-filter: blur(var(--navbar-blur));
+  -webkit-backdrop-filter: blur(var(--navbar-blur));
+  box-shadow: var(--navbar-sombra);
 }
+.navbar-logo { height: 32px; width: auto; display: block; }
+.navbar-actions { display: flex; align-items: center; gap: 0.5rem; }
 
-/* ── BOTÃO "MINHA ÁREA" (visível ao lado do avatar) ─────── */
-.btn-minha-area {
-  display: inline-flex; align-items: center; gap: .4rem;
-  font-family: var(--vm-na-font-display);
-  font-size: .72rem; font-weight: 700;
-  letter-spacing: .05em; text-transform: uppercase;
-  color: var(--vm-na-on-accent);
-  background: linear-gradient(135deg, var(--vm-na-accent), var(--vm-na-accent-deep));
-  border: none;
+/* ── BOTÃO "ENTRAR" (outline, aluna deslogada) ── */
+.btn-login {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 0.38rem 1rem;
   border-radius: 9999px;
-  padding: .45rem 1rem;
   cursor: pointer;
   text-decoration: none;
-  transition: transform .15s, box-shadow .15s, filter .15s;
-  box-shadow: 0 2px 12px rgba(0,0,0,.18);
+  transition: all 0.2s;
+  background: none;
+  color: var(--btn-entrar-texto-cor);
+  border: 1px solid var(--btn-entrar-borda-cor);
+}
+.btn-login:hover {
+  background: var(--btn-entrar-hover-fundo);
+  border-color: var(--btn-entrar-hover-borda-cor);
+}
+.btn-login:focus-visible {
+  outline: 3px solid var(--btn-entrar-borda-cor);
+  outline-offset: 3px;
+}
+
+/* ── BOTÃO "CRIAR CONTA" (preenchido, aluna deslogada) ── */
+.btn-cadastro-nav {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.42rem 1.1rem;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+  color: var(--btn-criar-texto-cor);
+  background: var(--btn-criar-fundo);
+  box-shadow: var(--btn-criar-sombra);
+}
+.btn-cadastro-nav:hover {
+  background: var(--btn-criar-hover-fundo);
+  box-shadow: var(--btn-criar-hover-sombra);
+  transform: translateY(-1px);
+}
+.btn-cadastro-nav:active { transform: translateY(0); }
+.btn-cadastro-nav:focus-visible {
+  outline: 3px solid var(--btn-criar-texto-cor);
+  outline-offset: 3px;
+}
+
+/* ── BOTÃO "MINHA ÁREA" (aluna logada, ao lado do avatar) ── */
+.btn-minha-area {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.42rem 1rem;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
   white-space: nowrap;
+  color: var(--btn-minha-area-texto-cor);
+  background: var(--btn-minha-area-fundo);
+  box-shadow: var(--btn-minha-area-sombra);
 }
 .btn-minha-area:hover {
-  filter: brightness(1.08);
-  box-shadow: 0 4px 18px rgba(0,0,0,.28);
+  background: var(--btn-minha-area-hover-fundo);
+  box-shadow: var(--btn-minha-area-hover-sombra);
   transform: translateY(-1px);
 }
 .btn-minha-area:active { transform: translateY(0); }
+.btn-minha-area:focus-visible {
+  outline: 3px solid var(--btn-minha-area-texto-cor);
+  outline-offset: 3px;
+}
 .btn-minha-area svg {
   width: 14px; height: 14px;
   stroke: currentColor; fill: none;
-  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   flex-shrink: 0;
 }
 
-/* ── AVATAR ── */
+/* ── AVATAR (botão circular da aluna logada) ── */
 .nav-avatar-wrap { position: relative; }
 .nav-avatar-btn {
-  width: 38px; height: 38px; border-radius: 50%;
-  border: 2px solid var(--vm-na-accent);
-  background: rgba(0,0,0,0.18);
+  width: 38px; height: 38px;
+  border-radius: 50%;
   cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  overflow: hidden; padding: 0;
-  transition: border-color .2s, box-shadow .2s, transform .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  border: 2px solid var(--avatar-borda-cor);
+  background: var(--avatar-fundo-cor);
 }
 .nav-avatar-btn:hover {
-  border-color: var(--vm-na-accent-bright);
-  box-shadow: 0 0 0 3px rgba(200,146,42,.18);
+  box-shadow: 0 0 0 3px var(--avatar-borda-cor);
 }
-.nav-avatar-btn:active { transform: scale(.94); }
-.nav-avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.nav-avatar-btn:active { transform: scale(0.94); }
+.nav-avatar-btn:focus-visible {
+  outline: 3px solid var(--avatar-borda-cor);
+  outline-offset: 3px;
+}
+.nav-avatar-img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
 .nav-avatar-iniciais {
-  font-family: var(--vm-na-font-display);
-  font-size: .74rem; font-weight: 800;
-  color: var(--vm-na-accent-light);
-  letter-spacing: .05em; text-transform: uppercase;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   pointer-events: none;
+  color: var(--avatar-iniciais-cor);
 }
 
-/* ── DROPDOWN — escuro translúcido com leitura sólida ── */
+/* ── DROPDOWN (menu da aluna logada, abre ao clicar no avatar) ── */
 .nav-drop {
-  position: absolute; top: calc(100% + 12px); right: 0;
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
   min-width: 240px;
-  background: var(--vm-na-bg);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1.5px solid var(--vm-na-accent);
   border-radius: 18px;
-  box-shadow:
-    0 0 0 1px rgba(0,0,0,0.08),
-    0 20px 56px rgba(0,0,0,0.55),
-    0 0 32px rgba(0,0,0,0.18);
   overflow: hidden;
-  opacity: 0; transform: translateY(-6px) scale(.97);
+  opacity: 0;
+  transform: translateY(-6px) scale(0.97);
   pointer-events: none;
-  transition: opacity .2s, transform .2s;
+  transition: opacity 0.2s, transform 0.2s;
   z-index: 300;
+  background: var(--dropdown-fundo);
+  backdrop-filter: blur(var(--dropdown-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--dropdown-blur)) saturate(160%);
+  border: 1.5px solid var(--dropdown-borda-cor);
+  box-shadow:
+    0 20px 56px rgba(0,0,0,0.4),
+    0 0 32px rgba(0,0,0,0.15);
 }
-.nav-drop.aberto { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
-
+.nav-drop.aberto {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
 .nav-drop-header {
-  padding: 1rem 1.1rem .85rem;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  background: linear-gradient(180deg, var(--vm-na-bg-soft), transparent);
+  padding: 1rem 1.1rem 0.85rem;
+  border-bottom: 1px solid var(--dropdown-separador-cor);
 }
 .nav-drop-nome {
-  font-family: var(--vm-na-font-display);
-  font-size: .85rem; font-weight: 800;
-  color: var(--vm-na-accent-light);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  letter-spacing: .01em;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--dropdown-nome-cor);
 }
 .nav-drop-sub {
-  font-size: .68rem;
-  color: var(--vm-na-text-mute);
+  font-size: 0.68rem;
   margin-top: 3px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--dropdown-texto-mute-cor);
 }
-
 .nav-drop-item {
-  display: flex; align-items: center; gap: .8rem;
-  padding: .72rem 1.1rem;
-  font-family: var(--vm-na-font-body);
-  font-size: .82rem; font-weight: 500;
-  color: var(--vm-na-text);
-  cursor: pointer; border: none; background: none;
-  width: 100%; text-align: left;
-  transition: background .15s, color .15s, padding-left .15s;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.72rem 1.1rem;
+  font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
   text-decoration: none;
-  opacity: .82;
+  transition: background 0.15s, color 0.15s, padding-left 0.15s;
+  opacity: 0.82;
+  color: var(--dropdown-texto-cor);
 }
 .nav-drop-item:hover {
-  background: var(--vm-na-bg-soft);
-  color: var(--vm-na-accent-light);
+  background: var(--dropdown-hover-fundo);
+  color: var(--dropdown-hover-texto-cor);
   opacity: 1;
   padding-left: 1.25rem;
 }
+.nav-drop-item:focus-visible {
+  outline: 2px solid var(--dropdown-hover-texto-cor);
+  outline-offset: -2px;
+}
 .nav-drop-item.danger {
-  color: rgba(240,140,140,0.78);
-  opacity: .82;
+  opacity: 0.82;
+  color: var(--dropdown-perigo-texto-cor);
 }
 .nav-drop-item.danger:hover {
-  background: rgba(200,60,60,0.14);
-  color: #f5a5a5;
+  background: var(--dropdown-perigo-hover-fundo);
+  color: var(--dropdown-perigo-texto-cor);
   opacity: 1;
 }
-
 .nav-drop-sep {
   height: 1px;
-  background: rgba(255,255,255,0.08);
-  margin: .35rem 0;
+  margin: 0.35rem 0;
+  background: var(--dropdown-separador-cor);
 }
-
-/* SVG icons — idênticos aos do /app (stroke 1.8, currentColor) */
 .nav-drop-icon {
   width: 18px; height: 18px;
-  stroke: currentColor; fill: none;
-  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   flex-shrink: 0;
+}
+
+/* ── Mobile: esconde "Criar conta" pra economizar espaço ── */
+@media (max-width: 640px) {
+  .btn-cadastro-nav { display: none; }
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║  NÍVEL 2 — :root (template neutro)                                ║
+   ║  Cinza genérico. Não pertence a nenhuma página.                  ║
+   ║  Serve só como template pra criar LP nova (copia e ajusta).      ║
+   ║  Se uma página esquecer de pôr classe no body, vê esse default   ║
+   ║  (legível, mas obviamente "não-marca" — sinaliza erro).          ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
+
+:root {
+  /* R1 — Navbar */
+  --navbar-fundo:                rgba(40, 40, 45, 0.92);
+  --navbar-borda-cor:            rgba(180, 180, 180, 0.15);
+  --navbar-blur:                 12px;
+  --navbar-sombra:               none;
+  /* R2 — Botão "Entrar" */
+  --btn-entrar-texto-cor:        #BBBBBB;
+  --btn-entrar-borda-cor:        rgba(187, 187, 187, 0.4);
+  --btn-entrar-hover-fundo:      rgba(187, 187, 187, 0.08);
+  --btn-entrar-hover-borda-cor:  #BBBBBB;
+  /* R3 — Botão "Criar conta" */
+  --btn-criar-texto-cor:         #1A1A1A;
+  --btn-criar-fundo:             #BBBBBB;
+  --btn-criar-hover-fundo:       #999999;
+  --btn-criar-sombra:            none;
+  --btn-criar-hover-sombra:      0 4px 12px rgba(0, 0, 0, 0.15);
+  /* R4 — Botão "Minha área" + Avatar */
+  --btn-minha-area-texto-cor:    #1A1A1A;
+  --btn-minha-area-fundo:        #BBBBBB;
+  --btn-minha-area-hover-fundo:  #999999;
+  --btn-minha-area-sombra:       none;
+  --btn-minha-area-hover-sombra: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --avatar-borda-cor:            rgba(187, 187, 187, 0.5);
+  --avatar-fundo-cor:            rgba(0, 0, 0, 0.2);
+  --avatar-iniciais-cor:         #BBBBBB;
+  /* R5 — Dropdown */
+  --dropdown-fundo:              rgba(30, 30, 35, 0.96);
+  --dropdown-blur:               14px;
+  --dropdown-borda-cor:          rgba(187, 187, 187, 0.25);
+  --dropdown-nome-cor:           #DDDDDD;
+  --dropdown-texto-cor:          rgba(220, 220, 220, 0.7);
+  --dropdown-texto-mute-cor:     rgba(220, 220, 220, 0.4);
+  --dropdown-hover-fundo:        rgba(255, 255, 255, 0.06);
+  --dropdown-hover-texto-cor:    #FFFFFF;
+  --dropdown-separador-cor:      rgba(255, 255, 255, 0.08);
+  --dropdown-perigo-texto-cor:   rgba(240, 140, 140, 0.75);
+  --dropdown-perigo-hover-fundo: rgba(200, 60, 60, 0.1);
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║  NÍVEL 3 — UMA POR PÁGINA                                         ║
+   ║  Autônomas: cada uma declara todas as 32, com valores próprios.  ║
+   ║  Mesmo que coincidam com outra, declaração é independente.       ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   INDEX — paleta escura padrão (preto + dourado)
+   ═══════════════════════════════════════════════════════════════════ */
+body.lp-index {
+  /* R1 */
+  --navbar-fundo:                rgba(13, 8, 0, 0.92);
+  --navbar-borda-cor:            rgba(200, 146, 42, 0.12);
+  --navbar-blur:                 12px;
+  --navbar-sombra:               none;
+  /* R2 */
+  --btn-entrar-texto-cor:        #C8922A;
+  --btn-entrar-borda-cor:        rgba(200, 146, 42, 0.4);
+  --btn-entrar-hover-fundo:      rgba(200, 146, 42, 0.1);
+  --btn-entrar-hover-borda-cor:  #C8922A;
+  /* R3 */
+  --btn-criar-texto-cor:         #1A1205;
+  --btn-criar-fundo:             #C8922A;
+  --btn-criar-hover-fundo:       #A17523;
+  --btn-criar-sombra:            none;
+  --btn-criar-hover-sombra:      none;
+  /* R4 */
+  --btn-minha-area-texto-cor:    #1A1205;
+  --btn-minha-area-fundo:        #C8922A;
+  --btn-minha-area-hover-fundo:  #A17523;
+  --btn-minha-area-sombra:       none;
+  --btn-minha-area-hover-sombra: none;
+  --avatar-borda-cor:            rgba(200, 146, 42, 0.5);
+  --avatar-fundo-cor:            rgba(200, 146, 42, 0.12);
+  --avatar-iniciais-cor:         #E8C97A;
+  /* R5 */
+  --dropdown-fundo:              rgba(13, 8, 0, 0.97);
+  --dropdown-blur:               20px;
+  --dropdown-borda-cor:          rgba(200, 146, 42, 0.25);
+  --dropdown-nome-cor:           #E8C97A;
+  --dropdown-texto-cor:          rgba(245, 240, 232, 0.7);
+  --dropdown-texto-mute-cor:     rgba(245, 240, 232, 0.35);
+  --dropdown-hover-fundo:        rgba(200, 146, 42, 0.08);
+  --dropdown-hover-texto-cor:    #E8C97A;
+  --dropdown-separador-cor:      rgba(200, 146, 42, 0.1);
+  --dropdown-perigo-texto-cor:   rgba(240, 100, 100, 0.75);
+  --dropdown-perigo-hover-fundo: rgba(200, 60, 60, 0.08);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   TESTE — paleta escura padrão (preto + dourado)
+   ═══════════════════════════════════════════════════════════════════ */
+body.lp-teste {
+  /* R1 */
+  --navbar-fundo:                rgba(13, 8, 0, 0.92);
+  --navbar-borda-cor:            rgba(200, 146, 42, 0.12);
+  --navbar-blur:                 12px;
+  --navbar-sombra:               none;
+  /* R2 */
+  --btn-entrar-texto-cor:        #C8922A;
+  --btn-entrar-borda-cor:        rgba(200, 146, 42, 0.4);
+  --btn-entrar-hover-fundo:      rgba(200, 146, 42, 0.1);
+  --btn-entrar-hover-borda-cor:  #C8922A;
+  /* R3 */
+  --btn-criar-texto-cor:         #1A1205;
+  --btn-criar-fundo:             #C8922A;
+  --btn-criar-hover-fundo:       #A17523;
+  --btn-criar-sombra:            none;
+  --btn-criar-hover-sombra:      none;
+  /* R4 */
+  --btn-minha-area-texto-cor:    #1A1205;
+  --btn-minha-area-fundo:        #C8922A;
+  --btn-minha-area-hover-fundo:  #A17523;
+  --btn-minha-area-sombra:       none;
+  --btn-minha-area-hover-sombra: none;
+  --avatar-borda-cor:            rgba(200, 146, 42, 0.5);
+  --avatar-fundo-cor:            rgba(200, 146, 42, 0.12);
+  --avatar-iniciais-cor:         #E8C97A;
+  /* R5 */
+  --dropdown-fundo:              rgba(13, 8, 0, 0.97);
+  --dropdown-blur:               20px;
+  --dropdown-borda-cor:          rgba(200, 146, 42, 0.25);
+  --dropdown-nome-cor:           #E8C97A;
+  --dropdown-texto-cor:          rgba(245, 240, 232, 0.7);
+  --dropdown-texto-mute-cor:     rgba(245, 240, 232, 0.35);
+  --dropdown-hover-fundo:        rgba(200, 146, 42, 0.08);
+  --dropdown-hover-texto-cor:    #E8C97A;
+  --dropdown-separador-cor:      rgba(200, 146, 42, 0.1);
+  --dropdown-perigo-texto-cor:   rgba(240, 100, 100, 0.75);
+  --dropdown-perigo-hover-fundo: rgba(200, 60, 60, 0.08);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   OURO DA REPROGRAMAÇÃO MENTAL — paleta escura quente (champanhe)
+   ═══════════════════════════════════════════════════════════════════ */
+body.lp-ouro {
+  /* R1 */
+  --navbar-fundo:                rgba(13, 8, 0, 0.92);
+  --navbar-borda-cor:            rgba(200, 146, 42, 0.12);
+  --navbar-blur:                 12px;
+  --navbar-sombra:               none;
+  /* R2 */
+  --btn-entrar-texto-cor:        #C8922A;
+  --btn-entrar-borda-cor:        rgba(200, 146, 42, 0.4);
+  --btn-entrar-hover-fundo:      rgba(200, 146, 42, 0.1);
+  --btn-entrar-hover-borda-cor:  #C8922A;
+  /* R3 */
+  --btn-criar-texto-cor:         #1A1205;
+  --btn-criar-fundo:             #C8922A;
+  --btn-criar-hover-fundo:       #A17523;
+  --btn-criar-sombra:            none;
+  --btn-criar-hover-sombra:      none;
+  /* R4 */
+  --btn-minha-area-texto-cor:    #1A1205;
+  --btn-minha-area-fundo:        #C8922A;
+  --btn-minha-area-hover-fundo:  #A17523;
+  --btn-minha-area-sombra:       none;
+  --btn-minha-area-hover-sombra: none;
+  --avatar-borda-cor:            rgba(200, 146, 42, 0.5);
+  --avatar-fundo-cor:            rgba(200, 146, 42, 0.12);
+  --avatar-iniciais-cor:         #E8C97A;
+  /* R5 */
+  --dropdown-fundo:              rgba(13, 8, 0, 0.97);
+  --dropdown-blur:               20px;
+  --dropdown-borda-cor:          rgba(200, 146, 42, 0.25);
+  --dropdown-nome-cor:           #E8C97A;
+  --dropdown-texto-cor:          rgba(245, 240, 232, 0.7);
+  --dropdown-texto-mute-cor:     rgba(245, 240, 232, 0.35);
+  --dropdown-hover-fundo:        rgba(200, 146, 42, 0.08);
+  --dropdown-hover-texto-cor:    #E8C97A;
+  --dropdown-separador-cor:      rgba(200, 146, 42, 0.1);
+  --dropdown-perigo-texto-cor:   rgba(240, 100, 100, 0.75);
+  --dropdown-perigo-hover-fundo: rgba(200, 60, 60, 0.08);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   LEI DA ATRAÇÃO BÍBLICA — paleta marinho profundo + dourado
+   ═══════════════════════════════════════════════════════════════════ */
+body.lp-lei {
+  /* R1 — fundo marinho */
+  --navbar-fundo:                rgba(5, 15, 30, 0.95);
+  --navbar-borda-cor:            rgba(200, 146, 42, 0.12);
+  --navbar-blur:                 12px;
+  --navbar-sombra:               none;
+  /* R2 */
+  --btn-entrar-texto-cor:        #C8922A;
+  --btn-entrar-borda-cor:        rgba(200, 146, 42, 0.4);
+  --btn-entrar-hover-fundo:      rgba(200, 146, 42, 0.1);
+  --btn-entrar-hover-borda-cor:  #C8922A;
+  /* R3 */
+  --btn-criar-texto-cor:         #1A1205;
+  --btn-criar-fundo:             #C8922A;
+  --btn-criar-hover-fundo:       #A17523;
+  --btn-criar-sombra:            none;
+  --btn-criar-hover-sombra:      none;
+  /* R4 */
+  --btn-minha-area-texto-cor:    #1A1205;
+  --btn-minha-area-fundo:        #C8922A;
+  --btn-minha-area-hover-fundo:  #A17523;
+  --btn-minha-area-sombra:       none;
+  --btn-minha-area-hover-sombra: none;
+  --avatar-borda-cor:            rgba(200, 146, 42, 0.5);
+  --avatar-fundo-cor:            rgba(200, 146, 42, 0.12);
+  --avatar-iniciais-cor:         #E8C97A;
+  /* R5 — dropdown marinho */
+  --dropdown-fundo:              rgba(5, 15, 30, 0.97);
+  --dropdown-blur:               20px;
+  --dropdown-borda-cor:          rgba(200, 146, 42, 0.25);
+  --dropdown-nome-cor:           #E8C97A;
+  --dropdown-texto-cor:          rgba(245, 240, 232, 0.7);
+  --dropdown-texto-mute-cor:     rgba(245, 240, 232, 0.35);
+  --dropdown-hover-fundo:        rgba(200, 146, 42, 0.08);
+  --dropdown-hover-texto-cor:    #E8C97A;
+  --dropdown-separador-cor:      rgba(200, 146, 42, 0.1);
+  --dropdown-perigo-texto-cor:   rgba(240, 100, 100, 0.75);
+  --dropdown-perigo-hover-fundo: rgba(200, 60, 60, 0.08);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   A TAL MANEIRA — paleta dourada gradient + drop light creme
+   ═══════════════════════════════════════════════════════════════════ */
+body.lp-talmaneira {
+  /* R1 — gradient dourado + sombra suave */
+  --navbar-fundo:                linear-gradient(135deg, #C8922A, #A17523);
+  --navbar-borda-cor:            rgba(61, 40, 20, 0.18);
+  --navbar-blur:                 12px;
+  --navbar-sombra:               0 2px 14px rgba(61, 40, 20, 0.18);
+  /* R2 — outline branco */
+  --btn-entrar-texto-cor:        #FFFFFF;
+  --btn-entrar-borda-cor:        rgba(255, 255, 255, 0.55);
+  --btn-entrar-hover-fundo:      rgba(255, 255, 255, 0.15);
+  --btn-entrar-hover-borda-cor:  #FFFFFF;
+  /* R3 — branco preenchido com texto dourado */
+  --btn-criar-texto-cor:         #A17523;
+  --btn-criar-fundo:             #FFFFFF;
+  --btn-criar-hover-fundo:       #FBF3DC;
+  --btn-criar-sombra:            0 2px 8px rgba(61, 40, 20, 0.25);
+  --btn-criar-hover-sombra:      0 4px 14px rgba(61, 40, 20, 0.35);
+  /* R4 — Minha área igual ao Criar conta */
+  --btn-minha-area-texto-cor:    #A17523;
+  --btn-minha-area-fundo:        #FFFFFF;
+  --btn-minha-area-hover-fundo:  #FBF3DC;
+  --btn-minha-area-sombra:       0 2px 8px rgba(61, 40, 20, 0.25);
+  --btn-minha-area-hover-sombra: 0 4px 14px rgba(61, 40, 20, 0.35);
+  --avatar-borda-cor:            rgba(255, 255, 255, 0.6);
+  --avatar-fundo-cor:            rgba(255, 255, 255, 0.2);
+  --avatar-iniciais-cor:         #FFFFFF;
+  /* R5 — dropdown creme light */
+  --dropdown-fundo:              rgba(255, 250, 236, 1);
+  --dropdown-blur:               20px;
+  --dropdown-borda-cor:          rgba(61, 40, 20, 0.1);
+  --dropdown-nome-cor:           #3D2814;
+  --dropdown-texto-cor:          #5C3F1A;
+  --dropdown-texto-mute-cor:     #8B6F47;
+  --dropdown-hover-fundo:        rgba(200, 146, 42, 0.1);
+  --dropdown-hover-texto-cor:    #A17523;
+  --dropdown-separador-cor:      rgba(61, 40, 20, 0.1);
+  --dropdown-perigo-texto-cor:   #C44444;
+  --dropdown-perigo-hover-fundo: rgba(200, 60, 60, 0.08);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   MÁGICA DO FLUIR — paleta dourada gradient + drop light creme
+   ═══════════════════════════════════════════════════════════════════ */
+body.lp-magica {
+  /* R1 — gradient dourado + sombra */
+  --navbar-fundo:                linear-gradient(135deg, #C8922A, #A17523);
+  --navbar-borda-cor:            rgba(61, 40, 20, 0.18);
+  --navbar-blur:                 12px;
+  --navbar-sombra:               0 2px 14px rgba(61, 40, 20, 0.18);
+  /* R2 — outline branco */
+  --btn-entrar-texto-cor:        #FFFFFF;
+  --btn-entrar-borda-cor:        rgba(255, 255, 255, 0.55);
+  --btn-entrar-hover-fundo:      rgba(255, 255, 255, 0.15);
+  --btn-entrar-hover-borda-cor:  #FFFFFF;
+  /* R3 — branco preenchido com texto dourado */
+  --btn-criar-texto-cor:         #A17523;
+  --btn-criar-fundo:             #FFFFFF;
+  --btn-criar-hover-fundo:       #FBF3DC;
+  --btn-criar-sombra:            0 2px 8px rgba(61, 40, 20, 0.25);
+  --btn-criar-hover-sombra:      0 4px 14px rgba(61, 40, 20, 0.35);
+  /* R4 */
+  --btn-minha-area-texto-cor:    #A17523;
+  --btn-minha-area-fundo:        #FFFFFF;
+  --btn-minha-area-hover-fundo:  #FBF3DC;
+  --btn-minha-area-sombra:       0 2px 8px rgba(61, 40, 20, 0.25);
+  --btn-minha-area-hover-sombra: 0 4px 14px rgba(61, 40, 20, 0.35);
+  --avatar-borda-cor:            rgba(255, 255, 255, 0.6);
+  --avatar-fundo-cor:            rgba(255, 255, 255, 0.2);
+  --avatar-iniciais-cor:         #FFFFFF;
+  /* R5 — dropdown creme light */
+  --dropdown-fundo:              rgba(255, 250, 236, 1);
+  --dropdown-blur:               20px;
+  --dropdown-borda-cor:          rgba(61, 40, 20, 0.1);
+  --dropdown-nome-cor:           #3D2814;
+  --dropdown-texto-cor:          #5C3F1A;
+  --dropdown-texto-mute-cor:     #8B6F47;
+  --dropdown-hover-fundo:        rgba(200, 146, 42, 0.1);
+  --dropdown-hover-texto-cor:    #A17523;
+  --dropdown-separador-cor:      rgba(61, 40, 20, 0.1);
+  --dropdown-perigo-texto-cor:   #C44444;
+  --dropdown-perigo-hover-fundo: rgba(200, 60, 60, 0.08);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   GUIA PRÁTICO DA RM — paleta light branca + laranja-dourado
+   ═══════════════════════════════════════════════════════════════════ */
+body.lp-guia {
+  /* R1 — navbar branca + sombra */
+  --navbar-fundo:                rgba(255, 255, 255, 0.96);
+  --navbar-borda-cor:            rgba(26, 18, 5, 0.08);
+  --navbar-blur:                 12px;
+  --navbar-sombra:               0 2px 12px rgba(26, 18, 5, 0.05);
+  /* R2 — outline laranja */
+  --btn-entrar-texto-cor:        #C2670F;
+  --btn-entrar-borda-cor:        rgba(230, 126, 34, 0.45);
+  --btn-entrar-hover-fundo:      rgba(230, 126, 34, 0.08);
+  --btn-entrar-hover-borda-cor:  #E67E22;
+  /* R3 — gradient warm-orange */
+  --btn-criar-texto-cor:         #FFFFFF;
+  --btn-criar-fundo:             linear-gradient(135deg, #D4A574, #E67E22);
+  --btn-criar-hover-fundo:       linear-gradient(135deg, #D4A574, #E67E22);
+  --btn-criar-sombra:            0 2px 8px rgba(230, 126, 34, 0.3);
+  --btn-criar-hover-sombra:      0 4px 14px rgba(230, 126, 34, 0.45);
+  /* R4 */
+  --btn-minha-area-texto-cor:    #FFFFFF;
+  --btn-minha-area-fundo:        linear-gradient(135deg, #D4A574, #E67E22);
+  --btn-minha-area-hover-fundo:  linear-gradient(135deg, #D4A574, #E67E22);
+  --btn-minha-area-sombra:       0 2px 8px rgba(230, 126, 34, 0.3);
+  --btn-minha-area-hover-sombra: 0 4px 14px rgba(230, 126, 34, 0.45);
+  --avatar-borda-cor:            rgba(230, 126, 34, 0.5);
+  --avatar-fundo-cor:            rgba(230, 126, 34, 0.1);
+  --avatar-iniciais-cor:         #C2670F;
+  /* R5 — dropdown branco */
+  --dropdown-fundo:              rgba(255, 255, 255, 1);
+  --dropdown-blur:               20px;
+  --dropdown-borda-cor:          rgba(26, 18, 5, 0.1);
+  --dropdown-nome-cor:           #1A1205;
+  --dropdown-texto-cor:          #5C3F0A;
+  --dropdown-texto-mute-cor:     #8B6520;
+  --dropdown-hover-fundo:        rgba(230, 126, 34, 0.08);
+  --dropdown-hover-texto-cor:    #C2670F;
+  --dropdown-separador-cor:      rgba(26, 18, 5, 0.08);
+  --dropdown-perigo-texto-cor:   #C44444;
+  --dropdown-perigo-hover-fundo: rgba(200, 60, 60, 0.08);
 }
