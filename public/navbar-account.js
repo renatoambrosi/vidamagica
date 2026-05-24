@@ -135,15 +135,37 @@
     function escAttr(s) { return escHtml(s); }
 
     // ── Fluxo principal ──
+    // Pinta IMEDIATAMENTE com o estado mais provável (sem esperar fetch)
+    // pra evitar FOUC ("pisca o menu"). Depois sincroniza com API em background.
+    //   - Tem access_token + último usuário cacheado → renderAvatar otimista
+    //   - Tem access mas sem cache de usuário → renderBotoes vazio temporário (raro)
+    //   - Sem access → renderBotoes (deslogado normal)
     (async function () {
       const access = window.VmSession.getAccess();
-      if (!access) { renderBotoes(); return; }
+      const cached = window.VmSession.getUsuarioLembrado && window.VmSession.getUsuarioLembrado();
 
+      // PRIMEIRO render (síncrono, sem flash)
+      if (access && cached) {
+        renderAvatar(cached);
+      } else if (!access) {
+        renderBotoes();
+        return; // deslogado, nada mais a fazer
+      }
+      // Se tem access mas sem cache, deixamos vazio até /me responder — menos comum.
+
+      // SEGUNDO: sincroniza com API em background (atualiza nome/foto se mudaram)
       try {
         const r = await fetch(`${API}/api/auth/me`, {
           headers: { Authorization: `Bearer ${access}` },
         });
-        if (r.ok) { renderAvatar(await r.json()); return; }
+        if (r.ok) {
+          const fresco = await r.json();
+          // Só re-renderiza se algo mudou (evita re-bind desnecessário de listeners)
+          if (!cached || cached.nome !== fresco.nome || cached.foto_url !== fresco.foto_url) {
+            renderAvatar(fresco);
+          }
+          return;
+        }
       } catch (_) { /* tenta renovar */ }
 
       const refresh = window.VmSession.getRefresh();
