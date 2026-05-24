@@ -468,7 +468,7 @@
           <!-- BLOCO RESPOSTA SUELLEN — estilo mensagem -->
           <div class="vmr-resposta" id="vmr-resposta">
             <div class="vmr-resposta-avatar" id="vmr-resposta-avatar">
-              <img src="/assets/avatar-suellen.jpg" alt="Suellen Seragi" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+              <img src="/assets/avatar-suellen.webp" alt="Suellen Seragi" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
               <div class="vmr-resposta-avatar-fallback" style="display:none">S</div>
             </div>
             <div class="vmr-resposta-bolha">

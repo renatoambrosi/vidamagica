@@ -15,7 +15,7 @@ const PRECOS_INICIAIS = {
   clube_vida_magica: {
     nome: 'Vida Mágica - Comunidade Suellen Seragi',
     tipo: 'comunidade',
-    imagem_url: '/assets/products/clube-vida-magica.png',
+    imagem_url: '/assets/products/clube-vida-magica.webp',
     link_checkout_padrao: 'https://pay.kiwify.com.br/4QyFVj2',
     link_checkout_aluno: '',
     mostrar_promo_ouro: false,
@@ -29,7 +29,7 @@ const PRECOS_INICIAIS = {
   teste_prosperidade: {
     nome: 'Teste de Prosperidade',
     tipo: 'promo',
-    imagem_url: '/assets/products/teste-prosperidade.png',
+    imagem_url: '/assets/products/teste-prosperidade.webp',
     link_checkout_padrao: '',
     link_checkout_aluno: '',
     mostrar_promo: false,
@@ -39,7 +39,7 @@ const PRECOS_INICIAIS = {
   teste_subconsciente: {
     nome: 'Teste do Subconsciente',
     tipo: 'promo',
-    imagem_url: '/assets/products/teste-subconsciente.png',
+    imagem_url: '/assets/products/teste-subconsciente.webp',
     link_checkout_padrao: '',
     link_checkout_aluno: '',
     mostrar_promo: false,
@@ -50,7 +50,7 @@ const PRECOS_INICIAIS = {
   vencendo_medo: {
     nome: 'E-Book Vencendo o Medo - Série Conhecer e Despertar',
     tipo: 'curso',
-    imagem_url: '/assets/products/ebook-vencendoomedo.png',
+    imagem_url: '/assets/products/ebook-vencendoomedo.webp',
     link_checkout_padrao: 'https://pay.kiwify.com.br/zr8CnoD',
     link_checkout_aluno: 'https://pay.kiwify.com.br/3Rsvddn',
     mostrar_promo: false,
@@ -67,7 +67,7 @@ const PRECOS_INICIAIS = {
   vencendo_desordem: {
     nome: 'E-Book Vencendo a Desordem - Série Conhecer e Despertar',
     tipo: 'curso',
-    imagem_url: '/assets/products/ebook-vencendoadesordem.png',
+    imagem_url: '/assets/products/ebook-vencendoadesordem.webp',
     link_checkout_padrao: '',
     link_checkout_aluno: '',
     mostrar_promo: false,
@@ -84,7 +84,7 @@ const PRECOS_INICIAIS = {
   vencendo_validacao: {
     nome: 'E-Book Vencendo a Validação - Série Conhecer e Despertar',
     tipo: 'curso',
-    imagem_url: '/assets/products/ebook-vencendoavalidacao.png',
+    imagem_url: '/assets/products/ebook-vencendoavalidacao.webp',
     link_checkout_padrao: '',
     link_checkout_aluno: '',
     mostrar_promo: false,
@@ -101,7 +101,7 @@ const PRECOS_INICIAIS = {
   vencendo_sobrevivencia: {
     nome: 'E-Book Vencendo a Sobrevivência - Série Conhecer e Despertar',
     tipo: 'curso',
-    imagem_url: '/assets/products/ebook-vencendoasobrevivencia.png',
+    imagem_url: '/assets/products/ebook-vencendoasobrevivencia.webp',
     link_checkout_padrao: '',
     link_checkout_aluno: '',
     mostrar_promo: false,
@@ -124,7 +124,7 @@ const PRECOS_INICIAIS = {
   guia_pratico: {
     nome: 'Guia Prático para Reprogramar a Mente',
     tipo: 'curso',
-    imagem_url: '/assets/products/guia-pratico.png',
+    imagem_url: '/assets/products/guia-pratico.webp',
     link_checkout_padrao: 'https://pay.kiwify.com.br/itNhMPe',
     link_checkout_aluno: 'https://pay.kiwify.com.br/YG9kuOH',
     mostrar_promo: false,
@@ -139,7 +139,7 @@ const PRECOS_INICIAIS = {
   atal_maneira_livro: {
     nome: 'Livro Digital A Tal Maneira 3 - Leis para a Riqueza e para a Vida',
     tipo: 'curso',
-    imagem_url: '/assets/products/atal-maneira-livro.png',
+    imagem_url: '/assets/products/atal-maneira-livro.webp',
     link_checkout_padrao: 'https://pay.kiwify.com.br/IId7xgS',
     link_checkout_aluno: 'https://pay.kiwify.com.br/fZCFTb6',
     mostrar_promo: false,
@@ -155,7 +155,7 @@ const PRECOS_INICIAIS = {
   ouro_reprogramacao: {
     nome: 'Curso O Ouro da Reprogramação Mental',
     tipo: 'curso',
-    imagem_url: '/assets/products/ouro-reprogramacao.png',
+    imagem_url: '/assets/products/ouro-reprogramacao.webp',
     link_checkout_padrao: 'https://pay.kiwify.com.br/F62VNpy',
     link_checkout_aluno: 'https://pay.kiwify.com.br/VYTiaCm',
     mostrar_promo: false,
@@ -170,7 +170,7 @@ const PRECOS_INICIAIS = {
   lda_biblica: {
     nome: 'Curso Lei da Atração Bíblica (LDA)',
     tipo: 'curso',
-    imagem_url: '/assets/products/lda-biblica.png',
+    imagem_url: '/assets/products/lda-biblica.webp',
     link_checkout_padrao: 'https://pay.kiwify.com.br/8BoTzTD',
     link_checkout_aluno: 'https://pay.kiwify.com.br/k2TZ8cU',
     mostrar_promo: false,
@@ -185,7 +185,7 @@ const PRECOS_INICIAIS = {
   atal_maneira_curso: {
     nome: 'Curso A Tal Maneira - O Curso Definitivo da Riqueza Bíblica',
     tipo: 'curso',
-    imagem_url: '/assets/products/atal-maneira-curso.png',
+    imagem_url: '/assets/products/atal-maneira-curso.webp',
     link_checkout_padrao: 'https://pay.kiwify.com.br/csxtcEQ',
     link_checkout_aluno: 'https://pay.kiwify.com.br/lT8PPM4',
     mostrar_promo: false,
@@ -203,7 +203,7 @@ const PRECOS_INICIAIS = {
   atal_maneira_combo: {
     nome: 'Combo A Tal Maneira - Livro Digital + Curso Completo',
     tipo: 'curso',
-    imagem_url: '/assets/products/atal-maneira-combo.png',
+    imagem_url: '/assets/products/atal-maneira-combo.webp',
     link_checkout_padrao: 'https://pay.kiwify.com.br/c7dRjkL',
     link_checkout_aluno: 'https://pay.kiwify.com.br/g47SRft',
     mostrar_promo: false,
@@ -221,7 +221,7 @@ const PRECOS_INICIAIS = {
   magica_fluir: {
     nome: 'A Mágica do Fluir - Guia de Bolso',
     tipo: 'curso',
-    imagem_url: '/assets/products/magica-fluir.png',
+    imagem_url: '/assets/products/magica-fluir.webp',
     link_checkout_padrao: 'https://pay.kiwify.com.br/yl5TJqM',
     link_checkout_aluno: 'https://pay.kiwify.com.br/AkYXx5F',
     mostrar_promo: false,

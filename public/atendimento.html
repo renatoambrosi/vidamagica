@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#E8DCC0">
   <title>Atendimento — Vida Mágica</title>
-  <link rel="icon" href="/favicon.png">
+  <link rel="icon" href="/assets/favicon.webp">
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <link rel="stylesheet" href="/assets/fonts/fonts.css">
 <style>
@@ -52,7 +52,7 @@ body {
   background-color: #E8DCC0;
   background-image:
     linear-gradient(180deg, rgba(255,250,240,0.72) 0%, rgba(248,243,232,0.60) 40%, rgba(240,232,215,0.55) 100%),
-    url('/assets/background-theme.jpg');
+    url('/assets/background-theme.webp');
   background-size: cover;
   background-position: center top;
   background-attachment: fixed;
@@ -1227,7 +1227,7 @@ ul, ol { list-style: none; }
   background-color: #E8DCC0;
   background-image:
     linear-gradient(180deg, rgba(255,250,240,0.72) 0%, rgba(248,243,232,0.6) 40%, rgba(240,232,215,0.55) 100%),
-    url('/assets/background-theme.jpg');
+    url('/assets/background-theme.webp');
   background-size: cover;
   background-position: center top;
   padding: 2rem;
@@ -1538,7 +1538,7 @@ ul, ol { list-style: none; }
 
 <div id="tela-login">
   <div class="login-marca">
-    <img src="/assets/logo-equipe.png" alt="Vida Mágica" onerror="this.style.display='none'">
+    <img src="/assets/logo-equipe.webp" alt="Vida Mágica" onerror="this.style.display='none'">
     <span class="login-marca-txt">Vida Mágica</span>
   </div>
   <div class="login-sub">Painel de Atendimento</div>
@@ -1571,11 +1571,11 @@ ul, ol { list-style: none; }
       <div class="identidade-switch" id="identidade-switch" data-modo="suellen">
         <div class="identidade-pill"></div>
         <button class="identidade-opcao ativa" data-modo="suellen">
-          <img src="/assets/avatar-suellen.jpg" alt="Suellen" onerror="this.style.display='none'">
+          <img src="/assets/avatar-suellen.webp" alt="Suellen" onerror="this.style.display='none'">
           <span>Suellen</span>
         </button>
         <button class="identidade-opcao" data-modo="equipe">
-          <img src="/assets/logo-equipe.png" alt="Equipe" onerror="this.style.display='none'">
+          <img src="/assets/logo-equipe.webp" alt="Equipe" onerror="this.style.display='none'">
           <span>Equipe</span>
         </button>
       </div>
@@ -1752,7 +1752,7 @@ function tierSLA(tier) {
 }
 
 function canalLabel(tipo) { return tipo === 'suporte' ? 'Suporte' : 'Suellen'; }
-function canalImg(tipo) { return tipo === 'suporte' ? '/assets/logo-equipe.png' : '/assets/avatar-suellen.jpg'; }
+function canalImg(tipo) { return tipo === 'suporte' ? '/assets/logo-equipe.webp' : '/assets/avatar-suellen.webp'; }
 
 (function() {
   const c = document.getElementById('particulas');
@@ -1928,7 +1928,7 @@ function renderLista() {
   // Canal Suellen
   if (porCanal.suellen.length) {
     html += `<div class="canal-divisor">
-      <span class="avatar"><img src="/assets/avatar-suellen.jpg" onerror="this.style.display='none';this.parentElement.textContent='S'"></span>
+      <span class="avatar"><img src="/assets/avatar-suellen.webp" onerror="this.style.display='none';this.parentElement.textContent='S'"></span>
       <span>Suellen</span>
       <span class="count">${porCanal.suellen.length}</span>
     </div>`;
@@ -1938,7 +1938,7 @@ function renderLista() {
   // Canal Suporte
   if (porCanal.suporte.length) {
     html += `<div class="canal-divisor suporte">
-      <span class="avatar"><img src="/assets/logo-equipe.png" onerror="this.style.display='none';this.parentElement.textContent='?'"></span>
+      <span class="avatar"><img src="/assets/logo-equipe.webp" onerror="this.style.display='none';this.parentElement.textContent='?'"></span>
       <span>Suporte</span>
       <span class="count">${porCanal.suporte.length}</span>
     </div>`;
@@ -2319,7 +2319,7 @@ function criarMsgAvatarAtend(msg, isAluna) {
     }
   } else {
     const ident = msg.identidade || 'suellen';
-    img.src = ident === 'equipe' ? '/assets/logo-equipe.png' : '/assets/avatar-suellen.jpg';
+    img.src = ident === 'equipe' ? '/assets/logo-equipe.webp' : '/assets/avatar-suellen.webp';
     img.alt = ident === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen';
   }
   img.onerror = () => { img.style.display = 'none'; };
@@ -2349,7 +2349,7 @@ function criarBolha(msg) {
   if (!isAluna) {
     const ident = msg.identidade || 'suellen';
     const nomeIdent = ident === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen';
-    const imgSrc = ident === 'equipe' ? '/assets/logo-equipe.png' : '/assets/avatar-suellen.jpg';
+    const imgSrc = ident === 'equipe' ? '/assets/logo-equipe.webp' : '/assets/avatar-suellen.webp';
     const etiq = document.createElement('div');
     etiq.className = `msg-etiqueta ${ident === 'equipe' ? 'equipe' : ''}`;
     etiq.innerHTML = `<img src="${imgSrc}" alt="${nomeIdent}" onerror="this.style.display='none'"><span>${nomeIdent}</span>`;
@@ -2494,7 +2494,7 @@ function criarAudioBolha(msg) {
   if (!isAluna) {
     const ident = msg.identidade || 'suellen';
     const nomeIdent = ident === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen';
-    const imgSrc = ident === 'equipe' ? '/assets/logo-equipe.png' : '/assets/avatar-suellen.jpg';
+    const imgSrc = ident === 'equipe' ? '/assets/logo-equipe.webp' : '/assets/avatar-suellen.webp';
     const etiq = document.createElement('div');
     etiq.className = `msg-etiqueta ${ident==='equipe'?'equipe':''}`;
     etiq.innerHTML = `<img src="${imgSrc}" onerror="this.style.display='none'"><span>${nomeIdent}</span>`;

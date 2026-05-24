@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vida Mágica — CRM</title>
+<link rel="icon" href="/assets/favicon.webp">
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
 <style>
 :root {
@@ -520,7 +521,7 @@ select option { background: #1a1205; }
 
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
-    <img src="/assets/logo-horizontal.png" alt="Vida Mágica">
+    <img src="/assets/logo-horizontal.webp" alt="Vida Mágica">
   </div>
 
   <div class="sidebar-section-label">Conteúdo</div>
@@ -1570,19 +1571,19 @@ let dadosProdutos = {};
 // Fallback de imagens caso o admin ainda não tenha preenchido imagem_url
 // na aba Preços. A FONTE DA VERDADE é p.imagem_url (vindo do banco precos).
 const IMGS = {
-  clube_vida_magica:      '/assets/products/clube-vida-magica.png',
-  teste_prosperidade:     '/assets/products/teste-prosperidade.png',
-  teste_subconsciente:    '/assets/products/teste-subconsciente.png',
-  vencendo_medo:          '/assets/products/ebook-vencendoomedo.png',
-  vencendo_desordem:      '/assets/products/ebook-vencendoadesordem.png',
-  vencendo_validacao:     '/assets/products/ebook-vencendoavalidacao.png',
-  vencendo_sobrevivencia: '/assets/products/ebook-vencendoasobrevivencia.png',
-  magica_fluir:           '/assets/products/magica-fluir.png',
-  guia_pratico:           '/assets/products/guia-pratico.png',
-  atal_maneira_livro:     '/assets/products/atal-maneira-livro.png',
-  ouro_reprogramacao:     '/assets/products/ouro-reprogramacao.png',
-  lda_biblica:            '/assets/products/lda-biblica.png',
-  atal_maneira_curso:     '/assets/products/atal-maneira-curso.png',
+  clube_vida_magica:      '/assets/products/clube-vida-magica.webp',
+  teste_prosperidade:     '/assets/products/teste-prosperidade.webp',
+  teste_subconsciente:    '/assets/products/teste-subconsciente.webp',
+  vencendo_medo:          '/assets/products/ebook-vencendoomedo.webp',
+  vencendo_desordem:      '/assets/products/ebook-vencendoadesordem.webp',
+  vencendo_validacao:     '/assets/products/ebook-vencendoavalidacao.webp',
+  vencendo_sobrevivencia: '/assets/products/ebook-vencendoasobrevivencia.webp',
+  magica_fluir:           '/assets/products/magica-fluir.webp',
+  guia_pratico:           '/assets/products/guia-pratico.webp',
+  atal_maneira_livro:     '/assets/products/atal-maneira-livro.webp',
+  ouro_reprogramacao:     '/assets/products/ouro-reprogramacao.webp',
+  lda_biblica:            '/assets/products/lda-biblica.webp',
+  atal_maneira_curso:     '/assets/products/atal-maneira-curso.webp',
 };
 function calcDesc(de, por) { const a=parseFloat(String(de).replace(',','.')), b=parseFloat(String(por).replace(',','.')); if(!a||!b||b>=a) return null; return Math.round(((a-b)/a)*100); }
 function getVal(card, field) { return card.querySelector(`[data-field="${field}"]`)?.value||''; }

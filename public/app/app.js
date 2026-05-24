@@ -1864,7 +1864,7 @@ function renderPopupClube(ctx) {
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
     <div class="popup-clube-icone" aria-hidden="true">
-      <img src="/assets/favicon.png" alt="" onerror="this.style.display='none'">
+      <img src="/assets/favicon.webp" alt="" onerror="this.style.display='none'">
     </div>
     <div class="popup-clube-textos">
       <div class="popup-clube-titulo">Clube Vida Mágica</div>
@@ -2898,7 +2898,7 @@ async function abrirCanal(canal) {
   const headerImg = document.getElementById('chat-canal-header-img');
   const headerNome = document.getElementById('chat-canal-header-nome');
   const headerStatus = document.getElementById('chat-canal-header-status');
-  if (headerImg) headerImg.src = isS ? '/assets/avatar-suellen.jpg' : '/assets/logo-equipe.png';
+  if (headerImg) headerImg.src = isS ? '/assets/avatar-suellen.webp' : '/assets/logo-equipe.webp';
   if (headerNome) headerNome.textContent = isS ? 'Suellen Seragi' : 'Equipe Vida Mágica';
   if (headerStatus) headerStatus.textContent = isS ? 'Atendimento' : 'Dúvidas e suporte';
 
@@ -3132,7 +3132,7 @@ function criarMsgAvatarChat(msg, isAluna) {
     img.alt = usuario?.nome || 'Você';
   } else {
     const ident = msg.identidade || 'suellen';
-    img.src = ident === 'equipe' ? '/assets/logo-equipe.png' : '/assets/avatar-suellen.jpg';
+    img.src = ident === 'equipe' ? '/assets/logo-equipe.webp' : '/assets/avatar-suellen.webp';
     img.alt = ident === 'equipe' ? 'Equipe Vida Mágica' : 'Suellen Seragi';
   }
   img.onerror = () => { img.style.display = 'none'; };
