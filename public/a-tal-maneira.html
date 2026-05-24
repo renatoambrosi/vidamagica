@@ -124,6 +124,22 @@
       box-shadow: 0 2px 8px rgba(61,40,20,0.25);
     }
     .btn-cadastro-nav:hover { transform: translateY(-1px); background: var(--bg-cream); box-shadow: 0 4px 14px rgba(61,40,20,0.35); }
+    /* Minha área — visível ao lado do avatar quando logada. Mesma família visual do .btn-cadastro-nav, com ícone */
+    .btn-minha-area {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-family: var(--font-body);
+      font-size: 0.78rem; font-weight: 700;
+      color: var(--gold-deep);
+      background: #FFFFFF;
+      border: none;
+      border-radius: var(--r-full);
+      padding: 0.42rem 1rem;
+      cursor: pointer; transition: all 0.2s;
+      text-decoration: none; letter-spacing: 0.04em;
+      box-shadow: 0 2px 8px rgba(61,40,20,0.25);
+    }
+    .btn-minha-area:hover { transform: translateY(-1px); background: var(--bg-cream); box-shadow: 0 4px 14px rgba(61,40,20,0.35); }
+    .btn-minha-area svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 
     /* AVATAR NAVBAR — ajustado pra fundo dourado da navbar (precisa contrastar com branco) */
     .nav-avatar-wrap { position: relative; }
@@ -141,7 +157,7 @@
     .nav-drop-item.danger { color: #c44; }
     .nav-drop-item.danger:hover { background: rgba(200,60,60,.08); color: #a33; }
     .nav-drop-sep { height: 1px; background: rgba(61,40,20,.1); margin: .2rem 0; }
-    .nav-drop-icon { font-size: .9rem; width: 16px; text-align: center; flex-shrink: 0; }
+    .nav-drop-icon { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 
     /* SCROLL PROGRESS — IDÊNTICO (cor adaptada) */
     .scroll-progress { position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: 2px; background: linear-gradient(90deg, var(--gold-radiant), var(--gold), var(--gold-deep)); transform-origin: 0 0; transform: scaleX(0); transition: transform 0.05s linear; box-shadow: 0 0 12px var(--gold-glow); }
@@ -803,7 +819,12 @@
         const fotoHtml = usuario.foto_url
           ? `<img src="${usuario.foto_url}" alt="${usuario.nome}" class="nav-avatar-img">`
           : `<span class="nav-avatar-iniciais">${iniciais}</span>`;
+        // SVGs canônicos COPIADOS de public/app.html (.topo-btn e .bottom-nav). NÃO inventar.
         actions.innerHTML = `
+          <a href="/app" class="btn-minha-area" aria-label="Ir para minha área">
+            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Minha área
+          </a>
           <div class="nav-avatar-wrap" id="nav-avatar-wrap">
             <button class="nav-avatar-btn" onclick="toggleNavDrop()" aria-label="Menu">${fotoHtml}</button>
             <div class="nav-drop" id="nav-drop">
@@ -811,9 +832,31 @@
                 <div class="nav-drop-nome">${usuario.nome||'Minha conta'}</div>
                 <div class="nav-drop-sub">${usuario.email||usuario.telefone_formatado||''}</div>
               </div>
-              <a href="/app" class="nav-drop-item"><span class="nav-drop-icon">🌱</span> Minha área</a>
+              <a href="/app" class="nav-drop-item">
+                <svg class="nav-drop-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                Minha área
+              </a>
+              <a href="/app/jornada" class="nav-drop-item">
+                <svg class="nav-drop-icon" viewBox="0 0 24 24"><path d="M12 2 L14.5 9 L22 9 L16 13.5 L18.5 21 L12 16.5 L5.5 21 L8 13.5 L2 9 L9.5 9 Z"/></svg>
+                Minha Jornada
+              </a>
+              <a href="/app/chat" class="nav-drop-item">
+                <svg class="nav-drop-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Fale com a Su
+              </a>
+              <a href="/app/loja" class="nav-drop-item">
+                <svg class="nav-drop-icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                Materiais
+              </a>
+              <a href="/app/perfil" class="nav-drop-item">
+                <svg class="nav-drop-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Perfil
+              </a>
               <div class="nav-drop-sep"></div>
-              <button class="nav-drop-item danger" onclick="navLogout()"><span class="nav-drop-icon">🚪</span> Sair</button>
+              <button class="nav-drop-item danger" onclick="navLogout()">
+                <svg class="nav-drop-icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sair
+              </button>
             </div>
           </div>`;
         document.addEventListener('click', function(e){
