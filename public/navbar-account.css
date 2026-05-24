@@ -39,8 +39,12 @@
   --vm-na-accent-light:  #E8C97A;
   --vm-na-accent-bright: #F4D998;
   /* Estrutura */
-  --vm-na-bg:            rgba(13,8,0,0.88);   /* fundo do drop — opaco o suficiente pra leitura */
-  --vm-na-bg-soft:       rgba(20,12,4,0.70);  /* hover sutil */
+  /* Fundo do drop: PRECISA ser quase opaco. backdrop-filter da .navbar
+     pai cria stacking context próprio, então o backdrop-filter do drop
+     fica preso e não blurra o body atrás. Sem fundo opaco, drop fica
+     visualmente transparente sobre LPs de fundo claro/dourado. */
+  --vm-na-bg:            rgba(13,8,0,0.96);
+  --vm-na-bg-soft:       rgba(40,28,12,0.70);  /* hover sutil */
   --vm-na-text:          #F5F0E8;
   --vm-na-text-mute:     rgba(245,240,232,0.45);
   --vm-na-on-accent:     #1A1205;             /* cor do texto SOBRE o acento (botão) */
@@ -104,13 +108,15 @@
   pointer-events: none;
 }
 
-/* ── DROPDOWN — escuro translúcido com leitura sólida ── */
+/* ── DROPDOWN — fundo quase opaco (leitura garantida em qualquer LP) ──
+   isolation:isolate força stacking context próprio (importante pra LPs
+   onde a .navbar pai tem backdrop-filter — sem isso o drop herda contexto
+   e ferra a renderização do fundo). */
 .nav-drop {
   position: absolute; top: calc(100% + 12px); right: 0;
   min-width: 240px;
   background: var(--vm-na-bg);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  isolation: isolate;
   border: 1.5px solid var(--vm-na-accent);
   border-radius: 18px;
   box-shadow:
