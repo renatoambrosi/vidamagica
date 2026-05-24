@@ -39,12 +39,8 @@
   --vm-na-accent-light:  #E8C97A;
   --vm-na-accent-bright: #F4D998;
   /* Estrutura */
-  /* Fundo do drop: PRECISA ser quase opaco. backdrop-filter da .navbar
-     pai cria stacking context próprio, então o backdrop-filter do drop
-     fica preso e não blurra o body atrás. Sem fundo opaco, drop fica
-     visualmente transparente sobre LPs de fundo claro/dourado. */
-  --vm-na-bg:            rgba(13,8,0,0.96);
-  --vm-na-bg-soft:       rgba(40,28,12,0.70);  /* hover sutil */
+  --vm-na-bg:            rgba(13,8,0,0.88);   /* fundo do drop — opaco o suficiente pra leitura */
+  --vm-na-bg-soft:       rgba(20,12,4,0.70);  /* hover sutil */
   --vm-na-text:          #F5F0E8;
   --vm-na-text-mute:     rgba(245,240,232,0.45);
   --vm-na-on-accent:     #1A1205;             /* cor do texto SOBRE o acento (botão) */
@@ -108,31 +104,24 @@
   pointer-events: none;
 }
 
-/* ── DROPDOWN — fundo SÓLIDO hardcoded com !important ──
-   Versão defensiva: zero variável CSS no background, zero backdrop-filter,
-   !important pra ganhar specificity contra qualquer override pré-existente.
-   Se MESMO ASSIM aparecer transparente, o problema é fora do CSS
-   (cache Cloudflare/Service Worker servindo versão antiga). */
+/* ── DROPDOWN — escuro translúcido com leitura sólida ── */
 .nav-drop {
-  position: absolute !important;
-  top: calc(100% + 12px) !important;
-  right: 0 !important;
-  min-width: 240px !important;
-  background-color: #0D0800 !important;
-  background-image: linear-gradient(180deg, rgba(40,28,12,0.55), rgba(13,8,0,0)) !important;
-  isolation: isolate;
-  border: 1.5px solid var(--vm-na-accent, #C8922A) !important;
-  border-radius: 18px !important;
+  position: absolute; top: calc(100% + 12px); right: 0;
+  min-width: 240px;
+  background: var(--vm-na-bg);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1.5px solid var(--vm-na-accent);
+  border-radius: 18px;
   box-shadow:
     0 0 0 1px rgba(0,0,0,0.08),
     0 20px 56px rgba(0,0,0,0.55),
-    0 0 32px rgba(0,0,0,0.18) !important;
-  overflow: hidden !important;
-  opacity: 0;
-  transform: translateY(-6px) scale(.97);
+    0 0 32px rgba(0,0,0,0.18);
+  overflow: hidden;
+  opacity: 0; transform: translateY(-6px) scale(.97);
   pointer-events: none;
   transition: opacity .2s, transform .2s;
-  z-index: 300 !important;
+  z-index: 300;
 }
 .nav-drop.aberto { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
 
