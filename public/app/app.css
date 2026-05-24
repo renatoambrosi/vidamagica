@@ -1294,7 +1294,7 @@ body.tesouro-modal-aberto .tesouro-bau.flutuante {
   /* Usa --kbd-offset (setado por JS via visualViewport) */
   bottom: calc(var(--nav-h) + var(--safe-bottom) + var(--kbd-offset, 0px));
   flex-direction: column;
-  /* Sem background nem blur — o fundo do body (background-theme.jpg) atravessa
+  /* Sem background nem blur — o fundo do body (background-theme.webp) atravessa
      a área do chat, igual ao painel de atendimento da Suellen.
      Header, banner e input continuam sólidos/vidro porque têm seu próprio fundo. */
   max-width: var(--content-max);
