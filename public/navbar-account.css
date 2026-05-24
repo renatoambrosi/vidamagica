@@ -1,0 +1,187 @@
+/* ============================================================
+   VIDA MÁGICA — public/navbar-account.css
+   Componente compartilhado: botão "Minha área" + avatar + dropdown
+   de conta. Usado em index.html + 6 LPs públicas.
+
+   ┌──────────────────────────────────────────────────────────┐
+   │ COMO CUSTOMIZAR POR LP                                   │
+   │                                                          │
+   │ O componente respeita variáveis CSS sobrescritas no       │
+   │ :root da LP. Pra mudar a paleta em uma LP específica,     │
+   │ adicione no :root da LP:                                  │
+   │                                                          │
+   │   :root {                                                │
+   │     --vm-na-accent:       #E8B85C;  /* botão+borda */    │
+   │     --vm-na-accent-deep:  #C8922A;                       │
+   │     --vm-na-accent-light: #E8C97A;  /* texto destaque */ │
+   │     --vm-na-bg:           rgba(20,10,2,0.92); /* opc */  │
+   │   }                                                      │
+   │                                                          │
+   │ Se a LP NÃO sobrescrever, usa os defaults dourados        │
+   │ abaixo. O fundo do dropdown sempre é escuro/translúcido    │
+   │ por padrão (pra garantir leitura). LP que quiser fundo    │
+   │ light pode trocar --vm-na-bg.                             │
+   └──────────────────────────────────────────────────────────┘
+
+   ÍCONES: SVGs canônicos COPIADOS de public/app.html (.topo-btn
+   e .bottom-nav). NÃO inventar paralelo.
+
+   Pareado com /navbar-account.js (lógica de auth/render/logout).
+   ============================================================ */
+
+/* ── DEFAULTS (Vida Mágica — dourado padrão) ────────────────
+   Cada LP pode sobrescrever esses valores no próprio :root pra
+   adaptar à paleta. */
+:root {
+  /* Acento — botão "Minha área", borda do drop, hover */
+  --vm-na-accent:        #C8922A;
+  --vm-na-accent-deep:   #A17523;
+  --vm-na-accent-light:  #E8C97A;
+  --vm-na-accent-bright: #F4D998;
+  /* Estrutura */
+  --vm-na-bg:            rgba(13,8,0,0.88);   /* fundo do drop — opaco o suficiente pra leitura */
+  --vm-na-bg-soft:       rgba(20,12,4,0.70);  /* hover sutil */
+  --vm-na-text:          #F5F0E8;
+  --vm-na-text-mute:     rgba(245,240,232,0.45);
+  --vm-na-on-accent:     #1A1205;             /* cor do texto SOBRE o acento (botão) */
+  /* Tipografia */
+  --vm-na-font-display:  'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  --vm-na-font-body:     'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ── BOTÃO "MINHA ÁREA" (visível ao lado do avatar) ─────── */
+.btn-minha-area {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-family: var(--vm-na-font-display);
+  font-size: .72rem; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase;
+  color: var(--vm-na-on-accent);
+  background: linear-gradient(135deg, var(--vm-na-accent), var(--vm-na-accent-deep));
+  border: none;
+  border-radius: 9999px;
+  padding: .45rem 1rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform .15s, box-shadow .15s, filter .15s;
+  box-shadow: 0 2px 12px rgba(0,0,0,.18);
+  white-space: nowrap;
+}
+.btn-minha-area:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 4px 18px rgba(0,0,0,.28);
+  transform: translateY(-1px);
+}
+.btn-minha-area:active { transform: translateY(0); }
+.btn-minha-area svg {
+  width: 14px; height: 14px;
+  stroke: currentColor; fill: none;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+/* ── AVATAR ── */
+.nav-avatar-wrap { position: relative; }
+.nav-avatar-btn {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 2px solid var(--vm-na-accent);
+  background: rgba(0,0,0,0.18);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; padding: 0;
+  transition: border-color .2s, box-shadow .2s, transform .15s;
+}
+.nav-avatar-btn:hover {
+  border-color: var(--vm-na-accent-bright);
+  box-shadow: 0 0 0 3px rgba(200,146,42,.18);
+}
+.nav-avatar-btn:active { transform: scale(.94); }
+.nav-avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.nav-avatar-iniciais {
+  font-family: var(--vm-na-font-display);
+  font-size: .74rem; font-weight: 800;
+  color: var(--vm-na-accent-light);
+  letter-spacing: .05em; text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* ── DROPDOWN — escuro translúcido com leitura sólida ── */
+.nav-drop {
+  position: absolute; top: calc(100% + 12px); right: 0;
+  min-width: 240px;
+  background: var(--vm-na-bg);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1.5px solid var(--vm-na-accent);
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.08),
+    0 20px 56px rgba(0,0,0,0.55),
+    0 0 32px rgba(0,0,0,0.18);
+  overflow: hidden;
+  opacity: 0; transform: translateY(-6px) scale(.97);
+  pointer-events: none;
+  transition: opacity .2s, transform .2s;
+  z-index: 300;
+}
+.nav-drop.aberto { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+
+.nav-drop-header {
+  padding: 1rem 1.1rem .85rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(180deg, var(--vm-na-bg-soft), transparent);
+}
+.nav-drop-nome {
+  font-family: var(--vm-na-font-display);
+  font-size: .85rem; font-weight: 800;
+  color: var(--vm-na-accent-light);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  letter-spacing: .01em;
+}
+.nav-drop-sub {
+  font-size: .68rem;
+  color: var(--vm-na-text-mute);
+  margin-top: 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.nav-drop-item {
+  display: flex; align-items: center; gap: .8rem;
+  padding: .72rem 1.1rem;
+  font-family: var(--vm-na-font-body);
+  font-size: .82rem; font-weight: 500;
+  color: var(--vm-na-text);
+  cursor: pointer; border: none; background: none;
+  width: 100%; text-align: left;
+  transition: background .15s, color .15s, padding-left .15s;
+  text-decoration: none;
+  opacity: .82;
+}
+.nav-drop-item:hover {
+  background: var(--vm-na-bg-soft);
+  color: var(--vm-na-accent-light);
+  opacity: 1;
+  padding-left: 1.25rem;
+}
+.nav-drop-item.danger {
+  color: rgba(240,140,140,0.78);
+  opacity: .82;
+}
+.nav-drop-item.danger:hover {
+  background: rgba(200,60,60,0.14);
+  color: #f5a5a5;
+  opacity: 1;
+}
+
+.nav-drop-sep {
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+  margin: .35rem 0;
+}
+
+/* SVG icons — idênticos aos do /app (stroke 1.8, currentColor) */
+.nav-drop-icon {
+  width: 18px; height: 18px;
+  stroke: currentColor; fill: none;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  flex-shrink: 0;
+}

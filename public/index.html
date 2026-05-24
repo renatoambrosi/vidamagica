@@ -7,6 +7,7 @@
 
   <link rel="icon" href="/assets/favicon.webp">
   <link rel="stylesheet" href="/assets/fonts/fonts.css">
+  <link rel="stylesheet" href="/navbar-account.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
 
   <style>
@@ -1073,102 +1074,7 @@
       .dropdown-panel.open { padding: 1.75rem 1.5rem 2rem; }
     }
   
-    /* ── BOTÃO "MINHA ÁREA" (visível ao lado do avatar quando logada) ── */
-    .btn-minha-area {
-      display: inline-flex; align-items: center; gap: .4rem;
-      font-family: var(--font-display);
-      font-size: .72rem; font-weight: 700;
-      letter-spacing: .05em; text-transform: uppercase;
-      color: var(--color-brown-dark, #1A1205);
-      background: linear-gradient(135deg, var(--color-gold-amber, #C8922A), var(--color-gold-deep, #A17523));
-      border: none;
-      border-radius: 9999px;
-      padding: .45rem 1rem;
-      cursor: pointer;
-      text-decoration: none;
-      transition: transform .15s, box-shadow .15s, filter .15s;
-      box-shadow: 0 2px 12px rgba(200,146,42,.32);
-    }
-    .btn-minha-area:hover { filter: brightness(1.08); box-shadow: 0 4px 18px rgba(200,146,42,.45); transform: translateY(-1px); }
-    .btn-minha-area:active { transform: translateY(0); }
-    .btn-minha-area svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
-
-    /* ── AVATAR NAVBAR ── */
-    .nav-avatar-wrap { position: relative; }
-    .nav-avatar-btn { width: 38px; height: 38px; border-radius: 50%; border: 2px solid rgba(200,146,42,.55); background: rgba(200,146,42,.12); cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0; transition: border-color .2s, box-shadow .2s, transform .15s; }
-    .nav-avatar-btn:hover { border-color: var(--color-gold-amber); box-shadow: 0 0 0 3px rgba(200,146,42,.18); }
-    .nav-avatar-btn:active { transform: scale(.94); }
-    .nav-avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-    .nav-avatar-iniciais { font-family: var(--font-display); font-size: .74rem; font-weight: 800; color: var(--color-gold-light); letter-spacing: .05em; text-transform: uppercase; pointer-events: none; }
-
-    /* ── DROPDOWN — fumê dourado glassmorphism ── */
-    .nav-drop {
-      position: absolute; top: calc(100% + 12px); right: 0;
-      min-width: 240px;
-      background: rgba(13,8,0,0.55);
-      backdrop-filter: blur(28px) saturate(180%);
-      -webkit-backdrop-filter: blur(28px) saturate(180%);
-      border: 1.5px solid rgba(244,217,152,0.25);
-      border-radius: 18px;
-      box-shadow:
-        0 0 0 1px rgba(200,146,42,0.08),
-        0 20px 56px rgba(0,0,0,0.55),
-        0 0 32px rgba(200,146,42,0.12);
-      overflow: hidden;
-      opacity: 0; transform: translateY(-6px) scale(.97);
-      pointer-events: none;
-      transition: opacity .2s, transform .2s;
-      z-index: 300;
-    }
-    .nav-drop.aberto { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
-
-    .nav-drop-header {
-      padding: 1rem 1.1rem .85rem;
-      border-bottom: 1px solid rgba(244,217,152,0.12);
-      background: linear-gradient(180deg, rgba(200,146,42,0.06), transparent);
-    }
-    .nav-drop-nome {
-      font-family: var(--font-display);
-      font-size: .85rem; font-weight: 800;
-      color: var(--color-gold-light);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      letter-spacing: .01em;
-    }
-    .nav-drop-sub {
-      font-size: .68rem;
-      color: rgba(245,240,232,0.42);
-      margin-top: 3px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-
-    .nav-drop-item {
-      display: flex; align-items: center; gap: .8rem;
-      padding: .72rem 1.1rem;
-      font-family: var(--font-body);
-      font-size: .82rem; font-weight: 500;
-      color: rgba(245,240,232,0.78);
-      cursor: pointer; border: none; background: none;
-      width: 100%; text-align: left;
-      transition: background .15s, color .15s, padding-left .15s;
-      text-decoration: none;
-    }
-    .nav-drop-item:hover {
-      background: rgba(200,146,42,0.10);
-      color: var(--color-gold-light);
-      padding-left: 1.25rem;
-    }
-    .nav-drop-item.danger { color: rgba(240,140,140,0.72); }
-    .nav-drop-item.danger:hover { background: rgba(200,60,60,0.10); color: #f5a5a5; }
-
-    .nav-drop-sep { height: 1px; background: rgba(244,217,152,0.10); margin: .35rem 0; }
-
-    /* SVG icons — padrão idêntico aos do /app (stroke 1.8, currentColor) */
-    .nav-drop-icon {
-      width: 18px; height: 18px;
-      stroke: currentColor; fill: none;
-      stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
-      flex-shrink: 0;
-    }
+    /* Navbar account (botão Minha área + avatar + dropdown) — vive em /navbar-account.css */
 
   </style>
 </head>
@@ -1249,7 +1155,7 @@
 
           <div class="drop-divider"></div>
           <p class="drop-intro">O primeiro passo é descobrir o que está travando a sua prosperidade:</p>
-          <a href="https://teste.suellenseragi.com.br/?utm_source=vidamagica&utm_campaign=home-trilha-completa" class="btn-cta-drop" id="link-teste">
+          <a href="/teste?utm_source=vidamagica&utm_campaign=home-trilha-completa" class="btn-cta-drop" id="link-teste">
             ✨ Fazer o Teste de Prosperidade
           </a>
           <p class="drop-note">R$ 19 · Resultado imediato · Seu ponto de partida</p>
@@ -1283,8 +1189,8 @@
                 <p>15 perguntas. 6 perfis possíveis. Resultado imediato. O ponto de partida obrigatório para qualquer trilha.</p>
                 <div class="produto-preco" id="preco-teste">R$ 19</div>
                 <div class="produto-links">
-                  <a href="https://teste.suellenseragi.com.br/?utm_source=vidamagica&utm_campaign=home-produtos" class="btn-lp" id="lp-teste">Ver mais</a>
-                  <a href="https://teste.suellenseragi.com.br/?utm_source=vidamagica&utm_campaign=checkout-teste" class="btn-checkout" id="checkout-teste">Fazer agora</a>
+                  <a href="/teste?utm_source=vidamagica&utm_campaign=home-produtos" class="btn-lp" id="lp-teste">Ver mais</a>
+                  <a href="/teste?utm_source=vidamagica&utm_campaign=checkout-teste" class="btn-checkout" id="checkout-teste">Fazer agora</a>
                 </div>
               </div>
             </div>
@@ -1300,7 +1206,7 @@
                 <p>Um e-book por perfil de energia. Direcionado pelo seu resultado no Teste — trabalha exatamente a trava que é a sua.</p>
                 <div class="produto-preco">R$ 39</div>
                 <div class="produto-links">
-                  <a href="https://teste.suellenseragi.com.br" class="btn-lp">Ver mais</a>
+                  <a href="/teste" class="btn-lp">Ver mais</a>
                   <a href="https://pay.kiwify.com.br/F62VNpy" class="btn-checkout" target="_blank">Comprar</a>
                 </div>
               </div>
@@ -1313,7 +1219,7 @@
                 <p>Ferramentas práticas de reprogramação mental para aplicar no dia a dia. Material de suporte ao curso Ouro da RM.</p>
                 <div class="produto-preco" id="preco-guia">Carregando...</div>
                 <div class="produto-links">
-                  <a href="https://guiapratico.suellenseragi.com.br/?utm_source=vidamagica&utm_campaign=lp-guia" class="btn-lp" id="lp-guia" target="_blank">Ver mais</a>
+                  <a href="/guia-pratico-reprogramacao-mental?utm_source=vidamagica&utm_campaign=lp-guia" class="btn-lp" id="lp-guia" target="_blank">Ver mais</a>
                   <a href="https://pay.kiwify.com.br/itNhMPe" class="btn-checkout" target="_blank">Comprar</a>
                 </div>
               </div>
@@ -1326,7 +1232,7 @@
                 <p>A ferramenta definitiva da Fase 1. O curso completo que transforma o padrão mental na raiz — não na superfície.</p>
                 <div class="produto-preco" id="preco-ouro">Carregando...</div>
                 <div class="produto-links">
-                  <a href="https://www.suellenseragi.com.br/ourorm?utm_source=vidamagica&utm_campaign=lp-ouro" class="btn-lp" id="lp-ouro" target="_blank">Ver mais</a>
+                  <a href="/ouro-da-reprogramacao-mental?utm_source=vidamagica&utm_campaign=lp-ouro" class="btn-lp" id="lp-ouro" target="_blank">Ver mais</a>
                   <a href="https://pay.kiwify.com.br/F62VNpy" class="btn-checkout" target="_blank">Comprar</a>
                 </div>
               </div>
@@ -1343,7 +1249,7 @@
                 <p>14 aulas + extras + músicas. As leis espirituais da prosperidade ensinadas com profundidade e base bíblica real.</p>
                 <div class="produto-preco" id="preco-lda">Carregando...</div>
                 <div class="produto-links">
-                  <a href="http://lda.suellenseragi.com.br/?utm_source=vidamagica&utm_campaign=lp-lda" class="btn-lp" id="lp-lda" target="_blank">Ver mais</a>
+                  <a href="/lei-da-atracao-biblica?utm_source=vidamagica&utm_campaign=lp-lda" class="btn-lp" id="lp-lda" target="_blank">Ver mais</a>
                   <a href="https://pay.kiwify.com.br/8BoTzTD" class="btn-checkout" target="_blank">Comprar</a>
                 </div>
               </div>
@@ -1356,7 +1262,7 @@
                 <p>O momento certo para este livro é depois da reprogramação espiritual. Aqui as leis de riqueza têm profundidade máxima.</p>
                 <div class="produto-preco" id="preco-livro">Carregando...</div>
                 <div class="produto-links">
-                  <a href="https://talmaneira.suellenseragi.com.br/?utm_source=vidamagica&utm_campaign=lp-livro" class="btn-lp" id="lp-livro" target="_blank">Ver mais</a>
+                  <a href="/a-tal-maneira?utm_source=vidamagica&utm_campaign=lp-livro" class="btn-lp" id="lp-livro" target="_blank">Ver mais</a>
                   <a href="https://pay.kiwify.com.br/IId7xgS" class="btn-checkout" target="_blank">Comprar</a>
                 </div>
               </div>
@@ -1373,7 +1279,7 @@
                 <p>Para quem já vive a atração bíblica e está pronto para o próximo nível. Aqui você aprende a operar, não apenas a acreditar.</p>
                 <div class="produto-preco" id="preco-curso">Carregando...</div>
                 <div class="produto-links">
-                  <a href="https://talmaneira.suellenseragi.com.br/?utm_source=vidamagica&utm_campaign=lp-curso" class="btn-lp" id="lp-curso" target="_blank">Ver mais</a>
+                  <a href="/a-tal-maneira?utm_source=vidamagica&utm_campaign=lp-curso" class="btn-lp" id="lp-curso" target="_blank">Ver mais</a>
                   <a href="https://pay.kiwify.com.br/csxtcEQ" class="btn-checkout" target="_blank">Comprar</a>
                 </div>
               </div>
@@ -1582,14 +1488,14 @@
         } catch { return baseUrl; }
       }
 
-      document.getElementById('link-teste').href     = addUtms('https://teste.suellenseragi.com.br', 'home-trilha-completa');
-      document.getElementById('lp-teste').href       = addUtms('https://teste.suellenseragi.com.br', 'home-produtos');
-      document.getElementById('checkout-teste').href = addUtms('https://teste.suellenseragi.com.br', 'checkout-teste');
-      document.getElementById('lp-guia').href        = addUtms('https://guiapratico.suellenseragi.com.br/', 'lp-guia');
-      document.getElementById('lp-ouro').href        = addUtms('https://www.suellenseragi.com.br/ourorm', 'lp-ouro');
-      document.getElementById('lp-lda').href         = addUtms('http://lda.suellenseragi.com.br', 'lp-lda');
-      document.getElementById('lp-livro').href       = addUtms('https://talmaneira.suellenseragi.com.br/', 'lp-livro');
-      document.getElementById('lp-curso').href       = addUtms('https://talmaneira.suellenseragi.com.br/', 'lp-curso');
+      document.getElementById('link-teste').href     = addUtms('/teste', 'home-trilha-completa');
+      document.getElementById('lp-teste').href       = addUtms('/teste', 'home-produtos');
+      document.getElementById('checkout-teste').href = addUtms('/teste', 'checkout-teste');
+      document.getElementById('lp-guia').href        = addUtms('/guia-pratico-reprogramacao-mental/', 'lp-guia');
+      document.getElementById('lp-ouro').href        = addUtms('/ouro-da-reprogramacao-mental', 'lp-ouro');
+      document.getElementById('lp-lda').href         = addUtms('/lei-da-atracao-biblica', 'lp-lda');
+      document.getElementById('lp-livro').href       = addUtms('/a-tal-maneira/', 'lp-livro');
+      document.getElementById('lp-curso').href       = addUtms('/a-tal-maneira/', 'lp-curso');
     })();
 
     // ===== PREÇOS =====
@@ -1685,102 +1591,10 @@
   /* ── VmSession (mesma definição do auth.html) ── */
   window.VmSession=window.VmSession||(function(){const K='vm_s',P='vm_lembrar',U='vm_u';function salvar(d,l){const p=l!==undefined?l:getLembrar();localStorage.setItem(P,p?'1':'0');const s=p?localStorage:sessionStorage,o=p?sessionStorage:localStorage;o.removeItem(K);s.setItem(K,JSON.stringify(d));if(p&&d.usuario?.nome){localStorage.setItem(U,JSON.stringify({nome:d.usuario.nome,email:d.usuario.email||null,telefone_formatado:d.usuario.telefone_formatado||null,foto_url:d.usuario.foto_url||null}));}else if(!p){localStorage.removeItem(U);}}function carregar(){try{const r=localStorage.getItem(K)||sessionStorage.getItem(K);return r?JSON.parse(r):null;}catch{return null;}}function destruir(){localStorage.removeItem(K);sessionStorage.removeItem(K);}function getAccess(){return carregar()?.access_token||null;}function getRefresh(){return carregar()?.refresh_token||null;}function getLembrar(){return localStorage.getItem(P)!=='0';}function getUsuarioLembrado(){try{return JSON.parse(localStorage.getItem(U)||'null');}catch{return null;}}function limparUsuarioLembrado(){localStorage.removeItem(U);}return{salvar,carregar,destruir,getAccess,getRefresh,getLembrar,getUsuarioLembrado,limparUsuarioLembrado};})();
 
-  (async function navbarAuth(){
-    const API = '';
-    const actions = document.getElementById('navbar-actions');
-    if (!actions) return;
-
-    function renderBotoes(){
-      actions.innerHTML = `
-        <a href="/auth?intencional" class="btn-login">Entrar</a>
-        <a href="/auth?cadastro" class="btn-cadastro-nav">Criar conta</a>`;
-    }
-
-    function renderAvatar(usuario){
-      const iniciais = (usuario.nome||'?').split(' ').slice(0,2).map(p=>p[0]).join('').toUpperCase();
-      const fotoHtml = usuario.foto_url
-        ? `<img src="${usuario.foto_url}" alt="${usuario.nome}" class="nav-avatar-img">`
-        : `<span class="nav-avatar-iniciais">${iniciais}</span>`;
-      // SVGs canônicos — IDÊNTICOS aos do /app (public/app.html .topo-btn e .bottom-nav).
-      // NÃO inventar paralelo. Se ícone novo precisar, usar mesmo padrão (stroke 1.8).
-      actions.innerHTML = `
-        <a href="/app" class="btn-minha-area" aria-label="Ir para minha área">
-          <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          Minha área
-        </a>
-        <div class="nav-avatar-wrap" id="nav-avatar-wrap">
-          <button class="nav-avatar-btn" onclick="toggleNavDrop()" aria-label="Abrir menu da conta">${fotoHtml}</button>
-          <div class="nav-drop" id="nav-drop" role="menu">
-            <div class="nav-drop-header">
-              <div class="nav-drop-nome">${usuario.nome||'Minha conta'}</div>
-              <div class="nav-drop-sub">${usuario.email||usuario.telefone_formatado||''}</div>
-            </div>
-            <a href="/app" class="nav-drop-item" role="menuitem">
-              <svg class="nav-drop-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-              Minha área
-            </a>
-            <a href="/app/jornada" class="nav-drop-item" role="menuitem">
-              <svg class="nav-drop-icon" viewBox="0 0 24 24"><path d="M12 2 L14.5 9 L22 9 L16 13.5 L18.5 21 L12 16.5 L5.5 21 L8 13.5 L2 9 L9.5 9 Z"/></svg>
-              Minha Jornada
-            </a>
-            <a href="/app/chat" class="nav-drop-item" role="menuitem">
-              <svg class="nav-drop-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              Fale com a Su
-            </a>
-            <a href="/app/loja" class="nav-drop-item" role="menuitem">
-              <svg class="nav-drop-icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-              Materiais
-            </a>
-            <a href="/app/perfil" class="nav-drop-item" role="menuitem">
-              <svg class="nav-drop-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              Perfil
-            </a>
-            <div class="nav-drop-sep"></div>
-            <button class="nav-drop-item danger" onclick="navLogout()" role="menuitem">
-              <svg class="nav-drop-icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-              Sair
-            </button>
-          </div>
-        </div>`;
-      document.addEventListener('click', function(e){
-        const wrap = document.getElementById('nav-avatar-wrap');
-        if (wrap && !wrap.contains(e.target)) document.getElementById('nav-drop')?.classList.remove('aberto');
-      });
-    }
-
-    window.toggleNavDrop = function(){ document.getElementById('nav-drop')?.classList.toggle('aberto'); };
-
-    window.navLogout = async function(){
-      try{ await fetch(`${API}/api/auth/logout`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:VmSession.getRefresh()})}); }catch{}
-      VmSession.destruir();
-      renderBotoes();
-    };
-
-    const access = VmSession.getAccess();
-    if (!access){ renderBotoes(); return; }
-
-    try{
-      const r = await fetch(`${API}/api/auth/me`,{headers:{Authorization:`Bearer ${access}`}});
-      if (r.ok){ renderAvatar(await r.json()); return; }
-    }catch{}
-
-    const refresh = VmSession.getRefresh();
-    if (refresh){
-      try{
-        const r2 = await fetch(`${API}/api/auth/renovar`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refresh})});
-        if (r2.ok){
-          const d = await r2.json();
-          VmSession.salvar(d, VmSession.getLembrar());
-          const r3 = await fetch(`${API}/api/auth/me`,{headers:{Authorization:`Bearer ${d.access_token}`}});
-          if (r3.ok){ renderAvatar(await r3.json()); return; }
-        }
-      }catch{}
-    }
-
-    VmSession.destruir();
-    renderBotoes();
-  })();
+  /* Render do botão Minha área + avatar + dropdown vive em /navbar-account.js
+     (depende do VmSession definido logo acima). */
   </script>
+  <script src="/navbar-account.js" defer></script>
 
   <!-- Modal + swipe dos cards de relatos (compartilhado entre as 7 LPs) -->
   <script src="/relatos-card.js"></script>

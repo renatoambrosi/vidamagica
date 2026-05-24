@@ -9,6 +9,7 @@
 
   <link rel="icon" href="/assets/favicon.webp">
   <link rel="stylesheet" href="/assets/fonts/fonts.css">
+  <link rel="stylesheet" href="/navbar-account.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
 
   <style>
@@ -116,23 +117,7 @@
     }
     .btn-cadastro-nav:hover { background: var(--gold-deep); }
 
-    /* AVATAR NAVBAR (logada) — IDÊNTICO ao teste.html */
-    .nav-avatar-wrap { position: relative; }
-    .nav-avatar-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(200,146,42,.5); background: rgba(200,146,42,.12); cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0; transition: border-color .2s, box-shadow .2s; }
-    .nav-avatar-btn:hover { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(200,146,42,.15); }
-    .nav-avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-    .nav-avatar-iniciais { font-family: var(--font-display); font-size: .72rem; font-weight: 800; color: var(--gold-light); letter-spacing: .05em; text-transform: uppercase; pointer-events: none; }
-    .nav-drop { position: absolute; top: calc(100% + 10px); right: 0; min-width: 200px; background: rgba(13,8,0,.97); border: 1px solid rgba(200,146,42,.25); border-radius: 14px; box-shadow: 0 16px 48px rgba(0,0,0,.6); backdrop-filter: blur(20px); overflow: hidden; opacity: 0; transform: translateY(-6px) scale(.97); pointer-events: none; transition: opacity .2s, transform .2s; z-index: 300; }
-    .nav-drop.aberto { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
-    .nav-drop-header { padding: .9rem 1.1rem .7rem; border-bottom: 1px solid rgba(200,146,42,.12); }
-    .nav-drop-nome { font-family: var(--font-display); font-size: .78rem; font-weight: 800; color: var(--gold-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .nav-drop-sub { font-size: .67rem; color: rgba(245,240,232,.35); margin-top: 2px; }
-    .nav-drop-item { display: flex; align-items: center; gap: .65rem; padding: .65rem 1.1rem; font-size: .8rem; font-weight: 500; color: rgba(245,240,232,.7); cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: background .15s, color .15s; text-decoration: none; }
-    .nav-drop-item:hover { background: rgba(200,146,42,.08); color: var(--gold-light); }
-    .nav-drop-item.danger { color: rgba(240,100,100,.75); }
-    .nav-drop-item.danger:hover { background: rgba(200,60,60,.08); color: #f09090; }
-    .nav-drop-sep { height: 1px; background: rgba(200,146,42,.1); margin: .2rem 0; }
-    .nav-drop-icon { font-size: .9rem; width: 16px; text-align: center; flex-shrink: 0; }
+    /* Navbar account (botão + avatar + dropdown) — vive em /navbar-account.css */
 
     /* SCROLL PROGRESS — IDÊNTICO (cor adaptada pra dourado) */
     .scroll-progress { position: fixed; top: 0; left: 0; right: 0; z-index: 200; height: 2px; background: linear-gradient(90deg, var(--champ-bright), var(--gold-light), var(--gold)); transform-origin: 0 0; transform: scaleX(0); transition: transform 0.05s linear; box-shadow: 0 0 12px var(--champ-glow); }
@@ -692,65 +677,7 @@
       return{salvar,carregar,destruir,getAccess,getRefresh,getLembrar,getUsuarioLembrado,limparUsuarioLembrado};
     })();
 
-    (async function navbarAuth(){
-      const actions = document.getElementById('navbar-actions');
-      if (!actions) return;
-
-      function renderBotoes(){
-        actions.innerHTML = `<a href="/auth?intencional" class="btn-login">Entrar</a><a href="/auth?cadastro" class="btn-cadastro-nav">Criar conta</a>`;
-      }
-
-      function renderAvatar(usuario){
-        const iniciais = (usuario.nome||'?').split(' ').slice(0,2).map(p=>p[0]).join('').toUpperCase();
-        const fotoHtml = usuario.foto_url
-          ? `<img src="${usuario.foto_url}" alt="${usuario.nome}" class="nav-avatar-img">`
-          : `<span class="nav-avatar-iniciais">${iniciais}</span>`;
-        actions.innerHTML = `
-          <div class="nav-avatar-wrap" id="nav-avatar-wrap">
-            <button class="nav-avatar-btn" onclick="toggleNavDrop()" aria-label="Menu">${fotoHtml}</button>
-            <div class="nav-drop" id="nav-drop">
-              <div class="nav-drop-header">
-                <div class="nav-drop-nome">${usuario.nome||'Minha conta'}</div>
-                <div class="nav-drop-sub">${usuario.email||usuario.telefone_formatado||''}</div>
-              </div>
-              <a href="/app" class="nav-drop-item"><span class="nav-drop-icon">🌱</span> Minha área</a>
-              <div class="nav-drop-sep"></div>
-              <button class="nav-drop-item danger" onclick="navLogout()"><span class="nav-drop-icon">🚪</span> Sair</button>
-            </div>
-          </div>`;
-        document.addEventListener('click', function(e){
-          const wrap = document.getElementById('nav-avatar-wrap');
-          if (wrap && !wrap.contains(e.target)) document.getElementById('nav-drop')?.classList.remove('aberto');
-        });
-      }
-
-      window.toggleNavDrop = function(){ document.getElementById('nav-drop')?.classList.toggle('aberto'); };
-      window.navLogout = async function(){
-        try{ await fetch(`${API_BASE}/api/auth/logout`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:VmSession.getRefresh()})}); }catch{}
-        VmSession.destruir(); renderBotoes();
-      };
-
-      const access = VmSession.getAccess();
-      if (!access){ renderBotoes(); return; }
-      try{
-        const r = await fetch(`${API_BASE}/api/auth/me`,{headers:{Authorization:`Bearer ${access}`}});
-        if (r.ok){ renderAvatar(await r.json()); return; }
-      }catch{}
-      const refresh = VmSession.getRefresh();
-      if (refresh){
-        try{
-          const r2 = await fetch(`${API_BASE}/api/auth/renovar`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:refresh})});
-          if (r2.ok){
-            const d = await r2.json();
-            VmSession.salvar(d, VmSession.getLembrar());
-            const r3 = await fetch(`${API_BASE}/api/auth/me`,{headers:{Authorization:`Bearer ${d.access_token}`}});
-            if (r3.ok){ renderAvatar(await r3.json()); return; }
-          }
-        }catch{}
-      }
-      VmSession.destruir(); renderBotoes();
-    })();
-
+        /* navbarAuth — agora vive em /navbar-account.js (carregado no fim do body) */
     /* ═══ DEPOIMENTOS — fetch /api/depoimentos?tema=SLUG
        Não há mais fallback hardcoded — o backend tem seed garantindo ≥3 relatos
        por tema. Ticker (filtrado por mostrar_no_ticker) + carrossel grande.
@@ -901,5 +828,6 @@
   <!-- Modal + swipe dos cards de relatos (compartilhado entre as 7 LPs) -->
   <script src="/relatos-card.js"></script>
 
+<script src="/navbar-account.js" defer></script>
 </body>
 </html>
