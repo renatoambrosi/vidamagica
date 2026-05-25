@@ -7,8 +7,9 @@
 
   <link rel="icon" href="/assets/favicon.webp">
   <link rel="stylesheet" href="/assets/fonts/fonts.css">
-  <link rel="stylesheet" href="/navbar-account.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+  <link rel="stylesheet" href="/navbar-account.css">
 
   <style>
     /* ===== DESIGN SYSTEM — CORES & TIPOGRAFIA ===== */
@@ -959,27 +960,6 @@
       outline-offset: 3px;
     }
 
-    /* ===== BOTÃO ENTRAR NO HERO ===== */
-    .btn-entrar-hero {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-family: var(--font-body);
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: rgba(245,240,232,0.5);
-      background: none;
-      border: none;
-      cursor: pointer;
-      text-decoration: underline;
-      text-underline-offset: 3px;
-      letter-spacing: 0.03em;
-      margin-top: 0.25rem;
-      padding: 0.5rem 0;
-      transition: color 0.2s;
-    }
-    .btn-entrar-hero:hover { color: var(--color-gold-light); }
-
     /* ===== RESPONSIVO ===== */
     @media (min-width: 640px) {
       .logo { width: 200px; }
@@ -1013,33 +993,25 @@
       .btn-entry { padding: 1.1rem 1.5rem; font-size: 0.92rem; }
       .dropdown-panel.open { padding: 1.75rem 1.5rem 2rem; }
     }
-  
-    /* Navbar account (botão Minha área + avatar + dropdown) — vive em /navbar-account.css */
-
   </style>
 </head>
 <body class="lp-index">
 
-  <!-- NAVBAR -->
   <nav class="navbar">
     <a href="/" aria-label="Ir para o início"><img src="/assets/logo-horizontal.webp" alt="Vida Mágica" class="navbar-logo"></a>
     <div class="navbar-actions" id="navbar-actions"></div>
   </nav>
 
-  <!-- TICKER -->
   <div class="ticker-wrap">
     <div class="ticker-track" id="ticker-track"></div>
   </div>
 
-  <!-- BACKGROUND ANIMADO -->
   <div class="background">
     <div class="particles" id="particles"></div>
   </div>
 
-  <!-- BORBOLETAS -->
   <img src="/assets/butterflies-blue.webp" alt="" class="butterflies" aria-hidden="true">
 
-  <!-- HERO -->
   <main class="container">
     <img src="/assets/logo-vertical.webp" alt="Vida Mágica" class="logo">
 
@@ -1058,7 +1030,6 @@
       <div class="divider"></div>
       <p class="entry-label">Como podemos te ajudar agora?</p>
 
-      <!-- BOTÃO 1: TRILHA COMPLETA -->
       <div class="dropdown-wrap dropdown-wrap-primary">
         <button class="btn-entry btn-entry-primary" onclick="toggleDrop('drop-trilha')">
           <span>
@@ -1102,7 +1073,6 @@
         </div>
       </div>
 
-      <!-- BOTÃO 2: EXPLORAR PRODUTOS -->
       <div class="dropdown-wrap">
         <button class="btn-entry" onclick="toggleDrop('drop-produtos')">
           <span>
@@ -1241,7 +1211,6 @@
     </div>
   </main>
 
-  <!-- QUEM SOMOS -->
   <section class="quem-somos">
     <div class="qs-particles" id="qs-particles"></div>
 
@@ -1264,7 +1233,6 @@
     </div>
   </section>
 
-  <!-- VALIDAÇÃO SOCIAL -->
   <section class="validacao-social">
     <div class="validacao-container">
       <span class="section-eyebrow">Nossos números</span>
@@ -1328,7 +1296,6 @@
     </div>
   </section>
 
-  <!-- RODAPÉ -->
   <div class="cta-footer">
     <p>Renato &amp; Suellen Seragi · Vida Mágica · 2025</p>
   </div>
@@ -1536,7 +1503,6 @@
   </script>
   <script src="/navbar-account.js" defer></script>
 
-  <!-- Modal + swipe dos cards de relatos (compartilhado entre as 7 LPs) -->
   <script src="/relatos-card.js"></script>
 
 </body>
