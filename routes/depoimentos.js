@@ -87,6 +87,8 @@ function normalizarPayloadDep(body) {
     cidade: safe(body.cidade),  // legacy — mantido por compat
     texto: safe(body.texto) || '',
     tema_id: body.tema_id ? parseInt(body.tema_id, 10) : null,
+    // produto_slug: override opcional do produto do tema. Vazio/null = herda do tema.
+    produto_slug: safe(body.produto_slug) || null,
     usuario_id: safe(body.usuario_id),
     mostrar_no_ticker: safeBool(body.mostrar_no_ticker, true),
     gerado_por_ia: safeBool(body.gerado_por_ia, false),
@@ -105,7 +107,12 @@ function normalizarPayloadDep(body) {
 const SELECT_DEP_COMPLETO = `
   SELECT
     d.id, d.nome, d.profissao, d.idade, d.cidade, d.texto,
-    d.tema_id, t.slug AS tema_slug, t.nome AS tema_nome, t.produto_slug,
+    d.tema_id, t.slug AS tema_slug, t.nome AS tema_nome,
+    -- produto_slug do relato vence o do tema (COALESCE).
+    -- Quando d.produto_slug é NULL, herda t.produto_slug.
+    COALESCE(d.produto_slug, t.produto_slug) AS produto_slug,
+    d.produto_slug AS produto_slug_relato,
+    t.produto_slug AS produto_slug_tema,
     d.usuario_id, d.mostrar_no_ticker, d.gerado_por_ia, d.status_moderacao,
     d.autora_era_assinante_clube, d.motivo_rejeicao,
     d.tags, d.ordem, d.ativo, d.criado_em, d.atualizado_em,
@@ -377,12 +384,12 @@ router.post('/admin/depoimentos', autenticarPainel('admin'), async (req, res) =>
 
     const r = await poolComunicacao.query(
       `INSERT INTO depoimentos
-         (nome, profissao, idade, cidade, texto, tema_id, usuario_id,
+         (nome, profissao, idade, cidade, texto, tema_id, produto_slug, usuario_id,
           mostrar_no_ticker, gerado_por_ia, status_moderacao,
           autora_era_assinante_clube, tags, ordem, ativo)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
        RETURNING id`,
-      [p.nome, p.profissao, p.idade, p.cidade, p.texto, p.tema_id, p.usuario_id,
+      [p.nome, p.profissao, p.idade, p.cidade, p.texto, p.tema_id, p.produto_slug, p.usuario_id,
        p.mostrar_no_ticker, p.gerado_por_ia, p.status_moderacao,
        p.autora_era_assinante_clube, p.tags, p.ordem, p.ativo]
     );
@@ -411,6 +418,11 @@ router.put('/admin/depoimentos/:id', autenticarPainel('admin'), async (req, res)
     if (b.cidade !== undefined) add('cidade', b.cidade ? String(b.cidade).trim() : null);
     if (b.texto !== undefined) add('texto', String(b.texto).trim());
     if (b.tema_id !== undefined) add('tema_id', b.tema_id ? parseInt(b.tema_id, 10) : null);
+    // produto_slug do relato — vazio/null = herda do tema (COALESCE no SELECT).
+    if (b.produto_slug !== undefined) {
+      const ps = (b.produto_slug == null) ? null : String(b.produto_slug).trim();
+      add('produto_slug', ps ? ps : null);
+    }
     if (b.usuario_id !== undefined) add('usuario_id', b.usuario_id || null);
     if (b.mostrar_no_ticker !== undefined) add('mostrar_no_ticker', !!b.mostrar_no_ticker);
     if (b.gerado_por_ia !== undefined) add('gerado_por_ia', !!b.gerado_por_ia);

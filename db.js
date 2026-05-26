@@ -1465,6 +1465,11 @@ async function initComunicacao() {
     await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS oculto_por_conta_inativa BOOLEAN DEFAULT FALSE`);
     // motivo_rejeicao (Fase 2.1): opcional, quando admin/atendimento rejeita o relato.
     await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS motivo_rejeicao TEXT`);
+    // produto_slug do relato (override opcional do produto do tema). Quando preenchido,
+    // vence o t.produto_slug no SELECT_DEP_COMPLETO (COALESCE em routes/depoimentos.js).
+    // Quando NULL, relato herda o produto do tema. Permite mesmo tema agrupar relatos
+    // de produtos diferentes (ex: tema "geral" no index mostrando variedade real).
+    await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS produto_slug VARCHAR(80)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_depoimentos_tema ON depoimentos(tema_id)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_depoimentos_usuario ON depoimentos(usuario_id)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_depoimentos_status ON depoimentos(status_moderacao)`);

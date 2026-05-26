@@ -757,6 +757,7 @@ select option { background: #1a1205; }
           </div>
           <div class="dep-row" style="margin-bottom:0.5rem">
             <div class="field"><label>Tema</label><select id="dep-new-tema"></select></div>
+            <div class="field"><label>Produto vinculado <span style="text-transform:none;letter-spacing:0;color:var(--text-muted);font-weight:400">(opcional — sobrescreve o do tema)</span></label><select id="dep-new-produto"></select></div>
             <div class="field" style="max-width:200px">
               <label style="display:flex;align-items:center;gap:0.5rem;justify-content:space-between">
                 <span>Aparecer no ticker</span>
@@ -2042,6 +2043,9 @@ function renderDeps(){
           <div class="field"><label>Tema</label>
             <select data-field="tema_id">${dropdownTemaSelected(d.tema_id)}</select>
           </div>
+          <div class="field"><label>Produto vinculado <span style="text-transform:none;letter-spacing:0;color:var(--text-muted);font-weight:400">(vazio = usa o do tema)</span></label>
+            <select data-field="produto_slug">${optProdutos(d.produto_slug_relato || '')}</select>
+          </div>
         </div>
         <div class="field" style="margin-bottom:0.3rem">
           <label>Relato <span style="float:right;color:var(--text-muted);font-weight:400" id="${counterId}">${charCount} caracteres</span></label>
@@ -2088,6 +2092,8 @@ function abrirNovoDep(){
   document.getElementById('form-novo-dep').style.display = 'block';
   document.getElementById('dep-new-tema').innerHTML = ['<option value="">— sem tema —</option>']
     .concat(temas.map(t => `<option value="${t.id}">${escHtml(t.nome)} (${escHtml(t.slug)})</option>`)).join('');
+  // Produto vinculado opcional — usa optProdutos() já existente (a mesma do form de tema)
+  document.getElementById('dep-new-produto').innerHTML = optProdutos('');
   document.getElementById('dep-new-nome').focus();
   updateCounter('dep-new-texto','dep-new-counter');
 }
@@ -2106,6 +2112,8 @@ async function criarDep(){
     profissao: document.getElementById('dep-new-profissao').value.trim() || null,
     idade: parseInt(document.getElementById('dep-new-idade').value, 10) || null,
     tema_id: parseInt(document.getElementById('dep-new-tema').value, 10) || null,
+    // produto_slug: vazio = herda do tema (COALESCE no backend)
+    produto_slug: document.getElementById('dep-new-produto').value || null,
     mostrar_no_ticker: document.getElementById('dep-new-ticker').checked,
     texto: document.getElementById('dep-new-texto').value.trim(),
     ativo: true,
@@ -2132,6 +2140,8 @@ async function salvarDep(id, btn){
     profissao: card.querySelector('[data-field="profissao"]').value.trim() || null,
     idade: parseInt(card.querySelector('[data-field="idade"]').value, 10) || null,
     tema_id: parseInt(card.querySelector('[data-field="tema_id"]').value, 10) || null,
+    // produto_slug: vazio = herda do tema (COALESCE no backend)
+    produto_slug: card.querySelector('[data-field="produto_slug"]').value || null,
     mostrar_no_ticker: card.querySelector('[data-field="mostrar_no_ticker"]').checked,
     ativo: card.querySelector('[data-field="ativo"]').checked,
     autora_era_assinante_clube: card.querySelector('[data-field="autora_era_assinante_clube"]')?.checked || false,
@@ -2355,6 +2365,9 @@ function renderPendentes(){
           <div class="field"><label>Tema (produto) <span style="color:#F09090">*</span></label>
             <select data-field="tema_id" required>${dropdownTemaSelected(d.tema_id)}</select>
           </div>
+          <div class="field"><label>Produto vinculado <span style="text-transform:none;letter-spacing:0;color:var(--text-muted);font-weight:400">(vazio = usa o do tema)</span></label>
+            <select data-field="produto_slug">${optProdutos(d.produto_slug_relato || '')}</select>
+          </div>
         </div>
         <div class="field" style="margin-bottom:0.3rem">
           <label>Relato <span style="float:right;color:var(--text-muted);font-weight:400" id="${counterId}">${charCount} caracteres</span></label>
@@ -2405,6 +2418,8 @@ async function aprovarPendente(id, btn){
     profissao: card.querySelector('[data-field="profissao"]').value.trim() || null,
     idade: parseInt(card.querySelector('[data-field="idade"]').value, 10) || null,
     tema_id,
+    // produto_slug: vazio = herda do tema (COALESCE no backend)
+    produto_slug: card.querySelector('[data-field="produto_slug"]')?.value || null,
     texto: card.querySelector('[data-field="texto"]').value.trim(),
     autora_era_assinante_clube: card.querySelector('[data-field="autora_era_assinante_clube"]').checked,
     mostrar_no_ticker: card.querySelector('[data-field="mostrar_no_ticker"]').checked,
