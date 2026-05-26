@@ -197,6 +197,24 @@ const PRECOS_INICIAIS = {
     preco_alunos: '411,00',
     parcelas_valor_alunos: '42,51'
   },
+  // Combo da Série Conhecer e Despertar. Agrupa os 4 ebooks "vencendo_*"
+  // (medo, desordem, validação, sobrevivência) num único produto pra venda
+  // combinada. Preço/link a definir pelo admin antes de divulgar.
+  serie_conhecer_despertar: {
+    nome: 'Série Conhecer e Despertar',
+    tipo: 'curso',
+    imagem_url: '/assets/products/serie-despertando.webp',
+    link_checkout_padrao: '',
+    link_checkout_aluno: '',
+    mostrar_promo: false,
+    preco_padrao: '0,00',
+    parcelas_qtd: 12,
+    parcelas_valor_padrao: '0,00',
+    preco_promo: '0,00',
+    parcelas_valor_promo: '0,00',
+    preco_alunos: '0,00',
+    parcelas_valor_alunos: '0,00'
+  },
   // Combo Livro Digital + Curso A Tal Maneira. Preços placeholder —
   // ajustar pelo painel /admin → Preços antes de divulgar. Links Kiwify
   // já apontam pros checkouts corretos do combo.
@@ -236,6 +254,32 @@ const PRECOS_INICIAIS = {
 };
 
 /* ============================================================
+   Classificação inicial pras abas do admin
+   (Serviços / Materiais / Cursos / Combos / Legado).
+   Aplicada pra produtos que ainda não têm `categoria_admin` ou `eh_legado` no banco.
+   Renato pode mover qualquer produto entre abas pelo painel — esses dois mappings
+   só populam o estado INICIAL na transição.
+   ============================================================ */
+const CATEGORIA_ADMIN_INICIAL = {
+  clube_vida_magica:        'servicos',
+  teste_subconsciente:      'servicos',
+  teste_prosperidade:       'servicos',
+  ouro_reprogramacao:       'cursos',
+  lda_biblica:              'cursos',
+  atal_maneira_curso:       'cursos',
+  atal_maneira_combo:       'combos',
+  serie_conhecer_despertar: 'combos',
+  vencendo_medo:            'materiais',
+  vencendo_desordem:        'materiais',
+  vencendo_validacao:       'materiais',
+  vencendo_sobrevivencia:   'materiais',
+  guia_pratico:             'materiais',
+  atal_maneira_livro:       'materiais',
+  magica_fluir:             'materiais',
+};
+const EH_LEGADO_INICIAL = new Set(['teste_prosperidade']);
+
+/* ============================================================
    Função interna — usada também pelo boot do server.js.
    Idempotente:
      - Insere chaves que ainda não existem (sem sobrescrever).
@@ -258,6 +302,16 @@ async function seedPrecos() {
     const CAMPOS_AUTO_FILL = ['imagem_url', 'link_checkout_padrao', 'link_checkout_aluno'];
 
     for (const [key, valor] of Object.entries(PRECOS_INICIAIS)) {
+      // Injeta categoria_admin e eh_legado no canônico antes de aplicar.
+      // Produtos novos: ficam com esses campos já no INSERT.
+      // Produtos existentes sem o campo: caem na regra (a) "campo novo: adiciona".
+      if (valor.categoria_admin === undefined) {
+        valor.categoria_admin = CATEGORIA_ADMIN_INICIAL[key] || 'cursos';
+      }
+      if (valor.eh_legado === undefined) {
+        valor.eh_legado = EH_LEGADO_INICIAL.has(key);
+      }
+
       const r = await client.query(`
         INSERT INTO precos (key, dados, atualizado_em)
         VALUES ($1, $2, NOW())
