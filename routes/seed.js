@@ -236,6 +236,30 @@ const PRECOS_INICIAIS = {
 };
 
 /* ============================================================
+   Classificação inicial pras abas do admin (Cursos / E-books / Serviços / Legado).
+   Aplicada pra produtos que ainda não têm `categoria_admin` ou `eh_legado` no banco.
+   Renato pode mover qualquer produto entre abas pelo painel — esses dois mappings
+   só populam o estado INICIAL na transição.
+   ============================================================ */
+const CATEGORIA_ADMIN_INICIAL = {
+  clube_vida_magica:      'servicos',
+  teste_subconsciente:    'servicos',
+  teste_prosperidade:     'servicos',
+  ouro_reprogramacao:     'cursos',
+  lda_biblica:            'cursos',
+  atal_maneira_curso:     'cursos',
+  atal_maneira_combo:     'cursos',
+  vencendo_medo:          'ebooks',
+  vencendo_desordem:      'ebooks',
+  vencendo_validacao:     'ebooks',
+  vencendo_sobrevivencia: 'ebooks',
+  guia_pratico:           'ebooks',
+  atal_maneira_livro:     'ebooks',
+  magica_fluir:           'ebooks',
+};
+const EH_LEGADO_INICIAL = new Set(['teste_prosperidade']);
+
+/* ============================================================
    Função interna — usada também pelo boot do server.js.
    Idempotente:
      - Insere chaves que ainda não existem (sem sobrescrever).
@@ -258,6 +282,16 @@ async function seedPrecos() {
     const CAMPOS_AUTO_FILL = ['imagem_url', 'link_checkout_padrao', 'link_checkout_aluno'];
 
     for (const [key, valor] of Object.entries(PRECOS_INICIAIS)) {
+      // Injeta categoria_admin e eh_legado no canônico antes de aplicar.
+      // Produtos novos: ficam com esses campos já no INSERT.
+      // Produtos existentes sem o campo: caem na regra (a) "campo novo: adiciona".
+      if (valor.categoria_admin === undefined) {
+        valor.categoria_admin = CATEGORIA_ADMIN_INICIAL[key] || 'cursos';
+      }
+      if (valor.eh_legado === undefined) {
+        valor.eh_legado = EH_LEGADO_INICIAL.has(key);
+      }
+
       const r = await client.query(`
         INSERT INTO precos (key, dados, atualizado_em)
         VALUES ($1, $2, NOW())
