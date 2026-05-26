@@ -72,6 +72,8 @@ body { font-family: var(--font-body); background: var(--bg-dark); color: var(--t
 label, .field-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 4px; }
 input[type="text"], input[type="email"], input[type="number"], input[type="tel"], input[type="url"], input[type="password"], input[type="search"], textarea, select, .field-input { background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.45rem 0.75rem; color: var(--text-light); font-family: var(--font-body); font-size: 0.85rem; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; }
 input[type="text"]:focus, input[type="email"]:focus, input[type="number"]:focus, input[type="tel"]:focus, input[type="url"]:focus, input[type="password"]:focus, input[type="search"]:focus, textarea:focus, select:focus, .field-input:focus { outline: none; border-color: rgba(200,146,42,0.5); box-shadow: 0 0 0 3px rgba(200,146,42,0.06); }
+/* Filtro com valor selecionado (não em "Todos") — destaca pra Renato bater o olho e enxergar. */
+select.filter-ativo { border-color: var(--color-gold-amber); background: rgba(200,146,42,0.07); box-shadow: 0 0 0 2px rgba(200,146,42,0.12); }
 textarea, .field-input[as="textarea"] { resize: vertical; min-height: 68px; line-height: 1.5; }
 select option { background: #1a1205; }
 .toggle-row { display: flex; align-items: center; gap: 0.65rem; padding: 0.4rem 0; }
@@ -745,6 +747,7 @@ select option { background: #1a1205; }
               <option value="false">Fora do ticker</option>
             </select>
           </div>
+          <button id="btn-limpar-filtros-deps" class="btn btn-ghost btn-sm" style="display:none" onclick="limparFiltrosDeps()" title="Volta a mostrar todos os relatos">✕ Limpar filtros</button>
           <span style="font-size:0.65rem;color:var(--text-muted);margin-left:auto" id="dep-status">—</span>
         </div>
 
@@ -1979,6 +1982,27 @@ async function carregarProdutosParaDropdown(){
 }
 
 // ─── RELATOS ───
+// Sincroniza estado visual dos filtros: borda dourada em selects ativos e
+// botão "Limpar filtros" visível somente quando há filtro ativo.
+function atualizarFiltrosDeps(){
+  const ids = ['filtro-tema','filtro-placeholder','filtro-ticker'];
+  let temAtivo = false;
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.value) { el.classList.add('filter-ativo'); temAtivo = true; }
+    else el.classList.remove('filter-ativo');
+  });
+  const btn = document.getElementById('btn-limpar-filtros-deps');
+  if (btn) btn.style.display = temAtivo ? 'inline-flex' : 'none';
+}
+function limparFiltrosDeps(){
+  ['filtro-tema','filtro-placeholder','filtro-ticker'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  carregarDeps();
+}
 async function carregarDeps(){
   // Atualiza o toggle de shuffle (mantido)
   try {
@@ -2005,6 +2029,7 @@ async function carregarDeps(){
     deps = r.ok ? await r.json() : [];
   } catch { deps = []; }
 
+  atualizarFiltrosDeps();
   renderDeps();
   atualizarBadges();
   const status = document.getElementById('dep-status');
@@ -2014,7 +2039,15 @@ async function carregarDeps(){
 function renderDeps(){
   const grid = document.getElementById('dep-grid');
   if (!grid) return;
-  if (!deps.length) { grid.innerHTML = '<div class="loading">Nenhum relato encontrado com esses filtros.</div>'; return; }
+  if (!deps.length) {
+    // Se há filtro ativo, oferecer botão pra limpar direto da mensagem vazia.
+    const temFiltro = ['filtro-tema','filtro-placeholder','filtro-ticker']
+      .some(id => document.getElementById(id)?.value);
+    grid.innerHTML = temFiltro
+      ? '<div class="loading">Nenhum relato encontrado com esses filtros.<br><button class="btn btn-ghost btn-sm" style="margin-top:0.7rem" onclick="limparFiltrosDeps()">✕ Limpar filtros e ver tudo</button></div>'
+      : '<div class="loading">Nenhum relato cadastrado ainda.</div>';
+    return;
+  }
   grid.innerHTML = '';
   deps.forEach((d) => {
     const card = document.createElement('div');
