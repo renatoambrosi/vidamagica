@@ -116,11 +116,6 @@ const PRECOS_INICIAIS = {
     parcelas_qtd_alunos: 10
   },
   // ── GUIAS ──
-  // (definição antiga de `magica_fluir` foi removida daqui — havia outra
-  //  declaração mais abaixo com nome/links corretos. A duplicação em JS
-  //  fazia a segunda sobrescrever a primeira de qualquer jeito; mantemos
-  //  só a versão final pra evitar confusão visual no arquivo. A função
-  //  corrigirDuplicacaoMagicaFluir() abaixo limpa o legacy do banco.)
   guia_pratico: {
     nome: 'Guia Prático para Reprogramar a Mente',
     tipo: 'curso',
@@ -197,24 +192,6 @@ const PRECOS_INICIAIS = {
     preco_alunos: '411,00',
     parcelas_valor_alunos: '42,51'
   },
-  // Combo da Série Conhecer e Despertar. Agrupa os 4 ebooks "vencendo_*"
-  // (medo, desordem, validação, sobrevivência) num único produto pra venda
-  // combinada. Preço/link a definir pelo admin antes de divulgar.
-  serie_conhecer_despertar: {
-    nome: 'Série Conhecer e Despertar',
-    tipo: 'curso',
-    imagem_url: '/assets/products/serie-despertando.webp',
-    link_checkout_padrao: '',
-    link_checkout_aluno: '',
-    mostrar_promo: false,
-    preco_padrao: '0,00',
-    parcelas_qtd: 12,
-    parcelas_valor_padrao: '0,00',
-    preco_promo: '0,00',
-    parcelas_valor_promo: '0,00',
-    preco_alunos: '0,00',
-    parcelas_valor_alunos: '0,00'
-  },
   // Combo Livro Digital + Curso A Tal Maneira. Preços placeholder —
   // ajustar pelo painel /admin → Preços antes de divulgar. Links Kiwify
   // já apontam pros checkouts corretos do combo.
@@ -268,7 +245,6 @@ const CATEGORIA_ADMIN_INICIAL = {
   lda_biblica:              'cursos',
   atal_maneira_curso:       'cursos',
   atal_maneira_combo:       'combos',
-  serie_conhecer_despertar: 'combos',
   vencendo_medo:            'materiais',
   vencendo_desordem:        'materiais',
   vencendo_validacao:       'materiais',
@@ -388,102 +364,5 @@ router.post('/admin/seed', autenticarPainel('admin'), async (req, res) => {
   }
 });
 
-/* ============================================================
-   corrigirDuplicacaoMagicaFluir — limpeza idempotente.
-
-   Histórico do bug: o arquivo seed.js tinha o slug `magica_fluir`
-   declarado 2 vezes (JS sobrescrevia silenciosamente), mas o banco
-   acumulou 2 produtos relacionados a "Mágica do Fluir" — um com
-   preço e SEM link de checkout, outro com link Kiwify e preço 0,00.
-
-   Esta função:
-     1) Roda 1 vez no boot (controlada por seed_log).
-     2) Lista produtos cuja key OU nome casa com "magica*fluir".
-     3) Se houver 2+:
-        - Escolhe o "bom" (maior preço_padrao numérico).
-        - Copia links de checkout do "ruim" pro "bom" (se faltarem).
-        - Apaga os "ruins".
-     4) Marca como executada no seed_log.
-
-   Pra forçar re-rodar: DELETE FROM seed_log WHERE seed_key = 'fix_magica_fluir_v1';
-   ============================================================ */
-async function corrigirDuplicacaoMagicaFluir() {
-  const SEED_KEY = 'fix_magica_fluir_v1';
-  try {
-    const ja = await poolComunicacao.query(
-      `SELECT 1 FROM seed_log WHERE seed_key = $1`, [SEED_KEY]
-    );
-    if (ja.rows.length > 0) return;
-
-    const r = await poolComunicacao.query(`
-      SELECT key, dados FROM precos
-      WHERE LOWER(key) LIKE '%magica%fluir%'
-         OR LOWER(COALESCE(dados->>'nome','')) LIKE '%mágica do fluir%'
-         OR LOWER(COALESCE(dados->>'nome','')) LIKE '%magica do fluir%'
-    `);
-
-    if (r.rows.length <= 1) {
-      // Nada a corrigir — registra que rodou pra não verificar de novo.
-      await poolComunicacao.query(
-        `INSERT INTO seed_log (seed_key) VALUES ($1) ON CONFLICT DO NOTHING`,
-        [SEED_KEY]
-      );
-      return;
-    }
-
-    const parsePreco = (s) => parseFloat(String(s || '0').replace(',', '.')) || 0;
-
-    // Ordena: maior preço primeiro. O primeiro é o "bom", restantes são "ruins".
-    const ordenados = r.rows.slice().sort((a, b) =>
-      parsePreco(b.dados.preco_padrao) - parsePreco(a.dados.preco_padrao)
-    );
-
-    const bom = ordenados[0];
-    const ruins = ordenados.slice(1);
-
-    // Merge dos links de checkout (preserva o que o "bom" não tinha).
-    const novoBom = { ...bom.dados };
-    for (const ruim of ruins) {
-      const d = ruim.dados || {};
-      if (!novoBom.link_checkout_padrao && d.link_checkout_padrao) {
-        novoBom.link_checkout_padrao = d.link_checkout_padrao;
-      }
-      if (!novoBom.link_checkout_aluno && d.link_checkout_aluno) {
-        novoBom.link_checkout_aluno = d.link_checkout_aluno;
-      }
-    }
-
-    const client = await poolComunicacao.connect();
-    try {
-      await client.query('BEGIN');
-      // Atualiza o "bom" com merge dos links
-      await client.query(
-        `UPDATE precos SET dados = $2, atualizado_em = NOW() WHERE key = $1`,
-        [bom.key, JSON.stringify(novoBom)]
-      );
-      // Apaga os "ruins"
-      for (const ruim of ruins) {
-        await client.query(`DELETE FROM precos WHERE key = $1`, [ruim.key]);
-      }
-      await client.query(
-        `INSERT INTO seed_log (seed_key) VALUES ($1) ON CONFLICT DO NOTHING`,
-        [SEED_KEY]
-      );
-      await client.query('COMMIT');
-
-      const apagadas = ruins.map(x => x.key).join(', ');
-      console.log(`✅ Mágica do Fluir: duplicação corrigida. Mantida key '${bom.key}'. Apagadas: ${apagadas}.`);
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
-  } catch (err) {
-    console.error('⚠️ Falha ao corrigir duplicação Mágica do Fluir:', err.message);
-  }
-}
-
 module.exports = router;
 module.exports.seedPrecos = seedPrecos;
-module.exports.corrigirDuplicacaoMagicaFluir = corrigirDuplicacaoMagicaFluir;

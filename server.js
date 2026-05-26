@@ -310,12 +310,6 @@ server.listen(PORT, async () => {
       if (typeof seedMod.seedPrecos === 'function') {
         await seedMod.seedPrecos();
       }
-      // Limpeza pontual: corrige duplicação da Mágica do Fluir no banco
-      // (rodada idempotente via seed_log). Mantém o produto com preço
-      // e herda os links de checkout do duplicado antes de apagá-lo.
-      if (typeof seedMod.corrigirDuplicacaoMagicaFluir === 'function') {
-        await seedMod.corrigirDuplicacaoMagicaFluir();
-      }
     } catch (err) {
       console.error('⚠️ Seed de produtos não rodou:', err.message);
       // Não derruba o servidor — o seed é um nice-to-have, não bloqueante
