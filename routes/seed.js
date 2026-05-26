@@ -192,6 +192,24 @@ const PRECOS_INICIAIS = {
     preco_alunos: '411,00',
     parcelas_valor_alunos: '42,51'
   },
+  // Combo da Série Conhecer e Despertar. Agrupa os 4 ebooks "vencendo_*"
+  // (medo, desordem, validação, sobrevivência) num único produto pra venda
+  // combinada. Preço/link a definir pelo admin antes de divulgar.
+  serie_conhecer_despertar: {
+    nome: 'Série Conhecer e Despertar',
+    tipo: 'curso',
+    imagem_url: '/assets/products/serie-despertando.webp',
+    link_checkout_padrao: '',
+    link_checkout_aluno: '',
+    mostrar_promo: false,
+    preco_padrao: '0,00',
+    parcelas_qtd: 12,
+    parcelas_valor_padrao: '0,00',
+    preco_promo: '0,00',
+    parcelas_valor_promo: '0,00',
+    preco_alunos: '0,00',
+    parcelas_valor_alunos: '0,00'
+  },
   // Combo Livro Digital + Curso A Tal Maneira. Preços placeholder —
   // ajustar pelo painel /admin → Preços antes de divulgar. Links Kiwify
   // já apontam pros checkouts corretos do combo.
@@ -231,18 +249,13 @@ const PRECOS_INICIAIS = {
 };
 
 /* ============================================================
-<<<<<<< HEAD
    Classificação inicial pras abas do admin
    (Serviços / Materiais / Cursos / Combos / Legado).
-=======
-   Classificação inicial pras abas do admin (Cursos / E-books / Serviços / Legado).
->>>>>>> 67979fc3d79673edec2f9ff710f9acf77422bd0e
    Aplicada pra produtos que ainda não têm `categoria_admin` ou `eh_legado` no banco.
    Renato pode mover qualquer produto entre abas pelo painel — esses dois mappings
    só populam o estado INICIAL na transição.
    ============================================================ */
 const CATEGORIA_ADMIN_INICIAL = {
-<<<<<<< HEAD
   clube_vida_magica:        'servicos',
   teste_subconsciente:      'servicos',
   teste_prosperidade:       'servicos',
@@ -250,6 +263,7 @@ const CATEGORIA_ADMIN_INICIAL = {
   lda_biblica:              'cursos',
   atal_maneira_curso:       'cursos',
   atal_maneira_combo:       'combos',
+  serie_conhecer_despertar: 'combos',
   vencendo_medo:            'materiais',
   vencendo_desordem:        'materiais',
   vencendo_validacao:       'materiais',
@@ -257,22 +271,6 @@ const CATEGORIA_ADMIN_INICIAL = {
   guia_pratico:             'materiais',
   atal_maneira_livro:       'materiais',
   magica_fluir:             'materiais',
-=======
-  clube_vida_magica:      'servicos',
-  teste_subconsciente:    'servicos',
-  teste_prosperidade:     'servicos',
-  ouro_reprogramacao:     'cursos',
-  lda_biblica:            'cursos',
-  atal_maneira_curso:     'cursos',
-  atal_maneira_combo:     'cursos',
-  vencendo_medo:          'ebooks',
-  vencendo_desordem:      'ebooks',
-  vencendo_validacao:     'ebooks',
-  vencendo_sobrevivencia: 'ebooks',
-  guia_pratico:           'ebooks',
-  atal_maneira_livro:     'ebooks',
-  magica_fluir:           'ebooks',
->>>>>>> 67979fc3d79673edec2f9ff710f9acf77422bd0e
 };
 const EH_LEGADO_INICIAL = new Set(['teste_prosperidade']);
 

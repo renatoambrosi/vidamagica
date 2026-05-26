@@ -585,7 +585,6 @@ select option { background: #1a1205; }
     <!-- ABA PRODUTOS -->
     <div class="tab-panel active" id="tab-produtos">
       <div class="subtabs" role="tablist">
-<<<<<<< HEAD
         <button type="button" class="subtab-btn active" data-subtab-prod="servicos" onclick="goSubtabProdutos('servicos', this)">
           Serviços <span class="subtab-badge" id="badge-servicos">—</span>
         </button>
@@ -614,30 +613,6 @@ select option { background: #1a1205; }
       </div>
       <div class="subtab-panel" id="subtab-combos">
         <div id="produtos-combos-container"><div class="loading">Carregando...</div></div>
-=======
-        <button type="button" class="subtab-btn active" data-subtab-prod="cursos" onclick="goSubtabProdutos('cursos', this)">
-          📚 Cursos <span class="subtab-badge" id="badge-cursos">—</span>
-        </button>
-        <button type="button" class="subtab-btn" data-subtab-prod="ebooks" onclick="goSubtabProdutos('ebooks', this)">
-          📖 E-books <span class="subtab-badge" id="badge-ebooks">—</span>
-        </button>
-        <button type="button" class="subtab-btn" data-subtab-prod="servicos" onclick="goSubtabProdutos('servicos', this)">
-          ✨ Serviços <span class="subtab-badge" id="badge-servicos">—</span>
-        </button>
-        <button type="button" class="subtab-btn" data-subtab-prod="legado" onclick="goSubtabProdutos('legado', this)">
-          🕰️ Legado <span class="subtab-badge" id="badge-legado">—</span>
-        </button>
-      </div>
-
-      <div class="subtab-panel active" id="subtab-cursos">
-        <div id="produtos-cursos-container"><div class="loading">Carregando...</div></div>
-      </div>
-      <div class="subtab-panel" id="subtab-ebooks">
-        <div id="produtos-ebooks-container"><div class="loading">Carregando...</div></div>
-      </div>
-      <div class="subtab-panel" id="subtab-servicos">
-        <div id="produtos-servicos-container"><div class="loading">Carregando...</div></div>
->>>>>>> 67979fc3d79673edec2f9ff710f9acf77422bd0e
       </div>
       <div class="subtab-panel" id="subtab-legado">
         <div id="produtos-legado-container"><div class="loading">Carregando...</div></div>
@@ -1640,24 +1615,16 @@ const IMGS = {
   guia_pratico:           '/assets/products/guia-pratico.webp',
   atal_maneira_livro:     '/assets/products/atal-maneira-livro.webp',
   ouro_reprogramacao:     '/assets/products/ouro-reprogramacao.webp',
-<<<<<<< HEAD
   lda_biblica:              '/assets/products/lda-biblica.webp',
   atal_maneira_curso:       '/assets/products/atal-maneira-curso.webp',
   atal_maneira_combo:       '/assets/products/atal-maneira-combo.webp',
+  serie_conhecer_despertar: '/assets/products/serie-despertando.webp',
 };
 // Categoria padrão pras abas do admin (Serviços / Materiais / Cursos / Combos / Legado).
-=======
-  lda_biblica:            '/assets/products/lda-biblica.webp',
-  atal_maneira_curso:     '/assets/products/atal-maneira-curso.webp',
-  atal_maneira_combo:     '/assets/products/atal-maneira-combo.webp',
-};
-// Categoria padrão pra abas do admin (Cursos / E-books / Serviços / Legado).
->>>>>>> 67979fc3d79673edec2f9ff710f9acf77422bd0e
 // FONTE DA VERDADE: p.categoria_admin + p.eh_legado vindos do banco. Esses
 // dois fallbacks só preenchem quando o produto NÃO tem o campo ainda
 // (transição até o seed/admin gravarem o valor real).
 const CATEGORIA_PADRAO = {
-<<<<<<< HEAD
   clube_vida_magica:        'servicos',
   teste_subconsciente:      'servicos',
   teste_prosperidade:       'servicos',
@@ -1665,6 +1632,7 @@ const CATEGORIA_PADRAO = {
   lda_biblica:              'cursos',
   atal_maneira_curso:       'cursos',
   atal_maneira_combo:       'combos',
+  serie_conhecer_despertar: 'combos',
   vencendo_medo:            'materiais',
   vencendo_desordem:        'materiais',
   vencendo_validacao:       'materiais',
@@ -1672,22 +1640,6 @@ const CATEGORIA_PADRAO = {
   guia_pratico:             'materiais',
   atal_maneira_livro:       'materiais',
   magica_fluir:             'materiais',
-=======
-  clube_vida_magica:      'servicos',
-  teste_subconsciente:    'servicos',
-  teste_prosperidade:     'servicos',
-  ouro_reprogramacao:     'cursos',
-  lda_biblica:            'cursos',
-  atal_maneira_curso:     'cursos',
-  atal_maneira_combo:     'cursos',
-  vencendo_medo:          'ebooks',
-  vencendo_desordem:      'ebooks',
-  vencendo_validacao:     'ebooks',
-  vencendo_sobrevivencia: 'ebooks',
-  guia_pratico:           'ebooks',
-  atal_maneira_livro:     'ebooks',
-  magica_fluir:           'ebooks',
->>>>>>> 67979fc3d79673edec2f9ff710f9acf77422bd0e
 };
 const LEGADO_PADRAO = new Set(['teste_prosperidade']);
 function calcDesc(de, por) { const a=parseFloat(String(de).replace(',','.')), b=parseFloat(String(por).replace(',','.')); if(!a||!b||b>=a) return null; return Math.round(((a-b)/a)*100); }
@@ -1704,7 +1656,6 @@ function buildLinksImagem(key, p) {
 }
 function buildClassificacao(key, p) {
   const cat = p.categoria_admin || CATEGORIA_PADRAO[key] || 'cursos';
-<<<<<<< HEAD
   const ehLegado = (p.eh_legado === true) || (p.eh_legado === undefined && LEGADO_PADRAO.has(key));
   return `<div class="secao" style="margin-top:0;padding-top:0;border:none"><div class="secao-titulo">Classificação</div><div class="fields-grid"><div class="field"><label>Categoria no admin</label><select data-field="categoria_admin"><option value="servicos" ${cat==='servicos'?'selected':''}>Serviços</option><option value="materiais" ${cat==='materiais'?'selected':''}>Materiais</option><option value="cursos" ${cat==='cursos'?'selected':''}>Cursos</option><option value="combos" ${cat==='combos'?'selected':''}>Combos</option></select></div><div class="field"><label>Marcar como Legado</label><label class="toggle" style="margin-top:0.45rem;display:inline-flex"><input type="checkbox" data-field="eh_legado" ${ehLegado?'checked':''}><span class="toggle-slider"></span></label></div></div></div>`;
 }
@@ -1722,18 +1673,6 @@ function buildPreco(key, p) {
   corpo += p.tipo==='comunidade'?buildComunidade(key,p):buildPadrao(key,p)+buildPromo(key,p)+buildAlunos(key,p);
   corpo += buildLinksImagem(key, p);
   return `<div class="card" data-key="${key}"><div class="card-header"><img class="card-img" src="${imgPreview}" alt="${p.nome}" onerror="${onerrorAttr}"><div style="flex:1;min-width:0"><div class="card-title">${p.nome}</div><div class="card-badge">${badge}</div></div></div><div class="card-body">${corpo}</div></div>`;
-=======
-  return `<div class="secao" style="margin-top:0;padding-top:0;border:none"><div class="secao-titulo">Classificação</div><div class="fields-grid"><div class="field"><label>Categoria no admin</label><select data-field="categoria_admin"><option value="cursos" ${cat==='cursos'?'selected':''}>Cursos</option><option value="ebooks" ${cat==='ebooks'?'selected':''}>E-books</option><option value="servicos" ${cat==='servicos'?'selected':''}>Serviços</option></select></div></div></div>`;
-}
-function buildPreco(key, p) {
-  const imgPreview = (p.imagem_url && p.imagem_url.trim()) ? p.imagem_url : (IMGS[key] || '');
-  const badge=p.tipo==='promo'?'Padrão + Promo':p.tipo==='comunidade'?'Assinatura — Ouro e Mágico':'Padrão · Promo · Aluno';
-  const ehLegado = (p.eh_legado === true) || (p.eh_legado === undefined && LEGADO_PADRAO.has(key));
-  let corpo = buildClassificacao(key, p);
-  corpo += p.tipo==='comunidade'?buildComunidade(key,p):buildPadrao(key,p)+buildPromo(key,p)+buildAlunos(key,p);
-  corpo += buildLinksImagem(key, p);
-  return `<div class="card" data-key="${key}"><div class="card-header"><img class="card-img" src="${imgPreview}" alt="${p.nome}" onerror="this.style.display='none'"><div style="flex:1;min-width:0"><div class="card-title">${p.nome}</div><div class="card-badge">${badge}</div></div><label class="toggle" title="Marcar como Legado"><span style="font-size:0.72rem;color:var(--color-gold-light);margin-right:0.5rem;font-weight:600;letter-spacing:0.04em">LEGADO</span><input type="checkbox" data-field="eh_legado" ${ehLegado?'checked':''}><span class="toggle-slider"></span></label></div><div class="card-body">${corpo}</div></div>`;
->>>>>>> 67979fc3d79673edec2f9ff710f9acf77422bd0e
 }
 function buildPadrao(key,p){if(p.tipo==='promo')return`<div class="fields-grid"><div class="field"><label>Preço Padrão (R$)</label><input type="text" data-field="preco_padrao" value="${p.preco_padrao}" oninput="recalc('${key}')"></div></div>`;return`<div class="fields-grid three"><div class="field"><label>Preço Padrão (R$)</label><input type="text" data-field="preco_padrao" value="${p.preco_padrao}" oninput="recalc('${key}')"></div><div class="field"><label>Nº Parcelas</label><input type="text" data-field="parcelas_qtd" value="${p.parcelas_qtd}"></div><div class="field"><label>Parcela Padrão (R$)</label><input type="text" data-field="parcelas_valor_padrao" value="${p.parcelas_valor_padrao}"></div></div>`;}
 function buildPromo(key,p){const ativo=p.mostrar_promo||false;const pct=calcDesc(p.preco_padrao,p.preco_promo);const fields=p.tipo==='curso'?`<div class="field"><label>Promo à vista (R$)</label><input type="text" data-field="preco_promo" value="${p.preco_promo||''}" oninput="recalc('${key}')"></div><div class="field"><label>Parcela Promo (R$)</label><input type="text" data-field="parcelas_valor_promo" value="${p.parcelas_valor_promo||''}"></div>${p.parcelas_qtd_promo!=null?`<div class="field"><label>Nº Parcelas Promo</label><input type="text" data-field="parcelas_qtd_promo" value="${p.parcelas_qtd_promo}"></div>`:''}`:`<div class="field"><label>Preço Promo (R$)</label><input type="text" data-field="preco_promo" value="${p.preco_promo||''}" oninput="recalc('${key}')"></div>`;return`<div class="secao"><div class="toggle-row"><div><div class="tl-titulo">Exibir Preço Promo</div><div class="tl-sub" id="sub-${key}">De R$ ${p.preco_padrao} por R$ ${p.preco_promo}</div></div><label class="toggle"><input type="checkbox" data-field="mostrar_promo" ${ativo?'checked':''} onchange="togglePromo('${key}',this.checked)"><span class="toggle-slider"></span></label></div><div class="promo-fields ${ativo?'visible':''}" id="promo-${key}">${fields}</div><div class="desconto-tag promo ${ativo&&pct?'visible':''}" id="desc-promo-${key}">Desconto exibido: <strong id="pct-promo-${key}">${pct?pct+'% off':'—'}</strong></div></div>`;}
@@ -1755,11 +1694,7 @@ async function carregarProdutos(){
     });
 
     // Distribui por aba. eh_legado=true sobrescreve categoria_admin.
-<<<<<<< HEAD
     const buckets = { servicos: [], materiais: [], cursos: [], combos: [], legado: [] };
-=======
-    const buckets = { cursos: [], ebooks: [], servicos: [], legado: [] };
->>>>>>> 67979fc3d79673edec2f9ff710f9acf77422bd0e
     ordenado.forEach(([k, p]) => {
       const ehLegado = (p.eh_legado === true) || (p.eh_legado === undefined && LEGADO_PADRAO.has(k));
       if (ehLegado) {
@@ -1771,7 +1706,6 @@ async function carregarProdutos(){
     });
 
     const vazio = '<div class="loading">Nenhum produto nesta categoria.</div>';
-<<<<<<< HEAD
     document.getElementById('produtos-servicos-container').innerHTML  = buckets.servicos.length  ? buckets.servicos.map(([k,p])=>buildPreco(k,p)).join('')  : vazio;
     document.getElementById('produtos-materiais-container').innerHTML = buckets.materiais.length ? buckets.materiais.map(([k,p])=>buildPreco(k,p)).join('') : vazio;
     document.getElementById('produtos-cursos-container').innerHTML    = buckets.cursos.length    ? buckets.cursos.map(([k,p])=>buildPreco(k,p)).join('')    : vazio;
@@ -1785,19 +1719,6 @@ async function carregarProdutos(){
     document.getElementById('badge-legado').textContent    = String(buckets.legado.length);
   } catch {
     ['servicos','materiais','cursos','combos','legado'].forEach(c => {
-=======
-    document.getElementById('produtos-cursos-container').innerHTML   = buckets.cursos.length   ? buckets.cursos.map(([k,p])=>buildPreco(k,p)).join('')   : vazio;
-    document.getElementById('produtos-ebooks-container').innerHTML   = buckets.ebooks.length   ? buckets.ebooks.map(([k,p])=>buildPreco(k,p)).join('')   : vazio;
-    document.getElementById('produtos-servicos-container').innerHTML = buckets.servicos.length ? buckets.servicos.map(([k,p])=>buildPreco(k,p)).join('') : vazio;
-    document.getElementById('produtos-legado-container').innerHTML   = buckets.legado.length   ? buckets.legado.map(([k,p])=>buildPreco(k,p)).join('')   : '<div class="loading">Nenhum produto legado.</div>';
-
-    document.getElementById('badge-cursos').textContent   = String(buckets.cursos.length);
-    document.getElementById('badge-ebooks').textContent   = String(buckets.ebooks.length);
-    document.getElementById('badge-servicos').textContent = String(buckets.servicos.length);
-    document.getElementById('badge-legado').textContent   = String(buckets.legado.length);
-  } catch {
-    ['cursos','ebooks','servicos','legado'].forEach(c => {
->>>>>>> 67979fc3d79673edec2f9ff710f9acf77422bd0e
       const el = document.getElementById('produtos-' + c + '-container');
       if (el) el.innerHTML = '<div class="loading">Erro ao carregar. Verifique a autenticação.</div>';
     });
