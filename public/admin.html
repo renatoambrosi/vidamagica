@@ -2815,14 +2815,17 @@ async function carregarStatusGateway() {
       gwConfigCarregada = true;
     }
 
-    renderCategorias(d.categorias || []);
+    renderCategoriasGateway(d.categorias || []);
     renderFila(d.fila || []);
   } catch (e) {
     console.error('carregarStatusGateway', e);
   }
 }
 
-function renderCategorias(cats) {
+// Renomeada de `renderCategorias` pra evitar shadowing — havia outra função
+// `renderCategorias` (aba Relatos, linha ~2243) que era sobrescrita por essa
+// via hoisting, e quebrava `bootDepoimentos` no boot. Esta é a do gateway WhatsApp.
+function renderCategoriasGateway(cats) {
   const c = document.getElementById('gw-categorias-lista');
   if (!cats.length) { c.innerHTML = '<p style="color:var(--text-muted);font-size:0.78rem">Nenhuma categoria.</p>'; return; }
   c.innerHTML = cats.map(cat => `
