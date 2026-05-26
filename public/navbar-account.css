@@ -670,34 +670,36 @@ body.lp-magica {
 
 
 /* ═══════════════════════════════════════════════════════════════════
-   GUIA PRÁTICO DA RM — paleta light branca + laranja-dourado
+   GUIA PRÁTICO DA RM — gradient warm-orange (navbar) + botão branco
+   Padrão das LPs light com logo dourada: header colorido garante leitura
+   da logo (que sumia no fundo branco anterior).
    ═══════════════════════════════════════════════════════════════════ */
 body.lp-guia {
-  /* R1 — navbar branca + sombra */
-  --navbar-fundo:                rgba(255, 255, 255, 0.96);
-  --navbar-borda-cor:            rgba(26, 18, 5, 0.08);
+  /* R1 — gradient warm-orange + sombra suave */
+  --navbar-fundo:                linear-gradient(135deg, #D4A574, #E67E22);
+  --navbar-borda-cor:            rgba(26, 18, 5, 0.18);
   --navbar-blur:                 12px;
-  --navbar-sombra:               0 2px 12px rgba(26, 18, 5, 0.05);
-  /* R2 — outline laranja */
-  --btn-entrar-texto-cor:        #C2670F;
-  --btn-entrar-borda-cor:        rgba(230, 126, 34, 0.45);
-  --btn-entrar-hover-fundo:      rgba(230, 126, 34, 0.08);
-  --btn-entrar-hover-borda-cor:  #E67E22;
-  /* R3 — gradient warm-orange */
-  --btn-criar-texto-cor:         #FFFFFF;
-  --btn-criar-fundo:             linear-gradient(135deg, #D4A574, #E67E22);
-  --btn-criar-hover-fundo:       linear-gradient(135deg, #D4A574, #E67E22);
+  --navbar-sombra:               0 2px 14px rgba(230, 126, 34, 0.22);
+  /* R2 — outline branco (em cima do gradient) */
+  --btn-entrar-texto-cor:        #FFFFFF;
+  --btn-entrar-borda-cor:        rgba(255, 255, 255, 0.55);
+  --btn-entrar-hover-fundo:      rgba(255, 255, 255, 0.15);
+  --btn-entrar-hover-borda-cor:  #FFFFFF;
+  /* R3 — branco preenchido com texto laranja */
+  --btn-criar-texto-cor:         #C2670F;
+  --btn-criar-fundo:             #FFFFFF;
+  --btn-criar-hover-fundo:       #FFF6E8;
   --btn-criar-sombra:            0 2px 8px rgba(230, 126, 34, 0.3);
   --btn-criar-hover-sombra:      0 4px 14px rgba(230, 126, 34, 0.45);
-  /* R4 */
-  --btn-minha-area-texto-cor:    #FFFFFF;
-  --btn-minha-area-fundo:        linear-gradient(135deg, #D4A574, #E67E22);
-  --btn-minha-area-hover-fundo:  linear-gradient(135deg, #D4A574, #E67E22);
+  /* R4 — Minha área igual ao Criar conta */
+  --btn-minha-area-texto-cor:    #C2670F;
+  --btn-minha-area-fundo:        #FFFFFF;
+  --btn-minha-area-hover-fundo:  #FFF6E8;
   --btn-minha-area-sombra:       0 2px 8px rgba(230, 126, 34, 0.3);
   --btn-minha-area-hover-sombra: 0 4px 14px rgba(230, 126, 34, 0.45);
-  --avatar-borda-cor:            rgba(230, 126, 34, 0.5);
-  --avatar-fundo-cor:            rgba(230, 126, 34, 0.1);
-  --avatar-iniciais-cor:         #C2670F;
+  --avatar-borda-cor:            rgba(255, 255, 255, 0.6);
+  --avatar-fundo-cor:            rgba(255, 255, 255, 0.2);
+  --avatar-iniciais-cor:         #FFFFFF;
   /* R5 — dropdown branco */
   --dropdown-fundo:              rgba(255, 255, 255, 1);
   --dropdown-blur:               20px;
