@@ -231,13 +231,18 @@ const PRECOS_INICIAIS = {
 };
 
 /* ============================================================
+<<<<<<< HEAD
    Classificação inicial pras abas do admin
    (Serviços / Materiais / Cursos / Combos / Legado).
+=======
+   Classificação inicial pras abas do admin (Cursos / E-books / Serviços / Legado).
+>>>>>>> 67979fc3d79673edec2f9ff710f9acf77422bd0e
    Aplicada pra produtos que ainda não têm `categoria_admin` ou `eh_legado` no banco.
    Renato pode mover qualquer produto entre abas pelo painel — esses dois mappings
    só populam o estado INICIAL na transição.
    ============================================================ */
 const CATEGORIA_ADMIN_INICIAL = {
+<<<<<<< HEAD
   clube_vida_magica:        'servicos',
   teste_subconsciente:      'servicos',
   teste_prosperidade:       'servicos',
@@ -252,6 +257,22 @@ const CATEGORIA_ADMIN_INICIAL = {
   guia_pratico:             'materiais',
   atal_maneira_livro:       'materiais',
   magica_fluir:             'materiais',
+=======
+  clube_vida_magica:      'servicos',
+  teste_subconsciente:    'servicos',
+  teste_prosperidade:     'servicos',
+  ouro_reprogramacao:     'cursos',
+  lda_biblica:            'cursos',
+  atal_maneira_curso:     'cursos',
+  atal_maneira_combo:     'cursos',
+  vencendo_medo:          'ebooks',
+  vencendo_desordem:      'ebooks',
+  vencendo_validacao:     'ebooks',
+  vencendo_sobrevivencia: 'ebooks',
+  guia_pratico:           'ebooks',
+  atal_maneira_livro:     'ebooks',
+  magica_fluir:           'ebooks',
+>>>>>>> 67979fc3d79673edec2f9ff710f9acf77422bd0e
 };
 const EH_LEGADO_INICIAL = new Set(['teste_prosperidade']);
 
