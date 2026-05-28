@@ -387,6 +387,9 @@ Idempotência forte: `UNIQUE(capsula_id, canal)` em `caderno_capsula_avisos` faz
 - `background-attachment: fixed` é tratado como `scroll` (não fixa o fundo).
 - `overflow: hidden` no `<body>` nem sempre trava scroll — em alguns casos precisa `position: fixed` no body.
 - Pull-to-refresh nativo é tricky de bloquear — precisa `overscroll-behavior: none` e às vezes mais.
+- ⚠️ **Cache agressivo de JS/CSS** — Safari iOS segura `app.js` (e qualquer outro arquivo estático) em cache **mesmo após deploy**. Sintoma típico: você corrige bug no código, sobe pra Railway, build verde, mas o iPhone continua mostrando o comportamento bugado enquanto o desktop já mostra a correção. **Diagnóstico:** "no desk funciona, no mobile não" = quase sempre cache do Safari iOS, NÃO bug real.
+  - **Fix permanente aplicado (2026-05-28):** `server.js` agora envia `Cache-Control: no-cache` pra HTML + JS/CSS do mini-SPA `/app` + `relatos-card.js`, via `setHeaders` no `express.static`. O Safari ainda guarda o arquivo, mas revalida com o servidor antes de usar (304 vazio quando inalterado, 200 com corpo quando você sobe versão nova). Custo de banda em escala = centavos. **Não precisa mais bumpar `?v=N`** pra forçar reload no celular após deploy — o Safari pega a versão nova automaticamente. O `?v=2` atual em `public/app.html` pode ficar como cinto-e-suspensórios; novos arquivos JS não precisam dele.
+  - **Bug histórico que gerou esta nota (2026-05-28):** após primeira entrega do Caderno da Mentalização, salvar escrita / plantar meta / adicionar imagem ao Vision Board falhavam **só no iPhone** com toast "Não consegui salvar". Causa real era que o `fetchAutenticado` não enviava `Content-Type: application/json` (corrigido) — mas o Safari iOS continuou rodando o `app.js` antigo (sem o fix) mesmo após múltiplos deploys. Só virou depois de adicionar `?v=2` nos `<script>`.
 
 ### YouTube embed
 

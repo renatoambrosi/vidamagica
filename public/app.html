@@ -1601,10 +1601,14 @@
   </div>
 
   <script src="/relatos-card.js"></script>
-  <script type="module" src="/app/app.js"></script>
+  <!-- Query string ?v= é cache buster pra Safari iOS que segura JS
+       antigo em cache mesmo após deploy. Bumpe o número (v=3, v=4, …)
+       sempre que mudar app.js ou caderno.js e quiser forçar reload no
+       celular sem o usuário ter que limpar cache. -->
+  <script type="module" src="/app/app.js?v=2"></script>
   <!-- Caderno da Mentalização + Conquistas. Carrega depois do app.js
        pra ter acesso a fetchAutenticado/irPara/toast/abrirModal/fecharModal
        como globais. Vide public/app/caderno.js. -->
-  <script src="/app/caderno.js"></script>
+  <script src="/app/caderno.js?v=2"></script>
 </body>
 </html>

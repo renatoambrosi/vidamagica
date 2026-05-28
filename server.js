@@ -185,7 +185,22 @@ app.use('/api/app/caderno',     require('./routes/caderno'));         // Caderno
 app.use('/api/app/gamificacao', require('./routes/gamificacao'));     // Conquistas (status, missões, prêmios, ranking mensal)
 
 // ── ESTÁTICOS ──────────────────────────────────────────────
-app.use(express.static(path.join(__dirname, 'public')));
+// Cache-Control no-cache pra HTML + JS/CSS do mini-SPA /app + relatos-card.js.
+// "no-cache" NÃO desliga cache: o Safari iOS continua guardando o arquivo,
+// mas revalida com o servidor a cada hit (304 vazio quando inalterado, ~200B;
+// 200 com corpo completo quando você sobe versão nova). Resolve o problema
+// recorrente de Safari iOS rodar app.js antigo após deploy sem nenhum custo
+// significativo de banda. Imagens, fontes, áudios e assets fora de /app
+// seguem com cache padrão do express.static. Ver CLAUDE.md → iOS Safari.
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, filepath) => {
+    if (filepath.endsWith('.html')
+        || /\/app\/.*\.(js|css)$/.test(filepath)
+        || /\/relatos-card\.js$/.test(filepath)) {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  },
+}));
 
 // ── PÁGINA INICIAL ─────────────────────────────────────────
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
