@@ -116,13 +116,89 @@
     if (badge && window._ctxAtual?.aluna) {
       badge.textContent = window._ctxAtual.aluna.sementes || 0;
     }
+    // ENTRADA RITUAL — só na primeira vez que ela abre o Caderno na sessão.
+    // Splash dourado + saudação personalizada + partículas + auto-focus.
+    // Se ela vai e volta, não dispara de novo (atrapalha quem só quer ir
+    // rápido na aba Vision/Cápsulas e voltar).
+    if (!estado.splashJaApareceu) {
+      estado.splashJaApareceu = true;
+      dispararSplashRitual();
+      criarParticulasCaderno();
+    }
     // Carrega conteúdo da aba ativa
     await carregarAbaCaderno(estado.abaAtiva);
     // Indicador de cápsula madura (banner no topo da aba Escrever)
     aplicarBannerCapsula(window._ctxAtual?.caderno?.capsula_madura_pendente);
     // Botões iniciais
     ligarBotoesCaderno();
+    // Auto-focus no textarea da aba Escrever (cursor piscando = "comece já").
+    // Atrasa um pouquinho pro splash não competir com o teclado abrindo
+    // logo de cara. iOS exige interação prévia pra .focus() funcionar —
+    // se vier do tap no card de atalho, isso conta como gesto.
+    if (estado.abaAtiva === 'escrever') {
+      setTimeout(() => {
+        const t = el('caderno-escrita-input');
+        if (t && document.activeElement !== t) {
+          try { t.focus({ preventScroll: true }); } catch { try { t.focus(); } catch {} }
+        }
+      }, 1800);
+    }
   };
+
+  // ────────────────────────────────────────────────────────────
+  // ENTRADA RITUAL — splash + saudação + partículas + glow brand
+  // Total da experiência: ~2.2s, mas não trava a aluna — splash usa
+  // pointer-events: none, ela pode tocar/scrollar normalmente por baixo.
+  // ────────────────────────────────────────────────────────────
+  function dispararSplashRitual() {
+    const splash = el('caderno-splash');
+    if (!splash) return;
+    // Personaliza saudação com nome + hora do dia
+    const primeiroNome = window._ctxAtual?.aluna?.primeiro_nome
+      || window._ctxAtual?.aluna?.nome_preferencia
+      || (window._ctxAtual?.aluna?.nome || '').split(' ')[0]
+      || '';
+    const hora = new Date().getHours();
+    const saudacao = hora < 5 ? 'Boa madrugada' : hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
+    const txt = el('caderno-splash-bom-dia');
+    if (txt) txt.textContent = `${saudacao}${primeiroNome ? `, ${primeiroNome}` : ''} 💛`;
+
+    splash.setAttribute('aria-hidden', 'false');
+    splash.classList.add('ativo');
+    // Glow pulsante no brand do topo (1x) — sincroniza com o portal abrindo
+    el('caderno-topo')?.classList.add('reveal-brand');
+    setTimeout(() => el('caderno-topo')?.classList.remove('reveal-brand'), 1400);
+    // Some o splash depois de ~2s. Se a aluna tocar antes, some na hora.
+    const sumir = () => {
+      splash.classList.remove('ativo');
+      splash.setAttribute('aria-hidden', 'true');
+      splash.removeEventListener('click', sumir);
+    };
+    splash.addEventListener('click', sumir);
+    setTimeout(sumir, 2100);
+  }
+
+  function criarParticulasCaderno() {
+    const wrap = el('caderno-particulas');
+    if (!wrap || wrap.dataset.gerado === '1') return;
+    wrap.dataset.gerado = '1';
+    // 36 partículas — mais densas que as 22 da Home pra comunicar
+    // "outro espaço". Aluna do Clube ganha 18 extras (chuva de ouro
+    // do Caderno, espelha a do app).
+    const ehClube = !!window._ctxAtual?.tem_clube;
+    const total = ehClube ? 54 : 36;
+    let html = '';
+    for (let i = 0; i < total; i++) {
+      const left = Math.random() * 100;
+      const size = 2 + Math.random() * 4;
+      const delay = -Math.random() * 18;
+      const dur = 14 + Math.random() * 10;
+      const opacity = 0.35 + Math.random() * 0.45;
+      const plus = i >= 36 ? ' caderno-particula-plus' : '';
+      html += `<span class="caderno-particula${plus}" style="--p-left:${left}%;--p-size:${size}px;--p-delay:${delay}s;--p-dur:${dur}s;--p-op:${opacity}"></span>`;
+    }
+    wrap.innerHTML = html;
+  }
 
   window.trocarAbaCaderno = function (aba, btnEl) {
     estado.abaAtiva = aba;

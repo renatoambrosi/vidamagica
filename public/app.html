@@ -883,6 +883,22 @@
     <!-- ════════════════════════════════════════════════════ -->
     <section class="view" id="view-caderno">
 
+      <!-- SPLASH RITUAL — overlay com glow dourado central + saudação.
+           Aparece quando body.caderno-aberto vira ativo. Anima 400ms
+           o portal abrindo + 1.4s a saudação flutuando. Removido por JS
+           após ~2s ou se a aluna interagir antes. -->
+      <div class="caderno-splash" id="caderno-splash" aria-hidden="true">
+        <div class="caderno-splash-glow"></div>
+        <div class="caderno-splash-saudacao">
+          <span class="caderno-splash-bom-dia" id="caderno-splash-bom-dia">Bom dia 💛</span>
+          <span class="caderno-splash-frase">Seu caderno te espera</span>
+        </div>
+      </div>
+
+      <!-- Camada de partículas douradas próprias do Caderno (mais densas
+           que as 22 da Home). Geradas via JS em renderCaderno(). -->
+      <div class="caderno-particulas" id="caderno-particulas" aria-hidden="true"></div>
+
       <!-- TOPO DO CADERNO (substitui o .topo do /app no modo imersivo) -->
       <header class="caderno-topo" id="caderno-topo">
         <button type="button" class="caderno-voltar" onclick="fecharCaderno()" aria-label="Voltar pra Home">
