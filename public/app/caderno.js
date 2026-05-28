@@ -364,17 +364,21 @@
         body: fd,
       });
       const d = await r.json();
-      if (!d?.url) throw new Error('falhou');
-      const titulo = prompt('Dê um título pra essa imagem (opcional):') || '';
-      const area = prompt('Em qual área? (ex: casa, carreira, saúde)') || '';
-      await fetchAutenticado('/api/app/caderno/vision', {
+      if (!d?.url) throw new Error('upload falhou');
+      // Sobe sem título/área agora — edição vem com o modal próprio depois.
+      // Não usar prompt() nativo do iOS (feio, e o usuário pode bloquear
+      // todos os diálogos do domínio acidentalmente).
+      const r2 = await fetchAutenticado('/api/app/caderno/vision', {
         method: 'POST',
-        body: JSON.stringify({ imagem_url: d.url, titulo, area }),
+        body: JSON.stringify({ imagem_url: d.url, titulo: '', area: '' }),
       });
+      const d2 = await r2.json();
+      if (!d2?.ok) throw new Error(d2?.erro || 'erro ao salvar');
       toast('Adicionado ao Vision Board ✨', 'ok');
       ev.target.value = '';
       carregarVision();
-    } catch {
+    } catch (err) {
+      console.error('[vision] upload erro:', err);
       toast('Não consegui subir a imagem.', 'erro');
     }
   }

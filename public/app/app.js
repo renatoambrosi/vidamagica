@@ -54,6 +54,14 @@ async function fetchAutenticado(url, opts = {}) {
 
   const fazerRequest = (token) => {
     const headers = Object.assign({}, opts.headers || {}, { Authorization: `Bearer ${token}` });
+    // Quando o chamador passa body como STRING (JSON serializado) e não
+    // definiu Content-Type, assume application/json. Sem isso o Express
+    // não parseia req.body e a rota recebe corpo vazio — causa de
+    // "não consegui salvar" em qualquer POST/PUT que esqueça o header.
+    // FormData / Blob mantêm Content-Type automático do browser.
+    if (typeof opts.body === 'string' && !headers['Content-Type'] && !headers['content-type']) {
+      headers['Content-Type'] = 'application/json';
+    }
     return fetch(url, Object.assign({}, opts, { headers }));
   };
 
