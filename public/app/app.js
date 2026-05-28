@@ -210,6 +210,14 @@ function irPara(viewId) {
     document.getElementById('chat-input')?.blur();
   }
 
+  // body.caderno-aberto ativa o MODO IMERSIVO do Caderno:
+  // - esconde .topo do /app
+  // - esconde .bottom-nav do /app
+  // - libera #view-caderno em fullscreen (position: fixed inset 0)
+  // - revela .caderno-topo e .caderno-bottom (controles próprios)
+  // Mesma estratégia do chat-aberto, mas com navegação interna própria.
+  document.body.classList.toggle('caderno-aberto', viewId === 'caderno');
+
   // Liga a class `antessala-ativa` no body só quando está nessa view.
   // Usada no CSS pra anular paddings do .views e travar scroll, fazendo
   // a min-height: 100vh da .chat-escolha centralizar EM 100vh real.
@@ -5554,3 +5562,9 @@ window.toast           = toast;
 window.abrirModal      = abrirModal;
 window.fecharModal     = fecharModal;
 window.fetchAutenticado = fetchAutenticado;
+
+// Fechar Caderno → volta pra Home com transição. Usado pelo botão ←
+// do .caderno-topo. Remove body.caderno-aberto via irPara('home').
+window.fecharCaderno = function () {
+  irPara('home');
+};

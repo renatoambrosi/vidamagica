@@ -874,35 +874,34 @@
     </section>
 
     <!-- ════════════════════════════════════════════════════ -->
-    <!-- CADERNO DA MENTALIZAÇÃO                              -->
-    <!-- 5 abas internas: Escrever / Vision / Cápsulas /      -->
-    <!-- Metas / Afirmações. Conteúdo populado por renderCaderno() -->
-    <!-- e funções específicas por aba (renderCadernoAba_*).  -->
+    <!-- CADERNO DA MENTALIZAÇÃO — modo IMERSIVO ("app dentro do app") -->
+    <!-- Quando view-caderno fica ativa, irPara() adiciona              -->
+    <!-- body.caderno-aberto que esconde .topo + .bottom-nav do /app    -->
+    <!-- e libera fullscreen. Topo + bottom-nav próprios do Caderno     -->
+    <!-- ficam fixos. 5 abas: Escrever / Vision / Cápsulas / Metas /    -->
+    <!-- Afirmações. Conteúdo populado por renderCaderno() em caderno.js. -->
     <!-- ════════════════════════════════════════════════════ -->
     <section class="view" id="view-caderno">
-      <div class="view-topo">
-        <h2 class="view-titulo">Caderno da Mentalização</h2>
-        <p class="view-sub">Seu espaço pra escrever, visualizar e materializar</p>
-      </div>
 
-      <!-- Abas do Caderno -->
-      <nav class="caderno-abas" id="caderno-abas" role="tablist">
-        <button type="button" class="caderno-aba ativa" data-aba="escrever" onclick="trocarAbaCaderno('escrever', this)">
-          <span aria-hidden="true">✍️</span><span>Escrever</span>
+      <!-- TOPO DO CADERNO (substitui o .topo do /app no modo imersivo) -->
+      <header class="caderno-topo" id="caderno-topo">
+        <button type="button" class="caderno-voltar" onclick="fecharCaderno()" aria-label="Voltar pra Home">
+          <svg viewBox="0 0 24 24" stroke-width="1.8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
         </button>
-        <button type="button" class="caderno-aba" data-aba="vision" onclick="trocarAbaCaderno('vision', this)">
-          <span aria-hidden="true">🖼️</span><span>Vision</span>
+        <div class="caderno-brand">
+          <span class="caderno-brand-icone" aria-hidden="true">📓</span>
+          <h2 class="caderno-brand-nome">Caderno</h2>
+        </div>
+        <button type="button" class="caderno-sementes" onclick="irPara('perfil')" aria-label="Suas sementes">
+          <span class="caderno-sementes-icone" aria-hidden="true">🌱</span>
+          <span class="caderno-sementes-num" id="caderno-badge-sementes">0</span>
         </button>
-        <button type="button" class="caderno-aba" data-aba="capsulas" onclick="trocarAbaCaderno('capsulas', this)">
-          <span aria-hidden="true">⏳</span><span>Cápsulas</span>
-        </button>
-        <button type="button" class="caderno-aba" data-aba="metas" onclick="trocarAbaCaderno('metas', this)">
-          <span aria-hidden="true">🌱</span><span>Metas</span>
-        </button>
-        <button type="button" class="caderno-aba" data-aba="afirmacoes" onclick="trocarAbaCaderno('afirmacoes', this)">
-          <span aria-hidden="true">✨</span><span>Afirmações</span>
-        </button>
-      </nav>
+      </header>
+
+      <!-- WRAPPER do conteúdo (entre topo e bottom-nav fixos no modo imersivo) -->
+      <div class="caderno-corpo" id="caderno-corpo">
 
       <!-- ABA: ESCREVER -->
       <div class="caderno-painel ativo" id="caderno-painel-escrever">
@@ -1036,6 +1035,53 @@
           <div class="caderno-empty">Carregando afirmações…</div>
         </div>
       </div>
+
+      </div><!-- /.caderno-corpo -->
+
+      <!-- BOTTOM-NAV PRÓPRIO DO CADERNO (5 abas grandes, touch-friendly) -->
+      <!-- Substitui visualmente o .bottom-nav do /app no modo imersivo. -->
+      <nav class="caderno-bottom" id="caderno-bottom" role="tablist" aria-label="Abas do Caderno">
+        <button type="button" class="caderno-tab ativa" data-aba="escrever" onclick="trocarAbaCaderno('escrever', this)" aria-label="Escrever">
+          <span class="caderno-tab-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" stroke-width="1.7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+            </svg>
+          </span>
+          <span class="caderno-tab-label">Escrever</span>
+        </button>
+        <button type="button" class="caderno-tab" data-aba="vision" onclick="trocarAbaCaderno('vision', this)" aria-label="Vision Board">
+          <span class="caderno-tab-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" stroke-width="1.7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+            </svg>
+          </span>
+          <span class="caderno-tab-label">Vision</span>
+        </button>
+        <button type="button" class="caderno-tab" data-aba="capsulas" onclick="trocarAbaCaderno('capsulas', this)" aria-label="Cápsulas do Tempo">
+          <span class="caderno-tab-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" stroke-width="1.7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M17 2v4.172a2 2 0 0 1-.586 1.414L12 12 7.586 7.586A2 2 0 0 1 7 6.172V2"/>
+            </svg>
+          </span>
+          <span class="caderno-tab-label">Cápsulas</span>
+        </button>
+        <button type="button" class="caderno-tab" data-aba="metas" onclick="trocarAbaCaderno('metas', this)" aria-label="Metas">
+          <span class="caderno-tab-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" stroke-width="1.7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+            </svg>
+          </span>
+          <span class="caderno-tab-label">Metas</span>
+        </button>
+        <button type="button" class="caderno-tab" data-aba="afirmacoes" onclick="trocarAbaCaderno('afirmacoes', this)" aria-label="Afirmações">
+          <span class="caderno-tab-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" stroke-width="1.7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </span>
+          <span class="caderno-tab-label">Afirmações</span>
+        </button>
+      </nav>
     </section>
 
     <!-- ════════════════════════════════════════════════════ -->

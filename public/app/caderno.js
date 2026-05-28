@@ -104,12 +104,18 @@
   // ════════════════════════════════════════════════════════
   window.renderCaderno = async function () {
     estado.abaAtiva = estado.abaAtiva || 'escrever';
-    document.querySelectorAll('.caderno-aba').forEach(a => {
+    // Sincroniza estado ativo em pills antigas E no bottom-nav imersivo
+    document.querySelectorAll('.caderno-aba, .caderno-tab').forEach(a => {
       a.classList.toggle('ativa', a.dataset.aba === estado.abaAtiva);
     });
     document.querySelectorAll('.caderno-painel').forEach(p => {
       p.classList.toggle('ativo', p.id === `caderno-painel-${estado.abaAtiva}`);
     });
+    // Badge de sementes no topo do Caderno (espelha o do /app)
+    const badge = el('caderno-badge-sementes');
+    if (badge && window._ctxAtual?.aluna) {
+      badge.textContent = window._ctxAtual.aluna.sementes || 0;
+    }
     // Carrega conteúdo da aba ativa
     await carregarAbaCaderno(estado.abaAtiva);
     // Indicador de cápsula madura (banner no topo da aba Escrever)
@@ -120,10 +126,18 @@
 
   window.trocarAbaCaderno = function (aba, btnEl) {
     estado.abaAtiva = aba;
-    document.querySelectorAll('.caderno-aba').forEach(a => a.classList.remove('ativa'));
+    // Sincroniza estado ATIVO no bottom-nav imersivo (.caderno-tab) E
+    // nas pills antigas (.caderno-aba) se ainda existirem.
+    document.querySelectorAll('.caderno-tab, .caderno-aba').forEach(a => a.classList.remove('ativa'));
     if (btnEl) btnEl.classList.add('ativa');
+    // Garante que o tab certo do bottom-nav fique ativo mesmo se a
+    // chamada veio de outro lugar (atalho, deep link futuro, etc.)
+    document.querySelector(`.caderno-tab[data-aba="${aba}"]`)?.classList.add('ativa');
     document.querySelectorAll('.caderno-painel').forEach(p => p.classList.remove('ativo'));
     el(`caderno-painel-${aba}`)?.classList.add('ativo');
+    // Scroll do conteúdo volta pro topo ao trocar de aba — evita
+    // ficar no meio de uma lista anterior.
+    el('caderno-corpo')?.scrollTo({ top: 0, behavior: 'instant' });
     carregarAbaCaderno(aba);
   };
 
