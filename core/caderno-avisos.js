@@ -190,6 +190,7 @@ async function processarCapsulasMaduras() {
 
     if (r.rows.length === 0) return 0;
 
+    console.log(`📬 Worker cápsulas: ${r.rows.length} cápsula(s) madura(s) pra processar`);
     let processadas = 0;
     for (const capsula of r.rows) {
       const usuario = {

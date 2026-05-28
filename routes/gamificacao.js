@@ -30,6 +30,7 @@ const { calcularJornadaVigente } = require('../core/jornadas');
 function erro(res, code, msg) {
   return res.status(code).json({ ok: false, erro: msg });
 }
+function tag(usuario_id) { return String(usuario_id || '?').slice(0, 8); }
 
 // ── GET /status ──────────────────────────────────────────
 // Espelho do que vai em /api/app/contexto.gamificacao + recordes.
@@ -124,9 +125,10 @@ router.get('/missoes', autenticar, async (req, res) => {
       };
     });
 
+    console.log(`🏆 ${tag(usuarioId)} consultou missões (jornada=${jornadaSlug || 'universal'}, ${missoes.length} ativas)`);
     return res.json({ ok: true, missoes, jornada_slug: jornadaSlug });
   } catch (e) {
-    console.error('[gam] GET /missoes:', e.message);
+    console.error(`❌ [gam] GET /missoes u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao listar missões');
   }
 });
@@ -177,7 +179,7 @@ router.get('/premios', autenticar, async (req, res) => {
 
     return res.json({ ok: true, premios });
   } catch (e) {
-    console.error('[gam] GET /premios:', e.message);
+    console.error(`❌ [gam] GET /premios u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao listar prêmios');
   }
 });
@@ -244,7 +246,7 @@ router.get('/ranking', autenticar, async (req, res) => {
       minha_posicao_fora_top: minhaPosicao,
     });
   } catch (e) {
-    console.error('[gam] GET /ranking:', e.message);
+    console.error(`❌ [gam] GET /ranking u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao calcular ranking');
   }
 });

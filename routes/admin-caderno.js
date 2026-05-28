@@ -29,6 +29,7 @@ const adm = autenticarPainel('admin');
 
 function erro(res, code, msg) { return res.status(code).json({ ok: false, erro: msg }); }
 function s(v, max) { return String(v || '').slice(0, max).trim(); }
+function admTag(req) { return String(req.admin?.id || '?').slice(0, 8); }
 
 // ════════════════════════════════════════════════════════════
 // CADERNO — PROMPTS
@@ -51,8 +52,9 @@ router.post('/caderno/prompts', adm, async (req, res) => {
       `INSERT INTO caderno_prompts (texto, categoria, ordem) VALUES ($1,$2,$3) RETURNING *`,
       [texto, categoria || null, ordem]
     );
+    console.log(`📓 admin ${admTag(req)} criou prompt #${r.rows[0].id} cat=${categoria || '-'}`);
     res.json({ ok: true, prompt: r.rows[0] });
-  } catch (e) { erro(res, 500, e.message); }
+  } catch (e) { console.error(`❌ [admin-caderno] POST /caderno/prompts:`, e.message); erro(res, 500, e.message); }
 });
 
 router.put('/caderno/prompts/:id', adm, async (req, res) => {
@@ -69,12 +71,15 @@ router.put('/caderno/prompts/:id', adm, async (req, res) => {
       [texto, categoria || null, ordem, ativo, id]
     );
     if (!r.rows[0]) return erro(res, 404, 'não encontrado');
+    console.log(`📓 admin ${admTag(req)} editou prompt #${id} ativo=${ativo}`);
     res.json({ ok: true, prompt: r.rows[0] });
-  } catch (e) { erro(res, 500, e.message); }
+  } catch (e) { console.error(`❌ [admin-caderno] PUT /caderno/prompts:`, e.message); erro(res, 500, e.message); }
 });
 
 router.delete('/caderno/prompts/:id', adm, async (req, res) => {
-  await poolComunicacao.query(`DELETE FROM caderno_prompts WHERE id=$1`, [Number(req.params.id)]);
+  const id = Number(req.params.id);
+  await poolComunicacao.query(`DELETE FROM caderno_prompts WHERE id=$1`, [id]);
+  console.log(`📓 admin ${admTag(req)} apagou prompt #${id}`);
   res.json({ ok: true });
 });
 
@@ -148,8 +153,9 @@ router.post('/caderno/audios', adm, async (req, res) => {
       `INSERT INTO caderno_audios_foco (titulo, tipo, url, duracao_seg, ordem) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
       [titulo, tipo || null, url, duracao_seg, ordem]
     );
+    console.log(`🎧 admin ${admTag(req)} criou áudio #${r.rows[0].id} "${titulo}" tipo=${tipo}`);
     res.json({ ok: true, audio: r.rows[0] });
-  } catch (e) { erro(res, 500, e.message); }
+  } catch (e) { console.error(`❌ [admin-caderno] POST /caderno/audios:`, e.message); erro(res, 500, e.message); }
 });
 
 router.put('/caderno/audios/:id', adm, async (req, res) => {
@@ -203,8 +209,9 @@ router.put('/gamificacao/premios/:id', adm, async (req, res) => {
       [sementes, rotulo || null, descricao || null, ativo, id]
     );
     if (!r.rows[0]) return erro(res, 404, 'não encontrado');
+    console.log(`🏆 admin ${admTag(req)} editou prêmio #${id} ${r.rows[0].tipo}/${r.rows[0].marco} → ${sementes}🌱 ativo=${ativo}`);
     res.json({ ok: true, premio: r.rows[0] });
-  } catch (e) { erro(res, 500, e.message); }
+  } catch (e) { console.error(`❌ [admin-caderno] PUT /gamificacao/premios:`, e.message); erro(res, 500, e.message); }
 });
 
 // ════════════════════════════════════════════════════════════
@@ -243,8 +250,9 @@ router.post('/gamificacao/missoes', adm, async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
       [slug, titulo, descricao || null, jornada_slug, tipo, alvo_tipo, alvo_qtd, sementes, prioridade]
     );
+    console.log(`🎯 admin ${admTag(req)} criou missão #${r.rows[0].id} "${slug}" tipo=${tipo} alvo=${alvo_tipo}/${alvo_qtd} +${sementes}🌱`);
     res.json({ ok: true, missao: r.rows[0] });
-  } catch (e) { erro(res, 500, e.message); }
+  } catch (e) { console.error(`❌ [admin-caderno] POST /gamificacao/missoes:`, e.message); erro(res, 500, e.message); }
 });
 
 router.put('/gamificacao/missoes/:id', adm, async (req, res) => {
@@ -289,9 +297,10 @@ router.get('/gamificacao/ranking/:ano_mes', adm, async (req, res) => {
 
 router.post('/gamificacao/ranking/:ano_mes/fechar', adm, async (req, res) => {
   try {
+    console.log(`👑 admin ${admTag(req)} disparou fechamento manual do ranking ${req.params.ano_mes}`);
     const r = await fecharRankingMensal(req.params.ano_mes);
     res.json({ ok: true, ...r });
-  } catch (e) { erro(res, 500, e.message); }
+  } catch (e) { console.error(`❌ [admin-caderno] fechar ranking:`, e.message); erro(res, 500, e.message); }
 });
 
 module.exports = router;

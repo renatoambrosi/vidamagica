@@ -33,6 +33,12 @@ function clampStr(s, max) {
   return String(s || '').slice(0, max);
 }
 
+// Tag curta do usuário pra logs (8 primeiros chars do UUID — suficiente
+// pra rastrear no banco sem expor o UUID inteiro nos logs)
+function tag(usuario_id) {
+  return String(usuario_id || '?').slice(0, 8);
+}
+
 // ════════════════════════════════════════════════════════════
 // ESCRITAS (scripting)
 // ════════════════════════════════════════════════════════════
@@ -64,7 +70,10 @@ router.post('/escritas', autenticar, async (req, res) => {
     const usuarioId = req.usuario.sub;
     const conteudo = clampStr(req.body?.conteudo, 10000).trim();
     const promptId = req.body?.prompt_id ? Number(req.body.prompt_id) : null;
-    if (!conteudo || conteudo.length < 3) return erro(res, 400, 'escreva pelo menos 3 caracteres');
+    if (!conteudo || conteudo.length < 3) {
+      console.log(`📓 ${tag(usuarioId)} escrita rejeitada — texto muito curto (${conteudo.length} chars)`);
+      return erro(res, 400, 'escreva pelo menos 3 caracteres');
+    }
 
     const r = await poolCore.query(
       `INSERT INTO caderno_escritas (usuario_id, conteudo, prompt_id)
@@ -73,8 +82,13 @@ router.post('/escritas', autenticar, async (req, res) => {
       [usuarioId, conteudo, promptId]
     );
 
+    console.log(`📓 ${tag(usuarioId)} escreveu #${r.rows[0].id} (${conteudo.length} chars${promptId ? `, prompt=${promptId}` : ''})`);
+
     // Avança missões que dependem de 'caderno_escrita' (engole erro)
     const missoesCompletadas = await progressoEvento(usuarioId, 'caderno_escrita');
+    if (missoesCompletadas.length > 0) {
+      console.log(`📓 ${tag(usuarioId)} completou ${missoesCompletadas.length} missão(ões): ${missoesCompletadas.map(m => m.slug).join(', ')}`);
+    }
 
     return res.json({
       ok: true,
@@ -82,7 +96,7 @@ router.post('/escritas', autenticar, async (req, res) => {
       missoes_completadas: missoesCompletadas,
     });
   } catch (e) {
-    console.error('[caderno] POST /escritas:', e.message);
+    console.error(`❌ [caderno] POST /escritas u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao salvar escrita');
   }
 });
@@ -101,10 +115,14 @@ router.put('/escritas/:id', autenticar, async (req, res) => {
         RETURNING id, conteudo, atualizado_em`,
       [conteudo, id, usuarioId]
     );
-    if (!r.rows[0]) return erro(res, 404, 'escrita não encontrada');
+    if (!r.rows[0]) {
+      console.log(`📓 ${tag(usuarioId)} tentou editar escrita #${id} — não encontrada/não é dela`);
+      return erro(res, 404, 'escrita não encontrada');
+    }
+    console.log(`📓 ${tag(usuarioId)} editou escrita #${id}`);
     return res.json({ ok: true, escrita: r.rows[0] });
   } catch (e) {
-    console.error('[caderno] PUT /escritas/:id:', e.message);
+    console.error(`❌ [caderno] PUT /escritas/:id u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao editar');
   }
 });
@@ -118,9 +136,10 @@ router.delete('/escritas/:id', autenticar, async (req, res) => {
       `DELETE FROM caderno_escritas WHERE id = $1 AND usuario_id = $2`,
       [id, usuarioId]
     );
+    console.log(`📓 ${tag(usuarioId)} apagou escrita #${id} (linhas=${r.rowCount})`);
     return res.json({ ok: true, apagou: r.rowCount > 0 });
   } catch (e) {
-    console.error('[caderno] DELETE /escritas/:id:', e.message);
+    console.error(`❌ [caderno] DELETE /escritas/:id u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao apagar');
   }
 });
@@ -189,6 +208,7 @@ router.post('/capsulas', autenticar, async (req, res) => {
     if (!conteudo || conteudo.length < 10) return erro(res, 400, 'escreva pelo menos 10 caracteres');
     if (!abrirEm || isNaN(abrirEm)) return erro(res, 400, 'data inválida');
     if (abrirEm.getTime() < Date.now() + 24 * 3600 * 1000) {
+      console.log(`📓 ${tag(usuarioId)} cápsula rejeitada — data muito próxima (${req.body?.abrir_em})`);
       return erro(res, 400, 'a cápsula precisa abrir pelo menos 1 dia no futuro');
     }
 
@@ -198,9 +218,10 @@ router.post('/capsulas', autenticar, async (req, res) => {
        RETURNING id, titulo, abrir_em, criado_em`,
       [usuarioId, titulo || null, conteudo, abrirEm.toISOString()]
     );
+    console.log(`📓 ${tag(usuarioId)} lacrou cápsula #${r.rows[0].id} pra abrir em ${abrirEm.toISOString().slice(0,10)}`);
     return res.json({ ok: true, capsula: r.rows[0] });
   } catch (e) {
-    console.error('[caderno] POST /capsulas:', e.message);
+    console.error(`❌ [caderno] POST /capsulas u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao criar cápsula');
   }
 });
@@ -217,10 +238,14 @@ router.post('/capsulas/:id/abrir', autenticar, async (req, res) => {
         RETURNING id, titulo, conteudo, abrir_em, aberta_em`,
       [id, usuarioId]
     );
-    if (!r.rows[0]) return erro(res, 404, 'cápsula não encontrada ou ainda trancada');
+    if (!r.rows[0]) {
+      console.log(`📓 ${tag(usuarioId)} tentou abrir cápsula #${id} — não existe ou ainda trancada`);
+      return erro(res, 404, 'cápsula não encontrada ou ainda trancada');
+    }
+    console.log(`💌 ${tag(usuarioId)} abriu cápsula #${id} "${(r.rows[0].titulo || '').slice(0,40)}"`);
     return res.json({ ok: true, capsula: r.rows[0] });
   } catch (e) {
-    console.error('[caderno] POST /capsulas/:id/abrir:', e.message);
+    console.error(`❌ [caderno] POST /capsulas/:id/abrir u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao abrir cápsula');
   }
 });
@@ -235,9 +260,10 @@ router.delete('/capsulas/:id', autenticar, async (req, res) => {
         WHERE id = $1 AND usuario_id = $2 AND aberta_em IS NULL`,
       [id, usuarioId]
     );
+    console.log(`📓 ${tag(usuarioId)} apagou cápsula #${id} (linhas=${r.rowCount})`);
     return res.json({ ok: true, apagou: r.rowCount > 0 });
   } catch (e) {
-    console.error('[caderno] DELETE /capsulas/:id:', e.message);
+    console.error(`❌ [caderno] DELETE /capsulas/:id u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao apagar cápsula');
   }
 });
@@ -296,6 +322,7 @@ router.post('/vision', autenticar, async (req, res) => {
         [usuarioId, imagem_url, titulo || null, area || null, principal]
       );
       await client.query('COMMIT');
+      console.log(`🖼️  ${tag(usuarioId)} adicionou item vision #${ins.rows[0].id}${principal ? ' (principal)' : ''}${area ? ` area=${area}` : ''}`);
       return res.json({ ok: true, item: ins.rows[0] });
     } catch (err) {
       await client.query('ROLLBACK');
@@ -304,7 +331,7 @@ router.post('/vision', autenticar, async (req, res) => {
       client.release();
     }
   } catch (e) {
-    console.error('[caderno] POST /vision:', e.message);
+    console.error(`❌ [caderno] POST /vision u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao salvar item');
   }
 });
@@ -360,9 +387,10 @@ router.post('/vision/:id/conquistado', autenticar, async (req, res) => {
       [id, usuarioId]
     );
     if (!r.rows[0]) return erro(res, 404, 'item não encontrado');
+    console.log(`🏆 ${tag(usuarioId)} conquistou vision #${id} "${(r.rows[0].titulo || '').slice(0,40)}"`);
     return res.json({ ok: true, item: r.rows[0] });
   } catch (e) {
-    console.error('[caderno] POST /vision/:id/conquistado:', e.message);
+    console.error(`❌ [caderno] POST /vision/:id/conquistado u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao marcar conquistado');
   }
 });
@@ -417,9 +445,10 @@ router.post('/metas', autenticar, async (req, res) => {
        RETURNING id, titulo, descricao, status, criado_em`,
       [usuarioId, titulo, descricao || null]
     );
+    console.log(`🌱 ${tag(usuarioId)} plantou meta #${r.rows[0].id} "${titulo.slice(0,40)}"`);
     return res.json({ ok: true, meta: r.rows[0] });
   } catch (e) {
-    console.error('[caderno] POST /metas:', e.message);
+    console.error(`❌ [caderno] POST /metas u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao criar meta');
   }
 });
@@ -441,9 +470,11 @@ router.put('/metas/:id/status', autenticar, async (req, res) => {
       [status, id, usuarioId]
     );
     if (!r.rows[0]) return erro(res, 404, 'meta não encontrada');
+    const emoji = materializada ? '🏆' : '🌿';
+    console.log(`${emoji} ${tag(usuarioId)} meta #${id} → ${status}${materializada ? ' (MATERIALIZADA!)' : ''}`);
     return res.json({ ok: true, meta: r.rows[0], materializada });
   } catch (e) {
-    console.error('[caderno] PUT /metas/:id/status:', e.message);
+    console.error(`❌ [caderno] PUT /metas/:id/status u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao atualizar status');
   }
 });
@@ -542,15 +573,16 @@ router.post('/afirmacoes/:id/favoritar', autenticar, async (req, res) => {
   try {
     const usuarioId = req.usuario.sub;
     const afirmacaoId = Number(req.params.id);
-    await poolCore.query(
+    const r = await poolCore.query(
       `INSERT INTO caderno_afirmacoes_favoritas (usuario_id, afirmacao_id)
        VALUES ($1, $2)
        ON CONFLICT DO NOTHING`,
       [usuarioId, afirmacaoId]
     );
+    if (r.rowCount > 0) console.log(`⭐ ${tag(usuarioId)} favoritou afirmação #${afirmacaoId}`);
     return res.json({ ok: true });
   } catch (e) {
-    console.error('[caderno] POST /afirmacoes/:id/favoritar:', e.message);
+    console.error(`❌ [caderno] POST /afirmacoes/:id/favoritar u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao favoritar');
   }
 });
@@ -559,13 +591,14 @@ router.delete('/afirmacoes/:id/favoritar', autenticar, async (req, res) => {
   try {
     const usuarioId = req.usuario.sub;
     const afirmacaoId = Number(req.params.id);
-    await poolCore.query(
+    const r = await poolCore.query(
       `DELETE FROM caderno_afirmacoes_favoritas WHERE usuario_id = $1 AND afirmacao_id = $2`,
       [usuarioId, afirmacaoId]
     );
+    if (r.rowCount > 0) console.log(`📓 ${tag(usuarioId)} desfavoritou afirmação #${afirmacaoId}`);
     return res.json({ ok: true });
   } catch (e) {
-    console.error('[caderno] DELETE /afirmacoes/:id/favoritar:', e.message);
+    console.error(`❌ [caderno] DELETE /afirmacoes/:id/favoritar u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao desfavoritar');
   }
 });
@@ -611,9 +644,10 @@ router.put('/audios/url-propria', autenticar, async (req, res) => {
          SET url_propria = EXCLUDED.url_propria, atualizado_em = NOW()`,
       [usuarioId, url]
     );
+    console.log(`🎧 ${tag(usuarioId)} salvou URL própria de áudio: ${url ? url.slice(0, 80) : '(vazio)'}`);
     return res.json({ ok: true, url_propria: url });
   } catch (e) {
-    console.error('[caderno] PUT /audios/url-propria:', e.message);
+    console.error(`❌ [caderno] PUT /audios/url-propria u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao salvar URL');
   }
 });

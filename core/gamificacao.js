@@ -56,6 +56,8 @@ const { poolCore, poolTeste, poolComunicacao } = require('../db');
 const { creditarSementes } = require('./sementes');
 const { calcularJornadaVigente } = require('./jornadas');
 
+function tag(usuario_id) { return String(usuario_id || '?').slice(0, 8); }
+
 // ── HELPER — DESCOBRIR JORNADA VIGENTE DA ALUNA ────────────
 
 /**
@@ -215,6 +217,7 @@ async function concederPremio({ usuario_id, tipo, marco, ciclo_id, motivo }) {
     );
 
     await client.query('COMMIT');
+    console.log(`✨ ${tag(usuario_id)} prêmio creditado: ${tipo}/${marco} ciclo=${ciclo_id} +${sementes}🌱 saldo=${saldo_atual}`);
     return {
       creditado: true,
       sementes,
@@ -225,7 +228,7 @@ async function concederPremio({ usuario_id, tipo, marco, ciclo_id, motivo }) {
     };
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('[gamificacao.concederPremio] erro:', err.message);
+    console.error(`❌ [gamificacao.concederPremio] u=${tag(usuario_id)} ${tipo}/${marco}:`, err.message);
     return { creditado: false, erro: err.message };
   } finally {
     client.release();
@@ -287,6 +290,7 @@ async function registrarLogin(usuario_id) {
     // 2) Atualiza streaks e identifica marcos atingidos
     const statusAntes = await lerStreak(usuario_id);
     const statusDepois = await avancarStreaks(usuario_id, hoje, statusAntes);
+    console.log(`🔥 ${tag(usuario_id)} login do dia: mensal ${statusAntes.ciclo_30_logins || 0}→${statusDepois.ciclo_30_logins}, trimestral ${statusAntes.ciclo_90_logins || 0}→${statusDepois.ciclo_90_logins}, rápida ${statusAntes.rapida_atual || 0}→${statusDepois.rapida_atual}`);
 
     // 3) Concede prêmios de cada streak que avançou
     // Mensal (1..30) — credita 1 vez por dia do ciclo + bônus em 7/15/30
@@ -338,13 +342,16 @@ async function registrarLogin(usuario_id) {
       }
     }
 
+    if (premios.length > 0) {
+      console.log(`🎉 ${tag(usuario_id)} ${premios.length} prêmio(s) na 1ª visita do dia: ${premios.map(p => `${p.tipo}/${p.marco}`).join(', ')}`);
+    }
     return {
       primeira_visita_do_dia: true,
       premios,
       streak: statusDepois,
     };
   } catch (err) {
-    console.error('[gamificacao.registrarLogin] erro:', err.message);
+    console.error(`❌ [gamificacao.registrarLogin] u=${tag(usuario_id)}:`, err.message);
     return { primeira_visita_do_dia: false, premios: [], erro: err.message };
   }
 }
@@ -566,6 +573,7 @@ async function avancarMissao(usuario_id, missao) {
     );
 
     await client.query('COMMIT');
+    console.log(`🎯 ${tag(usuario_id)} completou missão "${missao.slug}" tipo=${missao.tipo} +${sementes}🌱`);
     return {
       completada_agora: true,
       missao_id: missao.id,
@@ -576,7 +584,7 @@ async function avancarMissao(usuario_id, missao) {
     };
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('[gamificacao.avancarMissao] erro:', err.message);
+    console.error(`❌ [gamificacao.avancarMissao] u=${tag(usuario_id)} missao=${missao.slug}:`, err.message);
     return null;
   } finally {
     client.release();
@@ -699,6 +707,7 @@ async function fecharRankingMensal(ano_mes) {
     }
   }
 
+  console.log(`👑 Ranking ${mes} fechado: top-${ranking.length}, ${concedidos.length} prêmios concedidos`);
   return { fechado: true, ano_mes: mes, ranking, premios_concedidos: concedidos };
 }
 

@@ -58,6 +58,11 @@ Deploy alvo: Railway (`vidamagica-production.up.railway.app`). Origins CORS est�
 | **Cadastrar produto novo** | Adicionar em `PRECOS_INICIAIS` de `routes/seed.js`. Seed insere no próximo boot (sem sobrescrever). | INSERT manual no banco |
 | **Creditar/debitar SEMENTES** (qualquer motivo) | `core/sementes.js` → `creditarSementes({ client, usuario_id, delta, motivo, origem_tipo, origem_id })` ou `debitarSementes(...)`. Sempre dentro de transação (`poolCore.connect()` + `BEGIN`/`COMMIT`/`ROLLBACK`). Helper grava no ledger `sementes_movimentacoes`, faz `SELECT … FOR UPDATE` no usuário, atualiza `usuarios.sementes` atomicamente. | `UPDATE usuarios SET sementes = sementes + N` solto, soma no cliente, qualquer atalho |
 | **Idempotência de evento que credita semente** (ex: resgate de tesouro, futura compra de produto) | Tabela própria com `UNIQUE(usuario_id, <chave_do_evento>)` na mesma transação do crédito. Ex: `tesouros_resgatados (usuario_id, feed_id)`. INSERT … ON CONFLICT DO NOTHING; se já existe, NÃO credita de novo. | Confiar em localStorage da aluna, flag client-side |
+| **Registrar ação que conta como progresso de missão/ofensiva** (escreveu no caderno, viu vídeo, comprou, etc.) | `core/gamificacao.js` → `progressoEvento(usuario_id, alvo_tipo, contexto?)`. Avança automaticamente todas as missões com `alvo_tipo` correspondente da jornada vigente da aluna; quando atinge `alvo_qtd`, completa e credita sementes (idempotente). `alvo_tipo` aceitos hoje: `caderno_escrita`, `tesouro_resgatado`, `video_assistido`, `produto_comprado`, `teste_concluido`. | Contagem em tabela paralela, lógica de gamificação dentro de cada rota |
+| **Atualizar ofensiva de login da aluna** (qualquer dia que ela usa o app) | `core/gamificacao.js` → `registrarLogin(usuario_id)`. Idempotente — 1ª chamada do dia avança 3 streaks (mensal cumulativo, trimestral cumulativo, rápida consecutiva) e concede prêmios elegíveis. Chamado já em `GET /api/app/contexto`. **Não chamar duas vezes manualmente.** | Setar `usuarios.algo = NOW()` paralelo, contar dia no frontend |
+| **Conteúdo cadastrado pelo admin do Caderno** (prompts, afirmações, áudios) | Tabelas em `poolComunicacao`: `caderno_prompts`, `caderno_afirmacoes`, `caderno_audios_foco`. CRUD admin em `routes/admin-caderno.js`. Endpoint público em `routes/caderno.js` (aluna lê). Seed inicial em `routes/seed-caderno.js` chave `caderno_gamificacao_v1`. | Hardcode no HTML do app, tabela separada |
+| **Conteúdo gerado pela aluna no Caderno** (escritas, cápsulas, vision, metas, favoritos, áudio próprio) | Tabelas em `poolCore` com prefixo `caderno_*`. CRUD em `routes/caderno.js` (mount `/api/app/caderno`). Todas autenticadas com `autenticar`. | Sessionstorage, localStorage |
+| **Avisar aluna quando algo ficou pronto pra ela ver** (cápsula madura, futuro: missão expirando, ranking fechou) | `core/caderno-avisos.js` é o modelo: worker em `setInterval` que busca registros prontos + dispara WhatsApp (via gateway) + Email (Brevo) + marca canal `in_app` (banner via `/contexto`). Idempotência via `UNIQUE(entidade_id, canal)`. | Mandar email direto da rota, polling no cliente |
 
 ### Antes de codar QUALQUER feature nova
 1. Pergunte: "isso já tem casa em algum padrão acima?"
@@ -213,6 +218,9 @@ A área `/app` é uma mini-SPA cujas seções (`dashboard|perfil|chat|loja|semen
 | `/api/upload`                    | `routes/upload.js`            | Upload de áudio/imagem via Cloudinary (aceita JWT aluna OU painel)        |
 | `/api/teste`                     | `routes/teste.js`             | Teste do Subconsciente (lado da aluna)                                    |
 | `/api/app`                       | `routes/app.js`               | `GET /api/app/contexto` — contexto unificado pra todas as telas do `/app` |
+| `/api/app/caderno`               | `routes/caderno.js`           | Caderno da Mentalização (escritas, cápsulas, vision board, metas, afirmações, áudios) — lado da aluna |
+| `/api/app/gamificacao`           | `routes/gamificacao.js`       | Conquistas — status de ofensivas, missões da jornada, prêmios recebidos, ranking mensal — lado da aluna |
+| `/api/admin` (compartilhado)     | `routes/admin-caderno.js`     | Admin do Caderno (prompts/afirmações/áudios) + Gamificação (prêmios/missões/ranking) |
 
 Os 5 routers montados em `/api` raiz definem seus próprios subpaths internamente (ex: `/api/precos`, `/api/depoimentos`). Não é tudo em `/api/<arquivo>` — checar o router antes de assumir o path.
 
@@ -229,6 +237,8 @@ Os 5 routers montados em `/api` raiz definem seus próprios subpaths internament
 | `core/teste-resultado.js`| —                        | Lógica de cálculo do resultado (alta resolução interna, arredondamento visual)      |
 | `core/atualizacoes.js`   | `poolCore`               | `criarAtualizacaoCompra` / `criarAtualizacaoTeste` — gera celebração na Home        |
 | `core/utils.js`          | —                        | Normalização canônica de telefone (E.164 sem `+`). Não reimplementar em outro lugar.|
+| `core/gamificacao.js`    | `poolCore` + `poolTeste` + `poolComunicacao` | Motor TRANSVERSAL: `registrarLogin`, `progressoEvento`, `concederPremio`, `fecharRankingMensal`, `lerIndicadoresGamificacao`. Avança 3 ofensivas (mensal cumulativa, trimestral cumulativa, rápida consecutiva), missões por jornada, ranking. NÃO é do Caderno — Caderno é só uma das fontes (escrever = `alvo_tipo='caderno_escrita'`). |
+| `core/caderno-avisos.js` | `poolCore` + gateway     | Worker em `setInterval` (10 min) que dispara avisos de Cápsulas do Tempo maduras: WhatsApp (via gateway, categoria `caderno_capsula`) + Email (Brevo) + marca canal `in_app` (banner aparece via `/contexto`). Idempotente por `UNIQUE(capsula_id, canal)` em `caderno_capsula_avisos`. |
 
 ### Seed idempotente
 
@@ -286,6 +296,89 @@ Os campos antigos continuam no banco (`teste_perfis_conteudo`) por compat, mas s
 ### Atualizações pendentes
 
 `core/atualizacoes.js` expõe helpers (`criarAtualizacaoTeste`, `criarAtualizacaoCompra`) que geram celebração na Home (banner + sino + splash com barra animada 0 → percentual atual). Quando criar uma linha em `usuario_produtos` (ex: webhook de compra), **sempre chame `criarAtualizacaoCompra`** logo depois. Sem isso a aluna não vê a celebração na próxima visita.
+
+## Caderno da Mentalização + Gamificação da Plataforma
+
+**São DUAS features distintas que coexistem** e foi entregue no mesmo lote (2026-05-28). Importante não confundir:
+
+| | **Caderno da Mentalização** | **Gamificação da Plataforma** |
+|---|---|---|
+| O que é | Espaço pessoal da aluna pra escrever, visualizar, planejar | Motor TRANSVERSAL de engajamento (ofensivas/missões/prêmios/ranking) |
+| Escopo | Específico de uma view (`view-caderno`) | Aplicação inteira — qualquer ação da aluna pode alimentar |
+| Telas | `<section id="view-caderno">` com 5 abas internas + `view-conquistas` mostra parte da gamificação | `<section id="view-conquistas">` é a UI, mas a lógica roda em todo lugar |
+| Rotas | `/api/app/caderno/*` (aluna) + `/api/admin/caderno/*` (admin) | `/api/app/gamificacao/*` (aluna) + `/api/admin/gamificacao/*` (admin) |
+| Motor | `routes/caderno.js` direto | `core/gamificacao.js` (motor) → chamado por várias rotas |
+
+**Caderno usa Gamificação** (não o contrário): quando aluna salva uma escrita no Caderno, a rota chama `progressoEvento(usuarioId, 'caderno_escrita')` da gamificação — que avança missões e pode creditar sementes. **Outras features futuras vão fazer o mesmo** (assistir vídeo → `'video_assistido'`, comprar produto → `'produto_comprado'`, etc).
+
+### Estrutura de tabelas (resumida)
+
+**Caderno (poolCore — dados da aluna):**
+- `caderno_escritas` (scripting diário)
+- `caderno_capsulas` (carta pro futuro com `abrir_em`) + `caderno_capsula_avisos` (log idempotente WhatsApp/email/in_app, UNIQUE(capsula_id, canal))
+- `caderno_vision_itens` (vision board + galeria de conquistas via `status`; só 1 `principal=TRUE` ativo por aluna)
+- `caderno_metas` (termômetro de materialização: `plantando | em_movimento | quase_la | materializado`)
+- `caderno_afirmacoes_favoritas` (PK composta `(usuario_id, afirmacao_id)`)
+- `caderno_audio_pref_aluna` (URL própria que ela colou + último áudio do catálogo escolhido)
+
+**Caderno (poolComunicacao — cadastrado pelo admin):**
+- `caderno_prompts` (perguntas guiadas — prompt do dia é determinístico por `(usuario_id + dia_do_ano)`)
+- `caderno_afirmacoes` (banco com `categoria` livre — 'prosperidade', 'autoestima', 'relacionamentos', etc.)
+- `caderno_audios_foco` (catálogo de áudios — `tipo`: 'binaural' | 'branco' | 'natureza' | 'hz' | 'meditacao')
+
+**Gamificação (poolCore — estado da aluna):**
+- `gam_login_diario` (PK composta `(usuario_id, dia)` — 1 linha por dia ativo)
+- `gam_streak_aluna` (1 linha por aluna com TODOS os ciclos: mensal, trimestral, rápida + recordes)
+- `gam_premios_recebidos` (ledger idempotente — `UNIQUE(usuario_id, tipo, marco, ciclo_id)`)
+- `gam_missao_progresso` (`UNIQUE(usuario_id, missao_id)` — progresso da aluna em cada missão)
+- `gam_ranking_mensal` (snapshot do top 10 quando o mês fecha, PK `(ano_mes, posicao)`)
+
+**Gamificação (poolComunicacao — cadastrado pelo admin):**
+- `gam_premios_config` (tabela de prêmios — `UNIQUE(tipo, marco)`. Renato edita valores via admin)
+- `gam_missoes` (catálogo de missões por jornada, `slug` único)
+
+### Os 3 tipos de ofensiva — não confundir
+
+| Tipo | Comportamento | Como persiste | Prêmios padrão (editáveis) |
+|---|---|---|---|
+| **Mensal** | Cumulativa em ciclo de 30 dias. Conta dias DISTINTOS que ela apareceu. Vira automaticamente quando passa 30 dias do início OU chega a 30 logins. | `ciclo_30_inicio` + `ciclo_30_logins` + `ciclo_30_ultimo_dia` em `gam_streak_aluna` | 1🌱/dia + 5🌱(7) + 15🌱(15) + 50🌱(30) + 30🌱 bônus ciclo fechado |
+| **Trimestral** | Cumulativa em ciclo de 90 dias. Marcos premiados em 30, 60, 90 (30 já vem do mensal). | `ciclo_90_inicio` + `ciclo_90_logins` em `gam_streak_aluna` | 100🌱(60) + 250🌱(90) |
+| **Rápida** | **Streak CONSECUTIVO** — quebra se pular 1 dia. Marcos em 3 e 7 dias. | `rapida_atual` + `rapida_ultimo_dia` em `gam_streak_aluna` | 3🌱(3 seguidos) + 10🌱(7 seguidos) |
+
+⚠️ **NÃO existe "streak de escrita no caderno" separado.** Renato pediu pra deixar isso pra depois do primeiro layout. Hoje a única streak é a de LOGIN (qualquer GET `/api/app/contexto` autenticado). Quando for criar streak de escrita, **estender o motor existente** com um novo tipo (`escrita_30`?) — não criar tabela paralela.
+
+### Motivos novos em `core/sementes.js`
+
+Adicionados na constante `MOTIVOS_VALIDOS`: `streak_login`, `ofensiva_rapida`, `ciclo_fechado`, `ranking_mensal`, `missao_diaria`, `missao_jornada`, `caderno_escrita`. **Sempre adicionar motivo novo lá antes de criar lógica que credita** — senão `creditarSementes` joga erro `motivo inválido`.
+
+### Indicadores leves no `/api/app/contexto`
+
+Pra não pesar o contexto unificado com tudo, ele só carrega **indicadores rápidos**:
+
+- `caderno`: `{ escreveu_hoje, total_escritas, capsula_madura_pendente, prompt_do_dia }`
+- `gamificacao`: `{ ciclo_30_logins, ciclo_30_inicio, ciclo_90_logins, rapida_atual, recorde_30, recorde_90, recorde_rapida }`
+- `gamificacao_premios_novos`: array de prêmios concedidos NESTA chamada (só na 1ª visita do dia — frontend mostra toast/celebração e contexto seguinte vem vazio)
+
+Listas pesadas (escritas, vision, metas, missões, ranking) vivem em endpoints próprios sob `/api/app/caderno/*` e `/api/app/gamificacao/*` — chamados só quando aluna entra na view.
+
+### Frontend — onde mora
+
+- HTML: `public/app.html` tem `view-caderno`, `view-conquistas` e 3 modais (`modal-capsula-nova`, `modal-meta-nova`, `modal-capsula-abrir`). Também tem 2 cards de atalho na Home (`.atalho-card`).
+- JS: **`public/app/caderno.js`** é um arquivo separado, **NÃO é module** (carregado depois de `app.js` no `app.html`). Toda lógica de render/CRUD do Caderno + Conquistas mora lá. Expõe `window.renderCaderno`, `window.renderConquistas`, `window.renderAtalhosCaderno`, `window.trocarAbaCaderno`, etc.
+- Pra `caderno.js` chamar funções de `app.js` (que É module): `app.js` expõe `window.irPara/toast/abrirModal/fecharModal/fetchAutenticado` no final do arquivo (bootstrap). **Manter esse export** se for refatorar.
+- CSS: tudo no fim de `public/app/app.css` (bloco com banner "CADERNO DA MENTALIZAÇÃO + CONQUISTAS"). Usa os mesmos tokens dourados.
+
+### Worker da Cápsula do Tempo
+
+`core/caderno-avisos.js` — roda a cada 10 min em produção. Acha cápsulas com `abrir_em <= NOW() AND aviso_enviado_em IS NULL` e dispara 3 canais em paralelo:
+
+1. **WhatsApp** — via `enfileirarAtendimento` do gateway, categoria `caderno_capsula` (cadastre essa chave em `gateway_categorias` se quiser poder pausar)
+2. **Email** — via Brevo (mesmo padrão de `enviarOTPEmail` em `routes/auth.js`)
+3. **in_app** — só marca registro; o banner aparece automaticamente via `caderno.capsula_madura_pendente` no `/contexto`
+
+Idempotência forte: `UNIQUE(capsula_id, canal)` em `caderno_capsula_avisos` faz worker rodar 100 vezes sem mandar email/WA duplicado.
+
+**Limitação proposital:** validação no `POST /api/app/caderno/capsulas` exige `abrir_em > NOW() + 24h` (mínimo 1 dia no futuro). Pra testar localmente sem esperar, relaxar **temporariamente** essa linha — não comitar relaxado.
 
 ## Limitações conhecidas (pegadinhas reais)
 
