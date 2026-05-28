@@ -919,8 +919,13 @@
       <!-- WRAPPER do conteúdo (entre topo e bottom-nav fixos no modo imersivo) -->
       <div class="caderno-corpo" id="caderno-corpo">
 
-      <!-- ABA: ESCREVER -->
+      <!-- ABA: ESCREVER — modo ritual -->
+      <!-- Estrutura: banner cápsula (se houver) + eyebrow do prompt do dia
+           + canvas (textarea protagonista + Foco no canto + contador)
+           + link pro histórico (abre overlay full-screen).
+           Salvar fica FLUTUANTE no rodapé do viewport (ver CSS .escrever-salvar-flutuante). -->
       <div class="caderno-painel ativo" id="caderno-painel-escrever">
+
         <!-- Banner cápsula madura — só aparece se houver cápsula pronta -->
         <div class="capsula-banner" id="capsula-banner" style="display:none">
           <div class="capsula-banner-icone">💌</div>
@@ -931,70 +936,146 @@
           <button type="button" class="capsula-banner-btn" id="capsula-banner-btn">Abrir</button>
         </div>
 
-        <!-- Prompt do dia -->
-        <div class="caderno-prompt" id="caderno-prompt">
-          <span class="caderno-prompt-rotulo">Prompt do dia</span>
-          <p class="caderno-prompt-texto" id="caderno-prompt-texto">Carregando…</p>
+        <!-- Prompt do dia em formato EYEBROW (texto pequeno acima do textarea,
+             não compete com o cursor). -->
+        <div class="escrever-eyebrow" id="escrever-eyebrow">
+          <span class="escrever-eyebrow-rotulo">Prompt do dia</span>
+          <p class="escrever-eyebrow-texto" id="caderno-prompt-texto">Carregando…</p>
         </div>
 
-        <!-- Área de escrita -->
-        <div class="caderno-escrita-wrap">
-          <textarea id="caderno-escrita-input" class="caderno-escrita-input"
+        <!-- CANVAS — área onde a aluna escreve. Textarea protagonista. -->
+        <div class="escrever-canvas">
+          <textarea id="caderno-escrita-input" class="escrever-textarea"
             placeholder="Estou tão feliz e grata agora que…"
-            maxlength="10000" rows="10"></textarea>
-          <div class="caderno-escrita-acoes">
-            <button type="button" class="caderno-btn-foco" id="caderno-btn-foco" aria-label="Modo foco com áudio">
-              🎧 <span>Foco</span>
-            </button>
-            <button type="button" class="caderno-btn-salvar" id="caderno-btn-salvar">
-              Salvar escrita
-            </button>
-          </div>
+            maxlength="10000" rows="14"></textarea>
+
+          <!-- Botão Foco como CTA mágico flutuante no canto sup. direito -->
+          <button type="button" class="escrever-btn-foco" id="caderno-btn-foco" aria-label="Modo Foco com áudio">
+            <svg viewBox="0 0 24 24" stroke-width="1.8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 18v-6a9 9 0 0 1 18 0v6"/>
+              <path d="M21 19a2 2 0 0 1-2 2h-1v-7h3zM3 19a2 2 0 0 0 2 2h1v-7H3z"/>
+            </svg>
+            <span class="escrever-btn-foco-glow"></span>
+          </button>
+
+          <!-- Contador de caracteres sutil no canto inferior direito -->
+          <span class="escrever-contador" id="caderno-contador">0</span>
         </div>
 
-        <!-- Player de foco (oculto até clicar no botão) -->
-        <div class="caderno-foco-player" id="caderno-foco-player" style="display:none">
-          <div class="caderno-foco-head">
-            <strong>Modo Foco</strong>
-            <button type="button" class="caderno-foco-fechar" id="caderno-foco-fechar" aria-label="Fechar">×</button>
-          </div>
-          <div class="caderno-foco-tabs">
-            <button type="button" class="caderno-foco-tab ativa" data-fonte="catalogo" onclick="trocarFonteAudio('catalogo', this)">Catálogo</button>
-            <button type="button" class="caderno-foco-tab" data-fonte="propria" onclick="trocarFonteAudio('propria', this)">URL própria</button>
-          </div>
-          <div class="caderno-foco-corpo" id="caderno-foco-catalogo">
-            <select id="caderno-foco-select" class="caderno-foco-select">
-              <option value="">Escolha um áudio…</option>
-            </select>
-          </div>
-          <div class="caderno-foco-corpo" id="caderno-foco-propria" style="display:none">
-            <input type="url" id="caderno-foco-url" class="caderno-foco-url"
-              placeholder="Cole aqui um link YouTube ou MP3" />
-            <button type="button" class="caderno-foco-btn-aplicar" id="caderno-foco-btn-aplicar">Aplicar</button>
-          </div>
-          <div class="caderno-foco-embed" id="caderno-foco-embed"></div>
-        </div>
+        <!-- Link pro histórico — abre overlay full-screen -->
+        <button type="button" class="escrever-ver-historico" id="escrever-ver-historico">
+          <span>Ver minhas escritas</span>
+          <span class="escrever-ver-historico-count" id="caderno-historico-count">0</span>
+          <svg viewBox="0 0 24 24" stroke-width="1.8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      </div>
 
-        <!-- Lista de escritas anteriores -->
-        <div class="caderno-historico">
-          <h3 class="caderno-historico-titulo">Suas escritas</h3>
-          <div class="caderno-historico-lista" id="caderno-historico-lista">
-            <div class="caderno-empty">Suas escritas vão aparecer aqui ✨</div>
-          </div>
+      <!-- Botão SALVAR flutuante — ancorado no rodapé do viewport, acima
+           do bottom-nav. Aparece SÓ na aba Escrever (controle via JS). -->
+      <button type="button" class="escrever-salvar-flutuante" id="caderno-btn-salvar" style="display:none">
+        <svg viewBox="0 0 24 24" stroke-width="1.8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12l5 5L20 7"/>
+        </svg>
+        <span>Salvar escrita</span>
+        <span class="escrever-salvar-particulas" id="escrever-salvar-particulas"></span>
+      </button>
+
+      <!-- Overlay FULL-SCREEN do histórico — abre quando toca em "Ver minhas escritas" -->
+      <div class="escrever-historico-overlay" id="escrever-historico-overlay" aria-hidden="true">
+        <header class="escrever-historico-topo">
+          <button type="button" class="escrever-historico-voltar" id="escrever-historico-voltar" aria-label="Voltar">
+            <svg viewBox="0 0 24 24" stroke-width="1.8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
+          <h3 class="escrever-historico-titulo">Suas escritas</h3>
+          <span class="escrever-historico-spacer"></span>
+        </header>
+        <div class="escrever-historico-lista" id="caderno-historico-lista">
+          <div class="caderno-empty">Suas escritas vão aparecer aqui ✨</div>
         </div>
       </div>
 
-      <!-- ABA: VISION BOARD -->
-      <div class="caderno-painel" id="caderno-painel-vision">
-        <div class="vision-toolbar">
-          <button type="button" class="vision-btn-novo" id="vision-btn-novo">
-            <span aria-hidden="true">+</span> Adicionar imagem
-          </button>
-          <div class="vision-toggle">
-            <button type="button" class="vision-toggle-btn ativo" data-status="ativo" onclick="trocarStatusVision('ativo', this)">Quadro</button>
-            <button type="button" class="vision-toggle-btn" data-status="conquistado" onclick="trocarStatusVision('conquistado', this)">Conquistas</button>
+      <!-- BOTTOM SHEET de ações do Vision (long-press) -->
+      <div class="vision-sheet" id="vision-sheet" aria-hidden="true">
+        <div class="vision-sheet-fundo" data-fechar-sheet></div>
+        <div class="vision-sheet-painel">
+          <div class="vision-sheet-handle"></div>
+          <div class="vision-sheet-preview">
+            <img id="vision-sheet-preview-img" src="" alt="" />
           </div>
+          <h4 class="vision-sheet-titulo" id="vision-sheet-titulo">Imagem</h4>
+          <div class="vision-sheet-acoes">
+            <button type="button" class="vision-sheet-acao" id="vision-sheet-principal">
+              <span class="vision-sheet-acao-icone">⭐</span>
+              <span>Tornar principal</span>
+            </button>
+            <button type="button" class="vision-sheet-acao" id="vision-sheet-conquistado">
+              <span class="vision-sheet-acao-icone">🏆</span>
+              <span>Materializei!</span>
+            </button>
+            <button type="button" class="vision-sheet-acao vision-sheet-acao-perigo" id="vision-sheet-apagar">
+              <span class="vision-sheet-acao-icone">🗑</span>
+              <span>Apagar</span>
+            </button>
+          </div>
+          <button type="button" class="vision-sheet-cancelar" data-fechar-sheet>Cancelar</button>
         </div>
+      </div>
+
+      <!-- LIGHTBOX (toque rápido na imagem amplia em tela cheia) -->
+      <div class="vision-lightbox" id="vision-lightbox" aria-hidden="true">
+        <button type="button" class="vision-lightbox-fechar" id="vision-lightbox-fechar" aria-label="Fechar">×</button>
+        <img id="vision-lightbox-img" src="" alt="" />
+      </div>
+
+      <!-- Player de foco — vira BOTTOM SHEET deslizando de baixo -->
+      <div class="caderno-foco-player" id="caderno-foco-player" aria-hidden="true">
+        <div class="caderno-foco-handle"></div>
+        <div class="caderno-foco-head">
+          <strong>🎧 Modo Foco</strong>
+          <button type="button" class="caderno-foco-fechar" id="caderno-foco-fechar" aria-label="Fechar">×</button>
+        </div>
+        <div class="caderno-foco-tabs">
+          <button type="button" class="caderno-foco-tab ativa" data-fonte="catalogo" onclick="trocarFonteAudio('catalogo', this)">Catálogo</button>
+          <button type="button" class="caderno-foco-tab" data-fonte="propria" onclick="trocarFonteAudio('propria', this)">URL própria</button>
+        </div>
+        <div class="caderno-foco-corpo" id="caderno-foco-catalogo">
+          <select id="caderno-foco-select" class="caderno-foco-select">
+            <option value="">Escolha um áudio…</option>
+          </select>
+        </div>
+        <div class="caderno-foco-corpo" id="caderno-foco-propria" style="display:none">
+          <input type="url" id="caderno-foco-url" class="caderno-foco-url"
+            placeholder="Cole aqui um link YouTube ou MP3" />
+          <button type="button" class="caderno-foco-btn-aplicar" id="caderno-foco-btn-aplicar">Aplicar</button>
+        </div>
+        <div class="caderno-foco-embed" id="caderno-foco-embed"></div>
+      </div>
+
+      <!-- ABA: VISION BOARD -->
+      <!-- Cards LIMPOS (só imagem + selo principal se for o caso).
+           Toque rápido amplia (lightbox). Long-press abre bottom-sheet
+           com as 3 ações. Mobile-first. -->
+      <div class="caderno-painel" id="caderno-painel-vision">
+        <header class="vision-header">
+          <div class="vision-toggle">
+            <button type="button" class="vision-toggle-btn ativo" data-status="ativo" onclick="trocarStatusVision('ativo', this)">
+              <span>Quadro</span>
+            </button>
+            <button type="button" class="vision-toggle-btn" data-status="conquistado" onclick="trocarStatusVision('conquistado', this)">
+              <span>Conquistas</span>
+            </button>
+          </div>
+          <button type="button" class="vision-btn-novo" id="vision-btn-novo" aria-label="Adicionar imagem">
+            <svg viewBox="0 0 24 24" stroke-width="2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+        </header>
+        <p class="vision-hint" id="vision-hint">Toque na imagem pra ampliar · segure pra opções</p>
         <div class="vision-grid" id="vision-grid">
           <div class="caderno-empty">Carregando seu Vision Board…</div>
         </div>
@@ -1002,41 +1083,51 @@
       </div>
 
       <!-- ABA: CÁPSULAS DO TEMPO -->
+      <!-- Hero card único centralizado convida a criar.
+           Lista vertical de cápsulas (trancada/madura/aberta). -->
       <div class="caderno-painel" id="caderno-painel-capsulas">
-        <div class="capsulas-intro">
-          <p>Escreva uma carta pra você no futuro. O Caderno guarda e te avisa quando ela estiver pronta pra ser aberta.</p>
-        </div>
-        <button type="button" class="capsulas-btn-nova" id="capsulas-btn-nova">
-          ⏳ Escrever nova cápsula
-        </button>
+        <article class="capsulas-hero" id="capsulas-hero">
+          <div class="capsulas-hero-selo" aria-hidden="true">⏳</div>
+          <h3 class="capsulas-hero-titulo">Escreva pro seu eu do futuro</h3>
+          <p class="capsulas-hero-sub">Lacre uma carta hoje. O Caderno guarda em segredo e te avisa quando chegar a hora.</p>
+          <button type="button" class="capsulas-hero-cta" id="capsulas-btn-nova">
+            <svg viewBox="0 0 24 24" stroke-width="2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            <span>Lacrar nova cápsula</span>
+          </button>
+        </article>
         <div class="capsulas-lista" id="capsulas-lista">
           <div class="caderno-empty">Suas cápsulas vão aparecer aqui</div>
         </div>
       </div>
 
-      <!-- ABA: METAS (Termômetro) -->
+      <!-- ABA: METAS (Termômetro vertical real) -->
+      <!-- Cada meta vira um CARD VERTICAL com barra de progresso dourada
+           preenchida 25/50/75/100% conforme o status. 4 marcos visíveis
+           na barra (🌱 → 🌿 → 🌟 → 🏆). Status atual destacado.
+           Conquistadas vão pra seção "Conquistadas" expansível ao fim. -->
       <div class="caderno-painel" id="caderno-painel-metas">
+        <header class="metas-header">
+          <h3 class="metas-header-titulo">Suas materializações</h3>
+          <p class="metas-header-sub">Acompanhe cada meta no termômetro da prosperidade</p>
+        </header>
         <button type="button" class="metas-btn-nova" id="metas-btn-nova">
-          🌱 Plantar nova meta
+          <svg viewBox="0 0 24 24" stroke-width="1.8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span>Plantar nova meta</span>
         </button>
-        <div class="metas-tabuleiro" id="metas-tabuleiro">
-          <div class="metas-coluna" data-status="plantando">
-            <h4 class="metas-col-titulo">🌱 Plantando</h4>
-            <div class="metas-col-corpo" id="metas-col-plantando"></div>
-          </div>
-          <div class="metas-coluna" data-status="em_movimento">
-            <h4 class="metas-col-titulo">🌿 Em movimento</h4>
-            <div class="metas-col-corpo" id="metas-col-em_movimento"></div>
-          </div>
-          <div class="metas-coluna" data-status="quase_la">
-            <h4 class="metas-col-titulo">🌟 Quase lá</h4>
-            <div class="metas-col-corpo" id="metas-col-quase_la"></div>
-          </div>
-          <div class="metas-coluna" data-status="materializado">
-            <h4 class="metas-col-titulo">🏆 Materializado</h4>
-            <div class="metas-col-corpo" id="metas-col-materializado"></div>
-          </div>
+        <div class="metas-trilha" id="metas-trilha-ativas">
+          <div class="caderno-empty">Carregando…</div>
         </div>
+        <details class="metas-materializadas-secao" id="metas-materializadas-secao" style="display:none">
+          <summary class="metas-materializadas-titulo">
+            <span>🏆 Materializadas</span>
+            <span class="metas-materializadas-count" id="metas-materializadas-count">0</span>
+          </summary>
+          <div class="metas-trilha" id="metas-trilha-materializadas"></div>
+        </details>
       </div>
 
       <!-- ABA: AFIRMAÇÕES -->
@@ -1182,16 +1273,27 @@
     <!-- Modal: nova cápsula -->
     <div class="modal" id="modal-capsula-nova" aria-hidden="true">
       <div class="modal-fundo" data-close></div>
-      <div class="modal-painel modal-painel-capsula">
+      <div class="modal-painel modal-painel-capsula modal-painel-vm">
         <button type="button" class="modal-fechar" data-close aria-label="Fechar">×</button>
-        <h3 class="modal-titulo">⏳ Nova Cápsula do Tempo</h3>
-        <p class="modal-sub">Escreva pra você no futuro. Ninguém vê — nem você antes da data.</p>
+        <div class="modal-selo-topo" aria-hidden="true">⏳</div>
+        <h3 class="modal-titulo">Nova Cápsula do Tempo</h3>
+        <p class="modal-sub">Lacrada por você, vista só por você — no momento certo.</p>
         <label class="modal-label">Título (opcional)</label>
         <input type="text" class="modal-input" id="capsula-titulo-input" maxlength="200" placeholder="Pra mim em 3 meses…" />
         <label class="modal-label">Sua mensagem</label>
-        <textarea class="modal-textarea" id="capsula-conteudo-input" rows="8" maxlength="20000" placeholder="Escreva tudo que você quer que sua versão futura saiba…"></textarea>
+        <textarea class="modal-textarea" id="capsula-conteudo-input" rows="6" maxlength="20000" placeholder="Escreva tudo que você quer que sua versão futura saiba…"></textarea>
+
         <label class="modal-label">Abrir em</label>
-        <input type="date" class="modal-input" id="capsula-data-input" />
+        <div class="capsula-pills" id="capsula-pills">
+          <button type="button" class="capsula-pill" data-meses="1">Em 1 mês</button>
+          <button type="button" class="capsula-pill" data-meses="3">Em 3 meses</button>
+          <button type="button" class="capsula-pill" data-meses="6">Em 6 meses</button>
+          <button type="button" class="capsula-pill" data-meses="12">Em 1 ano</button>
+          <button type="button" class="capsula-pill" data-meses="custom">Outra data</button>
+        </div>
+        <input type="date" class="modal-input capsula-data-custom" id="capsula-data-input" style="display:none" />
+        <p class="capsula-data-hint" id="capsula-data-hint"></p>
+
         <div class="modal-acoes">
           <button type="button" class="modal-btn-secundario" data-close>Cancelar</button>
           <button type="button" class="modal-btn-primario" id="capsula-btn-salvar">Lacrar cápsula</button>
@@ -1202,13 +1304,15 @@
     <!-- Modal: nova meta -->
     <div class="modal" id="modal-meta-nova" aria-hidden="true">
       <div class="modal-fundo" data-close></div>
-      <div class="modal-painel">
+      <div class="modal-painel modal-painel-vm">
         <button type="button" class="modal-fechar" data-close aria-label="Fechar">×</button>
-        <h3 class="modal-titulo">🌱 Plantar nova meta</h3>
+        <div class="modal-selo-topo" aria-hidden="true">🌱</div>
+        <h3 class="modal-titulo">Plantar nova meta</h3>
+        <p class="modal-sub">Dê nome ao que você quer materializar.</p>
         <label class="modal-label">Título</label>
         <input type="text" class="modal-input" id="meta-titulo-input" maxlength="200" placeholder="Comprar minha casa própria" />
         <label class="modal-label">Detalhes (opcional)</label>
-        <textarea class="modal-textarea" id="meta-descricao-input" rows="4" maxlength="2000" placeholder="Como será?"></textarea>
+        <textarea class="modal-textarea" id="meta-descricao-input" rows="4" maxlength="2000" placeholder="Como será? O que você sentirá?"></textarea>
         <div class="modal-acoes">
           <button type="button" class="modal-btn-secundario" data-close>Cancelar</button>
           <button type="button" class="modal-btn-primario" id="meta-btn-salvar">Plantar</button>
@@ -1219,14 +1323,14 @@
     <!-- Modal: abrir cápsula madura -->
     <div class="modal" id="modal-capsula-abrir" aria-hidden="true">
       <div class="modal-fundo" data-close></div>
-      <div class="modal-painel modal-painel-capsula-abrir">
+      <div class="modal-painel modal-painel-capsula-abrir modal-painel-vm">
         <button type="button" class="modal-fechar" data-close aria-label="Fechar">×</button>
         <div class="capsula-abrir-selo">💌</div>
         <h3 class="modal-titulo" id="capsula-abrir-titulo">Sua cápsula chegou</h3>
         <p class="modal-sub" id="capsula-abrir-data">Escrita em —</p>
         <div class="capsula-abrir-conteudo" id="capsula-abrir-conteudo"></div>
         <div class="modal-acoes">
-          <button type="button" class="modal-btn-primario" data-close>Guardar com carinho</button>
+          <button type="button" class="modal-btn-primario" data-close>Guardar com carinho 💛</button>
         </div>
       </div>
     </div>

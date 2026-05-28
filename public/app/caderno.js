@@ -131,6 +131,14 @@
     aplicarBannerCapsula(window._ctxAtual?.caderno?.capsula_madura_pendente);
     // Botões iniciais
     ligarBotoesCaderno();
+    // Mostra o botão Salvar flutuante quando entrar pela aba Escrever
+    const salvar = el('caderno-btn-salvar');
+    if (salvar) salvar.style.display = (estado.abaAtiva === 'escrever') ? '' : 'none';
+    // Total de escritas no link "Ver minhas escritas"
+    const count = el('caderno-historico-count');
+    if (count && window._ctxAtual?.caderno) {
+      count.textContent = window._ctxAtual.caderno.total_escritas || 0;
+    }
     // Auto-focus no textarea da aba Escrever (cursor piscando = "comece já").
     // Atrasa um pouquinho pro splash não competir com o teclado abrindo
     // logo de cara. iOS exige interação prévia pra .focus() funcionar —
@@ -211,6 +219,9 @@
     document.querySelector(`.caderno-tab[data-aba="${aba}"]`)?.classList.add('ativa');
     document.querySelectorAll('.caderno-painel').forEach(p => p.classList.remove('ativo'));
     el(`caderno-painel-${aba}`)?.classList.add('ativo');
+    // Botão Salvar flutuante: visível APENAS na aba Escrever
+    const salvar = el('caderno-btn-salvar');
+    if (salvar) salvar.style.display = (aba === 'escrever') ? '' : 'none';
     // Scroll do conteúdo volta pro topo ao trocar de aba — evita
     // ficar no meio de uma lista anterior.
     el('caderno-corpo')?.scrollTo({ top: 0, behavior: 'instant' });
@@ -231,18 +242,46 @@
 
     // Salvar escrita
     el('caderno-btn-salvar')?.addEventListener('click', salvarEscrita);
-    // Botão foco
+    // Contador de caracteres em tempo real
+    el('caderno-escrita-input')?.addEventListener('input', atualizarContadorEscrita);
+    // Ver minhas escritas → abre overlay full-screen
+    el('escrever-ver-historico')?.addEventListener('click', () => {
+      const ov = el('escrever-historico-overlay');
+      if (ov) {
+        ov.setAttribute('aria-hidden', 'false');
+        ov.classList.add('aberto');
+        // Garante que a lista está populada
+        carregarEscritas();
+      }
+    });
+    el('escrever-historico-voltar')?.addEventListener('click', () => {
+      const ov = el('escrever-historico-overlay');
+      if (ov) {
+        ov.classList.remove('aberto');
+        setTimeout(() => ov.setAttribute('aria-hidden', 'true'), 320);
+      }
+    });
+    // Botão foco vira bottom-sheet
     el('caderno-btn-foco')?.addEventListener('click', () => {
       const player = el('caderno-foco-player');
-      if (player.style.display === 'none') {
-        player.style.display = '';
-        carregarAudios();
+      if (!player) return;
+      const aberto = player.classList.contains('aberto');
+      if (aberto) {
+        player.classList.remove('aberto');
+        setTimeout(() => player.setAttribute('aria-hidden', 'true'), 320);
+        pararAudioFoco();
       } else {
-        player.style.display = 'none';
+        player.setAttribute('aria-hidden', 'false');
+        player.classList.add('aberto');
+        carregarAudios();
       }
     });
     el('caderno-foco-fechar')?.addEventListener('click', () => {
-      el('caderno-foco-player').style.display = 'none';
+      const player = el('caderno-foco-player');
+      if (player) {
+        player.classList.remove('aberto');
+        setTimeout(() => player.setAttribute('aria-hidden', 'true'), 320);
+      }
       pararAudioFoco();
     });
     el('caderno-foco-select')?.addEventListener('change', (e) => {
@@ -268,10 +307,24 @@
     // Vision
     el('vision-btn-novo')?.addEventListener('click', () => el('vision-file-input').click());
     el('vision-file-input')?.addEventListener('change', uploadImagemVision);
+    // Fechar lightbox e bottom-sheet
+    el('vision-lightbox-fechar')?.addEventListener('click', fecharLightbox);
+    el('vision-lightbox')?.addEventListener('click', (ev) => {
+      if (ev.target === el('vision-lightbox')) fecharLightbox();
+    });
+    document.querySelectorAll('#vision-sheet [data-fechar-sheet]').forEach(b => {
+      b.addEventListener('click', fecharVisionSheet);
+    });
 
     // Cápsulas
-    el('capsulas-btn-nova')?.addEventListener('click', () => abrirModal('modal-capsula-nova'));
+    el('capsulas-btn-nova')?.addEventListener('click', () => {
+      resetarCapsulaPills();
+      abrirModal('modal-capsula-nova');
+    });
     el('capsula-btn-salvar')?.addEventListener('click', salvarCapsula);
+    document.querySelectorAll('.capsula-pill').forEach(p => {
+      p.addEventListener('click', (ev) => escolherDataCapsula(p.dataset.meses, ev.currentTarget));
+    });
     el('capsula-banner-btn')?.addEventListener('click', () => {
       const id = el('capsula-banner').dataset.capsulaId;
       if (id) abrirCapsulaMadura(Number(id));
@@ -316,7 +369,10 @@
       const d = await r.json();
       if (!d?.ok) throw 0;
       if (!d.escritas?.length) {
-        lista.innerHTML = '<div class="caderno-empty">Suas escritas vão aparecer aqui ✨</div>';
+        lista.innerHTML = `<div class="caderno-empty">
+          <p style="font-family:var(--font-display,serif);font-size:1rem;color:var(--texto);margin:0 0 .3rem">Sua primeira escrita está esperando você 💛</p>
+          <p style="font-size:.85rem;color:var(--texto-suave);margin:0">Comece pelo que sente agora. O resto vai vir.</p>
+        </div>`;
         return;
       }
       lista.innerHTML = d.escritas.map(e => `
@@ -359,7 +415,10 @@
       });
       const d = await r.json();
       if (!d?.ok) throw 0;
+      // Micro-celebração: partículas douradas explodindo do botão Salvar
+      celebrarEscritaSalva();
       input.value = '';
+      atualizarContadorEscrita();
       toast('Escrita salva ✨', 'ok');
       // Mostra missões completadas se houver
       (d.missoes_completadas || []).forEach(m => {
@@ -369,6 +428,35 @@
     } catch {
       toast('Não consegui salvar agora.', 'erro');
     }
+  }
+
+  // Micro-celebração ao salvar — 12 partículas douradas explodindo do
+  // botão Salvar pra cima/lados. Animação CSS, removida após 1.4s.
+  function celebrarEscritaSalva() {
+    const host = el('escrever-salvar-particulas');
+    if (!host) return;
+    let html = '';
+    for (let i = 0; i < 12; i++) {
+      const angle = -180 + (i * 30) + (Math.random() * 20 - 10);
+      const dist = 60 + Math.random() * 40;
+      const size = 3 + Math.random() * 4;
+      const delay = Math.random() * 0.08;
+      const dx = Math.cos(angle * Math.PI / 180) * dist;
+      const dy = Math.sin(angle * Math.PI / 180) * dist;
+      html += `<span class="celeb-part" style="--dx:${dx}px;--dy:${dy}px;--sz:${size}px;--dly:${delay}s"></span>`;
+    }
+    host.innerHTML = html;
+    setTimeout(() => { host.innerHTML = ''; }, 1500);
+  }
+
+  function atualizarContadorEscrita() {
+    const input = el('caderno-escrita-input');
+    const cont = el('caderno-contador');
+    if (!input || !cont) return;
+    const n = (input.value || '').length;
+    cont.textContent = n;
+    // Esconde quando vazio
+    cont.style.opacity = n > 0 ? '0.6' : '0';
   }
 
   function aplicarBannerCapsula(capsulaMaduraPendente) {
@@ -395,50 +483,174 @@
   async function carregarVision() {
     const grid = el('vision-grid');
     if (!grid) return;
-    grid.innerHTML = '<div class="caderno-empty">Carregando…</div>';
+    grid.innerHTML = montarSkeletonGrid(6);
     try {
       const r = await fetchAutenticado(`/api/app/caderno/vision?status=${estado.visionStatus}`);
       const d = await r.json();
       if (!d?.ok) throw 0;
       if (!d.itens?.length) {
         grid.innerHTML = estado.visionStatus === 'conquistado'
-          ? '<div class="caderno-empty">Suas conquistas vão aparecer aqui 🏆</div>'
-          : '<div class="caderno-empty">Adicione sua primeira imagem ✨</div>';
+          ? `<div class="caderno-empty">
+              <p style="font-family:var(--font-display,serif);font-size:1rem;color:var(--texto);margin:0 0 .3rem">Sua galeria de conquistas vai brilhar aqui 🏆</p>
+              <p style="font-size:.85rem;color:var(--texto-suave);margin:0">Marque uma meta do quadro como "Materializei!" quando ela acontecer</p>
+            </div>`
+          : `<div class="caderno-empty">
+              <p style="font-family:var(--font-display,serif);font-size:1rem;color:var(--texto);margin:0 0 .3rem">Seu Vision Board começa aqui ✨</p>
+              <p style="font-size:.85rem;color:var(--texto-suave);margin:0">Toque em + e adicione a primeira imagem do que você quer materializar</p>
+            </div>`;
         return;
       }
       grid.innerHTML = d.itens.map(it => `
-        <div class="vision-card ${it.principal ? 'vision-card-principal' : ''}" data-id="${it.id}">
-          <img src="${escHtml(it.imagem_url)}" alt="${escHtml(it.titulo || '')}" loading="lazy" />
-          ${it.titulo ? `<div class="vision-card-titulo">${escHtml(it.titulo)}</div>` : ''}
-          ${it.principal ? '<span class="vision-card-selo">⭐ Principal</span>' : ''}
-          <div class="vision-card-acoes">
-            ${estado.visionStatus === 'ativo' ? `
-              ${!it.principal ? `<button type="button" data-acao="principal" data-id="${it.id}">⭐ Tornar principal</button>` : ''}
-              <button type="button" data-acao="conquistado" data-id="${it.id}">🏆 Conquistei!</button>
-            ` : ''}
-            <button type="button" data-acao="apagar" data-id="${it.id}">🗑</button>
-          </div>
+        <div class="vision-card ${it.principal ? 'vision-card-principal' : ''}" data-id="${it.id}" data-url="${escHtml(it.imagem_url)}" data-titulo="${escHtml(it.titulo || '')}" data-principal="${it.principal ? '1' : '0'}">
+          <img src="${escHtml(it.imagem_url)}" alt="${escHtml(it.titulo || 'Imagem do vision board')}" loading="lazy" />
+          ${it.principal ? '<span class="vision-card-selo" aria-label="Imagem principal">⭐</span>' : ''}
         </div>
       `).join('');
-      grid.querySelectorAll('button[data-acao]').forEach(b => {
-        b.addEventListener('click', async (ev) => {
-          const acao = ev.currentTarget.dataset.acao;
-          const id = ev.currentTarget.dataset.id;
-          if (acao === 'principal') {
-            await fetchAutenticado(`/api/app/caderno/vision/${id}/principal`, { method: 'POST' });
-          } else if (acao === 'conquistado') {
-            await fetchAutenticado(`/api/app/caderno/vision/${id}/conquistado`, { method: 'POST' });
-            toast('Conquista marcada! 🏆', 'ok');
-          } else if (acao === 'apagar') {
-            if (!confirm('Apagar essa imagem?')) return;
-            await fetchAutenticado(`/api/app/caderno/vision/${id}`, { method: 'DELETE' });
-          }
-          carregarVision();
-        });
-      });
+      ligarLongPressVision();
     } catch {
       grid.innerHTML = '<div class="caderno-empty">Não consegui carregar.</div>';
     }
+  }
+
+  // Detecção de LONG-PRESS (toque longo) nos cards do Vision.
+  // < 500ms = toque rápido → abre lightbox.
+  // >= 500ms = long-press → abre bottom-sheet de ações.
+  // Cancela se o dedo arrastar (>10px) — pra não confundir com scroll.
+  function ligarLongPressVision() {
+    document.querySelectorAll('#vision-grid .vision-card').forEach(card => {
+      let timer = null;
+      let startX = 0, startY = 0;
+      let cancelado = false;
+      let longTriggered = false;
+
+      const start = (ev) => {
+        cancelado = false;
+        longTriggered = false;
+        const point = ev.touches?.[0] || ev;
+        startX = point.clientX;
+        startY = point.clientY;
+        timer = setTimeout(() => {
+          if (!cancelado) {
+            longTriggered = true;
+            // Feedback tátil em iOS/Android (se suportado)
+            try { navigator.vibrate?.(40); } catch {}
+            abrirVisionSheet(card);
+          }
+        }, 500);
+      };
+      const move = (ev) => {
+        const point = ev.touches?.[0] || ev;
+        const dx = Math.abs(point.clientX - startX);
+        const dy = Math.abs(point.clientY - startY);
+        if (dx > 10 || dy > 10) {
+          cancelado = true;
+          clearTimeout(timer);
+        }
+      };
+      const end = (ev) => {
+        clearTimeout(timer);
+        if (!cancelado && !longTriggered) {
+          // Toque rápido = lightbox
+          abrirLightbox(card.dataset.url, card.dataset.titulo);
+        }
+      };
+
+      card.addEventListener('touchstart', start, { passive: true });
+      card.addEventListener('touchmove', move, { passive: true });
+      card.addEventListener('touchend', end);
+      card.addEventListener('touchcancel', () => { cancelado = true; clearTimeout(timer); });
+      // Mouse fallback (desktop)
+      card.addEventListener('mousedown', start);
+      card.addEventListener('mousemove', move);
+      card.addEventListener('mouseup', end);
+      card.addEventListener('mouseleave', () => { cancelado = true; clearTimeout(timer); });
+    });
+  }
+
+  function abrirLightbox(url, titulo) {
+    const lb = el('vision-lightbox');
+    const img = el('vision-lightbox-img');
+    if (!lb || !img) return;
+    img.src = url;
+    img.alt = titulo || '';
+    lb.setAttribute('aria-hidden', 'false');
+    lb.classList.add('aberto');
+  }
+  function fecharLightbox() {
+    const lb = el('vision-lightbox');
+    if (!lb) return;
+    lb.classList.remove('aberto');
+    setTimeout(() => {
+      lb.setAttribute('aria-hidden', 'true');
+      const img = el('vision-lightbox-img');
+      if (img) img.src = '';
+    }, 320);
+  }
+
+  function abrirVisionSheet(card) {
+    const sheet = el('vision-sheet');
+    if (!sheet) return;
+    const id = card.dataset.id;
+    const url = card.dataset.url;
+    const titulo = card.dataset.titulo;
+    const principal = card.dataset.principal === '1';
+
+    // Popula preview
+    const previewImg = el('vision-sheet-preview-img');
+    if (previewImg) { previewImg.src = url; previewImg.alt = titulo || ''; }
+    el('vision-sheet-titulo').textContent = titulo || 'Imagem do Vision Board';
+
+    // Ações
+    const btnPrincipal = el('vision-sheet-principal');
+    const btnConquistado = el('vision-sheet-conquistado');
+    const btnApagar = el('vision-sheet-apagar');
+
+    // No modo "Conquistas" (galeria), esconde "Tornar principal" e "Materializei"
+    const conquistas = estado.visionStatus === 'conquistado';
+    btnPrincipal.style.display = (conquistas || principal) ? 'none' : '';
+    btnConquistado.style.display = conquistas ? 'none' : '';
+
+    btnPrincipal.onclick = async () => {
+      fecharVisionSheet();
+      await fetchAutenticado(`/api/app/caderno/vision/${id}/principal`, { method: 'POST' });
+      toast('Marcada como principal ⭐', 'ok');
+      carregarVision();
+    };
+    btnConquistado.onclick = async () => {
+      fecharVisionSheet();
+      await fetchAutenticado(`/api/app/caderno/vision/${id}/conquistado`, { method: 'POST' });
+      toast('Materializada! Que glória 🏆', 'ok');
+      carregarVision();
+    };
+    btnApagar.onclick = async () => {
+      if (!confirm('Apagar essa imagem do seu vision?')) return;
+      fecharVisionSheet();
+      await fetchAutenticado(`/api/app/caderno/vision/${id}`, { method: 'DELETE' });
+      carregarVision();
+    };
+
+    sheet.setAttribute('aria-hidden', 'false');
+    sheet.classList.add('aberto');
+  }
+  function fecharVisionSheet() {
+    const sheet = el('vision-sheet');
+    if (!sheet) return;
+    sheet.classList.remove('aberto');
+    setTimeout(() => sheet.setAttribute('aria-hidden', 'true'), 320);
+  }
+
+  // Skeletons douradas pra grids/listas durante carregamento
+  function montarSkeletonGrid(n = 6) {
+    let h = '<div class="vision-skeleton-grid">';
+    for (let i = 0; i < n; i++) h += '<div class="vision-skeleton-card"></div>';
+    h += '</div>';
+    return h;
+  }
+  function montarSkeletonLinhas(n = 3) {
+    let h = '<div class="skeleton-linhas">';
+    for (let i = 0; i < n; i++) h += '<div class="skeleton-linha"></div>';
+    h += '</div>';
+    return h;
   }
 
   async function uploadImagemVision(ev) {
@@ -484,34 +696,43 @@
       const d = await r.json();
       if (!d?.ok) throw 0;
       if (!d.capsulas?.length) {
-        lista.innerHTML = '<div class="caderno-empty">Suas cápsulas vão aparecer aqui ⏳</div>';
+        lista.innerHTML = ''; // hero já é convite suficiente
         return;
       }
-      lista.innerHTML = d.capsulas.map(c => {
+      lista.innerHTML = `<h4 class="capsulas-lista-titulo">Suas cápsulas</h4>` + d.capsulas.map(c => {
         const trancada = c.trancada;
+        const aberta = !!c.aberta_em;
+        const madura = !trancada && !aberta;
         const dias = trancada ? diasAtePropriaDataISO(c.abrir_em) : 0;
+        const estadoClass = trancada ? 'capsula-trancada' : aberta ? 'capsula-aberta' : 'capsula-madura';
+        const selo = trancada ? '🔒' : aberta ? '💌' : '✨';
+        const subtexto = trancada
+          ? `Abre em ${fmtData(c.abrir_em)} · faltam ${dias} dia${dias === 1 ? '' : 's'}`
+          : aberta
+            ? `Aberta em ${fmtData(c.aberta_em)}`
+            : 'Pronta pra abrir agora! ✨';
         return `
-          <article class="capsula-card ${trancada ? 'capsula-trancada' : c.aberta_em ? 'capsula-aberta' : 'capsula-madura'}" data-id="${c.id}">
-            <div class="capsula-card-selo">${trancada ? '🔒' : c.aberta_em ? '💌' : '✨'}</div>
+          <article class="capsula-card ${estadoClass}" data-id="${c.id}" ${madura ? 'data-acao-click="abrir"' : ''}>
+            <div class="capsula-card-selo-novo">${selo}</div>
             <div class="capsula-card-corpo">
               <h4 class="capsula-card-titulo">${escHtml(c.titulo || 'Cápsula sem título')}</h4>
-              <p class="capsula-card-meta">
-                ${trancada
-                  ? `Abre em ${fmtData(c.abrir_em)} · faltam ${dias} dia${dias === 1 ? '' : 's'}`
-                  : c.aberta_em
-                    ? `Aberta em ${fmtData(c.aberta_em)}`
-                    : 'Pronta pra abrir agora!'}
-              </p>
+              <p class="capsula-card-meta">${subtexto}</p>
             </div>
-            <div class="capsula-card-acoes">
-              ${!trancada ? `<button type="button" data-acao="abrir" data-id="${c.id}">Abrir</button>` : ''}
-              ${trancada ? `<button type="button" data-acao="apagar" data-id="${c.id}">🗑</button>` : ''}
-            </div>
+            ${madura
+              ? `<button type="button" class="capsula-card-btn-abrir" data-acao="abrir" data-id="${c.id}">Abrir</button>`
+              : trancada
+                ? `<button type="button" class="capsula-card-btn-apagar" data-acao="apagar" data-id="${c.id}" aria-label="Apagar">
+                     <svg viewBox="0 0 24 24" stroke-width="1.7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                       <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                     </svg>
+                   </button>`
+                : ''}
           </article>
         `;
       }).join('');
       lista.querySelectorAll('button[data-acao]').forEach(b => {
         b.addEventListener('click', async (ev) => {
+          ev.stopPropagation();
           const acao = ev.currentTarget.dataset.acao;
           const id = Number(ev.currentTarget.dataset.id);
           if (acao === 'abrir') abrirCapsulaMadura(id);
@@ -530,13 +751,14 @@
   async function salvarCapsula() {
     const titulo = el('capsula-titulo-input').value.trim();
     const conteudo = el('capsula-conteudo-input').value.trim();
-    const dataStr = el('capsula-data-input').value;
+    // Data vem do estado das pills (ou do input quando "Outra data")
+    const dataStr = estado.capsulaDataEscolhida;
     if (!conteudo || conteudo.length < 10) {
       toast('Escreva pelo menos 10 caracteres', 'aviso');
       return;
     }
     if (!dataStr) {
-      toast('Escolha uma data pra abrir', 'aviso');
+      toast('Escolha quando abrir a cápsula', 'aviso');
       return;
     }
     const abrir_em = new Date(`${dataStr}T12:00:00`).toISOString();
@@ -554,11 +776,61 @@
       el('capsula-titulo-input').value = '';
       el('capsula-conteudo-input').value = '';
       el('capsula-data-input').value = '';
+      estado.capsulaDataEscolhida = null;
+      resetarCapsulaPills();
       fecharModal('modal-capsula-nova');
       carregarCapsulas();
     } catch {
       toast('Não consegui salvar.', 'erro');
     }
+  }
+
+  // Pills de data rápida pra cápsula (Em 1 mês / 3 / 6 / 1 ano / Outra).
+  // Calcula data ISO e guarda em estado.capsulaDataEscolhida.
+  function escolherDataCapsula(mesesOuCustom, btn) {
+    const pills = document.querySelectorAll('.capsula-pill');
+    pills.forEach(p => p.classList.remove('ativo'));
+    if (btn) btn.classList.add('ativo');
+
+    const input = el('capsula-data-input');
+    const hint = el('capsula-data-hint');
+
+    if (mesesOuCustom === 'custom') {
+      input.style.display = '';
+      input.value = '';
+      input.focus();
+      estado.capsulaDataEscolhida = null;
+      if (hint) hint.textContent = '';
+      input.onchange = () => {
+        const v = input.value;
+        if (v) {
+          estado.capsulaDataEscolhida = v;
+          atualizarHintCapsula(v, hint);
+        }
+      };
+      return;
+    }
+    input.style.display = 'none';
+    const meses = Number(mesesOuCustom);
+    const d = new Date();
+    d.setMonth(d.getMonth() + meses);
+    const iso = d.toISOString().slice(0, 10);
+    estado.capsulaDataEscolhida = iso;
+    atualizarHintCapsula(iso, hint);
+  }
+  function atualizarHintCapsula(iso, hint) {
+    if (!hint || !iso) return;
+    const d = new Date(`${iso}T12:00:00`);
+    const dias = Math.ceil((d.getTime() - Date.now()) / 86400000);
+    const formatada = d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    hint.textContent = `Abre em ${formatada} · ${dias} dia${dias === 1 ? '' : 's'} a partir de hoje`;
+  }
+  function resetarCapsulaPills() {
+    document.querySelectorAll('.capsula-pill').forEach(p => p.classList.remove('ativo'));
+    const input = el('capsula-data-input');
+    if (input) input.style.display = 'none';
+    const hint = el('capsula-data-hint');
+    if (hint) hint.textContent = '';
   }
 
   async function abrirCapsulaMadura(id) {
@@ -583,32 +855,40 @@
   // ── ABA: METAS ───────────────────────────────────────────
 
   async function carregarMetas() {
+    const ativasEl = el('metas-trilha-ativas');
+    if (!ativasEl) return;
     try {
       const r = await fetchAutenticado('/api/app/caderno/metas');
       const d = await r.json();
       if (!d?.ok) throw 0;
-      ['plantando', 'em_movimento', 'quase_la', 'materializado'].forEach(status => {
-        const col = el(`metas-col-${status}`);
-        if (!col) return;
-        const itens = (d.metas || []).filter(m => m.status === status);
-        if (!itens.length) {
-          col.innerHTML = '<div class="metas-col-vazia">—</div>';
-          return;
-        }
-        col.innerHTML = itens.map(m => `
-          <div class="meta-card" data-id="${m.id}" draggable="true">
-            <strong>${escHtml(m.titulo)}</strong>
-            ${m.descricao ? `<p>${escHtml(m.descricao)}</p>` : ''}
-            <div class="meta-card-acoes">
-              ${montarBotaoStatus(m, status)}
-              <button type="button" data-acao="apagar" data-id="${m.id}" aria-label="Apagar">🗑</button>
-            </div>
+
+      const ordem = ['plantando', 'em_movimento', 'quase_la', 'materializado'];
+      const ativas = (d.metas || []).filter(m => m.status !== 'materializado');
+      const conquistadas = (d.metas || []).filter(m => m.status === 'materializado');
+
+      if (ativas.length === 0) {
+        ativasEl.innerHTML = `
+          <div class="caderno-empty">
+            <p style="font-family:var(--font-display,serif);font-size:1rem;color:var(--texto);margin:0 0 .3rem">Sua primeira meta está esperando você 🌱</p>
+            <p style="font-size:.85rem;color:var(--texto-suave);margin:0">Toque em "Plantar nova meta" pra começar</p>
           </div>
-        `).join('');
-      });
-      // Ligar botões
+        `;
+      } else {
+        ativasEl.innerHTML = ativas.map(m => montarMetaCard(m, ordem)).join('');
+      }
+
+      if (conquistadas.length > 0) {
+        el('metas-materializadas-secao').style.display = '';
+        el('metas-materializadas-count').textContent = conquistadas.length;
+        el('metas-trilha-materializadas').innerHTML = conquistadas.map(m => montarMetaCard(m, ordem)).join('');
+      } else {
+        el('metas-materializadas-secao').style.display = 'none';
+      }
+
+      // Liga os botões de ação (avançar status / apagar)
       document.querySelectorAll('.meta-card button[data-acao]').forEach(b => {
         b.addEventListener('click', async (ev) => {
+          ev.stopPropagation();
           const acao = ev.currentTarget.dataset.acao;
           const id = ev.currentTarget.dataset.id;
           if (acao === 'avancar') {
@@ -616,7 +896,7 @@
             await fetchAutenticado(`/api/app/caderno/metas/${id}/status`, {
               method: 'PUT', body: JSON.stringify({ status: novo }),
             });
-            if (novo === 'materializado') toast('🏆 Manifestada! Que glória!', 'ok');
+            if (novo === 'materializado') toast('🏆 Materializada! Que glória!', 'ok');
             carregarMetas();
           } else if (acao === 'apagar') {
             if (!confirm('Apagar essa meta?')) return;
@@ -626,17 +906,62 @@
         });
       });
     } catch {
-      // silencioso
+      ativasEl.innerHTML = '<div class="caderno-empty">Não consegui carregar agora.</div>';
     }
   }
 
-  function montarBotaoStatus(m, status) {
-    const ordem = ['plantando', 'em_movimento', 'quase_la', 'materializado'];
-    const i = ordem.indexOf(status);
-    if (i < 0 || i === ordem.length - 1) return '';
-    const proximo = ordem[i + 1];
-    const labels = { em_movimento: 'Em movimento →', quase_la: 'Quase lá →', materializado: 'Manifestei! 🏆' };
-    return `<button type="button" data-acao="avancar" data-id="${m.id}" data-proximo="${proximo}">${labels[proximo]}</button>`;
+  function montarMetaCard(m, ordem) {
+    const labels = {
+      plantando:     { icone: '🌱', nome: 'Plantando',     proximo: 'em_movimento',  proximoLabel: 'Em movimento' },
+      em_movimento:  { icone: '🌿', nome: 'Em movimento',  proximo: 'quase_la',      proximoLabel: 'Quase lá' },
+      quase_la:      { icone: '🌟', nome: 'Quase lá',      proximo: 'materializado', proximoLabel: 'Materializei!' },
+      materializado: { icone: '🏆', nome: 'Materializada', proximo: null,            proximoLabel: null },
+    };
+    const idx = ordem.indexOf(m.status);
+    const pct = ((idx + 1) / ordem.length) * 100;
+    const info = labels[m.status] || labels.plantando;
+
+    // Marcos da régua (4 etapas)
+    const marcos = ordem.map((s, i) => {
+      const atingido = i <= idx;
+      const atual = s === m.status;
+      const icone = labels[s].icone;
+      return `<span class="meta-marco ${atingido ? 'atingido' : ''} ${atual ? 'atual' : ''}" data-idx="${i}">
+        <span class="meta-marco-icone">${icone}</span>
+        <span class="meta-marco-label">${labels[s].nome}</span>
+      </span>`;
+    }).join('');
+
+    const btnAvancar = info.proximo
+      ? `<button type="button" class="meta-btn-avancar" data-acao="avancar" data-id="${m.id}" data-proximo="${info.proximo}">
+           <span>${info.proximoLabel}</span>
+           <svg viewBox="0 0 24 24" stroke-width="2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+             <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+           </svg>
+         </button>`
+      : '';
+
+    return `
+      <article class="meta-card status-${m.status}" data-id="${m.id}">
+        <header class="meta-card-head">
+          <div class="meta-card-info">
+            <strong class="meta-card-titulo">${escHtml(m.titulo)}</strong>
+            ${m.descricao ? `<p class="meta-card-desc">${escHtml(m.descricao)}</p>` : ''}
+          </div>
+          <button type="button" class="meta-card-apagar" data-acao="apagar" data-id="${m.id}" aria-label="Apagar meta">
+            <svg viewBox="0 0 24 24" stroke-width="1.8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+        </header>
+        <div class="meta-termometro">
+          <div class="meta-termometro-trilha"></div>
+          <div class="meta-termometro-preenchimento" style="width: ${pct}%"></div>
+          <div class="meta-termometro-marcos">${marcos}</div>
+        </div>
+        ${btnAvancar}
+      </article>
+    `;
   }
 
   async function salvarMeta() {
@@ -685,20 +1010,27 @@
       if (!d?.ok) throw 0;
       if (!d.afirmacoes?.length) {
         grid.innerHTML = estado.afirmacoesFiltro === 'favoritas'
-          ? '<div class="caderno-empty">Você ainda não favoritou nenhuma afirmação ⭐</div>'
+          ? `<div class="caderno-empty">
+              <p style="font-family:var(--font-display,serif);font-size:1rem;color:var(--texto);margin:0 0 .3rem">Suas afirmações favoritas vão morar aqui ⭐</p>
+              <p style="font-size:.85rem;color:var(--texto-suave);margin:0">Toque na estrelinha de uma afirmação pra guardá-la.</p>
+            </div>`
           : '<div class="caderno-empty">Sem afirmações cadastradas ainda.</div>';
         return;
       }
-      grid.innerHTML = d.afirmacoes.map(a => `
+      grid.innerHTML = d.afirmacoes.map(a => {
+        const cat = (a.categoria || '').toLowerCase();
+        const catKnown = ['prosperidade', 'autoestima', 'relacionamentos', 'saude'].includes(cat) ? cat : 'default';
+        return `
         <article class="afirmacao-card" data-id="${a.id}">
           <p class="afirmacao-texto">${escHtml(a.texto)}</p>
           <div class="afirmacao-rodape">
-            ${a.categoria ? `<span class="afirmacao-categoria">${escHtml(a.categoria)}</span>` : '<span></span>'}
+            ${a.categoria ? `<span class="afirmacao-categoria" data-cat="${catKnown}">${escHtml(a.categoria)}</span>` : '<span></span>'}
             <button type="button" class="afirmacao-favoritar ${a.favoritada ? 'favoritada' : ''}"
               data-id="${a.id}" aria-label="Favoritar">${a.favoritada ? '⭐' : '☆'}</button>
           </div>
         </article>
-      `).join('');
+      `;
+      }).join('');
       grid.querySelectorAll('.afirmacao-favoritar').forEach(b => {
         b.addEventListener('click', async (ev) => {
           const id = ev.currentTarget.dataset.id;
@@ -800,12 +1132,16 @@
   async function carregarMissoes() {
     const lista = el('conq-missoes-lista');
     if (!lista) return;
+    lista.innerHTML = montarSkeletonLinhas(3);
     try {
       const r = await fetchAutenticado('/api/app/gamificacao/missoes');
       const d = await r.json();
       if (!d?.ok) throw 0;
       if (!d.missoes?.length) {
-        lista.innerHTML = '<div class="caderno-empty">Nenhuma missão ativa por aqui.</div>';
+        lista.innerHTML = `<div class="caderno-empty">
+          <p style="font-family:var(--font-display,serif);font-size:.98rem;color:var(--texto);margin:0 0 .3rem">Sua jornada está só começando ✨</p>
+          <p style="font-size:.82rem;color:var(--texto-suave);margin:0">Faça o Teste do Subconsciente pra desbloquear suas missões.</p>
+        </div>`;
         return;
       }
       lista.innerHTML = d.missoes.map(m => {
@@ -832,12 +1168,16 @@
   async function carregarPremios() {
     const lista = el('conq-premios-lista');
     if (!lista) return;
+    lista.innerHTML = montarSkeletonLinhas(3);
     try {
       const r = await fetchAutenticado('/api/app/gamificacao/premios');
       const d = await r.json();
       if (!d?.ok) throw 0;
       if (!d.premios?.length) {
-        lista.innerHTML = '<div class="caderno-empty">Continue logando pra ver seus prêmios aqui ✨</div>';
+        lista.innerHTML = `<div class="caderno-empty">
+          <p style="font-family:var(--font-display,serif);font-size:.98rem;color:var(--texto);margin:0 0 .3rem">Seu primeiro prêmio vem amanhã 💛</p>
+          <p style="font-size:.82rem;color:var(--texto-suave);margin:0">Aparecer aqui todo dia já é o começo.</p>
+        </div>`;
         return;
       }
       lista.innerHTML = d.premios.map(p => `
@@ -857,12 +1197,16 @@
   async function carregarRanking() {
     const lista = el('conq-ranking-lista');
     if (!lista) return;
+    lista.innerHTML = montarSkeletonLinhas(5);
     try {
       const r = await fetchAutenticado('/api/app/gamificacao/ranking');
       const d = await r.json();
       if (!d?.ok) throw 0;
       if (!d.ranking?.length) {
-        lista.innerHTML = '<div class="caderno-empty">Ranking começa amanhã 👑</div>';
+        lista.innerHTML = `<div class="caderno-empty">
+          <p style="font-family:var(--font-display,serif);font-size:.98rem;color:var(--texto);margin:0 0 .3rem">O ranking abre amanhã 👑</p>
+          <p style="font-size:.82rem;color:var(--texto-suave);margin:0">Volta a partir de amanhã pra ver quem está liderando.</p>
+        </div>`;
         return;
       }
       lista.innerHTML = d.ranking.map(r => `
