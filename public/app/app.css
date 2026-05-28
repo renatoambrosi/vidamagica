@@ -4579,91 +4579,143 @@ body.caderno-aberto #view-caderno {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   SPLASH RITUAL — overlay de entrada (portal abrindo + saudação)
-   Aparece por ~2.1s na 1ª visita à view-caderno na sessão. Não bloqueia:
-   pointer-events:none, exceto a área da saudação que é clicável pra
-   pular. JS some o splash automaticamente.
+   LOADING RITUAL — fumaça branca + orb dourado + mensagens sequenciais
+   Dispara TODA vez que a aluna entra no Caderno. Duração ~3s + fade.
+   Estrutura:
+   - .caderno-loading            overlay full-screen branco-creme leitoso
+   - .caderno-loading-fumaca-1/2/3  3 camadas de radial-gradient
+                                  brancas movendo (efeito de névoa densa)
+   - .caderno-loading-orb         círculo dourado central pulsando
+   - .caderno-loading-mensagens   container das 4 frases sequenciais
+   - .caderno-loading-msg.ativa   a frase visível no momento
    ════════════════════════════════════════════════════════════════════ */
-.caderno-splash {
+.caderno-loading {
   position: absolute; inset: 0;
-  z-index: 20;
-  display: flex; align-items: center; justify-content: center;
+  z-index: 30;
+  overflow: hidden;
   pointer-events: none;
   opacity: 0;
-  background: radial-gradient(circle at center,
-    rgba(255, 245, 215, 0.85) 0%,
-    rgba(244, 217, 152, 0.55) 30%,
-    rgba(250, 240, 220, 0.10) 65%,
-    transparent 85%);
-  transition: opacity 0.5s ease;
+  background:
+    radial-gradient(circle at center, rgba(255, 250, 240, 0.78), rgba(255, 250, 240, 0.95) 70%),
+    linear-gradient(180deg, #FFFCF5 0%, #FBF3DF 100%);
+  transition: opacity 0.4s ease;
 }
-.caderno-splash.ativo {
+.caderno-loading.ativo {
   opacity: 1;
-  animation: splash-portal 2.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  pointer-events: auto; /* bloqueia interação durante o loading */
+}
+.caderno-loading.saindo {
+  opacity: 0;
+  transition: opacity 0.4s ease;
 }
 
-@keyframes splash-portal {
-  0%   { opacity: 0; transform: scale(0.6); }
-  18%  { opacity: 1; transform: scale(1); }
-  72%  { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(1.06); }
-}
-
-.caderno-splash-glow {
+/* ── FUMAÇA — 3 camadas de radial-gradient brancos em movimento ── */
+.caderno-loading-fumaca {
   position: absolute;
-  top: 38%; left: 50%;
-  width: 380px; height: 380px;
-  max-width: 90vw; max-height: 90vw;
+  width: 180%; height: 180%;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0;
+}
+.caderno-loading.ativo .caderno-loading-fumaca { opacity: 1; }
+.caderno-loading-fumaca-1 {
+  top: -40%; left: -30%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 55%);
+  animation: fumaca-flutuar-1 6s ease-in-out infinite;
+}
+.caderno-loading-fumaca-2 {
+  top: 10%; right: -50%;
+  background: radial-gradient(circle, rgba(255, 250, 240, 0.9) 0%, rgba(255, 250, 240, 0) 60%);
+  animation: fumaca-flutuar-2 7s ease-in-out infinite;
+}
+.caderno-loading-fumaca-3 {
+  bottom: -50%; left: 20%;
+  background: radial-gradient(circle, rgba(255, 252, 245, 0.95) 0%, rgba(255, 252, 245, 0) 50%);
+  animation: fumaca-flutuar-3 5.5s ease-in-out infinite;
+}
+@keyframes fumaca-flutuar-1 {
+  0%, 100% { transform: translate(0, 0) scale(1);    opacity: 0.85; }
+  50%      { transform: translate(8%, 6%) scale(1.1); opacity: 1; }
+}
+@keyframes fumaca-flutuar-2 {
+  0%, 100% { transform: translate(0, 0) scale(1.05); opacity: 0.9; }
+  50%      { transform: translate(-10%, 4%) scale(1); opacity: 0.7; }
+}
+@keyframes fumaca-flutuar-3 {
+  0%, 100% { transform: translate(0, 0) scale(1);     opacity: 1; }
+  50%      { transform: translate(6%, -8%) scale(1.08); opacity: 0.8; }
+}
+
+/* ── ORB CENTRAL — círculo dourado pulsando (chama do ritual) ── */
+.caderno-loading-orb {
+  position: absolute;
+  top: 42%; left: 50%;
   transform: translate(-50%, -50%);
+  width: 70px; height: 70px;
+  z-index: 3;
+}
+.caderno-loading-orb-core {
+  position: absolute; inset: 0;
   border-radius: 50%;
   background: radial-gradient(circle,
-    rgba(255, 240, 190, 0.95) 0%,
-    rgba(244, 217, 152, 0.6) 25%,
-    rgba(200, 146, 42, 0.3) 50%,
-    transparent 75%);
-  filter: blur(8px);
-  animation: splash-glow-pulse 2.1s ease-in-out;
+    rgba(255, 245, 215, 1) 0%,
+    rgba(244, 217, 152, 0.95) 40%,
+    rgba(200, 146, 42, 0.85) 100%);
+  box-shadow:
+    0 0 24px rgba(244, 217, 152, 0.8),
+    0 0 56px rgba(244, 217, 152, 0.6),
+    0 0 0 1px rgba(255, 250, 240, 0.6);
+  animation: orb-pulse 1.6s ease-in-out infinite;
+}
+.caderno-loading-orb-aura {
+  position: absolute; inset: -30px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(244, 217, 152, 0.25) 0%, transparent 70%);
+  animation: orb-aura 2.4s ease-in-out infinite;
+}
+@keyframes orb-pulse {
+  0%, 100% { transform: scale(1);    box-shadow: 0 0 24px rgba(244, 217, 152, 0.8), 0 0 56px rgba(244, 217, 152, 0.6); }
+  50%      { transform: scale(1.18); box-shadow: 0 0 40px rgba(244, 217, 152, 1),   0 0 90px rgba(244, 217, 152, 0.8); }
+}
+@keyframes orb-aura {
+  0%, 100% { transform: scale(1);   opacity: 0.6; }
+  50%      { transform: scale(1.3); opacity: 1; }
 }
 
-@keyframes splash-glow-pulse {
-  0%   { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
-  20%  { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
-  60%  { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
-  100% { transform: translate(-50%, -50%) scale(1.3); opacity: 0; }
-}
-
-.caderno-splash-saudacao {
-  position: relative;
-  z-index: 2;
-  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+/* ── MENSAGENS SEQUENCIAIS ── */
+.caderno-loading-mensagens {
+  position: absolute;
+  top: 56%; left: 0; right: 0;
+  z-index: 4;
   text-align: center;
   padding: 0 1.5rem;
-  pointer-events: auto;
-  cursor: pointer;
-  animation: splash-saudacao-flutuar 2.1s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.caderno-splash-bom-dia {
+.caderno-loading-msg {
+  position: absolute;
+  left: 0; right: 0;
+  display: block;
   font-family: var(--font-display, serif);
-  font-size: clamp(1.6rem, 6vw, 2.2rem);
-  font-weight: 700;
+  font-size: clamp(1.05rem, 4.4vw, 1.25rem);
+  font-weight: 600;
   color: var(--texto);
-  letter-spacing: -0.01em;
-  line-height: 1.15;
-  text-shadow: 0 2px 18px rgba(244, 217, 152, 0.6);
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+  text-shadow: 0 2px 14px rgba(255, 250, 240, 0.9);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.32s ease, transform 0.32s ease;
 }
-.caderno-splash-frase {
-  font-family: var(--font-display, serif);
-  font-size: clamp(0.95rem, 3.5vw, 1.1rem);
-  color: var(--texto-suave);
-  font-style: italic;
-  letter-spacing: 0.02em;
+.caderno-loading-msg.ativa {
+  opacity: 1;
+  transform: translateY(0);
 }
-
-@keyframes splash-saudacao-flutuar {
-  0%   { transform: translateY(20px); opacity: 0; }
-  18%  { transform: translateY(0);    opacity: 1; }
-  68%  { transform: translateY(0);    opacity: 1; }
-  100% { transform: translateY(-12px); opacity: 0; }
+.caderno-loading-msg-final {
+  color: var(--ouro);
+  font-weight: 700;
+  font-style: normal;
+}
+.caderno-loading-msg-final.ativa {
+  text-shadow: 0 2px 18px rgba(244, 217, 152, 1);
 }
 
 /* ════════════════════════════════════════════════════════════════════

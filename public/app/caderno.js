@@ -23,23 +23,23 @@
   'use strict';
 
   /* ═══════════════════════════════════════════════════════════
-     ⚠️  MODO DEV — SPLASH INFINITO  ⚠️   (NÃO é bug, é proposital)
+     LOADING RITUAL DO CADERNO — sempre dispara
      ═══════════════════════════════════════════════════════════
-     Enquanto o Caderno está sendo polido (só o Renato testando),
-     o splash ritualístico (saudação + portal dourado + glow no
-     brand + auto-focus) dispara TODA VEZ que ela entra na view,
-     pra Renato conseguir ver/avaliar/iterar sem ficar limpando
-     sessionStorage ou reabrindo aba.
+     Toda vez que a aluna entra no Caderno (não só na 1ª visita),
+     roda um loading narrativo de ~3s simulando "acesso ao
+     subconsciente": fumaça branca tomando a tela + orb dourado
+     pulsando + mensagens sequenciais ("Acessando o subconsciente
+     → Acessando sonhos → Indo a lugares profundos → Sonhos
+     carregados com sucesso ✨"). É proposital — a feature é
+     ritualística, a entrada faz parte da experiência.
 
-     COMO REVERTER quando abrir pras alunas reais:
-     ► Trocar a constante abaixo de `true` pra `false`. Só isso.
-     ► Aí o splash dispara só na 1ª visita por sessão — quem só
-       quer ir rápido na aba Vision/Cápsulas não fica irritada.
-
-     Mesmo padrão do TESOURO_INFINITO_DEV em routes/app.js.
-     Não tratar como bug nem sugerir remover — é decisão.
+     Pra desabilitar temporariamente (debug, teste rápido),
+     trocar `LOADING_RITUAL_ATIVO` pra false.
      ═══════════════════════════════════════════════════════════ */
-  const SPLASH_DEV_SEMPRE = true;
+  const LOADING_RITUAL_ATIVO = true;
+  const LOADING_DURACAO_MS = 3000;       // total do loading
+  const LOADING_STEPS = 4;               // 4 mensagens
+  const LOADING_STEP_MS = LOADING_DURACAO_MS / LOADING_STEPS; // 750ms cada
 
   // ── ESTADO LOCAL ─────────────────────────────────────────
   const estado = {
@@ -135,17 +135,14 @@
     if (badge && window._ctxAtual?.aluna) {
       badge.textContent = window._ctxAtual.aluna.sementes || 0;
     }
-    // ENTRADA RITUAL — splash dourado + saudação + partículas + glow brand.
-    // Em DEV (SPLASH_DEV_SEMPRE=true): dispara TODA visita pra Renato avaliar.
-    // Em PROD (false): dispara só na 1ª visita por sessão pra não irritar
-    // alunas que vão e voltam rápido entre as abas.
-    // Partículas usam guard interno (dataset.gerado) — chamadas repetidas
-    // são no-op, não acumulam.
-    if (SPLASH_DEV_SEMPRE || !estado.splashJaApareceu) {
-      estado.splashJaApareceu = true;
-      dispararSplashRitual();
-      criarParticulasCaderno();
+    // LOADING RITUAL — toda visita. Fumaça branca + orb pulsante +
+    // 4 mensagens sequenciais ("Acessando o subconsciente → Sonhos
+    // carregados com sucesso ✨"). Total ~3s. Partículas continuam
+    // aparecendo após (chamada idempotente via dataset.gerado).
+    if (LOADING_RITUAL_ATIVO) {
+      dispararLoadingRitual();
     }
+    criarParticulasCaderno();
     // Carrega conteúdo da aba ativa
     await carregarAbaCaderno(estado.abaAtiva);
     // Indicador de cápsula madura (banner no topo da aba Escrever)
@@ -160,17 +157,18 @@
     if (count && window._ctxAtual?.caderno) {
       count.textContent = window._ctxAtual.caderno.total_escritas || 0;
     }
-    // Auto-focus no textarea da aba Escrever (cursor piscando = "comece já").
-    // Atrasa um pouquinho pro splash não competir com o teclado abrindo
-    // logo de cara. iOS exige interação prévia pra .focus() funcionar —
-    // se vier do tap no card de atalho, isso conta como gesto.
+    // Auto-focus no textarea da aba Escrever — só DEPOIS do loading sumir.
+    // Loading dura LOADING_DURACAO_MS + ~300ms de fade out. Aí o teclado
+    // sobe sem competir com a animação. iOS exige interação prévia pra
+    // .focus() funcionar — o tap no card de atalho conta como gesto.
     if (estado.abaAtiva === 'escrever') {
+      const atraso = LOADING_RITUAL_ATIVO ? (LOADING_DURACAO_MS + 250) : 100;
       setTimeout(() => {
         const t = el('caderno-escrita-input');
         if (t && document.activeElement !== t) {
           try { t.focus({ preventScroll: true }); } catch { try { t.focus(); } catch {} }
         }
-      }, 1800);
+      }, atraso);
     }
   };
 
@@ -179,46 +177,52 @@
   // Total da experiência: ~2.2s, mas não trava a aluna — splash usa
   // pointer-events: none, ela pode tocar/scrollar normalmente por baixo.
   // ────────────────────────────────────────────────────────────
-  // IDs de timers ativos do splash — pra limpar antes de re-disparar
-  // em modo DEV (SPLASH_DEV_SEMPRE), senão um timeout antigo poderia
-  // sumir com o splash novo na metade da animação.
-  let _splashTimers = [];
-  function dispararSplashRitual() {
-    const splash = el('caderno-splash');
-    if (!splash) return;
+  // Timers ativos do loading — limpos antes de re-disparar pra evitar
+  // que um ciclo anterior interrompa o novo (acontece quando a aluna
+  // reabre o Caderno antes do loading anterior terminar).
+  let _loadingTimers = [];
+  function dispararLoadingRitual() {
+    const overlay = el('caderno-loading');
+    if (!overlay) return;
 
-    // Limpa estado anterior (timers + classes) pra começar do zero
-    _splashTimers.forEach(t => clearTimeout(t));
-    _splashTimers = [];
-    splash.classList.remove('ativo');
-    el('caderno-topo')?.classList.remove('reveal-brand');
-    // Force reflow pra CSS animation reiniciar do começo
-    void splash.offsetWidth;
+    // Reset total
+    _loadingTimers.forEach(t => clearTimeout(t));
+    _loadingTimers = [];
+    overlay.classList.remove('ativo', 'saindo');
+    document.querySelectorAll('.caderno-loading-msg').forEach(m => m.classList.remove('ativa'));
+    // Force reflow pra CSS animation reiniciar do zero
+    void overlay.offsetWidth;
 
-    // Personaliza saudação com nome + hora do dia
-    const primeiroNome = window._ctxAtual?.aluna?.primeiro_nome
-      || window._ctxAtual?.aluna?.nome_preferencia
-      || (window._ctxAtual?.aluna?.nome || '').split(' ')[0]
-      || '';
-    const hora = new Date().getHours();
-    const saudacao = hora < 5 ? 'Boa madrugada' : hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
-    const txt = el('caderno-splash-bom-dia');
-    if (txt) txt.textContent = `${saudacao}${primeiroNome ? `, ${primeiroNome}` : ''} 💛`;
+    // Mostra o overlay
+    overlay.setAttribute('aria-hidden', 'false');
+    overlay.classList.add('ativo');
 
-    splash.setAttribute('aria-hidden', 'false');
-    splash.classList.add('ativo');
-    // Glow pulsante no brand do topo (1x) — sincroniza com o portal abrindo
-    el('caderno-topo')?.classList.add('reveal-brand');
-    _splashTimers.push(setTimeout(() => el('caderno-topo')?.classList.remove('reveal-brand'), 1400));
+    // Ativa a 1ª mensagem imediatamente
+    document.querySelector('.caderno-loading-msg[data-step="0"]')?.classList.add('ativa');
 
-    // Some o splash depois de ~2s. Se a aluna tocar antes, some na hora.
-    const sumir = () => {
-      splash.classList.remove('ativo');
-      splash.setAttribute('aria-hidden', 'true');
-      splash.removeEventListener('click', sumir);
-    };
-    splash.addEventListener('click', sumir);
-    _splashTimers.push(setTimeout(sumir, 2100));
+    // Troca de mensagem a cada LOADING_STEP_MS (~750ms)
+    for (let i = 1; i < LOADING_STEPS; i++) {
+      _loadingTimers.push(setTimeout(() => {
+        document.querySelectorAll('.caderno-loading-msg').forEach(m => m.classList.remove('ativa'));
+        document.querySelector(`.caderno-loading-msg[data-step="${i}"]`)?.classList.add('ativa');
+      }, i * LOADING_STEP_MS));
+    }
+
+    // Brand do topo pulsa quando o loading chega na mensagem final
+    // (sincroniza "Sonhos carregados com sucesso ✨" com a marca aparecendo)
+    _loadingTimers.push(setTimeout(() => {
+      el('caderno-topo')?.classList.add('reveal-brand');
+      setTimeout(() => el('caderno-topo')?.classList.remove('reveal-brand'), 1400);
+    }, (LOADING_STEPS - 1) * LOADING_STEP_MS));
+
+    // Fade out do overlay no fim do ciclo
+    _loadingTimers.push(setTimeout(() => {
+      overlay.classList.add('saindo');
+      _loadingTimers.push(setTimeout(() => {
+        overlay.classList.remove('ativo', 'saindo');
+        overlay.setAttribute('aria-hidden', 'true');
+      }, 400));
+    }, LOADING_DURACAO_MS));
   }
 
   function criarParticulasCaderno() {

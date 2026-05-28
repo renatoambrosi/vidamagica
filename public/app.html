@@ -8,7 +8,7 @@
   <title>Vida Mágica</title>
   <link rel="icon" href="/assets/favicon.webp">
   <link rel="stylesheet" href="/assets/fonts/fonts.css">
-  <link rel="stylesheet" href="/app/app.css?v=3">
+  <link rel="stylesheet" href="/app/app.css?v=5">
   <!-- Lottie player (Bodymovin) — usado pela animação do Baú do Tesouro da Su -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -883,15 +883,26 @@
     <!-- ════════════════════════════════════════════════════ -->
     <section class="view" id="view-caderno">
 
-      <!-- SPLASH RITUAL — overlay com glow dourado central + saudação.
-           Aparece quando body.caderno-aberto vira ativo. Anima 400ms
-           o portal abrindo + 1.4s a saudação flutuando. Removido por JS
-           após ~2s ou se a aluna interagir antes. -->
-      <div class="caderno-splash" id="caderno-splash" aria-hidden="true">
-        <div class="caderno-splash-glow"></div>
-        <div class="caderno-splash-saudacao">
-          <span class="caderno-splash-bom-dia" id="caderno-splash-bom-dia">Bom dia 💛</span>
-          <span class="caderno-splash-frase">Seu caderno te espera</span>
+      <!-- LOADING RITUAL — overlay com fumaças, orb pulsante e mensagens
+           sequenciais simulando "acesso ao subconsciente". Dispara TODA
+           vez que a aluna abre o Caderno. Duração total ~3s.
+
+           Camadas: 3 fumaças brancas (radial-gradients animados em loop),
+           orb dourado central pulsando, 4 mensagens trocando 750ms cada.
+           Removido após 3s — aí o Caderno aparece pra ela. -->
+      <div class="caderno-loading" id="caderno-loading" aria-hidden="true">
+        <div class="caderno-loading-fumaca caderno-loading-fumaca-1"></div>
+        <div class="caderno-loading-fumaca caderno-loading-fumaca-2"></div>
+        <div class="caderno-loading-fumaca caderno-loading-fumaca-3"></div>
+        <div class="caderno-loading-orb" aria-hidden="true">
+          <span class="caderno-loading-orb-core"></span>
+          <span class="caderno-loading-orb-aura"></span>
+        </div>
+        <div class="caderno-loading-mensagens" id="caderno-loading-mensagens">
+          <span class="caderno-loading-msg" data-step="0">Acessando o subconsciente…</span>
+          <span class="caderno-loading-msg" data-step="1">Acessando sonhos…</span>
+          <span class="caderno-loading-msg" data-step="2">Indo a lugares profundos…</span>
+          <span class="caderno-loading-msg caderno-loading-msg-final" data-step="3">Sonhos carregados com sucesso ✨</span>
         </div>
       </div>
 
@@ -1771,10 +1782,10 @@
        antigo em cache mesmo após deploy. Bumpe o número (v=3, v=4, …)
        sempre que mudar app.js ou caderno.js e quiser forçar reload no
        celular sem o usuário ter que limpar cache. -->
-  <script type="module" src="/app/app.js?v=3"></script>
+  <script type="module" src="/app/app.js?v=5"></script>
   <!-- Caderno da Mentalização + Conquistas. Carrega depois do app.js
        pra ter acesso a fetchAutenticado/irPara/toast/abrirModal/fecharModal
        como globais. Vide public/app/caderno.js. -->
-  <script src="/app/caderno.js?v=4"></script>
+  <script src="/app/caderno.js?v=5"></script>
 </body>
 </html>
