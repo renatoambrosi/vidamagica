@@ -22,6 +22,25 @@
 (function () {
   'use strict';
 
+  /* ═══════════════════════════════════════════════════════════
+     ⚠️  MODO DEV — SPLASH INFINITO  ⚠️   (NÃO é bug, é proposital)
+     ═══════════════════════════════════════════════════════════
+     Enquanto o Caderno está sendo polido (só o Renato testando),
+     o splash ritualístico (saudação + portal dourado + glow no
+     brand + auto-focus) dispara TODA VEZ que ela entra na view,
+     pra Renato conseguir ver/avaliar/iterar sem ficar limpando
+     sessionStorage ou reabrindo aba.
+
+     COMO REVERTER quando abrir pras alunas reais:
+     ► Trocar a constante abaixo de `true` pra `false`. Só isso.
+     ► Aí o splash dispara só na 1ª visita por sessão — quem só
+       quer ir rápido na aba Vision/Cápsulas não fica irritada.
+
+     Mesmo padrão do TESOURO_INFINITO_DEV em routes/app.js.
+     Não tratar como bug nem sugerir remover — é decisão.
+     ═══════════════════════════════════════════════════════════ */
+  const SPLASH_DEV_SEMPRE = true;
+
   // ── ESTADO LOCAL ─────────────────────────────────────────
   const estado = {
     abaAtiva: 'escrever',
@@ -116,11 +135,13 @@
     if (badge && window._ctxAtual?.aluna) {
       badge.textContent = window._ctxAtual.aluna.sementes || 0;
     }
-    // ENTRADA RITUAL — só na primeira vez que ela abre o Caderno na sessão.
-    // Splash dourado + saudação personalizada + partículas + auto-focus.
-    // Se ela vai e volta, não dispara de novo (atrapalha quem só quer ir
-    // rápido na aba Vision/Cápsulas e voltar).
-    if (!estado.splashJaApareceu) {
+    // ENTRADA RITUAL — splash dourado + saudação + partículas + glow brand.
+    // Em DEV (SPLASH_DEV_SEMPRE=true): dispara TODA visita pra Renato avaliar.
+    // Em PROD (false): dispara só na 1ª visita por sessão pra não irritar
+    // alunas que vão e voltam rápido entre as abas.
+    // Partículas usam guard interno (dataset.gerado) — chamadas repetidas
+    // são no-op, não acumulam.
+    if (SPLASH_DEV_SEMPRE || !estado.splashJaApareceu) {
       estado.splashJaApareceu = true;
       dispararSplashRitual();
       criarParticulasCaderno();
@@ -158,9 +179,22 @@
   // Total da experiência: ~2.2s, mas não trava a aluna — splash usa
   // pointer-events: none, ela pode tocar/scrollar normalmente por baixo.
   // ────────────────────────────────────────────────────────────
+  // IDs de timers ativos do splash — pra limpar antes de re-disparar
+  // em modo DEV (SPLASH_DEV_SEMPRE), senão um timeout antigo poderia
+  // sumir com o splash novo na metade da animação.
+  let _splashTimers = [];
   function dispararSplashRitual() {
     const splash = el('caderno-splash');
     if (!splash) return;
+
+    // Limpa estado anterior (timers + classes) pra começar do zero
+    _splashTimers.forEach(t => clearTimeout(t));
+    _splashTimers = [];
+    splash.classList.remove('ativo');
+    el('caderno-topo')?.classList.remove('reveal-brand');
+    // Force reflow pra CSS animation reiniciar do começo
+    void splash.offsetWidth;
+
     // Personaliza saudação com nome + hora do dia
     const primeiroNome = window._ctxAtual?.aluna?.primeiro_nome
       || window._ctxAtual?.aluna?.nome_preferencia
@@ -175,7 +209,8 @@
     splash.classList.add('ativo');
     // Glow pulsante no brand do topo (1x) — sincroniza com o portal abrindo
     el('caderno-topo')?.classList.add('reveal-brand');
-    setTimeout(() => el('caderno-topo')?.classList.remove('reveal-brand'), 1400);
+    _splashTimers.push(setTimeout(() => el('caderno-topo')?.classList.remove('reveal-brand'), 1400));
+
     // Some o splash depois de ~2s. Se a aluna tocar antes, some na hora.
     const sumir = () => {
       splash.classList.remove('ativo');
@@ -183,7 +218,7 @@
       splash.removeEventListener('click', sumir);
     };
     splash.addEventListener('click', sumir);
-    setTimeout(sumir, 2100);
+    _splashTimers.push(setTimeout(sumir, 2100));
   }
 
   function criarParticulasCaderno() {
