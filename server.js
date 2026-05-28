@@ -158,7 +158,7 @@ app.get('/resultado/:id', (req, res) => {
 // ── ROTA AMIGÁVEL: /app e /app/* (exceto arquivos estáticos) → app.html ──
 // Permite /app/dashboard, /app/perfil etc. — sem .html
 // Exclui /app/app.css, /app/app.js, /app/scene.js, /app/assets/*
-app.get(/^\/app(\/(dashboard|perfil|chat|loja|sementes|jornada)?)?$/, (req, res) => {
+app.get(/^\/app(\/(dashboard|perfil|chat|loja|sementes|jornada|caderno|conquistas)?)?$/, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'app.html'));
 });
 
@@ -166,6 +166,7 @@ app.get(/^\/app(\/(dashboard|perfil|chat|loja|sementes|jornada)?)?$/, (req, res)
 app.use('/api/auth',          require('./routes/auth'));
 app.use('/api/painel',        require('./routes/admin-auth'));        // OTP do admin/atendimento
 app.use('/api/admin',         require('./routes/admin'));             // Painel admin (gateway, templates, usuários)
+app.use('/api/admin',         require('./routes/admin-caderno'));     // Painel admin: Caderno (prompts/afirmações/áudios) + Gamificação (prêmios/missões/ranking)
 app.use('/api/painel-aluna',  require('./routes/painel-aluna'));      // Produtos+Jornada da aluna (admin OU atendimento)
 app.use('/webhook',           require('./routes/webhook-evolution')); // Webhook Evolution (zap entrante)
 app.use('/api',               require('./routes/produtos'));     // /api/produtos (canônico)
@@ -180,6 +181,8 @@ app.use('/api/atendimento/chat',  chat.routerAtendimento);
 app.use('/api/upload',        require('./routes/upload'));
 app.use('/api/teste',         require('./routes/teste'));            // Teste do Subconsciente (lado da aluna)
 app.use('/api/app',           require('./routes/app'));              // Contexto unificado pro /app (Home, Materiais, Chat)
+app.use('/api/app/caderno',     require('./routes/caderno'));         // Caderno da Mentalização (escritas, vision, cápsulas, metas, afirmações, áudios)
+app.use('/api/app/gamificacao', require('./routes/gamificacao'));     // Conquistas (status, missões, prêmios, ranking mensal)
 
 // ── ESTÁTICOS ──────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
@@ -336,9 +339,34 @@ server.listen(PORT, async () => {
       console.error('⚠️ Seed de categorias-relato não rodou:', err.message);
     }
 
+    // Seed do Caderno da Mentalização + Gamificação da Plataforma.
+    // Idempotente via seed_log key 'caderno_gamificacao_v1'.
+    // Inclui prompts, afirmações, áudios placeholder, config de prêmios
+    // (30 dias mensal + trimestral + rápida + ranking + ciclo fechado),
+    // e missões iniciais. Renato edita TUDO pelo admin depois.
+    try {
+      const seedCadMod = require('./routes/seed-caderno');
+      if (typeof seedCadMod.seedCadernoEGamificacao === 'function') {
+        await seedCadMod.seedCadernoEGamificacao();
+      }
+    } catch (err) {
+      console.error('⚠️ Seed do Caderno/Gamificação não rodou:', err.message);
+    }
+
     // Liga o worker do gateway de WhatsApp DEPOIS dos bancos estarem prontos
     const gateway = require('./core/gateway');
     gateway.iniciarWorker();
+
+    // Worker de avisos da Cápsula do Tempo (Caderno da Mentalização).
+    // A cada 10 min, busca cápsulas maduras (abrir_em <= NOW e sem aviso)
+    // e dispara WhatsApp (via gateway) + Email (Brevo). Banner in-app é
+    // automático via /api/app/contexto.
+    try {
+      const cadernoAvisos = require('./core/caderno-avisos');
+      cadernoAvisos.iniciarWorkerCapsulas();
+    } catch (err) {
+      console.error('⚠️ Worker de cápsulas não iniciou:', err.message);
+    }
   } catch (err) {
     console.error('💥 Falha ao iniciar bancos:', err.message);
     process.exit(1);

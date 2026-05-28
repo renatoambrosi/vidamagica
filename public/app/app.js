@@ -215,6 +215,15 @@ function irPara(viewId) {
   if (viewId === 'perfil') renderPerfil();
   if (viewId === 'bau') renderBau();
   if (viewId === 'meus-relatos') renderMeusRelatos();
+  // Caderno da Mentalização — view com 5 abas (Escrever/Vision/Cápsulas/Metas/Afirmações).
+  // Lógica em public/app/caderno.js (carregado depois deste arquivo no app.html).
+  if (viewId === 'caderno' && typeof window.renderCaderno === 'function') {
+    window.renderCaderno();
+  }
+  // Conquistas — view transversal da gamificação (ofensivas, missões, ranking).
+  if (viewId === 'conquistas' && typeof window.renderConquistas === 'function') {
+    window.renderConquistas();
+  }
   if (viewId === 'videos') {
     // Renderiza a grade Netflix passando o contexto atual (pra saber se é assinante)
     renderViewVideos(window._ctxAtual || null);
@@ -4243,6 +4252,24 @@ function hidratarHome(ctx) {
   // ── Botoeira (faixa abaixo do player com "Assista mais vídeos" + "i") ──
   renderBotoeira();
 
+  // ── Atalhos da Home — cards Caderno + Conquistas com badges dinâmicos.
+  //    Lógica em public/app/caderno.js. Se o script ainda não carregou,
+  //    a função é no-op (e o card aparece com defaults estáticos do HTML).
+  if (typeof window.renderAtalhosCaderno === 'function') {
+    window.renderAtalhosCaderno(ctx);
+  }
+
+  // ── Celebração de prêmios novos da gamificação ──
+  //    Se a aluna ganhou algo NESTA visita (1ª do dia), toca toast em
+  //    sequência. Backend zera o array em chamadas subsequentes do dia.
+  if (Array.isArray(ctx.gamificacao_premios_novos) && ctx.gamificacao_premios_novos.length) {
+    ctx.gamificacao_premios_novos.forEach((p, i) => {
+      setTimeout(() => {
+        try { toast(`✨ ${p.rotulo || 'Prêmio!'} +${p.sementes || 0} 🌱`, 'ok'); } catch (_) {}
+      }, i * 1800);
+    });
+  }
+
   // ── Saudação + barra de progresso da jornada ──
   renderSaudacaoJornada(ctx);
 
@@ -5507,3 +5534,15 @@ async function carregarRelatosComunidade(ctx) {
     track.innerHTML = '<div class="relatos-comunidade-loading">Não consegui carregar os relatos agora.</div>';
   }
 }
+
+// ════════════════════════════════════════════════════════════════════════
+// EXPOSE PRA SCRIPTS NÃO-MÓDULO (ex: public/app/caderno.js)
+// app.js é carregado com `type="module"` — funções top-level NÃO viram
+// globais automaticamente. Caderno + Conquistas estão em caderno.js
+// (não-módulo) e precisam dessas globais pra funcionar.
+// ════════════════════════════════════════════════════════════════════════
+window.irPara          = irPara;
+window.toast           = toast;
+window.abrirModal      = abrirModal;
+window.fecharModal     = fecharModal;
+window.fetchAutenticado = fetchAutenticado;

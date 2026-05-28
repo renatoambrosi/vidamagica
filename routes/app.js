@@ -24,6 +24,7 @@ const {
 } = require('../core/teste-resultado');
 const { calcularJornadaVigente, temClubeVidaMagica } = require('../core/jornadas');
 const { creditarSementes } = require('../core/sementes');
+const { registrarLogin, lerIndicadoresGamificacao } = require('../core/gamificacao');
 
 /* ============================================================
    ⚠️  MODO DEV — TESOURO INFINITO  ⚠️   (NÃO é bug, é proposital)
@@ -328,6 +329,85 @@ router.get('/contexto', autenticar, async (req, res) => {
       console.warn('[contexto] erro ao buscar atualizações pendentes:', e.message);
     }
 
+    // ── Gamificação da plataforma ────────────────────────────
+    // Registra o "login" do dia (idempotente — 1ª chamada do dia avança
+    // streaks e concede prêmios; demais chamadas são no-op). Engole erro
+    // pra não derrubar o contexto se a gamificação falhar.
+    let gamificacaoIndicadores = null;
+    let premiosNovos = [];
+    try {
+      const r = await registrarLogin(usuarioId);
+      if (r && r.premios) premiosNovos = r.premios;
+      gamificacaoIndicadores = await lerIndicadoresGamificacao(usuarioId);
+    } catch (e) {
+      console.warn('[contexto] erro na gamificação:', e.message);
+    }
+
+    // ── Caderno da Mentalização — indicadores leves ──────────
+    // 5 campos pra UI mostrar badge/banner sem custo pesado de query:
+    // streak local de escrita, prompt do dia, cápsula madura pendente.
+    let cadernoIndicadores = null;
+    try {
+      const hojeISO = new Date().toISOString().slice(0, 10);
+      const [escreveuHojeR, capsulaMaduraR, totalEscritasR] = await Promise.all([
+        poolCore.query(
+          `SELECT 1 FROM caderno_escritas
+            WHERE usuario_id = $1
+              AND criado_em >= $2::date
+              AND criado_em < ($2::date + INTERVAL '1 day')
+            LIMIT 1`,
+          [usuarioId, hojeISO]
+        ),
+        poolCore.query(
+          `SELECT id, titulo, abrir_em FROM caderno_capsulas
+            WHERE usuario_id = $1 AND aberta_em IS NULL AND abrir_em <= NOW()
+            ORDER BY abrir_em ASC LIMIT 1`,
+          [usuarioId]
+        ),
+        poolCore.query(
+          `SELECT COUNT(*)::int AS total FROM caderno_escritas WHERE usuario_id = $1`,
+          [usuarioId]
+        ),
+      ]);
+
+      // Prompt do dia — determinístico pra cada aluna+data (não muda durante o dia)
+      let promptDoDia = null;
+      try {
+        const totalP = await poolComunicacao.query(
+          `SELECT COUNT(*)::int AS total FROM caderno_prompts WHERE ativo = TRUE`
+        );
+        const totalPrompts = totalP.rows[0]?.total || 0;
+        if (totalPrompts > 0) {
+          // Hash simples: dia do ano + soma de chars do usuario_id → offset
+          const dia = new Date();
+          const diaDoAno = Math.floor((dia - new Date(dia.getFullYear(), 0, 0)) / 86400000);
+          const charSum = String(usuarioId).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+          const offset = (diaDoAno + charSum) % totalPrompts;
+          const pR = await poolComunicacao.query(
+            `SELECT id, texto, categoria FROM caderno_prompts
+              WHERE ativo = TRUE
+              ORDER BY ordem, id
+              LIMIT 1 OFFSET $1`,
+            [offset]
+          );
+          if (pR.rows[0]) promptDoDia = pR.rows[0];
+        }
+      } catch (_) {}
+
+      cadernoIndicadores = {
+        escreveu_hoje: escreveuHojeR.rows.length > 0,
+        total_escritas: totalEscritasR.rows[0]?.total || 0,
+        capsula_madura_pendente: capsulaMaduraR.rows[0] ? {
+          id: capsulaMaduraR.rows[0].id,
+          titulo: capsulaMaduraR.rows[0].titulo,
+          abrir_em: capsulaMaduraR.rows[0].abrir_em,
+        } : null,
+        prompt_do_dia: promptDoDia,
+      };
+    } catch (e) {
+      console.warn('[contexto] erro no caderno:', e.message);
+    }
+
     // ── Resposta ─────────────────────────────────────────────
     return res.json({
       ok: true,
@@ -405,6 +485,18 @@ router.get('/contexto', autenticar, async (req, res) => {
         };
       }),
       outros_produtos: outrosProdutos,
+      // ── Gamificação da plataforma ──────────────────────────
+      // Estado dos 3 ciclos + recordes. UI mostra contadores/badges no menu.
+      // Lista completa de missões e ranking vive em /api/app/gamificacao/*.
+      gamificacao: gamificacaoIndicadores,
+      // Prêmios concedidos NESTA chamada (só na 1ª visita do dia).
+      // UI exibe celebração (banner com sino tocando) e zera depois.
+      gamificacao_premios_novos: premiosNovos,
+      // ── Caderno da Mentalização ────────────────────────────
+      // Indicadores leves pra UI mostrar badge/banner sem fazer query extra.
+      // Conteúdo completo (lista de escritas, vision, metas) vive em
+      // /api/app/caderno/*.
+      caderno: cadernoIndicadores,
     });
   } catch (err) {
     console.error('[app/contexto] erro:', err);

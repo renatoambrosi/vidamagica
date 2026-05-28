@@ -35,6 +35,15 @@
    - 'compra_produto'   (−) débito ao comprar com sementes
    - 'cortesia_admin'   (±) ajuste manual via painel
    - 'bonus_*'          (+) bônus genéricos (a definir)
+
+   ── Motivos da gamificação da plataforma (core/gamificacao.js) ──
+   - 'streak_login'     (+) marco de ofensiva de login (dia 7/15/30 mensal, 60/90 trimestral)
+   - 'ofensiva_rapida'  (+) streak consecutivo curto (3 ou 7 dias)
+   - 'ciclo_fechado'    (+) prêmio garantido por fechar ciclo de 30 dias completo
+   - 'ranking_mensal'   (+) prêmio do top X do mês
+   - 'missao_diaria'    (+) missão relâmpago do dia concluída
+   - 'missao_jornada'   (+) missão da jornada vigente concluída
+   - 'caderno_escrita'  (+) escrever no Caderno da Mentalização (1/dia)
    === */
 
 const { poolCore } = require('../db');
@@ -46,6 +55,15 @@ const MOTIVOS_VALIDOS = new Set([
   'bonus_indicacao',
   'bonus_evento',
   'estorno',
+  // Gamificação da plataforma
+  'streak_login',
+  'ofensiva_rapida',
+  'ciclo_fechado',
+  'ranking_mensal',
+  'missao_diaria',
+  'missao_jornada',
+  // Caderno da Mentalização
+  'caderno_escrita',
 ]);
 
 /**

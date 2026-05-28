@@ -578,6 +578,14 @@ select option { background: #1a1205; }
     <span class="nav-icon">📜</span> Conteúdo dos Resultados
   </div>
 
+  <div class="sidebar-section-label" style="margin-top:0.5rem">Caderno da Mentalização</div>
+  <div class="nav-item" id="nav-caderno" onclick="goTab('caderno', this)">
+    <span class="nav-icon">📓</span> Caderno
+  </div>
+  <div class="nav-item" id="nav-gamificacao" onclick="goTab('gamificacao', this)">
+    <span class="nav-icon">🏆</span> Gamificação
+  </div>
+
   <div class="sidebar-section-label" style="margin-top:0.5rem">Em breve</div>
   <div class="nav-item disabled"><span class="nav-icon">👥</span> Membros do Clube <span class="nav-tag">—</span></div>
   <div class="nav-item disabled"><span class="nav-icon">📊</span> Métricas <span class="nav-tag">—</span></div>
@@ -1325,6 +1333,107 @@ select option { background: #1a1205; }
 
     <!-- (Aba "Livros" foi removida — fonte da verdade dos livros agora é a aba Preços, com slugs vencendo_medo/desordem/validacao/sobrevivencia) -->
 
+    <!-- ════════════════════ CADERNO DA MENTALIZAÇÃO ════════════════════
+         3 sub-abas: Prompts (perguntas guiadas) / Afirmações (banco)
+         / Áudios (catálogo de foco). Tudo CRUD simples via fetch.
+         APIs em /api/admin/caderno/*. -->
+    <div class="tab-panel" id="tab-caderno">
+      <div class="subtabs" role="tablist">
+        <button type="button" class="subtab-btn active" data-subtab-cad="prompts" onclick="goSubtabCaderno('prompts', this)">Prompts</button>
+        <button type="button" class="subtab-btn" data-subtab-cad="afirmacoes" onclick="goSubtabCaderno('afirmacoes', this)">Afirmações</button>
+        <button type="button" class="subtab-btn" data-subtab-cad="audios" onclick="goSubtabCaderno('audios', this)">Áudios de Foco</button>
+      </div>
+
+      <div class="subtab-panel active" id="subtab-cad-prompts">
+        <div class="wz-section">
+          <div class="wz-section-header">
+            <div>
+              <div class="wz-section-title">📝 Prompts diários</div>
+              <div class="wz-section-sub">Perguntas guiadas que sugerem o que a aluna pode escrever no dia.</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="cadPromptNovo()">+ Novo prompt</button>
+          </div>
+          <div id="cad-prompts-lista"><div class="loading">Carregando…</div></div>
+        </div>
+      </div>
+
+      <div class="subtab-panel" id="subtab-cad-afirmacoes">
+        <div class="wz-section">
+          <div class="wz-section-header">
+            <div>
+              <div class="wz-section-title">✨ Banco de afirmações</div>
+              <div class="wz-section-sub">Frases de poder organizadas por categoria. Aluna favorita, copia e lê.</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="cadAfirmacaoNova()">+ Nova afirmação</button>
+          </div>
+          <div id="cad-afirmacoes-lista"><div class="loading">Carregando…</div></div>
+        </div>
+      </div>
+
+      <div class="subtab-panel" id="subtab-cad-audios">
+        <div class="wz-section">
+          <div class="wz-section-header">
+            <div>
+              <div class="wz-section-title">🎧 Áudios de Foco</div>
+              <div class="wz-section-sub">Catálogo de Hz, binaurais e ruídos pra ela tocar enquanto escreve.</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="cadAudioNovo()">+ Novo áudio</button>
+          </div>
+          <div id="cad-audios-lista"><div class="loading">Carregando…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════ GAMIFICAÇÃO ════════════════════
+         3 sub-abas: Prêmios (tabela editável) / Missões (CRUD)
+         / Ranking (preview mensal). APIs em /api/admin/gamificacao/*. -->
+    <div class="tab-panel" id="tab-gamificacao">
+      <div class="subtabs" role="tablist">
+        <button type="button" class="subtab-btn active" data-subtab-gam="premios" onclick="goSubtabGam('premios', this)">Prêmios</button>
+        <button type="button" class="subtab-btn" data-subtab-gam="missoes" onclick="goSubtabGam('missoes', this)">Missões</button>
+        <button type="button" class="subtab-btn" data-subtab-gam="ranking" onclick="goSubtabGam('ranking', this)">Ranking</button>
+      </div>
+
+      <div class="subtab-panel active" id="subtab-gam-premios">
+        <div class="wz-section">
+          <div class="wz-section-header">
+            <div>
+              <div class="wz-section-title">🏆 Tabela de prêmios</div>
+              <div class="wz-section-sub">Sementes concedidas por marco. Edite o valor e o rótulo de cada um.</div>
+            </div>
+          </div>
+          <div id="gam-premios-lista"><div class="loading">Carregando…</div></div>
+        </div>
+      </div>
+
+      <div class="subtab-panel" id="subtab-gam-missoes">
+        <div class="wz-section">
+          <div class="wz-section-header">
+            <div>
+              <div class="wz-section-title">🎯 Missões</div>
+              <div class="wz-section-sub">Crie missões por jornada (Conhecer e Despertar / Vida Mágica / Multiplicando) ou universais.</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="gamMissaoNova()">+ Nova missão</button>
+          </div>
+          <div id="gam-missoes-lista"><div class="loading">Carregando…</div></div>
+        </div>
+      </div>
+
+      <div class="subtab-panel" id="subtab-gam-ranking">
+        <div class="wz-section">
+          <div class="wz-section-header">
+            <div>
+              <div class="wz-section-title">👑 Ranking mensal</div>
+              <div class="wz-section-sub">Top 50 do mês corrente — preview ao vivo. Botão "Fechar mês" grava snapshot e premia.</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="gamCarregarRanking()">↺ Atualizar</button>
+            <button class="btn btn-primary btn-sm" onclick="gamFecharRankingAtual()">Fechar mês atual</button>
+          </div>
+          <div id="gam-ranking-lista"><div class="loading">Carregando…</div></div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 
@@ -1449,6 +1558,8 @@ const tabMeta = {
   legado:      { title: 'Legado',               sub: 'Dados invisíveis pra aluna · visíveis só pra você' },
   teste:        { title: 'Teste do Subconsciente', sub: 'Versões do questionário — perguntas, alternativas e publicação' },
   'teste-perfis': { title: 'Conteúdo dos Resultados', sub: 'Textos, vídeos e produtos exibidos pra cada perfil dominante' },
+  caderno:      { title: 'Caderno da Mentalização', sub: 'Prompts, afirmações e áudios de foco' },
+  gamificacao:  { title: 'Gamificação',              sub: 'Tabela de prêmios, missões e ranking mensal' },
 };
 
 let wzCarregado = false;
@@ -1486,6 +1597,8 @@ function goTab(id, el) {
   if (id === 'legado') { carregarLegado(); }
   if (id === 'teste') { testeAdmin.carregar(); }
   if (id === 'teste-perfis') { perfisAdmin.carregar(); }
+  if (id === 'caderno') { cadCarregarPrompts(); }
+  if (id === 'gamificacao') { gamCarregarPremios(); }
 }
 
 function toast(msg, tipo = 'success') {
@@ -4676,6 +4789,427 @@ const produtosAluna = (function(){
 
   return { carregar, abrirLiberar, revogar };
 })();
+
+// ════════════════════════════════════════════════════════════════════
+// CADERNO DA MENTALIZAÇÃO + GAMIFICAÇÃO — CRUD admin
+// APIs: /api/admin/caderno/* + /api/admin/gamificacao/*
+// ════════════════════════════════════════════════════════════════════
+
+function admFetch(url, opts = {}) {
+  return fetch(url, {
+    ...opts,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': authHeader(),
+      ...(opts.headers || {}),
+    },
+  }).then(r => r.json());
+}
+
+function escAdm(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// ── SUBTAB SWITCH ──────────────────────────────────────────
+function goSubtabCaderno(sub, btn) {
+  document.querySelectorAll('#tab-caderno .subtab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#tab-caderno .subtab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`subtab-cad-${sub}`).classList.add('active');
+  if (sub === 'prompts') cadCarregarPrompts();
+  if (sub === 'afirmacoes') cadCarregarAfirmacoes();
+  if (sub === 'audios') cadCarregarAudios();
+}
+function goSubtabGam(sub, btn) {
+  document.querySelectorAll('#tab-gamificacao .subtab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#tab-gamificacao .subtab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`subtab-gam-${sub}`).classList.add('active');
+  if (sub === 'premios') gamCarregarPremios();
+  if (sub === 'missoes') gamCarregarMissoes();
+  if (sub === 'ranking') gamCarregarRanking();
+}
+
+// ── CADERNO — PROMPTS ──────────────────────────────────────
+async function cadCarregarPrompts() {
+  const cont = document.getElementById('cad-prompts-lista');
+  cont.innerHTML = '<div class="loading">Carregando…</div>';
+  try {
+    const d = await admFetch('/api/admin/caderno/prompts');
+    if (!d.ok) throw 0;
+    if (!d.prompts.length) {
+      cont.innerHTML = '<div class="loading">Nenhum prompt cadastrado.</div>';
+      return;
+    }
+    cont.innerHTML = `
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="text-align:left;border-bottom:1px solid var(--border)">
+          <th style="padding:8px">Texto</th><th style="padding:8px;width:120px">Categoria</th>
+          <th style="padding:8px;width:60px">Ordem</th><th style="padding:8px;width:80px">Ativo</th>
+          <th style="padding:8px;width:130px"></th>
+        </tr></thead>
+        <tbody>
+          ${d.prompts.map(p => `
+            <tr style="border-bottom:1px solid var(--border)" data-id="${p.id}">
+              <td style="padding:8px"><input class="field-input" data-f="texto" value="${escAdm(p.texto)}" /></td>
+              <td style="padding:8px"><input class="field-input" data-f="categoria" value="${escAdm(p.categoria)}" /></td>
+              <td style="padding:8px"><input class="field-input" data-f="ordem" type="number" value="${p.ordem}" /></td>
+              <td style="padding:8px"><input data-f="ativo" type="checkbox" ${p.ativo ? 'checked' : ''} /></td>
+              <td style="padding:8px;display:flex;gap:4px">
+                <button class="btn btn-primary btn-sm" onclick="cadPromptSalvar(${p.id}, this)">Salvar</button>
+                <button class="btn btn-ghost btn-sm" onclick="cadPromptApagar(${p.id})">🗑</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch { cont.innerHTML = '<div class="loading">Erro ao carregar.</div>'; }
+}
+async function cadPromptNovo() {
+  const texto = prompt('Texto do prompt:');
+  if (!texto) return;
+  const categoria = prompt('Categoria (opcional):') || '';
+  await admFetch('/api/admin/caderno/prompts', {
+    method: 'POST', body: JSON.stringify({ texto, categoria, ordem: 99 }),
+  });
+  cadCarregarPrompts();
+}
+async function cadPromptSalvar(id, btn) {
+  const tr = btn.closest('tr');
+  const body = {};
+  tr.querySelectorAll('[data-f]').forEach(inp => {
+    body[inp.dataset.f] = inp.type === 'checkbox' ? inp.checked : inp.value;
+  });
+  const d = await admFetch(`/api/admin/caderno/prompts/${id}`, {
+    method: 'PUT', body: JSON.stringify(body),
+  });
+  toast(d.ok ? '✓ Salvo' : '✗ Erro');
+}
+async function cadPromptApagar(id) {
+  if (!confirm('Apagar?')) return;
+  await admFetch(`/api/admin/caderno/prompts/${id}`, { method: 'DELETE' });
+  cadCarregarPrompts();
+}
+
+// ── CADERNO — AFIRMAÇÕES ──────────────────────────────────
+async function cadCarregarAfirmacoes() {
+  const cont = document.getElementById('cad-afirmacoes-lista');
+  cont.innerHTML = '<div class="loading">Carregando…</div>';
+  try {
+    const d = await admFetch('/api/admin/caderno/afirmacoes');
+    if (!d.ok) throw 0;
+    if (!d.afirmacoes.length) {
+      cont.innerHTML = '<div class="loading">Nenhuma afirmação cadastrada.</div>';
+      return;
+    }
+    cont.innerHTML = `
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="text-align:left;border-bottom:1px solid var(--border)">
+          <th style="padding:8px">Texto</th><th style="padding:8px;width:140px">Categoria</th>
+          <th style="padding:8px;width:60px">Ordem</th><th style="padding:8px;width:80px">Ativo</th>
+          <th style="padding:8px;width:130px"></th>
+        </tr></thead>
+        <tbody>
+          ${d.afirmacoes.map(a => `
+            <tr style="border-bottom:1px solid var(--border)" data-id="${a.id}">
+              <td style="padding:8px"><input class="field-input" data-f="texto" value="${escAdm(a.texto)}" /></td>
+              <td style="padding:8px"><input class="field-input" data-f="categoria" value="${escAdm(a.categoria)}" /></td>
+              <td style="padding:8px"><input class="field-input" data-f="ordem" type="number" value="${a.ordem}" /></td>
+              <td style="padding:8px"><input data-f="ativo" type="checkbox" ${a.ativo ? 'checked' : ''} /></td>
+              <td style="padding:8px;display:flex;gap:4px">
+                <button class="btn btn-primary btn-sm" onclick="cadAfirmacaoSalvar(${a.id}, this)">Salvar</button>
+                <button class="btn btn-ghost btn-sm" onclick="cadAfirmacaoApagar(${a.id})">🗑</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch { cont.innerHTML = '<div class="loading">Erro ao carregar.</div>'; }
+}
+async function cadAfirmacaoNova() {
+  const texto = prompt('Texto da afirmação:');
+  if (!texto) return;
+  const categoria = prompt('Categoria (ex: prosperidade, autoestima):') || '';
+  await admFetch('/api/admin/caderno/afirmacoes', {
+    method: 'POST', body: JSON.stringify({ texto, categoria, ordem: 99 }),
+  });
+  cadCarregarAfirmacoes();
+}
+async function cadAfirmacaoSalvar(id, btn) {
+  const tr = btn.closest('tr');
+  const body = {};
+  tr.querySelectorAll('[data-f]').forEach(inp => {
+    body[inp.dataset.f] = inp.type === 'checkbox' ? inp.checked : inp.value;
+  });
+  const d = await admFetch(`/api/admin/caderno/afirmacoes/${id}`, {
+    method: 'PUT', body: JSON.stringify(body),
+  });
+  toast(d.ok ? '✓ Salvo' : '✗ Erro');
+}
+async function cadAfirmacaoApagar(id) {
+  if (!confirm('Apagar?')) return;
+  await admFetch(`/api/admin/caderno/afirmacoes/${id}`, { method: 'DELETE' });
+  cadCarregarAfirmacoes();
+}
+
+// ── CADERNO — ÁUDIOS DE FOCO ──────────────────────────────
+async function cadCarregarAudios() {
+  const cont = document.getElementById('cad-audios-lista');
+  cont.innerHTML = '<div class="loading">Carregando…</div>';
+  try {
+    const d = await admFetch('/api/admin/caderno/audios');
+    if (!d.ok) throw 0;
+    if (!d.audios.length) {
+      cont.innerHTML = '<div class="loading">Nenhum áudio cadastrado.</div>';
+      return;
+    }
+    cont.innerHTML = `
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="text-align:left;border-bottom:1px solid var(--border)">
+          <th style="padding:8px;width:30%">Título</th>
+          <th style="padding:8px;width:100px">Tipo</th>
+          <th style="padding:8px">URL</th>
+          <th style="padding:8px;width:80px">Ordem</th>
+          <th style="padding:8px;width:70px">Ativo</th>
+          <th style="padding:8px;width:130px"></th>
+        </tr></thead>
+        <tbody>
+          ${d.audios.map(a => `
+            <tr style="border-bottom:1px solid var(--border)" data-id="${a.id}">
+              <td style="padding:8px"><input class="field-input" data-f="titulo" value="${escAdm(a.titulo)}" /></td>
+              <td style="padding:8px"><input class="field-input" data-f="tipo" value="${escAdm(a.tipo)}" /></td>
+              <td style="padding:8px"><input class="field-input" data-f="url" value="${escAdm(a.url)}" /></td>
+              <td style="padding:8px"><input class="field-input" data-f="ordem" type="number" value="${a.ordem}" /></td>
+              <td style="padding:8px"><input data-f="ativo" type="checkbox" ${a.ativo ? 'checked' : ''} /></td>
+              <td style="padding:8px;display:flex;gap:4px">
+                <button class="btn btn-primary btn-sm" onclick="cadAudioSalvar(${a.id}, this)">Salvar</button>
+                <button class="btn btn-ghost btn-sm" onclick="cadAudioApagar(${a.id})">🗑</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch { cont.innerHTML = '<div class="loading">Erro ao carregar.</div>'; }
+}
+async function cadAudioNovo() {
+  const titulo = prompt('Título do áudio:');
+  if (!titulo) return;
+  const tipo = prompt('Tipo (binaural/branco/natureza/hz/meditacao):') || 'hz';
+  const url = prompt('URL (YouTube embed ou MP3 direto):');
+  if (!url) return;
+  await admFetch('/api/admin/caderno/audios', {
+    method: 'POST', body: JSON.stringify({ titulo, tipo, url, ordem: 99 }),
+  });
+  cadCarregarAudios();
+}
+async function cadAudioSalvar(id, btn) {
+  const tr = btn.closest('tr');
+  const body = {};
+  tr.querySelectorAll('[data-f]').forEach(inp => {
+    body[inp.dataset.f] = inp.type === 'checkbox' ? inp.checked : inp.value;
+  });
+  const d = await admFetch(`/api/admin/caderno/audios/${id}`, {
+    method: 'PUT', body: JSON.stringify(body),
+  });
+  toast(d.ok ? '✓ Salvo' : '✗ Erro');
+}
+async function cadAudioApagar(id) {
+  if (!confirm('Apagar?')) return;
+  await admFetch(`/api/admin/caderno/audios/${id}`, { method: 'DELETE' });
+  cadCarregarAudios();
+}
+
+// ── GAMIFICAÇÃO — PRÊMIOS ──────────────────────────────────
+async function gamCarregarPremios() {
+  const cont = document.getElementById('gam-premios-lista');
+  cont.innerHTML = '<div class="loading">Carregando…</div>';
+  try {
+    const d = await admFetch('/api/admin/gamificacao/premios');
+    if (!d.ok) throw 0;
+    // Agrupa por tipo
+    const grupos = {};
+    d.premios.forEach(p => {
+      if (!grupos[p.tipo]) grupos[p.tipo] = [];
+      grupos[p.tipo].push(p);
+    });
+    const ordemTipos = ['streak_30', 'streak_90', 'ciclo_fechado', 'rapida', 'ranking_mensal'];
+    const labelTipos = {
+      streak_30: '🌟 Ofensiva mensal (30 dias)',
+      streak_90: '🌳 Ofensiva trimestral (90 dias)',
+      ciclo_fechado: '✨ Bônus de ciclo fechado',
+      rapida: '⚡ Ofensiva rápida (consecutiva)',
+      ranking_mensal: '👑 Ranking mensal',
+    };
+    cont.innerHTML = ordemTipos.filter(t => grupos[t]).map(tipo => `
+      <h4 style="margin:1rem 0 0.4rem;color:var(--color-gold-light)">${labelTipos[tipo] || tipo}</h4>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="text-align:left;border-bottom:1px solid var(--border)">
+          <th style="padding:6px;width:110px">Marco</th>
+          <th style="padding:6px">Rótulo</th>
+          <th style="padding:6px;width:90px">Sementes</th>
+          <th style="padding:6px;width:60px">Ativo</th>
+          <th style="padding:6px;width:80px"></th>
+        </tr></thead>
+        <tbody>
+          ${grupos[tipo].map(p => `
+            <tr style="border-bottom:1px solid var(--border)" data-id="${p.id}">
+              <td style="padding:6px;font-family:monospace;font-size:0.78rem">${escAdm(p.marco)}</td>
+              <td style="padding:6px"><input class="field-input" data-f="rotulo" value="${escAdm(p.rotulo)}" /></td>
+              <td style="padding:6px"><input class="field-input" data-f="sementes" type="number" value="${p.sementes}" /></td>
+              <td style="padding:6px"><input data-f="ativo" type="checkbox" ${p.ativo ? 'checked' : ''} /></td>
+              <td style="padding:6px"><button class="btn btn-primary btn-sm" onclick="gamPremioSalvar(${p.id}, this)">Salvar</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `).join('');
+  } catch { cont.innerHTML = '<div class="loading">Erro ao carregar.</div>'; }
+}
+async function gamPremioSalvar(id, btn) {
+  const tr = btn.closest('tr');
+  const body = {};
+  tr.querySelectorAll('[data-f]').forEach(inp => {
+    body[inp.dataset.f] = inp.type === 'checkbox' ? inp.checked : inp.value;
+  });
+  const d = await admFetch(`/api/admin/gamificacao/premios/${id}`, {
+    method: 'PUT', body: JSON.stringify(body),
+  });
+  toast(d.ok ? '✓ Salvo' : '✗ Erro');
+}
+
+// ── GAMIFICAÇÃO — MISSÕES ──────────────────────────────────
+async function gamCarregarMissoes() {
+  const cont = document.getElementById('gam-missoes-lista');
+  cont.innerHTML = '<div class="loading">Carregando…</div>';
+  try {
+    const d = await admFetch('/api/admin/gamificacao/missoes');
+    if (!d.ok) throw 0;
+    if (!d.missoes.length) {
+      cont.innerHTML = '<div class="loading">Nenhuma missão cadastrada.</div>';
+      return;
+    }
+    cont.innerHTML = `
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="text-align:left;border-bottom:1px solid var(--border)">
+          <th style="padding:6px">Título</th>
+          <th style="padding:6px;width:130px">Jornada</th>
+          <th style="padding:6px;width:130px">Tipo</th>
+          <th style="padding:6px;width:130px">Alvo</th>
+          <th style="padding:6px;width:60px">Qtd</th>
+          <th style="padding:6px;width:80px">Sementes</th>
+          <th style="padding:6px;width:70px">Ativa</th>
+          <th style="padding:6px;width:130px"></th>
+        </tr></thead>
+        <tbody>
+          ${d.missoes.map(m => `
+            <tr style="border-bottom:1px solid var(--border)" data-id="${m.id}">
+              <td style="padding:6px"><input class="field-input" data-f="titulo" value="${escAdm(m.titulo)}" /></td>
+              <td style="padding:6px"><input class="field-input" data-f="jornada_slug" value="${escAdm(m.jornada_slug)}" placeholder="(todas)" /></td>
+              <td style="padding:6px">
+                <select class="field-input" data-f="tipo">
+                  <option value="jornada" ${m.tipo === 'jornada' ? 'selected' : ''}>jornada</option>
+                  <option value="diaria_relampago" ${m.tipo === 'diaria_relampago' ? 'selected' : ''}>diária</option>
+                  <option value="evento" ${m.tipo === 'evento' ? 'selected' : ''}>evento</option>
+                </select>
+              </td>
+              <td style="padding:6px"><input class="field-input" data-f="alvo_tipo" value="${escAdm(m.alvo_tipo)}" /></td>
+              <td style="padding:6px"><input class="field-input" data-f="alvo_qtd" type="number" value="${m.alvo_qtd}" /></td>
+              <td style="padding:6px"><input class="field-input" data-f="sementes" type="number" value="${m.sementes}" /></td>
+              <td style="padding:6px"><input data-f="ativa" type="checkbox" ${m.ativa ? 'checked' : ''} /></td>
+              <td style="padding:6px;display:flex;gap:4px">
+                <button class="btn btn-primary btn-sm" onclick="gamMissaoSalvar(${m.id}, this)">Salvar</button>
+                <button class="btn btn-ghost btn-sm" onclick="gamMissaoApagar(${m.id})">🗑</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <p style="margin-top:1rem;font-size:0.78rem;color:var(--text-muted)">
+        Tipos de alvo aceitos: <code>caderno_escrita</code>, <code>tesouro_resgatado</code>, <code>video_assistido</code>, <code>produto_comprado</code>, <code>teste_concluido</code>.
+        Jornadas: <code>conhecer_e_despertar</code>, <code>vida_magica</code>, <code>multiplicando_vida_magica</code>, vazio = universal.
+      </p>
+    `;
+  } catch { cont.innerHTML = '<div class="loading">Erro ao carregar.</div>'; }
+}
+async function gamMissaoNova() {
+  const titulo = prompt('Título da missão:');
+  if (!titulo) return;
+  const slug = (titulo.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 60) + '_' + Date.now().toString(36));
+  const tipo = prompt('Tipo (jornada / diaria_relampago / evento):', 'jornada') || 'jornada';
+  const alvo_tipo = prompt('Alvo (caderno_escrita / tesouro_resgatado / ...):', 'caderno_escrita') || 'caderno_escrita';
+  const alvo_qtd = Number(prompt('Quantidade alvo:', '1')) || 1;
+  const sementes = Number(prompt('Sementes que dá ao completar:', '5')) || 5;
+  await admFetch('/api/admin/gamificacao/missoes', {
+    method: 'POST', body: JSON.stringify({ slug, titulo, tipo, alvo_tipo, alvo_qtd, sementes }),
+  });
+  gamCarregarMissoes();
+}
+async function gamMissaoSalvar(id, btn) {
+  const tr = btn.closest('tr');
+  const body = {};
+  tr.querySelectorAll('[data-f]').forEach(inp => {
+    body[inp.dataset.f] = inp.type === 'checkbox' ? inp.checked : inp.value;
+  });
+  const d = await admFetch(`/api/admin/gamificacao/missoes/${id}`, {
+    method: 'PUT', body: JSON.stringify(body),
+  });
+  toast(d.ok ? '✓ Salvo' : '✗ Erro');
+}
+async function gamMissaoApagar(id) {
+  if (!confirm('Apagar?')) return;
+  await admFetch(`/api/admin/gamificacao/missoes/${id}`, { method: 'DELETE' });
+  gamCarregarMissoes();
+}
+
+// ── GAMIFICAÇÃO — RANKING ──────────────────────────────────
+async function gamCarregarRanking() {
+  const cont = document.getElementById('gam-ranking-lista');
+  cont.innerHTML = '<div class="loading">Carregando…</div>';
+  const ymd = new Date().toISOString().slice(0, 7);
+  try {
+    const d = await admFetch(`/api/admin/gamificacao/ranking/${ymd}`);
+    if (!d.ok) throw 0;
+    if (!d.ranking.length) {
+      cont.innerHTML = '<div class="loading">Sem logins registrados este mês ainda.</div>';
+      return;
+    }
+    cont.innerHTML = `
+      <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.8rem">Mês: <strong>${ymd}</strong></p>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="text-align:left;border-bottom:1px solid var(--border)">
+          <th style="padding:6px;width:60px">Posição</th>
+          <th style="padding:6px">Usuário ID</th>
+          <th style="padding:6px;width:100px">Pontos</th>
+        </tr></thead>
+        <tbody>
+          ${d.ranking.map(r => `
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:6px;font-weight:700;color:var(--color-gold-light)">#${r.posicao}</td>
+              <td style="padding:6px;font-family:monospace;font-size:0.78rem">${escAdm(r.usuario_id)}</td>
+              <td style="padding:6px">${r.pontos} dias</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch { cont.innerHTML = '<div class="loading">Erro ao carregar.</div>'; }
+}
+async function gamFecharRankingAtual() {
+  if (!confirm('Fechar ranking do mês atual? Vai gravar snapshot e conceder prêmios (top 1 / 2-3 / 4-10).')) return;
+  const ymd = new Date().toISOString().slice(0, 7);
+  const d = await admFetch(`/api/admin/gamificacao/ranking/${ymd}/fechar`, { method: 'POST' });
+  if (d.ok) {
+    toast(d.ja_fechado ? '✓ Já estava fechado' : '✓ Fechado e premiado');
+    gamCarregarRanking();
+  } else {
+    toast('✗ Erro: ' + (d.erro || 'desconhecido'));
+  }
+}
 
 // ===== INIT =====
 carregarProdutos();

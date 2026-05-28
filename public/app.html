@@ -67,6 +67,42 @@
       <!-- BOTOEIRA (faixa abaixo do player) — populada por renderBotoeira() -->
       <section class="botoeira" id="botoeira"></section>
 
+      <!-- ── ATALHOS DA ALUNA ── Caderno + Conquistas ──
+           Cards de entrada pras duas frentes novas. Aparecem entre a
+           botoeira e o Tesouro. Conteúdo dinâmico via JS:
+           - badge de streak rápida no card Caderno (🔥 N) quando >0
+           - badge de prêmios novos no card Conquistas (✦ N) quando >0
+      -->
+      <section class="atalhos-home" id="atalhos-home">
+        <button class="atalho-card atalho-caderno" type="button" onclick="irPara('caderno')" aria-label="Caderno da Mentalização">
+          <div class="atalho-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" stroke-width="1.6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h13a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2V4z"/>
+              <path d="M4 4v16"/>
+              <path d="M8 8h7M8 12h7M8 16h5"/>
+            </svg>
+          </div>
+          <div class="atalho-texto">
+            <span class="atalho-titulo">Caderno da Mentalização</span>
+            <span class="atalho-sub" id="atalho-caderno-sub">Escreva o que você quer materializar</span>
+          </div>
+          <span class="atalho-badge" id="atalho-caderno-badge" style="display:none"></span>
+        </button>
+        <button class="atalho-card atalho-conquistas" type="button" onclick="irPara('conquistas')" aria-label="Conquistas e Ofensivas">
+          <div class="atalho-icone" aria-hidden="true">
+            <svg viewBox="0 0 24 24" stroke-width="1.6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 15a5 5 0 1 0 0-10 5 5 0 0 0 0 10z"/>
+              <path d="M8.5 13L7 22l5-3 5 3-1.5-9"/>
+            </svg>
+          </div>
+          <div class="atalho-texto">
+            <span class="atalho-titulo">Minhas Conquistas</span>
+            <span class="atalho-sub" id="atalho-conquistas-sub">Ofensivas, missões e prêmios</span>
+          </div>
+          <span class="atalho-badge" id="atalho-conquistas-badge" style="display:none"></span>
+        </button>
+      </section>
+
       <!-- Saudação + barra de jornada moveram pra view-jornada. -->
 
       <div class="tesouro-wrap" id="tesouro-wrap">
@@ -837,6 +873,302 @@
       </div>
     </section>
 
+    <!-- ════════════════════════════════════════════════════ -->
+    <!-- CADERNO DA MENTALIZAÇÃO                              -->
+    <!-- 5 abas internas: Escrever / Vision / Cápsulas /      -->
+    <!-- Metas / Afirmações. Conteúdo populado por renderCaderno() -->
+    <!-- e funções específicas por aba (renderCadernoAba_*).  -->
+    <!-- ════════════════════════════════════════════════════ -->
+    <section class="view" id="view-caderno">
+      <div class="view-topo">
+        <h2 class="view-titulo">Caderno da Mentalização</h2>
+        <p class="view-sub">Seu espaço pra escrever, visualizar e materializar</p>
+      </div>
+
+      <!-- Abas do Caderno -->
+      <nav class="caderno-abas" id="caderno-abas" role="tablist">
+        <button type="button" class="caderno-aba ativa" data-aba="escrever" onclick="trocarAbaCaderno('escrever', this)">
+          <span aria-hidden="true">✍️</span><span>Escrever</span>
+        </button>
+        <button type="button" class="caderno-aba" data-aba="vision" onclick="trocarAbaCaderno('vision', this)">
+          <span aria-hidden="true">🖼️</span><span>Vision</span>
+        </button>
+        <button type="button" class="caderno-aba" data-aba="capsulas" onclick="trocarAbaCaderno('capsulas', this)">
+          <span aria-hidden="true">⏳</span><span>Cápsulas</span>
+        </button>
+        <button type="button" class="caderno-aba" data-aba="metas" onclick="trocarAbaCaderno('metas', this)">
+          <span aria-hidden="true">🌱</span><span>Metas</span>
+        </button>
+        <button type="button" class="caderno-aba" data-aba="afirmacoes" onclick="trocarAbaCaderno('afirmacoes', this)">
+          <span aria-hidden="true">✨</span><span>Afirmações</span>
+        </button>
+      </nav>
+
+      <!-- ABA: ESCREVER -->
+      <div class="caderno-painel ativo" id="caderno-painel-escrever">
+        <!-- Banner cápsula madura — só aparece se houver cápsula pronta -->
+        <div class="capsula-banner" id="capsula-banner" style="display:none">
+          <div class="capsula-banner-icone">💌</div>
+          <div class="capsula-banner-texto">
+            <strong>Sua cápsula chegou!</strong>
+            <span id="capsula-banner-sub">Toque pra abrir</span>
+          </div>
+          <button type="button" class="capsula-banner-btn" id="capsula-banner-btn">Abrir</button>
+        </div>
+
+        <!-- Prompt do dia -->
+        <div class="caderno-prompt" id="caderno-prompt">
+          <span class="caderno-prompt-rotulo">Prompt do dia</span>
+          <p class="caderno-prompt-texto" id="caderno-prompt-texto">Carregando…</p>
+        </div>
+
+        <!-- Área de escrita -->
+        <div class="caderno-escrita-wrap">
+          <textarea id="caderno-escrita-input" class="caderno-escrita-input"
+            placeholder="Estou tão feliz e grata agora que…"
+            maxlength="10000" rows="10"></textarea>
+          <div class="caderno-escrita-acoes">
+            <button type="button" class="caderno-btn-foco" id="caderno-btn-foco" aria-label="Modo foco com áudio">
+              🎧 <span>Foco</span>
+            </button>
+            <button type="button" class="caderno-btn-salvar" id="caderno-btn-salvar">
+              Salvar escrita
+            </button>
+          </div>
+        </div>
+
+        <!-- Player de foco (oculto até clicar no botão) -->
+        <div class="caderno-foco-player" id="caderno-foco-player" style="display:none">
+          <div class="caderno-foco-head">
+            <strong>Modo Foco</strong>
+            <button type="button" class="caderno-foco-fechar" id="caderno-foco-fechar" aria-label="Fechar">×</button>
+          </div>
+          <div class="caderno-foco-tabs">
+            <button type="button" class="caderno-foco-tab ativa" data-fonte="catalogo" onclick="trocarFonteAudio('catalogo', this)">Catálogo</button>
+            <button type="button" class="caderno-foco-tab" data-fonte="propria" onclick="trocarFonteAudio('propria', this)">URL própria</button>
+          </div>
+          <div class="caderno-foco-corpo" id="caderno-foco-catalogo">
+            <select id="caderno-foco-select" class="caderno-foco-select">
+              <option value="">Escolha um áudio…</option>
+            </select>
+          </div>
+          <div class="caderno-foco-corpo" id="caderno-foco-propria" style="display:none">
+            <input type="url" id="caderno-foco-url" class="caderno-foco-url"
+              placeholder="Cole aqui um link YouTube ou MP3" />
+            <button type="button" class="caderno-foco-btn-aplicar" id="caderno-foco-btn-aplicar">Aplicar</button>
+          </div>
+          <div class="caderno-foco-embed" id="caderno-foco-embed"></div>
+        </div>
+
+        <!-- Lista de escritas anteriores -->
+        <div class="caderno-historico">
+          <h3 class="caderno-historico-titulo">Suas escritas</h3>
+          <div class="caderno-historico-lista" id="caderno-historico-lista">
+            <div class="caderno-empty">Suas escritas vão aparecer aqui ✨</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA: VISION BOARD -->
+      <div class="caderno-painel" id="caderno-painel-vision">
+        <div class="vision-toolbar">
+          <button type="button" class="vision-btn-novo" id="vision-btn-novo">
+            <span aria-hidden="true">+</span> Adicionar imagem
+          </button>
+          <div class="vision-toggle">
+            <button type="button" class="vision-toggle-btn ativo" data-status="ativo" onclick="trocarStatusVision('ativo', this)">Quadro</button>
+            <button type="button" class="vision-toggle-btn" data-status="conquistado" onclick="trocarStatusVision('conquistado', this)">Conquistas</button>
+          </div>
+        </div>
+        <div class="vision-grid" id="vision-grid">
+          <div class="caderno-empty">Carregando seu Vision Board…</div>
+        </div>
+        <input type="file" id="vision-file-input" accept="image/*" style="display:none" />
+      </div>
+
+      <!-- ABA: CÁPSULAS DO TEMPO -->
+      <div class="caderno-painel" id="caderno-painel-capsulas">
+        <div class="capsulas-intro">
+          <p>Escreva uma carta pra você no futuro. O Caderno guarda e te avisa quando ela estiver pronta pra ser aberta.</p>
+        </div>
+        <button type="button" class="capsulas-btn-nova" id="capsulas-btn-nova">
+          ⏳ Escrever nova cápsula
+        </button>
+        <div class="capsulas-lista" id="capsulas-lista">
+          <div class="caderno-empty">Suas cápsulas vão aparecer aqui</div>
+        </div>
+      </div>
+
+      <!-- ABA: METAS (Termômetro) -->
+      <div class="caderno-painel" id="caderno-painel-metas">
+        <button type="button" class="metas-btn-nova" id="metas-btn-nova">
+          🌱 Plantar nova meta
+        </button>
+        <div class="metas-tabuleiro" id="metas-tabuleiro">
+          <div class="metas-coluna" data-status="plantando">
+            <h4 class="metas-col-titulo">🌱 Plantando</h4>
+            <div class="metas-col-corpo" id="metas-col-plantando"></div>
+          </div>
+          <div class="metas-coluna" data-status="em_movimento">
+            <h4 class="metas-col-titulo">🌿 Em movimento</h4>
+            <div class="metas-col-corpo" id="metas-col-em_movimento"></div>
+          </div>
+          <div class="metas-coluna" data-status="quase_la">
+            <h4 class="metas-col-titulo">🌟 Quase lá</h4>
+            <div class="metas-col-corpo" id="metas-col-quase_la"></div>
+          </div>
+          <div class="metas-coluna" data-status="materializado">
+            <h4 class="metas-col-titulo">🏆 Materializado</h4>
+            <div class="metas-col-corpo" id="metas-col-materializado"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA: AFIRMAÇÕES -->
+      <div class="caderno-painel" id="caderno-painel-afirmacoes">
+        <div class="afirmacoes-toolbar">
+          <div class="afirmacoes-filtros" id="afirmacoes-filtros">
+            <button type="button" class="afirmacoes-filtro ativo" data-filtro="todas" onclick="filtrarAfirmacoes('todas', this)">Todas</button>
+            <button type="button" class="afirmacoes-filtro" data-filtro="favoritas" onclick="filtrarAfirmacoes('favoritas', this)">⭐ Favoritas</button>
+          </div>
+        </div>
+        <div class="afirmacoes-grid" id="afirmacoes-grid">
+          <div class="caderno-empty">Carregando afirmações…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════ -->
+    <!-- CONQUISTAS E OFENSIVAS                                -->
+    <!-- View transversal da plataforma — mostra ofensivas    -->
+    <!-- mensal/trimestral/rápida, missões da jornada vigente, -->
+    <!-- prêmios recebidos e ranking mensal.                   -->
+    <!-- Conteúdo populado por renderConquistas() no Commit 3. -->
+    <!-- ════════════════════════════════════════════════════ -->
+    <section class="view" id="view-conquistas">
+      <div class="view-topo">
+        <h2 class="view-titulo">Conquistas</h2>
+        <p class="view-sub">Suas ofensivas, missões e prêmios</p>
+      </div>
+
+      <!-- Ofensiva mensal — cartão grande -->
+      <section class="conq-ofensiva conq-ofensiva-mensal">
+        <header class="conq-ofensiva-head">
+          <span class="conq-ofensiva-rotulo">Ofensiva mensal</span>
+          <strong class="conq-ofensiva-contagem" id="conq-mensal-contagem">0 / 30</strong>
+        </header>
+        <div class="conq-ofensiva-trilha" id="conq-mensal-trilha" aria-label="Trilha de 30 dias"></div>
+        <p class="conq-ofensiva-rodape" id="conq-mensal-rodape">Recorde: 0 dias</p>
+      </section>
+
+      <!-- Ofensiva rápida + trimestral lado a lado -->
+      <section class="conq-ofensivas-secundarias">
+        <div class="conq-ofensiva conq-ofensiva-rapida">
+          <header class="conq-ofensiva-head">
+            <span class="conq-ofensiva-rotulo">🔥 Ofensiva rápida</span>
+          </header>
+          <div class="conq-rapida-numero" id="conq-rapida-numero">0</div>
+          <p class="conq-ofensiva-rodape">dias seguidos · recorde <span id="conq-rapida-recorde">0</span></p>
+        </div>
+        <div class="conq-ofensiva conq-ofensiva-trimestral">
+          <header class="conq-ofensiva-head">
+            <span class="conq-ofensiva-rotulo">🌳 Trimestral</span>
+          </header>
+          <div class="conq-rapida-numero" id="conq-trimestral-numero">0</div>
+          <p class="conq-ofensiva-rodape">de 90 dias · recorde <span id="conq-trimestral-recorde">0</span></p>
+        </div>
+      </section>
+
+      <!-- Missões -->
+      <section class="conq-secao">
+        <header class="conq-secao-head">
+          <h3 class="conq-secao-titulo">Missões</h3>
+          <span class="conq-secao-sub">Da sua jornada atual</span>
+        </header>
+        <div class="conq-missoes-lista" id="conq-missoes-lista">
+          <div class="caderno-empty">Carregando missões…</div>
+        </div>
+      </section>
+
+      <!-- Prêmios recebidos (histórico) -->
+      <section class="conq-secao">
+        <header class="conq-secao-head">
+          <h3 class="conq-secao-titulo">Prêmios recebidos</h3>
+          <span class="conq-secao-sub">Suas conquistas até aqui</span>
+        </header>
+        <div class="conq-premios-lista" id="conq-premios-lista">
+          <div class="caderno-empty">Continue logando pra ver seus prêmios aqui ✨</div>
+        </div>
+      </section>
+
+      <!-- Ranking mensal -->
+      <section class="conq-secao">
+        <header class="conq-secao-head">
+          <h3 class="conq-secao-titulo">Ranking deste mês</h3>
+          <span class="conq-secao-sub">Top 10 alunas mais consistentes</span>
+        </header>
+        <div class="conq-ranking-lista" id="conq-ranking-lista">
+          <div class="caderno-empty">Carregando ranking…</div>
+        </div>
+      </section>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════ -->
+    <!-- MODAIS DO CADERNO                                    -->
+    <!-- ════════════════════════════════════════════════════ -->
+
+    <!-- Modal: nova cápsula -->
+    <div class="modal" id="modal-capsula-nova" aria-hidden="true">
+      <div class="modal-fundo" data-close></div>
+      <div class="modal-painel modal-painel-capsula">
+        <button type="button" class="modal-fechar" data-close aria-label="Fechar">×</button>
+        <h3 class="modal-titulo">⏳ Nova Cápsula do Tempo</h3>
+        <p class="modal-sub">Escreva pra você no futuro. Ninguém vê — nem você antes da data.</p>
+        <label class="modal-label">Título (opcional)</label>
+        <input type="text" class="modal-input" id="capsula-titulo-input" maxlength="200" placeholder="Pra mim em 3 meses…" />
+        <label class="modal-label">Sua mensagem</label>
+        <textarea class="modal-textarea" id="capsula-conteudo-input" rows="8" maxlength="20000" placeholder="Escreva tudo que você quer que sua versão futura saiba…"></textarea>
+        <label class="modal-label">Abrir em</label>
+        <input type="date" class="modal-input" id="capsula-data-input" />
+        <div class="modal-acoes">
+          <button type="button" class="modal-btn-secundario" data-close>Cancelar</button>
+          <button type="button" class="modal-btn-primario" id="capsula-btn-salvar">Lacrar cápsula</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: nova meta -->
+    <div class="modal" id="modal-meta-nova" aria-hidden="true">
+      <div class="modal-fundo" data-close></div>
+      <div class="modal-painel">
+        <button type="button" class="modal-fechar" data-close aria-label="Fechar">×</button>
+        <h3 class="modal-titulo">🌱 Plantar nova meta</h3>
+        <label class="modal-label">Título</label>
+        <input type="text" class="modal-input" id="meta-titulo-input" maxlength="200" placeholder="Comprar minha casa própria" />
+        <label class="modal-label">Detalhes (opcional)</label>
+        <textarea class="modal-textarea" id="meta-descricao-input" rows="4" maxlength="2000" placeholder="Como será?"></textarea>
+        <div class="modal-acoes">
+          <button type="button" class="modal-btn-secundario" data-close>Cancelar</button>
+          <button type="button" class="modal-btn-primario" id="meta-btn-salvar">Plantar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: abrir cápsula madura -->
+    <div class="modal" id="modal-capsula-abrir" aria-hidden="true">
+      <div class="modal-fundo" data-close></div>
+      <div class="modal-painel modal-painel-capsula-abrir">
+        <button type="button" class="modal-fechar" data-close aria-label="Fechar">×</button>
+        <div class="capsula-abrir-selo">💌</div>
+        <h3 class="modal-titulo" id="capsula-abrir-titulo">Sua cápsula chegou</h3>
+        <p class="modal-sub" id="capsula-abrir-data">Escrita em —</p>
+        <div class="capsula-abrir-conteudo" id="capsula-abrir-conteudo"></div>
+        <div class="modal-acoes">
+          <button type="button" class="modal-btn-primario" data-close>Guardar com carinho</button>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- BOTTOM NAV -->
@@ -1270,5 +1602,9 @@
 
   <script src="/relatos-card.js"></script>
   <script type="module" src="/app/app.js"></script>
+  <!-- Caderno da Mentalização + Conquistas. Carrega depois do app.js
+       pra ter acesso a fetchAutenticado/irPara/toast/abrirModal/fecharModal
+       como globais. Vide public/app/caderno.js. -->
+  <script src="/app/caderno.js"></script>
 </body>
 </html>

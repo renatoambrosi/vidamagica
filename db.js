@@ -694,6 +694,221 @@ async function initCore() {
     `);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_tr_usuario ON tesouros_resgatados(usuario_id, resgatado_em DESC)`);
 
+    // ─────────────────────────────────────────────────────────
+    // CADERNO DA MENTALIZAÇÃO — dados da aluna
+    // Conteúdo que ela mesma produz (escritas, vision board, metas, cápsulas).
+    // Cadastro do admin (prompts, afirmações, áudios) vive em poolComunicacao.
+    // ─────────────────────────────────────────────────────────
+
+    // Escritas diárias (scripting). prompt_id é referência LÓGICA pra
+    // caderno_prompts (poolComunicacao). Sem FK física entre bancos.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS caderno_escritas (
+        id BIGSERIAL PRIMARY KEY,
+        usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        conteudo TEXT NOT NULL,
+        prompt_id INTEGER,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_cad_escritas_usuario ON caderno_escritas(usuario_id, criado_em DESC)`);
+
+    // Cápsulas do tempo — carta da aluna pra ela mesma no futuro.
+    // Backend BLOQUEIA leitura do conteúdo enquanto abrir_em > NOW().
+    // aviso_enviado_em marca quando o sistema disparou (WhatsApp/Brevo/in_app).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS caderno_capsulas (
+        id BIGSERIAL PRIMARY KEY,
+        usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        titulo VARCHAR(200),
+        conteudo TEXT NOT NULL,
+        abrir_em TIMESTAMPTZ NOT NULL,
+        aberta_em TIMESTAMPTZ,
+        aviso_enviado_em TIMESTAMPTZ,
+        criado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_cad_capsulas_usuario ON caderno_capsulas(usuario_id, abrir_em)`);
+    // Index pro scheduler de avisos: encontrar cápsulas maduras sem aviso
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_cad_capsulas_aviso_pendente ON caderno_capsulas(abrir_em) WHERE aviso_enviado_em IS NULL`);
+
+    // Log idempotente de avisos disparados por canal (anti-spam).
+    // canal: 'whatsapp' | 'email' | 'in_app' | 'push'
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS caderno_capsula_avisos (
+        id BIGSERIAL PRIMARY KEY,
+        capsula_id BIGINT NOT NULL REFERENCES caderno_capsulas(id) ON DELETE CASCADE,
+        canal VARCHAR(20) NOT NULL,
+        enviado_em TIMESTAMPTZ DEFAULT NOW(),
+        status VARCHAR(20) DEFAULT 'enviado',
+        detalhe TEXT,
+        UNIQUE(capsula_id, canal)
+      )
+    `);
+
+    // Vision Board — itens visuais (imagens com título/área).
+    // 'principal' = só 1 ativo por aluna; backend força via transação.
+    // 'status' = 'ativo' (no quadro) ou 'conquistado' (galeria de conquistas).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS caderno_vision_itens (
+        id BIGSERIAL PRIMARY KEY,
+        usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        imagem_url TEXT NOT NULL,
+        titulo VARCHAR(200),
+        area VARCHAR(60),
+        ordem INTEGER DEFAULT 0,
+        principal BOOLEAN DEFAULT FALSE,
+        status VARCHAR(20) DEFAULT 'ativo'
+          CHECK (status IN ('ativo','conquistado')),
+        conquistado_em TIMESTAMPTZ,
+        criado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_cad_vision_usuario ON caderno_vision_itens(usuario_id, status, ordem)`);
+    // Garante no máximo 1 item principal ativo por aluna
+    await c.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS uniq_cad_vision_principal
+        ON caderno_vision_itens (usuario_id)
+        WHERE principal = TRUE AND status = 'ativo'
+    `);
+
+    // Termômetro de Materialização — metas com 4 estados.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS caderno_metas (
+        id BIGSERIAL PRIMARY KEY,
+        usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        titulo VARCHAR(200) NOT NULL,
+        descricao TEXT,
+        status VARCHAR(20) DEFAULT 'plantando'
+          CHECK (status IN ('plantando','em_movimento','quase_la','materializado')),
+        ordem INTEGER DEFAULT 0,
+        materializada_em TIMESTAMPTZ,
+        atualizado_em TIMESTAMPTZ DEFAULT NOW(),
+        criado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_cad_metas_usuario ON caderno_metas(usuario_id, status, ordem)`);
+
+    // Afirmações favoritadas (FK lógico pra caderno_afirmacoes em poolComunicacao).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS caderno_afirmacoes_favoritas (
+        usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        afirmacao_id INTEGER NOT NULL,
+        favoritado_em TIMESTAMPTZ DEFAULT NOW(),
+        PRIMARY KEY (usuario_id, afirmacao_id)
+      )
+    `);
+
+    // Preferência de áudio da aluna — URL própria que ela colou (Spotify/YT/MP3)
+    // e/ou último áudio do catálogo escolhido.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS caderno_audio_pref_aluna (
+        usuario_id UUID PRIMARY KEY REFERENCES usuarios(id) ON DELETE CASCADE,
+        url_propria TEXT,
+        ultimo_audio_id INTEGER,
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    // ─────────────────────────────────────────────────────────
+    // GAMIFICAÇÃO DA PLATAFORMA — estado da aluna
+    // Sistema TRANSVERSAL (não é do Caderno). Login streak + missões da
+    // jornada + ofensivas rápidas + ranking mensal. Caderno é só UMA
+    // das fontes de progresso (escrever conta como missão).
+    // Cadastro do admin (config de prêmios, missões) vive em poolComunicacao.
+    // ─────────────────────────────────────────────────────────
+
+    // Log de cada dia que a aluna foi vista no app (1 linha por dia).
+    // "Login" aqui = qualquer GET /api/app/contexto autenticado.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS gam_login_diario (
+        usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        dia DATE NOT NULL,
+        primeira_atividade_em TIMESTAMPTZ DEFAULT NOW(),
+        PRIMARY KEY (usuario_id, dia)
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_gam_login_usuario ON gam_login_diario(usuario_id, dia DESC)`);
+
+    // Estado consolidado da aluna em todos os ciclos. 1 linha por aluna.
+    // Ciclos:
+    // - mensal (30 dias contínuos a partir de ciclo_30_inicio)
+    // - trimestral (90 dias contínuos a partir de ciclo_90_inicio)
+    // - rápida = streak CONSECUTIVO (quebra se pular dia). Outros são CUMULATIVOS no ciclo.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS gam_streak_aluna (
+        usuario_id UUID PRIMARY KEY REFERENCES usuarios(id) ON DELETE CASCADE,
+        ciclo_30_inicio DATE,
+        ciclo_30_logins INTEGER DEFAULT 0,
+        ciclo_30_ultimo_dia DATE,
+        ciclo_90_inicio DATE,
+        ciclo_90_logins INTEGER DEFAULT 0,
+        rapida_atual INTEGER DEFAULT 0,
+        rapida_ultimo_dia DATE,
+        recorde_30 INTEGER DEFAULT 0,
+        recorde_90 INTEGER DEFAULT 0,
+        recorde_rapida INTEGER DEFAULT 0,
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    // Log idempotente de prêmios recebidos. UNIQUE evita creditar 2x.
+    // tipo: 'streak_30' | 'streak_90' | 'rapida' | 'ranking_mensal' | 'missao'
+    // marco: 'dia_7' | 'dia_15' | 'dia_30' | 'dia_60' | 'dia_90' |
+    //        'consecutivo_3' | 'consecutivo_7' |
+    //        'top_1' | 'top_2_3' | 'top_4_10' |
+    //        slug da missão.
+    // ciclo_id: ex 'mensal_2026-05-01' | 'trimestral_2026-04-01' |
+    //              'ranking_2026-05' | 'missao_<slug>'
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS gam_premios_recebidos (
+        id BIGSERIAL PRIMARY KEY,
+        usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        tipo VARCHAR(40) NOT NULL,
+        marco VARCHAR(60) NOT NULL,
+        ciclo_id VARCHAR(80) NOT NULL,
+        sementes_creditadas INTEGER NOT NULL DEFAULT 0,
+        movimentacao_id BIGINT REFERENCES sementes_movimentacoes(id),
+        recebido_em TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(usuario_id, tipo, marco, ciclo_id)
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_gam_premios_usuario ON gam_premios_recebidos(usuario_id, recebido_em DESC)`);
+
+    // Progresso de cada missão por aluna. UNIQUE(usuario, missao).
+    // missao_id é referência LÓGICA pra gam_missoes (poolComunicacao).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS gam_missao_progresso (
+        id BIGSERIAL PRIMARY KEY,
+        usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        missao_id INTEGER NOT NULL,
+        progresso INTEGER DEFAULT 0,
+        alvo INTEGER NOT NULL,
+        completada_em TIMESTAMPTZ,
+        sementes_creditadas INTEGER DEFAULT 0,
+        movimentacao_id BIGINT REFERENCES sementes_movimentacoes(id),
+        iniciado_em TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(usuario_id, missao_id)
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_gam_missao_usuario ON gam_missao_progresso(usuario_id, completada_em)`);
+
+    // Snapshot do ranking mensal (Top X alunas do mês).
+    // Calculado por job/cron no fim do mês. Cada linha = 1 aluna no top X.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS gam_ranking_mensal (
+        ano_mes VARCHAR(7) NOT NULL,
+        posicao INTEGER NOT NULL,
+        usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+        pontos INTEGER NOT NULL DEFAULT 0,
+        premiado BOOLEAN DEFAULT FALSE,
+        fechado_em TIMESTAMPTZ,
+        PRIMARY KEY (ano_mes, posicao)
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_gam_ranking_pontos ON gam_ranking_mensal(ano_mes, pontos DESC)`);
+
     console.log('✅ Banco Core iniciado');
   } finally {
     c.release();
@@ -1910,6 +2125,114 @@ async function initComunicacao() {
         'livro-tal-maneira', 'curso-lda-biblica', 'curso-tal-maneira'
       )
     `);
+
+    // ─────────────────────────────────────────────────────────
+    // CADERNO DA MENTALIZAÇÃO — conteúdo cadastrado pelo admin
+    // (prompts diários, banco de afirmações, áudios de foco).
+    // Dados da aluna (escritas, vision, etc) vivem em poolCore.
+    // ─────────────────────────────────────────────────────────
+
+    // Catálogo de prompts (perguntas guiadas pra desbloquear a tela em branco).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS caderno_prompts (
+        id SERIAL PRIMARY KEY,
+        texto TEXT NOT NULL,
+        categoria VARCHAR(60),
+        ordem INTEGER DEFAULT 99,
+        ativo BOOLEAN DEFAULT TRUE,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_cad_prompts_ativo ON caderno_prompts(ativo, ordem)`);
+
+    // Banco de afirmações (frases de poder). Categorias livres em texto:
+    // 'prosperidade', 'relacionamentos', 'autoestima', 'saude', etc.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS caderno_afirmacoes (
+        id SERIAL PRIMARY KEY,
+        texto TEXT NOT NULL,
+        categoria VARCHAR(60),
+        ordem INTEGER DEFAULT 99,
+        ativo BOOLEAN DEFAULT TRUE,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_cad_afirmacoes_cat ON caderno_afirmacoes(ativo, categoria, ordem)`);
+
+    // Áudios de foco (binaurais, ruído branco, Hz, natureza).
+    // tipo: 'binaural' | 'branco' | 'natureza' | 'hz' | 'meditacao'
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS caderno_audios_foco (
+        id SERIAL PRIMARY KEY,
+        titulo VARCHAR(200) NOT NULL,
+        tipo VARCHAR(40),
+        url TEXT NOT NULL,
+        duracao_seg INTEGER,
+        ordem INTEGER DEFAULT 99,
+        ativo BOOLEAN DEFAULT TRUE,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    // ─────────────────────────────────────────────────────────
+    // GAMIFICAÇÃO — configuração cadastrada pelo admin
+    // (tabela de prêmios, definição de missões por jornada).
+    // Estado da aluna (streaks, prêmios recebidos, progresso) em poolCore.
+    // ─────────────────────────────────────────────────────────
+
+    // Tabela de prêmios. Cada linha = 1 marco premiado.
+    // tipo: 'streak_30' | 'streak_90' | 'rapida' | 'ranking_mensal' | 'ciclo_fechado'
+    // marco: 'dia_1' até 'dia_30' (mensal), 'dia_60'/'dia_90' (trimestral),
+    //        'consecutivo_3'/'consecutivo_7' (rápida),
+    //        'top_1'/'top_2_3'/'top_4_10' (ranking)
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS gam_premios_config (
+        id SERIAL PRIMARY KEY,
+        tipo VARCHAR(40) NOT NULL,
+        marco VARCHAR(60) NOT NULL,
+        sementes INTEGER NOT NULL DEFAULT 1,
+        rotulo VARCHAR(200),
+        descricao TEXT,
+        ativo BOOLEAN DEFAULT TRUE,
+        atualizado_em TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(tipo, marco)
+      )
+    `);
+
+    // Catálogo de missões. jornada_slug = NULL significa missão pra TODAS as jornadas.
+    // tipo:
+    //   'diaria_relampago' = expira no fim do dia, aparece e some
+    //   'jornada'          = atrelada a uma jornada específica, vigente enquanto a aluna está nela
+    //   'evento'           = campanha temporária com inicia_em/expira_em
+    // alvo_tipo: 'caderno_escrita' | 'video_assistido' | 'produto_comprado' |
+    //            'teste_concluido' | 'tesouro_resgatado' | etc
+    // alvo_filtro: JSONB pra refinar (ex: { produto_slug: 'ouro_reprogramacao' })
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS gam_missoes (
+        id SERIAL PRIMARY KEY,
+        slug VARCHAR(80) UNIQUE NOT NULL,
+        titulo VARCHAR(200) NOT NULL,
+        descricao TEXT,
+        jornada_slug VARCHAR(40),
+        tipo VARCHAR(40) NOT NULL
+          CHECK (tipo IN ('diaria_relampago','jornada','evento')),
+        alvo_tipo VARCHAR(40) NOT NULL,
+        alvo_qtd INTEGER DEFAULT 1,
+        alvo_filtro JSONB,
+        sementes INTEGER DEFAULT 5,
+        prioridade INTEGER DEFAULT 99,
+        ativa BOOLEAN DEFAULT TRUE,
+        inicia_em TIMESTAMPTZ,
+        expira_em TIMESTAMPTZ,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_gam_missoes_jornada ON gam_missoes(jornada_slug, ativa, prioridade)`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_gam_missoes_tipo ON gam_missoes(tipo, ativa)`);
 
     console.log('✅ Banco Comunicação iniciado');
   } finally {
