@@ -37,9 +37,9 @@
      trocar `LOADING_RITUAL_ATIVO` pra false.
      ═══════════════════════════════════════════════════════════ */
   const LOADING_RITUAL_ATIVO = true;
-  const LOADING_DURACAO_MS = 3000;       // total do loading
+  const LOADING_DURACAO_MS = 4800;       // total do loading
   const LOADING_STEPS = 4;               // 4 mensagens
-  const LOADING_STEP_MS = LOADING_DURACAO_MS / LOADING_STEPS; // 750ms cada
+  const LOADING_STEP_MS = LOADING_DURACAO_MS / LOADING_STEPS; // 1200ms cada — leitura confortável
 
   // ── ESTADO LOCAL ─────────────────────────────────────────
   const estado = {
@@ -189,15 +189,15 @@
     const wrap = el('caderno-loading-estrelas');
     if (!wrap || wrap.dataset.gerado === '1') return;
     wrap.dataset.gerado = '1';
-    const total = 32;
+    const total = 60;
     let html = '';
     for (let i = 0; i < total; i++) {
       const top = Math.random() * 100;
       const left = Math.random() * 100;
-      const size = 2 + Math.random() * 3;
-      const delay = Math.random() * 3;
-      const dur = 1.8 + Math.random() * 2.4;
-      const tipo = Math.random() > 0.65 ? 'caderno-estrela-dourada' : '';
+      const size = 3 + Math.random() * 5; // 3-8px (era 2-5)
+      const delay = Math.random() * 4;
+      const dur = 2.2 + Math.random() * 2.6;
+      const tipo = Math.random() > 0.55 ? 'caderno-estrela-dourada' : '';
       html += `<span class="caderno-estrela ${tipo}" style="--est-top:${top}%;--est-left:${left}%;--est-size:${size}px;--est-delay:${delay}s;--est-dur:${dur}s"></span>`;
     }
     wrap.innerHTML = html;
@@ -214,7 +214,7 @@
     _loadingTimers = [];
     overlay.classList.remove('ativo', 'saindo');
     document.querySelectorAll('.caderno-loading-msg').forEach(m => {
-      m.classList.remove('ativa', 'saindo');
+      m.classList.remove('ativa');
     });
     // Force reflow pra CSS animation reiniciar do zero
     void overlay.offsetWidth;
@@ -223,37 +223,22 @@
     overlay.setAttribute('aria-hidden', 'false');
     overlay.classList.add('ativo');
 
-    // CICLO DE MENSAGENS — transição suave com overlap.
-    // Cada step dura LOADING_STEP_MS (~750ms). Janela de leitura visível:
-    //   0..(STEP-200)ms = entrando + visível
-    //   (STEP-200)..(STEP)ms = saindo + entrando da próxima (overlap)
-    // A primeira msg precisa de delay mínimo (2 frames) pro browser pintar
-    // o estado inicial e a CSS transition rodar — senão "loada direto"
-    // sem fade (bug que o Renato notou).
-    const ativarMsg = (i) => {
+    // CICLO DE MENSAGENS — crossfade natural via .ativa.
+    // Quando troco .ativa de msg N pra msg N+1, ambas transitam ao mesmo
+    // tempo: N faz opacity 1→0, N+1 faz opacity 0→1, com a MESMA transition
+    // definida na base. O navegador interpola em paralelo → fade cruzado
+    // suave, sem flash.
+    // Pequeno delay (80ms) na 1ª msg garante que o browser pinte o estado
+    // inicial (opacity 0) antes do CSS transition rodar — sem isso o iOS
+    // Safari às vezes pula a animação e a frase aparece de uma vez.
+    const mostrarMsg = (i) => {
+      document.querySelectorAll('.caderno-loading-msg').forEach(m => m.classList.remove('ativa'));
       const msg = document.querySelector(`.caderno-loading-msg[data-step="${i}"]`);
       if (msg) msg.classList.add('ativa');
     };
-    const sairMsg = (i) => {
-      const msg = document.querySelector(`.caderno-loading-msg[data-step="${i}"]`);
-      if (msg) { msg.classList.remove('ativa'); msg.classList.add('saindo'); }
-    };
-
-    // 1ª msg: usa rAF dobrado pra GARANTIR que o browser pinte o estado
-    // inicial (opacity 0) antes de adicionar .ativa (opacity 1) — sem isso,
-    // o iOS Safari às vezes pula a transition e a frase aparece de uma vez.
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => ativarMsg(0));
-    });
-
-    // Demais mensagens — agenda cada uma com sairMsg da anterior 200ms antes
+    _loadingTimers.push(setTimeout(() => mostrarMsg(0), 80));
     for (let i = 1; i < LOADING_STEPS; i++) {
-      const tEntrada = i * LOADING_STEP_MS;
-      const tSaidaAnterior = tEntrada - 200; // overlap suave
-      if (tSaidaAnterior > 0) {
-        _loadingTimers.push(setTimeout(() => sairMsg(i - 1), tSaidaAnterior));
-      }
-      _loadingTimers.push(setTimeout(() => ativarMsg(i), tEntrada));
+      _loadingTimers.push(setTimeout(() => mostrarMsg(i), i * LOADING_STEP_MS));
     }
 
     // Brand do topo pulsa quando chega a mensagem final
