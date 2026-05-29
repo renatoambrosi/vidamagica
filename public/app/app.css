@@ -4654,17 +4654,35 @@ body.caderno-aberto #view-caderno {
 }
 .caderno-loading-cerebro svg {
   width: 100%; height: 100%; display: block;
-  animation: cerebro-respira 3.4s ease-in-out infinite;
-  transform-origin: center center;
-  will-change: transform;
+  overflow: visible; /* glow dos dots não pode ser cortado */
 }
 @keyframes cerebro-flutua {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-14px); }
 }
-@keyframes cerebro-respira {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.04); }
+
+/* ── DOTS DO CÉREBRO — vértices pulsando em ritmos diferentes ── */
+.caderno-loading-cerebro .cerebro-dots circle {
+  fill: #FFFCEB;
+  /* Glow dourado em 2 camadas — pop visual sem custo de animation */
+  filter: drop-shadow(0 0 4px rgba(255, 240, 180, 0.95))
+          drop-shadow(0 0 9px rgba(255, 220, 130, 0.7));
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cerebro-dot-pulse 2.4s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+/* 5 delays diferentes — distribuídos via classes nos circles do HTML.
+   Cada dot piscando no seu próprio tempo = orgânico, não-sincronizado. */
+.caderno-loading-cerebro .dot-a { animation-delay: 0s;     }
+.caderno-loading-cerebro .dot-b { animation-delay: 0.48s;  }
+.caderno-loading-cerebro .dot-c { animation-delay: 0.96s;  }
+.caderno-loading-cerebro .dot-d { animation-delay: 1.44s;  }
+.caderno-loading-cerebro .dot-e { animation-delay: 1.92s;  }
+
+@keyframes cerebro-dot-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.7);  }
+  50%      { opacity: 1;   transform: scale(1.35); }
 }
 
 /* ── FRASES EMPILHADAS (LOG) ────────────
