@@ -181,15 +181,41 @@
   // que um ciclo anterior interrompa o novo (acontece quando a aluna
   // reabre o Caderno antes do loading anterior terminar).
   let _loadingTimers = [];
+
+  // Cria ~28 estrelinhas com posições/delays/durações aleatórias.
+  // Cada estrelinha pisca (twinkle) em frequência própria — vira
+  // um céu vivo de fundo do loading.
+  function criarEstrelinhasLoading() {
+    const wrap = el('caderno-loading-estrelas');
+    if (!wrap || wrap.dataset.gerado === '1') return;
+    wrap.dataset.gerado = '1';
+    const total = 32;
+    let html = '';
+    for (let i = 0; i < total; i++) {
+      const top = Math.random() * 100;
+      const left = Math.random() * 100;
+      const size = 2 + Math.random() * 3;
+      const delay = Math.random() * 3;
+      const dur = 1.8 + Math.random() * 2.4;
+      const tipo = Math.random() > 0.65 ? 'caderno-estrela-dourada' : '';
+      html += `<span class="caderno-estrela ${tipo}" style="--est-top:${top}%;--est-left:${left}%;--est-size:${size}px;--est-delay:${delay}s;--est-dur:${dur}s"></span>`;
+    }
+    wrap.innerHTML = html;
+  }
+
   function dispararLoadingRitual() {
     const overlay = el('caderno-loading');
     if (!overlay) return;
 
-    // Reset total
+    criarEstrelinhasLoading();
+
+    // Reset total — limpa timers e classes anteriores
     _loadingTimers.forEach(t => clearTimeout(t));
     _loadingTimers = [];
     overlay.classList.remove('ativo', 'saindo');
-    document.querySelectorAll('.caderno-loading-msg').forEach(m => m.classList.remove('ativa'));
+    document.querySelectorAll('.caderno-loading-msg').forEach(m => {
+      m.classList.remove('ativa', 'saindo');
+    });
     // Force reflow pra CSS animation reiniciar do zero
     void overlay.offsetWidth;
 
@@ -197,31 +223,52 @@
     overlay.setAttribute('aria-hidden', 'false');
     overlay.classList.add('ativo');
 
-    // Ativa a 1ª mensagem imediatamente
-    document.querySelector('.caderno-loading-msg[data-step="0"]')?.classList.add('ativa');
+    // CICLO DE MENSAGENS — transição suave com overlap.
+    // Cada step dura LOADING_STEP_MS (~750ms). Janela de leitura visível:
+    //   0..(STEP-200)ms = entrando + visível
+    //   (STEP-200)..(STEP)ms = saindo + entrando da próxima (overlap)
+    // A primeira msg precisa de delay mínimo (2 frames) pro browser pintar
+    // o estado inicial e a CSS transition rodar — senão "loada direto"
+    // sem fade (bug que o Renato notou).
+    const ativarMsg = (i) => {
+      const msg = document.querySelector(`.caderno-loading-msg[data-step="${i}"]`);
+      if (msg) msg.classList.add('ativa');
+    };
+    const sairMsg = (i) => {
+      const msg = document.querySelector(`.caderno-loading-msg[data-step="${i}"]`);
+      if (msg) { msg.classList.remove('ativa'); msg.classList.add('saindo'); }
+    };
 
-    // Troca de mensagem a cada LOADING_STEP_MS (~750ms)
+    // 1ª msg: usa rAF dobrado pra GARANTIR que o browser pinte o estado
+    // inicial (opacity 0) antes de adicionar .ativa (opacity 1) — sem isso,
+    // o iOS Safari às vezes pula a transition e a frase aparece de uma vez.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => ativarMsg(0));
+    });
+
+    // Demais mensagens — agenda cada uma com sairMsg da anterior 200ms antes
     for (let i = 1; i < LOADING_STEPS; i++) {
-      _loadingTimers.push(setTimeout(() => {
-        document.querySelectorAll('.caderno-loading-msg').forEach(m => m.classList.remove('ativa'));
-        document.querySelector(`.caderno-loading-msg[data-step="${i}"]`)?.classList.add('ativa');
-      }, i * LOADING_STEP_MS));
+      const tEntrada = i * LOADING_STEP_MS;
+      const tSaidaAnterior = tEntrada - 200; // overlap suave
+      if (tSaidaAnterior > 0) {
+        _loadingTimers.push(setTimeout(() => sairMsg(i - 1), tSaidaAnterior));
+      }
+      _loadingTimers.push(setTimeout(() => ativarMsg(i), tEntrada));
     }
 
-    // Brand do topo pulsa quando o loading chega na mensagem final
-    // (sincroniza "Sonhos carregados com sucesso ✨" com a marca aparecendo)
+    // Brand do topo pulsa quando chega a mensagem final
     _loadingTimers.push(setTimeout(() => {
       el('caderno-topo')?.classList.add('reveal-brand');
-      setTimeout(() => el('caderno-topo')?.classList.remove('reveal-brand'), 1400);
+      _loadingTimers.push(setTimeout(() => el('caderno-topo')?.classList.remove('reveal-brand'), 1400));
     }, (LOADING_STEPS - 1) * LOADING_STEP_MS));
 
-    // Fade out do overlay no fim do ciclo
+    // Fade out do overlay no fim do ciclo (depois da última frase ler)
     _loadingTimers.push(setTimeout(() => {
       overlay.classList.add('saindo');
       _loadingTimers.push(setTimeout(() => {
         overlay.classList.remove('ativo', 'saindo');
         overlay.setAttribute('aria-hidden', 'true');
-      }, 400));
+      }, 500));
     }, LOADING_DURACAO_MS));
   }
 

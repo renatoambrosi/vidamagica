@@ -4646,7 +4646,38 @@ body.caderno-aberto #view-caderno {
   50%      { transform: translate(6%, -8%) scale(1.08); opacity: 0.8; }
 }
 
-/* ── ORB CENTRAL — círculo dourado pulsando (chama do ritual) ── */
+/* ── ESTRELINHAS — céu vivo de fundo do loading ── */
+.caderno-loading-estrelas {
+  position: absolute; inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.caderno-estrela {
+  position: absolute;
+  top: var(--est-top);
+  left: var(--est-left);
+  width: var(--est-size);
+  height: var(--est-size);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.2) 70%, transparent 100%);
+  opacity: 0;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
+  animation: estrela-piscar var(--est-dur) ease-in-out infinite;
+  animation-delay: var(--est-delay);
+}
+.caderno-estrela-dourada {
+  background: radial-gradient(circle, rgba(255, 240, 190, 1) 0%, rgba(244, 217, 152, 0.4) 60%, transparent 100%);
+  filter: drop-shadow(0 0 6px rgba(244, 217, 152, 0.9));
+}
+@keyframes estrela-piscar {
+  0%, 100%  { opacity: 0;   transform: scale(0.6); }
+  20%       { opacity: 1;   transform: scale(1.2); }
+  35%       { opacity: 0.4; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.1); }
+  70%       { opacity: 0.2; transform: scale(0.9); }
+}
+
+/* ── ORB CENTRAL — batida de coração (tum-tum-pausa) ── */
 .caderno-loading-orb {
   position: absolute;
   top: 42%; left: 50%;
@@ -4665,30 +4696,43 @@ body.caderno-aberto #view-caderno {
     0 0 24px rgba(244, 217, 152, 0.8),
     0 0 56px rgba(244, 217, 152, 0.6),
     0 0 0 1px rgba(255, 250, 240, 0.6);
-  animation: orb-pulse 1.6s ease-in-out infinite;
+  animation: orb-heartbeat 1.4s ease-in-out infinite;
+  transform-origin: center;
 }
 .caderno-loading-orb-aura {
   position: absolute; inset: -30px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(244, 217, 152, 0.25) 0%, transparent 70%);
-  animation: orb-aura 2.4s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(244, 217, 152, 0.28) 0%, transparent 70%);
+  animation: orb-aura-heartbeat 1.4s ease-in-out infinite;
 }
-@keyframes orb-pulse {
-  0%, 100% { transform: scale(1);    box-shadow: 0 0 24px rgba(244, 217, 152, 0.8), 0 0 56px rgba(244, 217, 152, 0.6); }
-  50%      { transform: scale(1.18); box-shadow: 0 0 40px rgba(244, 217, 152, 1),   0 0 90px rgba(244, 217, 152, 0.8); }
+/* Batida de coração real: dois "tum" rápidos + pausa.
+   Sequência: contrai → expande forte (1º tum) → relaxa → expande
+   menos (2º tum) → repousa até próximo ciclo. */
+@keyframes orb-heartbeat {
+  0%   { transform: scale(1);    box-shadow: 0 0 24px rgba(244, 217, 152, 0.8), 0 0 56px rgba(244, 217, 152, 0.6); }
+  14%  { transform: scale(1.22); box-shadow: 0 0 44px rgba(244, 217, 152, 1),   0 0 100px rgba(244, 217, 152, 0.85); }
+  28%  { transform: scale(1.02); }
+  42%  { transform: scale(1.14); box-shadow: 0 0 36px rgba(244, 217, 152, 0.95), 0 0 80px rgba(244, 217, 152, 0.7); }
+  56%  { transform: scale(1); }
+  100% { transform: scale(1);    box-shadow: 0 0 24px rgba(244, 217, 152, 0.8), 0 0 56px rgba(244, 217, 152, 0.6); }
 }
-@keyframes orb-aura {
-  0%, 100% { transform: scale(1);   opacity: 0.6; }
-  50%      { transform: scale(1.3); opacity: 1; }
+@keyframes orb-aura-heartbeat {
+  0%   { transform: scale(1);    opacity: 0.6; }
+  14%  { transform: scale(1.55); opacity: 1; }
+  28%  { transform: scale(1.05); opacity: 0.5; }
+  42%  { transform: scale(1.4);  opacity: 0.9; }
+  56%  { transform: scale(1);    opacity: 0.6; }
+  100% { transform: scale(1);    opacity: 0.6; }
 }
 
-/* ── MENSAGENS SEQUENCIAIS ── */
+/* ── MENSAGENS SEQUENCIAIS — transição suave com overlap ── */
 .caderno-loading-mensagens {
   position: absolute;
   top: 56%; left: 0; right: 0;
   z-index: 4;
   text-align: center;
   padding: 0 1.5rem;
+  min-height: 3rem;
 }
 .caderno-loading-msg {
   position: absolute;
@@ -4702,12 +4746,23 @@ body.caderno-aberto #view-caderno {
   line-height: 1.3;
   text-shadow: 0 2px 14px rgba(255, 250, 240, 0.9);
   opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 0.32s ease, transform 0.32s ease;
+  transform: translateY(10px);
+  /* Curva suave (cubic-bezier ease-out) com duração maior pra ler;
+     opacity sai um pouquinho atrasada do transform pra "respirar". */
+  transition:
+    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .caderno-loading-msg.ativa {
   opacity: 1;
   transform: translateY(0);
+}
+.caderno-loading-msg.saindo {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition:
+    opacity 0.45s ease-in,
+    transform 0.45s ease-in;
 }
 .caderno-loading-msg-final {
   color: var(--ouro);
