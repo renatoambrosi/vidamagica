@@ -4727,7 +4727,11 @@ body.caderno-aberto #view-caderno {
   100% { transform: scale(0.9); opacity: 0.55; }
 }
 
-/* ── FRASE ÚNICA com text-swap — sem briga de elementos no iOS Safari ── */
+/* ── FRASE ÚNICA com text-swap + animação auto-contida ────────────
+   Cada frase toca UMA animação de 1200ms quando recebe .tocando.
+   A animação CSS gerencia entra→fica→sai em fases (não há .ativa
+   nem .saindo em classes separadas — tudo num único @keyframes).
+   ─────────────────────────────────────────────────────────────── */
 .caderno-loading-frase-area {
   position: absolute;
   top: 54%; left: 0; right: 0;
@@ -4749,67 +4753,103 @@ body.caderno-aberto #view-caderno {
   opacity: 0;
   transform: translateY(16px) scale(0.97);
   filter: blur(6px);
-  will-change: opacity, transform, filter, letter-spacing;
-  transition:
-    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-    filter 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform, filter;
 }
-/* Estado ATIVA — visível e RESPIRANDO continuamente.
-   A respiração (letter-spacing + text-shadow + scale) é o "plasticidade"
-   que estava faltando: o texto não fica travado, ele pulsa com o orb. */
-.caderno-loading-frase.ativa {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  filter: blur(0);
-  animation: frase-respira 3s ease-in-out infinite 0.4s;
+/* Quando .tocando entra, dispara o ciclo completo de 1200ms.
+   - 0-18%   (216ms): ENTRA — opacity 0→1, blur 6→0, slide 16→0
+   - 18-78%  (720ms): FICA — visível com respiração sutil
+   - 78-100% (264ms): SAI — opacity 1→0, slide 0→-14, blur 0→5 */
+.caderno-loading-frase.tocando {
+  animation: frase-ciclo 1200ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-@keyframes frase-respira {
-  0%, 100% {
+@keyframes frase-ciclo {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+    filter: blur(6px);
+    letter-spacing: 0.01em;
+    text-shadow: 0 2px 14px rgba(255, 250, 240, 0.9);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
     letter-spacing: 0.01em;
     text-shadow: 0 2px 14px rgba(255, 250, 240, 0.95);
   }
-  50% {
+  /* Respiração no meio do ciclo (sente o pulsar com o orb) */
+  48% {
+    opacity: 1;
+    transform: translateY(-1px) scale(1.012);
+    filter: blur(0);
     letter-spacing: 0.05em;
     text-shadow:
-      0 2px 22px rgba(244, 217, 152, 0.95),
-      0 0 12px rgba(255, 200, 80, 0.5);
+      0 2px 24px rgba(244, 217, 152, 0.95),
+      0 0 14px rgba(255, 200, 80, 0.5);
+  }
+  78% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+    letter-spacing: 0.01em;
+    text-shadow: 0 2px 14px rgba(255, 250, 240, 0.95);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.98);
+    filter: blur(5px);
+    letter-spacing: 0.01em;
+    text-shadow: 0 2px 14px rgba(255, 250, 240, 0.9);
   }
 }
-/* Estado SAINDO — fade pra cima com blur de volta */
-.caderno-loading-frase.saindo {
-  opacity: 0;
-  transform: translateY(-14px) scale(0.98);
-  filter: blur(5px);
-  transition:
-    opacity 0.3s ease-in,
-    transform 0.3s ease-in,
-    filter 0.3s ease-in;
-}
-/* ÚLTIMA frase — dourada profunda, respiração mais intensa, escala maior */
+/* ÚLTIMA frase — dourada profunda, maior, respiração mais dramática */
 .caderno-loading-frase.final {
   color: var(--ouro-fundo);
   font-weight: 700;
-  font-size: clamp(1.25rem, 5.4vw, 1.65rem);
+  font-size: clamp(1.25rem, 5.4vw, 1.7rem);
 }
-.caderno-loading-frase.final.ativa {
-  animation: frase-respira-final 2.2s ease-in-out infinite 0.2s;
+.caderno-loading-frase.final.tocando {
+  animation: frase-ciclo-final 1200ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-@keyframes frase-respira-final {
-  0%, 100% {
+@keyframes frase-ciclo-final {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+    filter: blur(7px);
     letter-spacing: 0.02em;
-    text-shadow:
-      0 2px 18px rgba(244, 217, 152, 1),
-      0 0 8px rgba(255, 200, 80, 0.6);
-    transform: scale(1);
+    text-shadow: 0 2px 18px rgba(244, 217, 152, 0.8);
   }
+  20% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+    letter-spacing: 0.02em;
+    text-shadow: 0 2px 18px rgba(244, 217, 152, 1);
+  }
+  /* Pulso dramático da culminação */
   50% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.028);
+    filter: blur(0);
     letter-spacing: 0.07em;
     text-shadow:
       0 2px 36px rgba(255, 200, 80, 1),
       0 0 22px rgba(244, 217, 152, 1),
       0 0 50px rgba(244, 217, 152, 0.7);
-    transform: scale(1.03);
+  }
+  82% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+    letter-spacing: 0.02em;
+    text-shadow: 0 2px 18px rgba(244, 217, 152, 1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-12px) scale(1);
+    filter: blur(4px);
+    letter-spacing: 0.02em;
+    text-shadow: 0 2px 18px rgba(244, 217, 152, 0.7);
   }
 }
 

@@ -226,12 +226,12 @@
     overlay.classList.add('ativo');
 
     // 4 FRASES — swap de texto na MESMA tag <p>. Elimina o bug iOS Safari
-    // de elementos absolutos empilhados (ele pulava a transition da 3ª e 4ª).
-    // Sequência por frase:
-    //   - sair (300ms):  opacity 1→0 + blur + translateY
-    //   - swap texto
-    //   - entrar (500ms): opacity 0→1 + blur reverso + translateY reverso
-    //   - vive (resto):   respiração contínua (letter-spacing + glow)
+    // de elementos absolutos empilhados.
+    //
+    // Cada frase TOCA uma animação CSS auto-contida (entra → fica → sai)
+    // em LOADING_STEP_MS (1200ms). Pra disparar de novo na próxima frase,
+    // remove a classe, força reflow, troca texto, adiciona a classe.
+    // SEM rAF, SEM timeouts encadeados, SEM swap de classes — só toca.
     const FRASES = [
       { texto: 'Acessando o subconsciente…',         final: false },
       { texto: 'Acessando sonhos…',                  final: false },
@@ -239,38 +239,25 @@
       { texto: 'Sonhos carregados com sucesso ✨',   final: true  },
     ];
 
-    const trocarFrase = (i) => {
+    const tocarFrase = (i) => {
       const f = el('caderno-loading-frase');
       if (!f) return;
       const item = FRASES[i] || FRASES[0];
-      // Sai a anterior (se houver)
-      if (f.classList.contains('ativa')) {
-        f.classList.remove('ativa');
-        f.classList.add('saindo');
-        _loadingTimers.push(setTimeout(() => {
-          f.classList.remove('saindo', 'final');
-          f.textContent = item.texto;
-          if (item.final) f.classList.add('final');
-          // rAF dobrado pra garantir paint do estado inicial antes da transition
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => f.classList.add('ativa'));
-          });
-        }, 300));
-      } else {
-        // 1ª frase: setup direto + rAF pro Safari respeitar a transition
-        f.textContent = item.texto;
-        if (item.final) f.classList.add('final');
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => f.classList.add('ativa'));
-        });
-      }
+      // Remove classes anteriores
+      f.classList.remove('tocando', 'final');
+      // Reflow forçado — garante que o navegador "esqueça" o estado anterior
+      // antes de re-disparar a animação. Crucial pra iOS Safari.
+      void f.offsetWidth;
+      // Troca o texto + adiciona .final se for a última
+      f.textContent = item.texto;
+      if (item.final) f.classList.add('final');
+      // Toca a animação
+      f.classList.add('tocando');
     };
 
-    // Agenda cada troca
+    // Agenda cada frase no seu slot (0, 1200ms, 2400ms, 3600ms)
     for (let i = 0; i < LOADING_STEPS; i++) {
-      // 1ª frase tem delay menor (apenas o paint inicial); demais respeitam STEP
-      const t = i === 0 ? 60 : i * LOADING_STEP_MS;
-      _loadingTimers.push(setTimeout(() => trocarFrase(i), t));
+      _loadingTimers.push(setTimeout(() => tocarFrase(i), i * LOADING_STEP_MS));
     }
 
     // Brand do topo pulsa quando chega a mensagem final
