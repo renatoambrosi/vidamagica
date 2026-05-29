@@ -8,7 +8,7 @@
   <title>Vida Mágica</title>
   <link rel="icon" href="/assets/favicon.webp">
   <link rel="stylesheet" href="/assets/fonts/fonts.css">
-  <link rel="stylesheet" href="/app/app.css?v=9">
+  <link rel="stylesheet" href="/app/app.css?v=10">
   <!-- Lottie player (Bodymovin) — usado pela animação do Baú do Tesouro da Su -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -889,8 +889,41 @@
         <!-- Camada de sparkles em grande volume — populada por JS em criarSparklesLoading() -->
         <div class="caderno-loading-sparkles" id="caderno-loading-sparkles" aria-hidden="true"></div>
         
-        <!-- Bolha d'água dourada translúcida central -->
-        <div class="caderno-loading-bubble" aria-hidden="true"></div>
+        <!-- Cérebro estilizado central — top-down, 2 hemisférios.
+             SVG inline pra ser leve (sem border-radius animado).
+             Anima só com transform (scale + translateY) que vai pra GPU. -->
+        <div class="caderno-loading-cerebro" aria-hidden="true">
+          <svg viewBox="0 0 240 200" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <radialGradient id="cerebro-grad" cx="50%" cy="50%" r="55%">
+                <stop offset="0%"  stop-color="#FFF6D8" stop-opacity="0.55"/>
+                <stop offset="60%" stop-color="#FFDC82" stop-opacity="0.22"/>
+                <stop offset="100%" stop-color="#C8922A" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <!-- Hemisfério ESQUERDO -->
+            <path d="M118,18 C72,18 28,52 28,100 C28,150 60,188 118,190 Z"
+                  fill="url(#cerebro-grad)"
+                  stroke="rgba(255, 243, 195, 0.9)" stroke-width="2.5"
+                  stroke-linejoin="round"/>
+            <!-- Hemisfério DIREITO -->
+            <path d="M122,18 C168,18 212,52 212,100 C212,150 180,188 122,190 Z"
+                  fill="url(#cerebro-grad)"
+                  stroke="rgba(255, 243, 195, 0.9)" stroke-width="2.5"
+                  stroke-linejoin="round"/>
+            <!-- Sulci (curvas internas) — sugestão das circunvoluções -->
+            <g fill="none" stroke="rgba(255, 243, 195, 0.65)" stroke-width="1.6" stroke-linecap="round">
+              <!-- Esquerdo -->
+              <path d="M52,52 Q72,58 84,76"/>
+              <path d="M40,92 Q66,88 84,108"/>
+              <path d="M50,140 Q72,135 90,152"/>
+              <!-- Direito -->
+              <path d="M188,52 Q168,58 156,76"/>
+              <path d="M200,92 Q174,88 156,108"/>
+              <path d="M190,140 Q168,135 150,152"/>
+            </g>
+          </svg>
+        </div>
 
         <!-- FRASES EMPILHADAS — JS injeta <p> sequencialmente aqui. -->
         <div class="caderno-loading-frase-area" id="caderno-loading-frase-area">
@@ -1773,10 +1806,10 @@
        antigo em cache mesmo após deploy. Bumpe o número (v=3, v=4, …)
        sempre que mudar app.js ou caderno.js e quiser forçar reload no
        celular sem o usuário ter que limpar cache. -->
-  <script type="module" src="/app/app.js?v=9"></script>
+  <script type="module" src="/app/app.js?v=10"></script>
   <!-- Caderno da Mentalização + Conquistas. Carrega depois do app.js
        pra ter acesso a fetchAutenticado/irPara/toast/abrirModal/fecharModal
        como globais. Vide public/app/caderno.js. -->
-  <script src="/app/caderno.js?v=9"></script>
+  <script src="/app/caderno.js?v=10"></script>
 </body>
 </html>

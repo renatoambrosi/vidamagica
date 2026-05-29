@@ -135,14 +135,17 @@
     if (badge && window._ctxAtual?.aluna) {
       badge.textContent = window._ctxAtual.aluna.sementes || 0;
     }
-    // LOADING RITUAL — toda visita. Fumaça branca + orb pulsante +
-    // 4 mensagens sequenciais ("Acessando o subconsciente → Sonhos
-    // carregados com sucesso ✨"). Total ~3s. Partículas continuam
-    // aparecendo após (chamada idempotente via dataset.gerado).
+    // LOADING RITUAL — toda visita. Cérebro central + sparkles brancos
+    // subindo + 4 frases empilhando estilo log. As partículas douradas do
+    // Caderno NÃO disparam durante o loading (ficavam acumulando com os
+    // sparkles e travando o iOS). Elas entram só DEPOIS do overlay sumir.
     if (LOADING_RITUAL_ATIVO) {
       dispararLoadingRitual();
+      // Atraso = duração do loading + fade out (500ms) + um respiro
+      setTimeout(() => criarParticulasCaderno(), LOADING_DURACAO_MS + 600);
+    } else {
+      criarParticulasCaderno();
     }
-    criarParticulasCaderno();
     // Carrega conteúdo da aba ativa
     await carregarAbaCaderno(estado.abaAtiva);
     // Indicador de cápsula madura (banner no topo da aba Escrever)
@@ -188,7 +191,7 @@
     const wrap = el('caderno-loading-sparkles');
     if (!wrap || wrap.dataset.gerado === '1') return;
     wrap.dataset.gerado = '1';
-    const total = 35; // volume otimizado para performance
+    const total = 22; // reduzido de 35 — menos compositor layers no iOS
     let html = '';
     for (let i = 0; i < total; i++) {
       const left = Math.random() * 100;
