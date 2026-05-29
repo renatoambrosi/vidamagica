@@ -4579,15 +4579,13 @@ body.caderno-aberto #view-caderno {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   LOADING RITUAL — fumaça branca + orb dourado + mensagens sequenciais
-   Dispara TODA vez que a aluna entra no Caderno. Duração ~3s + fade.
+   LOADING RITUAL — fundo dourado suave + bolha transparente + sparkles
+   Dispara TODA vez que a aluna entra no Caderno. Duração ~5s + fade.
    Estrutura:
-   - .caderno-loading            overlay full-screen branco-creme leitoso
-   - .caderno-loading-fumaca-1/2/3  3 camadas de radial-gradient
-                                  brancas movendo (efeito de névoa densa)
-   - .caderno-loading-orb         círculo dourado central pulsando
-   - .caderno-loading-mensagens   container das 4 frases sequenciais
-   - .caderno-loading-msg.ativa   a frase visível no momento
+   - .caderno-loading            overlay full-screen dourado
+   - .caderno-loading-sparkles   container de muitas partículas brancas subindo
+   - .caderno-loading-bubble     bolha d'água animada central
+   - .caderno-loading-frase-area container das 4 frases sequenciais
    ════════════════════════════════════════════════════════════════════ */
 .caderno-loading {
   position: absolute; inset: 0;
@@ -4595,29 +4593,11 @@ body.caderno-aberto #view-caderno {
   overflow: hidden;
   pointer-events: none;
   opacity: 0;
-  /* FUMAÇA CÓSMICA — gradientes radiais animados NO PRÓPRIO overlay.
-     Mais confiável que divs separados com filter:blur (Safari engolia).
-     4 camadas: dourado quente, dourado profundo, azul-violeta sutil, base. */
-  background:
-    radial-gradient(60vmin circle at 18% 28%, rgba(255, 220, 130, 0.55), transparent 55%),
-    radial-gradient(55vmin circle at 82% 65%, rgba(255, 180, 90, 0.45), transparent 60%),
-    radial-gradient(70vmin circle at 50% 90%, rgba(200, 170, 240, 0.35), transparent 65%),
-    radial-gradient(45vmin circle at 75% 15%, rgba(255, 240, 200, 0.65), transparent 50%),
-    linear-gradient(160deg, #FFF8E8 0%, #FBEED1 60%, #F4DFB5 100%);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+  /* Fundo dourado suave em degradê radial */
+  background: radial-gradient(circle at center, rgba(232, 201, 122, 0.95), rgba(161, 117, 35, 0.98));
   transition: opacity 0.5s ease;
 }
-.caderno-loading.ativo {
-  animation: caderno-loading-cosmica 9s ease-in-out infinite;
-}
-@keyframes caderno-loading-cosmica {
-  0%, 100% {
-    background-position: 18% 28%, 82% 65%, 50% 90%, 75% 15%, 0% 0%;
-  }
-  50% {
-    background-position: 28% 18%, 72% 75%, 60% 80%, 65% 25%, 0% 0%;
-  }
-}
+
 .caderno-loading.ativo {
   opacity: 1;
   pointer-events: auto; /* bloqueia interação durante o loading */
@@ -4627,104 +4607,56 @@ body.caderno-aberto #view-caderno {
   transition: opacity 0.4s ease;
 }
 
-/* Fumaça agora vive no background do overlay (caderno-loading-cosmica).
-   Mantém os divs antigos escondidos pra não conflitar. */
-.caderno-loading-fumaca { display: none; }
-
-/* ── ESTRELINHAS — céu vivo de fundo do loading ── */
-.caderno-loading-estrelas {
+/* ── SPARKLES EM GRANDE VOLUME ── */
+.caderno-loading-sparkles {
   position: absolute; inset: 0;
   z-index: 2;
   pointer-events: none;
 }
-.caderno-estrela {
+.caderno-sparkle {
   position: absolute;
-  top: var(--est-top);
-  left: var(--est-left);
-  width: var(--est-size);
-  height: var(--est-size);
+  bottom: -10px;
+  left: var(--sp-left);
+  width: var(--sp-size);
+  height: var(--sp-size);
   border-radius: 50%;
-  /* DOURADAS — brancas sumiam no fundo creme */
-  background: radial-gradient(circle,
-    rgba(255, 220, 130, 1) 0%,
-    rgba(244, 200, 100, 0.55) 50%,
-    rgba(200, 146, 42, 0) 100%);
-  opacity: 0;
-  filter: drop-shadow(0 0 10px rgba(255, 200, 80, 0.95))
-          drop-shadow(0 0 18px rgba(244, 217, 152, 0.5));
-  animation: estrela-piscar var(--est-dur) ease-in-out infinite;
-  animation-delay: var(--est-delay);
-  will-change: opacity, transform;
+  background: #FFFFFF;
+  filter: blur(0.4px) drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+  animation: caderno-sparkle-subir var(--sp-dur) linear infinite;
+  animation-delay: var(--sp-delay);
+  will-change: transform, opacity;
 }
-.caderno-estrela-dourada {
-  background: radial-gradient(circle,
-    rgba(255, 245, 200, 1) 0%,
-    rgba(255, 200, 80, 0.7) 50%,
-    rgba(200, 146, 42, 0) 100%);
-  filter: drop-shadow(0 0 14px rgba(255, 200, 80, 1))
-          drop-shadow(0 0 24px rgba(244, 217, 152, 0.7));
-}
-@keyframes estrela-piscar {
-  0%, 100%  { opacity: 0;    transform: scale(0.5); }
-  20%       { opacity: 1;    transform: scale(1.4); }
-  40%       { opacity: 0.55; transform: scale(1); }
-  60%       { opacity: 1;    transform: scale(1.25); }
-  80%       { opacity: 0.3;  transform: scale(0.85); }
+@keyframes caderno-sparkle-subir {
+  0%   { transform: translateY(0) scale(0.5); opacity: 0; }
+  10%  { opacity: 1; transform: scale(1); }
+  90%  { opacity: 0.8; }
+  100% { transform: translateY(-110vh) scale(1.4); opacity: 0; }
 }
 
-/* ── ORB CENTRAL — batida de coração premium (tum-tum-pausa) ── */
-.caderno-loading-orb {
+/* ── BOLHA D'ÁGUA CENTRAL ── */
+.caderno-loading-bubble {
   position: absolute;
-  top: 38%; left: 50%;
+  top: 40%; left: 50%;
   transform: translate(-50%, -50%);
-  width: 96px; height: 96px;
+  width: 140px; height: 140px;
   z-index: 3;
-  filter: drop-shadow(0 0 32px rgba(244, 217, 152, 0.6));
+  border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: inset 10px 0 20px rgba(255, 255, 255, 0.3),
+              inset -10px 0 20px rgba(200, 146, 42, 0.4),
+              0 0 30px rgba(255, 255, 255, 0.4);
+  animation: bubble-float 6s ease-in-out infinite, bubble-morph 8s ease-in-out infinite;
 }
-.caderno-loading-orb-core {
-  position: absolute; inset: 0;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 35% 30%,
-      rgba(255, 255, 240, 1) 0%,
-      rgba(255, 240, 190, 0.95) 25%,
-      rgba(244, 217, 152, 0.95) 50%,
-      rgba(200, 146, 42, 0.9) 100%);
-  box-shadow:
-    inset 0 -8px 16px rgba(180, 120, 30, 0.4),
-    inset 0 4px 12px rgba(255, 250, 220, 0.7),
-    0 0 28px rgba(244, 217, 152, 0.85),
-    0 0 68px rgba(244, 217, 152, 0.55);
-  animation: orb-heartbeat 1.35s cubic-bezier(0.7, 0, 0.3, 1) infinite;
-  transform-origin: center;
+@keyframes bubble-float {
+  0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+  50% { transform: translate(-50%, -50%) translateY(-20px); }
 }
-.caderno-loading-orb-aura {
-  position: absolute; inset: -50px;
-  border-radius: 50%;
-  background: radial-gradient(circle,
-    rgba(255, 220, 130, 0.45) 0%,
-    rgba(244, 217, 152, 0.2) 35%,
-    transparent 70%);
-  animation: orb-aura-heartbeat 1.35s cubic-bezier(0.7, 0, 0.3, 1) infinite;
-}
-/* Batida de coração real: dois "tum-DUM" rápidos seguidos de pausa.
-   Sequência: 0% repouso → 8% tum forte → 16% relaxa rápido →
-   24% TUM mais forte (2ª batida) → 36% volta → 36-100% pausa longa. */
-@keyframes orb-heartbeat {
-  0%   { transform: scale(1); }
-  8%   { transform: scale(1.18); }
-  16%  { transform: scale(1.04); }
-  24%  { transform: scale(1.26); }
-  36%  { transform: scale(1); }
-  100% { transform: scale(1); }
-}
-@keyframes orb-aura-heartbeat {
-  0%   { transform: scale(0.9); opacity: 0.55; }
-  8%   { transform: scale(1.3); opacity: 0.95; }
-  16%  { transform: scale(1.0); opacity: 0.45; }
-  24%  { transform: scale(1.45); opacity: 1; }
-  36%  { transform: scale(1);   opacity: 0.55; }
-  100% { transform: scale(0.9); opacity: 0.55; }
+@keyframes bubble-morph {
+  0%, 100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+  34% { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; }
+  67% { border-radius: 100% 60% 60% 100% / 100% 100% 60% 60%; }
 }
 
 /* ── FRASE ÚNICA com text-swap + animação auto-contida ────────────
@@ -4734,7 +4666,7 @@ body.caderno-aberto #view-caderno {
    ─────────────────────────────────────────────────────────────── */
 .caderno-loading-frase-area {
   position: absolute;
-  top: 54%; left: 0; right: 0;
+  top: 65%; left: 0; right: 0;
   z-index: 4;
   text-align: center;
   padding: 0 1.5rem;
@@ -4746,10 +4678,10 @@ body.caderno-aberto #view-caderno {
   font-family: var(--font-display, serif);
   font-size: clamp(1.15rem, 5vw, 1.5rem);
   font-weight: 600;
-  color: var(--texto);
+  color: #FFFFFF;
   letter-spacing: 0.01em;
   line-height: 1.35;
-  text-shadow: 0 2px 14px rgba(255, 250, 240, 0.95);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   opacity: 0;
   transform: translateY(16px) scale(0.97);
   filter: blur(6px);
@@ -4768,43 +4700,36 @@ body.caderno-aberto #view-caderno {
     transform: translateY(16px) scale(0.97);
     filter: blur(6px);
     letter-spacing: 0.01em;
-    text-shadow: 0 2px 14px rgba(255, 250, 240, 0.9);
   }
   18% {
     opacity: 1;
     transform: translateY(0) scale(1);
     filter: blur(0);
     letter-spacing: 0.01em;
-    text-shadow: 0 2px 14px rgba(255, 250, 240, 0.95);
   }
-  /* Respiração no meio do ciclo (sente o pulsar com o orb) */
   48% {
     opacity: 1;
     transform: translateY(-1px) scale(1.012);
     filter: blur(0);
-    letter-spacing: 0.05em;
-    text-shadow:
-      0 2px 24px rgba(244, 217, 152, 0.95),
-      0 0 14px rgba(255, 200, 80, 0.5);
+    letter-spacing: 0.02em;
+    text-shadow: 0 0 14px rgba(255, 255, 255, 0.5);
   }
   78% {
     opacity: 1;
     transform: translateY(0) scale(1);
     filter: blur(0);
     letter-spacing: 0.01em;
-    text-shadow: 0 2px 14px rgba(255, 250, 240, 0.95);
   }
   100% {
     opacity: 0;
     transform: translateY(-14px) scale(0.98);
     filter: blur(5px);
     letter-spacing: 0.01em;
-    text-shadow: 0 2px 14px rgba(255, 250, 240, 0.9);
   }
 }
 /* ÚLTIMA frase — dourada profunda, maior, respiração mais dramática */
 .caderno-loading-frase.final {
-  color: var(--ouro-fundo);
+  color: #FFFFFF;
   font-weight: 700;
   font-size: clamp(1.25rem, 5.4vw, 1.7rem);
 }
@@ -4817,39 +4742,31 @@ body.caderno-aberto #view-caderno {
     transform: translateY(16px) scale(0.96);
     filter: blur(7px);
     letter-spacing: 0.02em;
-    text-shadow: 0 2px 18px rgba(244, 217, 152, 0.8);
   }
   20% {
     opacity: 1;
     transform: translateY(0) scale(1);
     filter: blur(0);
     letter-spacing: 0.02em;
-    text-shadow: 0 2px 18px rgba(244, 217, 152, 1);
   }
-  /* Pulso dramático da culminação */
   50% {
     opacity: 1;
     transform: translateY(-2px) scale(1.028);
     filter: blur(0);
-    letter-spacing: 0.07em;
-    text-shadow:
-      0 2px 36px rgba(255, 200, 80, 1),
-      0 0 22px rgba(244, 217, 152, 1),
-      0 0 50px rgba(244, 217, 152, 0.7);
+    letter-spacing: 0.03em;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
   }
   82% {
     opacity: 1;
     transform: translateY(0) scale(1);
     filter: blur(0);
     letter-spacing: 0.02em;
-    text-shadow: 0 2px 18px rgba(244, 217, 152, 1);
   }
   100% {
     opacity: 0;
     transform: translateY(-12px) scale(1);
     filter: blur(4px);
     letter-spacing: 0.02em;
-    text-shadow: 0 2px 18px rgba(244, 217, 152, 0.7);
   }
 }
 

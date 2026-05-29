@@ -883,26 +883,16 @@
     <!-- ════════════════════════════════════════════════════ -->
     <section class="view" id="view-caderno">
 
-      <!-- LOADING RITUAL — overlay com fumaças, orb pulsante e mensagens
-           sequenciais simulando "acesso ao subconsciente". Dispara TODA
-           vez que a aluna abre o Caderno. Duração total ~3s.
-
-           Camadas: 3 fumaças brancas (radial-gradients animados em loop),
-           orb dourado central pulsando, 4 mensagens trocando 750ms cada.
-           Removido após 3s — aí o Caderno aparece pra ela. -->
+      <!-- LOADING RITUAL — overlay com fundo dourado suave, bolha de água transparente animada,
+           muitos sparkles subindo e frases sequenciais. Duração total 5s. -->
       <div class="caderno-loading" id="caderno-loading" aria-hidden="true">
-        <div class="caderno-loading-fumaca caderno-loading-fumaca-1"></div>
-        <div class="caderno-loading-fumaca caderno-loading-fumaca-2"></div>
-        <div class="caderno-loading-fumaca caderno-loading-fumaca-3"></div>
-        <!-- Camada de estrelinhas — populada por JS em criarEstrelinhasLoading() -->
-        <div class="caderno-loading-estrelas" id="caderno-loading-estrelas" aria-hidden="true"></div>
-        <div class="caderno-loading-orb" aria-hidden="true">
-          <span class="caderno-loading-orb-core"></span>
-          <span class="caderno-loading-orb-aura"></span>
-        </div>
-        <!-- FRASE ÚNICA — JS troca textContent a cada step.
-             Multi-elemento empilhado quebrava no iOS Safari (max 2 frases visíveis).
-             O conceito de 4 frases continua intacto, mudou só a implementação técnica. -->
+        <!-- Camada de sparkles em grande volume — populada por JS em criarSparklesLoading() -->
+        <div class="caderno-loading-sparkles" id="caderno-loading-sparkles" aria-hidden="true"></div>
+        
+        <!-- Bolha d'água dourada translúcida central -->
+        <div class="caderno-loading-bubble" aria-hidden="true"></div>
+
+        <!-- FRASE ÚNICA — JS troca textContent a cada step. -->
         <div class="caderno-loading-frase-area" id="caderno-loading-frase-area">
           <p class="caderno-loading-frase" id="caderno-loading-frase" aria-live="polite"></p>
         </div>

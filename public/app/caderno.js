@@ -37,9 +37,9 @@
      trocar `LOADING_RITUAL_ATIVO` pra false.
      ═══════════════════════════════════════════════════════════ */
   const LOADING_RITUAL_ATIVO = true;
-  const LOADING_DURACAO_MS = 4800;       // total do loading
+  const LOADING_DURACAO_MS = 5000;       // total do loading
   const LOADING_STEPS = 4;               // 4 mensagens
-  const LOADING_STEP_MS = LOADING_DURACAO_MS / LOADING_STEPS; // 1200ms cada — leitura confortável
+  const LOADING_STEP_MS = LOADING_DURACAO_MS / LOADING_STEPS; // 1250ms cada — leitura confortável
 
   // ── ESTADO LOCAL ─────────────────────────────────────────
   const estado = {
@@ -182,23 +182,20 @@
   // reabre o Caderno antes do loading anterior terminar).
   let _loadingTimers = [];
 
-  // Cria ~28 estrelinhas com posições/delays/durações aleatórias.
-  // Cada estrelinha pisca (twinkle) em frequência própria — vira
-  // um céu vivo de fundo do loading.
-  function criarEstrelinhasLoading() {
-    const wrap = el('caderno-loading-estrelas');
+  // Cria uma grande quantidade de sparkles brancos subindo na tela
+  // para o fundo do loading, como pedido.
+  function criarSparklesLoading() {
+    const wrap = el('caderno-loading-sparkles');
     if (!wrap || wrap.dataset.gerado === '1') return;
     wrap.dataset.gerado = '1';
-    const total = 60;
+    const total = 100; // grande volume
     let html = '';
     for (let i = 0; i < total; i++) {
-      const top = Math.random() * 100;
       const left = Math.random() * 100;
-      const size = 3 + Math.random() * 5; // 3-8px (era 2-5)
-      const delay = Math.random() * 4;
-      const dur = 2.2 + Math.random() * 2.6;
-      const tipo = Math.random() > 0.55 ? 'caderno-estrela-dourada' : '';
-      html += `<span class="caderno-estrela ${tipo}" style="--est-top:${top}%;--est-left:${left}%;--est-size:${size}px;--est-delay:${delay}s;--est-dur:${dur}s"></span>`;
+      const size = 2 + Math.random() * 5; 
+      const delay = -Math.random() * 10;
+      const dur = 4 + Math.random() * 6;
+      html += `<span class="caderno-sparkle" style="--sp-left:${left}%;--sp-size:${size}px;--sp-delay:${delay}s;--sp-dur:${dur}s"></span>`;
     }
     wrap.innerHTML = html;
   }
@@ -207,7 +204,7 @@
     const overlay = el('caderno-loading');
     if (!overlay) return;
 
-    criarEstrelinhasLoading();
+    criarSparklesLoading();
 
     // Reset total — limpa timers e classes anteriores
     _loadingTimers.forEach(t => clearTimeout(t));
@@ -236,7 +233,7 @@
       { texto: 'Acessando o subconsciente…',         final: false },
       { texto: 'Acessando sonhos…',                  final: false },
       { texto: 'Indo a lugares profundos…',          final: false },
-      { texto: 'Sonhos carregados com sucesso ✨',   final: true  },
+      { texto: 'Conectado - Pronto para manifestar ✨', final: true  },
     ];
 
     const tocarFrase = (i) => {
