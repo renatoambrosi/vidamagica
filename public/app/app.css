@@ -4635,17 +4635,16 @@ body.caderno-aberto #view-caderno {
 /* ── BOLHA D'ÁGUA CENTRAL ── */
 .caderno-loading-bubble {
   position: absolute;
-  top: 40%; left: 50%;
+  top: 35%; left: 50%;
   transform: translate(-50%, -50%);
   width: 140px; height: 140px;
   z-index: 3;
   border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: inset 10px 0 20px rgba(255, 255, 255, 0.3),
-              inset -10px 0 20px rgba(200, 146, 42, 0.4),
-              0 0 30px rgba(255, 255, 255, 0.4);
+  /* Versão super otimizada: sem backdrop-filter pesado. Apenas gradiente suave simulando vidro */
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.05) 60%, transparent 80%);
+  box-shadow: inset 2px 2px 10px rgba(255, 255, 255, 0.5),
+              inset -4px -4px 10px rgba(200, 146, 42, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   animation: bubble-float 6s ease-in-out infinite, bubble-morph 8s ease-in-out infinite;
 }
 @keyframes bubble-float {
@@ -4658,115 +4657,78 @@ body.caderno-aberto #view-caderno {
   67% { border-radius: 100% 60% 60% 100% / 100% 100% 60% 60%; }
 }
 
-/* ── FRASE ÚNICA com text-swap + animação auto-contida ────────────
-   Cada frase toca UMA animação de 1200ms quando recebe .tocando.
-   A animação CSS gerencia entra→fica→sai em fases (não há .ativa
-   nem .saindo em classes separadas — tudo num único @keyframes).
+/* ── FRASES EMPILHADAS (LOG) ────────────
+   As frases vão aparecendo uma abaixo da outra.
+   A nova (last-child) é grande e branca.
+   As antigas vão ficando menores, opacas e subindo.
    ─────────────────────────────────────────────────────────────── */
 .caderno-loading-frase-area {
   position: absolute;
-  top: 65%; left: 0; right: 0;
+  top: 55%; left: 0; right: 0;
   z-index: 4;
   text-align: center;
   padding: 0 1.5rem;
-  min-height: 4rem;
-  display: flex; align-items: center; justify-content: center;
+  display: flex; 
+  flex-direction: column;
+  align-items: center; 
+  justify-content: flex-start;
+  gap: 0.8rem;
 }
+
 .caderno-loading-frase {
   margin: 0;
   font-family: var(--font-display, serif);
-  font-size: clamp(1.15rem, 5vw, 1.5rem);
   font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  
+  /* Estado base (frases antigas que já subiram) */
+  font-size: clamp(0.9rem, 3.5vw, 1.1rem);
+  color: rgba(255, 255, 255, 0.35);
+  transform: scale(0.85);
+  transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: frase-entra-log 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* A FRASE MAIS NOVA (a que acabou de entrar, no bottom) */
+.caderno-loading-frase:last-child {
+  font-size: clamp(1.15rem, 5vw, 1.5rem);
   color: #FFFFFF;
-  letter-spacing: 0.01em;
-  line-height: 1.35;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  opacity: 0;
-  transform: translateY(16px) scale(0.97);
-  filter: blur(6px);
-  will-change: opacity, transform, filter;
+  transform: scale(1);
+  text-shadow: 0 2px 10px rgba(255, 255, 255, 0.3);
 }
-/* Quando .tocando entra, dispara o ciclo completo de 1200ms.
-   - 0-18%   (216ms): ENTRA — opacity 0→1, blur 6→0, slide 16→0
-   - 18-78%  (720ms): FICA — visível com respiração sutil
-   - 78-100% (264ms): SAI — opacity 1→0, slide 0→-14, blur 0→5 */
-.caderno-loading-frase.tocando {
-  animation: frase-ciclo 1250ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+
+/* A penúltima frase */
+.caderno-loading-frase:nth-last-child(2) {
+  color: rgba(255, 255, 255, 0.75);
+  transform: scale(0.95);
 }
-@keyframes frase-ciclo {
+
+/* A antepenúltima frase */
+.caderno-loading-frase:nth-last-child(3) {
+  color: rgba(255, 255, 255, 0.5);
+  transform: scale(0.9);
+}
+
+@keyframes frase-entra-log {
   0% {
     opacity: 0;
-    transform: translateY(16px) scale(0.97);
-    filter: blur(6px);
-    letter-spacing: 0.01em;
-  }
-  18% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-    letter-spacing: 0.01em;
-  }
-  48% {
-    opacity: 1;
-    transform: translateY(-1px) scale(1.012);
-    filter: blur(0);
-    letter-spacing: 0.02em;
-    text-shadow: 0 0 14px rgba(255, 255, 255, 0.5);
-  }
-  78% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-    letter-spacing: 0.01em;
+    transform: translateY(20px) scale(0.9);
+    filter: blur(4px);
   }
   100% {
-    opacity: 0;
-    transform: translateY(-14px) scale(0.98);
-    filter: blur(5px);
-    letter-spacing: 0.01em;
+    opacity: 1;
+    /* transform final é ditado pela classe last-child no transition */
+    filter: blur(0);
   }
 }
-/* ÚLTIMA frase — dourada profunda, maior, respiração mais dramática */
+
+/* ÚLTIMA frase especial (Conectado) */
 .caderno-loading-frase.final {
   color: #FFFFFF;
-  font-weight: 700;
-  font-size: clamp(1.25rem, 5.4vw, 1.7rem);
-}
-.caderno-loading-frase.final.tocando {
-  animation: frase-ciclo-final 1250ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-@keyframes frase-ciclo-final {
-  0% {
-    opacity: 0;
-    transform: translateY(16px) scale(0.96);
-    filter: blur(7px);
-    letter-spacing: 0.02em;
-  }
-  20% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-    letter-spacing: 0.02em;
-  }
-  50% {
-    opacity: 1;
-    transform: translateY(-2px) scale(1.028);
-    filter: blur(0);
-    letter-spacing: 0.03em;
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
-  }
-  82% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-    letter-spacing: 0.02em;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-12px) scale(1);
-    filter: blur(4px);
-    letter-spacing: 0.02em;
-  }
+  font-weight: 800;
+  font-size: clamp(1.3rem, 5.5vw, 1.6rem);
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
 }
 
 /* ════════════════════════════════════════════════════════════════════

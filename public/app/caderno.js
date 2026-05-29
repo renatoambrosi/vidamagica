@@ -229,6 +229,9 @@
     // em LOADING_STEP_MS (1200ms). Pra disparar de novo na próxima frase,
     // remove a classe, força reflow, troca texto, adiciona a classe.
     // SEM rAF, SEM timeouts encadeados, SEM swap de classes — só toca.
+    const fraseArea = el('caderno-loading-frase-area');
+    if (fraseArea) fraseArea.innerHTML = ''; // Limpa frases do loading anterior
+
     const FRASES = [
       { texto: 'Acessando o subconsciente…',         final: false },
       { texto: 'Acessando sonhos…',                  final: false },
@@ -237,19 +240,15 @@
     ];
 
     const tocarFrase = (i) => {
-      const f = el('caderno-loading-frase');
-      if (!f) return;
+      if (!fraseArea) return;
       const item = FRASES[i] || FRASES[0];
-      // Remove classes anteriores
-      f.classList.remove('tocando', 'final');
-      // Reflow forçado — garante que o navegador "esqueça" o estado anterior
-      // antes de re-disparar a animação. Crucial pra iOS Safari.
-      void f.offsetWidth;
-      // Troca o texto + adiciona .final se for a última
-      f.textContent = item.texto;
-      if (item.final) f.classList.add('final');
-      // Toca a animação
-      f.classList.add('tocando');
+      
+      const p = document.createElement('p');
+      p.className = 'caderno-loading-frase';
+      p.textContent = item.texto;
+      if (item.final) p.classList.add('final');
+      
+      fraseArea.appendChild(p);
     };
 
     // Agenda cada frase no seu slot (0, 1200ms, 2400ms, 3600ms)
