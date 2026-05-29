@@ -188,7 +188,7 @@
     const wrap = el('caderno-loading-sparkles');
     if (!wrap || wrap.dataset.gerado === '1') return;
     wrap.dataset.gerado = '1';
-    const total = 100; // grande volume
+    const total = 35; // volume otimizado para performance
     let html = '';
     for (let i = 0; i < total; i++) {
       const left = Math.random() * 100;
