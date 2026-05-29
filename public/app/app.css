@@ -4595,10 +4595,28 @@ body.caderno-aberto #view-caderno {
   overflow: hidden;
   pointer-events: none;
   opacity: 0;
+  /* FUMAÇA CÓSMICA — gradientes radiais animados NO PRÓPRIO overlay.
+     Mais confiável que divs separados com filter:blur (Safari engolia).
+     4 camadas: dourado quente, dourado profundo, azul-violeta sutil, base. */
   background:
-    radial-gradient(circle at center, rgba(255, 250, 240, 0.78), rgba(255, 250, 240, 0.95) 70%),
-    linear-gradient(180deg, #FFFCF5 0%, #FBF3DF 100%);
-  transition: opacity 0.4s ease;
+    radial-gradient(60vmin circle at 18% 28%, rgba(255, 220, 130, 0.55), transparent 55%),
+    radial-gradient(55vmin circle at 82% 65%, rgba(255, 180, 90, 0.45), transparent 60%),
+    radial-gradient(70vmin circle at 50% 90%, rgba(200, 170, 240, 0.35), transparent 65%),
+    radial-gradient(45vmin circle at 75% 15%, rgba(255, 240, 200, 0.65), transparent 50%),
+    linear-gradient(160deg, #FFF8E8 0%, #FBEED1 60%, #F4DFB5 100%);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+  transition: opacity 0.5s ease;
+}
+.caderno-loading.ativo {
+  animation: caderno-loading-cosmica 9s ease-in-out infinite;
+}
+@keyframes caderno-loading-cosmica {
+  0%, 100% {
+    background-position: 18% 28%, 82% 65%, 50% 90%, 75% 15%, 0% 0%;
+  }
+  50% {
+    background-position: 28% 18%, 72% 75%, 60% 80%, 65% 25%, 0% 0%;
+  }
 }
 .caderno-loading.ativo {
   opacity: 1;
@@ -4609,42 +4627,9 @@ body.caderno-aberto #view-caderno {
   transition: opacity 0.4s ease;
 }
 
-/* ── FUMAÇA — 3 camadas de radial-gradient brancos em movimento ── */
-.caderno-loading-fumaca {
-  position: absolute;
-  width: 180%; height: 180%;
-  border-radius: 50%;
-  filter: blur(40px);
-  opacity: 0;
-}
-.caderno-loading.ativo .caderno-loading-fumaca { opacity: 1; }
-.caderno-loading-fumaca-1 {
-  top: -40%; left: -30%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 55%);
-  animation: fumaca-flutuar-1 6s ease-in-out infinite;
-}
-.caderno-loading-fumaca-2 {
-  top: 10%; right: -50%;
-  background: radial-gradient(circle, rgba(255, 250, 240, 0.9) 0%, rgba(255, 250, 240, 0) 60%);
-  animation: fumaca-flutuar-2 7s ease-in-out infinite;
-}
-.caderno-loading-fumaca-3 {
-  bottom: -50%; left: 20%;
-  background: radial-gradient(circle, rgba(255, 252, 245, 0.95) 0%, rgba(255, 252, 245, 0) 50%);
-  animation: fumaca-flutuar-3 5.5s ease-in-out infinite;
-}
-@keyframes fumaca-flutuar-1 {
-  0%, 100% { transform: translate(0, 0) scale(1);    opacity: 0.85; }
-  50%      { transform: translate(8%, 6%) scale(1.1); opacity: 1; }
-}
-@keyframes fumaca-flutuar-2 {
-  0%, 100% { transform: translate(0, 0) scale(1.05); opacity: 0.9; }
-  50%      { transform: translate(-10%, 4%) scale(1); opacity: 0.7; }
-}
-@keyframes fumaca-flutuar-3 {
-  0%, 100% { transform: translate(0, 0) scale(1);     opacity: 1; }
-  50%      { transform: translate(6%, -8%) scale(1.08); opacity: 0.8; }
-}
+/* Fumaça agora vive no background do overlay (caderno-loading-cosmica).
+   Mantém os divs antigos escondidos pra não conflitar. */
+.caderno-loading-fumaca { display: none; }
 
 /* ── ESTRELINHAS — céu vivo de fundo do loading ── */
 .caderno-loading-estrelas {
@@ -4687,129 +4672,144 @@ body.caderno-aberto #view-caderno {
   80%       { opacity: 0.3;  transform: scale(0.85); }
 }
 
-/* ── ORB CENTRAL — batida de coração (tum-tum-pausa) ── */
+/* ── ORB CENTRAL — batida de coração premium (tum-tum-pausa) ── */
 .caderno-loading-orb {
   position: absolute;
-  top: 42%; left: 50%;
+  top: 38%; left: 50%;
   transform: translate(-50%, -50%);
-  width: 70px; height: 70px;
+  width: 96px; height: 96px;
   z-index: 3;
+  filter: drop-shadow(0 0 32px rgba(244, 217, 152, 0.6));
 }
 .caderno-loading-orb-core {
   position: absolute; inset: 0;
   border-radius: 50%;
-  background: radial-gradient(circle,
-    rgba(255, 245, 215, 1) 0%,
-    rgba(244, 217, 152, 0.95) 40%,
-    rgba(200, 146, 42, 0.85) 100%);
+  background:
+    radial-gradient(circle at 35% 30%,
+      rgba(255, 255, 240, 1) 0%,
+      rgba(255, 240, 190, 0.95) 25%,
+      rgba(244, 217, 152, 0.95) 50%,
+      rgba(200, 146, 42, 0.9) 100%);
   box-shadow:
-    0 0 24px rgba(244, 217, 152, 0.8),
-    0 0 56px rgba(244, 217, 152, 0.6),
-    0 0 0 1px rgba(255, 250, 240, 0.6);
-  animation: orb-heartbeat 1.4s ease-in-out infinite;
+    inset 0 -8px 16px rgba(180, 120, 30, 0.4),
+    inset 0 4px 12px rgba(255, 250, 220, 0.7),
+    0 0 28px rgba(244, 217, 152, 0.85),
+    0 0 68px rgba(244, 217, 152, 0.55);
+  animation: orb-heartbeat 1.35s cubic-bezier(0.7, 0, 0.3, 1) infinite;
   transform-origin: center;
 }
 .caderno-loading-orb-aura {
-  position: absolute; inset: -30px;
+  position: absolute; inset: -50px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(244, 217, 152, 0.28) 0%, transparent 70%);
-  animation: orb-aura-heartbeat 1.4s ease-in-out infinite;
+  background: radial-gradient(circle,
+    rgba(255, 220, 130, 0.45) 0%,
+    rgba(244, 217, 152, 0.2) 35%,
+    transparent 70%);
+  animation: orb-aura-heartbeat 1.35s cubic-bezier(0.7, 0, 0.3, 1) infinite;
 }
-/* Batida de coração real: dois "tum" rápidos + pausa.
-   Sequência: contrai → expande forte (1º tum) → relaxa → expande
-   menos (2º tum) → repousa até próximo ciclo. */
+/* Batida de coração real: dois "tum-DUM" rápidos seguidos de pausa.
+   Sequência: 0% repouso → 8% tum forte → 16% relaxa rápido →
+   24% TUM mais forte (2ª batida) → 36% volta → 36-100% pausa longa. */
 @keyframes orb-heartbeat {
-  0%   { transform: scale(1);    box-shadow: 0 0 24px rgba(244, 217, 152, 0.8), 0 0 56px rgba(244, 217, 152, 0.6); }
-  14%  { transform: scale(1.22); box-shadow: 0 0 44px rgba(244, 217, 152, 1),   0 0 100px rgba(244, 217, 152, 0.85); }
-  28%  { transform: scale(1.02); }
-  42%  { transform: scale(1.14); box-shadow: 0 0 36px rgba(244, 217, 152, 0.95), 0 0 80px rgba(244, 217, 152, 0.7); }
-  56%  { transform: scale(1); }
-  100% { transform: scale(1);    box-shadow: 0 0 24px rgba(244, 217, 152, 0.8), 0 0 56px rgba(244, 217, 152, 0.6); }
+  0%   { transform: scale(1); }
+  8%   { transform: scale(1.18); }
+  16%  { transform: scale(1.04); }
+  24%  { transform: scale(1.26); }
+  36%  { transform: scale(1); }
+  100% { transform: scale(1); }
 }
 @keyframes orb-aura-heartbeat {
-  0%   { transform: scale(1);    opacity: 0.6; }
-  14%  { transform: scale(1.55); opacity: 1; }
-  28%  { transform: scale(1.05); opacity: 0.5; }
-  42%  { transform: scale(1.4);  opacity: 0.9; }
-  56%  { transform: scale(1);    opacity: 0.6; }
-  100% { transform: scale(1);    opacity: 0.6; }
+  0%   { transform: scale(0.9); opacity: 0.55; }
+  8%   { transform: scale(1.3); opacity: 0.95; }
+  16%  { transform: scale(1.0); opacity: 0.45; }
+  24%  { transform: scale(1.45); opacity: 1; }
+  36%  { transform: scale(1);   opacity: 0.55; }
+  100% { transform: scale(0.9); opacity: 0.55; }
 }
 
-/* ── MENSAGENS SEQUENCIAIS — entrada/saída suave + respiração quando visível ── */
-.caderno-loading-mensagens {
+/* ── FRASE ÚNICA com text-swap — sem briga de elementos no iOS Safari ── */
+.caderno-loading-frase-area {
   position: absolute;
-  top: 56%; left: 0; right: 0;
+  top: 54%; left: 0; right: 0;
   z-index: 4;
   text-align: center;
   padding: 0 1.5rem;
-  min-height: 3rem;
+  min-height: 4rem;
+  display: flex; align-items: center; justify-content: center;
 }
-.caderno-loading-msg {
-  position: absolute;
-  left: 0; right: 0;
-  display: block;
+.caderno-loading-frase {
+  margin: 0;
   font-family: var(--font-display, serif);
-  font-size: clamp(1.1rem, 4.8vw, 1.35rem);
+  font-size: clamp(1.15rem, 5vw, 1.5rem);
   font-weight: 600;
   color: var(--texto);
   letter-spacing: 0.01em;
   line-height: 1.35;
-  text-shadow: 0 2px 14px rgba(255, 250, 240, 0.9);
+  text-shadow: 0 2px 14px rgba(255, 250, 240, 0.95);
   opacity: 0;
-  transform: translateY(14px) scale(0.98);
-  filter: blur(4px);
-  /* will-change ajuda iOS Safari a NÃO pular a transition em elementos
-     absolute empilhados (era o bug do "só 2 frases aparecem"). */
-  will-change: opacity, transform, filter;
+  transform: translateY(16px) scale(0.97);
+  filter: blur(6px);
+  will-change: opacity, transform, filter, letter-spacing;
   transition:
-    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-    filter 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.caderno-loading-msg.ativa {
+/* Estado ATIVA — visível e RESPIRANDO continuamente.
+   A respiração (letter-spacing + text-shadow + scale) é o "plasticidade"
+   que estava faltando: o texto não fica travado, ele pulsa com o orb. */
+.caderno-loading-frase.ativa {
   opacity: 1;
   transform: translateY(0) scale(1);
   filter: blur(0);
-  /* PLASTICIDADE — respira sutil enquanto está visível (não fica travada).
-     Letter-spacing + text-shadow + scale sincronizam pra dar vida ao texto. */
-  animation: frase-respira 3.2s ease-in-out infinite 0.5s;
+  animation: frase-respira 3s ease-in-out infinite 0.4s;
 }
 @keyframes frase-respira {
   0%, 100% {
     letter-spacing: 0.01em;
-    text-shadow: 0 2px 14px rgba(255, 250, 240, 0.9);
-    transform: translateY(0) scale(1);
+    text-shadow: 0 2px 14px rgba(255, 250, 240, 0.95);
   }
   50% {
-    letter-spacing: 0.045em;
+    letter-spacing: 0.05em;
     text-shadow:
-      0 2px 24px rgba(244, 217, 152, 0.95),
-      0 0 14px rgba(255, 200, 80, 0.5);
-    transform: translateY(-1px) scale(1.012);
+      0 2px 22px rgba(244, 217, 152, 0.95),
+      0 0 12px rgba(255, 200, 80, 0.5);
   }
 }
-.caderno-loading-msg-final {
+/* Estado SAINDO — fade pra cima com blur de volta */
+.caderno-loading-frase.saindo {
+  opacity: 0;
+  transform: translateY(-14px) scale(0.98);
+  filter: blur(5px);
+  transition:
+    opacity 0.3s ease-in,
+    transform 0.3s ease-in,
+    filter 0.3s ease-in;
+}
+/* ÚLTIMA frase — dourada profunda, respiração mais intensa, escala maior */
+.caderno-loading-frase.final {
   color: var(--ouro-fundo);
   font-weight: 700;
-  font-style: normal;
+  font-size: clamp(1.25rem, 5.4vw, 1.65rem);
 }
-.caderno-loading-msg-final.ativa {
-  /* Última frase ganha sua própria respiração mais dramática */
-  animation: frase-respira-final 2.4s ease-in-out infinite 0.3s;
+.caderno-loading-frase.final.ativa {
+  animation: frase-respira-final 2.2s ease-in-out infinite 0.2s;
 }
 @keyframes frase-respira-final {
   0%, 100% {
     letter-spacing: 0.02em;
-    text-shadow: 0 2px 18px rgba(244, 217, 152, 1);
-    transform: translateY(0) scale(1);
+    text-shadow:
+      0 2px 18px rgba(244, 217, 152, 1),
+      0 0 8px rgba(255, 200, 80, 0.6);
+    transform: scale(1);
   }
   50% {
-    letter-spacing: 0.06em;
+    letter-spacing: 0.07em;
     text-shadow:
-      0 2px 32px rgba(255, 200, 80, 1),
-      0 0 24px rgba(244, 217, 152, 1),
-      0 0 48px rgba(244, 217, 152, 0.7);
-    transform: translateY(-2px) scale(1.025);
+      0 2px 36px rgba(255, 200, 80, 1),
+      0 0 22px rgba(244, 217, 152, 1),
+      0 0 50px rgba(244, 217, 152, 0.7);
+    transform: scale(1.03);
   }
 }
 

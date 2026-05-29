@@ -8,7 +8,7 @@
   <title>Vida Mágica</title>
   <link rel="icon" href="/assets/favicon.webp">
   <link rel="stylesheet" href="/assets/fonts/fonts.css">
-  <link rel="stylesheet" href="/app/app.css?v=7">
+  <link rel="stylesheet" href="/app/app.css?v=8">
   <!-- Lottie player (Bodymovin) — usado pela animação do Baú do Tesouro da Su -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -900,11 +900,11 @@
           <span class="caderno-loading-orb-core"></span>
           <span class="caderno-loading-orb-aura"></span>
         </div>
-        <div class="caderno-loading-mensagens" id="caderno-loading-mensagens">
-          <span class="caderno-loading-msg" data-step="0">Acessando o subconsciente…</span>
-          <span class="caderno-loading-msg" data-step="1">Acessando sonhos…</span>
-          <span class="caderno-loading-msg" data-step="2">Indo a lugares profundos…</span>
-          <span class="caderno-loading-msg caderno-loading-msg-final" data-step="3">Sonhos carregados com sucesso ✨</span>
+        <!-- FRASE ÚNICA — JS troca textContent a cada step.
+             Multi-elemento empilhado quebrava no iOS Safari (max 2 frases visíveis).
+             O conceito de 4 frases continua intacto, mudou só a implementação técnica. -->
+        <div class="caderno-loading-frase-area" id="caderno-loading-frase-area">
+          <p class="caderno-loading-frase" id="caderno-loading-frase" aria-live="polite"></p>
         </div>
       </div>
 
@@ -1784,10 +1784,10 @@
        antigo em cache mesmo após deploy. Bumpe o número (v=3, v=4, …)
        sempre que mudar app.js ou caderno.js e quiser forçar reload no
        celular sem o usuário ter que limpar cache. -->
-  <script type="module" src="/app/app.js?v=7"></script>
+  <script type="module" src="/app/app.js?v=8"></script>
   <!-- Caderno da Mentalização + Conquistas. Carrega depois do app.js
        pra ter acesso a fetchAutenticado/irPara/toast/abrirModal/fecharModal
        como globais. Vide public/app/caderno.js. -->
-  <script src="/app/caderno.js?v=7"></script>
+  <script src="/app/caderno.js?v=8"></script>
 </body>
 </html>

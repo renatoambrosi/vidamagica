@@ -213,9 +213,11 @@
     _loadingTimers.forEach(t => clearTimeout(t));
     _loadingTimers = [];
     overlay.classList.remove('ativo', 'saindo');
-    document.querySelectorAll('.caderno-loading-msg').forEach(m => {
-      m.classList.remove('ativa');
-    });
+    const frase = el('caderno-loading-frase');
+    if (frase) {
+      frase.textContent = '';
+      frase.classList.remove('ativa', 'final');
+    }
     // Force reflow pra CSS animation reiniciar do zero
     void overlay.offsetWidth;
 
@@ -223,22 +225,52 @@
     overlay.setAttribute('aria-hidden', 'false');
     overlay.classList.add('ativo');
 
-    // CICLO DE MENSAGENS — crossfade natural via .ativa.
-    // Quando troco .ativa de msg N pra msg N+1, ambas transitam ao mesmo
-    // tempo: N faz opacity 1→0, N+1 faz opacity 0→1, com a MESMA transition
-    // definida na base. O navegador interpola em paralelo → fade cruzado
-    // suave, sem flash.
-    // Pequeno delay (80ms) na 1ª msg garante que o browser pinte o estado
-    // inicial (opacity 0) antes do CSS transition rodar — sem isso o iOS
-    // Safari às vezes pula a animação e a frase aparece de uma vez.
-    const mostrarMsg = (i) => {
-      document.querySelectorAll('.caderno-loading-msg').forEach(m => m.classList.remove('ativa'));
-      const msg = document.querySelector(`.caderno-loading-msg[data-step="${i}"]`);
-      if (msg) msg.classList.add('ativa');
+    // 4 FRASES — swap de texto na MESMA tag <p>. Elimina o bug iOS Safari
+    // de elementos absolutos empilhados (ele pulava a transition da 3ª e 4ª).
+    // Sequência por frase:
+    //   - sair (300ms):  opacity 1→0 + blur + translateY
+    //   - swap texto
+    //   - entrar (500ms): opacity 0→1 + blur reverso + translateY reverso
+    //   - vive (resto):   respiração contínua (letter-spacing + glow)
+    const FRASES = [
+      { texto: 'Acessando o subconsciente…',         final: false },
+      { texto: 'Acessando sonhos…',                  final: false },
+      { texto: 'Indo a lugares profundos…',          final: false },
+      { texto: 'Sonhos carregados com sucesso ✨',   final: true  },
+    ];
+
+    const trocarFrase = (i) => {
+      const f = el('caderno-loading-frase');
+      if (!f) return;
+      const item = FRASES[i] || FRASES[0];
+      // Sai a anterior (se houver)
+      if (f.classList.contains('ativa')) {
+        f.classList.remove('ativa');
+        f.classList.add('saindo');
+        _loadingTimers.push(setTimeout(() => {
+          f.classList.remove('saindo', 'final');
+          f.textContent = item.texto;
+          if (item.final) f.classList.add('final');
+          // rAF dobrado pra garantir paint do estado inicial antes da transition
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => f.classList.add('ativa'));
+          });
+        }, 300));
+      } else {
+        // 1ª frase: setup direto + rAF pro Safari respeitar a transition
+        f.textContent = item.texto;
+        if (item.final) f.classList.add('final');
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => f.classList.add('ativa'));
+        });
+      }
     };
-    _loadingTimers.push(setTimeout(() => mostrarMsg(0), 80));
-    for (let i = 1; i < LOADING_STEPS; i++) {
-      _loadingTimers.push(setTimeout(() => mostrarMsg(i), i * LOADING_STEP_MS));
+
+    // Agenda cada troca
+    for (let i = 0; i < LOADING_STEPS; i++) {
+      // 1ª frase tem delay menor (apenas o paint inicial); demais respeitam STEP
+      const t = i === 0 ? 60 : i * LOADING_STEP_MS;
+      _loadingTimers.push(setTimeout(() => trocarFrase(i), t));
     }
 
     // Brand do topo pulsa quando chega a mensagem final
