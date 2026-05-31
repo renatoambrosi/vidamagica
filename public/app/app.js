@@ -30,7 +30,10 @@ async function checarAuth() {
       const r2 = await fetch(`${API}/api/auth/renovar`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ refresh_token: refresh }) });
       if (r2.ok) {
         const d = await r2.json();
-        VmSession.salvar(d, VmSession.getLembrar());
+        // /renovar NÃO devolve refresh_token (o servidor mantém o mesmo). Por isso
+        // MESCLAMOS com a sessão atual em vez de substituir — senão o refresh_token
+        // some do storage e o 401 seguinte não consegue renovar (= "pede login do nada").
+        VmSession.salvar({ ...(VmSession.carregar() || {}), ...d }, VmSession.getLembrar());
         const r3 = await fetch(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${d.access_token}` } });
         if (r3.ok) return await r3.json();
       }
@@ -89,7 +92,10 @@ async function fetchAutenticado(url, opts = {}) {
       return null;
     }
     const novo = await rRen.json();
-    VmSession.salvar(novo, VmSession.getLembrar());
+    // Mescla preservando o refresh_token (a resposta de /renovar não o devolve).
+    // Mesmo motivo do checarAuth: substituir aqui apagava o refresh e derrubava
+    // a aluna pro login no 401 seguinte.
+    VmSession.salvar({ ...(VmSession.carregar() || {}), ...novo }, VmSession.getLembrar());
     // Refaz a request original com o token renovado
     return await fazerRequest(novo.access_token);
   } catch (e) {
