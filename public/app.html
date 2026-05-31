@@ -8,7 +8,7 @@
   <title>Vida Mágica</title>
   <link rel="icon" href="/assets/favicon.webp">
   <link rel="stylesheet" href="/assets/fonts/fonts.css">
-  <link rel="stylesheet" href="/app/app.css?v=16">
+  <link rel="stylesheet" href="/app/app.css?v=17">
   <!-- Lottie player (Bodymovin) — usado pela animação do Baú do Tesouro da Su -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -939,6 +939,13 @@
         <!-- FRASES EMPILHADAS — JS injeta <p> sequencialmente aqui. -->
         <div class="caderno-loading-frase-area" id="caderno-loading-frase-area">
         </div>
+
+        <!-- Botão PULAR — discreto, parte inferior, com respiro (safe-area).
+             Só aparece da 2ª animação em diante (controle por localStorage no JS).
+             Ao tocar: cancela os timers e abre o Caderno com fade. -->
+        <button type="button" class="caderno-loading-pular" id="caderno-loading-pular" style="display:none">
+          Pular
+        </button>
       </div>
 
       <!-- Camada de partículas douradas próprias do Caderno (mais densas
@@ -1817,10 +1824,10 @@
        antigo em cache mesmo após deploy. Bumpe o número (v=3, v=4, …)
        sempre que mudar app.js ou caderno.js e quiser forçar reload no
        celular sem o usuário ter que limpar cache. -->
-  <script type="module" src="/app/app.js?v=16"></script>
+  <script type="module" src="/app/app.js?v=17"></script>
   <!-- Caderno da Mentalização + Conquistas. Carrega depois do app.js
        pra ter acesso a fetchAutenticado/irPara/toast/abrirModal/fecharModal
        como globais. Vide public/app/caderno.js. -->
-  <script src="/app/caderno.js?v=16"></script>
+  <script src="/app/caderno.js?v=17"></script>
 </body>
 </html>

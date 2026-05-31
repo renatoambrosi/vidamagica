@@ -225,6 +225,23 @@
     overlay.setAttribute('aria-hidden', 'false');
     overlay.classList.add('ativo');
 
+    // CONTADOR de exibições (persiste entre sessões/logins).
+    // A 1ª vez que a pessoa vê o loading: SEM botão pular (vê tudo).
+    // Da 2ª exibição em diante: aparece o botão "Pular" discreto.
+    const vezes = incLoadingCount();
+    const btnPular = el('caderno-loading-pular');
+    if (btnPular) {
+      if (vezes >= 2) {
+        btnPular.style.display = '';
+        // Reinicia o fade-in do botão a cada loading
+        btnPular.style.animation = 'none';
+        void btnPular.offsetWidth;
+        btnPular.style.animation = '';
+      } else {
+        btnPular.style.display = 'none';
+      }
+    }
+
     // 4 FRASES — swap de texto na MESMA tag <p>. Elimina o bug iOS Safari
     // de elementos absolutos empilhados.
     //
@@ -279,6 +296,8 @@
 
     // Fade out do overlay no fim do ciclo (depois da última frase ler)
     _loadingTimers.push(setTimeout(() => {
+      const b = el('caderno-loading-pular');
+      if (b) b.style.display = 'none';
       overlay.classList.add('saindo');
       _loadingTimers.push(setTimeout(() => {
         overlay.classList.remove('ativo', 'saindo');
@@ -286,6 +305,51 @@
       }, 500));
     }, LOADING_DURACAO_MS));
   }
+
+  // Contador de exibições do loading (cumulativo entre sessões/logins).
+  function getLoadingCount() {
+    try { return parseInt(localStorage.getItem('vm_caderno_loading_vezes') || '0', 10) || 0; }
+    catch { return 0; }
+  }
+  function incLoadingCount() {
+    try {
+      const n = getLoadingCount() + 1;
+      localStorage.setItem('vm_caderno_loading_vezes', String(n));
+      return n;
+    } catch { return 1; }
+  }
+
+  // PULAR — cancela a animação na hora e abre o Caderno com fade.
+  function pularLoading() {
+    const overlay = el('caderno-loading');
+    if (!overlay) return;
+    // Cancela TODOS os timers pendentes (frases, brand, fade programado)
+    _loadingTimers.forEach(t => clearTimeout(t));
+    _loadingTimers = [];
+    // Esconde o botão pular
+    const btn = el('caderno-loading-pular');
+    if (btn) btn.style.display = 'none';
+    // Fade-out imediato do overlay
+    overlay.classList.add('saindo');
+    setTimeout(() => {
+      overlay.classList.remove('ativo', 'saindo');
+      overlay.setAttribute('aria-hidden', 'true');
+    }, 400);
+    // Partículas douradas do Caderno entram agora (estavam programadas
+    // pra depois do loading completo). Idempotente via dataset.gerado.
+    criarParticulasCaderno();
+    // Auto-focus no textarea (o foco programado foi cancelado junto)
+    if (estado.abaAtiva === 'escrever') {
+      setTimeout(() => {
+        const t = el('caderno-escrita-input');
+        if (t && document.activeElement !== t) {
+          try { t.focus({ preventScroll: true }); } catch { try { t.focus(); } catch {} }
+        }
+      }, 450);
+    }
+  }
+  // Expõe pra ser ligado no listener
+  window._cadernoPularLoading = pularLoading;
 
   function criarParticulasCaderno() {
     const wrap = el('caderno-particulas');
@@ -341,6 +405,8 @@
     if (ligarBotoesCaderno._feito) return;
     ligarBotoesCaderno._feito = true;
 
+    // Botão Pular do loading
+    el('caderno-loading-pular')?.addEventListener('click', pularLoading);
     // Salvar escrita
     el('caderno-btn-salvar')?.addEventListener('click', salvarEscrita);
     // Contador de caracteres em tempo real

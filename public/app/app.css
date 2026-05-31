@@ -4610,6 +4610,40 @@ body.caderno-aberto #view-caderno {
   transition: opacity 0.4s ease;
 }
 
+/* ── BOTÃO PULAR — discreto, parte inferior, com respiro ──
+   Aparece só da 2ª animação em diante (JS controla via display).
+   Fade-in suave após 0.6s pra não competir com a entrada do loading. */
+.caderno-loading-pular {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 28px);  /* respiro do rodapé */
+  transform: translateX(-50%);
+  z-index: 6;
+  padding: 0.5rem 1.5rem;
+  background: rgba(255, 250, 240, 0.14);
+  border: 1px solid rgba(255, 250, 240, 0.35);
+  border-radius: var(--radius-full, 999px);
+  color: rgba(255, 250, 240, 0.88);
+  font-family: var(--font-display, serif);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  opacity: 0;
+  animation: pular-aparece 0.5s ease 0.6s forwards;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+.caderno-loading-pular:hover {
+  background: rgba(255, 250, 240, 0.22);
+}
+.caderno-loading-pular:active {
+  transform: translateX(-50%) scale(0.93);
+}
+@keyframes pular-aparece {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0);   }
+}
+
 /* ── SPARKLES EM GRANDE VOLUME ── */
 .caderno-loading-sparkles {
   position: absolute; inset: 0;
