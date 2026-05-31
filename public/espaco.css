@@ -114,14 +114,14 @@ body[data-tema="medieval"] {
   --glow: 0 0 24px rgba(140, 200, 150, 0.35), 0 0 48px rgba(100, 160, 255, 0.20);
 }
 
-/* Temas com imagem de fundo: mostram a imagem INTEIRA (contain) em vez de
-   estourar (cover). A --fundo-cor preenche as bordas, o --overlay funde.
-   Renato mandou as imagens 16:9 de propósito — quer ver a cena toda
-   ("fundo mais distante"), não com zoom. */
+/* Temas com imagem: a imagem PREENCHE a tela (cover, atinge os limites
+   vertical e horizontal). Como é 16:9 numa tela vertical, mostra o CENTRO e
+   corta as laterais (custo de preencher sem distorcer). --bg-pos ajustável
+   por tema se precisar reenquadrar. */
 body[data-tema="magico"],
 body[data-tema="universo"],
 body[data-tema="medieval"] {
-  --bg-size: contain;
+  --bg-size: cover;
   --bg-pos: center;
 }
 
@@ -238,12 +238,12 @@ body[data-tema="medieval"] {
    DROPUP DO AVATAR — sobe de baixo do avatar (canto direito)
    ───────────────────────────────────────────────────────────── */
 .espaco-avatar-menu {
-  position: absolute; top: calc(100% + 6px); right: 0.9rem;
-  min-width: 220px; z-index: 40;
+  position: absolute; bottom: calc(100% + 12px); right: 0.6rem;
+  min-width: 230px; z-index: 60;
   background: var(--header-bg);
   border: 1px solid var(--card-borda); border-radius: 16px;
-  padding: 0.4rem; box-shadow: 0 14px 40px rgba(0,0,0,0.45);
-  opacity: 0; transform: translateY(-8px) scale(0.97);
+  padding: 0.4rem; box-shadow: 0 -10px 40px rgba(0,0,0,0.45);
+  opacity: 0; transform: translateY(10px) scale(0.97);
   pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
 }
 .espaco-avatar-menu.aberto { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
@@ -264,7 +264,8 @@ body[data-tema="medieval"] {
 .espaco-corpo {
   flex: 1; position: relative; overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 1.4rem 1.1rem calc(env(safe-area-inset-bottom) + 1.4rem);
+  /* padding-bottom generoso pro bottom-nav (com botão central que salta) não cobrir */
+  padding: 1.4rem 1.1rem calc(env(safe-area-inset-bottom) + 6rem);
 }
 
 /* VIEW — telas internas trocadas via JS */
@@ -314,6 +315,44 @@ body[data-tema="medieval"] {
 .espaco-caminho-sub { font-size: 0.85rem; color: var(--texto-suave); }
 .espaco-caminho-seta { margin-left: auto; color: var(--texto-suave); }
 .espaco-caminho-seta svg { width: 20px; height: 20px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   MENU EMBAIXO (bottom-nav) — Início · Ambiente (botão central) · Perfil
+   ═══════════════════════════════════════════════════════════════════ */
+.espaco-bottom {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  display: flex; align-items: flex-end; justify-content: space-between;
+  padding: 0.45rem 1.8rem calc(env(safe-area-inset-bottom) + 0.45rem);
+  background: var(--header-bg);
+  border-top: 1px solid var(--card-borda);
+}
+.espaco-bottom-item {
+  display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
+  background: none; border: none; color: var(--texto-suave); cursor: pointer;
+  font-size: 0.66rem; font-weight: 700; font-family: var(--font-ui);
+  letter-spacing: 0.02em; padding: 0.35rem 0.5rem 0.15rem; border-radius: 12px;
+  transition: color 0.15s ease;
+}
+.espaco-bottom-item.ativo { color: var(--acento); }
+.espaco-bottom-item svg { width: 23px; height: 23px; }
+.espaco-bottom-avatar {
+  width: 27px; height: 27px; border-radius: 50%; overflow: hidden;
+  border: 2px solid var(--acento-2); display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 800; color: var(--texto);
+  font-size: 0.82rem; background: var(--card-bg);
+}
+.espaco-bottom-avatar img { width: 100%; height: 100%; object-fit: cover; }
+/* Botão central destacado (Ambiente) — maior e com glow, salta acima da barra */
+.espaco-bottom-central {
+  width: 60px; height: 60px; border-radius: 50%; margin-bottom: 4px;
+  border: 4px solid var(--fundo-cor, #fff);
+  background: linear-gradient(135deg, var(--acento-2), var(--acento-deep));
+  color: #fff; cursor: pointer; display: grid; place-items: center;
+  box-shadow: var(--glow); flex-shrink: 0;
+  transition: transform 0.14s ease;
+}
+.espaco-bottom-central:active { transform: scale(0.92); }
+.espaco-bottom-central svg { width: 27px; height: 27px; }
 
 /* ═══════════════════════════════════════════════════════════════════
    ANIMAÇÃO DE ABERTURA — portada do Caderno (cérebro dourado).

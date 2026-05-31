@@ -285,10 +285,12 @@
         toast(`${nomes[c] || 'Em breve'} — em breve ✨`);
       });
     });
-    // Ferramentas (timer / música / afirmação) — painel Ambiente vem depois
-    el('ferr-timer')?.addEventListener('click', () => toast('Timer — em breve ✨'));
-    el('ferr-musica')?.addEventListener('click', () => toast('Música — em breve ✨'));
-    el('ferr-afirmacao')?.addEventListener('click', () => toast('Afirmações — em breve ✨'));
+    // Botão central "Ambiente" (timer + música + afirmações) — painel vem depois
+    el('ferr-ambiente')?.addEventListener('click', () => toast('Ambiente (timer · música · afirmações) — em breve ✨'));
+    // Início — volta ao topo da Meditação Guiada
+    el('nav-inicio')?.addEventListener('click', () => {
+      document.querySelector('.espaco-corpo')?.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   }
 
   // ════════════════════════════════════════════════════════════
@@ -304,16 +306,14 @@
     // Sementes
     const sem = el('espaco-sementes-num');
     if (sem) sem.textContent = ctx.aluna?.sementes || 0;
-    // Avatar — foto se houver, senão inicial do nome
-    const av = el('espaco-avatar');
-    if (av) {
-      if (ctx.aluna?.foto_url) {
-        const img = document.createElement('img');
-        img.src = ctx.aluna.foto_url; img.alt = '';
-        av.innerHTML = ''; av.appendChild(img);
-      } else {
-        av.innerHTML = `<span id="espaco-avatar-inicial">${(ctx.aluna?.nome || '·').trim().charAt(0).toUpperCase() || '·'}</span>`;
-      }
+    // Avatar (no menu de baixo) — foto se houver, senão inicial do nome.
+    // Mira o container .espaco-bottom-avatar pra não apagar o label "Perfil".
+    const avBox = el('espaco-bottom-avatar');
+    if (avBox) {
+      const ini = (ctx.aluna?.nome || '·').trim().charAt(0).toUpperCase() || '·';
+      avBox.innerHTML = ctx.aluna?.foto_url
+        ? `<img src="${ctx.aluna.foto_url}" alt="" />`
+        : `<span id="espaco-avatar-inicial">${ini}</span>`;
     }
     // Saudação
     const tit = el('espaco-saudacao-titulo');
