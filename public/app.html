@@ -8,7 +8,7 @@
   <title>Vida Mágica</title>
   <link rel="icon" href="/assets/favicon.webp">
   <link rel="stylesheet" href="/assets/fonts/fonts.css">
-  <link rel="stylesheet" href="/app/app.css?v=12">
+  <link rel="stylesheet" href="/app/app.css?v=13">
   <!-- Lottie player (Bodymovin) — usado pela animação do Baú do Tesouro da Su -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -889,72 +889,28 @@
         <!-- Camada de sparkles em grande volume — populada por JS em criarSparklesLoading() -->
         <div class="caderno-loading-sparkles" id="caderno-loading-sparkles" aria-hidden="true"></div>
         
-        <!-- Cérebro estilo WIREFRAME poligonal — referência: imagem que o
-             Renato mandou (low-poly brain). 16 vértices no perímetro + 8
-             interiores = 24 dots. Mesh triangulado conectando vizinhos.
-             Cada dot tem glow dourado e PULSA em ritmo próprio (5 delays
-             diferentes via .dot-a..e). Linhas estáticas, dots animados. -->
+        <!-- Cérebro wireframe = imagem profissional (assets/cerebro.png).
+             A imagem é estática; pra dar o "piscar de verdade" dos nós,
+             sobrepomos ~13 dots dourados que piscam em ritmos diferentes
+             posicionados por cima dos vértices mais brilhantes. -->
         <div class="caderno-loading-cerebro" aria-hidden="true">
-          <svg viewBox="0 0 240 200" preserveAspectRatio="xMidYMid meet">
-
-            <!-- MESH (linhas estáticas — perímetro + triangulação interna) -->
-            <g class="cerebro-mesh"
-               stroke="rgba(255, 250, 230, 0.5)" stroke-width="0.75"
-               fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <!-- Perímetro -->
-              <polygon points="45,132 32,105 36,78 52,50 78,34 110,28 140,32 168,42 192,60 208,90 200,122 178,142 152,155 122,152 92,150 65,142"/>
-              <!-- Triangulação interna (conecta vértices interiores com vizinhos) -->
-              <path d="
-                M 78 80 L 45 132 M 78 80 L 32 105 M 78 80 L 36 78
-                M 78 80 L 52 50 M 78 80 L 78 34 M 78 80 L 105 70
-                M 78 80 L 90 110 M 78 80 L 65 142
-                M 105 70 L 78 34 M 105 70 L 110 28 M 105 70 L 140 32
-                M 105 70 L 135 78 M 105 70 L 120 105 M 105 70 L 90 110
-                M 135 78 L 140 32 M 135 78 L 168 42 M 135 78 L 165 88
-                M 135 78 L 120 105
-                M 165 88 L 168 42 M 165 88 L 192 60 M 165 88 L 208 90
-                M 165 88 L 155 115 M 165 88 L 120 105
-                M 155 115 L 208 90 M 155 115 L 200 122 M 155 115 L 178 142
-                M 155 115 L 152 155 M 155 115 L 120 105 M 155 115 L 110 130
-                M 120 105 L 90 110 M 120 105 L 110 130 M 120 105 L 152 155
-                M 90 110 L 45 132 M 90 110 L 32 105 M 90 110 L 65 142
-                M 90 110 L 110 130
-                M 110 130 L 122 152 M 110 130 L 92 150 M 110 130 L 152 155
-                M 92 150 L 65 142 M 92 150 L 122 152
-                M 122 152 L 152 155
-                M 178 142 L 200 122 M 178 142 L 152 155"/>
-            </g>
-
-            <!-- DOTS — vértices brilhantes, cada um pulsa em ritmo diferente -->
-            <g class="cerebro-dots">
-              <!-- Perímetro (16 dots) -->
-              <circle cx="45"  cy="132" r="2.2" class="dot dot-a"/>
-              <circle cx="32"  cy="105" r="2.2" class="dot dot-b"/>
-              <circle cx="36"  cy="78"  r="2.2" class="dot dot-c"/>
-              <circle cx="52"  cy="50"  r="2.2" class="dot dot-d"/>
-              <circle cx="78"  cy="34"  r="2.2" class="dot dot-e"/>
-              <circle cx="110" cy="28"  r="2.5" class="dot dot-a"/>
-              <circle cx="140" cy="32"  r="2.2" class="dot dot-b"/>
-              <circle cx="168" cy="42"  r="2.2" class="dot dot-c"/>
-              <circle cx="192" cy="60"  r="2.2" class="dot dot-d"/>
-              <circle cx="208" cy="90"  r="2.5" class="dot dot-e"/>
-              <circle cx="200" cy="122" r="2.2" class="dot dot-a"/>
-              <circle cx="178" cy="142" r="2.2" class="dot dot-b"/>
-              <circle cx="152" cy="155" r="2.2" class="dot dot-c"/>
-              <circle cx="122" cy="152" r="2.2" class="dot dot-d"/>
-              <circle cx="92"  cy="150" r="2.2" class="dot dot-e"/>
-              <circle cx="65"  cy="142" r="2.2" class="dot dot-a"/>
-              <!-- Interior (8 dots) -->
-              <circle cx="78"  cy="80"  r="2.4" class="dot dot-c"/>
-              <circle cx="105" cy="70"  r="2.4" class="dot dot-d"/>
-              <circle cx="135" cy="78"  r="2.4" class="dot dot-e"/>
-              <circle cx="165" cy="88"  r="2.4" class="dot dot-a"/>
-              <circle cx="155" cy="115" r="2.4" class="dot dot-b"/>
-              <circle cx="120" cy="105" r="2.6" class="dot dot-c"/>
-              <circle cx="90"  cy="110" r="2.4" class="dot dot-d"/>
-              <circle cx="110" cy="130" r="2.4" class="dot dot-e"/>
-            </g>
-          </svg>
+          <img src="/assets/cerebro.png?v=1" alt="" class="caderno-cerebro-img" />
+          <!-- Dots piscando por cima dos nós (posições em % do container) -->
+          <div class="caderno-cerebro-dots">
+            <span class="cdot cdot-a" style="left:50%;top:17%"></span>
+            <span class="cdot cdot-b" style="left:32%;top:25%"></span>
+            <span class="cdot cdot-c" style="left:66%;top:21%"></span>
+            <span class="cdot cdot-d" style="left:20%;top:42%"></span>
+            <span class="cdot cdot-e" style="left:37%;top:35%"></span>
+            <span class="cdot cdot-a" style="left:50%;top:41%"></span>
+            <span class="cdot cdot-b" style="left:66%;top:38%"></span>
+            <span class="cdot cdot-c" style="left:78%;top:48%"></span>
+            <span class="cdot cdot-d" style="left:28%;top:56%"></span>
+            <span class="cdot cdot-e" style="left:48%;top:55%"></span>
+            <span class="cdot cdot-a" style="left:64%;top:56%"></span>
+            <span class="cdot cdot-b" style="left:24%;top:66%"></span>
+            <span class="cdot cdot-c" style="left:54%;top:73%"></span>
+          </div>
         </div>
 
         <!-- FRASES EMPILHADAS — JS injeta <p> sequencialmente aqui. -->
@@ -1838,10 +1794,10 @@
        antigo em cache mesmo após deploy. Bumpe o número (v=3, v=4, …)
        sempre que mudar app.js ou caderno.js e quiser forçar reload no
        celular sem o usuário ter que limpar cache. -->
-  <script type="module" src="/app/app.js?v=12"></script>
+  <script type="module" src="/app/app.js?v=13"></script>
   <!-- Caderno da Mentalização + Conquistas. Carrega depois do app.js
        pra ter acesso a fetchAutenticado/irPara/toast/abrirModal/fecharModal
        como globais. Vide public/app/caderno.js. -->
-  <script src="/app/caderno.js?v=12"></script>
+  <script src="/app/caderno.js?v=13"></script>
 </body>
 </html>

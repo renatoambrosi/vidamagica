@@ -4641,48 +4641,54 @@ body.caderno-aberto #view-caderno {
    sem reflow/repaint a cada frame. Float lento + respiração sutil. */
 .caderno-loading-cerebro {
   position: absolute;
-  top: 35%; left: 50%;
-  width: 180px; height: 150px;
-  margin-left: -90px;  /* centraliza horizontalmente sem usar transform */
-  margin-top: -75px;
+  top: 34%; left: 50%;
+  width: 230px; height: 230px;
+  margin-left: -115px;  /* centraliza sem usar transform */
+  margin-top: -115px;
   z-index: 3;
-  /* drop-shadow num filter aplicado ao SVG inteiro — barato, GPU-friendly */
-  filter: drop-shadow(0 0 14px rgba(255, 240, 190, 0.55))
-          drop-shadow(0 0 28px rgba(255, 220, 130, 0.35));
   animation: cerebro-flutua 6s ease-in-out infinite;
   will-change: transform;
 }
-.caderno-loading-cerebro svg {
-  width: 100%; height: 100%; display: block;
-  overflow: visible; /* glow dos dots não pode ser cortado */
-}
 @keyframes cerebro-flutua {
   0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-14px); }
+  50%      { transform: translateY(-12px); }
+}
+/* Imagem do cérebro — estática (só glow fixo). Float vem do container. */
+.caderno-cerebro-img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 0 16px rgba(255, 235, 170, 0.45));
 }
 
-/* ── DOTS DO CÉREBRO — vértices pulsando em ritmos diferentes ── */
-.caderno-loading-cerebro .cerebro-dots circle {
-  fill: #FFFCEB;
-  /* Glow dourado em 2 camadas — pop visual sem custo de animation */
-  filter: drop-shadow(0 0 4px rgba(255, 240, 180, 0.95))
-          drop-shadow(0 0 9px rgba(255, 220, 130, 0.7));
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: cerebro-dot-pulse 2.4s ease-in-out infinite;
+/* ── DOTS OVERLAY — piscam por cima dos nós da imagem ── */
+.caderno-cerebro-dots {
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+.cdot {
+  position: absolute;
+  width: 6px; height: 6px;
+  margin: -3px 0 0 -3px;          /* centraliza no ponto left/top */
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    #FFFFFF 0%, rgba(255, 235, 170, 0.65) 45%, transparent 100%);
+  filter: drop-shadow(0 0 5px rgba(255, 235, 170, 0.95))
+          drop-shadow(0 0 10px rgba(255, 210, 110, 0.6));
+  opacity: 0;
+  transform: scale(0.5);
+  animation: cdot-twinkle 2.4s ease-in-out infinite;
   will-change: opacity, transform;
 }
-/* 5 delays diferentes — distribuídos via classes nos circles do HTML.
-   Cada dot piscando no seu próprio tempo = orgânico, não-sincronizado. */
-.caderno-loading-cerebro .dot-a { animation-delay: 0s;     }
-.caderno-loading-cerebro .dot-b { animation-delay: 0.48s;  }
-.caderno-loading-cerebro .dot-c { animation-delay: 0.96s;  }
-.caderno-loading-cerebro .dot-d { animation-delay: 1.44s;  }
-.caderno-loading-cerebro .dot-e { animation-delay: 1.92s;  }
-
-@keyframes cerebro-dot-pulse {
-  0%, 100% { opacity: 0.4; transform: scale(0.7);  }
-  50%      { opacity: 1;   transform: scale(1.35); }
+/* 5 ritmos diferentes — piscar assíncrono, orgânico */
+.cdot-a { animation-delay: 0s;    }
+.cdot-b { animation-delay: 0.5s;  }
+.cdot-c { animation-delay: 1.0s;  }
+.cdot-d { animation-delay: 1.5s;  }
+.cdot-e { animation-delay: 2.0s;  }
+@keyframes cdot-twinkle {
+  0%, 100% { opacity: 0;   transform: scale(0.5); }
+  50%      { opacity: 1;   transform: scale(1.4); }
 }
 
 /* ── FRASES EMPILHADAS (LOG) ────────────
