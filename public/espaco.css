@@ -20,7 +20,13 @@ body {
   /* overlay de legibilidade (cor do tema, leve) POR CIMA da imagem do tema.
      A imagem fica fixa (body não rola — o scroll é no .espaco-corpo), então
      não precisa de background-attachment: fixed (que o iOS ignora). */
-  background: var(--overlay, none), var(--fundo) center center / cover no-repeat;
+  /* Camada 1 = overlay (cobre tudo). Camada 2 = imagem do tema, com tamanho/
+     posição controlados por --bg-size / --bg-pos (cada tema ajusta). Imagens
+     16:9 num celular retrato: 'cover' estoura (zoom) → temas com foto usam
+     'contain' (mostra a imagem inteira) e a --fundo-cor preenche as bordas. */
+  background:
+    var(--overlay, none) center / cover no-repeat,
+    var(--fundo) var(--bg-pos, center) / var(--bg-size, cover) no-repeat;
   background-color: var(--fundo-cor, #E8DCC0);   /* fallback enquanto a imagem carrega */
   color: var(--texto);
   overflow: hidden;                 /* tela sem rolagem global — cada view controla */
@@ -106,6 +112,17 @@ body[data-tema="medieval"] {
   --particula: rgba(180, 220, 255, 0.90);
   --sombra: 0 8px 30px rgba(0, 0, 0, 0.40);
   --glow: 0 0 24px rgba(140, 200, 150, 0.35), 0 0 48px rgba(100, 160, 255, 0.20);
+}
+
+/* Temas com imagem de fundo: mostram a imagem INTEIRA (contain) em vez de
+   estourar (cover). A --fundo-cor preenche as bordas, o --overlay funde.
+   Renato mandou as imagens 16:9 de propósito — quer ver a cena toda
+   ("fundo mais distante"), não com zoom. */
+body[data-tema="magico"],
+body[data-tema="universo"],
+body[data-tema="medieval"] {
+  --bg-size: contain;
+  --bg-pos: center;
 }
 
 /* ─────────────────────────────────────────────────────────────
