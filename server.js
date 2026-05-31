@@ -162,6 +162,12 @@ app.get(/^\/app(\/(dashboard|perfil|chat|loja|sementes|jornada|conquistas)?)?$/,
   res.sendFile(path.join(__dirname, 'public', 'app.html'));
 });
 
+// ── ROTA AMIGÁVEL: /espaco → Espaço da Manifestação (página própria) ──
+// Página separada do /app (mais leve). Sub-seções trocadas via JS.
+app.get(/^\/espaco(\/(meditar|carta|manifestar|manifestacoes|cartas)?)?$/, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'espaco.html'));
+});
+
 // ── MÓDULOS DA API ─────────────────────────────────────────
 app.use('/api/auth',          require('./routes/auth'));
 app.use('/api/painel',        require('./routes/admin-auth'));        // OTP do admin/atendimento
@@ -182,8 +188,7 @@ app.use('/api/upload',        require('./routes/upload'));
 app.use('/api/teste',         require('./routes/teste'));            // Teste do Subconsciente (lado da aluna)
 app.use('/api/app',           require('./routes/app'));              // Contexto unificado pro /app (Home, Materiais, Chat)
 app.use('/api/app/gamificacao', require('./routes/gamificacao'));     // Conquistas (status, missões, prêmios, ranking mensal)
-// NOTA: /api/app/caderno (routes/caderno.js) foi REMOVIDO — Caderno descontinuado,
-// substituído pelo Espaço da Manifestação (espaco.html). Ver memória da remodelação.
+app.use('/api/app/espaco',      require('./routes/espaco'));          // Espaço da Manifestação (tema, manifestações, cartas do tempo)
 
 // ── ESTÁTICOS ──────────────────────────────────────────────
 // Cache-Control no-cache pra HTML + JS/CSS do mini-SPA /app + relatos-card.js.

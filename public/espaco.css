@@ -1,0 +1,378 @@
+/* === VIDA MÁGICA — public/espaco.css ===
+   Estilos do Espaço da Manifestação (página própria, espaco.html).
+
+   Estrutura:
+   - Variáveis de TEMA (3: vida_magica / universo / medieval) via body[data-tema]
+   - Header (título + ferramentas + bolinha de tema + sementes + avatar)
+   - Dropdown de temas (preview→confirma) + dropup do avatar
+   - Tela de entrada da Meditação Guiada (3 caminhos)
+   - Animação de abertura (portada do Caderno — cérebro dourado, SEMPRE dourada
+     independente do tema; foi aprovada e não muda)
+   === */
+
+/* ─────────────────────────────────────────────────────────────
+   RESET / BASE
+   ───────────────────────────────────────────────────────────── */
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--fundo);
+  color: var(--texto);
+  overflow: hidden;                 /* tela sem rolagem global — cada view controla */
+  position: fixed; inset: 0;        /* trava o scroll bounce do iOS */
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.6s ease, color 0.6s ease;
+}
+:root { --font-display: 'Playfair Display', Georgia, serif; }
+
+/* ─────────────────────────────────────────────────────────────
+   TEMAS — variáveis. Default = Vida Mágica (champagne dourado).
+   Trocar o tema = body[data-tema="..."]. Transição suave no <body>.
+   ───────────────────────────────────────────────────────────── */
+/* TEMA: VIDA MÁGICA (default) — champagne dourado, quente */
+body, body[data-tema="vida_magica"] {
+  --fundo: radial-gradient(circle at 50% 0%, #2a2012 0%, #1a1308 60%, #120d06 100%);
+  --texto: #f3e8d0;
+  --texto-suave: #b9a883;
+  --acento: #f4d060;            /* dourado vivo */
+  --acento-2: #e8c97a;          /* champagne */
+  --acento-deep: #a17523;       /* dourado profundo */
+  --card-bg: rgba(244, 208, 96, 0.06);
+  --card-borda: rgba(244, 208, 96, 0.22);
+  --header-bg: rgba(18, 13, 6, 0.72);
+  --particula: rgba(255, 240, 190, 0.9);
+}
+/* TEMA: UNIVERSO — noite cósmica, violeta + estrelas */
+body[data-tema="universo"] {
+  --fundo: radial-gradient(circle at 50% 10%, #1a1d4e 0%, #0c0e2e 55%, #050613 100%);
+  --texto: #e6e8ff;
+  --texto-suave: #9aa0d4;
+  --acento: #b8a4ff;            /* violeta luminoso */
+  --acento-2: #8d7aff;
+  --acento-deep: #5b4bc4;
+  --card-bg: rgba(184, 164, 255, 0.07);
+  --card-borda: rgba(184, 164, 255, 0.24);
+  --header-bg: rgba(5, 6, 19, 0.74);
+  --particula: rgba(220, 225, 255, 0.95);
+}
+/* TEMA: MEDIEVAL (mágico) — pergaminho + ouro velho/bronze */
+body[data-tema="medieval"] {
+  --fundo: radial-gradient(circle at 50% 0%, #34291a 0%, #241b10 60%, #18110a 100%);
+  --texto: #ecdcb8;
+  --texto-suave: #b69b6e;
+  --acento: #d8b85a;            /* ouro velho */
+  --acento-2: #c9a24a;
+  --acento-deep: #8a6d2f;       /* bronze */
+  --card-bg: rgba(216, 184, 90, 0.06);
+  --card-borda: rgba(216, 184, 90, 0.26);
+  --header-bg: rgba(24, 17, 10, 0.76);
+  --particula: rgba(245, 224, 170, 0.9);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   APP SHELL — header fixo + corpo + (futuro: ferramentas)
+   ───────────────────────────────────────────────────────────── */
+.espaco-app { height: 100%; display: flex; flex-direction: column; }
+
+/* HEADER */
+.espaco-header {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: calc(env(safe-area-inset-top) + 0.6rem) 0.9rem 0.6rem;
+  background: var(--header-bg);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--card-borda);
+  position: relative; z-index: 20;
+}
+.espaco-header-titulo {
+  font-family: var(--font-display);
+  font-size: 1.08rem; font-weight: 700; letter-spacing: 0.01em;
+  color: var(--texto); white-space: nowrap;
+  margin-right: auto;                 /* empurra o grupo de ações pra direita */
+}
+.espaco-acoes { display: flex; align-items: center; gap: 0.35rem; }
+
+/* Botão de ícone padrão do header (ferramentas + tema) */
+.espaco-icone-btn {
+  width: 38px; height: 38px; display: grid; place-items: center;
+  border: none; background: transparent; color: var(--texto);
+  border-radius: 50%; cursor: pointer;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+.espaco-icone-btn:active { transform: scale(0.9); }
+.espaco-icone-btn:hover { background: var(--card-bg); }
+.espaco-icone-btn svg { width: 21px; height: 21px; }
+
+/* Selo de sementes */
+.espaco-sementes {
+  display: flex; align-items: center; gap: 0.3rem;
+  padding: 0.3rem 0.6rem 0.3rem 0.45rem;
+  background: var(--card-bg); border: 1px solid var(--card-borda);
+  border-radius: 999px; color: var(--acento);
+  font-size: 0.84rem; font-weight: 700;
+}
+.espaco-sementes svg { width: 16px; height: 16px; }
+
+/* Bolinha do TEMA — é o botão que abre o dropdown */
+.espaco-tema-bolinha {
+  width: 34px; height: 34px; border-radius: 50%; cursor: pointer;
+  border: 2px solid var(--card-borda);
+  background: radial-gradient(circle at 35% 30%, var(--acento) 0%, var(--acento-deep) 100%);
+  box-shadow: 0 0 10px var(--card-borda);
+  transition: transform 0.12s ease, box-shadow 0.2s ease;
+  flex-shrink: 0;
+}
+.espaco-tema-bolinha:active { transform: scale(0.9); }
+
+/* Avatar do perfil (canto direito) */
+.espaco-avatar {
+  width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
+  border: 2px solid var(--acento-2); overflow: hidden; flex-shrink: 0;
+  background: var(--card-bg); display: grid; place-items: center;
+  color: var(--texto); font-family: var(--font-display); font-weight: 700;
+  transition: transform 0.12s ease;
+}
+.espaco-avatar:active { transform: scale(0.92); }
+.espaco-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ─────────────────────────────────────────────────────────────
+   DROPDOWN DE TEMAS — abre da bolinha. Preview ao tocar, check confirma.
+   ───────────────────────────────────────────────────────────── */
+.espaco-tema-menu {
+  position: absolute; top: calc(100% + 6px); right: 52px;
+  min-width: 210px; z-index: 40;
+  background: var(--header-bg);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--card-borda); border-radius: 16px;
+  padding: 0.4rem; box-shadow: 0 14px 40px rgba(0,0,0,0.45);
+  opacity: 0; transform: translateY(-8px) scale(0.97);
+  pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.espaco-tema-menu.aberto { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+.espaco-tema-item {
+  display: flex; align-items: center; gap: 0.6rem; width: 100%;
+  padding: 0.6rem 0.7rem; border: none; background: transparent;
+  color: var(--texto); cursor: pointer; border-radius: 11px;
+  font-size: 0.92rem; text-align: left;
+  transition: background 0.15s ease;
+}
+.espaco-tema-item:hover { background: var(--card-bg); }
+.espaco-tema-item.previewing { background: var(--card-bg); }
+.espaco-tema-amostra {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  border: 1.5px solid rgba(255,255,255,0.25);
+}
+.espaco-tema-amostra.vida_magica { background: radial-gradient(circle at 35% 30%, #f4d060, #a17523); }
+.espaco-tema-amostra.universo    { background: radial-gradient(circle at 35% 30%, #b8a4ff, #5b4bc4); }
+.espaco-tema-amostra.medieval    { background: radial-gradient(circle at 35% 30%, #d8b85a, #8a6d2f); }
+.espaco-tema-nome { margin-right: auto; }
+/* Check verde — confirma o tema em preview */
+.espaco-tema-check {
+  width: 26px; height: 26px; border-radius: 50%; display: none;
+  place-items: center; background: #2bbf6e; color: #fff; flex-shrink: 0;
+  border: none; cursor: pointer;
+}
+.espaco-tema-check svg { width: 15px; height: 15px; }
+.espaco-tema-item.previewing .espaco-tema-check { display: grid; }
+/* Marca o tema ATIVO (salvo) com um ponto */
+.espaco-tema-item.ativo .espaco-tema-nome::after {
+  content: '•'; color: var(--acento); margin-left: 0.4rem;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DROPUP DO AVATAR — sobe de baixo do avatar (canto direito)
+   ───────────────────────────────────────────────────────────── */
+.espaco-avatar-menu {
+  position: absolute; top: calc(100% + 6px); right: 0.9rem;
+  min-width: 220px; z-index: 40;
+  background: var(--header-bg);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--card-borda); border-radius: 16px;
+  padding: 0.4rem; box-shadow: 0 14px 40px rgba(0,0,0,0.45);
+  opacity: 0; transform: translateY(-8px) scale(0.97);
+  pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.espaco-avatar-menu.aberto { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+.espaco-avatar-item {
+  display: flex; align-items: center; gap: 0.65rem; width: 100%;
+  padding: 0.7rem 0.7rem; border: none; background: transparent;
+  color: var(--texto); cursor: pointer; border-radius: 11px;
+  font-size: 0.92rem; text-align: left; transition: background 0.15s ease;
+}
+.espaco-avatar-item:hover { background: var(--card-bg); }
+.espaco-avatar-item svg { width: 19px; height: 19px; color: var(--acento); flex-shrink: 0; }
+.espaco-avatar-item.sair { color: var(--texto-suave); }
+.espaco-avatar-sep { height: 1px; background: var(--card-borda); margin: 0.25rem 0.4rem; }
+
+/* ─────────────────────────────────────────────────────────────
+   CORPO — área de conteúdo (entre header e futuro rodapé)
+   ───────────────────────────────────────────────────────────── */
+.espaco-corpo {
+  flex: 1; position: relative; overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 1.4rem 1.1rem calc(env(safe-area-inset-bottom) + 1.4rem);
+}
+
+/* VIEW — telas internas trocadas via JS */
+.espaco-view { display: none; }
+.espaco-view.ativa { display: block; animation: espaco-fade 0.4s ease; }
+@keyframes espaco-fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── TELA DE ENTRADA — Meditação Guiada (3 caminhos) ── */
+.espaco-saudacao { text-align: center; margin: 0.5rem 0 1.6rem; }
+.espaco-eyebrow {
+  font-size: 0.74rem; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--acento); font-weight: 700; margin-bottom: 0.4rem;
+}
+.espaco-titulo-grande {
+  font-family: var(--font-display); font-size: 1.7rem; line-height: 1.2;
+  color: var(--texto); font-weight: 700;
+}
+.espaco-sub-grande { color: var(--texto-suave); font-size: 0.95rem; margin-top: 0.5rem; }
+
+.espaco-caminhos { display: flex; flex-direction: column; gap: 0.9rem; max-width: 460px; margin: 0 auto; }
+.espaco-caminho {
+  display: flex; align-items: center; gap: 1rem; width: 100%;
+  padding: 1.15rem 1.1rem; cursor: pointer; text-align: left;
+  background: var(--card-bg); border: 1px solid var(--card-borda);
+  border-radius: 18px; color: var(--texto);
+  transition: transform 0.14s ease, border-color 0.2s ease, background 0.2s ease;
+}
+.espaco-caminho:active { transform: scale(0.98); }
+.espaco-caminho:hover { border-color: var(--acento); }
+.espaco-caminho-icone {
+  width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0;
+  display: grid; place-items: center; color: var(--acento-deep);
+  background: linear-gradient(135deg, var(--acento), var(--acento-2));
+}
+.espaco-caminho-icone svg { width: 25px; height: 25px; }
+.espaco-caminho-texto { display: flex; flex-direction: column; gap: 0.15rem; }
+.espaco-caminho-titulo { font-family: var(--font-display); font-size: 1.12rem; font-weight: 700; }
+.espaco-caminho-sub { font-size: 0.85rem; color: var(--texto-suave); }
+.espaco-caminho-seta { margin-left: auto; color: var(--texto-suave); }
+.espaco-caminho-seta svg { width: 20px; height: 20px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ANIMAÇÃO DE ABERTURA — portada do Caderno (cérebro dourado).
+   SEMPRE dourada, independente do tema (aprovada, não muda).
+   Cores fixas (não usa variáveis de tema).
+   ═══════════════════════════════════════════════════════════════════ */
+.espaco-loading {
+  position: fixed; inset: 0; z-index: 100; overflow: hidden;
+  pointer-events: none; opacity: 0;
+  background-color: #A17523;
+  background-image: radial-gradient(circle at center, #E8C97A 0%, #A17523 80%);
+  transition: opacity 0.5s ease;
+}
+.espaco-loading.ativo { opacity: 1; pointer-events: auto; }
+.espaco-loading.saindo { opacity: 0; transition: opacity 0.4s ease; }
+
+.espaco-loading-pular {
+  position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 28px);
+  transform: translateX(-50%); z-index: 6;
+  padding: 0.5rem 1.5rem; background: rgba(255,250,240,0.14);
+  border: 1px solid rgba(255,250,240,0.35); border-radius: 999px;
+  color: rgba(255,250,240,0.88); font-family: var(--font-display);
+  font-size: 0.82rem; font-weight: 600; letter-spacing: 0.04em; cursor: pointer;
+  opacity: 0; animation: espaco-pular-aparece 0.5s ease 0.6s forwards;
+}
+.espaco-loading-pular:active { transform: translateX(-50%) scale(0.93); }
+@keyframes espaco-pular-aparece {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.espaco-loading-sparkles { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.espaco-sparkle {
+  position: absolute; bottom: -10px; left: var(--sp-left);
+  width: var(--sp-size); height: var(--sp-size); border-radius: 50%;
+  background: #FFFFFF; animation: espaco-sparkle-subir var(--sp-dur) linear infinite;
+  animation-delay: var(--sp-delay); will-change: transform, opacity;
+}
+@keyframes espaco-sparkle-subir {
+  0%   { transform: translateY(0) scale(0.5); opacity: 0; }
+  10%  { opacity: 1; transform: scale(1); }
+  90%  { opacity: 0.8; }
+  100% { transform: translateY(-110vh) scale(1.4); opacity: 0; }
+}
+
+.espaco-loading-cerebro {
+  position: absolute; top: 34%; left: 50%;
+  width: 230px; height: 230px; margin-left: -115px; margin-top: -115px;
+  z-index: 3; animation: espaco-cerebro-flutua 6s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes espaco-cerebro-flutua {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+.espaco-cerebro-img {
+  width: 100%; height: 100%; object-fit: contain; display: block;
+  filter: drop-shadow(0 0 16px rgba(255,235,170,0.45));
+}
+.espaco-cerebro-dots { position: absolute; inset: 0; pointer-events: none; }
+.cdot {
+  position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #FFFFFF 0%, rgba(255,235,170,0.65) 45%, transparent 100%);
+  filter: drop-shadow(0 0 5px rgba(255,235,170,0.95)) drop-shadow(0 0 10px rgba(255,210,110,0.6));
+  opacity: 0; transform: scale(0.5);
+  animation: cdot-twinkle 2.4s ease-in-out infinite; will-change: opacity, transform;
+}
+.cdot-a { animation-delay: 0s; } .cdot-b { animation-delay: 0.5s; }
+.cdot-c { animation-delay: 1.0s; } .cdot-d { animation-delay: 1.5s; } .cdot-e { animation-delay: 2.0s; }
+@keyframes cdot-twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.5); }
+  50%      { opacity: 1; transform: scale(1.4); }
+}
+
+.espaco-loading-frase-area {
+  position: absolute; top: 52%; left: 0; right: 0; z-index: 4;
+  text-align: center; padding: 0 1.5rem;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 0.5rem;
+}
+.espaco-loading-frase {
+  margin: 0; font-family: var(--font-display); font-weight: 600;
+  letter-spacing: 0.02em; line-height: 1.25;
+  font-size: clamp(1.15rem, 5vw, 1.5rem); color: #FFFFFF;
+  transform-origin: center top;
+  transition: transform 0.72s cubic-bezier(0.34, 1.42, 0.5, 1),
+    opacity 0.62s ease, color 0.5s ease, filter 0.62s ease, text-shadow 0.5s ease;
+  will-change: transform, opacity, filter;
+}
+.espaco-loading-frase:first-child {
+  opacity: 1; transform: translateY(0) scale(1); color: #FFFFFF; filter: blur(0);
+  text-shadow: 0 2px 14px rgba(255,255,255,0.35), 0 0 22px rgba(255,235,170,0.5);
+}
+.espaco-loading-frase:nth-child(2) { opacity: 0.55; transform: scale(0.78); color: rgba(255,255,255,0.9); }
+.espaco-loading-frase:nth-child(3) { opacity: 0.32; transform: scale(0.66); color: rgba(255,255,255,0.75); }
+.espaco-loading-frase:nth-child(4) { opacity: 0.16; transform: scale(0.56); }
+.espaco-loading-frase:nth-child(n+5) { opacity: 0; transform: scale(0.5); }
+.espaco-loading-frase.entrando { opacity: 0; transform: translateY(-22px) scale(1.06); filter: blur(7px); }
+.espaco-loading-frase.final-verde   { color: #5FE0A0; }
+.espaco-loading-frase.final-dourado { color: #FFE6A0; }
+.espaco-loading-frase.final-verde:first-child {
+  font-weight: 800; font-size: clamp(1.3rem, 5.5vw, 1.65rem); color: #74F0B4;
+  text-shadow: 0 0 24px rgba(95,224,160,0.65), 0 0 44px rgba(95,224,160,0.45);
+}
+.espaco-loading-frase.final-dourado:first-child {
+  font-weight: 800; font-size: clamp(1.3rem, 5.5vw, 1.65rem); color: #FFF0BE;
+  text-shadow: 0 0 24px rgba(255,225,140,0.75), 0 0 46px rgba(255,200,80,0.55);
+}
+
+/* PARTÍCULAS douradas do Espaço (entram depois do loading) */
+.espaco-particulas { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+.espaco-particula {
+  position: absolute; bottom: -10px; left: var(--p-left);
+  width: var(--p-size); height: var(--p-size); border-radius: 50%;
+  background: radial-gradient(circle, var(--particula) 0%, rgba(244,217,152,0.6) 40%, rgba(200,146,42,0) 100%);
+  opacity: 0; filter: blur(0.5px);
+  animation: espaco-particula-subir var(--p-dur) linear infinite; animation-delay: var(--p-delay);
+  --p-op: 0.6;
+}
+@keyframes espaco-particula-subir {
+  0%   { transform: translateY(0) scale(0.5); opacity: 0; }
+  8%   { opacity: var(--p-op); }
+  90%  { opacity: var(--p-op); }
+  100% { transform: translateY(-110vh) scale(1); opacity: 0; }
+}
