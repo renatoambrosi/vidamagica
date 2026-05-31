@@ -216,14 +216,6 @@ function irPara(viewId) {
     document.getElementById('chat-input')?.blur();
   }
 
-  // body.caderno-aberto ativa o MODO IMERSIVO do Caderno:
-  // - esconde .topo do /app
-  // - esconde .bottom-nav do /app
-  // - libera #view-caderno em fullscreen (position: fixed inset 0)
-  // - revela .caderno-topo e .caderno-bottom (controles próprios)
-  // Mesma estratégia do chat-aberto, mas com navegação interna própria.
-  document.body.classList.toggle('caderno-aberto', viewId === 'caderno');
-
   // Liga a class `antessala-ativa` no body só quando está nessa view.
   // Usada no CSS pra anular paddings do .views e travar scroll, fazendo
   // a min-height: 100vh da .chat-escolha centralizar EM 100vh real.
@@ -237,12 +229,8 @@ function irPara(viewId) {
   if (viewId === 'perfil') renderPerfil();
   if (viewId === 'bau') renderBau();
   if (viewId === 'meus-relatos') renderMeusRelatos();
-  // Caderno da Mentalização — view com 5 abas (Escrever/Vision/Cápsulas/Metas/Afirmações).
-  // Lógica em public/app/caderno.js (carregado depois deste arquivo no app.html).
-  if (viewId === 'caderno' && typeof window.renderCaderno === 'function') {
-    window.renderCaderno();
-  }
   // Conquistas — view transversal da gamificação (ofensivas, missões, ranking).
+  // Lógica em public/app/conquistas.js (módulo autônomo).
   if (viewId === 'conquistas' && typeof window.renderConquistas === 'function') {
     window.renderConquistas();
   }
@@ -4274,11 +4262,11 @@ function hidratarHome(ctx) {
   // ── Botoeira (faixa abaixo do player com "Assista mais vídeos" + "i") ──
   renderBotoeira();
 
-  // ── Atalhos da Home — cards Caderno + Conquistas com badges dinâmicos.
-  //    Lógica em public/app/caderno.js. Se o script ainda não carregou,
-  //    a função é no-op (e o card aparece com defaults estáticos do HTML).
-  if (typeof window.renderAtalhosCaderno === 'function') {
-    window.renderAtalhosCaderno(ctx);
+  // ── Atalho da Home — card Conquistas com badge dinâmico.
+  //    Lógica em public/app/conquistas.js (módulo autônomo de gamificação).
+  //    Se o script ainda não carregou, a função é no-op.
+  if (typeof window.renderAtalhosConquistas === 'function') {
+    window.renderAtalhosConquistas(ctx);
   }
 
   // ── Celebração de prêmios novos da gamificação ──
@@ -5558,19 +5546,13 @@ async function carregarRelatosComunidade(ctx) {
 }
 
 // ════════════════════════════════════════════════════════════════════════
-// EXPOSE PRA SCRIPTS NÃO-MÓDULO (ex: public/app/caderno.js)
+// EXPOSE PRA SCRIPTS NÃO-MÓDULO (ex: public/app/conquistas.js)
 // app.js é carregado com `type="module"` — funções top-level NÃO viram
-// globais automaticamente. Caderno + Conquistas estão em caderno.js
-// (não-módulo) e precisam dessas globais pra funcionar.
+// globais automaticamente. Conquistas (conquistas.js, não-módulo) precisa
+// dessas globais pra funcionar.
 // ════════════════════════════════════════════════════════════════════════
 window.irPara          = irPara;
 window.toast           = toast;
 window.abrirModal      = abrirModal;
 window.fecharModal     = fecharModal;
 window.fetchAutenticado = fetchAutenticado;
-
-// Fechar Caderno → volta pra Home com transição. Usado pelo botão ←
-// do .caderno-topo. Remove body.caderno-aberto via irPara('home').
-window.fecharCaderno = function () {
-  irPara('home');
-};
