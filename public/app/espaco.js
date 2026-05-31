@@ -266,8 +266,15 @@
     el('menu-manifestacoes')?.addEventListener('click', () => { fecharMenuAvatar(); toast('Minhas manifestações — em breve ✨'); });
     el('menu-voltar')?.addEventListener('click', () => { window.location.href = '/app'; });
 
-    // Fecha menus ao tocar fora
-    document.addEventListener('click', () => { fecharMenuTema(); fecharMenuAvatar(); });
+    // Fecha menus ao tocar FORA deles (e fora dos botões que os abrem).
+    // Sem este guard, o clique num item do menu borbulhava pro document e
+    // fechava o menu na hora — o preview de tema "não obedecia".
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('#espaco-tema-menu') || e.target.closest('#espaco-tema-bolinha')
+        || e.target.closest('#espaco-avatar-menu') || e.target.closest('#espaco-avatar')) return;
+      fecharMenuTema();
+      fecharMenuAvatar();
+    });
   }
 
   function ligarCaminhos() {

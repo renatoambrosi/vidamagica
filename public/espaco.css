@@ -16,7 +16,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; }
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-ui);
   background: var(--fundo);
   color: var(--texto);
   overflow: hidden;                 /* tela sem rolagem global — cada view controla */
@@ -24,50 +24,62 @@ body {
   -webkit-font-smoothing: antialiased;
   transition: background 0.6s ease, color 0.6s ease;
 }
-:root { --font-display: 'Playfair Display', Georgia, serif; }
+/* Fontes self-hostadas do app (carregadas via /assets/fonts/fonts.css) */
+:root {
+  --font-display: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body:    'Lora', Georgia, serif;
+  --font-ui:      'Open Sans', sans-serif;
+  --radius-sm: 8px; --radius-md: 14px; --radius-lg: 20px; --radius-xl: 28px;
+}
 
 /* ─────────────────────────────────────────────────────────────
    TEMAS — variáveis. Default = Vida Mágica (champagne dourado).
    Trocar o tema = body[data-tema="..."]. Transição suave no <body>.
    ───────────────────────────────────────────────────────────── */
-/* TEMA: VIDA MÁGICA (default) — champagne dourado, quente */
+/* TEMA: VIDA MÁGICA (default) — CLARO: creme/marfim + dourado + vidro (identidade do app) */
 body, body[data-tema="vida_magica"] {
-  --fundo: radial-gradient(circle at 50% 0%, #2a2012 0%, #1a1308 60%, #120d06 100%);
-  --texto: #f3e8d0;
-  --texto-suave: #b9a883;
-  --acento: #f4d060;            /* dourado vivo */
-  --acento-2: #e8c97a;          /* champagne */
-  --acento-deep: #a17523;       /* dourado profundo */
-  --card-bg: rgba(244, 208, 96, 0.06);
-  --card-borda: rgba(244, 208, 96, 0.22);
-  --header-bg: rgba(18, 13, 6, 0.72);
-  --particula: rgba(255, 240, 190, 0.9);
+  --fundo: radial-gradient(circle at 50% -8%, #FBF6EA 0%, #F2E8D0 55%, #E8DCC0 100%);
+  --texto: #3D2E1A;             /* marrom escuro do app */
+  --texto-suave: #6B5436;
+  --acento: #C8922A;            /* ouro do app */
+  --acento-2: #E8C97A;          /* ouro claro */
+  --acento-deep: #A17523;       /* ouro fundo */
+  --card-bg: rgba(255, 250, 240, 0.72);   /* vidro do app */
+  --card-borda: rgba(200, 146, 42, 0.28);
+  --header-bg: rgba(255, 250, 240, 0.82);
+  --particula: rgba(200, 146, 42, 0.55);
+  --sombra: 0 4px 24px rgba(161, 117, 35, 0.14);
+  --glow: 0 0 24px rgba(200, 146, 42, 0.32), 0 0 48px rgba(200, 146, 42, 0.16);
 }
-/* TEMA: UNIVERSO — noite cósmica, violeta + estrelas */
+/* TEMA: UNIVERSO — noite cósmica (escuro), violeta + estrelas */
 body[data-tema="universo"] {
-  --fundo: radial-gradient(circle at 50% 10%, #1a1d4e 0%, #0c0e2e 55%, #050613 100%);
-  --texto: #e6e8ff;
-  --texto-suave: #9aa0d4;
-  --acento: #b8a4ff;            /* violeta luminoso */
-  --acento-2: #8d7aff;
-  --acento-deep: #5b4bc4;
-  --card-bg: rgba(184, 164, 255, 0.07);
-  --card-borda: rgba(184, 164, 255, 0.24);
-  --header-bg: rgba(5, 6, 19, 0.74);
-  --particula: rgba(220, 225, 255, 0.95);
+  --fundo: radial-gradient(circle at 50% 8%, #20235e 0%, #0d0f33 50%, #050613 100%);
+  --texto: #eef0ff;
+  --texto-suave: #a3a9dc;
+  --acento: #c3b1ff;            /* violeta luminoso */
+  --acento-2: #9d8bff;
+  --acento-deep: #6a59cf;
+  --card-bg: rgba(150, 140, 255, 0.10);
+  --card-borda: rgba(180, 165, 255, 0.28);
+  --header-bg: rgba(8, 9, 28, 0.78);
+  --particula: rgba(225, 228, 255, 0.95);
+  --sombra: 0 8px 30px rgba(0, 0, 0, 0.40);
+  --glow: 0 0 24px rgba(160, 140, 255, 0.40), 0 0 50px rgba(120, 100, 255, 0.25);
 }
-/* TEMA: MEDIEVAL (mágico) — pergaminho + ouro velho/bronze */
+/* TEMA: MEDIEVAL (mágico) — pergaminho + ouro velho (claro sépia) */
 body[data-tema="medieval"] {
-  --fundo: radial-gradient(circle at 50% 0%, #34291a 0%, #241b10 60%, #18110a 100%);
-  --texto: #ecdcb8;
-  --texto-suave: #b69b6e;
-  --acento: #d8b85a;            /* ouro velho */
-  --acento-2: #c9a24a;
-  --acento-deep: #8a6d2f;       /* bronze */
-  --card-bg: rgba(216, 184, 90, 0.06);
-  --card-borda: rgba(216, 184, 90, 0.26);
-  --header-bg: rgba(24, 17, 10, 0.76);
-  --particula: rgba(245, 224, 170, 0.9);
+  --fundo: radial-gradient(circle at 50% -8%, #F3E7C8 0%, #E3CFA0 55%, #D2B87F 100%);
+  --texto: #4A3618;
+  --texto-suave: #7A5E30;
+  --acento: #9C6B1F;            /* ouro velho */
+  --acento-2: #C79A3E;
+  --acento-deep: #6E4D18;       /* bronze */
+  --card-bg: rgba(255, 248, 228, 0.60);
+  --card-borda: rgba(140, 100, 40, 0.34);
+  --header-bg: rgba(243, 231, 200, 0.82);
+  --particula: rgba(140, 100, 40, 0.50);
+  --sombra: 0 4px 22px rgba(110, 77, 24, 0.20);
+  --glow: 0 0 24px rgba(156, 107, 31, 0.32), 0 0 48px rgba(120, 80, 20, 0.18);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -86,15 +98,16 @@ body[data-tema="medieval"] {
 }
 .espaco-header-titulo {
   font-family: var(--font-display);
-  font-size: 1.08rem; font-weight: 700; letter-spacing: 0.01em;
-  color: var(--texto); white-space: nowrap;
+  font-size: 0.98rem; font-weight: 800; letter-spacing: 0.005em;
+  color: var(--texto);
   margin-right: auto;                 /* empurra o grupo de ações pra direita */
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.espaco-acoes { display: flex; align-items: center; gap: 0.35rem; }
+.espaco-acoes { display: flex; align-items: center; gap: 0.2rem; flex-shrink: 0; }
 
 /* Botão de ícone padrão do header (ferramentas + tema) */
 .espaco-icone-btn {
-  width: 38px; height: 38px; display: grid; place-items: center;
+  width: 34px; height: 34px; display: grid; place-items: center;
   border: none; background: transparent; color: var(--texto);
   border-radius: 50%; cursor: pointer;
   transition: background 0.15s ease, transform 0.12s ease;
@@ -234,12 +247,15 @@ body[data-tema="medieval"] {
 .espaco-caminho {
   display: flex; align-items: center; gap: 1rem; width: 100%;
   padding: 1.15rem 1.1rem; cursor: pointer; text-align: left;
-  background: var(--card-bg); border: 1px solid var(--card-borda);
-  border-radius: 18px; color: var(--texto);
-  transition: transform 0.14s ease, border-color 0.2s ease, background 0.2s ease;
+  background: var(--card-bg);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--card-borda);
+  border-radius: var(--radius-lg); color: var(--texto);
+  box-shadow: var(--sombra);
+  transition: transform 0.16s ease, border-color 0.2s ease, box-shadow 0.25s ease;
 }
 .espaco-caminho:active { transform: scale(0.98); }
-.espaco-caminho:hover { border-color: var(--acento); }
+.espaco-caminho:hover { border-color: var(--acento); box-shadow: var(--sombra), var(--glow); }
 .espaco-caminho-icone {
   width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0;
   display: grid; place-items: center; color: var(--acento-deep);
