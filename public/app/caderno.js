@@ -245,13 +245,22 @@
     const tocarFrase = (i) => {
       if (!fraseArea) return;
       const item = FRASES[i] || FRASES[0];
-      
+
       const p = document.createElement('p');
-      p.className = 'caderno-loading-frase';
+      // .entrando = estado inicial (vem de cima, maior, desfocada)
+      p.className = 'caderno-loading-frase entrando';
       p.textContent = item.texto;
       if (item.final) p.classList.add('final');
-      
-      fraseArea.appendChild(p);
+
+      // PREPEND → nova frase entra no TOPO. As anteriores viram
+      // :nth-child(2,3,4) e deslizam pra baixo suave (transition).
+      fraseArea.prepend(p);
+
+      // Remove .entrando no próximo frame → transiciona pro destaque.
+      // rAF duplo garante que o browser pinte o estado .entrando antes.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => p.classList.remove('entrando'));
+      });
     };
 
     // Agenda cada frase no seu slot (0, 1200ms, 2400ms, 3600ms)
