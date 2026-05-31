@@ -368,6 +368,34 @@ Listas pesadas (escritas, vision, metas, missões, ranking) vivem em endpoints p
 - Pra `caderno.js` chamar funções de `app.js` (que É module): `app.js` expõe `window.irPara/toast/abrirModal/fecharModal/fetchAutenticado` no final do arquivo (bootstrap). **Manter esse export** se for refatorar.
 - CSS: tudo no fim de `public/app/app.css` (bloco com banner "CADERNO DA MENTALIZAÇÃO + CONQUISTAS"). Usa os mesmos tokens dourados.
 
+### Loading ritual de entrada do Caderno (VALIDADO — não desmontar)
+
+Toda vez que a aluna entra no Caderno (`renderCaderno()`), roda um **loading narrativo de ~6,25s** simulando "acesso ao subconsciente". Foi muito iterado e aprovado pelo Renato — **mexer com cuidado**. Vive em `public/app/caderno.js` (função `dispararLoadingRitual`) + CSS no `app.css` (bloco "LOADING RITUAL") + HTML em `app.html` (`#caderno-loading`).
+
+**Composição visual (todas as camadas dentro de `#caderno-loading`):**
+- **Fundo:** dourado radial **100% opaco** (`#E8C97A → #A17523`). Não pode ser translúcido — senão vaza o Caderno por trás.
+- **Cérebro:** imagem profissional `public/assets/cerebro.png` (wireframe poligonal low-poly, já tonalizado dourado). **NÃO desenhar cérebro à mão em SVG** — fica amador, já foi tentado e rejeitado. Container `.caderno-loading-cerebro` flutua (`translateY`, GPU).
+- **Dots piscando:** 35 `<span class="cdot">` sobre os nós do cérebro, **posicionados por análise de pixel da imagem** (script Python detectou os pontos brilhantes — não estimar no olho). Piscam (`opacity` + `scale`) em **5 ritmos** (`.cdot-a..e`, delays escalonados).
+- **Sparkles:** 22 partículas brancas subindo (`criarSparklesLoading`). Reduzido de 35 por performance.
+- **Frases (mecânica de loading de jogo):** a frase NOVA entra no **topo em destaque** (via `fraseArea.prepend()` + classe `.entrando` removida no próximo frame); as anteriores **deslizam pra baixo** encolhendo/apagando (posição via `:nth-child(1..4)`, escala via `transform`). Transição com leve overshoot (`cubic-bezier(0.34, 1.42, 0.5, 1)`).
+
+**As 5 frases (constante `FRASES` em `dispararLoadingRitual`):** "Acessando o subconsciente…" → "Acessando sonhos…" → "Indo a lugares profundos…" → **"Conectado"** (verde, `.final-verde`) → **"Pronto para manifestar ✨"** (dourado, `.final-dourado`). As cores são declaradas DEPOIS dos `:nth-child` no CSS pra vencerem na cascata mesmo quando a frase desce.
+
+**Tempos (constantes no topo do IIFE de `caderno.js`):**
+- `LOADING_STEP_MS = 1250` — cadência por frase (aprovada, **não mexer sem pedir**).
+- `LOADING_STEPS = 5` — nº de frases.
+- `LOADING_DURACAO_MS = LOADING_STEPS * LOADING_STEP_MS` = 6250ms (derivado).
+- `LOADING_RITUAL_ATIVO = true` — liga/desliga o ritual inteiro (trocar pra `false` desativa, p/ debug).
+
+**Botão "Pular":**
+- Aparece **só da 2ª animação em diante** (1ª vez a aluna vê tudo). Contador cumulativo em `localStorage` chave `vm_caderno_loading_vezes`.
+- Discreto, parte inferior, **com respiro** (`bottom: calc(env(safe-area-inset-bottom) + 28px)`).
+- Ao tocar (`pularLoading`): cancela todos os `_loadingTimers`, fade-out imediato do overlay, dispara partículas + auto-focus que estavam programados pro fim.
+
+**Performance (aprendizado — manter leve):** tudo animado é `transform`/`opacity` (composited GPU). **Proibido** animar `border-radius`, `box-shadow inset` ou `filter` em loop (engasga iOS Safari). As partículas douradas do Caderno (`criarParticulasCaderno`) só disparam **depois** do loading sumir (`setTimeout(LOADING_DURACAO_MS + 600)`) pra não somar ~50 elementos animados durante o ritual.
+
+**Cache busting:** `app.html` carrega `app.css`, `app.js` e `caderno.js` com `?v=N`. **Ao mexer em qualquer um desses, bumpe o `?v=`** (hoje em `?v=17`) — Safari iOS segura JS/CSS antigo senão (ver seção iOS Safari). O `cerebro.png` também tem `?v=1`.
+
 ### Worker da Cápsula do Tempo
 
 `core/caderno-avisos.js` — roda a cada 10 min em produção. Acha cápsulas com `abrir_em <= NOW() AND aviso_enviado_em IS NULL` e dispara 3 canais em paralelo:

@@ -1,12 +1,14 @@
 /* ============================================================
    VIDA MÁGICA — db.js
-   Camada de acesso a banco. 4 pools Postgres separados.
+   Camada de acesso a banco. 5 pools Postgres separados.
 
    Bancos:
    - poolCore         → identidade, financeiro, produtos, comunidade (Clube)
    - poolTeste        → teste de prosperidade (leads, respostas, perfis)
    - poolMensagens    → chat aluna ↔ atendimento
    - poolComunicacao  → templates, fila, CRM, conteúdo do site/app
+   - poolEspaco       → Espaço da Manifestação (manifestações, cartas do tempo,
+                        meditações, playlists, afirmações, preferências/tema)
 
    Regras desta camada:
    - SEM pool genérico. Cada módulo importa o pool específico.
@@ -41,6 +43,11 @@ const poolMensagens = new Pool({
 
 const poolComunicacao = new Pool({
   connectionString: process.env.DATABASE_URL_COMUNICACAO,
+  ssl: sslConfig,
+});
+
+const poolEspaco = new Pool({
+  connectionString: process.env.DATABASE_URL_ESPACO,
   ssl: sslConfig,
 });
 
@@ -2240,6 +2247,141 @@ async function initComunicacao() {
   }
 }
 
+// ════════════════════════════════════════════════════════════
+// ESPAÇO DA MANIFESTAÇÃO (poolEspaco)
+// ════════════════════════════════════════════════════════════
+// Banco próprio do Espaço (ex-"Caderno"). Reúne o que a aluna gera
+// (manifestações, cartas do tempo, tema escolhido) e os catálogos que
+// o admin cadastra (meditações, playlists, afirmações).
+//
+// usuario_id é referência LÓGICA pra usuarios.id (poolCore) — UUID, sem
+// FK física (banco separado, cruzamento feito no código). FK só DENTRO
+// deste banco (ex: avisos → cartas_do_tempo).
+async function initEspaco() {
+  const c = await poolEspaco.connect();
+  try {
+    // ── Conteúdo da aluna ──────────────────────────────────
+
+    // MANIFESTAÇÕES — "caderno dos sonhos". Card/colagem montada pela aluna.
+    // card_json guarda a estrutura editável (posições/transform dos elementos);
+    // imagem_url guarda o preview PNG achatado (pra lista/baixar/Home).
+    // status: 'manifestando' | 'realizada'. meta: só UMA TRUE por aluna
+    // (garantido pelo índice único parcial abaixo).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS manifestacoes (
+        id SERIAL PRIMARY KEY,
+        usuario_id UUID NOT NULL,
+        texto TEXT,
+        card_json JSONB,
+        imagem_url TEXT,
+        status VARCHAR(20) DEFAULT 'manifestando' CHECK (status IN ('manifestando','realizada')),
+        meta BOOLEAN DEFAULT FALSE,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        realizado_em TIMESTAMPTZ,
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_manifestacoes_usuario ON manifestacoes(usuario_id, status, criado_em DESC)`);
+    // Garante no banco que cada aluna só tem UMA manifestação marcada como meta.
+    await c.query(`CREATE UNIQUE INDEX IF NOT EXISTS uniq_manifestacao_meta ON manifestacoes(usuario_id) WHERE meta = TRUE`);
+
+    // CARTAS DO TEMPO — carta pro futuro que abre na data (ex-cápsula do tempo).
+    // Conteúdo fica OMITIDO pra aluna enquanto abrir_em > NOW() (regra na rota).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS cartas_do_tempo (
+        id SERIAL PRIMARY KEY,
+        usuario_id UUID NOT NULL,
+        titulo VARCHAR(200),
+        conteudo TEXT NOT NULL,
+        abrir_em TIMESTAMPTZ NOT NULL,
+        aberta_em TIMESTAMPTZ,
+        aviso_enviado_em TIMESTAMPTZ,
+        criado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_cartas_tempo_usuario ON cartas_do_tempo(usuario_id, abrir_em DESC)`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_cartas_tempo_maduras ON cartas_do_tempo(abrir_em) WHERE aviso_enviado_em IS NULL`);
+
+    // CARTAS DO TEMPO — log idempotente de avisos (worker dispara WhatsApp/email/in_app).
+    // UNIQUE(carta_id, canal) faz o worker rodar N vezes sem duplicar aviso.
+    // FK REAL aqui pois é o mesmo banco.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS cartas_do_tempo_avisos (
+        id SERIAL PRIMARY KEY,
+        carta_id INTEGER NOT NULL REFERENCES cartas_do_tempo(id) ON DELETE CASCADE,
+        canal VARCHAR(20) NOT NULL,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(carta_id, canal)
+      )
+    `);
+
+    // PREFERÊNCIAS DA ALUNA — hoje guarda o tema escolhido do Espaço.
+    // tema: 'vida_magica' (default) | 'universo' | 'medieval'.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS espaco_pref_aluna (
+        usuario_id UUID PRIMARY KEY,
+        tema VARCHAR(30) DEFAULT 'vida_magica' CHECK (tema IN ('vida_magica','universo','medieval')),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    // ── Catálogos cadastrados pelo admin ───────────────────
+
+    // MEDITAÇÕES — guiadas, cronometradas. mp3_arquivo = arquivo em assets.
+    // Sequência fechada (MP3 pré-gerado: voz + respiração + música mixados).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS meditacoes (
+        id SERIAL PRIMARY KEY,
+        titulo VARCHAR(200) NOT NULL,
+        mp3_arquivo VARCHAR(300) NOT NULL,
+        duracao_seg INTEGER,
+        ordem INTEGER DEFAULT 99,
+        ativo BOOLEAN DEFAULT TRUE,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_meditacoes_ativo ON meditacoes(ativo, ordem)`);
+
+    // PLAYLISTS — música de fundo. pasta = subpasta em assets/playlist/ (ex '001');
+    // o player toca todos os MP3 da pasta. modo: 'ordem' | 'aleatorio'
+    // (aleatorio = shuffle sem repetição até a última tocar).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS playlists (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(200) NOT NULL,
+        pasta VARCHAR(100) NOT NULL,
+        modo VARCHAR(20) DEFAULT 'ordem' CHECK (modo IN ('ordem','aleatorio')),
+        ordem INTEGER DEFAULT 99,
+        ativo BOOLEAN DEFAULT TRUE,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_playlists_ativo ON playlists(ativo, ordem)`);
+
+    // AFIRMAÇÕES — catálogo de frases. audio_arquivo = MP3 em assets/afirmacoes/
+    // (narração opcional; a aluna pode usar só o slideshow e falar sozinha).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS afirmacoes (
+        id SERIAL PRIMARY KEY,
+        texto TEXT NOT NULL,
+        categoria VARCHAR(60),
+        audio_arquivo VARCHAR(300),
+        ordem INTEGER DEFAULT 99,
+        ativo BOOLEAN DEFAULT TRUE,
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        atualizado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_afirmacoes_cat ON afirmacoes(ativo, categoria, ordem)`);
+
+    console.log('✅ Banco Espaço da Manifestação iniciado');
+  } finally {
+    c.release();
+  }
+}
+
 // ── INIT GERAL ──────────────────────────────────────────────
 
 async function initDb() {
@@ -2247,6 +2389,7 @@ async function initDb() {
   await initTeste();
   await initMensagens();
   await initComunicacao();
+  await initEspaco();
   console.log('✅ Todos os bancos iniciados');
 }
 
@@ -2259,6 +2402,7 @@ async function checkHealth() {
     ['teste', poolTeste],
     ['mensagens', poolMensagens],
     ['comunicacao', poolComunicacao],
+    ['espaco', poolEspaco],
   ];
   for (const [nome, p] of bancos) {
     try {
@@ -2276,6 +2420,7 @@ module.exports = {
   poolTeste,
   poolMensagens,
   poolComunicacao,
+  poolEspaco,
   initDb,
   checkHealth,
 };
