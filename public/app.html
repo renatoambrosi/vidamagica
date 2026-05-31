@@ -8,7 +8,7 @@
   <title>Vida Mágica</title>
   <link rel="icon" href="/assets/favicon.webp">
   <link rel="stylesheet" href="/assets/fonts/fonts.css">
-  <link rel="stylesheet" href="/app/app.css?v=13">
+  <link rel="stylesheet" href="/app/app.css?v=14">
   <!-- Lottie player (Bodymovin) — usado pela animação do Baú do Tesouro da Su -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -895,21 +895,44 @@
              posicionados por cima dos vértices mais brilhantes. -->
         <div class="caderno-loading-cerebro" aria-hidden="true">
           <img src="/assets/cerebro.png?v=1" alt="" class="caderno-cerebro-img" />
-          <!-- Dots piscando por cima dos nós (posições em % do container) -->
+          <!-- Dots piscando — posições EXATAS detectadas por análise de
+               pixel da imagem (cada nó brilhante = um dot). 5 ritmos. -->
           <div class="caderno-cerebro-dots">
-            <span class="cdot cdot-a" style="left:50%;top:17%"></span>
-            <span class="cdot cdot-b" style="left:32%;top:25%"></span>
-            <span class="cdot cdot-c" style="left:66%;top:21%"></span>
-            <span class="cdot cdot-d" style="left:20%;top:42%"></span>
-            <span class="cdot cdot-e" style="left:37%;top:35%"></span>
-            <span class="cdot cdot-a" style="left:50%;top:41%"></span>
-            <span class="cdot cdot-b" style="left:66%;top:38%"></span>
-            <span class="cdot cdot-c" style="left:78%;top:48%"></span>
-            <span class="cdot cdot-d" style="left:28%;top:56%"></span>
-            <span class="cdot cdot-e" style="left:48%;top:55%"></span>
-            <span class="cdot cdot-a" style="left:64%;top:56%"></span>
-            <span class="cdot cdot-b" style="left:24%;top:66%"></span>
-            <span class="cdot cdot-c" style="left:54%;top:73%"></span>
+            <span class="cdot cdot-a" style="left:77.8%;top:31.1%"></span>
+            <span class="cdot cdot-b" style="left:22.1%;top:45.7%"></span>
+            <span class="cdot cdot-c" style="left:35.2%;top:27.3%"></span>
+            <span class="cdot cdot-d" style="left:53.4%;top:40.0%"></span>
+            <span class="cdot cdot-e" style="left:80.7%;top:47.6%"></span>
+            <span class="cdot cdot-a" style="left:76.8%;top:51.4%"></span>
+            <span class="cdot cdot-b" style="left:63.2%;top:34.9%"></span>
+            <span class="cdot cdot-c" style="left:42.4%;top:36.2%"></span>
+            <span class="cdot cdot-d" style="left:29.8%;top:39.4%"></span>
+            <span class="cdot cdot-e" style="left:50.5%;top:53.3%"></span>
+            <span class="cdot cdot-a" style="left:45.6%;top:21.2%"></span>
+            <span class="cdot cdot-b" style="left:70.3%;top:20.3%"></span>
+            <span class="cdot cdot-c" style="left:74.1%;top:26.6%"></span>
+            <span class="cdot cdot-d" style="left:52.1%;top:28.9%"></span>
+            <span class="cdot cdot-e" style="left:73.8%;top:33.6%"></span>
+            <span class="cdot cdot-a" style="left:69.0%;top:49.9%"></span>
+            <span class="cdot cdot-b" style="left:61.3%;top:55.5%"></span>
+            <span class="cdot cdot-c" style="left:74.4%;top:58.7%"></span>
+            <span class="cdot cdot-d" style="left:69.4%;top:61.6%"></span>
+            <span class="cdot cdot-e" style="left:35.4%;top:16.3%"></span>
+            <span class="cdot cdot-a" style="left:62.6%;top:24.2%"></span>
+            <span class="cdot cdot-b" style="left:22.1%;top:26.6%"></span>
+            <span class="cdot cdot-c" style="left:17.9%;top:38.0%"></span>
+            <span class="cdot cdot-d" style="left:29.9%;top:48.5%"></span>
+            <span class="cdot cdot-e" style="left:53.1%;top:58.8%"></span>
+            <span class="cdot cdot-a" style="left:56.2%;top:62.7%"></span>
+            <span class="cdot cdot-b" style="left:65.1%;top:18.0%"></span>
+            <span class="cdot cdot-c" style="left:66.3%;top:31.4%"></span>
+            <span class="cdot cdot-d" style="left:81.0%;top:38.3%"></span>
+            <span class="cdot cdot-e" style="left:72.4%;top:43.1%"></span>
+            <span class="cdot cdot-a" style="left:39.8%;top:47.6%"></span>
+            <span class="cdot cdot-b" style="left:56.7%;top:49.2%"></span>
+            <span class="cdot cdot-c" style="left:32.9%;top:53.3%"></span>
+            <span class="cdot cdot-d" style="left:37.0%;top:55.7%"></span>
+            <span class="cdot cdot-e" style="left:64.6%;top:62.4%"></span>
           </div>
         </div>
 
@@ -1794,10 +1817,10 @@
        antigo em cache mesmo após deploy. Bumpe o número (v=3, v=4, …)
        sempre que mudar app.js ou caderno.js e quiser forçar reload no
        celular sem o usuário ter que limpar cache. -->
-  <script type="module" src="/app/app.js?v=13"></script>
+  <script type="module" src="/app/app.js?v=14"></script>
   <!-- Caderno da Mentalização + Conquistas. Carrega depois do app.js
        pra ter acesso a fetchAutenticado/irPara/toast/abrirModal/fecharModal
        como globais. Vide public/app/caderno.js. -->
-  <script src="/app/caderno.js?v=13"></script>
+  <script src="/app/caderno.js?v=14"></script>
 </body>
 </html>
