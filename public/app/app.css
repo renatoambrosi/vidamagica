@@ -4784,12 +4784,29 @@ body.caderno-aberto #view-caderno {
   filter: blur(7px);
 }
 
-/* ÚLTIMA frase ("Conectado") — destaque extra no topo */
-.caderno-loading-frase.final:first-child {
+/* ── FRASES FINAIS COM COR PRÓPRIA ──
+   Declaradas DEPOIS dos :nth-child → a cor vence na cascata mesmo quando
+   a frase desce de posição (mantém identidade: Conectado fica verde,
+   Pronto pra manifestar fica dourado, mesmo apagando ao descer). */
+.caderno-loading-frase.final-verde   { color: #5FE0A0; }   /* verde conexão */
+.caderno-loading-frase.final-dourado { color: #FFE6A0; }   /* dourado promessa */
+
+/* "CONECTADO" — verde em destaque quando assume o topo */
+.caderno-loading-frase.final-verde:first-child {
   font-weight: 800;
   font-size: clamp(1.3rem, 5.5vw, 1.65rem);
-  text-shadow: 0 0 24px rgba(255, 255, 255, 0.55),
-               0 0 40px rgba(255, 225, 140, 0.5);
+  color: #74F0B4;
+  text-shadow: 0 0 24px rgba(95, 224, 160, 0.65),
+               0 0 44px rgba(95, 224, 160, 0.45);
+}
+
+/* "PRONTO PARA MANIFESTAR ✨" — dourado em destaque no topo */
+.caderno-loading-frase.final-dourado:first-child {
+  font-weight: 800;
+  font-size: clamp(1.3rem, 5.5vw, 1.65rem);
+  color: #FFF0BE;
+  text-shadow: 0 0 24px rgba(255, 225, 140, 0.75),
+               0 0 46px rgba(255, 200, 80, 0.55);
 }
 
 /* ════════════════════════════════════════════════════════════════════

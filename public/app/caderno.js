@@ -37,9 +37,9 @@
      trocar `LOADING_RITUAL_ATIVO` pra false.
      ═══════════════════════════════════════════════════════════ */
   const LOADING_RITUAL_ATIVO = true;
-  const LOADING_DURACAO_MS = 5000;       // total do loading
-  const LOADING_STEPS = 4;               // 4 mensagens
-  const LOADING_STEP_MS = LOADING_DURACAO_MS / LOADING_STEPS; // 1250ms cada — leitura confortável
+  const LOADING_STEP_MS = 1250;          // cadência por frase (a que o Renato gostou)
+  const LOADING_STEPS = 5;               // 5 frases (incl. Conectado + Pronto pra manifestar)
+  const LOADING_DURACAO_MS = LOADING_STEPS * LOADING_STEP_MS; // 6250ms total
 
   // ── ESTADO LOCAL ─────────────────────────────────────────
   const estado = {
@@ -236,10 +236,11 @@
     if (fraseArea) fraseArea.innerHTML = ''; // Limpa frases do loading anterior
 
     const FRASES = [
-      { texto: 'Acessando o subconsciente…',         final: false },
-      { texto: 'Acessando sonhos…',                  final: false },
-      { texto: 'Indo a lugares profundos…',          final: false },
-      { texto: 'Conectado - Pronto para manifestar ✨', final: true  },
+      { texto: 'Acessando o subconsciente…',  cor: null      },
+      { texto: 'Acessando sonhos…',           cor: null      },
+      { texto: 'Indo a lugares profundos…',   cor: null      },
+      { texto: 'Conectado',                   cor: 'verde'   },
+      { texto: 'Pronto para manifestar ✨',   cor: 'dourado' },
     ];
 
     const tocarFrase = (i) => {
@@ -250,7 +251,9 @@
       // .entrando = estado inicial (vem de cima, maior, desfocada)
       p.className = 'caderno-loading-frase entrando';
       p.textContent = item.texto;
-      if (item.final) p.classList.add('final');
+      // Frases finais ganham cor própria (verde = conexão, dourado = promessa)
+      if (item.cor === 'verde')   p.classList.add('final-verde');
+      else if (item.cor === 'dourado') p.classList.add('final-dourado');
 
       // PREPEND → nova frase entra no TOPO. As anteriores viram
       // :nth-child(2,3,4) e deslizam pra baixo suave (transition).
