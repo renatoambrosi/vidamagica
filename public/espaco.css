@@ -17,12 +17,15 @@
 html, body { height: 100%; }
 body {
   font-family: var(--font-ui);
-  background: var(--fundo);
+  /* overlay de legibilidade (cor do tema, leve) POR CIMA da imagem do tema.
+     A imagem fica fixa (body não rola — o scroll é no .espaco-corpo), então
+     não precisa de background-attachment: fixed (que o iOS ignora). */
+  background: var(--overlay, none), var(--fundo) center center / cover no-repeat;
+  background-color: var(--fundo-cor, #E8DCC0);   /* fallback enquanto a imagem carrega */
   color: var(--texto);
   overflow: hidden;                 /* tela sem rolagem global — cada view controla */
   position: fixed; inset: 0;        /* trava o scroll bounce do iOS */
   -webkit-font-smoothing: antialiased;
-  transition: background 0.6s ease, color 0.6s ease;
 }
 /* Fontes self-hostadas do app (carregadas via /assets/fonts/fonts.css) */
 :root {
@@ -36,50 +39,73 @@ body {
    TEMAS — variáveis. Default = Vida Mágica (champagne dourado).
    Trocar o tema = body[data-tema="..."]. Transição suave no <body>.
    ───────────────────────────────────────────────────────────── */
-/* TEMA: VIDA MÁGICA (default) — CLARO: creme/marfim + dourado + vidro (identidade do app) */
+/* TEMA: VIDA MÁGICA (default) — dourado/creme + sparkles. SEM imagem de fundo. */
 body, body[data-tema="vida_magica"] {
   --fundo: radial-gradient(circle at 50% -8%, #FBF6EA 0%, #F2E8D0 55%, #E8DCC0 100%);
+  --overlay: none;
+  --fundo-cor: #E8DCC0;
   --texto: #3D2E1A;             /* marrom escuro do app */
   --texto-suave: #6B5436;
   --acento: #C8922A;            /* ouro do app */
   --acento-2: #E8C97A;          /* ouro claro */
   --acento-deep: #A17523;       /* ouro fundo */
-  --card-bg: rgba(255, 250, 240, 0.72);   /* vidro do app */
+  --card-bg: rgba(255, 250, 240, 0.92);   /* vidro do app (sólido — sem blur) */
   --card-borda: rgba(200, 146, 42, 0.28);
-  --header-bg: rgba(255, 250, 240, 0.82);
+  --header-bg: rgba(252, 247, 236, 0.97);
   --particula: rgba(200, 146, 42, 0.55);
   --sombra: 0 4px 24px rgba(161, 117, 35, 0.14);
   --glow: 0 0 24px rgba(200, 146, 42, 0.32), 0 0 48px rgba(200, 146, 42, 0.16);
 }
-/* TEMA: UNIVERSO — noite cósmica (escuro), violeta + estrelas */
-body[data-tema="universo"] {
-  --fundo: radial-gradient(circle at 50% 8%, #20235e 0%, #0d0f33 50%, #050613 100%);
-  --texto: #eef0ff;
-  --texto-suave: #a3a9dc;
-  --acento: #c3b1ff;            /* violeta luminoso */
-  --acento-2: #9d8bff;
-  --acento-deep: #6a59cf;
-  --card-bg: rgba(150, 140, 255, 0.10);
-  --card-borda: rgba(180, 165, 255, 0.28);
-  --header-bg: rgba(8, 9, 28, 0.78);
-  --particula: rgba(225, 228, 255, 0.95);
-  --sombra: 0 8px 30px rgba(0, 0, 0, 0.40);
-  --glow: 0 0 24px rgba(160, 140, 255, 0.40), 0 0 50px rgba(120, 100, 255, 0.25);
+/* TEMA: MÁGICO — espiral galáctica pastel (magico.webp) + parallax */
+body[data-tema="magico"] {
+  --fundo: url('/assets/bgespaco/magico.webp');
+  --overlay: linear-gradient(to bottom, rgba(245,243,255,0.16) 0%, rgba(222,222,248,0.42) 100%);
+  --fundo-cor: #cfd4ee;
+  --texto: #2c2a4a;
+  --texto-suave: #5a567f;
+  --acento: #8a6fd6;            /* lilás mágico */
+  --acento-2: #b6a4ee;
+  --acento-deep: #6a52b8;
+  --card-bg: rgba(255, 255, 255, 0.82);
+  --card-borda: rgba(140, 120, 210, 0.30);
+  --header-bg: rgba(250, 249, 255, 0.93);
+  --particula: rgba(255, 240, 190, 0.9);
+  --sombra: 0 6px 26px rgba(90, 70, 160, 0.18);
+  --glow: 0 0 24px rgba(150, 120, 230, 0.35), 0 0 48px rgba(180, 160, 255, 0.20);
 }
-/* TEMA: MEDIEVAL (mágico) — pergaminho + ouro velho (claro sépia) */
+/* TEMA: UNIVERSO — céu noturno azul estrelado (universo.webp) + estrelas cadentes */
+body[data-tema="universo"] {
+  --fundo: url('/assets/bgespaco/universo.webp');
+  --overlay: linear-gradient(to bottom, rgba(4,8,30,0.34) 0%, rgba(4,8,28,0.66) 100%);
+  --fundo-cor: #060a22;
+  --texto: #eef0ff;
+  --texto-suave: #a9b0e0;
+  --acento: #8fb8ff;
+  --acento-2: #b8d0ff;
+  --acento-deep: #4f72c4;
+  --card-bg: rgba(20, 28, 66, 0.66);
+  --card-borda: rgba(150, 180, 255, 0.30);
+  --header-bg: rgba(6, 10, 30, 0.93);
+  --particula: rgba(220, 232, 255, 0.95);
+  --sombra: 0 8px 30px rgba(0, 0, 0, 0.40);
+  --glow: 0 0 24px rgba(120, 160, 255, 0.40), 0 0 50px rgba(90, 130, 255, 0.25);
+}
+/* TEMA: MEDIEVAL — floresta encantada (medieval.webp) + bolinhas + borboletas */
 body[data-tema="medieval"] {
-  --fundo: radial-gradient(circle at 50% -8%, #F3E7C8 0%, #E3CFA0 55%, #D2B87F 100%);
-  --texto: #4A3618;
-  --texto-suave: #7A5E30;
-  --acento: #9C6B1F;            /* ouro velho */
-  --acento-2: #C79A3E;
-  --acento-deep: #6E4D18;       /* bronze */
-  --card-bg: rgba(255, 248, 228, 0.60);
-  --card-borda: rgba(140, 100, 40, 0.34);
-  --header-bg: rgba(243, 231, 200, 0.82);
-  --particula: rgba(140, 100, 40, 0.50);
-  --sombra: 0 4px 22px rgba(110, 77, 24, 0.20);
-  --glow: 0 0 24px rgba(156, 107, 31, 0.32), 0 0 48px rgba(120, 80, 20, 0.18);
+  --fundo: url('/assets/bgespaco/medieval.webp');
+  --overlay: linear-gradient(to bottom, rgba(10,18,14,0.28) 0%, rgba(8,14,10,0.62) 100%);
+  --fundo-cor: #11201a;
+  --texto: #ede4cf;
+  --texto-suave: #b7c0a8;
+  --acento: #e0c878;            /* ouro velho luminoso */
+  --acento-2: #b8e0c0;
+  --acento-deep: #8a6d2f;
+  --card-bg: rgba(20, 34, 26, 0.70);
+  --card-borda: rgba(180, 160, 90, 0.32);
+  --header-bg: rgba(10, 20, 14, 0.93);
+  --particula: rgba(180, 220, 255, 0.90);
+  --sombra: 0 8px 30px rgba(0, 0, 0, 0.40);
+  --glow: 0 0 24px rgba(140, 200, 150, 0.35), 0 0 48px rgba(100, 160, 255, 0.20);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -92,7 +118,6 @@ body[data-tema="medieval"] {
   display: flex; align-items: center; gap: 0.5rem;
   padding: calc(env(safe-area-inset-top) + 0.6rem) 0.9rem 0.6rem;
   background: var(--header-bg);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--card-borda);
   position: relative; z-index: 20;
 }
@@ -155,7 +180,6 @@ body[data-tema="medieval"] {
   position: absolute; top: calc(100% + 6px); right: 52px;
   min-width: 210px; z-index: 40;
   background: var(--header-bg);
-  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
   border: 1px solid var(--card-borda); border-radius: 16px;
   padding: 0.4rem; box-shadow: 0 14px 40px rgba(0,0,0,0.45);
   opacity: 0; transform: translateY(-8px) scale(0.97);
@@ -176,8 +200,9 @@ body[data-tema="medieval"] {
   border: 1.5px solid rgba(255,255,255,0.25);
 }
 .espaco-tema-amostra.vida_magica { background: radial-gradient(circle at 35% 30%, #f4d060, #a17523); }
-.espaco-tema-amostra.universo    { background: radial-gradient(circle at 35% 30%, #b8a4ff, #5b4bc4); }
-.espaco-tema-amostra.medieval    { background: radial-gradient(circle at 35% 30%, #d8b85a, #8a6d2f); }
+.espaco-tema-amostra.magico      { background: radial-gradient(circle at 35% 30%, #c9b6f5, #6a52b8); }
+.espaco-tema-amostra.universo    { background: radial-gradient(circle at 35% 30%, #9fc0ff, #1a2a6e); }
+.espaco-tema-amostra.medieval    { background: radial-gradient(circle at 35% 30%, #cfe0a8, #4a6a2e); }
 .espaco-tema-nome { margin-right: auto; }
 /* Check verde — confirma o tema em preview */
 .espaco-tema-check {
@@ -199,7 +224,6 @@ body[data-tema="medieval"] {
   position: absolute; top: calc(100% + 6px); right: 0.9rem;
   min-width: 220px; z-index: 40;
   background: var(--header-bg);
-  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
   border: 1px solid var(--card-borda); border-radius: 16px;
   padding: 0.4rem; box-shadow: 0 14px 40px rgba(0,0,0,0.45);
   opacity: 0; transform: translateY(-8px) scale(0.97);
@@ -233,22 +257,28 @@ body[data-tema="medieval"] {
 
 /* ── TELA DE ENTRADA — Meditação Guiada (3 caminhos) ── */
 .espaco-saudacao { text-align: center; margin: 0.5rem 0 1.6rem; }
+/* Halo da cor do fundo atrás do texto da saudação = legibilidade sobre
+   qualquer imagem de tema (claro ou escuro), sem overlay pesado. */
 .espaco-eyebrow {
   font-size: 0.74rem; letter-spacing: 0.18em; text-transform: uppercase;
   color: var(--acento); font-weight: 700; margin-bottom: 0.4rem;
+  text-shadow: 0 0 16px var(--fundo-cor, transparent);
 }
 .espaco-titulo-grande {
   font-family: var(--font-display); font-size: 1.7rem; line-height: 1.2;
-  color: var(--texto); font-weight: 700;
+  color: var(--texto); font-weight: 800;
+  text-shadow: 0 1px 22px var(--fundo-cor, transparent);
 }
-.espaco-sub-grande { color: var(--texto-suave); font-size: 0.95rem; margin-top: 0.5rem; }
+.espaco-sub-grande {
+  color: var(--texto-suave); font-size: 0.95rem; margin-top: 0.5rem;
+  text-shadow: 0 0 14px var(--fundo-cor, transparent);
+}
 
 .espaco-caminhos { display: flex; flex-direction: column; gap: 0.9rem; max-width: 460px; margin: 0 auto; }
 .espaco-caminho {
   display: flex; align-items: center; gap: 1rem; width: 100%;
   padding: 1.15rem 1.1rem; cursor: pointer; text-align: left;
   background: var(--card-bg);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--card-borda);
   border-radius: var(--radius-lg); color: var(--texto);
   box-shadow: var(--sombra);

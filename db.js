@@ -2316,14 +2316,18 @@ async function initEspaco() {
     `);
 
     // PREFERÊNCIAS DA ALUNA — hoje guarda o tema escolhido do Espaço.
-    // tema: 'vida_magica' (default) | 'universo' | 'medieval'.
+    // tema: 'vida_magica' (default) | 'magico' | 'universo' | 'medieval'.
+    // Sem CHECK no banco (validação no código, routes/espaco.js TEMAS_VALIDOS)
+    // pra poder adicionar temas novos sem migration de constraint.
     await c.query(`
       CREATE TABLE IF NOT EXISTS espaco_pref_aluna (
         usuario_id UUID PRIMARY KEY,
-        tema VARCHAR(30) DEFAULT 'vida_magica' CHECK (tema IN ('vida_magica','universo','medieval')),
+        tema VARCHAR(30) DEFAULT 'vida_magica',
         atualizado_em TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+    // Remove o CHECK antigo (que só aceitava 3 temas) de tabelas já criadas.
+    await c.query(`ALTER TABLE espaco_pref_aluna DROP CONSTRAINT IF EXISTS espaco_pref_aluna_tema_check`);
 
     // ── Catálogos cadastrados pelo admin ───────────────────
 

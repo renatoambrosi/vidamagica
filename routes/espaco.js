@@ -17,7 +17,7 @@ const router = express.Router();
 const { poolEspaco, poolCore } = require('../db');
 const { autenticar } = require('../middleware/autenticar');
 
-const TEMAS_VALIDOS = new Set(['vida_magica', 'universo', 'medieval']);
+const TEMAS_VALIDOS = new Set(['vida_magica', 'magico', 'universo', 'medieval']);
 
 function erro(res, code, msg) { return res.status(code).json({ ok: false, erro: msg }); }
 function tag(id) { return String(id || '?').slice(0, 8); }
@@ -29,9 +29,9 @@ router.get('/contexto', autenticar, async (req, res) => {
   try {
     const usuarioId = req.usuario.sub;
 
-    // Identidade (poolCore) — nome, sementes, plano
+    // Identidade (poolCore) — nome, sementes, plano, foto
     const u = await poolCore.query(
-      `SELECT nome, sementes, plano FROM usuarios WHERE id = $1`,
+      `SELECT nome, sementes, plano, foto_url FROM usuarios WHERE id = $1`,
       [usuarioId]
     );
     const aluna = u.rows[0] || {};
@@ -49,6 +49,7 @@ router.get('/contexto', autenticar, async (req, res) => {
       aluna: {
         nome: aluna.nome || null,
         sementes: aluna.sementes || 0,
+        foto_url: aluna.foto_url || null,
       },
       tem_clube: plano !== 'gratuito',
       tema,

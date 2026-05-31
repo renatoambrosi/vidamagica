@@ -181,7 +181,7 @@
     if (!wrap || wrap.dataset.gerado === '1') return;
     wrap.dataset.gerado = '1';
     const ehClube = !!window._espacoCtx?.tem_clube;
-    const total = ehClube ? 54 : 36;
+    const total = ehClube ? 26 : 18;   // reduzido — performance no iOS
     let html = '';
     for (let i = 0; i < total; i++) {
       const left = Math.random() * 100;
@@ -304,9 +304,17 @@
     // Sementes
     const sem = el('espaco-sementes-num');
     if (sem) sem.textContent = ctx.aluna?.sementes || 0;
-    // Avatar — inicial do nome
-    const ini = el('espaco-avatar-inicial');
-    if (ini) ini.textContent = (ctx.aluna?.nome || '·').trim().charAt(0).toUpperCase() || '·';
+    // Avatar — foto se houver, senão inicial do nome
+    const av = el('espaco-avatar');
+    if (av) {
+      if (ctx.aluna?.foto_url) {
+        const img = document.createElement('img');
+        img.src = ctx.aluna.foto_url; img.alt = '';
+        av.innerHTML = ''; av.appendChild(img);
+      } else {
+        av.innerHTML = `<span id="espaco-avatar-inicial">${(ctx.aluna?.nome || '·').trim().charAt(0).toUpperCase() || '·'}</span>`;
+      }
+    }
     // Saudação
     const tit = el('espaco-saudacao-titulo');
     const primeiro = (ctx.aluna?.nome || '').split(' ')[0];
