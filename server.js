@@ -173,6 +173,7 @@ app.use('/api/auth',          require('./routes/auth'));
 app.use('/api/painel',        require('./routes/admin-auth'));        // OTP do admin/atendimento
 app.use('/api/admin',         require('./routes/admin'));             // Painel admin (gateway, templates, usuários)
 app.use('/api/admin',         require('./routes/admin-caderno'));     // Painel admin: Caderno (prompts/afirmações/áudios) + Gamificação (prêmios/missões/ranking)
+app.use('/api/admin',         require('./routes/admin-espaco'));      // Painel admin: Espaço da Manifestação (afirmações; futuro: meditações/playlists)
 app.use('/api/painel-aluna',  require('./routes/painel-aluna'));      // Produtos+Jornada da aluna (admin OU atendimento)
 app.use('/webhook',           require('./routes/webhook-evolution')); // Webhook Evolution (zap entrante)
 app.use('/api',               require('./routes/produtos'));     // /api/produtos (canônico)

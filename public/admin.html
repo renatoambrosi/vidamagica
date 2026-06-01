@@ -578,12 +578,17 @@ select option { background: #1a1205; }
     <span class="nav-icon">📜</span> Conteúdo dos Resultados
   </div>
 
-  <div class="sidebar-section-label" style="margin-top:0.5rem">Caderno da Mentalização</div>
-  <div class="nav-item" id="nav-caderno" onclick="goTab('caderno', this)">
-    <span class="nav-icon">📓</span> Caderno
+  <div class="sidebar-section-label" style="margin-top:0.5rem">Espaço da Manifestação</div>
+  <div class="nav-item" id="nav-espaco-afirmacoes" onclick="goTab('espaco-afirmacoes', this)">
+    <span class="nav-icon">✨</span> Afirmações
   </div>
   <div class="nav-item" id="nav-gamificacao" onclick="goTab('gamificacao', this)">
     <span class="nav-icon">🏆</span> Gamificação
+  </div>
+
+  <div class="sidebar-section-label" style="margin-top:0.5rem">Caderno da Mentalização</div>
+  <div class="nav-item" id="nav-caderno" onclick="goTab('caderno', this)">
+    <span class="nav-icon">📓</span> Caderno <span class="nav-tag">legado</span>
   </div>
 
   <div class="sidebar-section-label" style="margin-top:0.5rem">Em breve</div>
@@ -1333,6 +1338,22 @@ select option { background: #1a1205; }
 
     <!-- (Aba "Livros" foi removida — fonte da verdade dos livros agora é a aba Preços, com slugs vencendo_medo/desordem/validacao/sobrevivencia) -->
 
+    <!-- ════════════════════ ESPAÇO DA MANIFESTAÇÃO — AFIRMAÇÕES ════════════════════
+         Catálogo de afirmações do Espaço (poolEspaco). Cada uma pode ter um MP3
+         opcional (narração) em assets/afirmacoes/. API: /api/admin/espaco/afirmacoes -->
+    <div class="tab-panel" id="tab-espaco-afirmacoes">
+      <div class="wz-section">
+        <div class="wz-section-header">
+          <div>
+            <div class="wz-section-title">✨ Banco de afirmações</div>
+            <div class="wz-section-sub">Frases de poder por categoria. O áudio (MP3) é opcional — a aluna pode só ler. Nome do arquivo = o MP3 em <code>assets/afirmacoes/</code> (ex: <code>prosperidade-01.mp3</code>).</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="espAfirmNova()">+ Nova afirmação</button>
+        </div>
+        <div id="esp-afirmacoes-lista"><div class="loading">Carregando…</div></div>
+      </div>
+    </div>
+
     <!-- ════════════════════ CADERNO DA MENTALIZAÇÃO ════════════════════
          3 sub-abas: Prompts (perguntas guiadas) / Afirmações (banco)
          / Áudios (catálogo de foco). Tudo CRUD simples via fetch.
@@ -1558,6 +1579,7 @@ const tabMeta = {
   legado:      { title: 'Legado',               sub: 'Dados invisíveis pra aluna · visíveis só pra você' },
   teste:        { title: 'Teste do Subconsciente', sub: 'Versões do questionário — perguntas, alternativas e publicação' },
   'teste-perfis': { title: 'Conteúdo dos Resultados', sub: 'Textos, vídeos e produtos exibidos pra cada perfil dominante' },
+  'espaco-afirmacoes': { title: 'Espaço · Afirmações', sub: 'Catálogo de afirmações + áudio opcional (MP3 em assets/afirmacoes/)' },
   caderno:      { title: 'Caderno da Mentalização', sub: 'Prompts, afirmações e áudios de foco' },
   gamificacao:  { title: 'Gamificação',              sub: 'Tabela de prêmios, missões e ranking mensal' },
 };
@@ -1598,6 +1620,7 @@ function goTab(id, el) {
   if (id === 'teste') { testeAdmin.carregar(); }
   if (id === 'teste-perfis') { perfisAdmin.carregar(); }
   if (id === 'caderno') { cadCarregarPrompts(); }
+  if (id === 'espaco-afirmacoes') { espAfirmCarregar(); }
   if (id === 'gamificacao') { gamCarregarPremios(); }
 }
 
@@ -4954,6 +4977,86 @@ async function cadAfirmacaoApagar(id) {
   if (!confirm('Apagar?')) return;
   await admFetch(`/api/admin/caderno/afirmacoes/${id}`, { method: 'DELETE' });
   cadCarregarAfirmacoes();
+}
+
+// ── ESPAÇO DA MANIFESTAÇÃO — AFIRMAÇÕES (poolEspaco) ──────
+// API: /api/admin/espaco/afirmacoes. Cada afirmação tem áudio (MP3) opcional.
+async function espAfirmCarregar() {
+  const cont = document.getElementById('esp-afirmacoes-lista');
+  cont.innerHTML = '<div class="loading">Carregando…</div>';
+  try {
+    const d = await admFetch('/api/admin/espaco/afirmacoes');
+    if (!d.ok) throw 0;
+    if (!d.afirmacoes.length) {
+      cont.innerHTML = '<div class="loading">Nenhuma afirmação cadastrada. Clique em “+ Nova afirmação”.</div>';
+      return;
+    }
+    cont.innerHTML = `
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="text-align:left;border-bottom:1px solid var(--border)">
+          <th style="padding:8px">Texto</th>
+          <th style="padding:8px;width:130px">Categoria</th>
+          <th style="padding:8px;width:200px">Áudio (MP3)</th>
+          <th style="padding:8px;width:56px">Ordem</th>
+          <th style="padding:8px;width:56px">Ativo</th>
+          <th style="padding:8px;width:130px"></th>
+        </tr></thead>
+        <tbody>
+          ${d.afirmacoes.map(a => `
+            <tr style="border-bottom:1px solid var(--border)" data-id="${a.id}">
+              <td style="padding:8px"><input class="field-input" data-f="texto" value="${escAdm(a.texto)}" /></td>
+              <td style="padding:8px"><input class="field-input" data-f="categoria" value="${escAdm(a.categoria)}" placeholder="prosperidade…" /></td>
+              <td style="padding:8px;display:flex;gap:4px;align-items:center">
+                <input class="field-input" data-f="audio_arquivo" value="${escAdm(a.audio_arquivo)}" placeholder="ex: nome.mp3" style="flex:1" />
+                <button class="btn btn-ghost btn-sm" title="Ouvir" onclick="espAfirmPreview(this)">▶</button>
+              </td>
+              <td style="padding:8px"><input class="field-input" data-f="ordem" type="number" value="${a.ordem}" /></td>
+              <td style="padding:8px"><input data-f="ativo" type="checkbox" ${a.ativo ? 'checked' : ''} /></td>
+              <td style="padding:8px;display:flex;gap:4px">
+                <button class="btn btn-primary btn-sm" onclick="espAfirmSalvar(${a.id}, this)">Salvar</button>
+                <button class="btn btn-ghost btn-sm" onclick="espAfirmApagar(${a.id})">🗑</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch { cont.innerHTML = '<div class="loading">Erro ao carregar.</div>'; }
+}
+async function espAfirmNova() {
+  const texto = prompt('Texto da afirmação:');
+  if (!texto) return;
+  const categoria = prompt('Categoria (ex: prosperidade, autoestima, relacionamentos):') || '';
+  const audio_arquivo = prompt('Arquivo de áudio MP3 (opcional — deixe vazio se for só texto). Ex: prosperidade-01.mp3') || '';
+  const d = await admFetch('/api/admin/espaco/afirmacoes', {
+    method: 'POST', body: JSON.stringify({ texto, categoria, audio_arquivo, ordem: 99 }),
+  });
+  toast(d.ok ? '✓ Afirmação criada' : '✗ Erro');
+  espAfirmCarregar();
+}
+async function espAfirmSalvar(id, btn) {
+  const tr = btn.closest('tr');
+  const body = {};
+  tr.querySelectorAll('[data-f]').forEach(inp => {
+    body[inp.dataset.f] = inp.type === 'checkbox' ? inp.checked : inp.value;
+  });
+  const d = await admFetch(`/api/admin/espaco/afirmacoes/${id}`, {
+    method: 'PUT', body: JSON.stringify(body),
+  });
+  toast(d.ok ? '✓ Salvo' : '✗ Erro');
+}
+async function espAfirmApagar(id) {
+  if (!confirm('Apagar esta afirmação?')) return;
+  await admFetch(`/api/admin/espaco/afirmacoes/${id}`, { method: 'DELETE' });
+  espAfirmCarregar();
+}
+// Ouve o MP3 da afirmação pra conferir se o arquivo existe na pasta
+function espAfirmPreview(btn) {
+  const inp = btn.closest('td').querySelector('[data-f="audio_arquivo"]');
+  const arq = (inp?.value || '').trim();
+  if (!arq) { toast('Sem arquivo de áudio nesta linha', 'error'); return; }
+  const audio = new Audio('/assets/afirmacoes/' + encodeURIComponent(arq));
+  audio.play().catch(() => toast('Não encontrei /assets/afirmacoes/' + arq, 'error'));
 }
 
 // ── CADERNO — ÁUDIOS DE FOCO ──────────────────────────────
