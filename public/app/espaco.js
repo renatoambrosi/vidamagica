@@ -643,6 +643,15 @@
       const r = await fetchAutenticado('/api/app/espaco/contexto');
       if (r) { const d = await r.json(); if (d?.ok) hidratar(d); }
     } catch (e) { console.warn('[espaco] contexto:', e); }
+
+    // Deep-link do aviso de carta madura (WhatsApp/e-mail levam a ?ver=cartas):
+    // abre direto "Minhas cartas do tempo" (fica sob a animação e aparece quando ela some).
+    try {
+      if (new URLSearchParams(location.search).get('ver') === 'cartas') {
+        irPara('view-minhas-cartas');
+        carregarMinhasCartas();
+      }
+    } catch {}
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

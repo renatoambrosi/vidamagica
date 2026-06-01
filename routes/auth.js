@@ -81,7 +81,7 @@ function getIP(req) {
 async function enviarOTPEmail(email, codigo, nome) {
   const axios = require('axios');
   const apiKey = process.env.BREVO_API_KEY;
-  const senderEmail = process.env.SENDER_EMAIL || 'sistema@suellenseragi.com.br';
+  const senderEmail = process.env.SENDER_EMAIL || 'contato@suellenseragi.com.br';
   if (!apiKey || !email) return false;
   try {
     await axios.post('https://api.brevo.com/v3/smtp/email', {

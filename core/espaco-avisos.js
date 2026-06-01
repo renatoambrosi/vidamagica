@@ -21,8 +21,18 @@ const { poolEspaco, poolCore } = require('../db');
 const { enfileirarAtendimento } = require('./gateway');
 
 const APP_URL = process.env.APP_URL || 'https://www.vidamagica.com.br';
-const SENDER_EMAIL = process.env.SENDER_EMAIL || 'sistema@suellenseragi.com.br';
+// Remetente VERIFICADO no Brevo = contato@suellenseragi.com.br (a conta "Suellen
+// Seragi", que tem o avatar). sistema@ não é verificado — não usar. Pode sobrescrever
+// por env SENDER_EMAIL, mas o default agora é o endereço certo.
+const SENDER_EMAIL = process.env.SENDER_EMAIL || 'contato@suellenseragi.com.br';
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
+
+// GIF/imagem animada no TOPO do corpo do e-mail (animação só funciona DENTRO do
+// corpo — o avatar da caixa de entrada do Gmail é sempre estático, via BIMI/perfil
+// Google, fora do nosso controle). Renato sobe o GIF em public/assets/email/ e
+// referencia aqui (ou via env EMAIL_LOGO_URL). Se a imagem faltar, o layout se
+// segura sozinho (alt text + selo). Use GIF/PNG — e-mail não renderiza WEBP.
+const EMAIL_LOGO_URL = process.env.EMAIL_LOGO_URL || `${APP_URL}/assets/email/su.gif`;
 
 let intervalId = null;
 
@@ -33,6 +43,94 @@ let intervalId = null;
 const DEV_TICK_RAPIDO = true;
 const INTERVALO_MS = (DEV_TICK_RAPIDO ? 1 : 10) * 60 * 1000;
 const PRIMEIRO_RUN_MS = DEV_TICK_RAPIDO ? 15 * 1000 : 30 * 1000;
+
+// ── MONTAGEM DA MENSAGEM (copy + layout FINAIS, voz da Su) ──
+// Separado do envio pra que o "ver o que a aluna recebe" (modo dev) e o worker
+// de produção usem EXATAMENTE a mesma mensagem. Mudou a copy? Muda aqui, só aqui.
+
+const escapeHtml = (s) => String(s || '').replace(/[&<>"']/g, c => (
+  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+));
+
+// WhatsApp: array de mensagens (o gateway manda em sequência, "digitando").
+function montarWhatsApp(carta, usuario) {
+  const primeiroNome = (usuario.nome || '').split(' ')[0] || 'você';
+  const link = `${APP_URL}/espaco?ver=cartas`;
+  const sobreTitulo = carta.titulo ? ` — "${carta.titulo}"` : '';
+  return [
+    `Oi, ${primeiroNome} ✨`,
+    `Chegou o dia. 💌\n\nA carta que você guardou no tempo${sobreTitulo} está pronta pra ser aberta. Você escreveu ela pra viver exatamente este momento.\n\nQuer abrir agora?\n👉 ${link}`,
+  ];
+}
+
+// E-mail: { subject, htmlContent } — layout Vida Mágica (creme + dourado).
+function montarEmailCarta(carta, usuario) {
+  const primeiroNome = escapeHtml((usuario.nome || '').split(' ')[0] || 'você');
+  const tituloShow = escapeHtml(carta.titulo || 'Sua Carta do Tempo');
+  const temTitulo = !!carta.titulo;
+  const link = `${APP_URL}/espaco?ver=cartas`;
+
+  const htmlContent = `
+  <div style="margin:0;padding:0;background:#F1E4C4;">
+    <div style="max-width:560px;margin:0 auto;padding:32px 18px;font-family:Georgia,'Times New Roman',serif;">
+
+      <!-- Topo: GIF/logo animado (animação só funciona aqui, no corpo) -->
+      <div style="text-align:center;margin-bottom:22px">
+        <img src="${EMAIL_LOGO_URL}" alt="Vida Mágica" width="84" height="84"
+             style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid #E8C97A;background:#FFFBF0;box-shadow:0 6px 20px rgba(161,117,35,0.28)">
+      </div>
+
+      <!-- Cartão -->
+      <div style="background:linear-gradient(160deg,#FFFDF6,#FBF0D6);border:1px solid #DDB85E;border-radius:22px;padding:40px 32px;box-shadow:0 14px 40px rgba(120,86,20,0.16)">
+
+        <p style="margin:0 0 14px;text-align:center;color:#A17523;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:700">
+          Vida Mágica · Carta do Tempo
+        </p>
+
+        <h1 style="margin:0 0 18px;text-align:center;color:#3D2A12;font-size:25px;line-height:1.3;font-weight:700">
+          Chegou o dia, ${primeiroNome}.
+        </h1>
+
+        <p style="margin:0 0 8px;text-align:center;color:#6B5436;font-size:16px;line-height:1.65;font-family:Arial,Helvetica,sans-serif">
+          Há um tempo você sentou, respirou e escreveu uma carta para si mesma — pra ser aberta exatamente agora.
+        </p>
+        <p style="margin:0 0 28px;text-align:center;color:#6B5436;font-size:16px;line-height:1.65;font-family:Arial,Helvetica,sans-serif">
+          Ela esperou por você. Está pronta.
+        </p>
+
+        ${temTitulo ? `
+        <!-- Selo com o título da carta -->
+        <div style="margin:0 auto 30px;max-width:380px;text-align:center;padding:16px 20px;border:1px dashed #C8922A;border-radius:14px;background:rgba(232,201,122,0.16)">
+          <span style="display:block;color:#A17523;font-family:Arial,Helvetica,sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">Você nomeou de</span>
+          <span style="color:#3D2A12;font-size:18px;font-style:italic">"${tituloShow}"</span>
+        </div>` : ''}
+
+        <!-- CTA -->
+        <div style="text-align:center;margin:6px 0 8px">
+          <a href="${link}" style="display:inline-block;background:linear-gradient(135deg,#E0A93A,#A17523);color:#FFFDF6;text-decoration:none;padding:15px 34px;border-radius:999px;font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:15px;letter-spacing:0.3px;box-shadow:0 8px 22px rgba(161,117,35,0.42)">
+            Abrir minha carta
+          </a>
+        </div>
+
+        <hr style="margin:30px 0 18px;border:none;border-top:1px solid rgba(200,146,42,0.28)">
+
+        <p style="margin:0;text-align:center;color:#9A8254;font-size:14px;line-height:1.5;font-family:Arial,Helvetica,sans-serif">
+          Com você nessa jornada,<br>
+          <strong style="color:#7A5E2E">Suellen · Vida Mágica</strong>
+        </p>
+      </div>
+
+      <p style="margin:18px 0 0;text-align:center;color:#A8946A;font-size:11px;font-family:Arial,Helvetica,sans-serif;line-height:1.5">
+        Você recebeu este e-mail porque guardou uma Carta do Tempo no Espaço da Manifestação.
+      </p>
+    </div>
+  </div>`;
+
+  return {
+    subject: temTitulo ? `Sua carta "${carta.titulo}" chegou 💌` : 'Sua Carta do Tempo chegou 💌',
+    htmlContent,
+  };
+}
 
 // ── ENVIO POR CANAL ────────────────────────────────────────
 
@@ -48,17 +146,11 @@ async function enviarWhatsApp(carta, usuario) {
     );
     if (!ins.rows[0]) return { canal: 'whatsapp', ok: true, motivo: 'ja_enviado' };
 
-    const primeiroNome = (usuario.nome || '').split(' ')[0] || 'você';
-    const titulo = carta.titulo ? `"${carta.titulo}"` : '';
-    const mensagens = [
-      `Oi ${primeiroNome} ✨`,
-      `Sua Carta do Tempo ${titulo} chegou.\n\nVocê escreveu pra esse momento. Quer ler agora?\n\n👉 ${APP_URL}/espaco`,
-    ];
     await enfileirarAtendimento({
       telefone: usuario.telefone,
       tipo: 'ativo',
       categoria: 'carta_do_tempo',
-      mensagens: mensagens.map(texto => ({ texto, midias: [] })),
+      mensagens: montarWhatsApp(carta, usuario).map(texto => ({ texto, midias: [] })),
     });
     return { canal: 'whatsapp', ok: true };
   } catch (err) {
@@ -81,33 +173,13 @@ async function enviarEmail(carta, usuario) {
     );
     if (!ins.rows[0]) return { canal: 'email', ok: true, motivo: 'ja_enviado' };
 
+    const { subject, htmlContent } = montarEmailCarta(carta, usuario);
     const primeiroNome = (usuario.nome || '').split(' ')[0] || 'você';
-    const tituloShow = carta.titulo || 'Sua Carta do Tempo';
-    const link = `${APP_URL}/espaco`;
-
     await axios.post('https://api.brevo.com/v3/smtp/email', {
-      sender: { name: 'Vida Mágica', email: SENDER_EMAIL },
+      sender: { name: 'Suellen · Vida Mágica', email: SENDER_EMAIL },
       to: [{ email: usuario.email, name: primeiroNome }],
-      subject: `💌 ${tituloShow} chegou`,
-      htmlContent: `
-        <div style="font-family:Georgia,serif;max-width:520px;margin:0 auto;padding:40px 28px;background:linear-gradient(135deg,#FFF6E0,#FAE9B0);border-radius:18px;border:1px solid #C8922A">
-          <div style="text-align:center;font-size:48px;margin-bottom:8px">💌</div>
-          <h2 style="color:#3D2E1A;font-size:22px;margin:0 0 16px;text-align:center;font-weight:700">Sua Carta chegou, ${primeiroNome}!</h2>
-          <p style="color:#6B5436;font-size:15px;line-height:1.5;margin:0 0 24px;text-align:center">
-            Você escreveu pra esse momento. A carta que você lacrou está esperando você abrir.
-          </p>
-          <div style="text-align:center;margin:28px 0">
-            <a href="${link}" style="display:inline-block;background:linear-gradient(135deg,#C8922A,#A17523);color:white;text-decoration:none;padding:14px 28px;border-radius:999px;font-weight:700;font-size:15px;box-shadow:0 4px 18px rgba(200,146,42,0.4)">Abrir minha carta</a>
-          </div>
-          <p style="color:#A17523;font-size:13px;margin:24px 0 0;text-align:center;font-style:italic">
-            "${tituloShow}"
-          </p>
-          <hr style="margin:24px 0;border:none;border-top:1px solid rgba(200,146,42,0.3)">
-          <p style="color:#888;font-size:11px;margin:0;text-align:center">
-            Você está recebendo este email porque escreveu uma Carta do Tempo no Vida Mágica.
-          </p>
-        </div>
-      `,
+      subject,
+      htmlContent,
     }, {
       headers: { 'accept': 'application/json', 'api-key': BREVO_API_KEY, 'content-type': 'application/json' },
     });
@@ -187,23 +259,22 @@ async function processarCartasMaduras() {
   }
 }
 
-// ── TESTE MANUAL DE ENVIO (modo dev) ───────────────────────
-// Dispara um WhatsApp + email de TESTE pro próprio cadastro, SEM carta e SEM
-// idempotência (não grava em cartas_do_tempo_avisos). Serve pra o Renato
-// confirmar que os dois canais realmente funcionam. Reporta o motivo da falha.
+// ── "VER O QUE A ALUNA RECEBE" (modo dev) ──────────────────
+// Dispara pro PRÓPRIO cadastro a mensagem REAL de carta madura — copy e layout
+// idênticos ao que a aluna recebe (montarWhatsApp / montarEmailCarta) — usando
+// uma carta de EXEMPLO. SEM idempotência (não grava em cartas_do_tempo_avisos),
+// pra poder repetir o teste à vontade. Reporta o motivo se algum canal falhar.
+
+const CARTA_EXEMPLO = { id: 0, titulo: 'Um recado pra mim mesma', abrir_em: new Date().toISOString() };
 
 async function enviarTesteWhatsApp(usuario) {
   if (!usuario.telefone) return { ok: false, motivo: 'sem telefone no cadastro' };
   try {
-    const primeiroNome = (usuario.nome || '').split(' ')[0] || 'você';
     await enfileirarAtendimento({
       telefone: usuario.telefone,
       tipo: 'ativo',
       categoria: 'carta_do_tempo',
-      mensagens: [{
-        texto: `Oi ${primeiroNome} ✨\n\nEste é um teste de envio da Carta do Tempo. Se você recebeu isto, o WhatsApp está funcionando.`,
-        midias: [],
-      }],
+      mensagens: montarWhatsApp(CARTA_EXEMPLO, usuario).map(texto => ({ texto, midias: [] })),
     });
     return { ok: true, motivo: 'enfileirado no gateway (deve chegar em segundos)' };
   } catch (e) {
@@ -216,18 +287,12 @@ async function enviarTesteEmail(usuario) {
   if (!BREVO_API_KEY) return { ok: false, motivo: 'BREVO_API_KEY ausente no ambiente' };
   try {
     const primeiroNome = (usuario.nome || '').split(' ')[0] || 'você';
+    const { subject, htmlContent } = montarEmailCarta(CARTA_EXEMPLO, usuario);
     await axios.post('https://api.brevo.com/v3/smtp/email', {
-      sender: { name: 'Vida Mágica', email: SENDER_EMAIL },
+      sender: { name: 'Suellen · Vida Mágica', email: SENDER_EMAIL },
       to: [{ email: usuario.email, name: primeiroNome }],
-      subject: '💌 Teste de envio — Carta do Tempo',
-      htmlContent: `
-        <div style="font-family:Georgia,serif;max-width:520px;margin:0 auto;padding:40px 28px;background:linear-gradient(135deg,#FFF6E0,#FAE9B0);border-radius:18px;border:1px solid #C8922A">
-          <div style="text-align:center;font-size:48px;margin-bottom:8px">💌</div>
-          <h2 style="color:#3D2E1A;font-size:22px;margin:0 0 16px;text-align:center;font-weight:700">Teste de envio</h2>
-          <p style="color:#6B5436;font-size:15px;line-height:1.5;margin:0;text-align:center">
-            Se você está lendo isto, o e-mail da Carta do Tempo está funcionando, ${primeiroNome}.
-          </p>
-        </div>`,
+      subject,
+      htmlContent,
     }, {
       headers: { 'accept': 'application/json', 'api-key': BREVO_API_KEY, 'content-type': 'application/json' },
     });
