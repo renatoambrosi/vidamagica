@@ -1373,7 +1373,10 @@ select option { background: #1a1205; }
             <div class="wz-section-title">✨ Banco de afirmações</div>
             <div class="wz-section-sub">Frases de poder por categoria. O áudio (MP3) é opcional — a aluna pode só ler. Nome do arquivo = o MP3 em <code>assets/afirmacoes/</code> (ex: <code>prosperidade-01.mp3</code>).</div>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="espAfirmAbrirNova()">+ Nova afirmação</button>
+          <div style="display:flex;gap:0.4rem;align-items:center">
+            <button class="btn btn-primary btn-sm" onclick="espAfirmAbrirNova()">+ Nova afirmação</button>
+            <button class="btn btn-ghost btn-sm" title="Colar várias de uma vez (uma por linha)" onclick="espAfirmAbrirLote()">raw</button>
+          </div>
         </div>
         <div id="esp-afirmacoes-lista"><div class="loading">Carregando…</div></div>
       </div>
@@ -1539,6 +1542,26 @@ select option { background: #1a1205; }
     <div style="display:flex;gap:0.5rem;margin-top:1.25rem">
       <button class="btn btn-primary" id="esp-nova-btn" onclick="espAfirmConfirmarNova()">Adicionar</button>
       <button class="btn btn-ghost" onclick="espAfirmFecharNova()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Adicionar afirmações em LOTE (raw). Cada linha: "texto""tema""arquivo.mp3" -->
+<div id="modal-esp-lote" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:1.5rem">
+  <div style="background:var(--surface,#1a1206);border:1px solid var(--border);border-radius:14px;max-width:640px;width:100%;padding:1.75rem;max-height:90vh;overflow-y:auto">
+    <h3 style="margin:0 0 0.5rem;font-size:1.15rem;color:var(--color-gold-light)">✨ Adicionar em lote (raw)</h3>
+    <p style="color:var(--text-muted);font-size:0.82rem;margin:0 0 0.9rem;line-height:1.5">
+      Uma por linha, no formato <code style="color:var(--color-gold-light)">"texto""tema""arquivo.mp3"</code>. Tema e mp3 são opcionais — pode pôr só <code>"texto"</code> ou <code>"texto""tema"</code>.
+    </p>
+    <textarea id="esp-lote-raw" class="field-input" rows="8" oninput="espLotePreview()" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:0.82rem;line-height:1.55" placeholder='"Eu sou muito feliz""Felicidade""mtofeliz.mp3"
+"O dinheiro flui pra mim""Prosperidade""dinheiro.mp3"
+"Eu confio na minha sabedoria interior""Autoestima"'></textarea>
+    <div id="esp-lote-resumo" style="margin-top:0.6rem;font-size:0.78rem;color:var(--text-muted)">0 afirmações detectadas</div>
+    <div id="esp-lote-preview" style="margin-top:0.4rem;max-height:210px;overflow-y:auto"></div>
+    <div id="esp-lote-erro" style="display:none;margin-top:0.6rem;font-size:0.8rem;color:#F09090"></div>
+    <div style="display:flex;gap:0.5rem;margin-top:1.1rem">
+      <button class="btn btn-primary" id="esp-lote-btn" onclick="espAfirmConfirmarLote()">Adicionar</button>
+      <button class="btn btn-ghost" onclick="espAfirmFecharLote()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -5135,6 +5158,64 @@ async function espAfirmConfirmarNova() {
     btn.disabled = false; btn.textContent = txtBtn;
   }
 }
+// ── Lote (raw): parse de "texto""tema""arquivo.mp3" por linha ──
+// Extrai os campos entre aspas. 1º = texto, 2º = tema, 3º = mp3 (2 e 3 opcionais).
+// Linha sem aspas vira só texto (sem tema/mp3).
+function espParseRawLinha(linha) {
+  const segs = []; const re = /"([^"]*)"/g; let m;
+  while ((m = re.exec(linha)) !== null) segs.push(m[1].trim());
+  if (segs.length === 0) {
+    const t = linha.trim();
+    return t ? { texto: t, categoria: '', audio_arquivo: '' } : null;
+  }
+  return { texto: (segs[0] || '').trim(), categoria: (segs[1] || '').trim(), audio_arquivo: (segs[2] || '').trim() };
+}
+function espLoteParse() {
+  return document.getElementById('esp-lote-raw').value
+    .split('\n').map(espParseRawLinha).filter(it => it && it.texto);
+}
+function espLotePreview() {
+  const itens = espLoteParse();
+  document.getElementById('esp-lote-resumo').innerHTML =
+    `<b style="color:var(--color-gold-light)">${itens.length}</b> afirmaç${itens.length === 1 ? 'ão' : 'ões'} detectada${itens.length === 1 ? '' : 's'}`;
+  const prev = document.getElementById('esp-lote-preview');
+  prev.innerHTML = itens.slice(0, 40).map(it => `
+    <div style="display:flex;gap:0.6rem;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.78rem">
+      <span style="flex:1;min-width:0;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escAdm(it.texto)}</span>
+      <span style="color:var(--color-gold-amber);font-size:0.7rem;flex-shrink:0">${it.categoria ? escAdm(it.categoria) : '—'}</span>
+      <span style="color:var(--text-muted);font-size:0.7rem;flex-shrink:0">${it.audio_arquivo ? escAdm(it.audio_arquivo) : ''}</span>
+    </div>`).join('') + (itens.length > 40 ? `<div style="font-size:0.72rem;color:var(--text-muted);padding-top:4px">… e mais ${itens.length - 40}</div>` : '');
+  return itens;
+}
+function espAfirmAbrirLote() {
+  document.getElementById('esp-lote-raw').value = '';
+  const erro = document.getElementById('esp-lote-erro'); erro.style.display = 'none'; erro.textContent = '';
+  espLotePreview();
+  document.getElementById('modal-esp-lote').style.display = 'flex';
+  setTimeout(() => document.getElementById('esp-lote-raw').focus(), 60);
+}
+function espAfirmFecharLote() { document.getElementById('modal-esp-lote').style.display = 'none'; }
+async function espAfirmConfirmarLote() {
+  const itens = espLoteParse();
+  const erro = document.getElementById('esp-lote-erro');
+  if (!itens.length) { erro.textContent = 'Cole ao menos uma afirmação.'; erro.style.display = 'block'; return; }
+  const btn = document.getElementById('esp-lote-btn'); const txtBtn = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Adicionando…';
+  try {
+    const d = await admFetch('/api/admin/espaco/afirmacoes/lote', {
+      method: 'POST', body: JSON.stringify({ itens }),
+    });
+    if (!d.ok) { erro.textContent = d.erro || 'Erro ao adicionar.'; erro.style.display = 'block'; return; }
+    espAfirmFecharLote();
+    toast(`✓ ${d.inseridas} afirmações adicionadas`);
+    espAfirmCarregar();
+  } catch {
+    erro.textContent = 'Erro de conexão.'; erro.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = txtBtn;
+  }
+}
+
 async function espAfirmSalvar(id, btn) {
   const tr = btn.closest('.esp-af-item');
   const body = {};

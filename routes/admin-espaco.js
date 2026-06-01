@@ -56,6 +56,40 @@ router.post('/espaco/afirmacoes', adm, async (req, res) => {
   } catch (e) { console.error(`❌ [admin-espaco] POST /espaco/afirmacoes:`, e.message); erro(res, 500, e.message); }
 });
 
+// Lote (raw): cola N afirmações de uma vez. Cada item traz seu PRÓPRIO tema e
+// mp3 (o cliente faz o parse do formato "texto""tema""arquivo.mp3" e manda
+// como array de { texto, categoria, audio_arquivo }).
+router.post('/espaco/afirmacoes/lote', adm, async (req, res) => {
+  const client = await poolEspaco.connect();
+  try {
+    const itens = Array.isArray(req.body?.itens) ? req.body.itens : [];
+    const limpos = itens
+      .map(it => ({
+        texto: s(it?.texto, 1000),
+        categoria: s(it?.categoria, 60),
+        audio_arquivo: s(it?.audio_arquivo, 300),
+      }))
+      .filter(it => it.texto);
+    if (!limpos.length) return erro(res, 400, 'cole ao menos uma afirmação válida');
+    await client.query('BEGIN');
+    for (const it of limpos) {
+      await client.query(
+        `INSERT INTO afirmacoes (texto, categoria, audio_arquivo, ordem) VALUES ($1,$2,$3,99)`,
+        [it.texto, it.categoria || null, it.audio_arquivo || null]
+      );
+    }
+    await client.query('COMMIT');
+    console.log(`✨ admin ${admTag(req)} adicionou ${limpos.length} afirmações em lote (raw)`);
+    res.json({ ok: true, inseridas: limpos.length });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error(`❌ [admin-espaco] POST /espaco/afirmacoes/lote:`, e.message);
+    erro(res, 500, e.message);
+  } finally {
+    client.release();
+  }
+});
+
 router.put('/espaco/afirmacoes/:id', adm, async (req, res) => {
   try {
     const id = Number(req.params.id);
