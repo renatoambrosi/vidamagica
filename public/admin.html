@@ -96,6 +96,10 @@ textarea, .field-input[as="textarea"] { resize: vertical; min-height: 68px; line
 .esp-af-meta .btn-sm { min-height: 28px; padding: 0 0.6rem; font-size: 0.72rem; }
 .esp-af-on { display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; color: var(--text-muted); cursor: pointer; user-select: none; }
 .esp-af-meta .esp-af-spacer { margin-left: auto; }
+/* Chips de categoria no modal de nova afirmação */
+.esp-cat-chip { padding: 4px 11px; font-size: 0.76rem; border-radius: 999px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); color: var(--text-light); cursor: pointer; transition: all 0.15s; }
+.esp-cat-chip:hover { border-color: rgba(200,146,42,0.5); }
+.esp-cat-chip.sel { background: rgba(200,146,42,0.18); border-color: var(--color-gold-amber); color: var(--color-gold-light); }
 select option { background: #1a1205; }
 .toggle-row { display: flex; align-items: center; gap: 0.65rem; padding: 0.4rem 0; }
 .tl-titulo { font-size: 0.8rem; font-weight: 500; color: var(--text-light); }
@@ -1369,7 +1373,7 @@ select option { background: #1a1205; }
             <div class="wz-section-title">✨ Banco de afirmações</div>
             <div class="wz-section-sub">Frases de poder por categoria. O áudio (MP3) é opcional — a aluna pode só ler. Nome do arquivo = o MP3 em <code>assets/afirmacoes/</code> (ex: <code>prosperidade-01.mp3</code>).</div>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="espAfirmNova()">+ Nova afirmação</button>
+          <button class="btn btn-primary btn-sm" onclick="espAfirmAbrirNova()">+ Nova afirmação</button>
         </div>
         <div id="esp-afirmacoes-lista"><div class="loading">Carregando…</div></div>
       </div>
@@ -1511,6 +1515,30 @@ select option { background: #1a1205; }
     <div style="display:flex;gap:0.5rem;margin-top:1.25rem">
       <button class="btn btn-primary" onclick="testeAdmin.confirmarPublicar()" id="btn-confirmar-pub">Publicar</button>
       <button class="btn btn-ghost" onclick="testeAdmin.fecharPublicar()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nova afirmação do Espaço (escolhe tema existente ou escreve um novo) -->
+<div id="modal-esp-afirm" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:1.5rem">
+  <div style="background:var(--surface,#1a1206);border:1px solid var(--border);border-radius:14px;max-width:520px;width:100%;padding:1.75rem;max-height:88vh;overflow-y:auto">
+    <h3 style="margin:0 0 0.5rem;font-size:1.15rem;color:var(--color-gold-light)">✨ Nova afirmação</h3>
+    <p style="color:var(--text-muted);font-size:0.82rem;margin:0 0 1.1rem;line-height:1.5">Escreva a frase, escolha um tema (ou crie um novo) e, se quiser, vincule o MP3.</p>
+
+    <label class="field-label">Texto da afirmação</label>
+    <textarea id="esp-nova-texto" class="field-input" rows="3" placeholder="Ex: Eu confio na minha sabedoria interior." maxlength="1000"></textarea>
+
+    <label class="field-label" style="margin-top:1rem">Tema</label>
+    <input type="text" id="esp-nova-cat" class="field-input" placeholder="Escolha abaixo ou escreva um tema novo" maxlength="60" autocomplete="off" oninput="espAfirmCatDigitou()">
+    <div id="esp-nova-cat-chips" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.55rem"></div>
+
+    <label class="field-label" style="margin-top:1rem">Áudio MP3 <span style="color:var(--text-muted);font-weight:400">— opcional</span></label>
+    <input type="text" id="esp-nova-audio" class="field-input" placeholder="ex: prosperidade-01.mp3" maxlength="300" autocomplete="off">
+
+    <div id="esp-nova-erro" style="display:none;margin-top:0.75rem;font-size:0.8rem;color:#F09090"></div>
+    <div style="display:flex;gap:0.5rem;margin-top:1.25rem">
+      <button class="btn btn-primary" id="esp-nova-btn" onclick="espAfirmConfirmarNova()">Adicionar</button>
+      <button class="btn btn-ghost" onclick="espAfirmFecharNova()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -5014,6 +5042,7 @@ async function espAfirmCarregar() {
     }
     // Autocompletar de categorias já usadas (ajuda a classificar com nomes consistentes)
     const cats = [...new Set(d.afirmacoes.map(a => a.categoria).filter(Boolean))].sort();
+    window._espCats = cats;   // usado pelas chips do modal de nova afirmação
     const semCat = d.afirmacoes.filter(a => !a.categoria).length;
 
     // Conta por categoria (a lista já vem ordenada por categoria, NULLS first)
@@ -5054,16 +5083,57 @@ async function espAfirmCarregar() {
     cont.innerHTML = html;
   } catch { cont.innerHTML = '<div class="loading">Erro ao carregar.</div>'; }
 }
-async function espAfirmNova() {
-  const texto = prompt('Texto da afirmação:');
-  if (!texto) return;
-  const categoria = prompt('Categoria (ex: prosperidade, autoestima, relacionamentos):') || '';
-  const audio_arquivo = prompt('Arquivo de áudio MP3 (opcional — deixe vazio se for só texto). Ex: prosperidade-01.mp3') || '';
-  const d = await admFetch('/api/admin/espaco/afirmacoes', {
-    method: 'POST', body: JSON.stringify({ texto, categoria, audio_arquivo, ordem: 99 }),
+// Abre o modal de nova afirmação, montando as chips dos temas já existentes
+function espAfirmAbrirNova() {
+  document.getElementById('esp-nova-texto').value = '';
+  document.getElementById('esp-nova-cat').value = '';
+  document.getElementById('esp-nova-audio').value = '';
+  const erro = document.getElementById('esp-nova-erro');
+  erro.style.display = 'none'; erro.textContent = '';
+  const chips = document.getElementById('esp-nova-cat-chips');
+  const cats = window._espCats || [];
+  chips.innerHTML = cats.length
+    ? cats.map(c => `<button type="button" class="esp-cat-chip" data-cat="${escAdm(c)}" onclick="espAfirmEscolherCat(this)">${escAdm(c)}</button>`).join('')
+    : '<span style="font-size:0.74rem;color:var(--text-muted)">Nenhum tema ainda — escreva o primeiro no campo acima.</span>';
+  document.getElementById('modal-esp-afirm').style.display = 'flex';
+  setTimeout(() => document.getElementById('esp-nova-texto').focus(), 60);
+}
+// Clicar numa chip preenche o campo de tema e destaca a chip
+function espAfirmEscolherCat(btn) {
+  document.getElementById('esp-nova-cat').value = btn.dataset.cat;
+  document.querySelectorAll('#esp-nova-cat-chips .esp-cat-chip').forEach(c => c.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+// Digitar um tema manualmente desmarca as chips (texto livre vence)
+function espAfirmCatDigitou() {
+  const v = document.getElementById('esp-nova-cat').value.trim().toLowerCase();
+  document.querySelectorAll('#esp-nova-cat-chips .esp-cat-chip').forEach(c => {
+    c.classList.toggle('sel', c.dataset.cat.trim().toLowerCase() === v && v !== '');
   });
-  toast(d.ok ? '✓ Afirmação criada' : '✗ Erro');
-  espAfirmCarregar();
+}
+function espAfirmFecharNova() { document.getElementById('modal-esp-afirm').style.display = 'none'; }
+async function espAfirmConfirmarNova() {
+  const texto = document.getElementById('esp-nova-texto').value.trim();
+  const categoria = document.getElementById('esp-nova-cat').value.trim();
+  const audio_arquivo = document.getElementById('esp-nova-audio').value.trim();
+  const erro = document.getElementById('esp-nova-erro');
+  if (!texto) { erro.textContent = 'Escreva o texto da afirmação.'; erro.style.display = 'block'; return; }
+  const btn = document.getElementById('esp-nova-btn');
+  const txtBtn = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Adicionando…';
+  try {
+    const d = await admFetch('/api/admin/espaco/afirmacoes', {
+      method: 'POST', body: JSON.stringify({ texto, categoria, audio_arquivo, ordem: 99 }),
+    });
+    if (!d.ok) { erro.textContent = d.erro || 'Erro ao adicionar.'; erro.style.display = 'block'; return; }
+    espAfirmFecharNova();
+    toast('✓ Afirmação adicionada');
+    espAfirmCarregar();
+  } catch {
+    erro.textContent = 'Erro de conexão.'; erro.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = txtBtn;
+  }
 }
 async function espAfirmSalvar(id, btn) {
   const tr = btn.closest('.esp-af-item');
