@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=12" />
+  <link rel="stylesheet" href="/espaco.css?v=13" />
 </head>
 <body data-tema="vida_magica">
 
@@ -90,8 +90,9 @@
         </button>
         <!-- Sementes -->
         <span class="espaco-sementes" id="espaco-sementes">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2C9 6 6 8 6 13a6 6 0 0 0 12 0c0-5-3-7-6-11z"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22V12"/>
+            <path d="M12 12C12 12 7 11 5 7c-1.5-3 0-6 3-6 2 0 3.5 1.5 4 5 .5-3.5 2-5 4-5 3 0 4.5 3 3 6-2 4-7 5-7 5z"/>
           </svg>
           <span id="espaco-sementes-num">0</span>
         </span>
@@ -189,7 +190,7 @@
 
       <!-- BOTÃO CENTRAL — Ambiente (timer + música + afirmações). Painel vem depois. -->
       <button type="button" class="espaco-bottom-central" id="ferr-ambiente" aria-label="Ambiente — timer, música e afirmações">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h3l2-7 4 14 2-7h7"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9v6M10 5v14M14 7v10M18 10v4"/></svg>
       </button>
 
       <button type="button" class="espaco-bottom-item" id="espaco-avatar" aria-label="Perfil">
@@ -216,9 +217,23 @@
     </nav>
   </div>
 
+  <!-- Modal custom — permissão de movimento (giroscópio, tema Universo) -->
+  <div class="espaco-giro-modal" id="espaco-giro-modal" aria-hidden="true">
+    <div class="espaco-giro-overlay" id="espaco-giro-overlay"></div>
+    <div class="espaco-giro-card">
+      <div class="espaco-giro-icone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/><path d="M3 9a4 4 0 0 1 4-4M21 9a4 4 0 0 0-4-4"/></svg>
+      </div>
+      <h3 class="espaco-giro-titulo">Deixe o céu se mover com você</h3>
+      <p class="espaco-giro-texto">Incline o celular e as estrelas acompanham o movimento. Pra isso, o Espaço precisa da sua permissão.</p>
+      <button type="button" class="espaco-giro-btn-ativar" id="espaco-giro-ativar">Ativar movimento</button>
+      <button type="button" class="espaco-giro-btn-depois" id="espaco-giro-depois">Agora não</button>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=3"></script>
+  <script src="/app/espaco.js?v=4"></script>
 </body>
 </html>

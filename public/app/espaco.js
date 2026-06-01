@@ -200,7 +200,11 @@
   let temaSalvo = 'vida_magica';   // o confirmado (no banco)
   let temaPreview = null;          // o em pré-visualização
 
-  function aplicarTema(tema) { document.body.setAttribute('data-tema', tema); }
+  function aplicarTema(tema) {
+    document.body.setAttribute('data-tema', tema);
+    // Fora do Universo, zera o deslocamento do giroscópio (volta o fundo ao centro)
+    if (tema !== 'universo') document.body.style.removeProperty('--bg-pos');
+  }
 
   function marcarItens() {
     document.querySelectorAll('.espaco-tema-item').forEach(it => {
@@ -224,6 +228,7 @@
     temaSalvo = tema; temaPreview = null;
     aplicarTema(tema); marcarItens();
     el('espaco-tema-menu')?.classList.remove('aberto');
+    talvezOferecerGiro(tema);
     try {
       await fetchAutenticado('/api/app/espaco/tema', { method: 'PUT', body: JSON.stringify({ tema }) });
     } catch (_) {}
@@ -294,6 +299,46 @@
   }
 
   // ════════════════════════════════════════════════════════════
+  // PARALLAX GIROSCÓPIO (tema Universo) — modal custom + DeviceOrientation
+  // ════════════════════════════════════════════════════════════
+  let _giroOn = false, _giroPend = null, _giroRaf = null;
+  function _giroAplica() {
+    _giroRaf = null;
+    if (document.body.getAttribute('data-tema') !== 'universo' || !_giroPend) return;
+    const gx = Math.max(-12, Math.min(12, _giroPend.g));        // inclinação esq-dir
+    const gy = Math.max(-12, Math.min(12, _giroPend.b - 45));   // frente-trás (em pé ~45°)
+    // Move o fundo no sentido oposto à inclinação (sensação de profundidade)
+    document.body.style.setProperty('--bg-pos', `${(50 - gx * 0.8).toFixed(1)}% ${(50 - gy * 0.6).toFixed(1)}%`);
+  }
+  function _giroEvt(e) {
+    _giroPend = { g: e.gamma || 0, b: e.beta || 0 };
+    if (!_giroRaf) _giroRaf = requestAnimationFrame(_giroAplica);   // throttle no rAF (leve)
+  }
+  function ligarGiro() { if (_giroOn) return; _giroOn = true; window.addEventListener('deviceorientation', _giroEvt); }
+  async function pedirGiro() {
+    try {
+      const D = window.DeviceOrientationEvent;
+      if (D && typeof D.requestPermission === 'function') {   // iOS 13+
+        const p = await D.requestPermission();
+        if (p === 'granted') ligarGiro();
+      } else if (D) { ligarGiro(); }                          // Android / sem prompt
+    } catch (_) {}
+  }
+  function abrirGiroModal() { el('espaco-giro-modal')?.classList.add('aberto'); }
+  function fecharGiroModal() { el('espaco-giro-modal')?.classList.remove('aberto'); }
+  function talvezOferecerGiro(tema) {
+    if (tema !== 'universo' || _giroOn) return;
+    if (!window.DeviceOrientationEvent) return;               // sem sensor → ignora
+    try { if (localStorage.getItem('vm_espaco_giro') === 'nao') return; } catch (_) {}
+    setTimeout(abrirGiroModal, 700);
+  }
+  function ligarGiroBotoes() {
+    el('espaco-giro-ativar')?.addEventListener('click', () => { fecharGiroModal(); pedirGiro(); });
+    el('espaco-giro-depois')?.addEventListener('click', () => { fecharGiroModal(); try { localStorage.setItem('vm_espaco_giro', 'nao'); } catch (_) {} });
+    el('espaco-giro-overlay')?.addEventListener('click', fecharGiroModal);
+  }
+
+  // ════════════════════════════════════════════════════════════
   // CONTEXTO + INIT
   // ════════════════════════════════════════════════════════════
   function hidratar(ctx) {
@@ -303,6 +348,7 @@
     temaSalvo = ctx.tema || 'vida_magica';
     aplicarTema(temaSalvo);
     marcarItens();
+    talvezOferecerGiro(temaSalvo);
     // Sementes
     const sem = el('espaco-sementes-num');
     if (sem) sem.textContent = ctx.aluna?.sementes || 0;
@@ -328,6 +374,7 @@
     ligarTemas();
     ligarAvatar();
     ligarCaminhos();
+    ligarGiroBotoes();
     el('espaco-loading-pular')?.addEventListener('click', pularLoading);
 
     // Dispara a animação de abertura imediatamente
