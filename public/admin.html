@@ -36,16 +36,16 @@ body { font-family: var(--font-body); background: var(--bg-dark); color: var(--t
 .particle { position: absolute; border-radius: 50%; animation: float linear infinite; opacity: 0; }
 @keyframes float { 0% { transform: translateY(105vh) scale(0); opacity: 0; } 10% { opacity: 0.6; } 90% { opacity: 0.3; } 100% { transform: translateY(-5vh) scale(1.2); opacity: 0; } }
 .sidebar { width: var(--sidebar-w); min-height: 100vh; background: rgba(13,8,0,0.95); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 200; backdrop-filter: blur(20px); }
-.sidebar-logo { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--border); }
-.sidebar-logo img { height: 32px; width: auto; mix-blend-mode: screen; }
-.sidebar-section-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); padding: 1.25rem 1.25rem 0.4rem; }
-.nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1.25rem; cursor: pointer; color: var(--text-muted); font-size: 0.82rem; font-weight: 500; border-left: 2px solid transparent; transition: all 0.15s; user-select: none; }
+.sidebar-logo { padding: 0.85rem 1.25rem 0.7rem; border-bottom: 1px solid var(--border); }
+.sidebar-logo img { height: 30px; width: auto; mix-blend-mode: screen; }
+.sidebar-section-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); padding: 0.6rem 1.25rem 0.25rem; }
+.nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.42rem 1.25rem; cursor: pointer; color: var(--text-muted); font-size: 0.82rem; font-weight: 500; border-left: 2px solid transparent; transition: all 0.15s; user-select: none; }
 .nav-item:hover { color: var(--text-light); background: rgba(200,146,42,0.05); }
 .nav-item.active { color: var(--color-gold-light); border-left-color: var(--color-gold-amber); background: rgba(200,146,42,0.08); }
 .nav-item.disabled { opacity: 0.35; cursor: default; pointer-events: none; }
 .nav-icon { font-size: 0.95rem; width: 18px; text-align: center; flex-shrink: 0; }
 .nav-tag { margin-left: auto; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.05em; padding: 2px 7px; border-radius: var(--radius-full); background: rgba(200,146,42,0.1); color: var(--color-gold-amber); border: 1px solid rgba(200,146,42,0.2); }
-.sidebar-footer { margin-top: auto; padding: 1rem 1.25rem; border-top: 1px solid var(--border); font-size: 0.68rem; color: var(--text-muted); }
+.sidebar-footer { margin-top: auto; padding: 0.65rem 1.25rem; border-top: 1px solid var(--border); font-size: 0.68rem; color: var(--text-muted); }
 .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; position: relative; z-index: 1; }
 .topbar { height: var(--topbar-h); display: flex; align-items: center; justify-content: space-between; padding: 0 1.75rem; background: rgba(13,8,0,0.85); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
 .topbar-left h1 { font-family: var(--font-display); font-size: 0.88rem; font-weight: 800; color: var(--color-gold-light); letter-spacing: 0.06em; text-transform: uppercase; }
@@ -556,7 +556,7 @@ select option { background: #1a1205; }
     <span class="nav-icon">📡</span> Feed do App
   </div>
 
-  <div class="sidebar-section-label" style="margin-top:0.5rem">Comunidade</div>
+  <div class="sidebar-section-label" style="margin-top:0.15rem">Comunidade</div>
   <div class="nav-item" id="nav-whatsapp" onclick="goTab('whatsapp', this)">
     <span class="nav-icon">📲</span> Gateway WA
   </div>
@@ -570,7 +570,7 @@ select option { background: #1a1205; }
     <span class="nav-icon">📦</span> Legado
   </div>
 
-  <div class="sidebar-section-label" style="margin-top:0.5rem">Teste do Subconsciente</div>
+  <div class="sidebar-section-label" style="margin-top:0.15rem">Teste do Subconsciente</div>
   <div class="nav-item" id="nav-teste" onclick="goTab('teste', this)">
     <span class="nav-icon">🧠</span> Versões
   </div>
@@ -578,7 +578,7 @@ select option { background: #1a1205; }
     <span class="nav-icon">📜</span> Conteúdo dos Resultados
   </div>
 
-  <div class="sidebar-section-label" style="margin-top:0.5rem">Espaço da Manifestação</div>
+  <div class="sidebar-section-label" style="margin-top:0.15rem">Espaço da Manifestação</div>
   <div class="nav-item" id="nav-espaco-afirmacoes" onclick="goTab('espaco-afirmacoes', this)">
     <span class="nav-icon">✨</span> Afirmações
   </div>
@@ -586,12 +586,12 @@ select option { background: #1a1205; }
     <span class="nav-icon">🏆</span> Gamificação
   </div>
 
-  <div class="sidebar-section-label" style="margin-top:0.5rem">Caderno da Mentalização</div>
+  <div class="sidebar-section-label" style="margin-top:0.15rem">Caderno da Mentalização</div>
   <div class="nav-item" id="nav-caderno" onclick="goTab('caderno', this)">
     <span class="nav-icon">📓</span> Caderno <span class="nav-tag">legado</span>
   </div>
 
-  <div class="sidebar-section-label" style="margin-top:0.5rem">Em breve</div>
+  <div class="sidebar-section-label" style="margin-top:0.15rem">Em breve</div>
   <div class="nav-item disabled"><span class="nav-icon">👥</span> Membros do Clube <span class="nav-tag">—</span></div>
   <div class="nav-item disabled"><span class="nav-icon">📊</span> Métricas <span class="nav-tag">—</span></div>
 
