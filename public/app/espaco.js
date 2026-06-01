@@ -90,6 +90,8 @@
   const LOADING_RITUAL_ATIVO = true;
   let _loadingTimers = [];
 
+  let devCarta = false;   // modo dev da Carta do Tempo (vem do /contexto: dev_carta)
+
   function criarSparklesLoading() {
     const wrap = el('espaco-loading-sparkles');
     if (!wrap || wrap.dataset.gerado === '1') return;
@@ -486,6 +488,10 @@
         const icone = trancada
           ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`
           : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>`;
+        // Modo dev: ação pra amadurecer (destrancar + disparar aviso) na hora
+        const devAcao = (trancada && devCarta)
+          ? `<button type="button" class="espaco-carta-devacao" data-amadurecer="${c.id}">⚡ Amadurecer agora (teste)</button>`
+          : '';
         return `
           <button type="button" class="espaco-carta-item ${trancada ? 'trancada' : 'madura'}" data-id="${c.id}" data-trancada="${trancada ? '1' : '0'}">
             <span class="espaco-carta-icone">${icone}</span>
@@ -494,7 +500,7 @@
               <span class="espaco-carta-info-meta">${meta}</span>
             </span>
             <span class="espaco-carta-item-tag">${tag}</span>
-          </button>`;
+          </button>${devAcao}`;
       }).join('');
 
       // Ligar clique — só abre se madura
@@ -509,6 +515,29 @@
           const id = btn.dataset.id;
           const c = cartas.find(x => String(x.id) === String(id));
           if (c) abrirModalCarta(c);
+        });
+      });
+
+      // Modo dev: "Amadurecer agora" — destranca + dispara aviso real + recarrega
+      wrap.querySelectorAll('[data-amadurecer]').forEach(btn => {
+        btn.addEventListener('click', async (ev) => {
+          ev.stopPropagation();
+          const id = btn.dataset.amadurecer;
+          btn.disabled = true; btn.textContent = 'Amadurecendo...';
+          try {
+            const r = await fetchAutenticado(`/api/app/espaco/cartas/${id}/amadurecer-teste`, { method: 'POST', body: '{}' });
+            if (!r) return;
+            const d = await r.json().catch(() => ({}));
+            if (!d?.ok) { toast(d?.erro || 'Não consegui amadurecer agora.'); btn.disabled = false; btn.textContent = '⚡ Amadurecer agora (teste)'; return; }
+            const wa = d.whatsapp?.ok ? 'WhatsApp ✓' : `WhatsApp ✗`;
+            const em = d.email?.ok ? 'E-mail ✓' : `E-mail ✗`;
+            toast(`Carta destrancada · ${wa} · ${em}`);
+            carregarMinhasCartas();   // recarrega: a carta vira Madura, pronta pra abrir
+          } catch (err) {
+            console.warn('[espaco] amadurecer:', err);
+            toast('Não consegui amadurecer agora.');
+            btn.disabled = false; btn.textContent = '⚡ Amadurecer agora (teste)';
+          }
         });
       });
     } catch (err) {
@@ -611,9 +640,10 @@
     const tit = el('espaco-saudacao-titulo');
     const primeiro = (ctx.aluna?.nome || '').split(' ')[0];
     if (tit && primeiro) tit.textContent = `${primeiro}, o que você quer viver agora?`;
-    // Modo teste da Carta do Tempo — revela o preset "Em instantes (teste)"
-    // e o botão "Testar envios agora".
-    if (ctx.dev_carta) {
+    // Modo teste da Carta do Tempo — revela o preset "Em instantes (teste)",
+    // o botão "Testar envios agora" e o "amadurecer agora" na lista de cartas.
+    devCarta = !!ctx.dev_carta;
+    if (devCarta) {
       const dp = el('carta-preset-dev'); if (dp) dp.style.display = '';
       const bt = el('carta-testar-envio'); if (bt) bt.style.display = '';
     }

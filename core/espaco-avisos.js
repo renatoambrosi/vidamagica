@@ -354,4 +354,4 @@ function pararWorkerCartas() {
   if (intervalId) { clearInterval(intervalId); intervalId = null; console.log('📬 Worker de Cartas parado'); }
 }
 
-module.exports = { processarCartasMaduras, iniciarWorkerCartas, pararWorkerCartas, enviarWhatsApp, enviarEmail, enviarTesteWhatsApp, enviarTesteEmail };
+module.exports = { processarCartasMaduras, iniciarWorkerCartas, pararWorkerCartas, enviarWhatsApp, enviarEmail, marcarInApp, enviarTesteWhatsApp, enviarTesteEmail };

@@ -694,6 +694,19 @@ body[data-tema="medieval"] .espaco-caminho-icone {
 }
 .espaco-data-preset-dev.selecionado { font-style: normal; opacity: 1; }
 
+/* Ação dev "Amadurecer agora" sob cada carta trancada — discreta, tracejada. */
+.espaco-carta-devacao {
+  display: block; width: 100%; margin: -6px 0 14px;
+  padding: 0.55rem 0.8rem; font: inherit; font-size: 0.8rem; font-weight: 600;
+  color: var(--acento-deep); cursor: pointer;
+  background: transparent; border: 1px dashed var(--card-borda);
+  border-radius: var(--radius-md);
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+.espaco-carta-devacao:active { transform: scale(0.98); }
+.espaco-carta-devacao:hover { color: var(--acento); border-color: var(--acento); }
+.espaco-carta-devacao[disabled] { opacity: 0.55; cursor: progress; }
+
 /* Botão de teste de envio (modo dev) — discreto, tracejado, fora do fluxo real. */
 .espaco-btn-teste {
   display: block; width: 100%; margin-top: 0.2rem;

@@ -133,6 +133,54 @@ router.post('/cartas', autenticar, async (req, res) => {
   }
 });
 
+// ⚠️ MODO DEV — AMADURECE uma carta AGORA: destranca (abrir_em = NOW) + dispara o
+// aviso REAL daquela carta (WhatsApp + email + in_app, com o título dela). Faz o
+// que o Renato pediu: "o enviar email/whatsapp tem que destrancar a carta" — tudo
+// num clique. Só existe enquanto CARTA_DEV_SEM_MINIMO.
+router.post('/cartas/:id/amadurecer-teste', autenticar, async (req, res) => {
+  if (!CARTA_DEV_SEM_MINIMO) return erro(res, 403, 'modo teste desligado');
+  try {
+    const usuarioId = req.usuario.sub;
+    const cartaId = parseInt(req.params.id, 10);
+    if (!cartaId) return erro(res, 400, 'id inválido');
+
+    // 1) Destranca a carta (abrir_em = agora) e zera o aviso pra poder reenviar no teste
+    const upd = await poolEspaco.query(
+      `UPDATE cartas_do_tempo
+          SET abrir_em = NOW(), aviso_enviado_em = NULL
+        WHERE id = $1 AND usuario_id = $2
+        RETURNING id, titulo, abrir_em, usuario_id`,
+      [cartaId, usuarioId]
+    );
+    if (!upd.rows[0]) return erro(res, 404, 'carta não encontrada');
+    const carta = upd.rows[0];
+
+    // 2) Limpa avisos antigos dessa carta (em teste a gente quer reenviar)
+    await poolEspaco.query(`DELETE FROM cartas_do_tempo_avisos WHERE carta_id = $1`, [cartaId]);
+
+    // 3) Dispara o aviso REAL (mesmas funções do worker), com os dados da aluna
+    const u = await poolCore.query(`SELECT id, nome, telefone, email FROM usuarios WHERE id = $1`, [usuarioId]);
+    const usuario = u.rows[0] || {};
+    const { enviarWhatsApp, enviarEmail, marcarInApp } = require('../core/espaco-avisos');
+    const [whatsapp, email] = await Promise.all([
+      enviarWhatsApp(carta, usuario),
+      enviarEmail(carta, usuario),
+    ]);
+    await marcarInApp(carta);
+    await poolEspaco.query(`UPDATE cartas_do_tempo SET aviso_enviado_em = NOW() WHERE id = $1`, [cartaId]);
+
+    console.log(`🧪 ${tag(usuarioId)} amadureceu carta #${cartaId} — wa:${whatsapp.ok?'ok':'falha'} email:${email.ok?'ok':'falha'}`);
+    return res.json({
+      ok: true,
+      whatsapp: { ok: whatsapp.ok, motivo: whatsapp.motivo || whatsapp.erro || null },
+      email: { ok: email.ok, motivo: email.motivo || email.erro || null },
+    });
+  } catch (e) {
+    console.error(`❌ [espaco] POST /cartas/:id/amadurecer-teste u=${tag(req.usuario?.sub)}:`, e.message);
+    return erro(res, 500, 'erro ao amadurecer carta');
+  }
+});
+
 // ⚠️ MODO DEV — dispara WhatsApp + email de TESTE pro próprio cadastro AGORA
 // e reporta o resultado de cada canal. Só existe enquanto CARTA_DEV_SEM_MINIMO.
 router.post('/cartas/testar-envio', autenticar, async (req, res) => {
