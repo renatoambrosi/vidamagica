@@ -370,7 +370,8 @@
       const txtOriginal = btn?.textContent;
       if (btn) { btn.disabled = true; btn.textContent = 'Disparando teste...'; }
       try {
-        const r = await fetchAutenticado('/api/app/espaco/cartas/testar-envio', { method: 'POST', body: '{}' });
+        const titulo = (el('carta-titulo')?.value || '').trim();   // usa o que VOCÊ digitou
+        const r = await fetchAutenticado('/api/app/espaco/cartas/testar-envio', { method: 'POST', body: JSON.stringify({ titulo }) });
         if (!r) return;
         const d = await r.json().catch(() => ({}));
         if (!d?.ok) { toast(d?.erro || 'Não consegui testar agora.'); return; }

@@ -141,10 +141,11 @@ router.post('/cartas/testar-envio', autenticar, async (req, res) => {
     const usuarioId = req.usuario.sub;
     const u = await poolCore.query(`SELECT nome, telefone, email FROM usuarios WHERE id = $1`, [usuarioId]);
     const usuario = u.rows[0] || {};
+    const titulo = (req.body?.titulo || '').toString().slice(0, 120);  // o que ele digitou no form
     const { enviarTesteWhatsApp, enviarTesteEmail } = require('../core/espaco-avisos');
     const [whatsapp, email] = await Promise.all([
-      enviarTesteWhatsApp(usuario),
-      enviarTesteEmail(usuario),
+      enviarTesteWhatsApp(usuario, titulo),
+      enviarTesteEmail(usuario, titulo),
     ]);
     console.log(`🧪 ${tag(usuarioId)} testou envios — wa:${whatsapp.ok?'ok':'falha'} email:${email.ok?'ok':'falha'}`);
     return res.json({

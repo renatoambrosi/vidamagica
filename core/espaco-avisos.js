@@ -58,7 +58,7 @@ function montarWhatsApp(carta, usuario) {
   const sobreTitulo = carta.titulo ? ` — "${carta.titulo}"` : '';
   return [
     `Oi, ${primeiroNome} ✨`,
-    `Chegou o dia. 💌\n\nA carta que você guardou no tempo${sobreTitulo} está pronta pra ser aberta. Você escreveu ela pra viver exatamente este momento.\n\nQuer abrir agora?\n👉 ${link}`,
+    `Sua carta do tempo${sobreTitulo} chegou. 💌\n\nVocê escreveu ela pra si mesma e marcou hoje pra reler. Quer abrir agora?\n👉 ${link}`,
   ];
 }
 
@@ -74,12 +74,39 @@ function montarEmailCarta(carta, usuario) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Pede pro cliente NÃO inverter pro modo escuro (Apple Mail / Gmail desktop
-       respeitam; Gmail mobile às vezes ignora — limitação conhecida de e-mail). -->
-  <meta name="color-scheme" content="light only">
-  <meta name="supported-color-schemes" content="light">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <style>
+    /* MODO ESCURO — versão intencional da marca (clientes que suportam <style>+
+       media query: Apple Mail, iOS Mail, parte do Gmail). Mantém ouro + texto claro. */
+    @media (prefers-color-scheme: dark) {
+      .vm-body { background:#19120a !important; }
+      .vm-card { background:#241b0f !important; border-color:#6e5320 !important; }
+      .vm-eyebrow { color:#E8C97A !important; }
+      .vm-head { color:#F4E9CF !important; }
+      .vm-text { color:#D9C9A6 !important; }
+      .vm-seal { background:#2c2212 !important; border-color:#A17523 !important; }
+      .vm-seal-t { color:#F4E9CF !important; }
+      .vm-hr { border-top-color:rgba(232,201,122,0.22) !important; }
+      .vm-sign { color:#C7B488 !important; }
+      .vm-sign b { color:#E8C97A !important; }
+      .vm-foot { color:#9a865f !important; }
+    }
+    /* GMAIL APP dark theme: ele marca o que inverteu com data-ogsb/data-ogsc.
+       Re-forçamos um esquema escuro COERENTE (fundo + texto juntos, nunca claro
+       em claro). É o melhor controle possível no Gmail mobile. */
+    [data-ogsb] .vm-body { background:#19120a !important; }
+    [data-ogsb] .vm-card { background:#241b0f !important; }
+    [data-ogsc] .vm-eyebrow { color:#E8C97A !important; }
+    [data-ogsc] .vm-head { color:#F4E9CF !important; }
+    [data-ogsc] .vm-text { color:#D9C9A6 !important; }
+    [data-ogsc] .vm-seal-t { color:#F4E9CF !important; }
+    [data-ogsc] .vm-sign { color:#C7B488 !important; }
+    [data-ogsc] .vm-sign b { color:#E8C97A !important; }
+    [data-ogsc] .vm-foot { color:#9a865f !important; }
+  </style>
 </head>
-<body style="margin:0;padding:0;background:#FFFFFF;">
+<body class="vm-body" style="margin:0;padding:0;background:#E8DCC0;">
     <div style="max-width:560px;margin:0 auto;padding:32px 18px;font-family:Georgia,'Times New Roman',serif;">
 
       <!-- Topo: logo Vida Mágica vertical (PNG). Centralizada, largura fixa. -->
@@ -87,47 +114,46 @@ function montarEmailCarta(carta, usuario) {
         <img src="${EMAIL_LOGO_URL}" alt="Vida Mágica" width="150" style="width:150px;max-width:55%;height:auto;display:inline-block;border:0">
       </div>
 
-      <!-- Cartão -->
-      <div style="background:linear-gradient(160deg,#FFFDF6,#FBF0D6);border:1px solid #DDB85E;border-radius:22px;padding:40px 32px;box-shadow:0 14px 40px rgba(120,86,20,0.16)">
+      <!-- Cartão (paleta OFICIAL do app: creme #FFFAF0, texto #3D2E1A/#6B5436, ouro #C8922A) -->
+      <div class="vm-card" style="background:#FFFAF0;border:1px solid #D9B85E;border-radius:20px;padding:40px 32px;box-shadow:0 14px 40px rgba(120,86,20,0.16)">
 
-        <p style="margin:0 0 14px;text-align:center;color:#A17523;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:700">
+        <p class="vm-eyebrow" style="margin:0 0 14px;text-align:center;color:#A17523;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:700">
           Vida Mágica · Carta do Tempo
         </p>
 
-        <h1 style="margin:0 0 18px;text-align:center;color:#3D2A12;font-size:25px;line-height:1.3;font-weight:700">
-          Chegou o dia, ${primeiroNome}.
+        <h1 class="vm-head" style="margin:0 0 18px;text-align:center;color:#3D2E1A;font-size:25px;line-height:1.3;font-weight:700">
+          Sua carta do tempo chegou, ${primeiroNome}.
         </h1>
 
-        <p style="margin:0 0 8px;text-align:center;color:#6B5436;font-size:16px;line-height:1.65;font-family:Arial,Helvetica,sans-serif">
-          Há um tempo você sentou, respirou e escreveu uma carta para si mesma — pra ser aberta exatamente agora.
+        <p class="vm-text" style="margin:0 0 8px;text-align:center;color:#6B5436;font-size:16px;line-height:1.65;font-family:Arial,Helvetica,sans-serif">
+          Algum tempo atrás, você escreveu uma carta para si mesma e escolheu hoje para reabri-la.
         </p>
-        <p style="margin:0 0 28px;text-align:center;color:#6B5436;font-size:16px;line-height:1.65;font-family:Arial,Helvetica,sans-serif">
-          Ela esperou por você. Está pronta.
+        <p class="vm-text" style="margin:0 0 28px;text-align:center;color:#6B5436;font-size:16px;line-height:1.65;font-family:Arial,Helvetica,sans-serif">
+          O dia chegou. Ela está esperando por você.
         </p>
 
         ${temTitulo ? `
-        <!-- Selo com o título da carta -->
-        <div style="margin:0 auto 30px;max-width:380px;text-align:center;padding:16px 20px;border:1px dashed #C8922A;border-radius:14px;background:rgba(232,201,122,0.16)">
-          <span style="display:block;color:#A17523;font-family:Arial,Helvetica,sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">Você nomeou de</span>
-          <span style="color:#3D2A12;font-size:18px;font-style:italic">"${tituloShow}"</span>
+        <!-- Selo com o título que a própria aluna deu à carta (sem rótulo) -->
+        <div class="vm-seal" style="margin:0 auto 30px;max-width:400px;text-align:center;padding:18px 22px;border:1px dashed #C8922A;border-radius:14px;background:#F8EFCF">
+          <span class="vm-seal-t" style="color:#3D2E1A;font-size:19px;font-style:italic">&ldquo;${tituloShow}&rdquo;</span>
         </div>` : ''}
 
-        <!-- CTA -->
+        <!-- CTA — botão OFICIAL do app: gradiente #E8C97A→#C8922A, texto #3D2E1A, raio 14px -->
         <div style="text-align:center;margin:6px 0 8px">
-          <a href="${link}" style="display:inline-block;background:linear-gradient(135deg,#E0A93A,#A17523);color:#FFFDF6;text-decoration:none;padding:15px 34px;border-radius:999px;font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:15px;letter-spacing:0.3px;box-shadow:0 8px 22px rgba(161,117,35,0.42)">
+          <a class="vm-btn" href="${link}" style="display:inline-block;background:linear-gradient(135deg,#E8C97A,#C8922A);color:#3D2E1A;text-decoration:none;padding:15px 34px;border:1px solid #C8922A;border-radius:14px;font-family:Arial,Helvetica,sans-serif;font-weight:700;font-size:15px;letter-spacing:0.2px;box-shadow:0 6px 18px rgba(161,117,35,0.35)">
             Abrir minha carta
           </a>
         </div>
 
-        <hr style="margin:30px 0 18px;border:none;border-top:1px solid rgba(200,146,42,0.28)">
+        <hr class="vm-hr" style="margin:30px 0 18px;border:none;border-top:1px solid rgba(200,146,42,0.30)">
 
-        <p style="margin:0;text-align:center;color:#9A8254;font-size:14px;line-height:1.5;font-family:Arial,Helvetica,sans-serif">
+        <p class="vm-sign" style="margin:0;text-align:center;color:#6B5436;font-size:14px;line-height:1.5;font-family:Arial,Helvetica,sans-serif">
           Com você nessa jornada,<br>
-          <strong style="color:#7A5E2E">Suellen · Vida Mágica</strong>
+          <b style="color:#A17523">Renato e Suellen Seragi</b>
         </p>
       </div>
 
-      <p style="margin:18px 0 0;text-align:center;color:#A8946A;font-size:11px;font-family:Arial,Helvetica,sans-serif;line-height:1.5">
+      <p class="vm-foot" style="margin:18px 0 0;text-align:center;color:#A8946A;font-size:11px;font-family:Arial,Helvetica,sans-serif;line-height:1.5">
         Você recebeu este e-mail porque guardou uma Carta do Tempo no Espaço da Manifestação.
       </p>
     </div>
@@ -184,7 +210,7 @@ async function enviarEmail(carta, usuario) {
     const { subject, htmlContent } = montarEmailCarta(carta, usuario);
     const primeiroNome = (usuario.nome || '').split(' ')[0] || 'você';
     await axios.post('https://api.brevo.com/v3/smtp/email', {
-      sender: { name: 'Suellen · Vida Mágica', email: SENDER_EMAIL },
+      sender: { name: 'Vida Mágica', email: SENDER_EMAIL },
       to: [{ email: usuario.email, name: primeiroNome }],
       subject,
       htmlContent,
@@ -273,16 +299,20 @@ async function processarCartasMaduras() {
 // uma carta de EXEMPLO. SEM idempotência (não grava em cartas_do_tempo_avisos),
 // pra poder repetir o teste à vontade. Reporta o motivo se algum canal falhar.
 
-const CARTA_EXEMPLO = { id: 0, titulo: 'Um recado pra mim mesma', abrir_em: new Date().toISOString() };
+// Carta de teste com o título que o Renato DIGITOU no formulário (não um fixo).
+// Se ele não digitou título, vai sem título — fiel ao que ele escreveu.
+function cartaExemplo(titulo) {
+  return { id: 0, titulo: (titulo || '').trim() || null, abrir_em: new Date().toISOString() };
+}
 
-async function enviarTesteWhatsApp(usuario) {
+async function enviarTesteWhatsApp(usuario, titulo) {
   if (!usuario.telefone) return { ok: false, motivo: 'sem telefone no cadastro' };
   try {
     await enfileirarAtendimento({
       telefone: usuario.telefone,
       tipo: 'ativo',
       categoria: 'carta_do_tempo',
-      mensagens: montarWhatsApp(CARTA_EXEMPLO, usuario).map(texto => ({ texto, midias: [] })),
+      mensagens: montarWhatsApp(cartaExemplo(titulo), usuario).map(texto => ({ texto, midias: [] })),
     });
     return { ok: true, motivo: 'enfileirado no gateway (deve chegar em segundos)' };
   } catch (e) {
@@ -290,14 +320,14 @@ async function enviarTesteWhatsApp(usuario) {
   }
 }
 
-async function enviarTesteEmail(usuario) {
+async function enviarTesteEmail(usuario, titulo) {
   if (!usuario.email) return { ok: false, motivo: 'sem email no cadastro' };
   if (!BREVO_API_KEY) return { ok: false, motivo: 'BREVO_API_KEY ausente no ambiente' };
   try {
     const primeiroNome = (usuario.nome || '').split(' ')[0] || 'você';
-    const { subject, htmlContent } = montarEmailCarta(CARTA_EXEMPLO, usuario);
+    const { subject, htmlContent } = montarEmailCarta(cartaExemplo(titulo), usuario);
     await axios.post('https://api.brevo.com/v3/smtp/email', {
-      sender: { name: 'Suellen · Vida Mágica', email: SENDER_EMAIL },
+      sender: { name: 'Vida Mágica', email: SENDER_EMAIL },
       to: [{ email: usuario.email, name: primeiroNome }],
       subject,
       htmlContent,
