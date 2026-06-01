@@ -323,8 +323,21 @@ body[data-tema="medieval"] {
 .espaco-caminho-texto { display: flex; flex-direction: column; gap: 0.15rem; }
 .espaco-caminho-titulo { font-family: var(--font-display); font-size: 1.12rem; font-weight: 700; }
 .espaco-caminho-sub { font-size: 0.85rem; color: var(--texto-suave); }
-.espaco-caminho-seta { margin-left: auto; color: var(--texto-suave); }
+.espaco-caminho-seta { margin-left: auto; color: var(--texto-suave); transition: transform 0.2s ease, color 0.2s ease; }
 .espaco-caminho-seta svg { width: 20px; height: 20px; }
+/* Microinterações premium: seta desliza + ícone reage ao toque */
+.espaco-caminho:hover .espaco-caminho-seta,
+.espaco-caminho:active .espaco-caminho-seta { transform: translateX(4px); color: var(--acento); }
+.espaco-caminho-icone { transition: transform 0.2s ease; }
+.espaco-caminho:active .espaco-caminho-icone { transform: scale(1.08) rotate(-3deg); }
+
+/* Acessibilidade — desliga as animações decorativas em loop pra quem pediu
+   "reduzir movimento" no sistema (evita enjoo). A animação de abertura (1x) fica. */
+@media (prefers-reduced-motion: reduce) {
+  .espaco-particula, .espaco-sparkle, .cadente, .cdot,
+  .espaco-bottom-central::after,
+  body[data-tema="magico"] .espaco-caminho { animation: none !important; }
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    MENU EMBAIXO (bottom-nav) — Início · Ambiente (botão central) · Perfil
