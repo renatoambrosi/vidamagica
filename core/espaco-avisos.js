@@ -27,12 +27,11 @@ const APP_URL = process.env.APP_URL || 'https://www.vidamagica.com.br';
 const SENDER_EMAIL = process.env.SENDER_EMAIL || 'contato@suellenseragi.com.br';
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 
-// GIF/imagem animada no TOPO do corpo do e-mail (animação só funciona DENTRO do
-// corpo — o avatar da caixa de entrada do Gmail é sempre estático, via BIMI/perfil
-// Google, fora do nosso controle). Renato sobe o GIF em public/assets/email/ e
-// referencia aqui (ou via env EMAIL_LOGO_URL). Se a imagem faltar, o layout se
-// segura sozinho (alt text + selo). Use GIF/PNG — e-mail não renderiza WEBP.
-const EMAIL_LOGO_URL = process.env.EMAIL_LOGO_URL || `${APP_URL}/assets/email/su.gif`;
+// Logo Vida Mágica (vertical) no topo do corpo do e-mail. Renato sobe o arquivo
+// em public/assets/ como 'logo-vertical.png' (e-mail NÃO renderiza WEBP — tem que
+// ser PNG/JPG). Pode trocar por env EMAIL_LOGO_URL. Enquanto o PNG não estiver no
+// ar, aparece um ícone de imagem quebrada — então suba o PNG junto com o deploy.
+const EMAIL_LOGO_URL = process.env.EMAIL_LOGO_URL || `${APP_URL}/assets/logo-vertical.png`;
 
 let intervalId = null;
 
@@ -70,14 +69,22 @@ function montarEmailCarta(carta, usuario) {
   const temTitulo = !!carta.titulo;
   const link = `${APP_URL}/espaco?ver=cartas`;
 
-  const htmlContent = `
-  <div style="margin:0;padding:0;background:#F1E4C4;">
+  const htmlContent = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Pede pro cliente NÃO inverter pro modo escuro (Apple Mail / Gmail desktop
+       respeitam; Gmail mobile às vezes ignora — limitação conhecida de e-mail). -->
+  <meta name="color-scheme" content="light only">
+  <meta name="supported-color-schemes" content="light">
+</head>
+<body style="margin:0;padding:0;background:#FFFFFF;">
     <div style="max-width:560px;margin:0 auto;padding:32px 18px;font-family:Georgia,'Times New Roman',serif;">
 
-      <!-- Topo: GIF/logo animado (animação só funciona aqui, no corpo) -->
-      <div style="text-align:center;margin-bottom:22px">
-        <img src="${EMAIL_LOGO_URL}" alt="Vida Mágica" width="84" height="84"
-             style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid #E8C97A;background:#FFFBF0;box-shadow:0 6px 20px rgba(161,117,35,0.28)">
+      <!-- Topo: logo Vida Mágica vertical (PNG). Centralizada, largura fixa. -->
+      <div style="text-align:center;margin-bottom:24px">
+        <img src="${EMAIL_LOGO_URL}" alt="Vida Mágica" width="150" style="width:150px;max-width:55%;height:auto;display:inline-block;border:0">
       </div>
 
       <!-- Cartão -->
@@ -124,7 +131,8 @@ function montarEmailCarta(carta, usuario) {
         Você recebeu este e-mail porque guardou uma Carta do Tempo no Espaço da Manifestação.
       </p>
     </div>
-  </div>`;
+</body>
+</html>`;
 
   return {
     subject: temTitulo ? `Sua carta "${carta.titulo}" chegou 💌` : 'Sua Carta do Tempo chegou 💌',
