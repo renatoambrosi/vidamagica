@@ -356,6 +356,7 @@ body[data-tema="medieval"] {
 .espaco-bottom-avatar img { width: 100%; height: 100%; object-fit: cover; }
 /* Botão central destacado (Ambiente) — maior e com glow, salta acima da barra */
 .espaco-bottom-central {
+  position: relative;
   width: 60px; height: 60px; border-radius: 50%; margin-bottom: 4px;
   border: 4px solid var(--fundo-cor, #fff);
   background: linear-gradient(135deg, var(--acento-2), var(--acento-deep));
@@ -363,8 +364,74 @@ body[data-tema="medieval"] {
   box-shadow: var(--glow); flex-shrink: 0;
   transition: transform 0.14s ease;
 }
+/* Anel pulsante ("ping") — chama atenção pro botão central. transform/opacity (GPU). */
+.espaco-bottom-central::after {
+  content: ''; position: absolute; inset: -3px; border-radius: 50%;
+  border: 2px solid var(--acento-2); opacity: 0; pointer-events: none;
+  animation: espaco-ambiente-anel 3.2s ease-out infinite;
+}
+@keyframes espaco-ambiente-anel {
+  0%   { transform: scale(1);   opacity: 0.55; }
+  70%  { opacity: 0; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
 .espaco-bottom-central:active { transform: scale(0.92); }
 .espaco-bottom-central svg { width: 27px; height: 27px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   EFEITOS POR TEMA (leves — GPU. Outros efeitos: ver memória da remodelação)
+   ═══════════════════════════════════════════════════════════════════ */
+/* MÁGICO — contorno dos cards com luz multicolorida correndo (estilo Google).
+   Técnica: 2 camadas de background (fundo padding-box + conic border-box) +
+   borda transparente, animando o ângulo do conic via @property (iOS 16.4+;
+   abaixo disso a borda fica colorida estática — degrada bem). */
+@property --espaco-ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+body[data-tema="magico"] .espaco-caminho {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
+    conic-gradient(from var(--espaco-ang), #ff6ec4, #7873f5, #45c4f5, #4ade80, #ffd93d, #ff9a3d, #ff6ec4) border-box;
+  animation: espaco-luz-girar 7s linear infinite;
+}
+@keyframes espaco-luz-girar { to { --espaco-ang: 360deg; } }
+
+/* UNIVERSO — estrelas cadentes (riscos que cruzam o céu). Só transform+opacity
+   (GPU). Camada #espaco-fx-universo escondida nos outros temas. */
+.espaco-fx-universo { position: fixed; inset: 0; pointer-events: none; z-index: 1; display: none; overflow: hidden; }
+body[data-tema="universo"] .espaco-fx-universo { display: block; }
+.cadente {
+  position: absolute; top: var(--cd-top); left: var(--cd-left);
+  width: 3px; height: 3px; border-radius: 50%; background: #fff;
+  box-shadow: 0 0 6px 1px rgba(255,255,255,0.85);
+  opacity: 0; will-change: transform, opacity;
+  animation: espaco-cadente 10s linear infinite; animation-delay: var(--cd-delay);
+}
+.cadente::after {
+  content: ''; position: absolute; top: 50%; right: 2px;
+  width: 70px; height: 1.5px; transform: translateY(-50%);
+  background: linear-gradient(to left, rgba(255,255,255,0.75), transparent);
+}
+@keyframes espaco-cadente {
+  0%   { opacity: 0; transform: translate(0, 0); }
+  4%   { opacity: 1; }
+  14%  { opacity: 1; }
+  22%  { opacity: 0; transform: translate(220px, 150px); }
+  100% { opacity: 0; transform: translate(220px, 150px); }
+}
+
+/* MEDIEVAL — moldura de madeira nos cards (clima baú / Senhor dos Anéis).
+   Borda com gradiente amadeirado (padding-box fundo + border-box madeira) +
+   filete dourado interno sutil (inset estático, não animado). */
+body[data-tema="medieval"] .espaco-caminho {
+  border: 3px solid transparent;
+  background:
+    linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
+    linear-gradient(145deg, #7a5326 0%, #3e2a14 38%, #5a3d1e 68%, #2c1d0e 100%) border-box;
+  box-shadow: var(--sombra), inset 0 0 0 1.5px rgba(224, 200, 120, 0.18);
+}
+body[data-tema="medieval"] .espaco-caminho-icone {
+  box-shadow: inset 0 0 0 1.5px rgba(224, 200, 120, 0.25);
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    ANIMAÇÃO DE ABERTURA — portada do Caderno (cérebro dourado).
