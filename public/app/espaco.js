@@ -301,20 +301,34 @@
   // ════════════════════════════════════════════════════════════
   // PARALLAX GIROSCÓPIO (tema Universo) — modal custom + DeviceOrientation
   // ════════════════════════════════════════════════════════════
-  let _giroOn = false, _giroPend = null, _giroRaf = null;
-  function _giroAplica() {
-    _giroRaf = null;
-    if (document.body.getAttribute('data-tema') !== 'universo' || !_giroPend) return;
-    const gx = Math.max(-12, Math.min(12, _giroPend.g));        // inclinação esq-dir
-    const gy = Math.max(-12, Math.min(12, _giroPend.b - 45));   // frente-trás (em pé ~45°)
-    // Move o fundo no sentido oposto à inclinação (sensação de profundidade)
-    document.body.style.setProperty('--bg-pos', `${(50 - gx * 0.8).toFixed(1)}% ${(50 - gy * 0.6).toFixed(1)}%`);
-  }
+  // Parallax DELICADO (estilo CDZ Awakening): deslocamento pequeno + interpolação
+  // suave (lerp) num loop rAF contínuo — o sensor define o ALVO, o fundo desliza
+  // devagar até ele (sem pular nem tremer com o ruído do giroscópio).
+  let _giroOn = false, _giroLoop = null;
+  let _giroAlvoX = 50, _giroAlvoY = 50, _giroX = 50, _giroY = 50;
+  const GIRO_RANGE = 3;      // deslocamento máximo do fundo (%) — bem sutil
+  const GIRO_EASE = 0.055;   // suavização: quanto menor, mais delicado/lento
   function _giroEvt(e) {
-    _giroPend = { g: e.gamma || 0, b: e.beta || 0 };
-    if (!_giroRaf) _giroRaf = requestAnimationFrame(_giroAplica);   // throttle no rAF (leve)
+    const gx = Math.max(-15, Math.min(15, e.gamma || 0));       // inclinação esq-dir
+    const gy = Math.max(-15, Math.min(15, (e.beta || 0) - 45)); // frente-trás (em pé ~45°)
+    _giroAlvoX = 50 - (gx / 15) * GIRO_RANGE;
+    _giroAlvoY = 50 - (gy / 15) * GIRO_RANGE;
   }
-  function ligarGiro() { if (_giroOn) return; _giroOn = true; window.addEventListener('deviceorientation', _giroEvt); }
+  function _giroTick() {
+    _giroLoop = requestAnimationFrame(_giroTick);
+    if (document.body.getAttribute('data-tema') !== 'universo') return;
+    const nx = _giroX + (_giroAlvoX - _giroX) * GIRO_EASE;
+    const ny = _giroY + (_giroAlvoY - _giroY) * GIRO_EASE;
+    if (Math.abs(nx - _giroX) > 0.02 || Math.abs(ny - _giroY) > 0.02) {
+      _giroX = nx; _giroY = ny;
+      document.body.style.setProperty('--bg-pos', `${_giroX.toFixed(2)}% ${_giroY.toFixed(2)}%`);
+    }
+  }
+  function ligarGiro() {
+    if (_giroOn) return; _giroOn = true;
+    window.addEventListener('deviceorientation', _giroEvt);
+    if (!_giroLoop) _giroLoop = requestAnimationFrame(_giroTick);
+  }
   async function pedirGiro() {
     try {
       const D = window.DeviceOrientationEvent;
