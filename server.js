@@ -375,6 +375,19 @@ server.listen(PORT, async () => {
       console.error('⚠️ Seed do Caderno/Gamificação não rodou:', err.message);
     }
 
+    // Migração das afirmações do Caderno antigo → catálogo novo do Espaço.
+    // RODA DEPOIS do seed do Caderno (precisa da origem populada). Idempotente
+    // via seed_log 'migracao_afirmacoes_espaco_v1' + checagem de destino vazio.
+    // NÃO apaga o Caderno (deleção é no final da missão geral).
+    try {
+      const seedEspMod = require('./routes/seed-espaco');
+      if (typeof seedEspMod.migrarAfirmacoesParaEspaco === 'function') {
+        await seedEspMod.migrarAfirmacoesParaEspaco();
+      }
+    } catch (err) {
+      console.error('⚠️ Migração de afirmações Caderno→Espaço não rodou:', err.message);
+    }
+
     // Liga o worker do gateway de WhatsApp DEPOIS dos bancos estarem prontos
     const gateway = require('./core/gateway');
     gateway.iniciarWorker();
