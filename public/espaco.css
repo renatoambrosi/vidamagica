@@ -614,3 +614,217 @@ body[data-tema="medieval"] .espaco-caminho-icone {
   90%  { opacity: var(--p-op); }
   100% { transform: translateY(-110vh) scale(1); opacity: 0; }
 }
+
+/* ═════════════════════════════════════════════════════════════
+   VIEW: CARTA DO TEMPO (form) + MINHAS CARTAS (lista) + modal de abrir
+   Usa os tokens de tema (--card-bg, --acento, --texto, etc.) — herda
+   automaticamente a cor do Vida Mágica / Mágico / Universo / Medieval.
+   ═════════════════════════════════════════════════════════════ */
+
+/* Botão "Voltar" — discreto, em cima de qualquer view interna */
+.espaco-voltar {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--texto-suave); font-size: 0.9rem; font-weight: 600;
+  padding: 0.4rem 0.4rem 0.4rem 0; margin-bottom: 0.4rem;
+  transition: color 0.2s ease, transform 0.15s ease;
+  text-shadow: 0 0 12px var(--fundo-cor, transparent);
+}
+.espaco-voltar svg { width: 18px; height: 18px; }
+.espaco-voltar:hover, .espaco-voltar:active { color: var(--acento); transform: translateX(-2px); }
+
+/* Form genérico do Espaço — usado pela Carta e mais tarde por outras telas. */
+.espaco-form-carta {
+  display: flex; flex-direction: column; gap: 1.1rem;
+  max-width: 520px; margin: 0 auto;
+}
+.espaco-campo { display: flex; flex-direction: column; gap: 0.4rem; }
+.espaco-campo-rotulo {
+  font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em;
+  color: var(--texto); text-transform: uppercase;
+  text-shadow: 0 0 12px var(--fundo-cor, transparent);
+}
+.espaco-campo input[type="text"],
+.espaco-campo input[type="date"],
+.espaco-campo textarea {
+  width: 100%; padding: 0.85rem 1rem; font: inherit; font-size: 1rem;
+  color: var(--texto); background: var(--card-bg);
+  border: 1px solid var(--card-borda); border-radius: var(--radius-md);
+  box-shadow: var(--sombra); outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.25s ease;
+  font-family: var(--font-ui);
+}
+.espaco-campo textarea {
+  font-family: var(--font-body); resize: vertical; min-height: 180px; line-height: 1.55;
+}
+.espaco-campo input:focus,
+.espaco-campo textarea:focus {
+  border-color: var(--acento);
+  box-shadow: var(--sombra), 0 0 0 3px color-mix(in srgb, var(--acento) 22%, transparent);
+}
+.espaco-campo input::placeholder,
+.espaco-campo textarea::placeholder {
+  color: var(--texto-suave); opacity: 0.7;
+}
+.espaco-campo-dica {
+  font-size: 0.78rem; color: var(--texto-suave);
+  text-shadow: 0 0 10px var(--fundo-cor, transparent);
+}
+
+/* Presets de data — chips. O selecionado ganha visual cheio. */
+.espaco-data-presets { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.espaco-data-preset {
+  padding: 0.55rem 0.95rem; font-size: 0.88rem; font-weight: 600;
+  color: var(--texto); background: var(--card-bg);
+  border: 1px solid var(--card-borda); border-radius: 999px;
+  cursor: pointer; transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.espaco-data-preset:active { transform: scale(0.96); }
+.espaco-data-preset.selecionado {
+  background: linear-gradient(135deg, var(--acento), var(--acento-2));
+  border-color: var(--acento); color: var(--acento-deep);
+  box-shadow: var(--glow);
+}
+.espaco-data-input { display: none; }
+.espaco-data-input.aberto { display: block; margin-top: 0.5rem; }
+
+/* Botão primário (Lacrar carta, etc.) */
+.espaco-btn-primario {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
+  padding: 0.95rem 1.2rem; font: inherit; font-weight: 700; font-size: 1rem;
+  color: var(--acento-deep); cursor: pointer;
+  background: linear-gradient(135deg, var(--acento-2), var(--acento));
+  border: 1px solid var(--acento); border-radius: var(--radius-md);
+  box-shadow: var(--sombra), var(--glow);
+  transition: transform 0.16s ease, filter 0.2s ease;
+  margin-top: 0.4rem;
+}
+.espaco-btn-primario svg { width: 20px; height: 20px; }
+.espaco-btn-primario:active { transform: scale(0.98); }
+.espaco-btn-primario:hover { filter: brightness(1.04); }
+.espaco-btn-primario[disabled] { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.4); }
+
+/* Lista "Minhas cartas do tempo" — cards (trancado vs aberto) */
+.espaco-cartas-lista {
+  display: flex; flex-direction: column; gap: 0.8rem;
+  max-width: 520px; margin: 0 auto;
+}
+.espaco-carta-item {
+  display: flex; align-items: center; gap: 0.9rem;
+  padding: 1rem 1.05rem; cursor: pointer; text-align: left;
+  background: var(--card-bg);
+  border: 1px solid var(--card-borda);
+  border-radius: var(--radius-lg); color: var(--texto);
+  box-shadow: var(--sombra);
+  transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.25s ease;
+}
+.espaco-carta-item:active { transform: scale(0.98); }
+.espaco-carta-item.madura { border-color: var(--acento); box-shadow: var(--sombra), var(--glow); }
+.espaco-carta-icone {
+  width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+  display: grid; place-items: center; color: var(--acento-deep);
+  background: linear-gradient(135deg, var(--acento-2), var(--acento));
+}
+.espaco-carta-icone svg { width: 22px; height: 22px; }
+.espaco-carta-item.trancada .espaco-carta-icone {
+  background: linear-gradient(135deg, var(--card-borda), color-mix(in srgb, var(--card-borda) 40%, var(--texto-suave)));
+  color: var(--texto-suave);
+}
+.espaco-carta-info { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; flex: 1; }
+.espaco-carta-info-titulo {
+  font-family: var(--font-display); font-weight: 700; font-size: 1.02rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.espaco-carta-info-meta { font-size: 0.82rem; color: var(--texto-suave); }
+.espaco-carta-item-tag {
+  margin-left: auto; flex-shrink: 0;
+  padding: 0.3rem 0.65rem; font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  border-radius: 999px; border: 1px solid var(--card-borda);
+  color: var(--texto-suave);
+}
+.espaco-carta-item.madura .espaco-carta-item-tag {
+  color: var(--acento-deep); border-color: var(--acento);
+  background: color-mix(in srgb, var(--acento) 18%, transparent);
+}
+
+/* Vazio (sem cartas ainda) */
+.espaco-vazio {
+  text-align: center; padding: 2.2rem 1rem;
+  color: var(--texto-suave); font-size: 0.95rem; line-height: 1.5;
+  text-shadow: 0 0 12px var(--fundo-cor, transparent);
+}
+.espaco-vazio strong { color: var(--texto); display: block; margin-bottom: 0.4rem; font-size: 1rem; }
+
+/* Skeleton enquanto carrega a lista */
+.espaco-skeleton-carta {
+  height: 76px; border-radius: var(--radius-lg);
+  background: linear-gradient(90deg, var(--card-bg) 0%, color-mix(in srgb, var(--card-bg) 60%, var(--card-borda)) 50%, var(--card-bg) 100%);
+  background-size: 200% 100%;
+  animation: espaco-skel 1.4s ease infinite;
+  border: 1px solid var(--card-borda);
+}
+@keyframes espaco-skel { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* ── MODAL genérico do Espaço — overlay + card (usado pra abrir carta) ── */
+.espaco-modal {
+  position: fixed; inset: 0; z-index: 130;
+  display: none; align-items: center; justify-content: center;
+  padding: env(safe-area-inset-top) 1rem env(safe-area-inset-bottom);
+}
+.espaco-modal.aberto { display: flex; animation: espaco-fade 0.25s ease; }
+.espaco-modal-overlay {
+  position: absolute; inset: 0;
+  background: rgba(10, 8, 4, 0.62);
+  cursor: pointer;
+}
+.espaco-modal-card {
+  position: relative; width: 100%; max-width: 520px;
+  max-height: calc(100vh - 4rem); overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--card-bg);
+  border: 1px solid var(--card-borda); border-radius: var(--radius-xl);
+  padding: 1.8rem 1.5rem 1.6rem; box-shadow: var(--sombra), var(--glow);
+  color: var(--texto);
+  animation: espaco-modal-up 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+@keyframes espaco-modal-up { from { transform: translateY(40px) scale(0.96); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+.espaco-modal-x {
+  position: absolute; top: 0.7rem; right: 0.7rem;
+  width: 36px; height: 36px; border-radius: 50%;
+  border: none; background: transparent; cursor: pointer;
+  display: grid; place-items: center; color: var(--texto-suave);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.espaco-modal-x:hover { background: var(--card-borda); color: var(--texto); }
+.espaco-modal-x svg { width: 18px; height: 18px; }
+
+/* Modal específico — Carta aberta (estilo pergaminho) */
+.espaco-modal-card.carta { padding-top: 2.4rem; text-align: center; }
+.espaco-carta-selo {
+  width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 0.8rem;
+  display: grid; place-items: center; color: var(--acento-deep);
+  background: linear-gradient(135deg, var(--acento-2), var(--acento));
+  box-shadow: var(--glow);
+}
+.espaco-carta-selo svg { width: 28px; height: 28px; }
+.espaco-carta-titulo {
+  font-family: var(--font-display); font-weight: 800; font-size: 1.35rem;
+  color: var(--texto); margin-bottom: 0.25rem;
+}
+.espaco-carta-data {
+  font-size: 0.82rem; color: var(--texto-suave); margin-bottom: 1.2rem;
+  letter-spacing: 0.04em;
+}
+.espaco-carta-conteudo {
+  font-family: var(--font-body); font-size: 1.02rem; line-height: 1.65;
+  color: var(--texto); text-align: left; white-space: pre-wrap;
+  padding: 1rem 1.1rem; background: color-mix(in srgb, var(--card-bg) 75%, transparent);
+  border: 1px dashed var(--card-borda); border-radius: var(--radius-md);
+}
+
+/* Em telas pequenas (iPhone SE), reduz padding e tamanho do título do modal */
+@media (max-width: 380px) {
+  .espaco-modal-card { padding: 1.4rem 1.1rem 1.2rem; }
+  .espaco-carta-titulo { font-size: 1.18rem; }
+}

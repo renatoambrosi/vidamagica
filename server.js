@@ -378,9 +378,12 @@ server.listen(PORT, async () => {
     const gateway = require('./core/gateway');
     gateway.iniciarWorker();
 
-    // NOTA: o worker de avisos da Cápsula do Tempo (core/caderno-avisos.js) foi
-    // REMOVIDO junto com o Caderno. A "Carta do Tempo" do Espaço da Manifestação
-    // terá seu próprio worker quando for construída (ver memória da remodelação).
+    // Worker da Carta do Tempo (Espaço da Manifestação) — substitui o antigo
+    // core/caderno-avisos.js. Dispara WhatsApp/email/in_app quando a carta madura.
+    try {
+      const espacoAvisos = require('./core/espaco-avisos');
+      espacoAvisos.iniciarWorkerCartas();
+    } catch (err) { console.error('⚠️ Worker de cartas não iniciou:', err.message); }
   } catch (err) {
     console.error('💥 Falha ao iniciar bancos:', err.message);
     process.exit(1);
@@ -389,11 +392,13 @@ server.listen(PORT, async () => {
 
 process.on('SIGTERM', () => {
   try { require('./core/gateway').pararWorker(); } catch (_) {}
+  try { require('./core/espaco-avisos').pararWorkerCartas(); } catch (_) {}
   server.close();
   process.exit(0);
 });
 process.on('SIGINT',  () => {
   try { require('./core/gateway').pararWorker(); } catch (_) {}
+  try { require('./core/espaco-avisos').pararWorkerCartas(); } catch (_) {}
   server.close();
   process.exit(0);
 });

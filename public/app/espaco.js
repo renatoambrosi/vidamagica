@@ -267,7 +267,11 @@
       const menu = el('espaco-avatar-menu');
       if (menu?.classList.contains('aberto')) fecharMenuAvatar(); else { fecharMenuTema(); abrirMenuAvatar(); }
     });
-    el('menu-cartas')?.addEventListener('click', () => { fecharMenuAvatar(); toast('Minhas cartas do tempo — em breve ✨'); });
+    el('menu-cartas')?.addEventListener('click', () => {
+      fecharMenuAvatar();
+      irPara('view-minhas-cartas');
+      carregarMinhasCartas();
+    });
     el('menu-manifestacoes')?.addEventListener('click', () => { fecharMenuAvatar(); toast('Minhas manifestações — em breve ✨'); });
     el('menu-voltar')?.addEventListener('click', () => { window.location.href = '/app'; });
 
@@ -282,19 +286,217 @@
     });
   }
 
+  // ── NAVEGAÇÃO ENTRE VIEWS DO ESPAÇO ──────────────────────────
+  // Mantemos uma única "view ativa" — troca por classe .ativa. O JS é leve
+  // (sem router/HMR), e o estado mora só na DOM.
+  function irPara(viewId) {
+    document.querySelectorAll('.espaco-view').forEach(v => v.classList.remove('ativa'));
+    const alvo = el(viewId);
+    if (alvo) { alvo.classList.add('ativa'); document.querySelector('.espaco-corpo')?.scrollTo({ top: 0, behavior: 'instant' }); }
+    fecharMenuTema(); fecharMenuAvatar();
+  }
+
   function ligarCaminhos() {
+    // Caminhos da entrada
     document.querySelectorAll('.espaco-caminho').forEach(btn => {
       btn.addEventListener('click', () => {
         const c = btn.dataset.caminho;
-        const nomes = { meditar: 'Meditação guiada', carta: 'Carta do tempo', manifestar: 'Manifestar' };
-        toast(`${nomes[c] || 'Em breve'} — em breve ✨`);
+        if (c === 'carta')      return irPara('view-carta');
+        if (c === 'manifestar') return toast('Quero manifestar — em breve ✨');
+        if (c === 'meditar')    return toast('Quero meditar — em breve ✨');
       });
+    });
+    // Voltar (em qualquer view interna) — data-voltar="entrada"
+    document.querySelectorAll('[data-voltar]').forEach(b => {
+      b.addEventListener('click', () => irPara('view-' + b.dataset.voltar));
     });
     // Botão central "Ambiente" (timer + música + afirmações) — painel vem depois
     el('ferr-ambiente')?.addEventListener('click', () => toast('Ambiente (timer · música · afirmações) — em breve ✨'));
     // Início — volta ao topo da Meditação Guiada
     el('nav-inicio')?.addEventListener('click', () => {
-      document.querySelector('.espaco-corpo')?.scrollTo({ top: 0, behavior: 'smooth' });
+      irPara('view-entrada');
+    });
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // CARTA DO TEMPO — form (escrever) + lista + modal de abrir
+  // ════════════════════════════════════════════════════════════
+  let cartaDiasEscolhido = null;   // dias do preset (30/90/180/365) ou 'custom'
+
+  function ligarFormCarta() {
+    const ta = el('carta-conteudo');
+    const cnt = el('carta-contador');
+    const dataIn = el('carta-data');
+    const resumo = el('carta-data-resumo');
+
+    // Contador de caracteres
+    ta?.addEventListener('input', () => { if (cnt) cnt.textContent = String(ta.value.trim().length); });
+
+    // Presets de data
+    document.querySelectorAll('.espaco-data-preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.espaco-data-preset').forEach(b => b.classList.remove('selecionado'));
+        btn.classList.add('selecionado');
+        const v = btn.dataset.dias;
+        cartaDiasEscolhido = v;
+        if (v === 'custom') {
+          dataIn?.classList.add('aberto');
+          // Min: amanhã
+          const min = new Date(Date.now() + 24 * 3600 * 1000);
+          if (dataIn) dataIn.min = min.toISOString().slice(0, 10);
+          if (resumo) resumo.textContent = 'Escolha a data exata abaixo.';
+          setTimeout(() => dataIn?.focus(), 80);
+        } else {
+          dataIn?.classList.remove('aberto');
+          const dias = parseInt(v, 10);
+          const d = new Date(Date.now() + dias * 24 * 3600 * 1000);
+          if (resumo) resumo.textContent = `Sua carta abre em ${d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}.`;
+        }
+      });
+    });
+    dataIn?.addEventListener('change', () => {
+      const v = dataIn.value;
+      if (!v) return;
+      const d = new Date(v + 'T12:00:00');
+      if (resumo) resumo.textContent = `Sua carta abre em ${d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}.`;
+    });
+
+    // Submit
+    el('form-carta')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const titulo = (el('carta-titulo')?.value || '').trim();
+      const conteudo = (ta?.value || '').trim();
+      if (conteudo.length < 10) { toast('Escreva pelo menos 10 caracteres.'); return; }
+      if (!cartaDiasEscolhido) { toast('Escolha quando reler.'); return; }
+      let abrirEm = null;
+      if (cartaDiasEscolhido === 'custom') {
+        if (!dataIn?.value) { toast('Escolha a data.'); return; }
+        abrirEm = new Date(dataIn.value + 'T12:00:00');
+      } else {
+        const dias = parseInt(cartaDiasEscolhido, 10);
+        abrirEm = new Date(Date.now() + dias * 24 * 3600 * 1000);
+      }
+      if (!(abrirEm.getTime() > Date.now() + 24 * 3600 * 1000)) {
+        toast('A data precisa estar pelo menos 1 dia no futuro.'); return;
+      }
+
+      const btn = el('carta-lacrar');
+      if (btn) { btn.disabled = true; btn.querySelector('span').textContent = 'Lacrando...'; }
+      try {
+        const r = await fetchAutenticado('/api/app/espaco/cartas', {
+          method: 'POST',
+          body: JSON.stringify({ titulo, conteudo, abrir_em: abrirEm.toISOString() }),
+        });
+        if (!r) return;
+        const d = await r.json().catch(() => ({}));
+        if (!d?.ok) { toast(d?.erro || 'Não consegui lacrar a carta.'); return; }
+        toast('Carta lacrada ✨');
+        // Limpa o form e volta pra entrada
+        if (ta) ta.value = ''; if (cnt) cnt.textContent = '0';
+        const tit = el('carta-titulo'); if (tit) tit.value = '';
+        document.querySelectorAll('.espaco-data-preset').forEach(b => b.classList.remove('selecionado'));
+        dataIn?.classList.remove('aberto');
+        if (dataIn) dataIn.value = '';
+        if (resumo) resumo.textContent = 'Escolha quando a carta deve ser aberta.';
+        cartaDiasEscolhido = null;
+        setTimeout(() => irPara('view-entrada'), 700);
+      } catch (err) {
+        console.warn('[espaco] lacrar carta:', err);
+        toast('Não consegui lacrar agora. Tenta de novo.');
+      } finally {
+        if (btn) { btn.disabled = false; btn.querySelector('span').textContent = 'Lacrar carta'; }
+      }
+    });
+  }
+
+  // ── LISTA "Minhas cartas do tempo" ───────────────────────────
+  function fmtData(iso) {
+    if (!iso) return '';
+    try { return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }); }
+    catch { return ''; }
+  }
+  function fmtRelativoFuturo(iso) {
+    const ms = new Date(iso).getTime() - Date.now();
+    if (ms <= 0) return 'pronta pra abrir';
+    const dias = Math.ceil(ms / (24 * 3600 * 1000));
+    if (dias === 1) return 'abre amanhã';
+    if (dias < 30)  return `abre em ${dias} dias`;
+    const meses = Math.round(dias / 30);
+    if (meses < 12) return `abre em ${meses} ${meses === 1 ? 'mês' : 'meses'}`;
+    const anos = Math.round(dias / 365);
+    return `abre em ${anos} ${anos === 1 ? 'ano' : 'anos'}`;
+  }
+
+  async function carregarMinhasCartas() {
+    const wrap = el('cartas-lista');
+    if (!wrap) return;
+    wrap.innerHTML = '<div class="espaco-skeleton-carta"></div><div class="espaco-skeleton-carta"></div>';
+    try {
+      const r = await fetchAutenticado('/api/app/espaco/cartas');
+      if (!r) return;
+      const d = await r.json().catch(() => ({}));
+      const cartas = (d?.cartas || []);
+      if (cartas.length === 0) {
+        wrap.innerHTML = `
+          <div class="espaco-vazio">
+            <strong>Ainda não tem nenhuma carta aqui.</strong>
+            Você pode escrever a primeira pelo caminho “Carta do tempo”.
+          </div>`;
+        return;
+      }
+      wrap.innerHTML = cartas.map(c => {
+        const trancada = !!c.trancada;
+        const titulo = (c.titulo || 'Carta sem título').replace(/</g, '&lt;');
+        const meta = trancada
+          ? `Lacrada · ${fmtRelativoFuturo(c.abrir_em)}`
+          : `Aberta · ${fmtData(c.abrir_em)}`;
+        const tag = trancada ? 'Trancada' : 'Madura';
+        const icone = trancada
+          ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`
+          : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>`;
+        return `
+          <button type="button" class="espaco-carta-item ${trancada ? 'trancada' : 'madura'}" data-id="${c.id}" data-trancada="${trancada ? '1' : '0'}">
+            <span class="espaco-carta-icone">${icone}</span>
+            <span class="espaco-carta-info">
+              <span class="espaco-carta-info-titulo">${titulo}</span>
+              <span class="espaco-carta-info-meta">${meta}</span>
+            </span>
+            <span class="espaco-carta-item-tag">${tag}</span>
+          </button>`;
+      }).join('');
+
+      // Ligar clique — só abre se madura
+      wrap.querySelectorAll('.espaco-carta-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (btn.dataset.trancada === '1') {
+            const id = btn.dataset.id;
+            const c = cartas.find(x => String(x.id) === String(id));
+            toast(`Essa carta abre ${fmtRelativoFuturo(c.abrir_em)}.`);
+            return;
+          }
+          const id = btn.dataset.id;
+          const c = cartas.find(x => String(x.id) === String(id));
+          if (c) abrirModalCarta(c);
+        });
+      });
+    } catch (err) {
+      console.warn('[espaco] cartas:', err);
+      wrap.innerHTML = '<div class="espaco-vazio">Não consegui carregar agora. Tenta de novo daqui a pouco.</div>';
+    }
+  }
+
+  // ── MODAL — abrir carta madura ───────────────────────────────
+  function abrirModal(id) { el(id)?.classList.add('aberto'); el(id)?.setAttribute('aria-hidden', 'false'); }
+  function fecharModal(id) { el(id)?.classList.remove('aberto'); el(id)?.setAttribute('aria-hidden', 'true'); }
+  function abrirModalCarta(c) {
+    const t = el('carta-aberta-titulo'); if (t) t.textContent = c.titulo || 'Sua Carta do Tempo';
+    const d = el('carta-aberta-data');   if (d) d.textContent = `Lacrada e aberta em ${fmtData(c.abrir_em)}`;
+    const co = el('carta-aberta-conteudo'); if (co) co.textContent = c.conteudo || '';
+    abrirModal('modal-carta-aberta');
+  }
+  function ligarModais() {
+    document.querySelectorAll('[data-fechar-modal]').forEach(el2 => {
+      el2.addEventListener('click', () => fecharModal(el2.dataset.fecharModal));
     });
   }
 
@@ -387,6 +589,8 @@
     ligarAvatar();
     ligarCaminhos();
     ligarGiroBotoes();
+    ligarFormCarta();
+    ligarModais();
     el('espaco-loading-pular')?.addEventListener('click', pularLoading);
 
     // Dispara a animação de abertura imediatamente

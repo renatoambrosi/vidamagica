@@ -106,6 +106,16 @@ router.post('/cartas', autenticar, async (req, res) => {
       [usuarioId, titulo || null, conteudo, abrirEm.toISOString()]
     );
     console.log(`💌 ${tag(usuarioId)} lacrou carta do tempo #${r.rows[0].id} pra ${abrirEm.toISOString().slice(0,10)}`);
+
+    // Religação do gatilho da ofensiva: a Carta do Tempo é uma "escrita" do Espaço.
+    // O alvo_tipo 'caderno_escrita' segue sendo o evento canônico (ver memória
+    // project_renomear_caderno_para_espaco.md — não trocar a string, quebra missões).
+    // Falha silenciosa: gamificação não pode bloquear o salvar.
+    try {
+      const { progressoEvento } = require('../core/gamificacao');
+      await progressoEvento(usuarioId, 'caderno_escrita');
+    } catch (e) { console.warn(`⚠️ [espaco] progressoEvento(carta) falhou:`, e.message); }
+
     return res.json({ ok: true, carta: r.rows[0] });
   } catch (e) {
     console.error(`❌ [espaco] POST /cartas u=${tag(req.usuario?.sub)}:`, e.message);
