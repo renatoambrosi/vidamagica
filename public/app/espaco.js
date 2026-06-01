@@ -346,6 +346,9 @@
           if (dataIn) dataIn.min = min.toISOString().slice(0, 10);
           if (resumo) resumo.textContent = 'Escolha a data exata abaixo.';
           setTimeout(() => dataIn?.focus(), 80);
+        } else if (v === 'dev') {
+          dataIn?.classList.remove('aberto');
+          if (resumo) resumo.textContent = 'Modo teste: a carta abre em ~20 segundos.';
         } else {
           dataIn?.classList.remove('aberto');
           const dias = parseInt(v, 10);
@@ -361,6 +364,27 @@
       if (resumo) resumo.textContent = `Sua carta abre em ${d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}.`;
     });
 
+    // Botão "Testar envios agora" (modo dev) — dispara WhatsApp + email e mostra o resultado
+    el('carta-testar-envio')?.addEventListener('click', async () => {
+      const btn = el('carta-testar-envio');
+      const txtOriginal = btn?.textContent;
+      if (btn) { btn.disabled = true; btn.textContent = 'Disparando teste...'; }
+      try {
+        const r = await fetchAutenticado('/api/app/espaco/cartas/testar-envio', { method: 'POST', body: '{}' });
+        if (!r) return;
+        const d = await r.json().catch(() => ({}));
+        if (!d?.ok) { toast(d?.erro || 'Não consegui testar agora.'); return; }
+        const wa = d.whatsapp?.ok ? 'WhatsApp ✓' : `WhatsApp ✗ (${d.whatsapp?.motivo || 'falha'})`;
+        const em = d.email?.ok ? 'E-mail ✓' : `E-mail ✗ (${d.email?.motivo || 'falha'})`;
+        toast(`${wa} · ${em}`);
+      } catch (err) {
+        console.warn('[espaco] testar-envio:', err);
+        toast('Não consegui testar agora.');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = txtOriginal; }
+      }
+    });
+
     // Submit
     el('form-carta')?.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -372,12 +396,16 @@
       if (cartaDiasEscolhido === 'custom') {
         if (!dataIn?.value) { toast('Escolha a data.'); return; }
         abrirEm = new Date(dataIn.value + 'T12:00:00');
+      } else if (cartaDiasEscolhido === 'dev') {
+        abrirEm = new Date(Date.now() + 20 * 1000);   // ~20s — modo teste
       } else {
         const dias = parseInt(cartaDiasEscolhido, 10);
         abrirEm = new Date(Date.now() + dias * 24 * 3600 * 1000);
       }
-      if (!(abrirEm.getTime() > Date.now() + 24 * 3600 * 1000)) {
-        toast('A data precisa estar pelo menos 1 dia no futuro.'); return;
+      // Em modo teste (dev) o mínimo cai pra alguns segundos; senão exige 1 dia.
+      const minMs = cartaDiasEscolhido === 'dev' ? 10 * 1000 : 24 * 3600 * 1000;
+      if (!(abrirEm.getTime() > Date.now() + minMs)) {
+        toast(cartaDiasEscolhido === 'dev' ? 'Escolha uma data no futuro.' : 'A data precisa estar pelo menos 1 dia no futuro.'); return;
       }
 
       const btn = el('carta-lacrar');
@@ -418,6 +446,9 @@
   function fmtRelativoFuturo(iso) {
     const ms = new Date(iso).getTime() - Date.now();
     if (ms <= 0) return 'pronta pra abrir';
+    if (ms < 60 * 1000) return 'abre em instantes';
+    if (ms < 3600 * 1000) { const m = Math.round(ms / 60000); return `abre em ${m} min`; }
+    if (ms < 24 * 3600 * 1000) return 'abre ainda hoje';
     const dias = Math.ceil(ms / (24 * 3600 * 1000));
     if (dias === 1) return 'abre amanhã';
     if (dias < 30)  return `abre em ${dias} dias`;
@@ -579,6 +610,12 @@
     const tit = el('espaco-saudacao-titulo');
     const primeiro = (ctx.aluna?.nome || '').split(' ')[0];
     if (tit && primeiro) tit.textContent = `${primeiro}, o que você quer viver agora?`;
+    // Modo teste da Carta do Tempo — revela o preset "Em instantes (teste)"
+    // e o botão "Testar envios agora".
+    if (ctx.dev_carta) {
+      const dp = el('carta-preset-dev'); if (dp) dp.style.display = '';
+      const bt = el('carta-testar-envio'); if (bt) bt.style.display = '';
+    }
   }
 
   async function init() {

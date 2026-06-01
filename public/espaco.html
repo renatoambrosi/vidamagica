@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=15" />
+  <link rel="stylesheet" href="/espaco.css?v=17" />
 </head>
 <body data-tema="vida_magica">
 
@@ -218,6 +218,7 @@
               <button type="button" class="espaco-data-preset" data-dias="180">Em 6 meses</button>
               <button type="button" class="espaco-data-preset" data-dias="365">Em 1 ano</button>
               <button type="button" class="espaco-data-preset" data-dias="custom">Outra data</button>
+              <button type="button" class="espaco-data-preset espaco-data-preset-dev" data-dias="dev" id="carta-preset-dev" style="display:none">Em instantes (teste)</button>
             </div>
             <input type="date" id="carta-data" class="espaco-data-input" />
             <span class="espaco-campo-dica" id="carta-data-resumo">Escolha quando a carta deve ser aberta.</span>
@@ -226,6 +227,12 @@
           <button type="submit" class="espaco-btn-primario" id="carta-lacrar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/><path d="M12 13v6"/></svg>
             <span>Lacrar carta</span>
+          </button>
+
+          <!-- ⚠️ MODO TESTE — botão visível só quando dev_carta=true. Dispara
+               WhatsApp + email pro próprio cadastro AGORA e mostra o resultado. -->
+          <button type="button" class="espaco-btn-teste" id="carta-testar-envio" style="display:none">
+            Testar envios agora (WhatsApp + e-mail)
           </button>
         </form>
       </section>
@@ -324,6 +331,6 @@
   <!-- Toast -->
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=7"></script>
+  <script src="/app/espaco.js?v=9"></script>
 </body>
 </html>

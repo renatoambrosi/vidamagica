@@ -687,6 +687,25 @@ body[data-tema="medieval"] .espaco-caminho-icone {
 }
 .espaco-data-input { display: none; }
 .espaco-data-input.aberto { display: block; margin-top: 0.5rem; }
+/* Preset de teste (modo dev) — visual de afordância temporária, tracejado. */
+.espaco-data-preset-dev {
+  border-style: dashed; opacity: 0.85; font-style: italic;
+  background: color-mix(in srgb, var(--card-bg) 70%, transparent);
+}
+.espaco-data-preset-dev.selecionado { font-style: normal; opacity: 1; }
+
+/* Botão de teste de envio (modo dev) — discreto, tracejado, fora do fluxo real. */
+.espaco-btn-teste {
+  display: block; width: 100%; margin-top: 0.2rem;
+  padding: 0.7rem 1rem; font: inherit; font-size: 0.85rem; font-weight: 600;
+  color: var(--texto-suave); cursor: pointer;
+  background: transparent; border: 1px dashed var(--card-borda);
+  border-radius: var(--radius-md);
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+.espaco-btn-teste:active { transform: scale(0.98); }
+.espaco-btn-teste:hover { color: var(--acento); border-color: var(--acento); }
+.espaco-btn-teste[disabled] { opacity: 0.5; cursor: progress; }
 
 /* Botão primário (Lacrar carta, etc.) */
 .espaco-btn-primario {

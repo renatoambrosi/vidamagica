@@ -19,6 +19,15 @@ const { autenticar } = require('../middleware/autenticar');
 
 const TEMAS_VALIDOS = new Set(['vida_magica', 'magico', 'universo', 'medieval']);
 
+// ⚠️ MODO DEV ⚠️ — relaxa o mínimo de 1 dia da Carta do Tempo pra o Renato testar
+// o fluxo de amadurecimento (worker → WhatsApp/email/banner) sem esperar um dia.
+// Mesma filosofia do TESOURO_INFINITO_DEV / `|| true` (ver CLAUDE.md "Fase atual").
+// Quando true: a carta pode abrir em ~20s. TROCAR PRA false antes de abrir pras
+// alunas reais (senão alunas lacram cartas que abrem quase na hora).
+// Casado com DEV_TICK_RAPIDO em core/espaco-avisos.js (worker tick de 1 min).
+const CARTA_DEV_SEM_MINIMO = true;
+const CARTA_MIN_FUTURO_MS = CARTA_DEV_SEM_MINIMO ? 20 * 1000 : 24 * 3600 * 1000;
+
 function erro(res, code, msg) { return res.status(code).json({ ok: false, erro: msg }); }
 function tag(id) { return String(id || '?').slice(0, 8); }
 
@@ -53,6 +62,7 @@ router.get('/contexto', autenticar, async (req, res) => {
       },
       tem_clube: plano !== 'gratuito',
       tema,
+      dev_carta: CARTA_DEV_SEM_MINIMO,   // ⚠️ frontend mostra o preset "Em instantes (teste)"
     });
   } catch (e) {
     console.error(`❌ [espaco] GET /contexto u=${tag(req.usuario?.sub)}:`, e.message);
@@ -96,8 +106,8 @@ router.post('/cartas', autenticar, async (req, res) => {
     const conteudo = String(req.body?.conteudo || '').slice(0, 20000).trim();
     const abrirEm = req.body?.abrir_em ? new Date(req.body.abrir_em) : null;
     if (!conteudo || conteudo.length < 10) return erro(res, 400, 'escreva pelo menos 10 caracteres');
-    if (!abrirEm || isNaN(abrirEm) || abrirEm.getTime() < Date.now() + 24 * 3600 * 1000) {
-      return erro(res, 400, 'a carta precisa abrir pelo menos 1 dia no futuro');
+    if (!abrirEm || isNaN(abrirEm) || abrirEm.getTime() < Date.now() + CARTA_MIN_FUTURO_MS) {
+      return erro(res, 400, CARTA_DEV_SEM_MINIMO ? 'escolha uma data/hora no futuro' : 'a carta precisa abrir pelo menos 1 dia no futuro');
     }
     const r = await poolEspaco.query(
       `INSERT INTO cartas_do_tempo (usuario_id, titulo, conteudo, abrir_em)
@@ -120,6 +130,31 @@ router.post('/cartas', autenticar, async (req, res) => {
   } catch (e) {
     console.error(`❌ [espaco] POST /cartas u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao salvar carta');
+  }
+});
+
+// ⚠️ MODO DEV — dispara WhatsApp + email de TESTE pro próprio cadastro AGORA
+// e reporta o resultado de cada canal. Só existe enquanto CARTA_DEV_SEM_MINIMO.
+router.post('/cartas/testar-envio', autenticar, async (req, res) => {
+  if (!CARTA_DEV_SEM_MINIMO) return erro(res, 403, 'modo teste desligado');
+  try {
+    const usuarioId = req.usuario.sub;
+    const u = await poolCore.query(`SELECT nome, telefone, email FROM usuarios WHERE id = $1`, [usuarioId]);
+    const usuario = u.rows[0] || {};
+    const { enviarTesteWhatsApp, enviarTesteEmail } = require('../core/espaco-avisos');
+    const [whatsapp, email] = await Promise.all([
+      enviarTesteWhatsApp(usuario),
+      enviarTesteEmail(usuario),
+    ]);
+    console.log(`🧪 ${tag(usuarioId)} testou envios — wa:${whatsapp.ok?'ok':'falha'} email:${email.ok?'ok':'falha'}`);
+    return res.json({
+      ok: true,
+      whatsapp, email,
+      destino: { telefone: usuario.telefone || null, email: usuario.email || null },
+    });
+  } catch (e) {
+    console.error(`❌ [espaco] POST /cartas/testar-envio u=${tag(req.usuario?.sub)}:`, e.message);
+    return erro(res, 500, 'erro ao testar envios');
   }
 });
 

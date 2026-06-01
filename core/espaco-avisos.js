@@ -25,7 +25,14 @@ const SENDER_EMAIL = process.env.SENDER_EMAIL || 'sistema@suellenseragi.com.br';
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 
 let intervalId = null;
-const INTERVALO_MS = 10 * 60 * 1000; // 10 minutos
+
+// ⚠️ MODO DEV ⚠️ — tick rápido (1 min) pra o Renato ver o aviso chegar logo
+// depois de lacrar uma carta de teste (preset "Em instantes"). Casado com
+// CARTA_DEV_SEM_MINIMO em routes/espaco.js. TROCAR PRA false (volta a 10 min)
+// antes de abrir pras alunas reais.
+const DEV_TICK_RAPIDO = true;
+const INTERVALO_MS = (DEV_TICK_RAPIDO ? 1 : 10) * 60 * 1000;
+const PRIMEIRO_RUN_MS = DEV_TICK_RAPIDO ? 15 * 1000 : 30 * 1000;
 
 // ── ENVIO POR CANAL ────────────────────────────────────────
 
@@ -180,13 +187,63 @@ async function processarCartasMaduras() {
   }
 }
 
+// ── TESTE MANUAL DE ENVIO (modo dev) ───────────────────────
+// Dispara um WhatsApp + email de TESTE pro próprio cadastro, SEM carta e SEM
+// idempotência (não grava em cartas_do_tempo_avisos). Serve pra o Renato
+// confirmar que os dois canais realmente funcionam. Reporta o motivo da falha.
+
+async function enviarTesteWhatsApp(usuario) {
+  if (!usuario.telefone) return { ok: false, motivo: 'sem telefone no cadastro' };
+  try {
+    const primeiroNome = (usuario.nome || '').split(' ')[0] || 'você';
+    await enfileirarAtendimento({
+      telefone: usuario.telefone,
+      tipo: 'ativo',
+      categoria: 'carta_do_tempo',
+      mensagens: [{
+        texto: `Oi ${primeiroNome} ✨\n\nEste é um teste de envio da Carta do Tempo. Se você recebeu isto, o WhatsApp está funcionando.`,
+        midias: [],
+      }],
+    });
+    return { ok: true, motivo: 'enfileirado no gateway (deve chegar em segundos)' };
+  } catch (e) {
+    return { ok: false, motivo: e.message };
+  }
+}
+
+async function enviarTesteEmail(usuario) {
+  if (!usuario.email) return { ok: false, motivo: 'sem email no cadastro' };
+  if (!BREVO_API_KEY) return { ok: false, motivo: 'BREVO_API_KEY ausente no ambiente' };
+  try {
+    const primeiroNome = (usuario.nome || '').split(' ')[0] || 'você';
+    await axios.post('https://api.brevo.com/v3/smtp/email', {
+      sender: { name: 'Vida Mágica', email: SENDER_EMAIL },
+      to: [{ email: usuario.email, name: primeiroNome }],
+      subject: '💌 Teste de envio — Carta do Tempo',
+      htmlContent: `
+        <div style="font-family:Georgia,serif;max-width:520px;margin:0 auto;padding:40px 28px;background:linear-gradient(135deg,#FFF6E0,#FAE9B0);border-radius:18px;border:1px solid #C8922A">
+          <div style="text-align:center;font-size:48px;margin-bottom:8px">💌</div>
+          <h2 style="color:#3D2E1A;font-size:22px;margin:0 0 16px;text-align:center;font-weight:700">Teste de envio</h2>
+          <p style="color:#6B5436;font-size:15px;line-height:1.5;margin:0;text-align:center">
+            Se você está lendo isto, o e-mail da Carta do Tempo está funcionando, ${primeiroNome}.
+          </p>
+        </div>`,
+    }, {
+      headers: { 'accept': 'application/json', 'api-key': BREVO_API_KEY, 'content-type': 'application/json' },
+    });
+    return { ok: true, motivo: 'aceito pela Brevo (confira caixa de entrada / spam)' };
+  } catch (e) {
+    return { ok: false, motivo: e.response?.data?.message || e.message };
+  }
+}
+
 // ── WORKER ─────────────────────────────────────────────────
 
 function iniciarWorkerCartas() {
   if (intervalId) return;
-  console.log(`📬 Worker de Cartas do Tempo iniciado (loop a cada ${INTERVALO_MS / 60000} min)`);
-  // Roda 1x logo após iniciar (sem esperar 10min do primeiro tick)
-  setTimeout(() => { processarCartasMaduras().catch(() => {}); }, 30000);
+  console.log(`📬 Worker de Cartas do Tempo iniciado (loop a cada ${INTERVALO_MS / 60000} min${DEV_TICK_RAPIDO ? ' — MODO DEV' : ''})`);
+  // Roda 1x logo após iniciar (sem esperar o primeiro tick cheio)
+  setTimeout(() => { processarCartasMaduras().catch(() => {}); }, PRIMEIRO_RUN_MS);
   intervalId = setInterval(() => { processarCartasMaduras().catch(() => {}); }, INTERVALO_MS);
 }
 
@@ -194,4 +251,4 @@ function pararWorkerCartas() {
   if (intervalId) { clearInterval(intervalId); intervalId = null; console.log('📬 Worker de Cartas parado'); }
 }
 
-module.exports = { processarCartasMaduras, iniciarWorkerCartas, pararWorkerCartas, enviarWhatsApp, enviarEmail };
+module.exports = { processarCartasMaduras, iniciarWorkerCartas, pararWorkerCartas, enviarWhatsApp, enviarEmail, enviarTesteWhatsApp, enviarTesteEmail };
