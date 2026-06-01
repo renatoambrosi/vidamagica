@@ -7,9 +7,12 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=13" />
+  <link rel="stylesheet" href="/espaco.css?v=14" />
 </head>
 <body data-tema="vida_magica">
+
+  <!-- Camada de imagem do tema (atrás de tudo) — movida pelo parallax do giroscópio -->
+  <div class="espaco-bg" id="espaco-bg" aria-hidden="true"></div>
 
   <!-- ════════════════════════════════════════════════════════════
        ANIMAÇÃO DE ABERTURA — cérebro dourado (portada do Caderno).
@@ -234,6 +237,6 @@
   <!-- Toast -->
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=5"></script>
+  <script src="/app/espaco.js?v=6"></script>
 </body>
 </html>

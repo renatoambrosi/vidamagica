@@ -24,9 +24,9 @@ body {
      posição controlados por --bg-size / --bg-pos (cada tema ajusta). Imagens
      16:9 num celular retrato: 'cover' estoura (zoom) → temas com foto usam
      'contain' (mostra a imagem inteira) e a --fundo-cor preenche as bordas. */
-  background:
-    var(--overlay, none) center / cover no-repeat,
-    var(--fundo) var(--bg-pos, center) / var(--bg-size, cover) no-repeat;
+  /* A IMAGEM do tema vai na camada .espaco-bg (atrás), pra o parallax movê-la
+     via transform nos 2 eixos. O body fica só com o overlay de legibilidade. */
+  background: var(--overlay, none) center / cover no-repeat;
   background-color: var(--fundo-cor, #E8DCC0);   /* fallback enquanto a imagem carrega */
   color: var(--texto);
   overflow: hidden;                 /* tela sem rolagem global — cada view controla */
@@ -123,6 +123,15 @@ body[data-tema="universo"],
 body[data-tema="medieval"] {
   --bg-size: cover;
   --bg-pos: center;
+}
+
+/* Camada de IMAGEM do tema — atrás de tudo, ~14% maior que a tela (folga nos
+   2 eixos) pra o parallax do giroscópio mover via transform (GPU, suave). */
+.espaco-bg {
+  position: fixed; inset: -7%; z-index: -2;
+  background: var(--fundo) center center / cover no-repeat;
+  background-color: var(--fundo-cor, #E8DCC0);
+  will-change: transform;
 }
 
 /* ─────────────────────────────────────────────────────────────

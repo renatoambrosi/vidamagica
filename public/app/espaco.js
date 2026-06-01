@@ -202,8 +202,8 @@
 
   function aplicarTema(tema) {
     document.body.setAttribute('data-tema', tema);
-    // Fora do Universo, zera o deslocamento do giroscópio (volta o fundo ao centro)
-    if (tema !== 'universo') document.body.style.removeProperty('--bg-pos');
+    // Fora do Universo, zera o deslocamento do parallax (volta a imagem ao centro)
+    if (tema !== 'universo') { const bg = el('espaco-bg'); if (bg) bg.style.transform = ''; }
   }
 
   function marcarItens() {
@@ -305,24 +305,22 @@
   // suave (lerp) num loop rAF contínuo — o sensor define o ALVO, o fundo desliza
   // devagar até ele (sem pular nem tremer com o ruído do giroscópio).
   let _giroOn = false, _giroLoop = null;
-  let _giroAlvoX = 50, _giroAlvoY = 50, _giroX = 50, _giroY = 50;
-  const GIRO_RANGE = 3;      // deslocamento máximo do fundo (%) — bem sutil
-  const GIRO_EASE = 0.055;   // suavização: quanto menor, mais delicado/lento
+  let _giroAlvoX = 0, _giroAlvoY = 0, _giroX = 0, _giroY = 0;
+  const GIRO_RANGE = 22;     // px de deslocamento da camada (folga é ~7% da tela) — sutil
+  const GIRO_EASE = 0.06;    // suavização (lerp): quanto menor, mais delicado/lento
   function _giroEvt(e) {
     const gx = Math.max(-15, Math.min(15, e.gamma || 0));       // inclinação esq-dir
     const gy = Math.max(-15, Math.min(15, (e.beta || 0) - 45)); // frente-trás (em pé ~45°)
-    _giroAlvoX = 50 - (gx / 15) * GIRO_RANGE;
-    _giroAlvoY = 50 - (gy / 15) * GIRO_RANGE;
+    _giroAlvoX = -(gx / 15) * GIRO_RANGE;   // alvo em px (move imagem ao contrário = profundidade)
+    _giroAlvoY = -(gy / 15) * GIRO_RANGE;
   }
   function _giroTick() {
     _giroLoop = requestAnimationFrame(_giroTick);
     if (document.body.getAttribute('data-tema') !== 'universo') return;
-    const nx = _giroX + (_giroAlvoX - _giroX) * GIRO_EASE;
-    const ny = _giroY + (_giroAlvoY - _giroY) * GIRO_EASE;
-    if (Math.abs(nx - _giroX) > 0.02 || Math.abs(ny - _giroY) > 0.02) {
-      _giroX = nx; _giroY = ny;
-      document.body.style.setProperty('--bg-pos', `${_giroX.toFixed(2)}% ${_giroY.toFixed(2)}%`);
-    }
+    _giroX += (_giroAlvoX - _giroX) * GIRO_EASE;   // desliza suave até o alvo
+    _giroY += (_giroAlvoY - _giroY) * GIRO_EASE;
+    const bg = el('espaco-bg');
+    if (bg) bg.style.transform = `translate3d(${_giroX.toFixed(2)}px, ${_giroY.toFixed(2)}px, 0)`;
   }
   function ligarGiro() {
     if (_giroOn) return; _giroOn = true;
