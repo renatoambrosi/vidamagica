@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=7" />
+  <link rel="stylesheet" href="/espaco.css?v=8" />
 </head>
 <body data-tema="vida_magica">
 
@@ -74,8 +74,11 @@
     <header class="espaco-header">
       <h1 class="espaco-header-titulo">Espaço da Manifestação</h1>
       <div class="espaco-acoes">
-        <!-- Bolinha do tema (abre o dropdown). Ferramentas e perfil foram pro menu de baixo. -->
-        <button type="button" class="espaco-tema-bolinha" id="espaco-tema-bolinha" aria-label="Escolher tema"></button>
+        <!-- "tema" (discreto) + bolinha — abre o dropdown. -->
+        <button type="button" class="espaco-tema-trigger" id="espaco-tema-bolinha" aria-label="Escolher tema">
+          <span class="espaco-tema-rotulo">tema</span>
+          <span class="espaco-tema-bolinha"></span>
+        </button>
         <!-- Sementes -->
         <span class="espaco-sementes" id="espaco-sementes">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -171,8 +174,8 @@
     <!-- MENU EMBAIXO (bottom-nav) — Início · Ambiente (botão central) · Perfil -->
     <nav class="espaco-bottom">
       <button type="button" class="espaco-bottom-item ativo" id="nav-inicio">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></svg>
-        <span>Início</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.5"/><path d="M7.5 12a4.5 4.5 0 0 1 9 0"/><path d="M4 12a8 8 0 0 1 16 0"/></svg>
+        <span>Meditação Guiada</span>
       </button>
 
       <!-- BOTÃO CENTRAL — Ambiente (timer + música + afirmações). Painel vem depois. -->
@@ -181,7 +184,7 @@
       </button>
 
       <button type="button" class="espaco-bottom-item" id="espaco-avatar" aria-label="Perfil">
-        <span class="espaco-bottom-avatar"><span id="espaco-avatar-inicial">·</span></span>
+        <span class="espaco-bottom-avatar" id="espaco-bottom-avatar"><span id="espaco-avatar-inicial">·</span></span>
         <span>Perfil</span>
       </button>
 

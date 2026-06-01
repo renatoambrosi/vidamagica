@@ -145,7 +145,17 @@ body[data-tema="medieval"] {
   margin-right: auto;                 /* empurra o grupo de ações pra direita */
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.espaco-acoes { display: flex; align-items: center; gap: 0.2rem; flex-shrink: 0; }
+.espaco-acoes { display: flex; align-items: center; gap: 0.9rem; flex-shrink: 0; }
+/* "tema" (rótulo discreto) + bolinha, juntos no gatilho do dropdown */
+.espaco-tema-trigger {
+  display: flex; align-items: center; gap: 0.4rem;
+  background: none; border: none; cursor: pointer; padding: 0;
+}
+.espaco-tema-trigger:active { transform: scale(0.95); }
+.espaco-tema-rotulo {
+  font-size: 0.7rem; color: var(--texto-suave);
+  letter-spacing: 0.06em; text-transform: lowercase; font-weight: 600;
+}
 
 /* Botão de ícone padrão do header (ferramentas + tema) */
 .espaco-icone-btn {
@@ -335,6 +345,8 @@ body[data-tema="medieval"] {
 }
 .espaco-bottom-item.ativo { color: var(--acento); }
 .espaco-bottom-item svg { width: 23px; height: 23px; }
+/* Label de texto do item (ex: "Meditação Guiada") — centraliza e quebra em 2 linhas se preciso */
+.espaco-bottom-item > span:not(.espaco-bottom-avatar) { text-align: center; line-height: 1.08; max-width: 84px; }
 .espaco-bottom-avatar {
   width: 27px; height: 27px; border-radius: 50%; overflow: hidden;
   border: 2px solid var(--acento-2); display: grid; place-items: center;
