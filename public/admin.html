@@ -80,16 +80,22 @@ input[type="text"]:focus, input[type="email"]:focus, input[type="number"]:focus,
 select.filter-ativo { border-color: var(--color-gold-amber); background: rgba(200,146,42,0.07); box-shadow: 0 0 0 2px rgba(200,146,42,0.12); }
 textarea, .field-input[as="textarea"] { resize: vertical; min-height: 68px; line-height: 1.5; }
 
-/* Lista compacta de Afirmações do Espaço (serão muitas → densa, economiza espaço) */
-.esp-afirm-wrap { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
-.esp-afirm-head { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.7rem; font-size: 0.72rem; color: var(--text-muted); background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border); }
-.esp-afirm-table { width: 100%; border-collapse: collapse; }
-.esp-afirm-table th { padding: 5px 8px; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); text-align: left; border-bottom: 1px solid var(--border); }
-.esp-afirm-table td { padding: 2px 6px; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; }
-.esp-afirm-table tr:last-child td { border-bottom: none; }
-.esp-afirm-table .field-input { padding: 3px 7px; font-size: 0.78rem; border-radius: 6px; }
-.esp-afirm-table .btn-sm { min-height: 26px; padding: 0 0.55rem; font-size: 0.72rem; }
-.esp-afirm-table tr:hover td { background: rgba(200,146,42,0.04); }
+/* Lista de Afirmações do Espaço — texto em cima (legível, linha inteira),
+   controles compactos embaixo. Agrupado por tema. */
+.esp-afirm-head { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.2rem 0.7rem; font-size: 0.78rem; color: var(--text-muted); }
+.esp-af-group { display: flex; align-items: baseline; gap: 0.5rem; font-size: 0.64rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-gold-amber); padding: 0.7rem 0.25rem 0.35rem; border-bottom: 1px solid var(--border); margin-bottom: 0.45rem; }
+.esp-af-group .esp-af-group-n { color: var(--text-muted); font-weight: 600; letter-spacing: 0; }
+.esp-af-item { padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 9px; margin-bottom: 0.45rem; background: rgba(255,255,255,0.018); transition: border-color 0.15s; }
+.esp-af-item:hover { border-color: rgba(200,146,42,0.35); }
+.esp-af-item .esp-af-text { width: 100%; font-size: 0.92rem; margin-bottom: 0.45rem; }
+.esp-af-meta { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+.esp-af-meta .field-input { padding: 4px 8px; font-size: 0.78rem; border-radius: 6px; width: auto; }
+.esp-af-meta .esp-af-cat { width: 150px; }
+.esp-af-meta .esp-af-audio { width: 150px; }
+.esp-af-meta .esp-af-ord { width: 56px; }
+.esp-af-meta .btn-sm { min-height: 28px; padding: 0 0.6rem; font-size: 0.72rem; }
+.esp-af-on { display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; color: var(--text-muted); cursor: pointer; user-select: none; }
+.esp-af-meta .esp-af-spacer { margin-left: auto; }
 select option { background: #1a1205; }
 .toggle-row { display: flex; align-items: center; gap: 0.65rem; padding: 0.4rem 0; }
 .tl-titulo { font-size: 0.8rem; font-weight: 500; color: var(--text-light); }
@@ -5009,43 +5015,43 @@ async function espAfirmCarregar() {
     // Autocompletar de categorias já usadas (ajuda a classificar com nomes consistentes)
     const cats = [...new Set(d.afirmacoes.map(a => a.categoria).filter(Boolean))].sort();
     const semCat = d.afirmacoes.filter(a => !a.categoria).length;
-    cont.innerHTML = `
-      <datalist id="esp-cat-options">${cats.map(c => `<option value="${escAdm(c)}"></option>`).join('')}</datalist>
-      <div class="esp-afirm-wrap">
-        <div class="esp-afirm-head">
-          <span><b>${d.afirmacoes.length}</b> afirmações${semCat ? ` · <span style="color:var(--color-gold-amber)">${semCat} sem categoria</span>` : ''}</span>
-          <span>${cats.length} categoria${cats.length === 1 ? '' : 's'}</span>
+
+    // Conta por categoria (a lista já vem ordenada por categoria, NULLS first)
+    const contagem = {};
+    d.afirmacoes.forEach(a => { const k = a.categoria || ''; contagem[k] = (contagem[k] || 0) + 1; });
+
+    const itemHTML = (a) => `
+      <div class="esp-af-item" data-id="${a.id}">
+        <input class="field-input esp-af-text" data-f="texto" value="${escAdm(a.texto)}" />
+        <div class="esp-af-meta">
+          <input class="field-input esp-af-cat" data-f="categoria" list="esp-cat-options" value="${escAdm(a.categoria)}" placeholder="tema…" />
+          <input class="field-input esp-af-audio" data-f="audio_arquivo" value="${escAdm(a.audio_arquivo)}" placeholder="nome.mp3" />
+          <button class="btn btn-ghost btn-sm" title="Ouvir o MP3" onclick="espAfirmPreview(this)">▶</button>
+          <input class="field-input esp-af-ord" data-f="ordem" type="number" value="${a.ordem}" title="Ordem" />
+          <label class="esp-af-on"><input data-f="ativo" type="checkbox" ${a.ativo ? 'checked' : ''} /> ativa</label>
+          <button class="btn btn-primary btn-sm esp-af-spacer" onclick="espAfirmSalvar(${a.id}, this)">Salvar</button>
+          <button class="btn btn-ghost btn-sm" title="Apagar" onclick="espAfirmApagar(${a.id})">🗑</button>
         </div>
-        <table class="esp-afirm-table">
-          <thead><tr>
-            <th>Texto</th>
-            <th style="width:140px">Categoria</th>
-            <th style="width:190px">Áudio (MP3)</th>
-            <th style="width:46px">Ord</th>
-            <th style="width:40px">On</th>
-            <th style="width:110px"></th>
-          </tr></thead>
-          <tbody>
-            ${d.afirmacoes.map(a => `
-              <tr data-id="${a.id}">
-                <td><input class="field-input" data-f="texto" value="${escAdm(a.texto)}" /></td>
-                <td><input class="field-input" data-f="categoria" list="esp-cat-options" value="${escAdm(a.categoria)}" placeholder="tema…" /></td>
-                <td style="display:flex;gap:4px;align-items:center">
-                  <input class="field-input" data-f="audio_arquivo" value="${escAdm(a.audio_arquivo)}" placeholder="nome.mp3" style="flex:1" />
-                  <button class="btn btn-ghost btn-sm" title="Ouvir" onclick="espAfirmPreview(this)">▶</button>
-                </td>
-                <td><input class="field-input" data-f="ordem" type="number" value="${a.ordem}" /></td>
-                <td style="text-align:center"><input data-f="ativo" type="checkbox" ${a.ativo ? 'checked' : ''} /></td>
-                <td style="display:flex;gap:4px">
-                  <button class="btn btn-primary btn-sm" onclick="espAfirmSalvar(${a.id}, this)">Salvar</button>
-                  <button class="btn btn-ghost btn-sm" title="Apagar" onclick="espAfirmApagar(${a.id})">🗑</button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
+      </div>`;
+
+    // Monta agrupado por tema (na ordem que vem do backend)
+    let html = `
+      <datalist id="esp-cat-options">${cats.map(c => `<option value="${escAdm(c)}"></option>`).join('')}</datalist>
+      <div class="esp-afirm-head">
+        <span><b>${d.afirmacoes.length}</b> afirmações${semCat ? ` · <span style="color:var(--color-gold-amber)">${semCat} sem categoria</span>` : ''}</span>
+        <span>${cats.length} categoria${cats.length === 1 ? '' : 's'}</span>
+      </div>`;
+    let catAtual; let primeiro = true;
+    d.afirmacoes.forEach(a => {
+      const c = a.categoria || '';
+      if (primeiro || c !== catAtual) {
+        catAtual = c; primeiro = false;
+        const rotulo = c ? escAdm(c) : '⚠ sem categoria';
+        html += `<div class="esp-af-group">${rotulo}<span class="esp-af-group-n">${contagem[c]}</span></div>`;
+      }
+      html += itemHTML(a);
+    });
+    cont.innerHTML = html;
   } catch { cont.innerHTML = '<div class="loading">Erro ao carregar.</div>'; }
 }
 async function espAfirmNova() {
@@ -5060,7 +5066,7 @@ async function espAfirmNova() {
   espAfirmCarregar();
 }
 async function espAfirmSalvar(id, btn) {
-  const tr = btn.closest('tr');
+  const tr = btn.closest('.esp-af-item');
   const body = {};
   tr.querySelectorAll('[data-f]').forEach(inp => {
     body[inp.dataset.f] = inp.type === 'checkbox' ? inp.checked : inp.value;
@@ -5077,7 +5083,7 @@ async function espAfirmApagar(id) {
 }
 // Ouve o MP3 da afirmação pra conferir se o arquivo existe na pasta
 function espAfirmPreview(btn) {
-  const inp = btn.closest('td').querySelector('[data-f="audio_arquivo"]');
+  const inp = btn.closest('.esp-af-meta').querySelector('[data-f="audio_arquivo"]');
   const arq = (inp?.value || '').trim();
   if (!arq) { toast('Sem arquivo de áudio nesta linha', 'error'); return; }
   const audio = new Audio('/assets/afirmacoes/' + encodeURIComponent(arq));
