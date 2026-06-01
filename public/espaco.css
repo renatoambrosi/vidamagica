@@ -694,6 +694,19 @@ body[data-tema="medieval"] .espaco-caminho-icone {
 }
 .espaco-data-preset-dev.selecionado { font-style: normal; opacity: 1; }
 
+/* Botão "Compartilhar no WhatsApp" no modal da carta aberta — verde reconhecível. */
+.espaco-btn-whats {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  margin: 1.4rem auto 0; padding: 0.85rem 1.3rem;
+  font: inherit; font-weight: 700; font-size: 0.95rem; color: #fff; cursor: pointer;
+  background: #25D366; border: none; border-radius: var(--radius-md);
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.35);
+  transition: transform 0.16s ease, filter 0.2s ease;
+}
+.espaco-btn-whats svg { width: 20px; height: 20px; }
+.espaco-btn-whats:active { transform: scale(0.98); }
+.espaco-btn-whats:hover { filter: brightness(1.05); }
+
 /* Ação dev "Amadurecer agora" sob cada carta trancada — discreta, tracejada. */
 .espaco-carta-devacao {
   display: block; width: 100%; margin: -6px 0 14px;

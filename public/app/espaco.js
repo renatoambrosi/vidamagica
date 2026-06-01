@@ -553,6 +553,22 @@
     const t = el('carta-aberta-titulo'); if (t) t.textContent = c.titulo || 'Sua Carta do Tempo';
     const d = el('carta-aberta-data');   if (d) d.textContent = `Lacrada e aberta em ${fmtData(c.abrir_em)}`;
     const co = el('carta-aberta-conteudo'); if (co) co.textContent = c.conteudo || '';
+    // Botão "Compartilhar no WhatsApp" — monta o texto da carta + assinatura
+    const share = el('carta-aberta-share');
+    if (share) {
+      share.onclick = () => {
+        const linhas = [];
+        if (c.titulo) linhas.push(`✨ ${c.titulo}`);
+        else linhas.push('✨ Minha Carta do Tempo');
+        linhas.push('');
+        if (c.conteudo) linhas.push(c.conteudo);
+        linhas.push('');
+        linhas.push('Escrevi essa carta pra mim mesma no Espaço da Manifestação 💌');
+        linhas.push('vidamagica.com.br');
+        const url = 'https://wa.me/?text=' + encodeURIComponent(linhas.join('\n'));
+        window.open(url, '_blank');
+      };
+    }
     abrirModal('modal-carta-aberta');
   }
   function ligarModais() {
