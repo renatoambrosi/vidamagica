@@ -656,6 +656,10 @@
     const tit = el('espaco-saudacao-titulo');
     const primeiro = (ctx.aluna?.nome || '').split(' ')[0];
     if (tit && primeiro) tit.textContent = `${primeiro}, o que você quer viver agora?`;
+    // Data do dia na carta (dateline aconchegante)
+    const dl = el('carta-dateline');
+    if (dl) dl.textContent = 'Hoje · ' + new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+
     // Modo teste da Carta do Tempo — revela o preset "Em instantes (teste)",
     // o botão "Testar envios agora" e o "amadurecer agora" na lista de cartas.
     devCarta = !!ctx.dev_carta;

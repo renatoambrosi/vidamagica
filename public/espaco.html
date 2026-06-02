@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=19" />
+  <link rel="stylesheet" href="/espaco.css?v=21" />
 </head>
 <body data-tema="vida_magica">
 
@@ -192,49 +192,51 @@
           <span>Voltar</span>
         </button>
 
-        <div class="espaco-saudacao">
+        <div class="espaco-saudacao carta-intro">
           <p class="espaco-eyebrow">Carta do tempo</p>
-          <h2 class="espaco-titulo-grande">Escreva pro seu eu do futuro</h2>
-          <p class="espaco-sub-grande">A carta fica lacrada até a data que você escolher. Quando chegar a hora, você é avisada.</p>
         </div>
 
         <form class="espaco-form-carta" id="form-carta" autocomplete="off" novalidate>
-          <label class="espaco-campo">
-            <span class="espaco-campo-rotulo">Título (opcional)</span>
-            <input type="text" id="carta-titulo" maxlength="200" placeholder="Ex: Pra mim, no aniversário de 30" />
-          </label>
-
-          <label class="espaco-campo">
-            <span class="espaco-campo-rotulo">Sua carta</span>
-            <textarea id="carta-conteudo" maxlength="20000" placeholder="O que você quer dizer pra você do futuro? O que você está vivendo agora, o que está sonhando, o que quer lembrar quando reler?" rows="9"></textarea>
-            <span class="espaco-campo-dica"><span id="carta-contador">0</span> caracteres · mínimo 10</span>
-          </label>
-
-          <div class="espaco-campo">
-            <span class="espaco-campo-rotulo">Quando você quer reler?</span>
-            <div class="espaco-data-presets" role="radiogroup" aria-label="Quando abrir a carta">
-              <button type="button" class="espaco-data-preset" data-dias="30">Em 1 mês</button>
-              <button type="button" class="espaco-data-preset" data-dias="90">Em 3 meses</button>
-              <button type="button" class="espaco-data-preset" data-dias="180">Em 6 meses</button>
-              <button type="button" class="espaco-data-preset" data-dias="365">Em 1 ano</button>
-              <button type="button" class="espaco-data-preset" data-dias="custom">Outra data</button>
-              <button type="button" class="espaco-data-preset espaco-data-preset-dev" data-dias="dev" id="carta-preset-dev" style="display:none">Em instantes (teste)</button>
-            </div>
-            <input type="date" id="carta-data" class="espaco-data-input" />
-            <span class="espaco-campo-dica" id="carta-data-resumo">Escolha quando a carta deve ser aberta.</span>
+          <!-- O PAPEL — ambiente aconchegante: data do dia + saudação + corpo da carta -->
+          <div class="carta-papel">
+            <p class="carta-dateline" id="carta-dateline"></p>
+            <p class="carta-salutacao">Para você do futuro,</p>
+            <textarea id="carta-conteudo" class="carta-corpo" maxlength="20000" placeholder="Escreva com calma. O que você está vivendo, sonhando e sentindo agora — e o que quer que ela lembre quando reler…" rows="9"></textarea>
+            <p class="carta-corpo-dica"><span id="carta-contador">0</span> caracteres · mínimo 10</p>
           </div>
 
-          <button type="submit" class="espaco-btn-primario" id="carta-lacrar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/><path d="M12 13v6"/></svg>
-            <span>Lacrar carta</span>
-          </button>
+          <!-- SELAR — só depois de escrever: nome, quando reabrir, e o lacre -->
+          <div class="carta-selar">
+            <label class="espaco-campo">
+              <span class="espaco-campo-rotulo">Que nome dar a essa carta? (opcional)</span>
+              <input type="text" id="carta-titulo" maxlength="200" placeholder="Ex: Pra mim, no meu aniversário" />
+            </label>
 
-          <!-- ⚠️ MODO TESTE — botão visível só quando dev_carta=true. Dispara
-               pro PRÓPRIO cadastro a mensagem REAL de carta madura (a que a aluna
-               recebe), com uma carta de exemplo. WhatsApp + e-mail. -->
-          <button type="button" class="espaco-btn-teste" id="carta-testar-envio" style="display:none">
-            Ver o que a aluna recebe (WhatsApp + e-mail)
-          </button>
+            <div class="espaco-campo">
+              <span class="espaco-campo-rotulo">Quando reabrir?</span>
+              <div class="espaco-data-presets" role="radiogroup" aria-label="Quando abrir a carta">
+                <button type="button" class="espaco-data-preset" data-dias="30">Em 1 mês</button>
+                <button type="button" class="espaco-data-preset" data-dias="90">Em 3 meses</button>
+                <button type="button" class="espaco-data-preset" data-dias="180">Em 6 meses</button>
+                <button type="button" class="espaco-data-preset" data-dias="365">Em 1 ano</button>
+                <button type="button" class="espaco-data-preset" data-dias="custom">Outra data</button>
+                <button type="button" class="espaco-data-preset espaco-data-preset-dev" data-dias="dev" id="carta-preset-dev" style="display:none">Em instantes (teste)</button>
+              </div>
+              <input type="date" id="carta-data" class="espaco-data-input" />
+              <span class="espaco-campo-dica" id="carta-data-resumo">Escolha quando a carta deve ser aberta.</span>
+            </div>
+
+            <button type="submit" class="espaco-btn-primario" id="carta-lacrar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8.2l1.05 2.13 2.35.34-1.7 1.66.4 2.34L12 13.9l-2.1 1.1.4-2.34-1.7-1.66 2.35-.34z"/></svg>
+              <span>Lacrar carta</span>
+            </button>
+
+            <!-- ⚠️ MODO TESTE — visível só quando dev_carta=true. Dispara pro próprio
+                 cadastro a mensagem REAL de carta madura, com uma carta de exemplo. -->
+            <button type="button" class="espaco-btn-teste" id="carta-testar-envio" style="display:none">
+              Ver o que a aluna recebe (WhatsApp + e-mail)
+            </button>
+          </div>
         </form>
       </section>
 
@@ -336,6 +338,6 @@
   <!-- Toast -->
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=13"></script>
+  <script src="/app/espaco.js?v=14"></script>
 </body>
 </html>
