@@ -10,20 +10,31 @@
 
   <!--
     ============================================================
-    VIDA MÁGICA — jornada-animacao-teste.html (v2)
+    VIDA MÁGICA — jornada-animacao-teste.html (v3)
     Página de revelação da jornada da aluna.
-    Toca uma vez (quando a jornada é criada).
-    Estrutura:
-      1. HERO com animação intro (hex → painéis descendo → row de bolinhas)
-      2. Seção HTML estática com detalhes de cada passo (mesmo conteúdo
-         dos painéis, mas em HTML real e navegável)
+
+    MODELO: o MATERIAL é a unidade (não o passo).
+      N materiais = N bolinhas = N painéis = N cards estáticos.
+      Guia Prático e Mágica do Fluir são materiais SEPARADOS.
+
+    ESTRUTURA:
+      1. HERO com animação intro:
+         - título fixo no topo
+         - círculo de N bolinhas (só os materiais da jornada)
+         - reveal: cada material num painel, centro estável
+         - final: bolinhas viram uma row clicável, ligando à seção abaixo
+      2. Seção HTML estática: 1 card por material (foto + descritivo + CTA)
+
+    ESTABILIDADE: tudo da animação ancora no MESMO centro vertical
+      (--palco-y). Painéis têm drift pequeno (entram de cima, saem
+      por baixo) pra dar movimento sem "pular" pela tela.
+
     Paleta + tipografia = tokens do app.css.
     Implementação CSS + Web Animations API.
     ============================================================
   -->
 
   <style>
-    /* ===== Tokens Vida Mágica ===== */
     :root {
       --ouro: #C8922A;
       --ouro-claro: #E8C97A;
@@ -44,7 +55,10 @@
       --glow-ouro-forte: 0 0 36px rgba(200, 146, 42, 0.55), 0 0 96px rgba(244, 217, 152, 0.35);
       --font-display: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
       --font-body: 'Lora', Georgia, serif;
-      --hero-grad: radial-gradient(ellipse at 50% 28%, #fff9eb 0%, #f5ead0 55%, #e6d2a2 100%);
+      --hero-grad: radial-gradient(ellipse at 50% 30%, #fff9eb 0%, #f5ead0 55%, #e6d2a2 100%);
+
+      /* Centro vertical do "palco" — TUDO da animação ancora aqui */
+      --palco-y: 54%;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -57,39 +71,29 @@
       -moz-osx-font-smoothing: grayscale;
       min-height: 100%;
     }
-
-    body {
-      overflow-x: hidden;
-    }
+    body { overflow-x: hidden; }
 
     /* ===========================================
-       HERO — Animação intro
+       HERO
        =========================================== */
     .hero {
       position: relative;
       width: 100%;
       height: 100vh;
-      min-height: 640px;
+      min-height: 600px;
       overflow: hidden;
       background: var(--hero-grad);
     }
 
-    /* Partículas douradas */
     .particulas {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      overflow: hidden;
-      z-index: 1;
+      position: absolute; inset: 0;
+      pointer-events: none; overflow: hidden; z-index: 1;
     }
     .particula {
       position: absolute;
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
+      width: 4px; height: 4px; border-radius: 50%;
       background: radial-gradient(circle, var(--ouro-brilho) 0%, transparent 70%);
-      opacity: 0;
-      will-change: transform, opacity;
+      opacity: 0; will-change: transform, opacity;
       animation: flutuar linear infinite;
     }
     @keyframes flutuar {
@@ -99,348 +103,201 @@
       100% { transform: translate(40px, -8vh) scale(1.2); opacity: 0; }
     }
 
-    /* Stage que segura tudo do hero */
-    .hero-stage {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      z-index: 2;
-    }
+    .hero-stage { position: relative; width: 100%; height: 100%; z-index: 2; }
 
-    /* ===== TÍTULO DO TOPO ===== */
+    /* ===== TÍTULO FIXO NO TOPO ===== */
     .titulo-topo {
       position: absolute;
-      left: 50%;
-      top: 6%;
+      left: 50%; top: 9%;
       transform: translateX(-50%);
       text-align: center;
-      width: 92%;
-      max-width: 900px;
+      width: 92%; max-width: 900px;
       opacity: 0;
       will-change: opacity, transform;
-      z-index: 4;
+      z-index: 8;
       pointer-events: none;
     }
-
     .titulo-eyebrow {
-      font-family: var(--font-body);
-      font-style: italic;
-      color: var(--texto-suave);
-      letter-spacing: 0.04em;
-      font-size: clamp(13px, 1.6vw, 19px);
-      margin-bottom: 8px;
+      font-family: var(--font-body); font-style: italic;
+      color: var(--texto-suave); letter-spacing: 0.04em;
+      font-size: clamp(13px, 1.6vw, 19px); margin-bottom: 8px;
     }
-
     .titulo-nome {
-      font-family: var(--font-display);
-      font-weight: 700;
-      letter-spacing: 0.005em;
-      line-height: 1.05;
-      font-size: clamp(30px, 5.2vw, 64px);
+      font-family: var(--font-display); font-weight: 700;
+      letter-spacing: 0.005em; line-height: 1.05;
+      font-size: clamp(30px, 5.2vw, 60px);
       background: linear-gradient(135deg, var(--ouro-fundo) 0%, var(--ouro-brilho) 50%, var(--ouro-fundo) 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      -webkit-background-clip: text; background-clip: text; color: transparent;
       filter: drop-shadow(0 0 16px rgba(200, 146, 42, 0.3));
     }
-
     .titulo-sublinha {
-      font-family: var(--font-body);
-      font-style: italic;
+      font-family: var(--font-body); font-style: italic;
       color: var(--texto-suave);
-      font-size: clamp(13px, 1.4vw, 17px);
-      margin-top: 10px;
-      opacity: 0.85;
+      font-size: clamp(13px, 1.4vw, 17px); margin-top: 10px; opacity: 0.85;
     }
 
-    /* ===== HEXÁGONO ===== */
-    /* Posicionado ABAIXO do título, sem sobrepor */
-    .hexagono {
+    /* ===== CÍRCULO DE BOLINHAS (intro) ===== */
+    /* Ancorado no --palco-y */
+    .circulo {
       position: absolute;
-      left: 50%;
-      top: 64%;
+      left: 50%; top: var(--palco-y);
       transform: translate(-50%, -50%);
-      width: 100%;
-      max-width: 560px;
+      width: 100%; max-width: 520px;
       aspect-ratio: 1 / 1;
       pointer-events: none;
       z-index: 3;
     }
     .bolha {
       position: absolute;
-      left: 50%;
-      top: 50%;
-      width: var(--size, 130px);
-      height: var(--size, 130px);
-      margin-left: calc(var(--size, 130px) / -2);
-      margin-top: calc(var(--size, 130px) / -2);
-      border-radius: 50%;
-      overflow: hidden;
+      left: 50%; top: 50%;
+      width: var(--size, 120px); height: var(--size, 120px);
+      margin-left: calc(var(--size, 120px) / -2);
+      margin-top: calc(var(--size, 120px) / -2);
+      border-radius: 50%; overflow: hidden;
       border: 2px solid var(--vidro-borda-hi);
       box-shadow: var(--glow-ouro), var(--sombra-media);
       background: var(--vidro-forte);
       opacity: 0;
       will-change: transform, opacity, filter;
     }
-    .bolha img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
+    .bolha img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-    /* ===== PAINEL (cada passo descendo) ===== */
-    .paineis {
-      position: absolute;
-      inset: 0;
-      z-index: 6;
-      pointer-events: none;
-    }
+    /* ===== PAINEL (reveal de cada material) ===== */
+    /* Ancorado no MESMO --palco-y. Drift pequeno (entra de cima, sai por baixo). */
+    .paineis { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
     .painel {
       position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%) translateY(-120vh) scale(0.95);
-      width: 92%;
-      max-width: 900px;
-      max-height: 88vh;
-      opacity: 0;
-      filter: blur(8px);
+      left: 50%; top: var(--palco-y);
+      transform: translate(-50%, -50%) translateY(-10vh) scale(0.96);
+      width: 92%; max-width: 860px; max-height: 78vh;
+      opacity: 0; filter: blur(4px);
       display: grid;
-      grid-template-columns: 1fr 1.1fr;
+      grid-template-columns: 0.9fr 1.1fr;
       align-items: center;
-      gap: clamp(20px, 4vw, 56px);
+      gap: clamp(20px, 4vw, 52px);
       padding: clamp(20px, 3vw, 36px);
       background: var(--vidro-forte);
       border: 1.5px solid var(--vidro-borda-hi);
       border-radius: 28px;
       box-shadow: var(--glow-ouro-forte), var(--sombra-forte);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       will-change: transform, opacity, filter;
     }
-
-    .painel-imagem {
-      position: relative;
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      align-items: center;
-    }
+    .painel-imagem { display: flex; justify-content: center; align-items: center; }
     .painel-imagem .capa {
-      width: 100%;
-      max-width: 280px;
-      aspect-ratio: 1 / 1;
-      border-radius: 18px;
-      overflow: hidden;
+      width: 100%; max-width: 260px; aspect-ratio: 1 / 1;
+      border-radius: 18px; overflow: hidden;
       box-shadow: var(--sombra-forte);
       border: 2px solid var(--vidro-borda-hi);
     }
-    .painel-imagem .capa img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    /* Quando tem 2 capas, ficam lado a lado menores */
-    .painel-imagem.tem-2 .capa { max-width: 160px; }
-    .painel-imagem.tem-2 .capa:nth-child(2) {
-      transform: translateY(20px) rotate(2deg);
-    }
-    .painel-imagem.tem-2 .capa:first-child {
-      transform: translateY(-20px) rotate(-2deg);
-    }
+    .painel-imagem .capa img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-    .painel-texto {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
+    .painel-texto { display: flex; flex-direction: column; gap: 14px; }
     .painel-passo-tag {
-      display: inline-flex;
-      align-items: center;
-      align-self: flex-start;
-      gap: 8px;
-      font-family: var(--font-display);
-      font-weight: 600;
-      font-size: clamp(11px, 1.1vw, 13px);
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--ouro-fundo);
-      padding: 6px 14px;
-      background: var(--ouro-pelicula);
-      border: 1px solid var(--vidro-borda);
-      border-radius: 999px;
+      display: inline-flex; align-items: center; align-self: flex-start; gap: 8px;
+      font-family: var(--font-display); font-weight: 600;
+      font-size: clamp(11px, 1.1vw, 13px); text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--ouro-fundo);
+      padding: 6px 14px; background: var(--ouro-pelicula);
+      border: 1px solid var(--vidro-borda); border-radius: 999px;
     }
     .painel-passo-tag .num {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 18px; height: 18px;
-      border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px; border-radius: 50%;
       background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro-claro));
-      color: #fff;
-      font-size: 11px;
+      color: #fff; font-size: 11px;
     }
     .painel-titulo {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(28px, 4.2vw, 48px);
-      line-height: 1.05;
-      letter-spacing: 0.005em;
+      font-family: var(--font-display); font-weight: 700;
+      font-size: clamp(26px, 4vw, 44px); line-height: 1.06; letter-spacing: 0.005em;
       background: linear-gradient(135deg, var(--ouro-fundo) 0%, var(--ouro-brilho) 60%, var(--ouro-fundo) 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      -webkit-background-clip: text; background-clip: text; color: transparent;
     }
     .painel-produto-nome {
-      font-family: var(--font-display);
-      font-weight: 600;
-      color: var(--texto);
-      font-size: clamp(15px, 1.6vw, 19px);
-      line-height: 1.3;
+      font-family: var(--font-display); font-weight: 600;
+      color: var(--texto); font-size: clamp(15px, 1.6vw, 19px); line-height: 1.3;
     }
     .painel-descricao {
-      font-family: var(--font-body);
-      color: var(--texto-suave);
-      font-size: clamp(14px, 1.5vw, 18px);
-      line-height: 1.55;
+      font-family: var(--font-body); color: var(--texto-suave);
+      font-size: clamp(14px, 1.5vw, 18px); line-height: 1.55;
     }
 
-    /* ===== ROW FINAL — bolinhas clicáveis ===== */
+    /* ===== FINAL — bolinhas clicáveis em row ===== */
+    /* Posicionado mais ALTO (não no centro) pra LIGAR com a seção abaixo. */
     .final {
       position: absolute;
-      inset: 0;
+      left: 0; right: 0;
+      top: 0; bottom: 0;
       z-index: 7;
       pointer-events: none;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: clamp(16px, 3vh, 32px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: clamp(14px, 2.4vh, 26px);
       padding: 0 24px;
       opacity: 0;
     }
     .final.visivel { pointer-events: auto; }
-
     .final-eyebrow {
-      font-family: var(--font-body);
-      font-style: italic;
-      color: var(--texto-suave);
-      font-size: clamp(13px, 1.5vw, 18px);
-      letter-spacing: 0.04em;
+      font-family: var(--font-body); font-style: italic;
+      color: var(--texto-suave); font-size: clamp(13px, 1.5vw, 18px); letter-spacing: 0.04em;
     }
     .final-titulo {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(28px, 4.5vw, 56px);
-      line-height: 1.05;
+      font-family: var(--font-display); font-weight: 700;
+      font-size: clamp(28px, 4.5vw, 54px); line-height: 1.05;
       background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro-brilho) 50%, var(--ouro-fundo));
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      text-align: center;
-      filter: drop-shadow(0 0 14px rgba(200, 146, 42, 0.25));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      text-align: center; filter: drop-shadow(0 0 14px rgba(200, 146, 42, 0.25));
     }
     .final-subtitulo {
-      font-family: var(--font-body);
-      color: var(--texto-suave);
-      font-size: clamp(14px, 1.6vw, 19px);
-      text-align: center;
-      max-width: 640px;
+      font-family: var(--font-body); color: var(--texto-suave);
+      font-size: clamp(14px, 1.6vw, 19px); text-align: center; max-width: 640px;
     }
-
     .row-bolinhas {
-      display: flex;
-      gap: clamp(8px, 1.4vw, 18px);
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: center;
-      margin-top: 8px;
+      display: flex; gap: clamp(10px, 1.6vw, 20px);
+      flex-wrap: wrap; justify-content: center; align-items: center;
+      margin-top: 6px; max-width: 92vw;
     }
     .bolinha-final {
       position: relative;
-      width: clamp(64px, 9vw, 110px);
-      height: clamp(64px, 9vw, 110px);
-      border-radius: 50%;
-      overflow: hidden;
+      width: clamp(68px, 10vw, 120px); height: clamp(68px, 10vw, 120px);
+      border-radius: 50%; overflow: hidden;
       border: 2px solid var(--vidro-borda-hi);
       box-shadow: var(--glow-ouro), var(--sombra-media);
       background: var(--vidro-forte);
       cursor: pointer;
       transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
-      opacity: 0;
-      transform: scale(0.6) translateY(20px);
-      will-change: transform, opacity;
-      padding: 0;
-      flex: 0 0 auto;
+      opacity: 0; transform: scale(0.6) translateY(20px);
+      will-change: transform, opacity; padding: 0; flex: 0 0 auto;
     }
-    .bolinha-final img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    .bolinha-final:hover {
-      transform: scale(1.08) translateY(0);
-      box-shadow: var(--glow-ouro-forte), var(--sombra-forte);
-    }
-    .bolinha-final:active { transform: scale(0.96) translateY(0); }
+    .bolinha-final img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .bolinha-final:hover { transform: scale(1.08); box-shadow: var(--glow-ouro-forte), var(--sombra-forte); }
+    .bolinha-final:active { transform: scale(0.96); }
 
     .scroll-hint {
-      position: absolute;
-      bottom: 26px;
-      left: 50%;
+      position: absolute; bottom: 24px; left: 50%;
       transform: translateX(-50%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      font-family: var(--font-body);
-      font-style: italic;
-      color: var(--texto-mute);
-      font-size: clamp(12px, 1.3vw, 15px);
-      opacity: 0;
-      pointer-events: none;
-      animation: pulse-hint 2.2s ease-in-out infinite;
-      animation-play-state: paused;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      font-family: var(--font-body); font-style: italic;
+      color: var(--texto-mute); font-size: clamp(12px, 1.3vw, 15px);
+      opacity: 0; pointer-events: none;
+      animation: pulse-hint 2.2s ease-in-out infinite; animation-play-state: paused;
     }
-    .scroll-hint.visivel {
-      opacity: 1;
-      animation-play-state: running;
-    }
-    .scroll-hint svg {
-      width: 22px; height: 22px;
-      stroke: var(--texto-mute);
-    }
+    .scroll-hint.visivel { opacity: 1; animation-play-state: running; }
+    .scroll-hint svg { width: 22px; height: 22px; stroke: var(--texto-mute); }
     @keyframes pulse-hint {
       0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.7; }
       50%      { transform: translateX(-50%) translateY(6px); opacity: 1; }
     }
 
-    /* ===== Botão rever (canto) ===== */
     .btn-rever {
-      position: fixed;
-      top: 18px;
-      right: 18px;
-      background: var(--vidro-forte);
-      border: 1px solid var(--vidro-borda-hi);
-      color: var(--texto);
-      padding: 9px 16px 9px 12px;
-      border-radius: 999px;
-      font-family: var(--font-display);
-      font-weight: 600;
-      font-size: 12px;
-      letter-spacing: 0.03em;
-      cursor: pointer;
-      opacity: 0;
+      position: fixed; top: 18px; right: 18px;
+      background: var(--vidro-forte); border: 1px solid var(--vidro-borda-hi);
+      color: var(--texto); padding: 9px 16px 9px 12px; border-radius: 999px;
+      font-family: var(--font-display); font-weight: 600; font-size: 12px; letter-spacing: 0.03em;
+      cursor: pointer; opacity: 0;
       transition: opacity 0.5s ease, transform 0.18s ease;
-      z-index: 99;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      z-index: 99; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      display: inline-flex; align-items: center; gap: 6px;
     }
     .btn-rever.visivel { opacity: 1; }
     .btn-rever:hover { transform: scale(1.04); }
@@ -448,203 +305,109 @@
     .btn-rever svg { width: 13px; height: 13px; }
 
     /* ===========================================
-       SEÇÃO ESTÁTICA — Detalhes dos passos
+       SEÇÃO ESTÁTICA — 1 card por material
        =========================================== */
-    .secao-passos {
+    .secao-materiais {
       background: linear-gradient(180deg, #faf2dd 0%, #f3e6c8 100%);
-      padding: clamp(60px, 8vw, 120px) 24px clamp(80px, 10vw, 140px);
+      padding: clamp(56px, 7vw, 110px) 24px clamp(80px, 10vw, 140px);
       position: relative;
     }
-    .secao-passos::before {
-      content: "";
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 60px;
+    .secao-materiais::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 60px;
       background: linear-gradient(180deg, rgba(230, 210, 162, 0.4), transparent);
       pointer-events: none;
     }
-
-    .container {
-      width: 100%;
-      max-width: 980px;
-      margin: 0 auto;
-    }
-
+    .container { width: 100%; max-width: 980px; margin: 0 auto; }
     .secao-eyebrow {
-      font-family: var(--font-body);
-      font-style: italic;
-      color: var(--texto-suave);
-      font-size: clamp(13px, 1.5vw, 18px);
-      letter-spacing: 0.04em;
-      text-align: center;
-      margin-bottom: 12px;
+      font-family: var(--font-body); font-style: italic; color: var(--texto-suave);
+      font-size: clamp(13px, 1.5vw, 18px); letter-spacing: 0.04em; text-align: center; margin-bottom: 12px;
     }
     .secao-titulo {
-      font-family: var(--font-display);
-      font-weight: 700;
-      color: var(--texto);
-      font-size: clamp(26px, 3.6vw, 42px);
-      line-height: 1.15;
-      letter-spacing: 0.005em;
-      text-align: center;
-      margin-bottom: clamp(40px, 5vw, 64px);
+      font-family: var(--font-display); font-weight: 700; color: var(--texto);
+      font-size: clamp(26px, 3.6vw, 42px); line-height: 1.15; letter-spacing: 0.005em;
+      text-align: center; margin-bottom: clamp(40px, 5vw, 64px);
     }
     .secao-titulo .ouro {
       background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro-brilho) 50%, var(--ouro-fundo));
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      -webkit-background-clip: text; background-clip: text; color: transparent;
     }
 
-    .passo-card {
-      display: grid;
-      grid-template-columns: 1fr 1.2fr;
-      gap: clamp(24px, 3.5vw, 48px);
-      align-items: center;
-      padding: clamp(24px, 3.5vw, 48px);
+    .material-card {
+      display: grid; grid-template-columns: 0.9fr 1.2fr;
+      gap: clamp(24px, 3.5vw, 48px); align-items: center;
+      padding: clamp(24px, 3.5vw, 44px);
       background: var(--vidro-forte);
-      border: 1.5px solid var(--vidro-borda);
-      border-radius: 28px;
+      border: 1.5px solid var(--vidro-borda); border-radius: 28px;
       box-shadow: var(--sombra-media);
-      margin-bottom: clamp(28px, 4vw, 56px);
-      scroll-margin-top: 60px;
-      transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+      margin-bottom: clamp(24px, 3.5vw, 44px);
+      scroll-margin-top: 40px;
+      transition: box-shadow 0.3s ease, border-color 0.3s ease;
     }
-    .passo-card:hover,
-    .passo-card.destacado {
-      box-shadow: var(--glow-ouro), var(--sombra-forte);
-      border-color: var(--vidro-borda-hi);
+    .material-card:hover, .material-card.destacado {
+      box-shadow: var(--glow-ouro), var(--sombra-forte); border-color: var(--vidro-borda-hi);
     }
+    .material-card-imagem { display: flex; justify-content: center; align-items: center; }
+    .material-card-imagem .capa {
+      width: 100%; max-width: 240px; aspect-ratio: 1 / 1;
+      border-radius: 18px; overflow: hidden;
+      box-shadow: var(--sombra-media); border: 1.5px solid var(--vidro-borda);
+    }
+    .material-card-imagem .capa img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-    .passo-card-imagens {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      align-items: center;
+    .material-card-conteudo h3 {
+      font-family: var(--font-display); font-weight: 700; color: var(--ouro-fundo);
+      font-size: clamp(22px, 2.8vw, 32px); line-height: 1.1; margin-bottom: 6px; letter-spacing: 0.005em;
     }
-    .passo-card-imagens .capa {
-      width: 100%;
-      max-width: 230px;
-      aspect-ratio: 1 / 1;
-      border-radius: 18px;
-      overflow: hidden;
-      box-shadow: var(--sombra-media);
-      border: 1.5px solid var(--vidro-borda);
+    .material-card-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--font-display); font-weight: 600; font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.14em; color: var(--ouro-fundo);
+      padding: 5px 12px; background: var(--ouro-pelicula);
+      border: 1px solid var(--vidro-borda); border-radius: 999px; margin-bottom: 14px;
     }
-    .passo-card-imagens .capa img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    .passo-card-imagens.tem-2 .capa { max-width: 145px; }
-    .passo-card-imagens.tem-2 .capa:first-child { transform: rotate(-3deg); }
-    .passo-card-imagens.tem-2 .capa:nth-child(2) { transform: rotate(3deg); }
-
-    .passo-card-conteudo h3 {
-      font-family: var(--font-display);
-      font-weight: 700;
-      color: var(--ouro-fundo);
-      font-size: clamp(22px, 2.8vw, 32px);
-      line-height: 1.1;
-      margin-bottom: 6px;
-      letter-spacing: 0.005em;
-    }
-    .passo-card-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-family: var(--font-display);
-      font-weight: 600;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--ouro-fundo);
-      padding: 5px 12px;
-      background: var(--ouro-pelicula);
-      border: 1px solid var(--vidro-borda);
-      border-radius: 999px;
-      margin-bottom: 14px;
-    }
-    .passo-card-tag .num {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px; height: 16px;
-      border-radius: 50%;
+    .material-card-tag .num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 16px; height: 16px; border-radius: 50%;
       background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro-claro));
-      color: #fff;
-      font-size: 10px;
+      color: #fff; font-size: 10px;
     }
-    .passo-card-produto-nome {
-      font-family: var(--font-display);
-      font-weight: 600;
-      color: var(--texto);
-      font-size: clamp(15px, 1.6vw, 19px);
-      margin-bottom: 12px;
-      line-height: 1.3;
+    .material-card-produto-nome {
+      font-family: var(--font-display); font-weight: 600; color: var(--texto);
+      font-size: clamp(15px, 1.6vw, 19px); margin-bottom: 12px; line-height: 1.3;
     }
-    .passo-card-descricao {
-      font-family: var(--font-body);
-      color: var(--texto-suave);
-      font-size: clamp(15px, 1.6vw, 18px);
-      line-height: 1.6;
-      margin-bottom: 22px;
+    .material-card-descricao {
+      font-family: var(--font-body); color: var(--texto-suave);
+      font-size: clamp(15px, 1.6vw, 18px); line-height: 1.6; margin-bottom: 22px;
     }
-    .passo-card-cta {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
+    .material-card-cta {
+      display: inline-flex; align-items: center; gap: 8px;
       padding: 12px 22px;
       background: linear-gradient(135deg, var(--ouro-fundo), var(--ouro));
-      color: #fff;
-      border: none;
-      border-radius: 999px;
-      font-family: var(--font-display);
-      font-weight: 600;
-      font-size: 14px;
-      letter-spacing: 0.02em;
-      cursor: pointer;
-      text-decoration: none;
+      color: #fff; border: none; border-radius: 999px;
+      font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: 0.02em;
+      cursor: pointer; text-decoration: none;
       box-shadow: var(--sombra-media);
       transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    .passo-card-cta:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--glow-ouro), var(--sombra-forte);
-    }
-    .passo-card-cta:active { transform: translateY(0); }
-    .passo-card-cta svg { width: 14px; height: 14px; }
+    .material-card-cta:hover { transform: translateY(-2px); box-shadow: var(--glow-ouro), var(--sombra-forte); }
+    .material-card-cta:active { transform: translateY(0); }
+    .material-card-cta svg { width: 14px; height: 14px; }
 
     /* ===========================================
-       Mobile (vertical)
+       Mobile
        =========================================== */
     @media (max-aspect-ratio: 1/1), (max-width: 720px) {
-      .titulo-topo { top: 6%; }
+      :root { --palco-y: 56%; }
+      .titulo-topo { top: 7%; }
       .titulo-nome { font-size: clamp(28px, 8vw, 44px); }
-      .hexagono { top: 56%; max-width: 90vw; }
-
-      .painel {
-        grid-template-columns: 1fr;
-        max-width: 88vw;
-        gap: 16px;
-      }
-      .painel-imagem .capa { max-width: 200px; }
-      .painel-imagem.tem-2 .capa { max-width: 130px; }
-
-      .passo-card {
-        grid-template-columns: 1fr;
-        text-align: center;
-      }
-      .passo-card-imagens .capa { max-width: 200px; }
-      .passo-card-tag {
-        align-self: center;
-        margin-left: auto;
-        margin-right: auto;
-      }
+      .circulo { max-width: 86vw; }
+      .painel { grid-template-columns: 1fr; max-width: 88vw; gap: 16px; max-height: 82vh; }
+      .painel-imagem .capa { max-width: 190px; }
+      .material-card { grid-template-columns: 1fr; text-align: center; }
+      .material-card-imagem .capa { max-width: 200px; }
+      .material-card-tag { align-self: center; margin-left: auto; margin-right: auto; }
     }
 
-    /* Reduced motion */
     @media (prefers-reduced-motion: reduce) {
       .particula { animation: none; opacity: 0.3; }
       .scroll-hint { animation: none; }
@@ -653,35 +416,29 @@
 </head>
 
 <body>
-  <!-- HERO com animação intro -->
   <section class="hero" id="hero">
     <div class="particulas" id="particulas" aria-hidden="true"></div>
 
     <div class="hero-stage" id="stage">
-      <!-- Título no TOPO (não sobrepõe o hex) -->
       <div class="titulo-topo" id="titulo-topo">
         <p class="titulo-eyebrow" id="titulo-eyebrow">A sua jornada começa</p>
         <h1 class="titulo-nome" id="titulo-nome">Vida Mágica</h1>
-        <p class="titulo-sublinha" id="titulo-sublinha">Conheça os passos do seu caminho</p>
+        <p class="titulo-sublinha" id="titulo-sublinha">Estes são os materiais do seu caminho</p>
       </div>
 
-      <!-- Hexágono de bolinhas (visual decorativo do início) -->
-      <div class="hexagono" id="hexagono"></div>
+      <div class="circulo" id="circulo"></div>
 
-      <!-- Painéis dos passos (descem do topo) -->
       <div class="paineis" id="paineis"></div>
 
-      <!-- Estado final: row de bolinhas clicáveis -->
       <div class="final" id="final">
         <p class="final-eyebrow">Sua jornada</p>
         <h2 class="final-titulo" id="final-titulo">Vida Mágica</h2>
-        <p class="final-subtitulo" id="final-subtitulo">Toque em qualquer item pra saber mais</p>
+        <p class="final-subtitulo" id="final-subtitulo">Toque em qualquer material pra conhecer melhor</p>
         <div class="row-bolinhas" id="row-bolinhas"></div>
       </div>
 
-      <!-- Hint pra rolar -->
       <div class="scroll-hint" id="scroll-hint">
-        <span>continue rolando</span>
+        <span>role pra ver cada material</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <polyline points="7 13 12 18 17 13"></polyline>
           <polyline points="7 7 12 12 17 7"></polyline>
@@ -698,12 +455,11 @@
     </button>
   </section>
 
-  <!-- SEÇÃO ESTÁTICA — Detalhes dos passos -->
-  <section class="secao-passos">
+  <section class="secao-materiais">
     <div class="container">
       <p class="secao-eyebrow">Sua trilha em detalhe</p>
-      <h2 class="secao-titulo">Os passos da <span class="ouro" id="secao-titulo-jornada">Vida Mágica</span></h2>
-      <div id="passos-lista"></div>
+      <h2 class="secao-titulo">Os materiais da <span class="ouro" id="secao-titulo-jornada">Vida Mágica</span></h2>
+      <div id="materiais-lista"></div>
     </div>
   </section>
 
@@ -711,115 +467,57 @@
     'use strict';
 
     // ============================================================
-    // DADOS DAS JORNADAS (mock — depois vem de /api/app/contexto)
+    // DADOS — o MATERIAL é a unidade (cada produto = 1 item)
+    // Depois vem de /api/app/contexto.
+    // passo/passoTag são só rótulo: vários materiais podem ter o mesmo passo.
     // ============================================================
-
     const JORNADAS = {
       conhecer_e_despertar: {
         nome: 'Conhecer e Despertar',
         eyebrow: 'A sua jornada começa',
-        sublinha: 'Conheça os passos do seu caminho',
-        finalSubtitulo: 'Toque em qualquer item pra conhecer melhor',
-        passos: [
-          {
-            ordem: 1,
-            tag: 'Conhecer',
-            titulo: 'O Teste do Subconsciente',
-            descricao: 'O ponto de partida. O retrato fiel do que está hoje funcionando dentro de você — e do que precisa ser despertado.',
-            produtos: [
-              { slug: 'teste_subconsciente', nome: 'Teste do Subconsciente', imagem: '/assets/products/teste-subconsciente.webp', cta: 'Refazer o teste' },
-            ],
-          },
-          {
-            ordem: 2,
-            tag: 'Despertar',
-            titulo: 'Os livros que despertam',
-            descricao: 'A Série Conhecer e Despertar trabalha as energias que mais aparecem no seu resultado. Um livro por trava.',
-            produtos: [
-              { slug: 'vencendo_medo',     nome: 'Vencendo o Medo',     imagem: '/assets/products/ebook-vencendoomedo.webp',     cta: 'Conhecer o livro' },
-              { slug: 'vencendo_desordem', nome: 'Vencendo a Desordem', imagem: '/assets/products/ebook-vencendoadesordem.webp', cta: 'Conhecer o livro' },
-            ],
-          },
-          {
-            ordem: 3,
-            tag: 'Reprogramação',
-            titulo: 'O curso que reprograma',
-            descricao: 'Depois de despertar, vem a reprogramação. O Ouro da Reprogramação Mental é o passo definitivo dessa primeira jornada.',
-            produtos: [
-              { slug: 'ouro_reprogramacao', nome: 'Curso Ouro da Reprogramação Mental', imagem: '/assets/products/ouro-reprogramacao.webp', cta: 'Conhecer o curso' },
-            ],
-          },
+        sublinha: 'Estes são os materiais do seu caminho',
+        finalSubtitulo: 'Toque em qualquer material pra conhecer melhor',
+        materiais: [
+          { slug:'teste_subconsciente', passo:1, passoTag:'Conhecer',      nome:'Teste do Subconsciente', titulo:'O ponto de partida', descricao:'O retrato fiel do que está hoje funcionando dentro de você — e do que precisa ser despertado.', imagem:'/assets/products/teste-subconsciente.webp', cta:'Refazer o teste' },
+          { slug:'vencendo_medo',       passo:2, passoTag:'Despertar',     nome:'Vencendo o Medo',        titulo:'Despertar começa aqui', descricao:'O livro da Série Conhecer e Despertar que trabalha a energia do medo.', imagem:'/assets/products/ebook-vencendoomedo.webp', cta:'Conhecer o livro' },
+          { slug:'vencendo_desordem',   passo:2, passoTag:'Despertar',     nome:'Vencendo a Desordem',    titulo:'Organizar por dentro', descricao:'O livro que trabalha a energia da desordem — pra dentro e pra fora.', imagem:'/assets/products/ebook-vencendoadesordem.webp', cta:'Conhecer o livro' },
+          { slug:'ouro_reprogramacao',  passo:3, passoTag:'Reprogramação', nome:'Curso Ouro da Reprogramação Mental', titulo:'A reprogramação definitiva', descricao:'O passo que fecha a primeira jornada e prepara a próxima.', imagem:'/assets/products/ouro-reprogramacao.webp', cta:'Conhecer o curso' },
         ],
       },
 
       vida_magica: {
         nome: 'Vida Mágica',
         eyebrow: 'A sua jornada começa',
-        sublinha: 'Conheça os passos do seu caminho',
-        finalSubtitulo: 'Toque em qualquer item pra conhecer melhor',
-        passos: [
-          {
-            ordem: 1,
-            tag: 'Reprogramação',
-            titulo: 'A base que recria sua mente',
-            descricao: 'A Lei da Atração Bíblica é o curso que vai reescrever os padrões que você nem sabia que tinha. Tudo começa aqui.',
-            produtos: [
-              { slug: 'lda_biblica', nome: 'Curso Lei da Atração Bíblica', imagem: '/assets/products/lda-biblica.webp', cta: 'Conhecer o curso' },
-            ],
-          },
-          {
-            ordem: 2,
-            tag: 'Prática diária',
-            titulo: 'A reprogramação vira rotina',
-            descricao: 'Dois guias pra você viver a reprogramação no dia a dia, na palma da mão. Práticas curtas, resultados que se acumulam.',
-            produtos: [
-              { slug: 'guia_pratico', nome: 'Guia Prático para Reprogramar a Mente', imagem: '/assets/products/guia-pratico.webp', cta: 'Ver o guia' },
-              { slug: 'magica_fluir', nome: 'Guia de Bolso Mágica do Fluir',         imagem: '/assets/products/magica-fluir.webp', cta: 'Ver o guia de bolso' },
-            ],
-          },
-          {
-            ordem: 3,
-            tag: 'Aprofundamento',
-            titulo: 'O livro que abre o próximo nível',
-            descricao: 'O Livro Digital A Tal Maneira é a ponte pra Multiplicando a Vida Mágica. A próxima jornada começa aqui.',
-            produtos: [
-              { slug: 'atal_maneira_livro', nome: 'Livro Digital A Tal Maneira', imagem: '/assets/products/atal-maneira-livro.webp', cta: 'Conhecer o livro' },
-            ],
-          },
+        sublinha: 'Estes são os materiais do seu caminho',
+        finalSubtitulo: 'Toque em qualquer material pra conhecer melhor',
+        materiais: [
+          { slug:'lda_biblica',        passo:1, passoTag:'Reprogramação',  nome:'Curso Lei da Atração Bíblica',          titulo:'A base que recria sua mente', descricao:'O curso que vai reescrever os padrões que você nem sabia que tinha. Tudo começa aqui.', imagem:'/assets/products/lda-biblica.webp', cta:'Conhecer o curso' },
+          { slug:'guia_pratico',       passo:2, passoTag:'Prática diária', nome:'Guia Prático para Reprogramar a Mente', titulo:'A prática que vira rotina',   descricao:'Práticas curtas e diárias pra manter a reprogramação viva no dia a dia.', imagem:'/assets/products/guia-pratico.webp', cta:'Ver o guia' },
+          { slug:'magica_fluir',       passo:2, passoTag:'Prática diária', nome:'Guia de Bolso Mágica do Fluir',         titulo:'O fluir na palma da mão',    descricao:'Um guia de bolso pra destravar o fluxo sempre que precisar, em qualquer lugar.', imagem:'/assets/products/magica-fluir.webp', cta:'Ver o guia de bolso' },
+          { slug:'atal_maneira_livro', passo:3, passoTag:'Aprofundamento', nome:'Livro Digital A Tal Maneira',           titulo:'O próximo nível se abre',    descricao:'O livro que é a ponte pra Multiplicando a Vida Mágica. A próxima jornada começa aqui.', imagem:'/assets/products/atal-maneira-livro.webp', cta:'Conhecer o livro' },
         ],
       },
 
       multiplicando_vida_magica: {
         nome: 'Multiplicando a Vida Mágica',
         eyebrow: 'Você chegou na última jornada',
-        sublinha: 'Um passo. Tudo o que falta pra multiplicar.',
+        sublinha: 'Um material. Tudo o que falta pra multiplicar.',
         finalSubtitulo: 'Toque pra conhecer o curso definitivo',
-        passos: [
-          {
-            ordem: 1,
-            tag: 'Multiplicar',
-            titulo: 'O curso definitivo da riqueza bíblica',
-            descricao: 'A Tal Maneira é o curso que finaliza sua jornada — e abre a porta da multiplicação. Você só chegou até aqui porque já está pronta.',
-            produtos: [
-              { slug: 'atal_maneira_curso', nome: 'Curso A Tal Maneira', imagem: '/assets/products/atal-maneira-curso.webp', cta: 'Conhecer o curso' },
-            ],
-          },
+        materiais: [
+          { slug:'atal_maneira_curso', passo:1, passoTag:'Multiplicar', nome:'Curso A Tal Maneira', titulo:'O curso definitivo da riqueza bíblica', descricao:'O curso que finaliza sua jornada — e abre a porta da multiplicação. Você chegou porque já está pronta.', imagem:'/assets/products/atal-maneira-curso.webp', cta:'Conhecer o curso' },
         ],
       },
     };
 
-    // Escolhe jornada via ?j= na URL
     const params = new URLSearchParams(location.search);
     const jornadaSlug = params.get('j') || 'vida_magica';
     const JORNADA = JORNADAS[jornadaSlug] || JORNADAS.vida_magica;
-
-    // Lista achatada de produtos (pro hexágono ciclar e pra row final)
-    const PRODUTOS_FLAT = JORNADA.passos.flatMap(p => p.produtos);
+    const MATERIAIS = JORNADA.materiais;
+    const N = MATERIAIS.length;
 
     // ============================================================
     // SETUP
     // ============================================================
-
     function preencherTextoFixo() {
       document.getElementById('titulo-eyebrow').textContent = JORNADA.eyebrow;
       document.getElementById('titulo-nome').textContent = JORNADA.nome;
@@ -832,8 +530,7 @@
     function criarParticulas() {
       const c = document.getElementById('particulas');
       c.innerHTML = '';
-      const N = 28;
-      for (let i = 0; i < N; i++) {
+      for (let i = 0; i < 28; i++) {
         const p = document.createElement('div');
         p.className = 'particula';
         p.style.left = `${Math.random() * 100}%`;
@@ -845,37 +542,35 @@
       }
     }
 
-    const HEX_N = 6;
-
-    function criarHexagono() {
-      const hex = document.getElementById('hexagono');
-      hex.innerHTML = '';
-      const w = hex.clientWidth;
-      const h = hex.clientHeight;
+    // Círculo adaptativo: N bolinhas (só os materiais), distribuídas no círculo.
+    function criarCirculo() {
+      const cont = document.getElementById('circulo');
+      cont.innerHTML = '';
+      const w = cont.clientWidth, h = cont.clientHeight;
       const lado = Math.min(w, h);
-      const raio = lado * 0.32;
-      const bolhaSz = Math.min(130, lado * 0.22);
+
+      // tamanho da bolinha encolhe conforme aumenta N (pra não colidir)
+      const fator = N <= 2 ? 0.30 : N <= 4 ? 0.26 : 0.22;
+      const bolhaSz = Math.min(140, lado * fator);
+      // raio do círculo (0 se só 1 material → fica no centro)
+      const raio = N === 1 ? 0 : lado * (N <= 4 ? 0.33 : 0.36);
 
       const bolhas = [];
-      for (let i = 0; i < HEX_N; i++) {
-        // Começa do topo, sentido horário
-        const ang = (i * 60 - 90) * Math.PI / 180;
-        const x = Math.cos(ang) * raio;
-        const y = Math.sin(ang) * raio;
+      for (let i = 0; i < N; i++) {
+        const ang = (i / N) * 2 * Math.PI - Math.PI / 2; // começa do topo
+        const x = N === 1 ? 0 : Math.cos(ang) * raio;
+        const y = N === 1 ? 0 : Math.sin(ang) * raio;
 
         const b = document.createElement('div');
         b.className = 'bolha';
         b.style.setProperty('--size', `${bolhaSz}px`);
         b.dataset.x = x.toFixed(1);
         b.dataset.y = y.toFixed(1);
-
-        const produto = PRODUTOS_FLAT[i % PRODUTOS_FLAT.length];
         const img = document.createElement('img');
-        img.src = produto.imagem;
-        img.alt = produto.nome;
+        img.src = MATERIAIS[i].imagem;
+        img.alt = MATERIAIS[i].nome;
         b.appendChild(img);
-
-        hex.appendChild(b);
+        cont.appendChild(b);
         bolhas.push(b);
       }
       return bolhas;
@@ -884,45 +579,28 @@
     function criarPaineis() {
       const cont = document.getElementById('paineis');
       cont.innerHTML = '';
-      JORNADA.passos.forEach((passo, idx) => {
+      MATERIAIS.forEach((mat, idx) => {
         const painel = document.createElement('div');
         painel.className = 'painel';
         painel.dataset.idx = idx;
 
         const imgCont = document.createElement('div');
-        imgCont.className = 'painel-imagem' + (passo.produtos.length > 1 ? ' tem-2' : '');
-        passo.produtos.forEach(prod => {
-          const capa = document.createElement('div');
-          capa.className = 'capa';
-          const img = document.createElement('img');
-          img.src = prod.imagem;
-          img.alt = prod.nome;
-          capa.appendChild(img);
-          imgCont.appendChild(capa);
-        });
+        imgCont.className = 'painel-imagem';
+        const capa = document.createElement('div');
+        capa.className = 'capa';
+        const img = document.createElement('img');
+        img.src = mat.imagem; img.alt = mat.nome;
+        capa.appendChild(img);
+        imgCont.appendChild(capa);
 
         const texto = document.createElement('div');
         texto.className = 'painel-texto';
-
-        const tag = document.createElement('div');
-        tag.className = 'painel-passo-tag';
-        tag.innerHTML = `<span class="num">${passo.ordem}</span> ${passo.tag}`;
-        texto.appendChild(tag);
-
-        const titulo = document.createElement('div');
-        titulo.className = 'painel-titulo';
-        titulo.textContent = passo.titulo;
-        texto.appendChild(titulo);
-
-        const prodNome = document.createElement('div');
-        prodNome.className = 'painel-produto-nome';
-        prodNome.textContent = passo.produtos.map(p => p.nome).join('  +  ');
-        texto.appendChild(prodNome);
-
-        const desc = document.createElement('div');
-        desc.className = 'painel-descricao';
-        desc.textContent = passo.descricao;
-        texto.appendChild(desc);
+        texto.innerHTML = `
+          <div class="painel-passo-tag"><span class="num">${mat.passo}</span> ${mat.passoTag}</div>
+          <div class="painel-titulo">${mat.titulo}</div>
+          <div class="painel-produto-nome">${mat.nome}</div>
+          <div class="painel-descricao">${mat.descricao}</div>
+        `;
 
         painel.appendChild(imgCont);
         painel.appendChild(texto);
@@ -933,19 +611,16 @@
     function criarRowBolinhas() {
       const row = document.getElementById('row-bolinhas');
       row.innerHTML = '';
-      PRODUTOS_FLAT.forEach((prod, idx) => {
+      MATERIAIS.forEach((mat) => {
         const b = document.createElement('button');
         b.className = 'bolinha-final';
-        b.dataset.slug = prod.slug;
-        b.title = prod.nome;
-        b.setAttribute('aria-label', prod.nome);
+        b.title = mat.nome;
+        b.setAttribute('aria-label', mat.nome);
         const img = document.createElement('img');
-        img.src = prod.imagem;
-        img.alt = prod.nome;
+        img.src = mat.imagem; img.alt = mat.nome;
         b.appendChild(img);
-
         b.addEventListener('click', () => {
-          const alvo = document.querySelector(`[data-passo-slug="${prod.slug}"]`);
+          const alvo = document.querySelector(`[data-mat-slug="${mat.slug}"]`);
           if (alvo) {
             alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
             alvo.classList.add('destacado');
@@ -956,112 +631,67 @@
       });
     }
 
-    function criarPassosDetalhes() {
-      const cont = document.getElementById('passos-lista');
+    function criarMateriaisDetalhes() {
+      const cont = document.getElementById('materiais-lista');
       cont.innerHTML = '';
-      JORNADA.passos.forEach(passo => {
+      MATERIAIS.forEach((mat) => {
         const card = document.createElement('article');
-        card.className = 'passo-card';
-        // Marca cada produto com seu slug pra ancoragem
-        const slugPrincipal = passo.produtos[0].slug;
-        card.setAttribute('data-passo-slug', slugPrincipal);
-
-        const imgs = document.createElement('div');
-        imgs.className = 'passo-card-imagens' + (passo.produtos.length > 1 ? ' tem-2' : '');
-        passo.produtos.forEach(prod => {
-          const capa = document.createElement('div');
-          capa.className = 'capa';
-          // Ancoragem secundária pra cada produto também
-          card.setAttribute('data-passo-slug-' + prod.slug, '1');
-          const img = document.createElement('img');
-          img.src = prod.imagem;
-          img.alt = prod.nome;
-          capa.appendChild(img);
-          imgs.appendChild(capa);
-        });
-
-        const conteudo = document.createElement('div');
-        conteudo.className = 'passo-card-conteudo';
-        const tag = document.createElement('div');
-        tag.className = 'passo-card-tag';
-        tag.innerHTML = `<span class="num">${passo.ordem}</span> Passo ${passo.ordem} — ${passo.tag}`;
-        conteudo.appendChild(tag);
-
-        const h3 = document.createElement('h3');
-        h3.textContent = passo.titulo;
-        conteudo.appendChild(h3);
-
-        const prodNomes = document.createElement('div');
-        prodNomes.className = 'passo-card-produto-nome';
-        prodNomes.textContent = passo.produtos.map(p => p.nome).join('  +  ');
-        conteudo.appendChild(prodNomes);
-
-        const desc = document.createElement('p');
-        desc.className = 'passo-card-descricao';
-        desc.textContent = passo.descricao;
-        conteudo.appendChild(desc);
-
-        // CTA do primeiro produto (poderia ter um por produto, mas mantemos 1 só pra começar)
-        const cta = document.createElement('a');
-        cta.className = 'passo-card-cta';
-        cta.href = '#';
-        cta.innerHTML = `${passo.produtos[0].cta} <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`;
-        conteudo.appendChild(cta);
-
-        card.appendChild(imgs);
-        card.appendChild(conteudo);
+        card.className = 'material-card';
+        card.setAttribute('data-mat-slug', mat.slug);
+        card.innerHTML = `
+          <div class="material-card-imagem">
+            <div class="capa"><img src="${mat.imagem}" alt="${mat.nome}"></div>
+          </div>
+          <div class="material-card-conteudo">
+            <div class="material-card-tag"><span class="num">${mat.passo}</span> Passo ${mat.passo} — ${mat.passoTag}</div>
+            <h3>${mat.titulo}</h3>
+            <div class="material-card-produto-nome">${mat.nome}</div>
+            <p class="material-card-descricao">${mat.descricao}</p>
+            <a class="material-card-cta" href="#">${mat.cta}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </a>
+          </div>
+        `;
         cont.appendChild(card);
       });
     }
 
     // ============================================================
-    // ORQUESTRADOR DA ANIMAÇÃO
+    // ORQUESTRADOR
     // ============================================================
-    // Timeline (ms) — total aproximado: ~12s pra Jornada 2 (3 painéis)
     const T = {
-      tituloIn:      { start:  300, dur: 800 },
-      hexIn:         { start: 1100, dur: 1000, stagger: 130 },
-      hexHold:       { start: 2400, dur: 1200 },
-      tituloOut:     { start: 3400, dur: 500 },
-      hexOut:        { start: 3500, dur: 700, stagger: 70 },
-      // Painéis: cada um dura 2300ms (entra 600 + segura 1300 + sai 400)
-      painelEnter:   600,
-      painelHold:    1500,
-      painelExit:    500,
-      painelOverlap: 350,  // sobreposição entre exit do anterior e entrada do próximo
-      paineisStart:  3900,
-      // Final
-      finalIn:       700,
-      bolinhasIn:    600,
-      bolinhasStagger: 80,
-      hintIn:        400,
+      tituloIn:   { start: 300,  dur: 800 },
+      circuloIn:  { start: 1100, dur: 950, stagger: 120 },
+      circuloHold:{ dur: 1100 },
+      tituloOut:  { dur: 450 },
+      circuloOut: { dur: 650, stagger: 60 },
+      painelEnter: 600,
+      painelHold:  1400,
+      painelExit:  450,
+      painelOverlap: 250,
+      finalIn:     700,
+      bolinhasIn:  600,
+      bolinhasStagger: 90,
     };
 
-    let animacoesAtivas = [];
-    function track(a) { animacoesAtivas.push(a); return a; }
-    function cancelarTudo() {
-      animacoesAtivas.forEach(a => { try { a.cancel(); } catch (_) {} });
-      animacoesAtivas = [];
-    }
+    let animacoes = [];
+    const track = a => { animacoes.push(a); return a; };
+    function cancelarTudo() { animacoes.forEach(a => { try { a.cancel(); } catch (_) {} }); animacoes = []; }
 
     function resetEstado() {
-      document.getElementById('titulo-topo').style.opacity = '0';
-      document.getElementById('titulo-topo').style.transform = 'translateX(-50%) translateY(-10px)';
+      const t = document.getElementById('titulo-topo');
+      t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(-10px)';
       document.querySelectorAll('.bolha').forEach(b => {
-        b.style.transform = `translate(0, 0) scale(0)`;
-        b.style.opacity = '0';
-        b.style.filter = 'blur(0)';
+        b.style.transform = 'translate(0,0) scale(0)'; b.style.opacity = '0'; b.style.filter = 'blur(0)';
       });
       document.querySelectorAll('.painel').forEach(p => {
-        p.style.transform = 'translate(-50%, -50%) translateY(-120vh) scale(0.95)';
-        p.style.opacity = '0';
-        p.style.filter = 'blur(8px)';
+        p.style.transform = 'translate(-50%, -50%) translateY(-10vh) scale(0.96)';
+        p.style.opacity = '0'; p.style.filter = 'blur(4px)';
       });
-      document.getElementById('final').style.opacity = '0';
-      document.getElementById('final').classList.remove('visivel');
+      const f = document.getElementById('final');
+      f.style.opacity = '0'; f.classList.remove('visivel');
       document.querySelectorAll('.bolinha-final').forEach(b => {
-        b.style.opacity = '0';
-        b.style.transform = 'scale(0.6) translateY(20px)';
+        b.style.opacity = '0'; b.style.transform = 'scale(0.6) translateY(20px)';
       });
       document.getElementById('scroll-hint').classList.remove('visivel');
       document.getElementById('btn-rever').classList.remove('visivel');
@@ -1077,113 +707,76 @@
       const paineis = Array.from(document.querySelectorAll('.painel'));
       const finalEl = document.getElementById('final');
       const bolinhas = Array.from(document.querySelectorAll('.bolinha-final'));
-      const hint = document.getElementById('scroll-hint');
       const btnRever = document.getElementById('btn-rever');
 
-      // FASE 1 — Título do topo aparece
+      // FASE 1 — título topo
       track(titulo.animate([
         { opacity: 0, transform: 'translateX(-50%) translateY(-10px)' },
         { opacity: 1, transform: 'translateX(-50%) translateY(0)' },
-      ], {
-        duration: T.tituloIn.dur,
-        delay: T.tituloIn.start,
-        easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
-        fill: 'forwards',
-      }));
+      ], { duration: T.tituloIn.dur, delay: T.tituloIn.start, easing: 'cubic-bezier(0.16,1,0.3,1)', fill: 'forwards' }));
 
-      // FASE 2 — Hexágono entra com stagger
+      // FASE 2 — círculo entra
       bolhas.forEach((b, i) => {
-        const x = parseFloat(b.dataset.x);
-        const y = parseFloat(b.dataset.y);
+        const x = parseFloat(b.dataset.x), y = parseFloat(b.dataset.y);
         track(b.animate([
           { transform: 'translate(0,0) scale(0)', opacity: 0 },
           { transform: `translate(${x}px, ${y}px) scale(1.1)`, opacity: 1, offset: 0.7 },
           { transform: `translate(${x}px, ${y}px) scale(1)`, opacity: 1 },
-        ], {
-          duration: T.hexIn.dur,
-          delay: T.hexIn.start + i * T.hexIn.stagger,
-          easing: 'cubic-bezier(0.22, 1.2, 0.36, 1)',
-          fill: 'forwards',
-        }));
+        ], { duration: T.circuloIn.dur, delay: T.circuloIn.start + i * T.circuloIn.stagger, easing: 'cubic-bezier(0.22,1.2,0.36,1)', fill: 'forwards' }));
       });
 
-      // FASE 3 — Título sai + Hexágono dispersa
+      const fimCirculoIn = T.circuloIn.start + (N - 1) * T.circuloIn.stagger + T.circuloIn.dur;
+      const inicioReveal = fimCirculoIn + T.circuloHold.dur;
+
+      // FASE 3 — título sai + círculo dispersa
       track(titulo.animate([
         { opacity: 1, transform: 'translateX(-50%) translateY(0)' },
         { opacity: 0, transform: 'translateX(-50%) translateY(-12px)' },
-      ], {
-        duration: T.tituloOut.dur,
-        delay: T.tituloOut.start,
-        easing: 'cubic-bezier(0.7, 0, 0.84, 0)',
-        fill: 'forwards',
-      }));
+      ], { duration: T.tituloOut.dur, delay: inicioReveal - 500, easing: 'cubic-bezier(0.7,0,0.84,0)', fill: 'forwards' }));
 
       bolhas.forEach((b, i) => {
-        const x = parseFloat(b.dataset.x);
-        const y = parseFloat(b.dataset.y);
+        const x = parseFloat(b.dataset.x), y = parseFloat(b.dataset.y);
         track(b.animate([
           { transform: `translate(${x}px, ${y}px) scale(1)`, opacity: 1, filter: 'blur(0)' },
-          { transform: `translate(${x * 1.7}px, ${y * 1.7}px) scale(1.4)`, opacity: 0, filter: 'blur(12px)' },
-        ], {
-          duration: T.hexOut.dur,
-          delay: T.hexOut.start + i * T.hexOut.stagger,
-          easing: 'cubic-bezier(0.7, 0, 0.84, 0)',
-          fill: 'forwards',
-        }));
+          { transform: `translate(${x * 1.5}px, ${y * 1.5}px) scale(1.3)`, opacity: 0, filter: 'blur(10px)' },
+        ], { duration: T.circuloOut.dur, delay: inicioReveal - 450 + i * T.circuloOut.stagger, easing: 'cubic-bezier(0.7,0,0.84,0)', fill: 'forwards' }));
       });
 
-      // FASE 4 — Painéis descem de cima → centro → saem por baixo
-      const cicloPainel = T.painelEnter + T.painelHold + T.painelExit;
-      const stridePainel = T.painelEnter + T.painelHold - T.painelOverlap;
+      // FASE 4 — painéis (drift pequeno, centro estável)
+      // stride = ciclo - overlap → troca quase sequencial: o próximo só
+      // começa a entrar quando o anterior já está quase saindo (sem dois no foco).
+      const ciclo = T.painelEnter + T.painelHold + T.painelExit;
+      const stride = ciclo - T.painelOverlap;
 
       paineis.forEach((p, i) => {
-        const delay = T.paineisStart + i * stridePainel;
+        const delay = inicioReveal + i * stride;
         track(p.animate([
-          // entrada de CIMA (top)
-          { transform: 'translate(-50%, -50%) translateY(-120vh) scale(0.95)', opacity: 0, filter: 'blur(8px)', offset: 0 },
-          // foco no centro
-          { transform: 'translate(-50%, -50%) translateY(0) scale(1)',          opacity: 1, filter: 'blur(0)',  offset: T.painelEnter / cicloPainel },
-          // segura no centro
-          { transform: 'translate(-50%, -50%) translateY(2vh) scale(1)',        opacity: 1, filter: 'blur(0)',  offset: (T.painelEnter + T.painelHold) / cicloPainel },
-          // saída pra BAIXO (bottom)
-          { transform: 'translate(-50%, -50%) translateY(120vh) scale(0.95)',   opacity: 0, filter: 'blur(8px)', offset: 1 },
-        ], {
-          duration: cicloPainel,
-          delay,
-          easing: 'cubic-bezier(0.5, 0, 0.5, 1)',
-          fill: 'forwards',
-        }));
+          { transform: 'translate(-50%, -50%) translateY(-9vh) scale(0.97)', opacity: 0, filter: 'blur(4px)', offset: 0 },
+          { transform: 'translate(-50%, -50%) translateY(0) scale(1)',        opacity: 1, filter: 'blur(0)',  offset: T.painelEnter / ciclo },
+          { transform: 'translate(-50%, -50%) translateY(0) scale(1)',        opacity: 1, filter: 'blur(0)',  offset: (T.painelEnter + T.painelHold) / ciclo },
+          { transform: 'translate(-50%, -50%) translateY(9vh) scale(0.97)',   opacity: 0, filter: 'blur(4px)', offset: 1 },
+        ], { duration: ciclo, delay, easing: 'cubic-bezier(0.45,0,0.3,1)', fill: 'forwards' }));
       });
 
-      // FASE 5 — Final: row de bolinhas + texto novo
-      const fimPaineis = T.paineisStart + (paineis.length - 1) * stridePainel + T.painelEnter + T.painelHold;
-      const tFinal = fimPaineis;
+      // FASE 5 — final
+      const fimPaineis = inicioReveal + (N - 1) * stride + T.painelEnter + T.painelHold + T.painelExit * 0.5;
 
       setTimeout(() => {
-        // Cancela últimas saídas pra ficar limpo
-        track(finalEl.animate([
-          { opacity: 0 },
-          { opacity: 1 },
-        ], { duration: T.finalIn, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'forwards' }));
+        track(finalEl.animate([{ opacity: 0 }, { opacity: 1 }], { duration: T.finalIn, easing: 'cubic-bezier(0.16,1,0.3,1)', fill: 'forwards' }));
         finalEl.classList.add('visivel');
-      }, tFinal);
+      }, fimPaineis);
 
-      // Bolinhas finais entram com stagger
       bolinhas.forEach((b, i) => {
         setTimeout(() => {
           track(b.animate([
             { opacity: 0, transform: 'scale(0.6) translateY(20px)' },
             { opacity: 1, transform: 'scale(1.1) translateY(-4px)', offset: 0.7 },
             { opacity: 1, transform: 'scale(1) translateY(0)' },
-          ], {
-            duration: T.bolinhasIn,
-            easing: 'cubic-bezier(0.22, 1.2, 0.36, 1)',
-            fill: 'forwards',
-          }));
-        }, tFinal + T.finalIn / 2 + i * T.bolinhasStagger);
+          ], { duration: T.bolinhasIn, easing: 'cubic-bezier(0.22,1.2,0.36,1)', fill: 'forwards' }));
+        }, fimPaineis + T.finalIn / 2 + i * T.bolinhasStagger);
       });
 
-      const tHint = tFinal + T.finalIn + bolinhas.length * T.bolinhasStagger + 300;
+      const tHint = fimPaineis + T.finalIn + N * T.bolinhasStagger + 300;
       setTimeout(() => {
         document.getElementById('scroll-hint').classList.add('visivel');
         btnRever.classList.add('visivel');
@@ -1195,7 +788,7 @@
     // ============================================================
     function reconstruir() {
       preencherTextoFixo();
-      criarHexagono();
+      criarCirculo();
       criarPaineis();
       criarRowBolinhas();
     }
@@ -1203,45 +796,30 @@
     preencherTextoFixo();
     criarParticulas();
     reconstruir();
-    criarPassosDetalhes();
+    criarMateriaisDetalhes();
 
-    // Espera imagens carregarem antes de tocar
     let imgsCarregadas = 0;
     const todasImgs = document.querySelectorAll('.hero img, .bolinha-final img');
     function tentarTocar() {
       imgsCarregadas++;
-      if (imgsCarregadas >= todasImgs.length) {
-        setTimeout(tocarAnimacao, 200);
-      }
+      if (imgsCarregadas >= todasImgs.length) setTimeout(tocarAnimacao, 200);
     }
-    if (todasImgs.length === 0) {
-      setTimeout(tocarAnimacao, 200);
-    } else {
-      todasImgs.forEach(img => {
-        if (img.complete) tentarTocar();
-        else {
-          img.addEventListener('load',  tentarTocar, { once: true });
-          img.addEventListener('error', tentarTocar, { once: true });
-        }
-      });
-    }
-    setTimeout(() => {
-      if (imgsCarregadas < todasImgs.length) tocarAnimacao();
-    }, 2500);
+    if (todasImgs.length === 0) setTimeout(tocarAnimacao, 200);
+    else todasImgs.forEach(img => {
+      if (img.complete) tentarTocar();
+      else { img.addEventListener('load', tentarTocar, { once: true }); img.addEventListener('error', tentarTocar, { once: true }); }
+    });
+    setTimeout(() => { if (imgsCarregadas < todasImgs.length) tocarAnimacao(); }, 2500);
 
     document.getElementById('btn-rever').addEventListener('click', () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(tocarAnimacao, 400);
     });
 
-    // Resize debounced
     let resizeTimer;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        reconstruir();
-        tocarAnimacao();
-      }, 350);
+      resizeTimer = setTimeout(() => { reconstruir(); tocarAnimacao(); }, 350);
     });
   </script>
 </body>
