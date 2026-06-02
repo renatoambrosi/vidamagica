@@ -429,8 +429,8 @@
         if (dataIn) dataIn.value = '';
         if (resumo) resumo.textContent = 'Escolha quando a carta deve ser aberta.';
         cartaDiasEscolhido = null;
-        // Cerimônia de lacrar (selo de cera → parte no tempo → Minhas cartas)
-        if (!dispararLacre(abrirEm)) { toast('Carta lacrada ✨'); setTimeout(() => irPara('view-entrada'), 700); }
+        toast('Carta lacrada ✨');
+        setTimeout(() => { irPara('view-minhas-cartas'); carregarMinhasCartas(); }, 600);
       } catch (err) {
         console.warn('[espaco] lacrar carta:', err);
         toast('Não consegui lacrar agora. Tenta de novo.');
@@ -438,37 +438,6 @@
         if (btn) { btn.disabled = false; btn.querySelector('span').textContent = 'Lacrar carta'; }
       }
     });
-  }
-
-  // ── CERIMÔNIA DE LACRAR ──────────────────────────────────────
-  // Selo de cera carimba a carta, ela parte no tempo, surge "Lacrada · até [data]",
-  // e cai em "Minhas cartas". Retorna false se o overlay não existir (fallback).
-  let _lacreTimers = [];
-  function dispararLacre(abrirEmDate) {
-    const ov = el('carta-lacre');
-    if (!ov) return false;
-    const papel = el('carta-lacre-papel');
-    const selo = el('carta-lacre-selo');
-    const sub = el('carta-lacre-sub');
-    _lacreTimers.forEach(clearTimeout); _lacreTimers = [];
-    ov.classList.remove('ativo', 'texto-on');
-    papel && papel.classList.remove('enviando');
-    selo && selo.classList.remove('selado');
-    if (sub) sub.textContent = abrirEmDate
-      ? 'Vai te esperar até ' + abrirEmDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
-      : '';
-    ov.setAttribute('aria-hidden', 'false');
-    requestAnimationFrame(() => ov.classList.add('ativo'));
-    _lacreTimers.push(setTimeout(() => selo && selo.classList.add('selado'), 380));   // carimba
-    _lacreTimers.push(setTimeout(() => papel && papel.classList.add('enviando'), 1150)); // parte no tempo
-    _lacreTimers.push(setTimeout(() => ov.classList.add('texto-on'), 1350));            // texto surge
-    _lacreTimers.push(setTimeout(() => {                                                // fecha + lista
-      ov.classList.remove('ativo');
-      ov.setAttribute('aria-hidden', 'true');
-      irPara('view-minhas-cartas');
-      carregarMinhasCartas();
-    }, 3300));
-    return true;
   }
 
   // ── LISTA "Minhas cartas do tempo" ───────────────────────────
@@ -687,9 +656,9 @@
     const tit = el('espaco-saudacao-titulo');
     const primeiro = (ctx.aluna?.nome || '').split(' ')[0];
     if (tit && primeiro) tit.textContent = `${primeiro}, o que você quer viver agora?`;
-    // Data do dia na carta (dateline aconchegante)
+    // Data do dia na carta (só a data)
     const dl = el('carta-dateline');
-    if (dl) dl.textContent = 'Hoje · ' + new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    if (dl) dl.textContent = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 
     // Modo teste da Carta do Tempo — revela o preset "Em instantes (teste)",
     // o botão "Testar envios agora" e o "amadurecer agora" na lista de cartas.
