@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=21" />
+  <link rel="stylesheet" href="/espaco.css?v=22" />
 </head>
 <body data-tema="vida_magica">
 
@@ -336,8 +336,25 @@
   </div>
 
   <!-- Toast -->
+  <!-- ════════════════════════════════════════════════════════════
+       CERIMÔNIA DE LACRAR — selo de cera carimba a carta e ela parte no tempo.
+       Cores acompanham o tema (var --acento / --carta-*). Disparada no submit.
+       ════════════════════════════════════════════════════════════ -->
+  <div class="carta-lacre" id="carta-lacre" aria-hidden="true">
+    <div class="carta-lacre-papel" id="carta-lacre-papel">
+      <span class="carta-lacre-linha"></span>
+      <span class="carta-lacre-linha"></span>
+      <span class="carta-lacre-linha"></span>
+      <div class="carta-lacre-selo" id="carta-lacre-selo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l2.2 4.46 4.92.72-3.56 3.47.84 4.9L12 19.7l-4.4 2.32.84-4.9L4.88 9.65l4.92-.72z"/></svg>
+      </div>
+    </div>
+    <p class="carta-lacre-titulo">Lacrada</p>
+    <p class="carta-lacre-sub" id="carta-lacre-sub"></p>
+  </div>
+
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=14"></script>
+  <script src="/app/espaco.js?v=15"></script>
 </body>
 </html>

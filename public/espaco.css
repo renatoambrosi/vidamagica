@@ -764,6 +764,70 @@ body[data-tema="magico"] {
   display: flex; flex-direction: column; gap: 1rem;
 }
 
+/* ── CERIMÔNIA DE LACRAR — selo de cera + a carta parte no tempo ─────
+   Tudo transform/opacity (GPU). Cores acompanham o tema (--acento / --carta-*). */
+.carta-lacre {
+  position: fixed; inset: 0; z-index: 130;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(18, 12, 5, 0);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.45s ease, background 0.45s ease;
+}
+.carta-lacre.ativo { opacity: 1; pointer-events: auto; background: rgba(18, 12, 5, 0.58); }
+
+.carta-lacre-papel {
+  position: relative; width: 168px; min-height: 206px; box-sizing: border-box;
+  padding: 24px 20px;
+  background: var(--carta-bg, linear-gradient(180deg, #FCF6E7, #F4E8CF));
+  border: 1px solid var(--carta-borda, rgba(160, 117, 35, 0.3));
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.42), 0 0 56px var(--carta-halo, rgba(255, 190, 100, 0.2));
+  transform: translateY(10px) scale(0.96); opacity: 0;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease;
+}
+.carta-lacre.ativo .carta-lacre-papel { transform: translateY(0) scale(1); opacity: 1; }
+.carta-lacre-papel.enviando {
+  transform: translateY(-64px) scale(0.52); opacity: 0;
+  transition: transform 0.95s cubic-bezier(0.5, 0, 0.7, 0), opacity 0.95s ease;
+}
+.carta-lacre-linha {
+  display: block; height: 7px; border-radius: 4px;
+  background: var(--carta-suave, #A07B3E); opacity: 0.26; margin-bottom: 13px;
+}
+.carta-lacre-linha:nth-child(1) { width: 84%; }
+.carta-lacre-linha:nth-child(2) { width: 96%; }
+.carta-lacre-linha:nth-child(3) { width: 66%; }
+
+.carta-lacre-selo {
+  position: absolute; left: 50%; top: 58%; width: 64px; height: 64px; margin: -32px 0 0 -32px;
+  display: flex; align-items: center; justify-content: center; color: #fff;
+  background: radial-gradient(circle at 35% 30%, var(--acento-2, #E8C97A), var(--acento, #C8922A) 68%, var(--acento-deep, #A17523));
+  border-radius: 50%;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.38), inset 0 2px 6px rgba(255, 255, 255, 0.4);
+  transform: scale(1.9) rotate(-12deg); opacity: 0;
+}
+.carta-lacre-selo svg { width: 32px; height: 32px; }
+.carta-lacre-selo.selado { animation: lacreStamp 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) forwards; }
+@keyframes lacreStamp {
+  0%   { transform: scale(1.9) rotate(-12deg); opacity: 0; }
+  62%  { transform: scale(0.84) rotate(-12deg); opacity: 1; }
+  100% { transform: scale(1) rotate(-12deg); opacity: 1; }
+}
+
+.carta-lacre-titulo, .carta-lacre-sub {
+  text-align: center; opacity: 0; transform: translateY(10px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.carta-lacre-titulo { font-family: var(--font-body); font-size: 1.7rem; color: #F4E9CF; margin: 30px 0 5px; }
+.carta-lacre-sub { font-family: var(--font-ui); font-size: 0.95rem; color: #D9C9A6; margin: 0; max-width: 80vw; }
+.carta-lacre.texto-on .carta-lacre-titulo,
+.carta-lacre.texto-on .carta-lacre-sub { opacity: 1; transform: translateY(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .carta-lacre-papel, .carta-lacre-papel.enviando, .carta-lacre-selo,
+  .carta-lacre-titulo, .carta-lacre-sub { transition: opacity 0.3s ease; animation: none; transform: none; }
+}
+
 /* Botão "Compartilhar no WhatsApp" no modal da carta aberta — verde reconhecível. */
 .espaco-btn-whats {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;

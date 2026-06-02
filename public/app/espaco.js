@@ -421,8 +421,7 @@
         if (!r) return;
         const d = await r.json().catch(() => ({}));
         if (!d?.ok) { toast(d?.erro || 'Não consegui lacrar a carta.'); return; }
-        toast('Carta lacrada ✨');
-        // Limpa o form e volta pra entrada
+        // Limpa o form
         if (ta) ta.value = ''; if (cnt) cnt.textContent = '0';
         const tit = el('carta-titulo'); if (tit) tit.value = '';
         document.querySelectorAll('.espaco-data-preset').forEach(b => b.classList.remove('selecionado'));
@@ -430,7 +429,8 @@
         if (dataIn) dataIn.value = '';
         if (resumo) resumo.textContent = 'Escolha quando a carta deve ser aberta.';
         cartaDiasEscolhido = null;
-        setTimeout(() => irPara('view-entrada'), 700);
+        // Cerimônia de lacrar (selo de cera → parte no tempo → Minhas cartas)
+        if (!dispararLacre(abrirEm)) { toast('Carta lacrada ✨'); setTimeout(() => irPara('view-entrada'), 700); }
       } catch (err) {
         console.warn('[espaco] lacrar carta:', err);
         toast('Não consegui lacrar agora. Tenta de novo.');
@@ -438,6 +438,37 @@
         if (btn) { btn.disabled = false; btn.querySelector('span').textContent = 'Lacrar carta'; }
       }
     });
+  }
+
+  // ── CERIMÔNIA DE LACRAR ──────────────────────────────────────
+  // Selo de cera carimba a carta, ela parte no tempo, surge "Lacrada · até [data]",
+  // e cai em "Minhas cartas". Retorna false se o overlay não existir (fallback).
+  let _lacreTimers = [];
+  function dispararLacre(abrirEmDate) {
+    const ov = el('carta-lacre');
+    if (!ov) return false;
+    const papel = el('carta-lacre-papel');
+    const selo = el('carta-lacre-selo');
+    const sub = el('carta-lacre-sub');
+    _lacreTimers.forEach(clearTimeout); _lacreTimers = [];
+    ov.classList.remove('ativo', 'texto-on');
+    papel && papel.classList.remove('enviando');
+    selo && selo.classList.remove('selado');
+    if (sub) sub.textContent = abrirEmDate
+      ? 'Vai te esperar até ' + abrirEmDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+      : '';
+    ov.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => ov.classList.add('ativo'));
+    _lacreTimers.push(setTimeout(() => selo && selo.classList.add('selado'), 380));   // carimba
+    _lacreTimers.push(setTimeout(() => papel && papel.classList.add('enviando'), 1150)); // parte no tempo
+    _lacreTimers.push(setTimeout(() => ov.classList.add('texto-on'), 1350));            // texto surge
+    _lacreTimers.push(setTimeout(() => {                                                // fecha + lista
+      ov.classList.remove('ativo');
+      ov.setAttribute('aria-hidden', 'true');
+      irPara('view-minhas-cartas');
+      carregarMinhasCartas();
+    }, 3300));
+    return true;
   }
 
   // ── LISTA "Minhas cartas do tempo" ───────────────────────────
