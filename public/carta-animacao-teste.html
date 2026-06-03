@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Carta — animação (teste)</title>
+  <title>Carta — animações (teste)</title>
   <style>
     :root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     * { box-sizing: border-box; }
@@ -11,10 +11,11 @@
     header { padding: 18px 16px 6px; }
     header h1 { font-size: 17px; margin: 0 0 4px; font-weight: 700; }
     header p { font-size: 12.5px; margin: 0; color: #aaa; line-height: 1.5; }
+    h2.sec { font-size: 14px; margin: 22px 16px 2px; color: #ffd98a; }
 
-    .row { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,.06); }
+    .row { display: flex; align-items: center; gap: 10px; padding: 9px 16px; border-bottom: 1px solid rgba(255,255,255,.06); }
     .lbl { width: 92px; font-size: 12px; color: rgba(255,255,255,.55); flex-shrink: 0; }
-    .cena { flex: 1; height: 158px; border-radius: 14px; overflow: hidden; }
+    .cena { flex: 1; height: 170px; border-radius: 14px; overflow: hidden; }
 
     /* paletas dos temas (acento principal + claro) */
     .t-vm { background: radial-gradient(circle at 50% -10%, #FBF6EA, #E8DCC0); --ac:#C8922A; --ac2:#E8C97A; }
@@ -30,34 +31,40 @@
     .p-swirl{ fill: none; stroke: var(--ac); stroke-width: 1.3; opacity: .55; stroke-dasharray: 3 7; }
     .p-deep { fill: #0a0612; }
     .spark  { fill: var(--ac); }
+    .wax    { fill: var(--ac); stroke: var(--ac2); stroke-width: 1; }
   </style>
 </head>
 <body>
   <header>
-    <h1>Carta do Tempo — voo entre portais (momento 2: trancada/viajando)</h1>
-    <p>Portais (boca escura + aro de luz do tema) de onde as cartas vêm e vão.<br>SVG + CSS, transparente, recolore por tema. Me diga o que ajustar.</p>
+    <h1>Carta do Tempo — animações (SVG, transparente, recolore por tema)</h1>
+    <p>Conceito de portal: a carta atravessa o tempo por um portal.</p>
   </header>
-  <div id="rows"></div>
+
+  <h2 class="sec">Momento 1 — LACRAR (fecha · lacra · vai pro portal)</h2>
+  <div id="rows-lacrar"></div>
+
+  <h2 class="sec">Momento 2 — TRANCADA (viajando entre portais)</h2>
+  <div id="rows-voo"></div>
 
   <script>
-    // Um portal centrado em (0,0): glow + boca escura + aro de luz + redemoinho girando + centro fundo
-    function portal(x, y, rot) {
-      return '<g transform="translate(' + x + ',' + y + ') rotate(' + rot + ')">' +
-        '<ellipse class="p-glow" rx="23" ry="31"/>' +
+    // Portal centrado em (0,0): glow + boca + aro + redemoinho + centro fundo
+    function portalShapes() {
+      return '<ellipse class="p-glow" rx="23" ry="31"/>' +
         '<ellipse class="p-mouth" rx="18" ry="26"/>' +
         '<ellipse class="p-rim" rx="18" ry="26"/>' +
         '<ellipse class="p-swirl" rx="12.5" ry="19"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="7s" repeatCount="indefinite"/></ellipse>' +
-        '<ellipse class="p-deep" rx="6.5" ry="11"/>' +
-      '</g>';
+        '<ellipse class="p-deep" rx="6.5" ry="11"/>';
+    }
+    function portal(x, y, rot) {
+      return '<g transform="translate(' + x + ',' + y + ') rotate(' + rot + ')">' + portalShapes() + '</g>';
     }
 
-    var SVG = '\
+    /* ─── MOMENTO 2: voo entre portais (loop simples) ─── */
+    var VOO = '\
     <svg viewBox="0 0 320 150" preserveAspectRatio="xMidYMid meet">\
       <path class="arco" d="M58,104 Q160,40 262,104"/>' +
-      portal(58, 104, -18) +
-      portal(262, 104, 18) + '\
+      portal(58, 104, -18) + portal(262, 104, 18) + '\
       <g class="spark" opacity=".7"><path d="M120,46 l1.6,3.4 3.4,1.6 -3.4,1.6 -1.6,3.4 -1.6,-3.4 -3.4,-1.6 3.4,-1.6z"><animate attributeName="opacity" values="0.2;0.9;0.2" dur="2s" repeatCount="indefinite"/></path></g>\
-      <g class="spark" opacity=".7"><path d="M200,54 l1.3,2.7 2.7,1.3 -2.7,1.3 -1.3,2.7 -1.3,-2.7 -2.7,-1.3 2.7,-1.3z"><animate attributeName="opacity" values="0.7;0.2;0.7" dur="2.4s" repeatCount="indefinite"/></path></g>\
       <circle class="spark" cx="160" cy="40" r="2"><animate attributeName="opacity" values="0.2;0.8;0.2" dur="1.8s" repeatCount="indefinite"/></circle>\
       <g>\
         <animateMotion dur="3.4s" repeatCount="indefinite" rotate="auto" calcMode="spline" keyTimes="0;1" keyPoints="0;1" keySplines="0.45 0 0.55 1" path="M58,104 Q160,40 262,104"/>\
@@ -70,12 +77,46 @@
       </g>\
     </svg>';
 
+    /* ─── MOMENTO 1: lacrar (ciclo de 4s). fecha a aba → lacre → voa pro portal ─── */
+    var SEL = '\
+    <svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid meet">\
+      <g transform="translate(160,48)">\
+        <g>\
+          <animateTransform attributeName="transform" type="scale" values="0;0;1;1;0;0" keyTimes="0;0.25;0.35;0.66;0.76;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.2 1.3 0.5 1;0 0 1 1;0.5 0 0.8 1;0 0 1 1"/>' +
+          portalShapes() + '\
+        </g>\
+      </g>\
+      <g>\
+        <animateMotion dur="4s" repeatCount="indefinite" rotate="0" keyPoints="0;0;1;1" keyTimes="0;0.4;0.62;1" calcMode="spline" keySplines="0 0 1 1;0.5 0 0.6 1;0 0 1 1" path="M160,132 Q150,90 160,50"/>\
+        <g>\
+          <animateTransform attributeName="transform" type="scale" values="1;1;0.12;0.12" keyTimes="0;0.4;0.62;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.5 0 0.7 1;0 0 1 1"/>\
+          <animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.58;0.66;0.94;1" dur="4s" repeatCount="indefinite"/>\
+          <rect x="-16" y="-11" width="32" height="22" rx="2.5" fill="var(--ac)"/>\
+          <path fill="var(--ac2)">\
+            <animate attributeName="d" values="M-16,-11 L0,-26 L16,-11 Z; M-16,-11 L0,-26 L16,-11 Z; M-16,-11 L0,3 L16,-11 Z; M-16,-11 L0,3 L16,-11 Z" keyTimes="0;0.1;0.25;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.4 0 0.3 1;0 0 1 1"/>\
+          </path>\
+          <circle class="wax" cx="0" cy="3" r="0">\
+            <animate attributeName="r" values="0;0;4.5;4.5" keyTimes="0;0.28;0.36;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.2 1.5 0.5 1;0 0 1 1"/>\
+          </circle>\
+        </g>\
+      </g>\
+      <g class="spark">\
+        <circle cx="160" cy="48" r="2"><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.64;0.7;0.82;1" dur="4s" repeatCount="indefinite"/><animate attributeName="cy" values="48;48;30;30" keyTimes="0;0.64;0.82;1" dur="4s" repeatCount="indefinite"/></circle>\
+        <circle cx="140" cy="50" r="1.6"><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.64;0.72;0.84;1" dur="4s" repeatCount="indefinite"/><animate attributeName="cy" values="50;50;36;36" keyTimes="0;0.64;0.84;1" dur="4s" repeatCount="indefinite"/></circle>\
+        <circle cx="180" cy="50" r="1.6"><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.64;0.72;0.84;1" dur="4s" repeatCount="indefinite"/><animate attributeName="cy" values="50;50;36;36" keyTimes="0;0.64;0.84;1" dur="4s" repeatCount="indefinite"/></circle>\
+      </g>\
+    </svg>';
+
     var temas = [["Vida Mágica","t-vm"],["Medieval","t-md"],["Universo","t-un"],["Mágico","t-mg"]];
-    var html = "";
-    temas.forEach(function (t) {
-      html += '<div class="row"><div class="lbl">' + t[0] + '</div><div class="cena ' + t[1] + '">' + SVG + '</div></div>';
-    });
-    document.getElementById("rows").innerHTML = html;
+    function render(id, svg) {
+      var html = "";
+      temas.forEach(function (t) {
+        html += '<div class="row"><div class="lbl">' + t[0] + '</div><div class="cena ' + t[1] + '">' + svg + '</div></div>';
+      });
+      document.getElementById(id).innerHTML = html;
+    }
+    render("rows-lacrar", SEL);
+    render("rows-voo", VOO);
   </script>
 </body>
 </html>
