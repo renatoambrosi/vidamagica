@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=23" />
+  <link rel="stylesheet" href="/espaco.css?v=24" />
 </head>
 <body data-tema="vida_magica">
 
@@ -285,6 +285,22 @@
       </div>
     </div>
 
+    <!-- ════════════════════════════════════════════════════════════
+         MODAL: CARTA VIAJANDO (ao tocar numa carta trancada)
+         Animação de portal recolore pelo tema. SVG injetado via JS.
+         ════════════════════════════════════════════════════════════ -->
+    <div class="espaco-modal" id="modal-carta-viagem" aria-hidden="true">
+      <div class="espaco-modal-overlay" data-fechar-modal="modal-carta-viagem"></div>
+      <div class="espaco-modal-card">
+        <button type="button" class="espaco-modal-x" data-fechar-modal="modal-carta-viagem" aria-label="Fechar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div class="carta-anim carta-viagem-palco" id="carta-viagem-palco" aria-hidden="true"></div>
+        <h3 class="espaco-carta-titulo" id="carta-viagem-titulo"></h3>
+        <p class="espaco-carta-data" id="carta-viagem-quando"></p>
+      </div>
+    </div>
+
     <!-- MENU EMBAIXO (bottom-nav) — Início · Ambiente (botão central) · Perfil -->
     <nav class="espaco-bottom">
       <button type="button" class="espaco-bottom-item ativo" id="nav-inicio">
@@ -336,8 +352,15 @@
   </div>
 
   <!-- Toast -->
+  <!-- ════════════════════════════════════════════════════════════
+       CERIMÔNIA DE LACRAR — palco do portal (SVG injetado via JS no submit).
+       ════════════════════════════════════════════════════════════ -->
+  <div class="carta-cerimonia" id="carta-cerimonia" aria-hidden="true">
+    <div class="carta-anim carta-cerimonia-palco" id="carta-cerimonia-palco"></div>
+  </div>
+
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=16"></script>
+  <script src="/app/espaco.js?v=17"></script>
 </body>
 </html>

@@ -429,8 +429,12 @@
         if (dataIn) dataIn.value = '';
         if (resumo) resumo.textContent = 'Escolha quando a carta deve ser aberta.';
         cartaDiasEscolhido = null;
-        toast('Carta lacrada ✨');
-        setTimeout(() => { irPara('view-minhas-cartas'); carregarMinhasCartas(); }, 600);
+        // Cerimônia do portal (lacrar) → depois cai em "Minhas cartas"
+        tocarCerimoniaLacre(() => {
+          irPara('view-minhas-cartas');
+          carregarMinhasCartas();
+          toast('Carta lacrada ✨');
+        });
       } catch (err) {
         console.warn('[espaco] lacrar carta:', err);
         toast('Não consegui lacrar agora. Tenta de novo.');
@@ -438,6 +442,73 @@
         if (btn) { btn.disabled = false; btn.querySelector('span').textContent = 'Lacrar carta'; }
       }
     });
+  }
+
+  // ── ANIMAÇÕES DA CARTA (portais, SVG) ────────────────────────
+  // Recolorem pelo tema via var(--acento)/var(--acento-2) + classes .p-* em CSS.
+  function svgPortalShapes() {
+    return '<ellipse class="p-glow" rx="23" ry="31"/>' +
+      '<ellipse class="p-mouth" rx="18" ry="26"/>' +
+      '<ellipse class="p-rim" rx="18" ry="26"/>' +
+      '<ellipse class="p-swirl" rx="12.5" ry="19"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="7s" repeatCount="indefinite"/></ellipse>' +
+      '<ellipse class="p-deep" rx="6.5" ry="11"/>';
+  }
+  // Momento 2 — voo entre portais (loop)
+  function svgVoo() {
+    var P = function (x, y, r) { return '<g transform="translate(' + x + ',' + y + ') rotate(' + r + ')">' + svgPortalShapes() + '</g>'; };
+    return '<svg viewBox="0 0 320 150" preserveAspectRatio="xMidYMid meet">' +
+      '<path class="arco" d="M58,104 Q160,40 262,104"/>' + P(58, 104, -18) + P(262, 104, 18) +
+      '<g class="spark" opacity=".7"><path d="M120,46 l1.6,3.4 3.4,1.6 -3.4,1.6 -1.6,3.4 -1.6,-3.4 -3.4,-1.6 3.4,-1.6z"><animate attributeName="opacity" values="0.2;0.9;0.2" dur="2s" repeatCount="indefinite"/></path></g>' +
+      '<circle class="spark" cx="160" cy="40" r="2"><animate attributeName="opacity" values="0.2;0.8;0.2" dur="1.8s" repeatCount="indefinite"/></circle>' +
+      '<g><animateMotion dur="3.4s" repeatCount="indefinite" rotate="auto" calcMode="spline" keyTimes="0;1" keyPoints="0;1" keySplines="0.45 0 0.55 1" path="M58,104 Q160,40 262,104"/>' +
+      '<g><animateTransform attributeName="transform" type="scale" values="0.2;1;1;0.2" keyTimes="0;0.24;0.76;1" dur="3.4s" repeatCount="indefinite" calcMode="spline" keySplines="0.3 0 0.4 1;0 0 1 1;0.6 0 0.7 1"/>' +
+      '<rect x="-15" y="-10" width="30" height="20" rx="2.5" fill="var(--ac)"/>' +
+      '<path d="M-15,-10 L0,2 L15,-10 Z" fill="var(--ac2)"/>' +
+      '<path d="M-15,-9 L0,3 L15,-9" fill="none" stroke="#fff" stroke-opacity="0.5" stroke-width="1.6" stroke-linejoin="round"/>' +
+      '</g></g></svg>';
+  }
+  // Momento 1 — lacrar (ciclo 4s): brilho explode → portal cresce → envelope fecha/lacra → voa pro portal
+  function svgLacre() {
+    return '<svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid meet">' +
+      '<g transform="translate(160,48)">' +
+      '<circle fill="#fff" r="0" opacity="0"><animate attributeName="r" values="0;0;30;30" keyTimes="0;0.24;0.31;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.15 0.7 0.4 1;0 0 1 1"/><animate attributeName="opacity" values="0;0;0.5;0;0" keyTimes="0;0.24;0.275;0.33;1" dur="4s" repeatCount="indefinite"/></circle>' +
+      '<circle fill="#fff" r="0" opacity="0"><animate attributeName="r" values="0;0;17;17" keyTimes="0;0.24;0.30;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.2 0.8 0.4 1;0 0 1 1"/><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.24;0.27;0.34;1" dur="4s" repeatCount="indefinite"/></circle>' +
+      '<g><animateTransform attributeName="transform" type="scale" values="0;0;1.12;1;1;0;0" keyTimes="0;0.27;0.38;0.42;0.66;0.76;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.2 0.9 0.4 1;0.5 0 0.8 1;0 0 1 1;0.5 0 0.8 1;0 0 1 1"/>' + svgPortalShapes() + '</g>' +
+      '</g>' +
+      '<g><animateMotion dur="4s" repeatCount="indefinite" rotate="0" keyPoints="0;0;1;1" keyTimes="0;0.4;0.62;1" calcMode="spline" keySplines="0 0 1 1;0.5 0 0.6 1;0 0 1 1" path="M160,132 Q150,90 160,50"/>' +
+      '<g><animateTransform attributeName="transform" type="scale" values="1;1;0.12;0.12" keyTimes="0;0.4;0.62;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.5 0 0.7 1;0 0 1 1"/>' +
+      '<animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.58;0.66;0.94;1" dur="4s" repeatCount="indefinite"/>' +
+      '<rect x="-16" y="-11" width="32" height="22" rx="2.5" fill="var(--ac)"/>' +
+      '<path fill="var(--ac2)"><animate attributeName="d" values="M-16,-11 L0,-26 L16,-11 Z; M-16,-11 L0,-26 L16,-11 Z; M-16,-11 L0,3 L16,-11 Z; M-16,-11 L0,3 L16,-11 Z" keyTimes="0;0.1;0.25;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.4 0 0.3 1;0 0 1 1"/></path>' +
+      '<circle class="wax" cx="0" cy="3" r="0"><animate attributeName="r" values="0;0;4.5;4.5" keyTimes="0;0.28;0.36;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.2 1.5 0.5 1;0 0 1 1"/></circle>' +
+      '</g></g>' +
+      '<g class="spark">' +
+      '<circle cx="160" cy="48" r="2"><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.64;0.7;0.82;1" dur="4s" repeatCount="indefinite"/><animate attributeName="cy" values="48;48;30;30" keyTimes="0;0.64;0.82;1" dur="4s" repeatCount="indefinite"/></circle>' +
+      '<circle cx="140" cy="50" r="1.6"><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.64;0.72;0.84;1" dur="4s" repeatCount="indefinite"/><animate attributeName="cy" values="50;50;36;36" keyTimes="0;0.64;0.84;1" dur="4s" repeatCount="indefinite"/></circle>' +
+      '<circle cx="180" cy="50" r="1.6"><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.64;0.72;0.84;1" dur="4s" repeatCount="indefinite"/><animate attributeName="cy" values="50;50;36;36" keyTimes="0;0.64;0.84;1" dur="4s" repeatCount="indefinite"/></circle>' +
+      '</g></svg>';
+  }
+  // Toca a cerimônia de lacrar (uma vez) e chama cb ao final
+  function tocarCerimoniaLacre(cb) {
+    var ov = el('carta-cerimonia'), palco = el('carta-cerimonia-palco');
+    if (!ov || !palco) { if (cb) cb(); return; }
+    palco.innerHTML = svgLacre();            // injeta fresco → SMIL toca do início
+    ov.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => ov.classList.add('ativo'));
+    setTimeout(() => {                         // ~3,2s: cerimônia completa → fecha + segue
+      ov.classList.remove('ativo');
+      ov.setAttribute('aria-hidden', 'true');
+      setTimeout(() => { palco.innerHTML = ''; }, 450);
+      if (cb) cb();
+    }, 3200);
+  }
+  // Modal "carta viajando" (ao tocar numa carta trancada)
+  function abrirModalViagem(c) {
+    var palco = el('carta-viagem-palco');
+    if (palco) palco.innerHTML = svgVoo();
+    var t = el('carta-viagem-titulo'); if (t) t.textContent = c.titulo || 'Sua Carta do Tempo';
+    var q = el('carta-viagem-quando'); if (q) q.textContent = 'Essa carta ' + fmtRelativoFuturo(c.abrir_em) + '.';
+    abrirModal('modal-carta-viagem');
   }
 
   // ── LISTA "Minhas cartas do tempo" ───────────────────────────
@@ -509,7 +580,7 @@
           if (btn.dataset.trancada === '1') {
             const id = btn.dataset.id;
             const c = cartas.find(x => String(x.id) === String(id));
-            toast(`Essa carta abre ${fmtRelativoFuturo(c.abrir_em)}.`);
+            if (c) abrirModalViagem(c);   // mostra a carta viajando entre portais + quando abre
             return;
           }
           const id = btn.dataset.id;

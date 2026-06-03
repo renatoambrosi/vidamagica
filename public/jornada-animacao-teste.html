@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital@0;1&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 
   <!--
     ============================================================
@@ -47,6 +48,9 @@
       --sombra-forte: 0 12px 48px rgba(161, 117, 35, 0.22);
       --glow-ouro: 0 0 24px rgba(200, 146, 42, 0.35), 0 0 48px rgba(200, 146, 42, 0.18);
       --glow-ouro-forte: 0 0 40px rgba(200, 146, 42, 0.6), 0 0 110px rgba(244, 217, 152, 0.4);
+      --verde: #2FA84F;
+      --verde-fundo: #1F8A3E;
+      --glow-verde: 0 0 22px rgba(47, 168, 79, 0.5), 0 0 56px rgba(47, 168, 79, 0.26);
       --font-display: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
       --font-body: 'Lora', Georgia, serif;
       --hero-grad: radial-gradient(ellipse at 50% 28%, #fff9eb 0%, #f5ead0 55%, #e6d2a2 100%);
@@ -93,6 +97,20 @@
     .card-cta:active { transform: translateY(0); }
     .card-cta svg { width: 14px; height: 14px; }
 
+    /* ===== COMPRADO (desbloqueado) — contorno verde + brilho ===== */
+    .card { position: relative; }
+    .card.comprado { border-color: var(--verde); box-shadow: var(--glow-verde), var(--sombra-forte); }
+    .bolha.comprado, .bolinha-final.comprado { border-color: var(--verde); box-shadow: var(--glow-verde), var(--sombra-media); }
+    .chip-desbloqueado {
+      position: absolute; top: 14px; right: 14px; z-index: 2;
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: var(--font-display); font-weight: 700; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+      color: #fff; padding: 5px 11px 5px 8px; border-radius: 999px;
+      background: linear-gradient(135deg, var(--verde), var(--verde-fundo));
+      box-shadow: 0 2px 10px rgba(47,168,79,0.4);
+    }
+    .chip-desbloqueado svg { width: 13px; height: 13px; }
+
     /* ===================== PALCO (animação) ===================== */
     .palco { position: fixed; inset: 0; z-index: 50; pointer-events: none; transition: opacity 0.5s ease; }
     .palco.oculto { opacity: 0; }
@@ -128,8 +146,15 @@
     .bolinha-final:hover { transform: scale(1.08); box-shadow: var(--glow-ouro-forte), var(--sombra-forte); }
     .bolinha-final:active { transform: scale(0.96); }
 
+    /* barra de progresso da jornada (Lottie) abaixo das bolinhas */
+    .progresso-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: clamp(8px,1.6vh,18px); opacity: 0; }
+    .progresso-bar { width: min(360px, 80vw); height: 78px; overflow: hidden; position: relative; }
+    .progresso-bar > div { position: absolute; left: 0; top: 50%; width: 100%; aspect-ratio: 1/1; transform: translateY(-50%); }
+    .progresso-label { font-family: var(--font-display); font-weight: 600; font-size: clamp(12px,1.3vw,14px); letter-spacing: 0.02em; color: var(--ouro-fundo); }
+    .progresso-label b { color: var(--verde-fundo); }
+
     /* respiro mínimo + lista de materiais logo abaixo */
-    .lista-materiais { max-width: 720px; margin: clamp(18px, 3vh, 34px) auto 0; padding: 0 24px; display: flex; flex-direction: column; gap: clamp(22px, 3.5vw, 40px); }
+    .lista-materiais { max-width: 720px; margin: clamp(18px, 3vh, 34px) auto 0; padding: 0 24px; display: flex; flex-direction: column; align-items: center; gap: clamp(22px, 3.5vw, 40px); }
     .lista-item { scroll-margin-top: 18px; transition: box-shadow 0.3s ease, transform 0.3s ease; }
     .lista-item.destacado { box-shadow: var(--glow-ouro-forte), var(--sombra-forte); transform: translateY(-2px); }
 
@@ -175,12 +200,16 @@
       <h1 class="tj-titulo" id="tj-titulo">Vida Mágica</h1>
       <p class="tj-sub">Toque em qualquer material pra conhecer melhor</p>
       <div class="row-bolinhas" id="row-bolinhas"></div>
+      <div class="progresso-wrap" id="progresso-wrap">
+        <div class="progresso-bar" id="progresso-bar"></div>
+        <div class="progresso-label" id="progresso-label"></div>
+      </div>
     </header>
     <div class="lista-materiais" id="materiais-lista"></div>
   </main>
 
-  <button class="btn-rever" id="btn-rever" type="button" aria-label="Rever animação">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"></path><polyline points="3 4 3 10 9 10"></polyline></svg> Rever
+  <button class="btn-rever" id="btn-rever" type="button" aria-label="Atualizar jornada">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"></path><polyline points="3 4 3 10 9 10"></polyline></svg> Atualizar jornada
   </button>
 
   <script>
@@ -194,7 +223,7 @@
       conhecer_e_despertar: {
         nome: 'Conhecer e Despertar', eyebrow: 'A sua jornada começa', sublinha: 'Estes são os materiais do seu caminho',
         materiais: [
-          { slug:'teste_subconsciente', passo:1, passoTag:'Conhecer',      nome:'Teste do Subconsciente',            fala:'Tudo começa quando você se enxerga por inteiro.', descricao:'O retrato fiel do que hoje funciona dentro de você — e do que precisa despertar.', imagem:'/assets/products/teste-subconsciente.webp', cta:'Refazer o teste' },
+          { slug:'teste_subconsciente', passo:1, passoTag:'Conhecer',      comprado:true, nome:'Teste do Subconsciente',            fala:'Tudo começa quando você se enxerga por inteiro.', descricao:'O retrato fiel do que hoje funciona dentro de você — e do que precisa despertar.', imagem:'/assets/products/teste-subconsciente.webp', cta:'Refazer o teste' },
           { slug:'vencendo_medo',       passo:2, passoTag:'Despertar',     nome:'Vencendo o Medo',                   fala:'Aí a gente acende a luz no que mais trava você.', descricao:'O livro da Série Conhecer e Despertar que trabalha a energia do medo.', imagem:'/assets/products/ebook-vencendoomedo.webp', cta:'Conhecer o livro' },
           { slug:'vencendo_desordem',   passo:2, passoTag:'Despertar',     nome:'Vencendo a Desordem',               fala:'E organiza por dentro pra fluir por fora.', descricao:'O livro que trabalha a energia da desordem — pra dentro e pra fora.', imagem:'/assets/products/ebook-vencendoadesordem.webp', cta:'Conhecer o livro' },
           { slug:'ouro_reprogramacao',  passo:3, passoTag:'Reprogramação', nome:'Curso Ouro da Reprogramação Mental', fala:'Até a reprogramação virar o seu novo normal.', descricao:'O passo que fecha a primeira jornada e prepara a próxima.', imagem:'/assets/products/ouro-reprogramacao.webp', cta:'Conhecer o curso' },
@@ -203,10 +232,10 @@
       vida_magica: {
         nome: 'Vida Mágica', eyebrow: 'A sua jornada começa', sublinha: 'Estes são os materiais do seu caminho',
         materiais: [
-          { slug:'lda_biblica',        passo:1, passoTag:'Reprogramação',  nome:'Curso Lei da Atração Bíblica',          fala:'Tudo começa aqui — reprogramando como você atrai.', descricao:'O curso que reescreve os padrões que você nem sabia que tinha. É a base de tudo.', imagem:'/assets/products/lda-biblica.webp', cta:'Conhecer o curso' },
-          { slug:'guia_pratico',       passo:2, passoTag:'Prática diária', nome:'Guia Prático para Reprogramar a Mente', fala:'Depois, isso entra no seu dia e vira hábito.', descricao:'Práticas curtas e diárias pra manter a reprogramação viva.', imagem:'/assets/products/guia-pratico.webp', cta:'Ver o guia' },
-          { slug:'magica_fluir',       passo:2, passoTag:'Prática diária', nome:'Guia de Bolso Mágica do Fluir',         fala:'E o fluir passa a caber no seu bolso.', descricao:'Um guia de bolso pra destravar o fluxo em qualquer momento.', imagem:'/assets/products/magica-fluir.webp', cta:'Ver o guia de bolso' },
-          { slug:'atal_maneira_livro', passo:3, passoTag:'Aprofundamento', nome:'Livro Digital A Tal Maneira',           fala:'Até abrir a porta do seu próximo nível.', descricao:'O livro que é a ponte pra Multiplicando a Vida Mágica.', imagem:'/assets/products/atal-maneira-livro.webp', cta:'Conhecer o livro' },
+          { slug:'lda_biblica',        passo:1, passoTag:'Reprogramação',  comprado:true,  nome:'Curso Lei da Atração Bíblica',          fala:'Tudo começa aqui — reprogramando como você atrai.', descricao:'O curso que reescreve os padrões que você nem sabia que tinha. É a base de tudo.', imagem:'/assets/products/lda-biblica.webp', cta:'Conhecer o curso' },
+          { slug:'guia_pratico',       passo:2, passoTag:'Prática diária', comprado:true,  nome:'Guia Prático para Reprogramar a Mente', fala:'Depois, isso entra no seu dia e vira hábito.', descricao:'Práticas curtas e diárias pra manter a reprogramação viva.', imagem:'/assets/products/guia-pratico.webp', cta:'Ver o guia' },
+          { slug:'magica_fluir',       passo:2, passoTag:'Prática diária', comprado:false, nome:'Guia de Bolso Mágica do Fluir',         fala:'E o fluir passa a caber no seu bolso.', descricao:'Um guia de bolso pra destravar o fluxo em qualquer momento.', imagem:'/assets/products/magica-fluir.webp', cta:'Ver o guia de bolso' },
+          { slug:'atal_maneira_livro', passo:3, passoTag:'Aprofundamento', comprado:false, nome:'Livro Digital A Tal Maneira',           fala:'Até abrir a porta do seu próximo nível.', descricao:'O livro que é a ponte pra Multiplicando a Vida Mágica.', imagem:'/assets/products/atal-maneira-livro.webp', cta:'Conhecer o livro' },
         ],
       },
       multiplicando_vida_magica: {
@@ -229,7 +258,9 @@
     // ============================================================
     function cardInner(mat, comCta) {
       const cta = comCta ? `<a class="card-cta" href="#">${mat.cta} <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></a>` : '';
+      const chip = mat.comprado ? `<span class="chip-desbloqueado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Desbloqueado</span>` : '';
       return `
+        ${chip}
         <div class="card-step">
           <span class="card-step-label"><span class="pip">${mat.passo}</span> Passo ${mat.passo} <i>de</i> ${TOTAL_PASSOS}</span>
           <span class="card-step-nome">${mat.passoTag}</span>
@@ -276,7 +307,7 @@
       for (let i = 0; i < N; i++) {
         const ang = (i/N)*2*Math.PI - Math.PI/2;
         const x = N===1?0:Math.cos(ang)*raio, y = N===1?0:Math.sin(ang)*raio;
-        const b = document.createElement('div'); b.className = 'bolha';
+        const b = document.createElement('div'); b.className = 'bolha' + (MATERIAIS[i].comprado ? ' comprado' : '');
         b.style.setProperty('--size', `${bolhaSz}px`); b.dataset.x = x.toFixed(1); b.dataset.y = y.toFixed(1);
         const img = document.createElement('img'); img.src = MATERIAIS[i].imagem; img.alt = MATERIAIS[i].nome;
         b.appendChild(img); cont.appendChild(b); bolhas.push(b);
@@ -287,7 +318,7 @@
     function criarTorre() {
       const cont = document.getElementById('torre'); cont.innerHTML = '';
       MATERIAIS.forEach((mat, idx) => {
-        const card = document.createElement('div'); card.className = 'card'; card.dataset.idx = idx;
+        const card = document.createElement('div'); card.className = 'card' + (mat.comprado ? ' comprado' : ''); card.dataset.idx = idx;
         card.innerHTML = cardInner(mat, false);
         cont.appendChild(card);
       });
@@ -296,7 +327,7 @@
     function criarRowBolinhas() {
       const row = document.getElementById('row-bolinhas'); row.innerHTML = '';
       MATERIAIS.forEach(mat => {
-        const b = document.createElement('button'); b.className = 'bolinha-final';
+        const b = document.createElement('button'); b.className = 'bolinha-final' + (mat.comprado ? ' comprado' : '');
         b.title = mat.nome; b.setAttribute('aria-label', mat.nome);
         const img = document.createElement('img'); img.src = mat.imagem; img.alt = mat.nome; b.appendChild(img);
         b.addEventListener('click', () => irPara(mat.slug));
@@ -307,7 +338,7 @@
     function criarLista() {
       const cont = document.getElementById('materiais-lista'); cont.innerHTML = '';
       MATERIAIS.forEach(mat => {
-        const art = document.createElement('article'); art.className = 'card lista-item'; art.setAttribute('data-mat-slug', mat.slug);
+        const art = document.createElement('article'); art.className = 'card lista-item' + (mat.comprado ? ' comprado' : ''); art.setAttribute('data-mat-slug', mat.slug);
         art.innerHTML = cardInner(mat, true);
         cont.appendChild(art);
       });
@@ -318,10 +349,27 @@
       if (alvo) { alvo.scrollIntoView({ behavior:'smooth', block:'center' }); alvo.classList.add('destacado'); setTimeout(()=>alvo.classList.remove('destacado'), 2200); }
     }
 
+    // ===== Barra de progresso da jornada (Lottie) =====
+    const COMPRADOS = MATERIAIS.filter(m => m.comprado).length;
+    let animProgresso = null, progLoaded = false;
+    function criarProgresso() {
+      const cont = document.getElementById('progresso-bar'); cont.innerHTML = '';
+      progLoaded = false;
+      animProgresso = lottie.loadAnimation({ container: cont, renderer:'svg', loop:false, autoplay:false, path:'/assets/jornada-progresso.json' });
+      animProgresso.addEventListener('DOMLoaded', ()=>{ progLoaded = true; animProgresso.goToAndStop(0, true); });
+      const label = document.getElementById('progresso-label');
+      label.innerHTML = `<b>${COMPRADOS}</b> de ${N} ${N===1?'material desbloqueado':'materiais desbloqueados'}`;
+    }
+    function tocarProgresso() {
+      const frac = N>0 ? COMPRADOS/N : 0;
+      const go = ()=>{ const tf = animProgresso.totalFrames || 60; const target = frac<=0 ? 0 : Math.max(1, Math.round(frac*tf)); animProgresso.playSegments([0, target], true); };
+      if (progLoaded) go(); else animProgresso.addEventListener('DOMLoaded', go);
+    }
+
     // ============================================================
     // TIMING
     // ============================================================
-    const T = { tituloIn:{start:300,dur:800}, circuloIn:{start:1100,dur:950,stagger:120}, circuloHold:{dur:800}, torreIntro:650, torreHold:1250, torreTravel:700, torreOutro:550 };
+    const T = { tituloIn:{start:300,dur:800}, circuloIn:{start:1100,dur:900,stagger:110}, circuloHold:{dur:650}, torreIntro:480, torreHold:820, torreTravel:480, torreOutro:420 };
 
     let waapi = [], towerRAF = null;
     const track = a => { waapi.push(a); return a; };
@@ -346,7 +394,7 @@
         const t = now-start, camY = camYAt(t);
         cards.forEach((card,idx)=>{
           const offset=(idx-camY)*spacing, an=Math.abs(offset/spacing);
-          const blur=Math.min(16,an*11), scale=Math.max(0.5,1-an*0.24), opacity=Math.max(0,1-an*0.78);
+          const blur=Math.min(12,an*8), scale=Math.max(0.62,1-an*0.18), opacity=Math.max(0.18,1-an*0.5);
           card.style.transform=`translate(-50%, calc(-50% + ${offset}px)) scale(${scale})`;
           card.style.filter=`blur(${blur}px)`; card.style.opacity=opacity.toFixed(3); card.style.zIndex=String(Math.round(100-an*10));
         });
@@ -373,6 +421,9 @@
       track(topo.animate([{opacity:0,transform:'translateY(-14px)'},{opacity:1,transform:'translateY(0)'}],{duration:650,easing:'cubic-bezier(0.16,1,0.3,1)',fill:'forwards'}));
       const bolinhas = Array.from(document.querySelectorAll('.bolinha-final'));
       bolinhas.forEach((b,i)=>{ setTimeout(()=>{ track(b.animate([{opacity:0,transform:'scale(0.6) translateY(16px)'},{opacity:1,transform:'scale(1.1) translateY(-3px)',offset:0.7},{opacity:1,transform:'scale(1) translateY(0)'}],{duration:600,easing:'cubic-bezier(0.22,1.2,0.36,1)',fill:'forwards'})); }, 250 + i*90); });
+      // barra de progresso entra e preenche
+      const progWrap = document.getElementById('progresso-wrap');
+      setTimeout(()=>{ track(progWrap.animate([{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'translateY(0)'}],{duration:600,easing:'cubic-bezier(0.16,1,0.3,1)',fill:'forwards'})); tocarProgresso(); }, 250 + N*90 + 200);
       // etapa 1 (e demais) sobem suave
       const itens = Array.from(document.querySelectorAll('.lista-item'));
       itens.forEach((it,i)=>{ setTimeout(()=>{ track(it.animate([{opacity:0,transform:'translateY(20px)'},{opacity:1,transform:'translateY(0)'}],{duration:600,easing:'cubic-bezier(0.16,1,0.3,1)',fill:'forwards'})); }, 350 + i*100); });
@@ -396,6 +447,8 @@
       document.querySelectorAll('.torre .card').forEach(c=>{c.style.opacity='0';});
       document.querySelectorAll('.bolinha-final').forEach(b=>{b.style.opacity='0';b.style.transform='scale(0.6) translateY(16px)';});
       document.querySelectorAll('.lista-item').forEach(it=>{it.style.opacity='0';});
+      const pw = document.getElementById('progresso-wrap'); pw.style.opacity='0';
+      if (animProgresso && progLoaded) animProgresso.goToAndStop(0, true);
     }
 
     async function tocarAnimacao() {
@@ -423,7 +476,7 @@
     // ============================================================
     // BOOT (toca 1x)
     // ============================================================
-    preencherTextoFixo(); criarParticulas(); criarCirculo(); criarTorre(); criarRowBolinhas(); criarLista();
+    preencherTextoFixo(); criarParticulas(); criarCirculo(); criarTorre(); criarRowBolinhas(); criarLista(); criarProgresso();
 
     let imgsCarregadas=0; const todasImgs=document.querySelectorAll('.palco img, .row-bolinhas img');
     function tentarTocar(){ imgsCarregadas++; if(imgsCarregadas>=todasImgs.length) setTimeout(tocarAnimacao,200); }
