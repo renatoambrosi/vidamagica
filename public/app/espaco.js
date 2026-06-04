@@ -795,6 +795,126 @@
     }
   }
 
+  // ── CARD DE COMPARTILHAR (viral) — imagem 1080×1920 com o fundo do tema,
+  // a logo Vida Mágica e "Correio Temporal / Vida Mágica". Gera e abre o share nativo.
+  function _carregarImg(src) {
+    return new Promise((res, rej) => {
+      const img = new Image(); img.crossOrigin = 'anonymous';
+      img.onload = () => res(img); img.onerror = rej; img.src = src;
+    });
+  }
+  function _cover(ctx, img, W, H) {
+    const ir = img.width / img.height, cr = W / H; let dw, dh, dx, dy;
+    if (ir > cr) { dh = H; dw = H * ir; dx = (W - dw) / 2; dy = 0; }
+    else { dw = W; dh = W / ir; dx = 0; dy = (H - dh) / 2; }
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }
+  function _fill(ctx, W, H, c1, c2) { const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, c1); g.addColorStop(1, c2); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
+  function _roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  function _wrap(ctx, text, maxW) {
+    const out = [];
+    String(text || '').split('\n').forEach(para => {
+      if (!para) { out.push(''); return; }
+      const words = para.split(' '); let line = '';
+      words.forEach(w => {
+        const test = line ? line + ' ' + w : w;
+        if (ctx.measureText(test).width > maxW && line) { out.push(line); line = w; } else line = test;
+      });
+      if (line) out.push(line);
+    });
+    return out;
+  }
+  async function _garantirFontes() {
+    if (!document.fonts || !document.fonts.load) return;
+    try { await Promise.all([document.fonts.load('700 100px Lora'), document.fonts.load('600 52px Montserrat')]); } catch (e) {}
+  }
+  // Card de compartilhar = a CARTA (papel com avatar/título/data/texto, como ela é,
+  // SEM o X e SEM o botão) por cima do fundo do tema + marca "Correio Temporal".
+  async function gerarCardCompartilhar(c, comAvatar) {
+    c = c || {}; if (comAvatar === undefined) comAvatar = true;
+    const W = 1080, H = 1920;
+    const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    const cs = getComputedStyle(document.body);
+    const tema = document.body.getAttribute('data-tema') || 'vida_magica';
+    const acento = (cs.getPropertyValue('--acento') || '#C8922A').trim();
+    const acento2 = (cs.getPropertyValue('--acento-2') || '#E8C97A').trim();
+    const cTexto = (cs.getPropertyValue('--carta-texto') || '#3D2E1A').trim();
+    const cSalut = (cs.getPropertyValue('--carta-salut') || '#4A3414').trim();
+    const cSuave = (cs.getPropertyValue('--carta-suave') || '#A07B3E').trim();
+    const paperMap = { vida_magica: ['#FCF6E7', '#F4E8CF'], medieval: ['#F2E4C2', '#E4CF9F'], universo: ['#F4F3FB', '#E5E7F5'], magico: ['#FBF4FB', '#ECE4F8'] };
+    const paper = paperMap[tema] || paperMap.vida_magica;
+
+    // 1) Fundo do tema + scrim
+    const bgMap = { magico: '/assets/bgespaco/magico.webp', universo: '/assets/bgespaco/universo.webp', medieval: '/assets/bgespaco/medieval.webp' };
+    if (bgMap[tema]) { try { _cover(ctx, await _carregarImg(bgMap[tema]), W, H); } catch (e) { _fill(ctx, W, H, '#FBF6EA', '#E8DCC0'); } }
+    else _fill(ctx, W, H, '#FBF6EA', '#E8DCC0');
+    const sc = ctx.createLinearGradient(0, 0, 0, H);
+    sc.addColorStop(0, 'rgba(8,6,3,0.24)'); sc.addColorStop(0.5, 'rgba(8,6,3,0.34)'); sc.addColorStop(1, 'rgba(8,6,3,0.66)');
+    ctx.fillStyle = sc; ctx.fillRect(0, 0, W, H);
+    await _garantirFontes();
+
+    // 2) PAPEL DA CARTA (rounded rect creme + sombra)
+    const px = 80, py = 230, pw = W - 160, ph = 1300, pad = 64;
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.42)'; ctx.shadowBlur = 46; ctx.shadowOffsetY = 18;
+    const pg = ctx.createLinearGradient(0, py, 0, py + ph); pg.addColorStop(0, paper[0]); pg.addColorStop(1, paper[1]);
+    _roundRect(ctx, px, py, pw, ph, 38); ctx.fillStyle = pg; ctx.fill(); ctx.restore();
+
+    let topo = py + 60;
+    // 3) Avatar (mesmo selo da leitura) — com retry sem avatar se der CORS
+    if (comAvatar && alunaFoto) {
+      try {
+        const av = await _carregarImg(alunaFoto);
+        const r = 80, ax = W / 2, ay = topo + r;
+        ctx.save(); ctx.beginPath(); ctx.arc(ax, ay, r, 0, Math.PI * 2); ctx.closePath(); ctx.clip();
+        const s = Math.max((2 * r) / av.width, (2 * r) / av.height), dw = av.width * s, dh = av.height * s;
+        ctx.drawImage(av, ax - dw / 2, ay - dh / 2, dw, dh); ctx.restore();
+        ctx.beginPath(); ctx.arc(ax, ay, r, 0, Math.PI * 2); ctx.lineWidth = 6; ctx.strokeStyle = acento2; ctx.stroke();
+        topo = ay + r + 40;
+      } catch (e) { topo = py + 70; }
+    }
+    // 4) Título + "Escrita em [data]" (centrados)
+    ctx.textAlign = 'center';
+    ctx.fillStyle = cSalut; ctx.font = '700 56px Lora, Georgia, serif';
+    ctx.fillText(c.titulo || 'Sua Carta do Tempo', W / 2, topo + 50);
+    ctx.fillStyle = cSuave; ctx.font = 'italic 400 36px Lora, Georgia, serif';
+    const dt = c.criado_em || c.abrir_em;
+    ctx.fillText(dt ? ('Escrita em ' + fmtData(dt)) : '', W / 2, topo + 110);
+    // 5) Conteúdo (esquerda, serifada, auto-ajuste de tamanho pra caber)
+    const cx0 = px + pad, cw = pw - pad * 2, startY = topo + 180, availH = (py + ph) - pad - startY;
+    let fs = 42, lh, lines;
+    for (; fs >= 26; fs -= 2) {
+      ctx.font = '400 ' + fs + 'px Lora, Georgia, serif';
+      lines = _wrap(ctx, c.conteudo || '', cw); lh = Math.round(fs * 1.62);
+      if (lines.length * lh <= availH) break;
+    }
+    if (lines.length * lh > availH) { const mx = Math.max(1, Math.floor(availH / lh)); lines = lines.slice(0, mx); lines[lines.length - 1] = (lines[lines.length - 1] || '').replace(/.$/, '…'); }
+    ctx.textAlign = 'left'; ctx.fillStyle = cTexto; ctx.font = '400 ' + fs + 'px Lora, Georgia, serif';
+    let y = startY + fs;
+    lines.forEach(ln => { ctx.fillText(ln, cx0, y); y += lh; });
+
+    // 6) Marca embaixo: "Correio Temporal" (dourado) + "Vida Mágica · site"
+    ctx.textAlign = 'center';
+    const tg = ctx.createLinearGradient(0, 1600, 0, 1670); tg.addColorStop(0, acento2); tg.addColorStop(1, acento);
+    ctx.fillStyle = tg; ctx.font = '700 76px Lora, Georgia, serif';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 4;
+    ctx.fillText('Correio Temporal', W / 2, 1670); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    ctx.fillStyle = 'rgba(244,233,207,0.92)'; ctx.font = '600 40px Montserrat, sans-serif';
+    ctx.fillText('Vida Mágica · vidamagica.com.br', W / 2, 1735);
+
+    // toBlob — se o avatar tiver tornado o canvas "tainted" (CORS), refaz sem avatar
+    try {
+      return await new Promise((res, rej) => canvas.toBlob(b => b ? res(b) : rej(new Error('null')), 'image/png', 0.95));
+    } catch (e) {
+      if (comAvatar) return gerarCardCompartilhar(c, false);
+      throw e;
+    }
+  }
+
   // ── MODAL — abrir carta madura ───────────────────────────────
   function abrirModal(id) { el(id)?.classList.add('aberto'); el(id)?.setAttribute('aria-hidden', 'false'); }
   function fecharModal(id) { el(id)?.classList.remove('aberto'); el(id)?.setAttribute('aria-hidden', 'true'); }
@@ -837,20 +957,30 @@
     const t = el('carta-aberta-titulo'); if (t) t.textContent = c.titulo || 'Sua Carta do Tempo';
     const d = el('carta-aberta-data');   if (d) d.textContent = `Escrita em ${fmtData(c.criado_em || c.abrir_em)}`;
     const co = el('carta-aberta-conteudo'); if (co) co.textContent = c.conteudo || '';
-    // Botão "Compartilhar no WhatsApp" — monta o texto da carta + assinatura
+    // Botão "Compartilhar" — gera o card da marca e abre o share nativo
+    // (WhatsApp, Status, Instagram Stories/Feed — a pessoa escolhe onde postar).
     const share = el('carta-aberta-share');
     if (share) {
-      share.onclick = () => {
-        const linhas = [];
-        if (c.titulo) linhas.push(`✨ ${c.titulo}`);
-        else linhas.push('✨ Minha Carta do Tempo');
-        linhas.push('');
-        if (c.conteudo) linhas.push(c.conteudo);
-        linhas.push('');
-        linhas.push('Escrevi essa carta pra mim mesma no Espaço da Manifestação 💌');
-        linhas.push('vidamagica.com.br');
-        const url = 'https://wa.me/?text=' + encodeURIComponent(linhas.join('\n'));
-        window.open(url, '_blank');
+      share.onclick = async () => {
+        if (share.classList.contains('carregando')) return;
+        share.classList.add('carregando');
+        const texto = 'Deixei uma carta pro meu futuro no Correio Temporal ✨ — Vida Mágica\nvidamagica.com.br';
+        try {
+          const blob = await gerarCardCompartilhar(c);
+          const file = new File([blob], 'correio-temporal-vida-magica.png', { type: 'image/png' });
+          if (blob && navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], text: texto });
+          } else if (blob) {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob); a.download = 'correio-temporal-vida-magica.png'; a.click();
+            setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+            toast('Card salvo — compartilhe nos stories ✨');
+          } else { throw new Error('sem card'); }
+        } catch (e) {
+          if (!e || e.name !== 'AbortError') {   // AbortError = usuário fechou o share
+            window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
+          }
+        } finally { share.classList.remove('carregando'); }
       };
     }
     abrirModal('modal-carta-aberta');

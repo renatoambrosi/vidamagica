@@ -832,18 +832,22 @@ body[data-tema="magico"] {
 @keyframes miniPulse { 0%, 100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.06); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .mini-pulse { animation: none; } }
 
-/* Botão "Compartilhar no WhatsApp" no modal da carta aberta — verde reconhecível. */
-.espaco-btn-whats {
-  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-  margin: 1.4rem auto 0; padding: 0.85rem 1.3rem;
-  font: inherit; font-weight: 700; font-size: 0.95rem; color: #fff; cursor: pointer;
-  background: #25D366; border: none; border-radius: var(--radius-md);
-  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.35);
+/* Botão "Compartilhar" no modal da carta — gera o card e abre o share nativo.
+   Dourado da marca (não é mais só WhatsApp: stories, insta, status…). */
+.espaco-btn-compartilhar {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
+  margin: 1.5rem auto 0.2rem; padding: 0.95rem 1.6rem;
+  font: inherit; font-weight: 700; font-size: 1rem; letter-spacing: 0.2px;
+  color: var(--carta-texto, #3D2E1A); cursor: pointer;
+  background: linear-gradient(135deg, var(--acento-2), var(--acento));
+  border: 1px solid var(--acento); border-radius: var(--radius-md);
+  box-shadow: 0 6px 20px rgba(161, 117, 35, 0.35);
   transition: transform 0.16s ease, filter 0.2s ease;
 }
-.espaco-btn-whats svg { width: 20px; height: 20px; }
-.espaco-btn-whats:active { transform: scale(0.98); }
-.espaco-btn-whats:hover { filter: brightness(1.05); }
+.espaco-btn-compartilhar svg { width: 20px; height: 20px; }
+.espaco-btn-compartilhar:active { transform: scale(0.98); }
+.espaco-btn-compartilhar:hover { filter: brightness(1.04); }
+.espaco-btn-compartilhar.carregando { opacity: 0.6; pointer-events: none; }
 
 /* Ação dev "Amadurecer agora" sob cada carta trancada — discreta, tracejada. */
 .espaco-carta-devacao {
