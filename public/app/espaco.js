@@ -469,23 +469,25 @@
   }
   // Momento 1 — lacrar (ciclo 4s): brilho explode → portal cresce → envelope fecha/lacra → voa pro portal
   function svgLacre() {
-    return '<svg viewBox="100 8 120 150" preserveAspectRatio="xMidYMid meet">' +
-      '<g transform="translate(160,48)">' +
-      '<circle fill="#fff" r="0" opacity="0"><animate attributeName="r" values="0;0;30;30" keyTimes="0;0.24;0.31;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.15 0.7 0.4 1;0 0 1 1"/><animate attributeName="opacity" values="0;0;0.5;0;0" keyTimes="0;0.24;0.275;0.33;1" dur="4s" repeatCount="indefinite"/></circle>' +
-      '<circle fill="#fff" r="0" opacity="0"><animate attributeName="r" values="0;0;17;17" keyTimes="0;0.24;0.30;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.2 0.8 0.4 1;0 0 1 1"/><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.24;0.27;0.34;1" dur="4s" repeatCount="indefinite"/></circle>' +
+    // Envelope maior, mais alto e centrado; aba arredondada com pontas encaixadas
+    // no corpo (evita "vazar ponta"); voa pro portal no fim.
+    return '<svg viewBox="108 2 104 128" preserveAspectRatio="xMidYMid meet">' +
+      '<g transform="translate(160,40)">' +
+      '<circle fill="#fff" r="0" opacity="0"><animate attributeName="r" values="0;0;32;32" keyTimes="0;0.24;0.31;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.15 0.7 0.4 1;0 0 1 1"/><animate attributeName="opacity" values="0;0;0.5;0;0" keyTimes="0;0.24;0.275;0.33;1" dur="4s" repeatCount="indefinite"/></circle>' +
+      '<circle fill="#fff" r="0" opacity="0"><animate attributeName="r" values="0;0;19;19" keyTimes="0;0.24;0.30;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.2 0.8 0.4 1;0 0 1 1"/><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.24;0.27;0.34;1" dur="4s" repeatCount="indefinite"/></circle>' +
       '<g><animateTransform attributeName="transform" type="scale" values="0;0;1.12;1;1;0;0" keyTimes="0;0.27;0.38;0.42;0.66;0.76;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.2 0.9 0.4 1;0.5 0 0.8 1;0 0 1 1;0.5 0 0.8 1;0 0 1 1"/>' + svgPortalShapes() + '</g>' +
       '</g>' +
-      '<g><animateMotion dur="4s" repeatCount="indefinite" rotate="0" keyPoints="0;0;1;1" keyTimes="0;0.4;0.62;1" calcMode="spline" keySplines="0 0 1 1;0.5 0 0.6 1;0 0 1 1" path="M160,132 Q150,90 160,50"/>' +
+      '<g><animateMotion dur="4s" repeatCount="indefinite" rotate="0" keyPoints="0;0;1;1" keyTimes="0;0.4;0.62;1" calcMode="spline" keySplines="0 0 1 1;0.5 0 0.6 1;0 0 1 1" path="M160,92 Q152,62 160,40"/>' +
       '<g><animateTransform attributeName="transform" type="scale" values="1;1;0.12;0.12" keyTimes="0;0.4;0.62;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.5 0 0.7 1;0 0 1 1"/>' +
       '<animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.58;0.66;0.94;1" dur="4s" repeatCount="indefinite"/>' +
-      '<rect x="-16" y="-11" width="32" height="22" rx="2.5" fill="var(--ac)"/>' +
-      '<path fill="var(--ac2)"><animate attributeName="d" values="M-16,-11 L0,-26 L16,-11 Z; M-16,-11 L0,-26 L16,-11 Z; M-16,-11 L0,3 L16,-11 Z; M-16,-11 L0,3 L16,-11 Z" keyTimes="0;0.1;0.25;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.4 0 0.3 1;0 0 1 1"/></path>' +
-      '<circle class="wax" cx="0" cy="3" r="0"><animate attributeName="r" values="0;0;4.5;4.5" keyTimes="0;0.28;0.36;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.2 1.5 0.5 1;0 0 1 1"/></circle>' +
+      '<rect x="-24" y="-16" width="48" height="32" rx="4" fill="var(--ac)"/>' +
+      '<path fill="var(--ac2)" stroke="var(--ac)" stroke-width="0.6" stroke-linejoin="round"><animate attributeName="d" values="M-20,-15 L-2,-30 Q0,-32 2,-30 L20,-15 Z; M-20,-15 L-2,-30 Q0,-32 2,-30 L20,-15 Z; M-20,-15 L-2,5 Q0,7 2,5 L20,-15 Z; M-20,-15 L-2,5 Q0,7 2,5 L20,-15 Z" keyTimes="0;0.1;0.25;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.4 0 0.3 1;0 0 1 1"/></path>' +
+      '<circle class="wax" cx="0" cy="5" r="0"><animate attributeName="r" values="0;0;6;6" keyTimes="0;0.28;0.36;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.2 1.5 0.5 1;0 0 1 1"/></circle>' +
       '</g></g>' +
       '<g class="spark">' +
-      '<circle cx="160" cy="48" r="2"><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.64;0.7;0.82;1" dur="4s" repeatCount="indefinite"/><animate attributeName="cy" values="48;48;30;30" keyTimes="0;0.64;0.82;1" dur="4s" repeatCount="indefinite"/></circle>' +
-      '<circle cx="140" cy="50" r="1.6"><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.64;0.72;0.84;1" dur="4s" repeatCount="indefinite"/><animate attributeName="cy" values="50;50;36;36" keyTimes="0;0.64;0.84;1" dur="4s" repeatCount="indefinite"/></circle>' +
-      '<circle cx="180" cy="50" r="1.6"><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.64;0.72;0.84;1" dur="4s" repeatCount="indefinite"/><animate attributeName="cy" values="50;50;36;36" keyTimes="0;0.64;0.84;1" dur="4s" repeatCount="indefinite"/></circle>' +
+      '<circle cx="160" cy="40" r="2.4"><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.64;0.7;0.82;1" dur="4s" repeatCount="indefinite"/><animate attributeName="cy" values="40;40;22;22" keyTimes="0;0.64;0.82;1" dur="4s" repeatCount="indefinite"/></circle>' +
+      '<circle cx="141" cy="42" r="1.9"><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.64;0.72;0.84;1" dur="4s" repeatCount="indefinite"/><animate attributeName="cy" values="42;42;26;26" keyTimes="0;0.64;0.84;1" dur="4s" repeatCount="indefinite"/></circle>' +
+      '<circle cx="179" cy="42" r="1.9"><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.64;0.72;0.84;1" dur="4s" repeatCount="indefinite"/><animate attributeName="cy" values="42;42;26;26" keyTimes="0;0.64;0.84;1" dur="4s" repeatCount="indefinite"/></circle>' +
       '</g></svg>';
   }
   // Mini-animações dentro dos cards = as MESMAS fases, em versão compacta.

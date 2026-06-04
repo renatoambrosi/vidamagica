@@ -791,7 +791,7 @@ body[data-tema="magico"] {
 }
 .carta-cerimonia.ativo { opacity: 1; pointer-events: auto; background: rgba(14, 9, 3, 0.72); }
 /* Grande e centralizado (viewBox do svgLacre já zoomado em 100 8 120 150) */
-.carta-cerimonia-palco { width: 84vw; max-width: 360px; aspect-ratio: 120 / 150; }
+.carta-cerimonia-palco { width: 88vw; max-width: 380px; aspect-ratio: 104 / 128; }
 
 /* Palco da carta viajando (dentro do modal) */
 .carta-viagem-palco { width: 100%; height: 150px; margin: 2px 0 12px; }
