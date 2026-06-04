@@ -488,20 +488,27 @@
       '<circle cx="180" cy="50" r="1.6"><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.64;0.72;0.84;1" dur="4s" repeatCount="indefinite"/><animate attributeName="cy" values="50;50;36;36" keyTimes="0;0.64;0.84;1" dur="4s" repeatCount="indefinite"/></circle>' +
       '</g></svg>';
   }
-  // Mini-animações dentro dos cards da lista (recolorem pelo tema via .mini-anim)
-  function miniTransito() {   // "A caminho" — envelope flutuando (em trânsito) + sparkles
-    return '<svg class="mini-anim" viewBox="0 0 40 40">' +
-      '<g class="mini-bob"><rect x="9" y="15" width="22" height="14" rx="2.5" fill="var(--ac)"/>' +
-      '<path d="M9,16 L20,24 L31,16" fill="none" stroke="var(--ac2)" stroke-width="1.5" stroke-linejoin="round"/></g>' +
-      '<circle class="mini-tw" cx="32" cy="10" r="1.7" fill="var(--ac)"/>' +
-      '<circle class="mini-tw mini-tw2" cx="9" cy="12" r="1.3" fill="var(--ac)"/>' +
-      '</svg>';
+  // Mini-animações dentro dos cards = as MESMAS fases, em versão compacta.
+  // "A caminho" — voo entre portais, pequeno (mesma animação da fase 2).
+  function svgVooMini() {
+    var P = function (x, y, r) { return '<g transform="translate(' + x + ',' + y + ') scale(0.46) rotate(' + r + ')">' + svgPortalShapes() + '</g>'; };
+    return '<svg viewBox="0 0 96 66" preserveAspectRatio="xMidYMid meet">' +
+      '<path class="arco" d="M18,44 Q48,14 78,44"/>' + P(18, 44, -18) + P(78, 44, 18) +
+      '<circle class="spark" cx="48" cy="12" r="1.5"><animate attributeName="opacity" values="0.2;0.9;0.2" dur="1.8s" repeatCount="indefinite"/></circle>' +
+      '<g><animateMotion dur="3s" repeatCount="indefinite" rotate="auto" calcMode="spline" keyTimes="0;1" keyPoints="0;1" keySplines="0.45 0 0.55 1" path="M18,44 Q48,14 78,44"/>' +
+      '<g><animateTransform attributeName="transform" type="scale" values="0.15;0.5;0.5;0.15" keyTimes="0;0.24;0.76;1" dur="3s" repeatCount="indefinite" calcMode="spline" keySplines="0.3 0 0.4 1;0 0 1 1;0.6 0 0.7 1"/>' +
+      '<rect x="-15" y="-10" width="30" height="20" rx="2.5" fill="var(--ac)"/>' +
+      '<path d="M-15,-10 L0,2 L15,-10 Z" fill="var(--ac2)"/>' +
+      '</g></g></svg>';
   }
-  function miniChegou() {     // "Chegou" — envelope aberto com a carta + brilho pulsando
-    return '<svg class="mini-anim mini-pulse" viewBox="0 0 40 40">' +
-      '<rect x="13" y="9" width="14" height="12" rx="1.5" fill="#fff8ec"/>' +
-      '<rect x="9" y="18" width="22" height="12" rx="2.5" fill="var(--ac)"/>' +
-      '<path d="M9,18 L20,26 L31,18" fill="none" stroke="var(--ac2)" stroke-width="1.5" stroke-linejoin="round"/>' +
+  // "Chegou" — envelope chegado + selo de check, brilho suave (fase 3, compacta).
+  function svgChegouMini() {
+    return '<svg viewBox="0 0 84 66" preserveAspectRatio="xMidYMid meet">' +
+      '<g transform="translate(40,38)"><g class="mini-pulse">' +
+      '<rect x="-19" y="-13" width="38" height="26" rx="3" fill="var(--ac)"/>' +
+      '<path d="M-19,-13 L0,3 L19,-13" fill="none" stroke="var(--ac2)" stroke-width="2" stroke-linejoin="round"/>' +
+      '</g></g>' +
+      '<g transform="translate(62,18)"><circle r="12" fill="var(--ac2)"/><path d="M-5.5,0 L-1.5,4.5 L6.5,-5.5" fill="none" stroke="#241606" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g>' +
       '</svg>';
   }
 
@@ -524,7 +531,7 @@
     var palco = el('carta-viagem-palco');
     if (palco) palco.innerHTML = svgVoo();
     var t = el('carta-viagem-titulo'); if (t) t.textContent = c.titulo || 'Sua Carta do Tempo';
-    var q = el('carta-viagem-quando'); if (q) q.textContent = 'Essa carta ' + fmtRelativoFuturo(c.abrir_em) + '.';
+    var q = el('carta-viagem-quando'); if (q) q.textContent = 'Sua carta está viajando pelo tempo. Ela chega em ' + fmtData(c.abrir_em) + '.';
     abrirModal('modal-carta-viagem');
   }
 
@@ -573,14 +580,14 @@
           ? `Lacrada · ${fmtRelativoFuturo(c.abrir_em)}`
           : `Chegou · ${fmtData(c.abrir_em)}`;
         const tag = trancada ? 'A caminho' : 'Chegou';
-        const icone = trancada ? miniTransito() : miniChegou();
+        const icone = trancada ? svgVooMini() : svgChegouMini();
         // Modo dev: faz a carta "chegar" agora (destranca + dispara aviso)
         const devAcao = (trancada && devCarta)
           ? `<button type="button" class="espaco-carta-devacao" data-amadurecer="${c.id}">⚡ Fazer chegar agora (teste)</button>`
           : '';
         return `
           <button type="button" class="espaco-carta-item ${trancada ? 'trancada' : 'madura'}" data-id="${c.id}" data-trancada="${trancada ? '1' : '0'}">
-            <span class="espaco-carta-icone">${icone}</span>
+            <span class="espaco-carta-icone carta-anim">${icone}</span>
             <span class="espaco-carta-info">
               <span class="espaco-carta-info-titulo">${titulo}</span>
               <span class="espaco-carta-info-meta">${meta}</span>

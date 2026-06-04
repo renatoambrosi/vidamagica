@@ -796,23 +796,10 @@ body[data-tema="magico"] {
 /* Palco da carta viajando (dentro do modal) */
 .carta-viagem-palco { width: 100%; height: 150px; margin: 2px 0 12px; }
 
-/* ── MINI-ANIMAÇÕES nos cards da lista (a caminho / chegou) ── */
-.mini-anim {
-  --ac: var(--acento);
-  --ac2: var(--acento-2);
-  --ac2: color-mix(in srgb, var(--acento) 48%, #ffffff);
-  display: block; width: 100%; height: 100%; overflow: visible;
-}
-.mini-bob { transform-box: fill-box; transform-origin: center; animation: miniBob 2.6s ease-in-out infinite; }
-@keyframes miniBob { 0%, 100% { transform: translateY(0.5px); } 50% { transform: translateY(-2px); } }
-.mini-tw { animation: miniTw 1.9s ease-in-out infinite; }
-.mini-tw2 { animation-duration: 2.4s; animation-delay: .4s; }
-@keyframes miniTw { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+/* ── Pulso suave do "Chegou" (usado em svgChegouMini) ── */
 .mini-pulse { transform-box: fill-box; transform-origin: center; animation: miniPulse 2.4s ease-in-out infinite; }
 @keyframes miniPulse { 0%, 100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.06); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) {
-  .mini-bob, .mini-tw, .mini-pulse { animation: none; }
-}
+@media (prefers-reduced-motion: reduce) { .mini-pulse { animation: none; } }
 
 /* Botão "Compartilhar no WhatsApp" no modal da carta aberta — verde reconhecível. */
 .espaco-btn-whats {
@@ -885,16 +872,14 @@ body[data-tema="magico"] {
 }
 .espaco-carta-item:active { transform: scale(0.98); }
 .espaco-carta-item.madura { border-color: var(--acento); box-shadow: var(--sombra), var(--glow); }
+/* Sem box — a animação tem protagonismo, ocupa o espaço e flutua livre */
 .espaco-carta-icone {
-  width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
-  display: grid; place-items: center; color: var(--acento-deep);
-  background: linear-gradient(135deg, var(--acento-2), var(--acento));
+  width: 76px; height: 60px; flex-shrink: 0;
+  display: grid; place-items: center;
+  background: none; border-radius: 0;
 }
-.espaco-carta-icone svg { width: 22px; height: 22px; }
-.espaco-carta-item.trancada .espaco-carta-icone {
-  background: linear-gradient(135deg, var(--card-borda), color-mix(in srgb, var(--card-borda) 40%, var(--texto-suave)));
-  color: var(--texto-suave);
-}
+.espaco-carta-icone svg { width: 100%; height: 100%; }
+.espaco-carta-item.trancada .espaco-carta-icone { background: none; }
 .espaco-carta-info { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; flex: 1; }
 .espaco-carta-info-titulo {
   font-family: var(--font-display); font-weight: 700; font-size: 1.02rem;
