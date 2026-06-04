@@ -469,7 +469,7 @@
   }
   // Momento 1 — lacrar (ciclo 4s): brilho explode → portal cresce → envelope fecha/lacra → voa pro portal
   function svgLacre() {
-    return '<svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid meet">' +
+    return '<svg viewBox="100 8 120 150" preserveAspectRatio="xMidYMid meet">' +
       '<g transform="translate(160,48)">' +
       '<circle fill="#fff" r="0" opacity="0"><animate attributeName="r" values="0;0;30;30" keyTimes="0;0.24;0.31;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.15 0.7 0.4 1;0 0 1 1"/><animate attributeName="opacity" values="0;0;0.5;0;0" keyTimes="0;0.24;0.275;0.33;1" dur="4s" repeatCount="indefinite"/></circle>' +
       '<circle fill="#fff" r="0" opacity="0"><animate attributeName="r" values="0;0;17;17" keyTimes="0;0.24;0.30;1" dur="4s" repeatCount="indefinite" calcMode="spline" keySplines="0 0 1 1;0.2 0.8 0.4 1;0 0 1 1"/><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.24;0.27;0.34;1" dur="4s" repeatCount="indefinite"/></circle>' +
@@ -488,6 +488,23 @@
       '<circle cx="180" cy="50" r="1.6"><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.64;0.72;0.84;1" dur="4s" repeatCount="indefinite"/><animate attributeName="cy" values="50;50;36;36" keyTimes="0;0.64;0.84;1" dur="4s" repeatCount="indefinite"/></circle>' +
       '</g></svg>';
   }
+  // Mini-animações dentro dos cards da lista (recolorem pelo tema via .mini-anim)
+  function miniTransito() {   // "A caminho" — envelope flutuando (em trânsito) + sparkles
+    return '<svg class="mini-anim" viewBox="0 0 40 40">' +
+      '<g class="mini-bob"><rect x="9" y="15" width="22" height="14" rx="2.5" fill="var(--ac)"/>' +
+      '<path d="M9,16 L20,24 L31,16" fill="none" stroke="var(--ac2)" stroke-width="1.5" stroke-linejoin="round"/></g>' +
+      '<circle class="mini-tw" cx="32" cy="10" r="1.7" fill="var(--ac)"/>' +
+      '<circle class="mini-tw mini-tw2" cx="9" cy="12" r="1.3" fill="var(--ac)"/>' +
+      '</svg>';
+  }
+  function miniChegou() {     // "Chegou" — envelope aberto com a carta + brilho pulsando
+    return '<svg class="mini-anim mini-pulse" viewBox="0 0 40 40">' +
+      '<rect x="13" y="9" width="14" height="12" rx="1.5" fill="#fff8ec"/>' +
+      '<rect x="9" y="18" width="22" height="12" rx="2.5" fill="var(--ac)"/>' +
+      '<path d="M9,18 L20,26 L31,18" fill="none" stroke="var(--ac2)" stroke-width="1.5" stroke-linejoin="round"/>' +
+      '</svg>';
+  }
+
   // Toca a cerimônia de lacrar (uma vez) e chama cb ao final
   function tocarCerimoniaLacre(cb) {
     var ov = el('carta-cerimonia'), palco = el('carta-cerimonia-palco');
@@ -554,14 +571,12 @@
         const titulo = (c.titulo || 'Carta sem título').replace(/</g, '&lt;');
         const meta = trancada
           ? `Lacrada · ${fmtRelativoFuturo(c.abrir_em)}`
-          : `Aberta · ${fmtData(c.abrir_em)}`;
-        const tag = trancada ? 'Trancada' : 'Madura';
-        const icone = trancada
-          ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`
-          : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>`;
-        // Modo dev: ação pra amadurecer (destrancar + disparar aviso) na hora
+          : `Chegou · ${fmtData(c.abrir_em)}`;
+        const tag = trancada ? 'A caminho' : 'Chegou';
+        const icone = trancada ? miniTransito() : miniChegou();
+        // Modo dev: faz a carta "chegar" agora (destranca + dispara aviso)
         const devAcao = (trancada && devCarta)
-          ? `<button type="button" class="espaco-carta-devacao" data-amadurecer="${c.id}">⚡ Amadurecer agora (teste)</button>`
+          ? `<button type="button" class="espaco-carta-devacao" data-amadurecer="${c.id}">⚡ Fazer chegar agora (teste)</button>`
           : '';
         return `
           <button type="button" class="espaco-carta-item ${trancada ? 'trancada' : 'madura'}" data-id="${c.id}" data-trancada="${trancada ? '1' : '0'}">
