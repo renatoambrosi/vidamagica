@@ -538,6 +538,56 @@
       if (cb) cb();
     }, 3200);
   }
+  // ── ABERTURA MÁGICA DA CARTA (Lottie carta.json recolorido por tema) ──
+  function _hx(h) { h = h.replace('#', ''); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
+  function _toHex(r) { return '#' + r.map(x => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0')).join(''); }
+  function _mix(a, b, t) { a = _hx(a); b = _hx(b); return _toHex([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]); }
+  function _rgb01ToHex(c) { return '#' + c.slice(0, 3).map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join(''); }
+  function _hexToRgb01(h) { h = h.replace('#', ''); return [parseInt(h.slice(0, 2), 16) / 255, parseInt(h.slice(2, 4), 16) / 255, parseInt(h.slice(4, 6), 16) / 255]; }
+  // Substitui as cores douradas do carta.json pelos tons do acento do tema (mantém papel/neutros)
+  function tintLottie(data, map) {
+    var m = {}; for (var k in map) m[k.toLowerCase()] = _hexToRgb01(map[k]);
+    (function w(o) {
+      if (Array.isArray(o)) { o.forEach(w); return; }
+      if (o && typeof o === 'object') {
+        if ((o.ty === 'fl' || o.ty === 'st') && o.c && Array.isArray(o.c.k) && typeof o.c.k[0] === 'number') {
+          var h = _rgb01ToHex(o.c.k).toLowerCase();
+          if (m[h]) { o.c.k[0] = m[h][0]; o.c.k[1] = m[h][1]; o.c.k[2] = m[h][2]; }
+        }
+        for (var kk in o) w(o[kk]);
+      }
+    })(data);
+    return data;
+  }
+  function mapaCartaTema() {
+    var ac = (getComputedStyle(document.body).getPropertyValue('--acento') || '').trim() || '#C8922A';
+    return { '#ffbd00': _mix(ac, '#ffffff', 0.42), '#faad03': ac, '#b5872b': _mix(ac, '#000000', 0.30) };
+  }
+  var _cartaJsonCache = null;
+  // Toca a carta abrindo (uma vez); ao terminar chama cb (mostrar a leitura).
+  function playAberturaCarta(cb) {
+    var ov = el('carta-abertura'), palco = el('carta-abertura-palco');
+    if (!ov || !palco || typeof lottie === 'undefined') { if (cb) cb(); return; }  // fallback: abre direto
+    function rodar(json) {
+      var data = tintLottie(JSON.parse(JSON.stringify(json)), mapaCartaTema());
+      palco.innerHTML = '';
+      ov.setAttribute('aria-hidden', 'false');
+      requestAnimationFrame(() => ov.classList.add('ativo'));
+      var anim = lottie.loadAnimation({ container: palco, renderer: 'svg', loop: false, autoplay: true, animationData: data });
+      var done = false;
+      var fechar = function () {
+        if (done) return; done = true;
+        ov.classList.remove('ativo'); ov.setAttribute('aria-hidden', 'true');
+        setTimeout(function () { try { anim.destroy(); } catch (e) {} palco.innerHTML = ''; }, 420);
+        if (cb) cb();
+      };
+      anim.addEventListener('complete', fechar);
+      setTimeout(fechar, 4200);   // segurança, caso o evento não dispare
+    }
+    if (_cartaJsonCache) { rodar(_cartaJsonCache); return; }
+    fetch('/assets/carta.json').then(r => r.json()).then(function (j) { _cartaJsonCache = j; rodar(j); }).catch(function () { if (cb) cb(); });
+  }
+
   // Modal "carta viajando" (ao tocar numa carta trancada)
   function abrirModalViagem(c) {
     var palco = el('carta-viagem-palco');
@@ -622,11 +672,14 @@
           const id = btn.dataset.id;
           const c = cartas.find(x => String(x.id) === String(id));
           if (!c) return;
-          abrirModalCarta(c);
-          if (!c.aberta_em) {   // 1ª leitura → marca como lida e atualiza o card
+          if (!c.aberta_em) {
+            // 1ª leitura → ABERTURA MÁGICA (carta abrindo) e só então a leitura
             c.aberta_em = new Date().toISOString();
+            playAberturaCarta(() => abrirModalCarta(c));
             fetchAutenticado(`/api/app/espaco/cartas/${id}/lida`, { method: 'POST', body: '{}' })
               .then(() => carregarMinhasCartas()).catch(() => {});
+          } else {
+            abrirModalCarta(c);   // já lida → abre direto
           }
         });
       });

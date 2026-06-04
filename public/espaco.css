@@ -796,6 +796,9 @@ body[data-tema="magico"] {
 /* Palco da carta viajando (dentro do modal) */
 .carta-viagem-palco { width: 100%; height: 150px; margin: 2px 0 12px; }
 
+/* Palco da ABERTURA mágica (Lottie carta.json, 512×604) — grande e centralizado */
+.carta-abertura-palco { width: 80vw; max-width: 340px; aspect-ratio: 512 / 604; }
+
 /* ── Pulso suave do "Chegou" (usado em svgChegouMini) ── */
 .mini-pulse { transform-box: fill-box; transform-origin: center; animation: miniPulse 2.4s ease-in-out infinite; }
 @keyframes miniPulse { 0%, 100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.06); opacity: 1; } }
