@@ -1,0 +1,43 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="/assets/fonts/fonts.css"><link rel="stylesheet" href="/espaco.css?v=35">
+<style>body{margin:0;background:#111;display:flex;justify-content:center;padding:8px}img{height:97vh;border-radius:10px}</style></head>
+<body data-tema="medieval">
+  <img id="a">
+<script>
+const alunaFoto='/assets/avatar-suellen.webp';
+function fmtData(iso){try{return new Date(iso).toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});}catch(e){return '';}}
+function _carregarImg(s){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin='anonymous';i.onload=()=>res(i);i.onerror=rej;i.src=s;});}
+function _cover(ctx,img,W,H){const ir=img.width/img.height,cr=W/H;let dw,dh,dx,dy;if(ir>cr){dh=H;dw=H*ir;dx=(W-dw)/2;dy=0;}else{dw=W;dh=W/ir;dx=0;dy=(H-dh)/2;}ctx.drawImage(img,dx,dy,dw,dh);}
+function _fill(ctx,W,H,c1,c2){const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,c1);g.addColorStop(1,c2);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+function _roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function _wrap(ctx,text,maxW){const out=[];String(text||'').split('\n').forEach(p=>{if(!p){out.push('');return;}const ws=p.split(' ');let l='';ws.forEach(w=>{const t=l?l+' '+w:w;if(ctx.measureText(t).width>maxW&&l){out.push(l);l=w;}else l=t;});if(l)out.push(l);});return out;}
+async function _gf(){if(!document.fonts)return;try{await Promise.all([document.fonts.load('700 52px Lora'),document.fonts.load('400 42px Lora'),document.fonts.load('italic 400 32px Lora')]);}catch(e){}}
+async function gen(c){
+  const W=1080,H=1920;const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');
+  const cs=getComputedStyle(document.body);const tema=document.body.getAttribute('data-tema');
+  const acento2=cs.getPropertyValue('--acento-2').trim();
+  const cTexto=cs.getPropertyValue('--carta-texto').trim(),cSalut=cs.getPropertyValue('--carta-salut').trim(),cSuave=cs.getPropertyValue('--carta-suave').trim();
+  const pm={vida_magica:['#FCF6E7','#F4E8CF'],medieval:['#F2E4C2','#E4CF9F'],universo:['#F4F3FB','#E5E7F5'],magico:['#FBF4FB','#ECE4F8']};const paper=pm[tema]||pm.vida_magica;
+  const bg={magico:'/assets/bgespaco/magico.webp',universo:'/assets/bgespaco/universo.webp',medieval:'/assets/bgespaco/medieval.webp'};
+  if(bg[tema]){try{_cover(ctx,await _carregarImg(bg[tema]),W,H);}catch(e){_fill(ctx,W,H,'#FBF6EA','#E8DCC0');}}else _fill(ctx,W,H,'#FBF6EA','#E8DCC0');
+  const sc=ctx.createLinearGradient(0,0,0,H);sc.addColorStop(0,'rgba(8,6,3,0.28)');sc.addColorStop(0.5,'rgba(8,6,3,0.36)');sc.addColorStop(1,'rgba(8,6,3,0.66)');ctx.fillStyle=sc;ctx.fillRect(0,0,W,H);
+  let seloImg=null;try{seloImg=await _carregarImg('/assets/selo-carta.webp');}catch(e){}
+  let avImg=null;try{avImg=await _carregarImg(alunaFoto);}catch(e){}
+  await _gf();
+  const px=80,pw=W-160,pad=56,cw=pw-pad*2;
+  const avatarBloco=avImg?(156+26):0;const yCorreioRel=pad+avatarBloco+50;const yEscritaRel=yCorreioRel+50;const yRecebidaRel=yEscritaRel+42;const yTituloRel=yRecebidaRel+72;const yContentTopRel=yTituloRel+42;
+  const bandTop=210,bandBottom=1730,bandH=bandBottom-bandTop;const maxContentH=bandH-(yContentTopRel+pad);
+  let fs=42,lh,lines;for(;fs>=26;fs-=2){ctx.font='400 '+fs+'px Lora, Georgia, serif';lines=_wrap(ctx,c.conteudo||'',cw);lh=Math.round(fs*1.62);if(lines.length*lh<=maxContentH)break;}
+  const contentH=lines.length*lh;const cardH=yContentTopRel+contentH+pad;const cardTop=Math.round(Math.max(bandTop,Math.min(bandTop+(bandH-cardH)/2,bandBottom-cardH)));
+  ctx.save();ctx.shadowColor='rgba(0,0,0,0.42)';ctx.shadowBlur=46;ctx.shadowOffsetY=18;const pg=ctx.createLinearGradient(0,cardTop,0,cardTop+cardH);pg.addColorStop(0,paper[0]);pg.addColorStop(1,paper[1]);_roundRect(ctx,px,cardTop,pw,cardH,38);ctx.fillStyle=pg;ctx.fill();ctx.restore();
+  if(avImg){const r=78,ax=W/2,ay=cardTop+pad+r;ctx.save();ctx.beginPath();ctx.arc(ax,ay,r,0,Math.PI*2);ctx.closePath();ctx.clip();const s=Math.max((2*r)/avImg.width,(2*r)/avImg.height),dw=avImg.width*s,dh=avImg.height*s;ctx.drawImage(avImg,ax-dw/2,ay-dh/2,dw,dh);ctx.restore();ctx.beginPath();ctx.arc(ax,ay,r,0,Math.PI*2);ctx.lineWidth=6;ctx.strokeStyle=acento2;ctx.stroke();}
+  ctx.textAlign='center';ctx.fillStyle=cSalut;ctx.font='700 52px Lora, Georgia, serif';ctx.fillText('Correio Temporal',W/2,cardTop+yCorreioRel);
+  ctx.fillStyle=cSuave;ctx.font='italic 400 32px Lora, Georgia, serif';ctx.fillText('Escrita por mim em: '+fmtData(c.criado_em),W/2,cardTop+yEscritaRel);ctx.fillText('Recebida em: '+fmtData(c.abrir_em),W/2,cardTop+yRecebidaRel);
+  ctx.fillStyle=cSalut;ctx.font='700 46px Lora, Georgia, serif';ctx.fillText(c.titulo,W/2,cardTop+yTituloRel);
+  ctx.textAlign='left';ctx.fillStyle=cTexto;ctx.font='400 '+fs+'px Lora, Georgia, serif';let y=cardTop+yContentTopRel+fs;lines.forEach(ln=>{ctx.fillText(ln,px+pad,y);y+=lh;});
+  if(seloImg){const seloMargem=26,bw=168,bh=bw*(seloImg.height/seloImg.width);ctx.drawImage(seloImg,px+pw-bw-seloMargem,cardTop+seloMargem,bw,bh);}
+  document.getElementById('a').src=canvas.toDataURL('image/png');window._done=true;
+}
+gen({titulo:'Carta sexy',criado_em:'2026-06-04T12:00:00',abrir_em:'2026-09-04T12:00:00',conteudo:'Teste para mim mais uma carta sexy do tempo'});
+</script></body></html>

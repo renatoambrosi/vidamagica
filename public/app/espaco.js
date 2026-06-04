@@ -857,67 +857,60 @@
     sc.addColorStop(0, 'rgba(8,6,3,0.28)'); sc.addColorStop(0.5, 'rgba(8,6,3,0.36)'); sc.addColorStop(1, 'rgba(8,6,3,0.66)');
     ctx.fillStyle = sc; ctx.fillRect(0, 0, W, H);
 
-    // Carrega logo + avatar antes (preciso saber se o avatar entra pra medir a altura do card)
-    let logoImg = null; try { logoImg = await _carregarImg('/assets/logo-vertical.webp'); } catch (e) {}
+    // Carrega selo + avatar antes (preciso saber se o avatar entra pra medir a altura)
+    let seloImg = null; try { seloImg = await _carregarImg('/assets/selo-carta.webp'); } catch (e) {}
     let avImg = null; if (comAvatar && alunaFoto) { try { avImg = await _carregarImg(alunaFoto); } catch (e) {} }
     await _garantirFontes();
 
-    // 2) LOGO Vida Mágica no topo
-    if (logoImg) { const lw = 230, lh = lw * (logoImg.height / logoImg.width); ctx.drawImage(logoImg, (W - lw) / 2, 96, lw, lh); }
-
-    // 3) Layout do PAPEL — ALTURA DINÂMICA (cresce/encolhe com o texto) e centralizado
+    // Layout do PAPEL — altura dinâmica (cresce/encolhe com o texto) e centralizado
     const px = 80, pw = W - 160, pad = 56, cw = pw - pad * 2;
-    const avatarBloco = avImg ? (160 + 36) : 0;           // diâmetro + respiro
-    const yTituloRel = pad + avatarBloco + 52;            // baseline do título (rel. ao topo do card)
-    const yDateRel = yTituloRel + 54;
-    const yContentTopRel = yDateRel + 38;
-    const bandTop = 320, bandBottom = 1680, bandH = bandBottom - bandTop;   // faixa onde o card mora
+    const avatarBloco = avImg ? (156 + 26) : 0;           // diâmetro + respiro
+    const yCorreioRel = pad + avatarBloco + 50;           // "Correio Temporal" (cabeçalho)
+    const yEscritaRel = yCorreioRel + 50;                 // "Escrita por mim em: …"
+    const yRecebidaRel = yEscritaRel + 42;                // "Recebida em: …"
+    const yTituloRel = yRecebidaRel + 72;                 // título da carta
+    const yContentTopRel = yTituloRel + 42;               // topo do corpo
+    const bandTop = 210, bandBottom = 1730, bandH = bandBottom - bandTop;
     const maxContentH = bandH - (yContentTopRel + pad);
-    // auto-ajuste do texto pra caber na faixa
     let fs = 42, lh, lines;
     for (; fs >= 26; fs -= 2) { ctx.font = '400 ' + fs + 'px Lora, Georgia, serif'; lines = _wrap(ctx, c.conteudo || '', cw); lh = Math.round(fs * 1.62); if (lines.length * lh <= maxContentH) break; }
     if (lines.length * lh > maxContentH) { const mx = Math.max(1, Math.floor(maxContentH / lh)); lines = lines.slice(0, mx); lines[lines.length - 1] = (lines[lines.length - 1] || '').replace(/.$/, '…'); }
     const contentH = lines.length * lh;
     const cardH = yContentTopRel + contentH + pad;
-    let cardTop = bandTop + (bandH - cardH) / 2;          // centralizado na faixa
-    cardTop = Math.round(Math.max(bandTop, Math.min(cardTop, bandBottom - cardH)));
+    const cardTop = Math.round(Math.max(bandTop, Math.min(bandTop + (bandH - cardH) / 2, bandBottom - cardH)));
 
-    // 4) Desenha o papel
+    // Papel
     ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.42)'; ctx.shadowBlur = 46; ctx.shadowOffsetY = 18;
     const pg = ctx.createLinearGradient(0, cardTop, 0, cardTop + cardH); pg.addColorStop(0, paper[0]); pg.addColorStop(1, paper[1]);
     _roundRect(ctx, px, cardTop, pw, cardH, 38); ctx.fillStyle = pg; ctx.fill(); ctx.restore();
 
-    // 5) Avatar
+    // Avatar (foto da aluna)
     if (avImg) {
-      const r = 80, ax = W / 2, ay = cardTop + pad + r;
+      const r = 78, ax = W / 2, ay = cardTop + pad + r;
       ctx.save(); ctx.beginPath(); ctx.arc(ax, ay, r, 0, Math.PI * 2); ctx.closePath(); ctx.clip();
       const s = Math.max((2 * r) / avImg.width, (2 * r) / avImg.height), dw = avImg.width * s, dh = avImg.height * s;
       ctx.drawImage(avImg, ax - dw / 2, ay - dh / 2, dw, dh); ctx.restore();
       ctx.beginPath(); ctx.arc(ax, ay, r, 0, Math.PI * 2); ctx.lineWidth = 6; ctx.strokeStyle = acento2; ctx.stroke();
     }
-    // 6) Título + "Escrita em [data]"
     ctx.textAlign = 'center';
-    ctx.fillStyle = cSalut; ctx.font = '700 56px Lora, Georgia, serif';
+    // Cabeçalho "Correio Temporal" + datas
+    ctx.fillStyle = cSalut; ctx.font = '700 52px Lora, Georgia, serif';
+    ctx.fillText('Correio Temporal', W / 2, cardTop + yCorreioRel);
+    ctx.fillStyle = cSuave; ctx.font = 'italic 400 32px Lora, Georgia, serif';
+    if (c.criado_em) ctx.fillText('Escrita por mim em: ' + fmtData(c.criado_em), W / 2, cardTop + yEscritaRel);
+    if (c.abrir_em) ctx.fillText('Recebida em: ' + fmtData(c.abrir_em), W / 2, cardTop + yRecebidaRel);
+    // Título da carta
     let tit = c.titulo || 'Sua Carta do Tempo';
+    ctx.fillStyle = cSalut; ctx.font = '700 46px Lora, Georgia, serif';
     while (tit.length > 4 && ctx.measureText(tit).width > cw) tit = tit.slice(0, -2);
     if (tit !== (c.titulo || 'Sua Carta do Tempo')) tit = tit.replace(/.$/, '…');
     ctx.fillText(tit, W / 2, cardTop + yTituloRel);
-    ctx.fillStyle = cSuave; ctx.font = 'italic 400 36px Lora, Georgia, serif';
-    const dt = c.criado_em || c.abrir_em;
-    if (dt) ctx.fillText('Escrita em ' + fmtData(dt), W / 2, cardTop + yDateRel);
-    // 7) Conteúdo
+    // Corpo
     ctx.textAlign = 'left'; ctx.fillStyle = cTexto; ctx.font = '400 ' + fs + 'px Lora, Georgia, serif';
     let y = cardTop + yContentTopRel + fs;
     lines.forEach(ln => { ctx.fillText(ln, px + pad, y); y += lh; });
-
-    // 8) "Correio Temporal" no rodapé (dourado especial) + site
-    ctx.textAlign = 'center';
-    const tg = ctx.createLinearGradient(0, 1720, 0, 1790); tg.addColorStop(0, acento2); tg.addColorStop(1, acento);
-    ctx.fillStyle = tg; ctx.font = '700 76px Lora, Georgia, serif';
-    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 4;
-    ctx.fillText('Correio Temporal', W / 2, 1790); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-    ctx.fillStyle = 'rgba(244,233,207,0.85)'; ctx.font = '500 34px Montserrat, sans-serif';
-    ctx.fillText('vidamagica.com.br', W / 2, 1848);
+    // Selo (selo-carta.webp): topo TANGENTE à margem superior do card + leve folga da direita.
+    if (seloImg) { const seloDir = 36, bw = 168, bh = bw * (seloImg.height / seloImg.width); ctx.drawImage(seloImg, px + pw - bw - seloDir, cardTop, bw, bh); }
 
     // toBlob — se o avatar tiver tornado o canvas "tainted" (CORS), refaz sem avatar
     try {
