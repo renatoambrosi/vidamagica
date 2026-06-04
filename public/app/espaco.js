@@ -618,7 +618,7 @@
     var palco = el('carta-viagem-palco');
     if (palco) palco.innerHTML = svgVoo();
     var t = el('carta-viagem-titulo'); if (t) t.textContent = c.titulo || 'Sua Carta do Tempo';
-    var q = el('carta-viagem-quando'); if (q) q.textContent = 'Sua carta está viajando pelo tempo. Ela chega em ' + fmtData(c.abrir_em) + '.';
+    var q = el('carta-viagem-quando'); if (q) q.textContent = 'Ela ainda está a caminho — atravessando o tempo até você. Chega em ' + fmtData(c.abrir_em) + '.';
     abrirModal('modal-carta-viagem');
   }
 
@@ -739,10 +739,15 @@
         acao.addEventListener('click', async (e) => {
           e.stopPropagation();
           const ehTrancada = item.dataset.trancada === '1';
-          const pergunta = ehTrancada
-            ? 'Cancelar o envio temporal desta carta? Ela some pra sempre.'
-            : 'Excluir esta carta? Não dá pra desfazer.';
-          if (!window.confirm(pergunta)) return;
+          const ok = await confirmarAcao({
+            mensagem: ehTrancada
+              ? 'Quer mesmo cancelar o envio dela? A carta não vai chegar — e some pra sempre.'
+              : 'Quer guardar isso só na memória e apagar a carta? Não tem como voltar atrás.',
+            okLabel: ehTrancada ? 'Cancelar envio' : 'Apagar carta',
+            cancelLabel: 'Deixa pra lá',
+            perigo: true,
+          });
+          if (!ok) return;
           try {
             const rr = await fetchAutenticado(`/api/app/espaco/cartas/${id}`, { method: 'DELETE' });
             if (!rr) return;
@@ -786,6 +791,36 @@
   // ── MODAL — abrir carta madura ───────────────────────────────
   function abrirModal(id) { el(id)?.classList.add('aberto'); el(id)?.setAttribute('aria-hidden', 'false'); }
   function fecharModal(id) { el(id)?.classList.remove('aberto'); el(id)?.setAttribute('aria-hidden', 'true'); }
+
+  // Confirmação própria da marca (NUNCA usar confirm()/alert() do sistema)
+  function confirmarAcao(opts) {
+    opts = opts || {};
+    return new Promise((resolve) => {
+      const modal = el('modal-confirmar'), msg = el('confirmar-msg');
+      const okb = el('confirmar-ok'), cancelb = el('confirmar-cancelar');
+      const overlay = modal ? modal.querySelector('.espaco-modal-overlay') : null;
+      if (!modal || !okb || !cancelb) { resolve(false); return; }
+      if (msg) msg.textContent = opts.mensagem || 'Tem certeza?';
+      okb.textContent = opts.okLabel || 'Confirmar';
+      cancelb.textContent = opts.cancelLabel || 'Voltar';
+      okb.classList.toggle('perigo', !!opts.perigo);
+      let done = false;
+      const finish = (v) => {
+        if (done) return; done = true;
+        okb.removeEventListener('click', onOk);
+        cancelb.removeEventListener('click', onCancel);
+        if (overlay) overlay.removeEventListener('click', onCancel);
+        fecharModal('modal-confirmar');
+        resolve(v);
+      };
+      const onOk = () => finish(true);
+      const onCancel = () => finish(false);
+      okb.addEventListener('click', onOk);
+      cancelb.addEventListener('click', onCancel);
+      if (overlay) overlay.addEventListener('click', onCancel);
+      abrirModal('modal-confirmar');
+    });
+  }
   function abrirModalCarta(c) {
     // Selo = foto da aluna (ela escreveu pra si mesma); sem foto, cai no envelope
     const selo = el('carta-aberta-selo');

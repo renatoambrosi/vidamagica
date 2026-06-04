@@ -993,19 +993,50 @@ body[data-tema="magico"] {
 }
 .espaco-carta-selo svg { width: 28px; height: 28px; }
 .espaco-carta-selo img { width: 100%; height: 100%; object-fit: cover; }
+/* Base (legível no card escuro do modal viajando) */
 .espaco-carta-titulo {
-  font-family: var(--font-body); font-weight: 700; font-size: 1.4rem;
-  color: var(--carta-salut); margin-bottom: 0.2rem;
+  font-family: var(--font-display); font-weight: 800; font-size: 1.35rem;
+  color: var(--texto); margin-bottom: 0.25rem;
 }
 .espaco-carta-data {
-  font-family: var(--font-body); font-style: italic;
-  font-size: 0.84rem; color: var(--carta-suave); margin-bottom: 1.1rem;
+  font-size: 0.84rem; color: var(--texto-suave); margin-bottom: 1.1rem; letter-spacing: 0.03em;
+}
+/* Só na carta ABERTA (papel) usa os tons quentes do papel */
+.espaco-modal-card.carta .espaco-carta-titulo {
+  font-family: var(--font-body); font-weight: 700; font-size: 1.4rem; color: var(--carta-salut);
+}
+.espaco-modal-card.carta .espaco-carta-data {
+  font-family: var(--font-body); font-style: italic; letter-spacing: 0; color: var(--carta-suave);
 }
 .espaco-carta-conteudo {
   font-family: var(--font-body); font-size: 1.06rem; line-height: 1.9;
   color: var(--carta-texto); text-align: left; white-space: pre-wrap;
-  padding: 0.6rem 0.2rem 0.2rem; background: none; border: none;
+  padding: 0.6rem 0.3rem 0.2rem; background: none; border: none;
 }
+
+/* Modal "carta viajando" — centrado, com respiro nas laterais */
+#modal-carta-viagem .espaco-modal-card { text-align: center; padding-left: 1.8rem; padding-right: 1.8rem; }
+#carta-viagem-quando { line-height: 1.6; max-width: 30ch; margin-left: auto; margin-right: auto; }
+
+/* ── MODAL DE CONFIRMAÇÃO (próprio da marca — nada de confirm() do sistema) ── */
+.espaco-modal-card.espaco-confirmar { max-width: 380px; text-align: center; padding: 1.7rem 1.5rem 1.4rem; }
+.espaco-confirmar-msg {
+  font-family: var(--font-body); font-size: 1.06rem; line-height: 1.55;
+  color: var(--texto); margin: 0.2rem 0 1.4rem;
+}
+.espaco-confirmar-acoes { display: flex; gap: 10px; }
+.espaco-confirmar-acoes button {
+  flex: 1; padding: 0.85rem 0.6rem; border-radius: var(--radius-md);
+  font: inherit; font-weight: 700; font-size: 0.95rem; cursor: pointer;
+  border: 1px solid var(--card-borda); transition: transform 0.15s ease, filter 0.2s ease;
+}
+.espaco-confirmar-acoes button:active { transform: scale(0.98); }
+.espaco-confirmar-cancelar { background: transparent; color: var(--texto); }
+.espaco-confirmar-ok {
+  background: linear-gradient(135deg, var(--acento-2), var(--acento));
+  color: var(--acento-deep); border-color: var(--acento);
+}
+.espaco-confirmar-ok.perigo { background: linear-gradient(135deg, #E2574C, #C0392B); color: #fff; border-color: transparent; }
 
 /* ── SWIPE nos cards (revela Excluir / Cancelar envio temporal) ── */
 .espaco-carta-row { position: relative; border-radius: var(--radius-lg); }
