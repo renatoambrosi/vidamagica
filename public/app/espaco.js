@@ -854,57 +854,70 @@
     if (bgMap[tema]) { try { _cover(ctx, await _carregarImg(bgMap[tema]), W, H); } catch (e) { _fill(ctx, W, H, '#FBF6EA', '#E8DCC0'); } }
     else _fill(ctx, W, H, '#FBF6EA', '#E8DCC0');
     const sc = ctx.createLinearGradient(0, 0, 0, H);
-    sc.addColorStop(0, 'rgba(8,6,3,0.24)'); sc.addColorStop(0.5, 'rgba(8,6,3,0.34)'); sc.addColorStop(1, 'rgba(8,6,3,0.66)');
+    sc.addColorStop(0, 'rgba(8,6,3,0.28)'); sc.addColorStop(0.5, 'rgba(8,6,3,0.36)'); sc.addColorStop(1, 'rgba(8,6,3,0.66)');
     ctx.fillStyle = sc; ctx.fillRect(0, 0, W, H);
+
+    // Carrega logo + avatar antes (preciso saber se o avatar entra pra medir a altura do card)
+    let logoImg = null; try { logoImg = await _carregarImg('/assets/logo-vertical.webp'); } catch (e) {}
+    let avImg = null; if (comAvatar && alunaFoto) { try { avImg = await _carregarImg(alunaFoto); } catch (e) {} }
     await _garantirFontes();
 
-    // 2) PAPEL DA CARTA (rounded rect creme + sombra)
-    const px = 80, py = 230, pw = W - 160, ph = 1300, pad = 64;
-    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.42)'; ctx.shadowBlur = 46; ctx.shadowOffsetY = 18;
-    const pg = ctx.createLinearGradient(0, py, 0, py + ph); pg.addColorStop(0, paper[0]); pg.addColorStop(1, paper[1]);
-    _roundRect(ctx, px, py, pw, ph, 38); ctx.fillStyle = pg; ctx.fill(); ctx.restore();
+    // 2) LOGO Vida Mágica no topo
+    if (logoImg) { const lw = 230, lh = lw * (logoImg.height / logoImg.width); ctx.drawImage(logoImg, (W - lw) / 2, 96, lw, lh); }
 
-    let topo = py + 60;
-    // 3) Avatar (mesmo selo da leitura) — com retry sem avatar se der CORS
-    if (comAvatar && alunaFoto) {
-      try {
-        const av = await _carregarImg(alunaFoto);
-        const r = 80, ax = W / 2, ay = topo + r;
-        ctx.save(); ctx.beginPath(); ctx.arc(ax, ay, r, 0, Math.PI * 2); ctx.closePath(); ctx.clip();
-        const s = Math.max((2 * r) / av.width, (2 * r) / av.height), dw = av.width * s, dh = av.height * s;
-        ctx.drawImage(av, ax - dw / 2, ay - dh / 2, dw, dh); ctx.restore();
-        ctx.beginPath(); ctx.arc(ax, ay, r, 0, Math.PI * 2); ctx.lineWidth = 6; ctx.strokeStyle = acento2; ctx.stroke();
-        topo = ay + r + 40;
-      } catch (e) { topo = py + 70; }
+    // 3) Layout do PAPEL — ALTURA DINÂMICA (cresce/encolhe com o texto) e centralizado
+    const px = 80, pw = W - 160, pad = 56, cw = pw - pad * 2;
+    const avatarBloco = avImg ? (160 + 36) : 0;           // diâmetro + respiro
+    const yTituloRel = pad + avatarBloco + 52;            // baseline do título (rel. ao topo do card)
+    const yDateRel = yTituloRel + 54;
+    const yContentTopRel = yDateRel + 38;
+    const bandTop = 320, bandBottom = 1680, bandH = bandBottom - bandTop;   // faixa onde o card mora
+    const maxContentH = bandH - (yContentTopRel + pad);
+    // auto-ajuste do texto pra caber na faixa
+    let fs = 42, lh, lines;
+    for (; fs >= 26; fs -= 2) { ctx.font = '400 ' + fs + 'px Lora, Georgia, serif'; lines = _wrap(ctx, c.conteudo || '', cw); lh = Math.round(fs * 1.62); if (lines.length * lh <= maxContentH) break; }
+    if (lines.length * lh > maxContentH) { const mx = Math.max(1, Math.floor(maxContentH / lh)); lines = lines.slice(0, mx); lines[lines.length - 1] = (lines[lines.length - 1] || '').replace(/.$/, '…'); }
+    const contentH = lines.length * lh;
+    const cardH = yContentTopRel + contentH + pad;
+    let cardTop = bandTop + (bandH - cardH) / 2;          // centralizado na faixa
+    cardTop = Math.round(Math.max(bandTop, Math.min(cardTop, bandBottom - cardH)));
+
+    // 4) Desenha o papel
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.42)'; ctx.shadowBlur = 46; ctx.shadowOffsetY = 18;
+    const pg = ctx.createLinearGradient(0, cardTop, 0, cardTop + cardH); pg.addColorStop(0, paper[0]); pg.addColorStop(1, paper[1]);
+    _roundRect(ctx, px, cardTop, pw, cardH, 38); ctx.fillStyle = pg; ctx.fill(); ctx.restore();
+
+    // 5) Avatar
+    if (avImg) {
+      const r = 80, ax = W / 2, ay = cardTop + pad + r;
+      ctx.save(); ctx.beginPath(); ctx.arc(ax, ay, r, 0, Math.PI * 2); ctx.closePath(); ctx.clip();
+      const s = Math.max((2 * r) / avImg.width, (2 * r) / avImg.height), dw = avImg.width * s, dh = avImg.height * s;
+      ctx.drawImage(avImg, ax - dw / 2, ay - dh / 2, dw, dh); ctx.restore();
+      ctx.beginPath(); ctx.arc(ax, ay, r, 0, Math.PI * 2); ctx.lineWidth = 6; ctx.strokeStyle = acento2; ctx.stroke();
     }
-    // 4) Título + "Escrita em [data]" (centrados)
+    // 6) Título + "Escrita em [data]"
     ctx.textAlign = 'center';
     ctx.fillStyle = cSalut; ctx.font = '700 56px Lora, Georgia, serif';
-    ctx.fillText(c.titulo || 'Sua Carta do Tempo', W / 2, topo + 50);
+    let tit = c.titulo || 'Sua Carta do Tempo';
+    while (tit.length > 4 && ctx.measureText(tit).width > cw) tit = tit.slice(0, -2);
+    if (tit !== (c.titulo || 'Sua Carta do Tempo')) tit = tit.replace(/.$/, '…');
+    ctx.fillText(tit, W / 2, cardTop + yTituloRel);
     ctx.fillStyle = cSuave; ctx.font = 'italic 400 36px Lora, Georgia, serif';
     const dt = c.criado_em || c.abrir_em;
-    ctx.fillText(dt ? ('Escrita em ' + fmtData(dt)) : '', W / 2, topo + 110);
-    // 5) Conteúdo (esquerda, serifada, auto-ajuste de tamanho pra caber)
-    const cx0 = px + pad, cw = pw - pad * 2, startY = topo + 180, availH = (py + ph) - pad - startY;
-    let fs = 42, lh, lines;
-    for (; fs >= 26; fs -= 2) {
-      ctx.font = '400 ' + fs + 'px Lora, Georgia, serif';
-      lines = _wrap(ctx, c.conteudo || '', cw); lh = Math.round(fs * 1.62);
-      if (lines.length * lh <= availH) break;
-    }
-    if (lines.length * lh > availH) { const mx = Math.max(1, Math.floor(availH / lh)); lines = lines.slice(0, mx); lines[lines.length - 1] = (lines[lines.length - 1] || '').replace(/.$/, '…'); }
+    if (dt) ctx.fillText('Escrita em ' + fmtData(dt), W / 2, cardTop + yDateRel);
+    // 7) Conteúdo
     ctx.textAlign = 'left'; ctx.fillStyle = cTexto; ctx.font = '400 ' + fs + 'px Lora, Georgia, serif';
-    let y = startY + fs;
-    lines.forEach(ln => { ctx.fillText(ln, cx0, y); y += lh; });
+    let y = cardTop + yContentTopRel + fs;
+    lines.forEach(ln => { ctx.fillText(ln, px + pad, y); y += lh; });
 
-    // 6) Marca embaixo: "Correio Temporal" (dourado) + "Vida Mágica · site"
+    // 8) "Correio Temporal" no rodapé (dourado especial) + site
     ctx.textAlign = 'center';
-    const tg = ctx.createLinearGradient(0, 1600, 0, 1670); tg.addColorStop(0, acento2); tg.addColorStop(1, acento);
+    const tg = ctx.createLinearGradient(0, 1720, 0, 1790); tg.addColorStop(0, acento2); tg.addColorStop(1, acento);
     ctx.fillStyle = tg; ctx.font = '700 76px Lora, Georgia, serif';
     ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 4;
-    ctx.fillText('Correio Temporal', W / 2, 1670); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-    ctx.fillStyle = 'rgba(244,233,207,0.92)'; ctx.font = '600 40px Montserrat, sans-serif';
-    ctx.fillText('Vida Mágica · vidamagica.com.br', W / 2, 1735);
+    ctx.fillText('Correio Temporal', W / 2, 1790); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    ctx.fillStyle = 'rgba(244,233,207,0.85)'; ctx.font = '500 34px Montserrat, sans-serif';
+    ctx.fillText('vidamagica.com.br', W / 2, 1848);
 
     // toBlob — se o avatar tiver tornado o canvas "tainted" (CORS), refaz sem avatar
     try {
