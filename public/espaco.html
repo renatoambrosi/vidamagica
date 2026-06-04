@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=30" />
+  <link rel="stylesheet" href="/espaco.css?v=31" />
   <!-- Lottie (mesma lib/CDN do baú no /app) — usado na abertura mágica da carta -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -189,10 +189,16 @@
            Backend: POST /api/app/espaco/cartas (mín. 10 chars + abrir_em ≥ 1 dia)
            ════════════════════════════════════════════════════════════ -->
       <section class="espaco-view" id="view-carta">
-        <button type="button" class="espaco-voltar" data-voltar="entrada" aria-label="Voltar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          <span>Voltar</span>
-        </button>
+        <div class="carta-topo">
+          <button type="button" class="espaco-voltar" data-voltar="entrada" aria-label="Voltar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <span>Voltar</span>
+          </button>
+          <button type="button" class="carta-correio-link" id="ir-correio" aria-label="Minhas cartas — Correio temporal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.5 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.5A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.5z"/></svg>
+            <span>Correio temporal</span>
+          </button>
+        </div>
 
         <div class="espaco-saudacao carta-intro">
           <p class="espaco-eyebrow">Carta do tempo</p>
@@ -374,6 +380,6 @@
 
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=23"></script>
+  <script src="/app/espaco.js?v=24"></script>
 </body>
 </html>

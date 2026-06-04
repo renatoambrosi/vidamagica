@@ -318,6 +318,11 @@
     el('nav-inicio')?.addEventListener('click', () => {
       irPara('view-entrada');
     });
+    // Atalho "Correio temporal" (no topo da view de escrever) → Minhas cartas
+    el('ir-correio')?.addEventListener('click', () => {
+      irPara('view-minhas-cartas');
+      carregarMinhasCartas();
+    });
   }
 
   // ════════════════════════════════════════════════════════════

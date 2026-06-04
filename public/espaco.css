@@ -728,6 +728,18 @@ body[data-tema="magico"] {
   --carta-texto: #2B2440; --carta-salut: #3A2A5A; --carta-suave: #7A6AA8;
 }
 
+/* Topo da view de escrever: Voltar (esq) + atalho "Correio temporal" (dir) */
+.carta-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.carta-correio-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: none; border: none; cursor: pointer; font: inherit;
+  font-size: 0.9rem; font-weight: 600; color: var(--acento);
+  padding: 6px 2px; transition: opacity 0.2s ease, transform 0.15s ease;
+}
+.carta-correio-link svg { width: 18px; height: 18px; }
+.carta-correio-link:active { transform: scale(0.97); }
+.carta-correio-link:hover { opacity: 0.8; }
+
 .carta-intro { margin-bottom: 0.5rem; }
 
 .carta-papel {
