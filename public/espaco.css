@@ -871,7 +871,10 @@ body[data-tema="magico"] {
   transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.25s ease;
 }
 .espaco-carta-item:active { transform: scale(0.98); }
-.espaco-carta-item.madura { border-color: var(--acento); box-shadow: var(--sombra), var(--glow); }
+/* "Chegou" (não lida) = estado ACESO: borda dourada + brilho (tem novidade) */
+.espaco-carta-item.chegou { border-color: var(--acento); box-shadow: var(--sombra), var(--glow); }
+/* "Lida" = calmo, já consumida */
+.espaco-carta-item.lida { border-color: var(--card-borda); }
 /* Sem box — a animação tem protagonismo, ocupa o espaço e flutua livre */
 .espaco-carta-icone {
   width: 76px; height: 60px; flex-shrink: 0;
@@ -893,9 +896,15 @@ body[data-tema="magico"] {
   border-radius: 999px; border: 1px solid var(--card-borda);
   color: var(--texto-suave);
 }
-.espaco-carta-item.madura .espaco-carta-item-tag {
-  color: var(--acento-deep); border-color: var(--acento);
-  background: color-mix(in srgb, var(--acento) 18%, transparent);
+/* Tag "Chegou" — amarelo VIVO, aceso (notificação "tem carta nova"), texto legível */
+.espaco-carta-item.chegou .espaco-carta-item-tag {
+  color: #2a1c06; border-color: transparent;
+  background: linear-gradient(135deg, #FFE08A, #FFC22E);
+  box-shadow: 0 0 14px rgba(255, 196, 46, 0.55);
+}
+/* Tag "Lida" — discreta, calma */
+.espaco-carta-item.lida .espaco-carta-item-tag {
+  color: var(--texto-suave); border-color: var(--card-borda); background: transparent;
 }
 
 /* Vazio (sem cartas ainda) */

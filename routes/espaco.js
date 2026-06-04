@@ -226,4 +226,22 @@ router.get('/cartas', autenticar, async (req, res) => {
   }
 });
 
+// Marca uma carta madura como LIDA (1ª abertura). Só se já chegou e ainda não lida.
+router.post('/cartas/:id/lida', autenticar, async (req, res) => {
+  try {
+    const usuarioId = req.usuario.sub;
+    const cartaId = parseInt(req.params.id, 10);
+    if (!cartaId) return erro(res, 400, 'id inválido');
+    await poolEspaco.query(
+      `UPDATE cartas_do_tempo SET aberta_em = NOW()
+        WHERE id = $1 AND usuario_id = $2 AND abrir_em <= NOW() AND aberta_em IS NULL`,
+      [cartaId, usuarioId]
+    );
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error(`❌ [espaco] POST /cartas/:id/lida u=${tag(req.usuario?.sub)}:`, e.message);
+    return erro(res, 500, 'erro ao marcar lida');
+  }
+});
+
 module.exports = router;

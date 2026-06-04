@@ -501,15 +501,27 @@
       '<path d="M-15,-10 L0,2 L15,-10 Z" fill="var(--ac2)"/>' +
       '</g></g></svg>';
   }
-  // "Chegou" — envelope chegado + selo de check, brilho suave (fase 3, compacta).
+  // "Chegou" (não lida) — envelope LACRADO que acabou de chegar, com halo pulsando
+  // (pronta pra abrir). Selo de cera no centro. Brilha = "tem novidade".
   function svgChegouMini() {
     return '<svg viewBox="0 0 84 66" preserveAspectRatio="xMidYMid meet">' +
-      '<g transform="translate(40,38)"><g class="mini-pulse">' +
+      '<g transform="translate(42,36)"><g class="mini-pulse">' +
+      '<ellipse rx="27" ry="21" fill="var(--ac)" opacity="0.20"/>' +
       '<rect x="-19" y="-13" width="38" height="26" rx="3" fill="var(--ac)"/>' +
       '<path d="M-19,-13 L0,3 L19,-13" fill="none" stroke="var(--ac2)" stroke-width="2" stroke-linejoin="round"/>' +
+      '<circle cx="0" cy="-1" r="3.6" fill="var(--ac2)"/>' +
       '</g></g>' +
-      '<g transform="translate(62,18)"><circle r="12" fill="var(--ac2)"/><path d="M-5.5,0 L-1.5,4.5 L6.5,-5.5" fill="none" stroke="#241606" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g>' +
+      '<path class="spark" d="M66,15 l1.4,3 3,1.4 -3,1.4 -1.4,3 -1.4,-3 -3,-1.4 3,-1.4z"><animate attributeName="opacity" values="0.2;0.95;0.2" dur="1.8s" repeatCount="indefinite"/></path>' +
       '</svg>';
+  }
+  // "Lida" — envelope ABERTO com a carta pra fora (já foi lida). Calmo, sem brilho.
+  function svgLidaMini() {
+    return '<svg viewBox="0 0 84 66" preserveAspectRatio="xMidYMid meet">' +
+      '<g transform="translate(42,38)">' +
+      '<rect x="-16" y="-13" width="32" height="18" rx="1.5" fill="#fff8ec"/>' +
+      '<rect x="-19" y="-2" width="38" height="16" rx="2.5" fill="var(--ac)"/>' +
+      '<path d="M-19,-2 L0,-15 L19,-2 Z" fill="var(--ac2)"/>' +
+      '</g></svg>';
   }
 
   // Toca a cerimônia de lacrar (uma vez) e chama cb ao final
@@ -575,18 +587,20 @@
       }
       wrap.innerHTML = cartas.map(c => {
         const trancada = !!c.trancada;
+        const lida = !trancada && !!c.aberta_em;
+        const estado = trancada ? 'trancada' : (lida ? 'lida' : 'chegou');
         const titulo = (c.titulo || 'Carta sem título').replace(/</g, '&lt;');
         const meta = trancada
           ? `Lacrada · ${fmtRelativoFuturo(c.abrir_em)}`
-          : `Chegou · ${fmtData(c.abrir_em)}`;
-        const tag = trancada ? 'A caminho' : 'Chegou';
-        const icone = trancada ? svgVooMini() : svgChegouMini();
+          : (lida ? `Lida · ${fmtData(c.aberta_em)}` : `Chegou · ${fmtData(c.abrir_em)}`);
+        const tag = trancada ? 'A caminho' : (lida ? 'Lida' : 'Chegou');
+        const icone = trancada ? svgVooMini() : (lida ? svgLidaMini() : svgChegouMini());
         // Modo dev: faz a carta "chegar" agora (destranca + dispara aviso)
         const devAcao = (trancada && devCarta)
           ? `<button type="button" class="espaco-carta-devacao" data-amadurecer="${c.id}">⚡ Fazer chegar agora (teste)</button>`
           : '';
         return `
-          <button type="button" class="espaco-carta-item ${trancada ? 'trancada' : 'madura'}" data-id="${c.id}" data-trancada="${trancada ? '1' : '0'}">
+          <button type="button" class="espaco-carta-item ${estado}" data-id="${c.id}" data-trancada="${trancada ? '1' : '0'}">
             <span class="espaco-carta-icone carta-anim">${icone}</span>
             <span class="espaco-carta-info">
               <span class="espaco-carta-info-titulo">${titulo}</span>
@@ -607,7 +621,13 @@
           }
           const id = btn.dataset.id;
           const c = cartas.find(x => String(x.id) === String(id));
-          if (c) abrirModalCarta(c);
+          if (!c) return;
+          abrirModalCarta(c);
+          if (!c.aberta_em) {   // 1ª leitura → marca como lida e atualiza o card
+            c.aberta_em = new Date().toISOString();
+            fetchAutenticado(`/api/app/espaco/cartas/${id}/lida`, { method: 'POST', body: '{}' })
+              .then(() => carregarMinhasCartas()).catch(() => {});
+          }
         });
       });
 
