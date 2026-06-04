@@ -751,6 +751,11 @@ body[data-tema="magico"] {
   border-radius: 18px;
   /* sombra escura neutra (vale em qualquer fundo) + halo colorido do tema */
   box-shadow: 0 14px 40px rgba(20, 15, 8, 0.22), 0 0 70px var(--carta-halo);
+  /* O PAPEL É A ÁREA DE ESCRITA: preenche a faixa visível. O textarea cresce
+     dentro e o "Continuar" fica no RODAPÉ do papel. (300px = header+nav+eyebrow
+     +espaço pro selar peekar embaixo — único número a calibrar.) */
+  display: flex; flex-direction: column;
+  min-height: calc(100dvh - 300px);
 }
 .carta-dateline {
   margin: 0 0 12px; text-align: right;
@@ -763,7 +768,7 @@ body[data-tema="magico"] {
 }
 .carta-corpo {
   display: block; width: 100%; box-sizing: border-box;
-  min-height: 220px; resize: vertical;
+  flex: 1; min-height: 60px;            /* cresce pra preencher o papel */
   padding: 2px; border: none; outline: none; background: transparent;
   font-family: var(--font-body); font-size: 1.06rem; line-height: 1.95; color: var(--carta-texto);
 }
@@ -773,7 +778,7 @@ body[data-tema="magico"] {
 /* Dica "Continuar" — botão fantasma que rola até o lacre (transparente, seta pulsa) */
 .carta-continuar {
   display: flex; flex-direction: column; align-items: center; gap: 1px;
-  margin: -90px auto 0; padding: 8px 18px;   /* só subi (margin-top negativa) */
+  margin: 4px auto 0; padding: 8px 18px;   /* no rodapé do papel (sem gambiarra de margem) */
   background: none; border: none; cursor: pointer; font: inherit;
   font-size: 0.82rem; font-weight: 600; letter-spacing: 0.02em;
   color: var(--texto); opacity: 0.62; transition: opacity 0.2s ease;
