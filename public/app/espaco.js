@@ -91,6 +91,7 @@
   let _loadingTimers = [];
 
   let devCarta = false;   // modo dev da Carta do Tempo (vem do /contexto: dev_carta)
+  let alunaFoto = null;   // foto da aluna (vem do /contexto) — usada como "selo" da carta
 
   function criarSparklesLoading() {
     const wrap = el('espaco-loading-sparkles');
@@ -673,38 +674,84 @@
         const devAcao = (trancada && devCarta)
           ? `<button type="button" class="espaco-carta-devacao" data-amadurecer="${c.id}">⚡ Fazer chegar agora (teste)</button>`
           : '';
+        const rotuloExcluir = trancada ? 'Cancelar envio temporal' : 'Excluir';
         return `
-          <button type="button" class="espaco-carta-item ${estado}" data-id="${c.id}" data-trancada="${trancada ? '1' : '0'}">
-            <span class="espaco-carta-icone carta-anim">${icone}</span>
-            <span class="espaco-carta-info">
-              <span class="espaco-carta-info-titulo">${titulo}</span>
-              <span class="espaco-carta-info-meta">${meta}</span>
-            </span>
-            <span class="espaco-carta-item-tag">${tag}</span>
-          </button>${devAcao}`;
+          <div class="espaco-carta-row${trancada ? ' cancelar' : ''}" data-id="${c.id}">
+            <button type="button" class="espaco-carta-excluir" data-excluir="${c.id}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              <span>${rotuloExcluir}</span>
+            </button>
+            <button type="button" class="espaco-carta-item ${estado}" data-id="${c.id}" data-trancada="${trancada ? '1' : '0'}">
+              <span class="espaco-carta-icone carta-anim">${icone}</span>
+              <span class="espaco-carta-info">
+                <span class="espaco-carta-info-titulo">${titulo}</span>
+                <span class="espaco-carta-info-meta">${meta}</span>
+              </span>
+              <span class="espaco-carta-item-tag">${tag}</span>
+            </button>
+          </div>${devAcao}`;
       }).join('');
 
-      // Ligar clique — só abre se madura
-      wrap.querySelectorAll('.espaco-carta-item').forEach(btn => {
-        btn.addEventListener('click', () => {
-          if (btn.dataset.trancada === '1') {
-            const id = btn.dataset.id;
-            const c = cartas.find(x => String(x.id) === String(id));
-            if (c) abrirModalViagem(c);   // mostra a carta viajando entre portais + quando abre
-            return;
-          }
-          const id = btn.dataset.id;
-          const c = cartas.find(x => String(x.id) === String(id));
+      // Por linha: swipe horizontal revela "Excluir"/"Cancelar"; tap abre a carta
+      wrap.querySelectorAll('.espaco-carta-row').forEach(row => {
+        const item = row.querySelector('.espaco-carta-item');
+        const acao = row.querySelector('.espaco-carta-excluir');
+        const id = row.dataset.id;
+        const c = cartas.find(x => String(x.id) === String(id));
+        let startX = 0, startY = 0, base = 0, curX = 0, dragging = false, locked = null, moved = false;
+        const apply = (x) => { curX = x; item.style.transform = x ? `translateX(${x}px)` : ''; };
+        const fechar = () => { apply(0); row.classList.remove('aberto', 'arrastando'); };
+        item.addEventListener('touchstart', (e) => {
+          const t = e.touches[0]; startX = t.clientX; startY = t.clientY; base = curX;
+          dragging = true; locked = null; moved = false; item.style.transition = 'none';
+        }, { passive: true });
+        item.addEventListener('touchmove', (e) => {
+          if (!dragging) return; const t = e.touches[0];
+          const mx = t.clientX - startX, my = t.clientY - startY;
+          if (locked === null && (Math.abs(mx) > 8 || Math.abs(my) > 8)) locked = Math.abs(mx) > Math.abs(my) ? 'h' : 'v';
+          if (locked !== 'h') return;
+          moved = true; row.classList.add('arrastando');
+          const w = acao.offsetWidth;
+          apply(Math.max(-w, Math.min(0, base + mx)));
+        }, { passive: true });
+        item.addEventListener('touchend', () => {
+          if (!dragging) return; dragging = false; item.style.transition = '';
+          const w = acao.offsetWidth;
+          if (curX < -w * 0.4) { apply(-w); row.classList.add('aberto'); row.classList.remove('arrastando'); }
+          else fechar();
+        }, { passive: true });
+        // Tap: se arrastou, ignora; se aberto, fecha; senão abre a carta
+        item.addEventListener('click', () => {
+          if (moved) { moved = false; return; }
+          if (row.classList.contains('aberto')) { fechar(); return; }
           if (!c) return;
+          if (item.dataset.trancada === '1') { abrirModalViagem(c); return; }
           if (!c.aberta_em) {
-            // 1ª leitura → ABERTURA MÁGICA (carta abrindo) e só então a leitura
             c.aberta_em = new Date().toISOString();
-            playAberturaCarta(() => abrirModalCarta(c));
+            playAberturaCarta(() => abrirModalCarta(c));   // abertura mágica → leitura
             fetchAutenticado(`/api/app/espaco/cartas/${id}/lida`, { method: 'POST', body: '{}' })
               .then(() => carregarMinhasCartas()).catch(() => {});
           } else {
-            abrirModalCarta(c);   // já lida → abre direto
+            abrirModalCarta(c);
           }
+        });
+        // Botão revelado: excluir / cancelar envio
+        acao.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const ehTrancada = item.dataset.trancada === '1';
+          const pergunta = ehTrancada
+            ? 'Cancelar o envio temporal desta carta? Ela some pra sempre.'
+            : 'Excluir esta carta? Não dá pra desfazer.';
+          if (!window.confirm(pergunta)) return;
+          try {
+            const rr = await fetchAutenticado(`/api/app/espaco/cartas/${id}`, { method: 'DELETE' });
+            if (!rr) return;
+            const dd = await rr.json().catch(() => ({}));
+            if (!dd?.ok) { toast(dd?.erro || 'Não consegui excluir.'); return; }
+            row.style.transition = 'opacity .25s ease, transform .25s ease';
+            row.style.opacity = '0'; row.style.transform = 'translateX(-100%)';
+            setTimeout(() => carregarMinhasCartas(), 260);
+          } catch (err) { toast('Não consegui excluir agora.'); }
         });
       });
 
@@ -740,8 +787,13 @@
   function abrirModal(id) { el(id)?.classList.add('aberto'); el(id)?.setAttribute('aria-hidden', 'false'); }
   function fecharModal(id) { el(id)?.classList.remove('aberto'); el(id)?.setAttribute('aria-hidden', 'true'); }
   function abrirModalCarta(c) {
+    // Selo = foto da aluna (ela escreveu pra si mesma); sem foto, cai no envelope
+    const selo = el('carta-aberta-selo');
+    if (selo) selo.innerHTML = alunaFoto
+      ? `<img src="${alunaFoto}" alt="">`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>`;
     const t = el('carta-aberta-titulo'); if (t) t.textContent = c.titulo || 'Sua Carta do Tempo';
-    const d = el('carta-aberta-data');   if (d) d.textContent = `Lacrada e aberta em ${fmtData(c.abrir_em)}`;
+    const d = el('carta-aberta-data');   if (d) d.textContent = `Escrita em ${fmtData(c.criado_em || c.abrir_em)}`;
     const co = el('carta-aberta-conteudo'); if (co) co.textContent = c.conteudo || '';
     // Botão "Compartilhar no WhatsApp" — monta o texto da carta + assinatura
     const share = el('carta-aberta-share');
@@ -846,6 +898,8 @@
     const tit = el('espaco-saudacao-titulo');
     const primeiro = (ctx.aluna?.nome || '').split(' ')[0];
     if (tit && primeiro) tit.textContent = `${primeiro}, o que você quer viver agora?`;
+    alunaFoto = ctx.aluna?.foto_url || null;   // pra usar como selo na carta aberta
+
     // Data do dia na carta (só a data)
     const dl = el('carta-dateline');
     if (dl) dl.textContent = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });

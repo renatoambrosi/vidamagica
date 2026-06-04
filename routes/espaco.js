@@ -244,4 +244,18 @@ router.post('/cartas/:id/lida', autenticar, async (req, res) => {
   }
 });
 
+// Exclui uma carta (swipe → Excluir / Cancelar envio temporal). Cascateia avisos (FK).
+router.delete('/cartas/:id', autenticar, async (req, res) => {
+  try {
+    const usuarioId = req.usuario.sub;
+    const cartaId = parseInt(req.params.id, 10);
+    if (!cartaId) return erro(res, 400, 'id inválido');
+    await poolEspaco.query(`DELETE FROM cartas_do_tempo WHERE id = $1 AND usuario_id = $2`, [cartaId, usuarioId]);
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error(`❌ [espaco] DELETE /cartas/:id u=${tag(req.usuario?.sub)}:`, e.message);
+    return erro(res, 500, 'erro ao excluir carta');
+  }
+});
+
 module.exports = router;
