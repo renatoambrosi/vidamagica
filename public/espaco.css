@@ -776,10 +776,13 @@ body[data-tema="magico"] {
 /* Dica "Continuar" — botão fantasma que rola até o lacre (transparente, seta pulsa) */
 .carta-continuar {
   display: flex; flex-direction: column; align-items: center; gap: 1px;
-  margin: auto auto 6px; padding: 8px 18px;   /* margin-top:auto empurra pro fundo da faixa */
+  margin: auto auto 34px; padding: 8px 18px;   /* margin-top:auto empurra pro fundo; bottom sobe um tico */
   background: none; border: none; cursor: pointer; font: inherit;
-  font-size: 0.82rem; font-weight: 600; letter-spacing: 0.02em;
-  color: var(--texto); opacity: 0.62; transition: opacity 0.2s ease;
+  font-size: 0.85rem; font-weight: 700; letter-spacing: 0.04em;
+  /* cor do acento do tema + sombra leve = legível sobre fundo claro OU escuro */
+  color: var(--acento); opacity: 1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  transition: opacity 0.2s ease, filter 0.2s ease;
 }
 .carta-continuar svg { width: 22px; height: 22px; animation: cartaContinuarBounce 1.8s ease-in-out infinite; }
 .carta-continuar:active { opacity: 1; }
