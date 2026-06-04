@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=33" />
+  <link rel="stylesheet" href="/espaco.css?v=34" />
   <!-- Lottie (mesma lib/CDN do baú no /app) — usado na abertura mágica da carta -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -213,6 +213,12 @@
             <p class="carta-corpo-dica"><span id="carta-contador">0</span> caracteres · mínimo 10</p>
           </div>
 
+          <!-- Dica de rolagem pra quem não percebe que tem mais embaixo (rola até o lacre) -->
+          <button type="button" class="carta-continuar" id="carta-continuar" aria-label="Continuar">
+            <span>Continuar</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+
           <!-- SELAR — só depois de escrever: nome, quando reabrir, e o lacre -->
           <div class="carta-selar">
             <label class="espaco-campo">
@@ -395,6 +401,6 @@
 
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=26"></script>
+  <script src="/app/espaco.js?v=27"></script>
 </body>
 </html>

@@ -340,6 +340,13 @@
     // Contador de caracteres
     ta?.addEventListener('input', () => { if (cnt) cnt.textContent = String(ta.value.trim().length); });
 
+    // "Continuar" → rola a tela até o fim (revela o lacre)
+    el('carta-continuar')?.addEventListener('click', () => {
+      const corpo = document.querySelector('.espaco-corpo');
+      if (corpo) corpo.scrollTo({ top: corpo.scrollHeight, behavior: 'smooth' });
+      else el('carta-lacrar')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
     // Presets de data
     document.querySelectorAll('.espaco-data-preset').forEach(btn => {
       btn.addEventListener('click', () => {
