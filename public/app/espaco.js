@@ -563,6 +563,21 @@
     var ac = (getComputedStyle(document.body).getPropertyValue('--acento') || '').trim() || '#C8922A';
     return { '#ffbd00': _mix(ac, '#ffffff', 0.42), '#faad03': ac, '#b5872b': _mix(ac, '#000000', 0.30) };
   }
+  // Camada de sparkles (estrelas + pontos subindo) ao redor da carta abrindo — cor do tema
+  function svgSparklesAbertura() {
+    var STAR = 'M0,-4 L1.1,-1.1 L4,0 L1.1,1.1 L0,4 L-1.1,1.1 L-4,0 L-1.1,-1.1 Z';
+    var P = [[20,34,0.75,1.9,1],[80,40,0.9,2.3,1],[50,20,1.05,2.6,1],[30,64,0.6,2.1,0],
+             [72,66,0.7,1.7,1],[14,80,0.55,2.4,0],[88,76,0.7,2.0,1],[46,92,0.6,2.2,0],
+             [62,48,0.5,1.6,0],[36,44,0.6,2.5,0],[8,52,0.6,2.0,1],[92,56,0.55,1.8,0]];
+    var s = '<svg viewBox="0 0 100 110" preserveAspectRatio="xMidYMid meet">';
+    P.forEach(function (p, i) {
+      var beg = (i * 0.16).toFixed(2);
+      if (p[4]) s += '<path class="spark" transform="translate(' + p[0] + ',' + p[1] + ') scale(' + p[2] + ')" d="' + STAR + '" opacity="0"><animate attributeName="opacity" values="0;1;0" dur="' + p[3] + 's" repeatCount="indefinite" begin="' + beg + 's"/></path>';
+      else s += '<circle class="spark" cx="' + p[0] + '" cy="' + p[1] + '" r="' + (p[2] * 1.7).toFixed(2) + '" opacity="0"><animate attributeName="opacity" values="0;0.9;0" dur="' + p[3] + 's" repeatCount="indefinite" begin="' + beg + 's"/><animate attributeName="cy" values="' + p[1] + ';' + (p[1] - 7) + '" dur="' + p[3] + 's" repeatCount="indefinite" begin="' + beg + 's"/></circle>';
+    });
+    return s + '</svg>';
+  }
+
   var _cartaJsonCache = null;
   // Toca a carta abrindo (uma vez); ao terminar chama cb (mostrar a leitura).
   function playAberturaCarta(cb) {
@@ -571,6 +586,8 @@
     function rodar(json) {
       var data = tintLottie(JSON.parse(JSON.stringify(json)), mapaCartaTema());
       palco.innerHTML = '';
+      var sparks = el('carta-abertura-sparks');
+      if (sparks) sparks.innerHTML = svgSparklesAbertura();
       ov.setAttribute('aria-hidden', 'false');
       requestAnimationFrame(() => ov.classList.add('ativo'));
       var anim = lottie.loadAnimation({ container: palco, renderer: 'svg', loop: false, autoplay: true, animationData: data });
@@ -578,7 +595,7 @@
       var fechar = function () {
         if (done) return; done = true;
         ov.classList.remove('ativo'); ov.setAttribute('aria-hidden', 'true');
-        setTimeout(function () { try { anim.destroy(); } catch (e) {} palco.innerHTML = ''; }, 420);
+        setTimeout(function () { try { anim.destroy(); } catch (e) {} palco.innerHTML = ''; if (sparks) sparks.innerHTML = ''; }, 420);
         if (cb) cb();
       };
       anim.addEventListener('complete', fechar);
