@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=37" />
+  <link rel="stylesheet" href="/espaco.css?v=38" />
   <!-- Lottie (mesma lib/CDN do baú no /app) — usado na abertura mágica da carta -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -211,12 +211,14 @@
             <p class="carta-salutacao">Para você do futuro,</p>
             <textarea id="carta-conteudo" class="carta-corpo" maxlength="20000" placeholder="Escreva com calma. O que você está vivendo, sonhando e sentindo agora — e o que quer que ela lembre quando reler…" rows="9"></textarea>
             <p class="carta-corpo-dica"><span id="carta-contador">0</span> caracteres · mínimo 10</p>
-            <!-- Dica de rolagem — NO RODAPÉ DO PAPEL (papel preenche a tela) -->
-            <button type="button" class="carta-continuar" id="carta-continuar" aria-label="Continuar">
-              <span>Continuar</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
           </div>
+
+          <!-- "Continuar" — empurrado pro fundo da faixa visível, abaixo do papel,
+               centralizado, acima da nav (margin-top:auto no form que preenche a tela). -->
+          <button type="button" class="carta-continuar" id="carta-continuar" aria-label="Continuar">
+            <span>Continuar</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
 
           <!-- SELAR — só depois de escrever: nome, quando reabrir, e o lacre -->
           <div class="carta-selar">

@@ -637,6 +637,9 @@ body[data-tema="medieval"] .espaco-caminho-icone {
 .espaco-form-carta {
   display: flex; flex-direction: column; gap: 1.1rem;
   max-width: 520px; margin: 0 auto;
+  /* preenche a faixa visível pra o "Continuar" poder ser empurrado pro fundo
+     (margin-top:auto). 190px ≈ header+nav+eyebrow — único número a calibrar. */
+  min-height: calc(100dvh - 190px);
 }
 .espaco-campo { display: flex; flex-direction: column; gap: 0.4rem; }
 .espaco-campo-rotulo {
@@ -751,11 +754,6 @@ body[data-tema="magico"] {
   border-radius: 18px;
   /* sombra escura neutra (vale em qualquer fundo) + halo colorido do tema */
   box-shadow: 0 14px 40px rgba(20, 15, 8, 0.22), 0 0 70px var(--carta-halo);
-  /* O PAPEL É A ÁREA DE ESCRITA: preenche a faixa visível. O textarea cresce
-     dentro e o "Continuar" fica no RODAPÉ do papel. (300px = header+nav+eyebrow
-     +espaço pro selar peekar embaixo — único número a calibrar.) */
-  display: flex; flex-direction: column;
-  min-height: calc(100dvh - 300px);
 }
 .carta-dateline {
   margin: 0 0 12px; text-align: right;
@@ -768,7 +766,7 @@ body[data-tema="magico"] {
 }
 .carta-corpo {
   display: block; width: 100%; box-sizing: border-box;
-  flex: 1; min-height: 60px;            /* cresce pra preencher o papel */
+  min-height: 220px; resize: vertical;
   padding: 2px; border: none; outline: none; background: transparent;
   font-family: var(--font-body); font-size: 1.06rem; line-height: 1.95; color: var(--carta-texto);
 }
@@ -778,7 +776,7 @@ body[data-tema="magico"] {
 /* Dica "Continuar" — botão fantasma que rola até o lacre (transparente, seta pulsa) */
 .carta-continuar {
   display: flex; flex-direction: column; align-items: center; gap: 1px;
-  margin: 4px auto 0; padding: 8px 18px;   /* no rodapé do papel (sem gambiarra de margem) */
+  margin: auto auto 6px; padding: 8px 18px;   /* margin-top:auto empurra pro fundo da faixa */
   background: none; border: none; cursor: pointer; font: inherit;
   font-size: 0.82rem; font-weight: 600; letter-spacing: 0.02em;
   color: var(--texto); opacity: 0.62; transition: opacity 0.2s ease;
