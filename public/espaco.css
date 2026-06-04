@@ -770,21 +770,16 @@ body[data-tema="magico"] {
 .carta-corpo::placeholder { color: var(--carta-suave); opacity: 0.75; font-style: italic; }
 .carta-corpo-dica { margin: 10px 2px 0; text-align: right; font-size: 0.74rem; color: var(--carta-suave); }
 
-/* "Continuar" — dica de rolagem até o lacre. Pill VISÍVEL no vidro do tema
-   (borda + texto no acento), seta pra baixo pulsando. Folga em cima e embaixo
-   pra não grudar no papel nem na bottom-nav. */
+/* Dica "Continuar" — botão fantasma que rola até o lacre (transparente, seta pulsa) */
 .carta-continuar {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  margin: 1.7rem auto 1.4rem; padding: 0.66rem 1.5rem;
-  background: var(--card-bg); border: 1.5px solid var(--acento); border-radius: 999px;
-  color: var(--acento); cursor: pointer; font: inherit;
-  font-size: 0.9rem; font-weight: 700; letter-spacing: 0.02em;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
-  transition: filter 0.2s ease, transform 0.16s ease;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  margin: -90px auto 0; padding: 8px 18px;   /* só subi (margin-top negativa) */
+  background: none; border: none; cursor: pointer; font: inherit;
+  font-size: 0.82rem; font-weight: 600; letter-spacing: 0.02em;
+  color: var(--texto); opacity: 0.62; transition: opacity 0.2s ease;
 }
-.carta-continuar svg { width: 18px; height: 18px; animation: cartaContinuarBounce 1.8s ease-in-out infinite; }
-.carta-continuar:active { transform: scale(0.98); }
-.carta-continuar:hover { filter: brightness(1.05); }
+.carta-continuar svg { width: 22px; height: 22px; animation: cartaContinuarBounce 1.8s ease-in-out infinite; }
+.carta-continuar:active { opacity: 1; }
 @keyframes cartaContinuarBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
 @media (prefers-reduced-motion: reduce) { .carta-continuar svg { animation: none; } }
 
@@ -837,17 +832,17 @@ body[data-tema="magico"] {
 @keyframes miniPulse { 0%, 100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.06); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .mini-pulse { animation: none; } }
 
-/* Botão "Compartilhar" no modal da carta — gera o card e abre o share nativo.
-   Cor do TEMA (acento→acento-deep, sem o --acento-2 que em alguns temas é
-   verde/efeito e destoava). Texto branco com sombra = legível em qualquer acento. */
+/* Botão "Compartilhar" no modal da carta — segue a MESMA REGRA do botão padrão
+   do tema (.espaco-btn-primario): texto --acento-deep, gradiente --acento-2→--acento,
+   borda --acento, glow do tema. Assim não destoa — é o botão do tema. */
 .espaco-btn-compartilhar {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
   margin: 1.5rem auto 0.2rem; padding: 0.95rem 1.6rem;
   font: inherit; font-weight: 700; font-size: 1rem; letter-spacing: 0.2px;
-  color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.30); cursor: pointer;
-  background: linear-gradient(135deg, var(--acento), var(--acento-deep));
-  border: 1px solid var(--acento-deep); border-radius: var(--radius-md);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  color: var(--acento-deep); cursor: pointer;
+  background: linear-gradient(135deg, var(--acento-2), var(--acento));
+  border: 1px solid var(--acento); border-radius: var(--radius-md);
+  box-shadow: var(--sombra), var(--glow);
   transition: transform 0.16s ease, filter 0.2s ease;
 }
 .espaco-btn-compartilhar svg { width: 20px; height: 20px; }
