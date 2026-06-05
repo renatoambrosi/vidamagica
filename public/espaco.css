@@ -96,7 +96,7 @@ body[data-tema="universo"] {
   --sombra: 0 8px 30px rgba(0, 0, 0, 0.40);
   --glow: 0 0 24px rgba(120, 160, 255, 0.40), 0 0 50px rgba(90, 130, 255, 0.25);
 }
-/* TEMA: MEDIEVAL — floresta encantada (medieval.webp) + bolinhas + borboletas */
+/* TEMA: MEDIEVAL (medieval.webp) + bolinhas + borboletas */
 body[data-tema="medieval"] {
   --fundo: url('/assets/bgespaco/medieval.webp');
   --overlay: linear-gradient(to bottom, rgba(10,18,14,0.28) 0%, rgba(8,14,10,0.62) 100%);
@@ -637,9 +637,11 @@ body[data-tema="medieval"] .espaco-caminho-icone {
 .espaco-form-carta {
   display: flex; flex-direction: column; gap: 1.1rem;
   max-width: 520px; margin: 0 auto;
-  /* preenche a faixa visível pra o "Continuar" poder ser empurrado pro fundo
-     (margin-top:auto). 190px ≈ header+nav+eyebrow — único número a calibrar. */
-  min-height: calc(100dvh - 190px);
+  /* preenche a faixa visível pra o "Continuar" ser empurrado pro fundo (margin-top:auto),
+     SEM transbordar por trás da nav. Desconta as safe-areas do device (notch/home indicator)
+     — era isso que faltava: o iPhone tem ~80px de safe-area que o cálculo ignorava.
+     O 200px (header+nav+eyebrow+respiro) é o único número a calibrar. */
+  min-height: calc(100dvh - 230px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
 }
 .espaco-campo { display: flex; flex-direction: column; gap: 0.4rem; }
 .espaco-campo-rotulo {
