@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=46" />
+  <link rel="stylesheet" href="/espaco.css?v=49" />
   <!-- Lottie (mesma lib/CDN do baú no /app) — usado na abertura mágica da carta -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -79,6 +79,14 @@
     <span class="cadente" style="--cd-top:22%;--cd-left:4%;--cd-delay:9s"></span>
   </div>
 
+  <!-- FX do tema Medieval — 2 Lotties no fundo (atrás dos cards, na frente da
+       imagem). Carregam/destroem por JS só no tema Medieval (Lottie é pesado).
+       Arquivos: /assets/medieval-fx-1.json e /assets/medieval-fx-2.json. -->
+  <div class="espaco-fx-medieval" aria-hidden="true">
+    <div class="espaco-fx-lottie" id="fx-medieval-1" data-slot="1"></div>
+    <div class="espaco-fx-lottie" id="fx-medieval-2" data-slot="2"></div>
+  </div>
+
   <!-- ════════════════════════════════════════════════════════════
        APP SHELL
        ════════════════════════════════════════════════════════════ -->
@@ -88,6 +96,11 @@
     <header class="espaco-header">
       <h1 class="espaco-header-titulo">Espaço da Manifestação</h1>
       <div class="espaco-acoes">
+        <!-- Chip do Timer — aparece só com timer ativo, regredindo. Toque reabre o painel. -->
+        <button type="button" class="espaco-timer-chip" id="espaco-timer-chip" style="display:none" aria-label="Timer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9.5v3.5l2.2 1.6"/></svg>
+          <span id="timer-chip-txt">0:00</span>
+        </button>
         <!-- "tema" (discreto) + bolinha — abre o dropdown. -->
         <button type="button" class="espaco-tema-trigger" id="espaco-tema-bolinha" aria-label="Escolher tema">
           <span class="espaco-tema-rotulo">tema</span>
@@ -467,13 +480,49 @@
         <button type="button" class="espaco-ferr" id="ferr-timer">
           <span class="espaco-ferr-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9 2h6"/></svg></span>
           <span class="espaco-ferr-nome">Timer</span>
-          <span class="espaco-ferr-desc">Em breve</span>
+          <span class="espaco-ferr-desc">Tempo de prática</span>
         </button>
-        <button type="button" class="espaco-ferr" id="ferr-musica">
+        <button type="button" class="espaco-ferr em-breve" id="ferr-musica">
           <span class="espaco-ferr-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></span>
           <span class="espaco-ferr-nome">Música</span>
           <span class="espaco-ferr-desc">Em breve</span>
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       TIMER — bottom sheet (estilo Apple). Presets + somar tempo +
+       play/pause + som suave ao terminar. Roda global (header mostra
+       o tempo regredindo mesmo com a folha fechada). Lógica em espaco.js.
+       ════════════════════════════════════════════════════════════ -->
+  <div class="espaco-ambiente espaco-timer" id="espaco-timer" aria-hidden="true">
+    <div class="espaco-ambiente-overlay" data-fechar-timer></div>
+    <div class="espaco-ambiente-sheet" role="dialog" aria-label="Timer">
+      <div class="espaco-ambiente-grip"></div>
+      <h2 class="espaco-ambiente-titulo">Timer</h2>
+      <div class="espaco-timer-display" id="timer-display">0:00</div>
+
+      <div class="espaco-timer-presets" id="timer-presets">
+        <button type="button" data-min="5">5 min</button>
+        <button type="button" data-min="10">10 min</button>
+        <button type="button" data-min="15">15 min</button>
+        <button type="button" data-min="30">30 min</button>
+      </div>
+      <div class="espaco-timer-add" id="timer-add">
+        <button type="button" data-add="1">+1</button>
+        <button type="button" data-add="5">+5</button>
+        <button type="button" data-add="10">+10</button>
+      </div>
+
+      <div class="espaco-timer-controles">
+        <button type="button" class="espaco-timer-reset" id="timer-reset" aria-label="Zerar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4"/></svg>
+        </button>
+        <button type="button" class="espaco-timer-toggle" id="timer-toggle" aria-label="Iniciar">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>
+        </button>
+        <span class="espaco-timer-spacer"></span>
       </div>
     </div>
   </div>
@@ -541,6 +590,6 @@
 
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=35"></script>
+  <script src="/app/espaco.js?v=38"></script>
 </body>
 </html>

@@ -207,6 +207,48 @@
     document.body.setAttribute('data-tema', tema);
     // Fora do Universo, zera o deslocamento do parallax (volta a imagem ao centro)
     if (tema !== 'universo') { const bg = el('espaco-bg'); if (bg) bg.style.transform = ''; }
+    // Medieval: liga/desliga os 2 Lotties do fundo (pesados — só nesse tema)
+    ligarFxMedieval(tema);
+  }
+
+  // ── FX MEDIEVAL — Lotties no fundo, só no tema medieval ──────────
+  // Carrega e toca quando entra no medieval; destrói ao sair (Lottie consome
+  // CPU; não pode rodar nos outros temas). JSON em cache pra não re-baixar.
+  // Cada slot aponta pra um JSON + a pasta das imagens (os .lottie do Renato
+  // são image-based: o JSON referencia webp externos → usamos assetsPath).
+  // Slot 2 entra quando ele subir o 2º arquivo.
+  const FX_MEDIEVAL_SLOTS = [
+    { mount: 'fx-medieval-1', json: '/assets/medieval-fx-1/animation.json', assets: '/assets/medieval-fx-1/images/' },
+    // { mount: 'fx-medieval-2', json: '/assets/medieval-fx-2/animation.json', assets: '/assets/medieval-fx-2/images/' },
+  ];
+  let _fxMedievalAnims = [];
+  const _fxMedievalCache = {};
+  function destruirFxMedieval() {
+    _fxMedievalAnims.forEach(a => { try { a.destroy(); } catch (e) {} });
+    _fxMedievalAnims = [];
+    FX_MEDIEVAL_SLOTS.forEach(s => { const m = el(s.mount); if (m) m.innerHTML = ''; });
+  }
+  function ligarFxMedieval(tema) {
+    if (tema !== 'medieval') { if (_fxMedievalAnims.length) destruirFxMedieval(); return; }
+    if (_fxMedievalAnims.length) return;            // já está ativo
+    if (typeof lottie === 'undefined') return;      // lib ainda não carregou
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    FX_MEDIEVAL_SLOTS.forEach(slot => {
+      const mount = el(slot.mount);
+      if (!mount) return;
+      const criar = (data) => {
+        if (document.body.getAttribute('data-tema') !== 'medieval') return;  // saiu enquanto baixava
+        try {
+          _fxMedievalAnims.push(lottie.loadAnimation({
+            container: mount, renderer: 'canvas', loop: true, autoplay: true,
+            animationData: data, assetsPath: slot.assets,
+            rendererSettings: { preserveAspectRatio: 'xMidYMid meet', clearCanvas: true },
+          }));
+        } catch (e) {}
+      };
+      if (_fxMedievalCache[slot.json]) criar(_fxMedievalCache[slot.json]);
+      else fetch(slot.json).then(r => r.ok ? r.json() : Promise.reject()).then(j => { _fxMedievalCache[slot.json] = j; criar(j); }).catch(() => {});
+    });
   }
 
   function marcarItens() {
@@ -1348,13 +1390,130 @@
     if (_visHandler) { document.removeEventListener('visibilitychange', _visHandler); _visHandler = null; }
   }
 
+  // ── Timer (estilo Apple) — global; roda independente da folha aberta.
+  // Conta por TIMESTAMP-alvo (não decrementa contador) → sobrevive ao
+  // throttle de background do iOS: ao voltar, recalcula o tempo certo.
+  let _tmRunning = false, _tmFimTs = 0, _tmRestanteMs = 0, _tmTick = null;
+  let _audioCtx = null;
+
+  function _fmtTimer(ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    const m = Math.floor(s / 60), ss = s % 60;
+    return `${m}:${String(ss).padStart(2, '0')}`;
+  }
+  function _tmRestante() { return _tmRunning ? Math.max(0, _tmFimTs - Date.now()) : _tmRestanteMs; }
+  function _tmRender() {
+    const txt = _fmtTimer(_tmRestante());
+    const disp = el('timer-display'); if (disp) disp.textContent = txt;
+    const tg = el('timer-toggle');
+    if (tg) { tg.innerHTML = _tmRunning ? SVG_PAUSE : SVG_PLAY; tg.setAttribute('aria-label', _tmRunning ? 'Pausar' : 'Iniciar'); }
+    const chip = el('espaco-timer-chip');
+    if (chip) {
+      const ativo = _tmRunning || _tmRestanteMs > 0;
+      chip.style.display = ativo ? '' : 'none';
+      chip.classList.toggle('rodando', _tmRunning);
+      const ct = el('timer-chip-txt'); if (ct) ct.textContent = txt;
+    }
+  }
+  function abrirTimer() {
+    const t = el('espaco-timer'); if (!t) return;
+    t.classList.add('aberto'); t.setAttribute('aria-hidden', 'false');
+    _tmRender();
+  }
+  function fecharTimer() {
+    const t = el('espaco-timer'); if (!t) return;
+    t.classList.remove('aberto'); t.setAttribute('aria-hidden', 'true');
+  }
+  function _tmSetPreset(ms) {
+    _tmRestanteMs = ms;
+    if (_tmRunning) _tmFimTs = Date.now() + ms;
+    _tmRender();
+  }
+  function _tmAdd(ms) {
+    if (_tmRunning) _tmFimTs += ms;
+    else _tmRestanteMs = Math.max(0, _tmRestanteMs + ms);
+    _tmRender();
+  }
+  function _tmPlayPause() {
+    if (_tmRunning) {
+      _tmRestanteMs = _tmRestante();
+      _tmRunning = false;
+      clearInterval(_tmTick); _tmTick = null;
+    } else {
+      if (_tmRestanteMs <= 0) { toast('Escolha um tempo primeiro.'); return; }
+      _desbloquearAudio();   // gesto do usuário libera o som de término
+      _tmFimTs = Date.now() + _tmRestanteMs;
+      _tmRunning = true;
+      clearInterval(_tmTick);
+      _tmTick = setInterval(_tmTickFn, 250);
+    }
+    _tmRender();
+  }
+  function _tmTickFn() {
+    if (_tmRestante() <= 0) { _tmCompletar(); return; }
+    _tmRender();
+  }
+  function _tmCompletar() {
+    clearInterval(_tmTick); _tmTick = null;
+    _tmRunning = false; _tmRestanteMs = 0;
+    document.querySelectorAll('#timer-presets button').forEach(b => b.classList.remove('sel'));
+    _tmRender();
+    _tmTocarSino();
+    toast('Tempo concluído ✨');
+  }
+  function _tmReset() {
+    clearInterval(_tmTick); _tmTick = null;
+    _tmRunning = false; _tmRestanteMs = 0;
+    document.querySelectorAll('#timer-presets button').forEach(b => b.classList.remove('sel'));
+    _tmRender();
+  }
+  // Som suave de término — Web Audio (sem arquivo). Desbloqueado no 1º play.
+  function _desbloquearAudio() {
+    try {
+      if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (_audioCtx.state === 'suspended') _audioCtx.resume();
+    } catch {}
+  }
+  function _tmTocarSino() {
+    try {
+      if (!_audioCtx) _desbloquearAudio();
+      const ctx = _audioCtx; if (!ctx) return;
+      const now = ctx.currentTime;
+      [880, 1174.7, 1318.5].forEach((f, k) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = f;
+        const t0 = now + k * 0.16;
+        g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(0.2, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.6);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(t0); o.stop(t0 + 1.7);
+      });
+    } catch {}
+  }
+
   // ── Wiring do Ambiente/Afirmações ──
   function ligarAmbiente() {
     el('ferr-ambiente')?.addEventListener('click', abrirAmbiente);
     document.querySelectorAll('[data-fechar-ambiente]').forEach(o => o.addEventListener('click', fecharAmbiente));
     el('ferr-afirmacoes')?.addEventListener('click', () => { fecharAmbiente(); abrirAfirmSetup(); });
-    el('ferr-timer')?.addEventListener('click', () => toast('Timer — em breve ✨'));
+    el('ferr-timer')?.addEventListener('click', () => { fecharAmbiente(); abrirTimer(); });
     el('ferr-musica')?.addEventListener('click', () => toast('Música — em breve ✨'));
+    // Timer: chip do header reabre a folha; controles
+    el('espaco-timer-chip')?.addEventListener('click', abrirTimer);
+    document.querySelectorAll('[data-fechar-timer]').forEach(o => o.addEventListener('click', fecharTimer));
+    el('timer-presets')?.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-min]'); if (!b) return;
+      el('timer-presets').querySelectorAll('button').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+      _tmSetPreset(Number(b.dataset.min) * 60000);
+    });
+    el('timer-add')?.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-add]'); if (!b) return;
+      _tmAdd(Number(b.dataset.add) * 60000);
+    });
+    el('timer-reset')?.addEventListener('click', _tmReset);
+    el('timer-toggle')?.addEventListener('click', _tmPlayPause);
     el('afirm-setup-x')?.addEventListener('click', fecharAfirmSetup);
     el('afirm-lista')?.addEventListener('click', (e) => {
       const btn = e.target.closest('.espaco-afirm-frase'); if (!btn) return;
