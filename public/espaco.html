@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=43" />
+  <link rel="stylesheet" href="/espaco.css?v=44" />
   <!-- Lottie (mesma lib/CDN do baú no /app) — usado na abertura mágica da carta -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -210,31 +210,33 @@
 
         <form class="espaco-form-carta" id="form-carta" autocomplete="off" novalidate>
           <!-- O PAPEL — ambiente aconchegante: data do dia + saudação + corpo da carta -->
+          <!-- Sugestões — FORA do papel (setas cilcam os temas; o exemplo aparece no corpo) -->
+          <div class="carta-sugestoes">
+            <button type="button" class="carta-sug-seta" id="sug-prev" aria-label="Tema anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+            <span class="carta-sug-label" id="sug-label">Sugestões</span>
+            <button type="button" class="carta-sug-seta" id="sug-next" aria-label="Próximo tema"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          </div>
+
           <div class="carta-papel">
-            <p class="carta-dateline" id="carta-dateline"></p>
-            <!-- Contexto: de quem → para quem (dropdowns) -->
-            <div class="carta-contexto">
-              <label class="carta-ctx"><span class="carta-ctx-lbl">De</span>
-                <select id="carta-de" class="carta-ctx-sel" aria-label="De quem">
-                  <option value="eu_passado">eu do passado</option>
-                  <option value="eu_presente" selected>eu do presente</option>
-                  <option value="eu_futuro">eu do futuro</option>
-                </select>
-              </label>
-              <span class="carta-ctx-seta" aria-hidden="true">→</span>
-              <label class="carta-ctx"><span class="carta-ctx-lbl">Para</span>
-                <select id="carta-para" class="carta-ctx-sel" aria-label="Para quem">
-                  <option value="eu_passado">eu do passado</option>
-                  <option value="eu_presente">eu do presente</option>
-                  <option value="eu_futuro" selected>eu do futuro</option>
-                </select>
-              </label>
-            </div>
-            <!-- Sugestões: setas cilcam os temas; o exemplo aparece no corpo. Tocar no corpo limpa. -->
-            <div class="carta-sugestoes">
-              <button type="button" class="carta-sug-seta" id="sug-prev" aria-label="Tema anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-              <span class="carta-sug-label" id="sug-label">Sugestões</span>
-              <button type="button" class="carta-sug-seta" id="sug-next" aria-label="Próximo tema"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+            <!-- TOPO: contexto (esquerda) + data (direita) -->
+            <div class="carta-topo">
+              <div class="carta-contexto">
+                <label class="carta-ctx"><span class="carta-ctx-lbl">De</span>
+                  <select id="carta-de" class="carta-ctx-sel" aria-label="De quem">
+                    <option value="eu_passado">eu do passado</option>
+                    <option value="eu_presente" selected>eu do presente</option>
+                    <option value="eu_futuro">eu do futuro</option>
+                  </select>
+                </label>
+                <label class="carta-ctx"><span class="carta-ctx-lbl">Para</span>
+                  <select id="carta-para" class="carta-ctx-sel" aria-label="Para quem">
+                    <option value="eu_passado">eu do passado</option>
+                    <option value="eu_presente">eu do presente</option>
+                    <option value="eu_futuro" selected>eu do futuro</option>
+                  </select>
+                </label>
+              </div>
+              <p class="carta-dateline" id="carta-dateline"></p>
             </div>
             <textarea id="carta-conteudo" class="carta-corpo" maxlength="20000" placeholder="Escreva com calma. O que você está vivendo, sonhando e sentindo agora — e o que quer que ela lembre quando reler…" rows="9"></textarea>
             <p class="carta-corpo-dica"><span id="carta-contador">0</span> caracteres · mínimo 10</p>
@@ -254,15 +256,6 @@
               <input type="text" id="carta-titulo" maxlength="200" placeholder="Ex: Pra mim, no meu aniversário" />
             </label>
 
-            <div class="espaco-campo">
-              <span class="espaco-campo-rotulo">O que fazer com ela?</span>
-              <div class="carta-modo" role="radiogroup" aria-label="Enviar ou salvar">
-                <button type="button" class="carta-modo-opt ativo" data-modo="enviar">Enviar no tempo</button>
-                <button type="button" class="carta-modo-opt" data-modo="salvar">Só salvar</button>
-              </div>
-              <span class="espaco-campo-dica" id="carta-modo-dica">Fica lacrada até a data — você é avisada quando chegar.</span>
-            </div>
-
             <div class="espaco-campo" id="carta-quando">
               <span class="espaco-campo-rotulo">Quando reabrir?</span>
               <div class="espaco-data-presets" role="radiogroup" aria-label="Quando abrir a carta">
@@ -279,8 +272,11 @@
 
             <button type="submit" class="espaco-btn-primario" id="carta-lacrar">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8.2l1.05 2.13 2.35.34-1.7 1.66.4 2.34L12 13.9l-2.1 1.1.4-2.34-1.7-1.66 2.35-.34z"/></svg>
-              <span>Lacrar carta</span>
+              <span>Lacrar e enviar</span>
             </button>
+
+            <!-- Só salvar — guarda sem enviar; entra já no Correio Temporal com a data de criação -->
+            <button type="button" class="carta-btn-salvar" id="carta-salvar">Só salvar (sem enviar)</button>
 
             <!-- ⚠️ MODO TESTE — visível só quando dev_carta=true. Dispara pro próprio
                  cadastro a mensagem REAL de carta madura, com uma carta de exemplo. -->
@@ -453,6 +449,6 @@
 
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=32"></script>
+  <script src="/app/espaco.js?v=33"></script>
 </body>
 </html>

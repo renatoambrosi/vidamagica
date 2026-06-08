@@ -469,28 +469,6 @@
     ta?.addEventListener('focus', limparExemplo);
     ta?.addEventListener('pointerdown', limparExemplo);
 
-    // ── ENVIAR vs SÓ SALVAR ──
-    let cartaModo = 'enviar';
-    const quandoBox = el('carta-quando');
-    const modoDica = el('carta-modo-dica');
-    document.querySelectorAll('.carta-modo-opt').forEach(opt => {
-      opt.addEventListener('click', () => {
-        document.querySelectorAll('.carta-modo-opt').forEach(o => o.classList.remove('ativo'));
-        opt.classList.add('ativo');
-        cartaModo = opt.dataset.modo;
-        const span = el('carta-lacrar')?.querySelector('span');
-        if (cartaModo === 'salvar') {
-          if (quandoBox) quandoBox.style.display = 'none';
-          if (modoDica) modoDica.textContent = 'Ela entra agora no Correio Temporal, pra você reler quando quiser.';
-          if (span) span.textContent = 'Salvar carta';
-        } else {
-          if (quandoBox) quandoBox.style.display = '';
-          if (modoDica) modoDica.textContent = 'Fica lacrada até a data — você é avisada quando chegar.';
-          if (span) span.textContent = 'Lacrar carta';
-        }
-      });
-    });
-
     // ── VÍDEO "como usar" (modal translúcido por cima da carta) ──
     const VIDEO_ID = 'UCK4EA_MVTA';
     const vmodal = el('carta-video-modal');
@@ -508,21 +486,20 @@
     el('carta-video-btn')?.addEventListener('click', abrirVideo);
     document.querySelectorAll('[data-fechar-video]').forEach(x => x.addEventListener('click', fecharVideo));
 
-    // ── SUBMIT (enviar OU salvar) ──
-    el('form-carta')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    // ── SALVAR a carta — "Lacrar e enviar" (modo='enviar') OU "Só salvar" (modo='salvar') ──
+    async function salvarCarta(modo) {
       if (exemploAtivo) { toast('Toque na carta e escreva a sua antes de salvar.'); ta?.focus(); return; }
       const titulo = (el('carta-titulo')?.value || '').trim();
       const conteudo = (ta?.value || '').trim();
       if (conteudo.length < 10) { toast('Escreva pelo menos 10 caracteres.'); return; }
 
       const corpoReq = {
-        titulo, conteudo, modo: cartaModo,
+        titulo, conteudo, modo,
         carta_de: el('carta-de')?.value || null,
         carta_para: el('carta-para')?.value || null,
       };
 
-      if (cartaModo === 'enviar') {
+      if (modo === 'enviar') {
         if (!cartaDiasEscolhido) { toast('Escolha quando reler.'); return; }
         let abrirEm = null;
         if (cartaDiasEscolhido === 'custom') {
@@ -541,10 +518,12 @@
         corpoReq.abrir_em = abrirEm.toISOString();
       }
 
-      const btn = el('carta-lacrar');
-      const span = btn?.querySelector('span');
-      const labelOrig = span?.textContent || (cartaModo === 'salvar' ? 'Salvar carta' : 'Lacrar carta');
-      if (btn) { btn.disabled = true; if (span) span.textContent = cartaModo === 'salvar' ? 'Salvando...' : 'Lacrando...'; }
+      const btnPrim = el('carta-lacrar'), btnSalv = el('carta-salvar');
+      const primSpan = btnPrim?.querySelector('span');
+      if (btnPrim) btnPrim.disabled = true;
+      if (btnSalv) btnSalv.disabled = true;
+      if (modo === 'salvar') { if (btnSalv) btnSalv.textContent = 'Salvando...'; }
+      else { if (primSpan) primSpan.textContent = 'Lacrando...'; }
       try {
         const r = await fetchAutenticado('/api/app/espaco/cartas', { method: 'POST', body: JSON.stringify(corpoReq) });
         if (!r) return;
@@ -558,7 +537,7 @@
         dataIn?.classList.remove('aberto'); if (dataIn) dataIn.value = '';
         if (resumo) resumo.textContent = 'Escolha quando a carta deve ser aberta.';
         cartaDiasEscolhido = null; sugIdx = -1; if (sugLabel) sugLabel.textContent = 'Sugestões';
-        if (cartaModo === 'salvar') {
+        if (modo === 'salvar') {
           irPara('view-minhas-cartas'); carregarMinhasCartas(); toast('Carta salva ✨');
         } else {
           tocarCerimoniaLacre(() => { irPara('view-minhas-cartas'); carregarMinhasCartas(); toast('Carta lacrada ✨'); });
@@ -567,9 +546,12 @@
         console.warn('[espaco] salvar carta:', err);
         toast('Não consegui salvar agora. Tenta de novo.');
       } finally {
-        if (btn) { btn.disabled = false; if (span) span.textContent = labelOrig; }
+        if (btnPrim) { btnPrim.disabled = false; if (primSpan) primSpan.textContent = 'Lacrar e enviar'; }
+        if (btnSalv) { btnSalv.disabled = false; btnSalv.textContent = 'Só salvar (sem enviar)'; }
       }
-    });
+    }
+    el('form-carta')?.addEventListener('submit', (e) => { e.preventDefault(); salvarCarta('enviar'); });
+    el('carta-salvar')?.addEventListener('click', () => salvarCarta('salvar'));
   }
 
   // ── ANIMAÇÕES DA CARTA (portais, SVG) ────────────────────────
