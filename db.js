@@ -2301,6 +2301,9 @@ async function initEspaco() {
     `);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_cartas_tempo_usuario ON cartas_do_tempo(usuario_id, abrir_em DESC)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_cartas_tempo_maduras ON cartas_do_tempo(abrir_em) WHERE aviso_enviado_em IS NULL`);
+    // Contexto da carta (de quem → para quem): eu_passado | eu_presente | eu_futuro. Migration idempotente.
+    await c.query(`ALTER TABLE cartas_do_tempo ADD COLUMN IF NOT EXISTS carta_de VARCHAR(20)`);
+    await c.query(`ALTER TABLE cartas_do_tempo ADD COLUMN IF NOT EXISTS carta_para VARCHAR(20)`);
 
     // CARTAS DO TEMPO — log idempotente de avisos (worker dispara WhatsApp/email/in_app).
     // UNIQUE(carta_id, canal) faz o worker rodar N vezes sem duplicar aviso.

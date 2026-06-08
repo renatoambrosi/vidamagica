@@ -641,7 +641,7 @@ body[data-tema="medieval"] .espaco-caminho-icone {
      SEM transbordar por trás da nav. Desconta as safe-areas do device (notch/home indicator)
      — era isso que faltava: o iPhone tem ~80px de safe-area que o cálculo ignorava.
      O 200px (header+nav+eyebrow+respiro) é o único número a calibrar. */
-  min-height: calc(100dvh - 230px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  min-height: calc(100dvh - 250px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
 }
 .espaco-campo { display: flex; flex-direction: column; gap: 0.4rem; }
 .espaco-campo-rotulo {
@@ -774,6 +774,97 @@ body[data-tema="magico"] {
 }
 .carta-corpo::placeholder { color: var(--carta-suave); opacity: 0.75; font-style: italic; }
 .carta-corpo-dica { margin: 10px 2px 0; text-align: right; font-size: 0.74rem; color: var(--carta-suave); }
+/* Corpo mostrando EXEMPLO (sugestão) — mais ameno; tocar limpa pra escrever a sua. */
+.carta-corpo.carta-corpo-exemplo { color: var(--carta-suave); opacity: 0.9; font-style: italic; }
+
+/* ── Botão do vídeo "como usar" (perto do eyebrow) ── */
+.carta-video-btn {
+  display: inline-flex; align-items: center; gap: 0.45rem; margin: 0.7rem auto 0;
+  padding: 0.5rem 1.1rem; font: inherit; font-size: 0.85rem; font-weight: 700;
+  color: var(--acento); background: var(--card-bg); cursor: pointer;
+  border: 1px solid var(--acento); border-radius: 999px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.14);
+  transition: filter 0.2s ease, transform 0.15s ease;
+}
+.carta-video-btn svg { width: 18px; height: 18px; }
+.carta-video-btn:active { transform: scale(0.98); }
+
+/* ── Contexto: De [select] → Para [select] (dentro do papel) ── */
+.carta-contexto {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 0.35rem 0.7rem; margin: 0 0 14px;
+}
+.carta-ctx { display: inline-flex; align-items: center; gap: 0.35rem; }
+.carta-ctx-lbl {
+  font-family: var(--font-ui); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--carta-suave);
+}
+.carta-ctx-sel {
+  font-family: var(--font-body); font-size: 1rem; color: var(--carta-texto);
+  background: transparent; border: none; border-bottom: 1.5px dashed var(--carta-borda);
+  padding: 1px 20px 2px 2px; cursor: pointer; -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23998866' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 2px center; background-size: 13px;
+}
+.carta-ctx-sel:focus { outline: none; border-bottom-style: solid; }
+.carta-ctx-seta { color: var(--carta-suave); opacity: 0.75; font-size: 1.15rem; }
+
+/* ── Sugestões — setas cilcam os temas; rótulo mostra o tema atual ── */
+.carta-sugestoes {
+  display: flex; align-items: center; justify-content: center; gap: 0.55rem; margin: 0 0 14px;
+}
+.carta-sug-seta {
+  width: 30px; height: 30px; flex: none; display: inline-flex; align-items: center; justify-content: center;
+  color: var(--carta-texto); background: transparent; cursor: pointer;
+  border: 1px solid var(--carta-borda); border-radius: 50%;
+  transition: transform 0.15s ease, border-color 0.2s ease;
+}
+.carta-sug-seta svg { width: 15px; height: 15px; }
+.carta-sug-seta:active { transform: scale(0.9); }
+.carta-sug-label {
+  min-width: 130px; max-width: 70%; text-align: center; font-family: var(--font-ui);
+  font-size: 0.74rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--carta-suave); line-height: 1.2;
+}
+
+/* ── Toggle: Enviar no tempo / Só salvar ── */
+.carta-modo { display: flex; gap: 0.5rem; }
+.carta-modo-opt {
+  flex: 1; padding: 0.62rem 0.5rem; font: inherit; font-size: 0.9rem; font-weight: 700;
+  color: var(--texto); cursor: pointer; background: var(--card-bg);
+  border: 1.5px solid var(--card-borda); border-radius: var(--radius-md);
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+.carta-modo-opt.ativo {
+  color: var(--acento-deep); border-color: var(--acento);
+  background: linear-gradient(135deg, var(--acento-2), var(--acento));
+}
+
+/* ── Modal do vídeo — translúcido por cima da carta ── */
+.carta-video-modal {
+  position: fixed; inset: 0; z-index: 140; display: flex; align-items: center; justify-content: center;
+  padding: 20px; opacity: 0; pointer-events: none;
+  background: rgba(10, 8, 4, 0); transition: opacity 0.3s ease, background 0.3s ease;
+}
+.carta-video-modal.aberto { opacity: 1; pointer-events: auto; background: rgba(10, 8, 4, 0.55); }
+.carta-video-overlay { position: absolute; inset: 0; }
+.carta-video-box {
+  position: relative; width: 100%; max-width: 460px;
+  background: var(--card-bg); border: 1px solid var(--acento); border-radius: var(--radius-lg);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5); padding: 14px;
+  transform: translateY(12px) scale(0.98); transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.carta-video-modal.aberto .carta-video-box { transform: translateY(0) scale(1); }
+.carta-video-frame { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius-md); overflow: hidden; background: #000; }
+.carta-video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.carta-video-cap { margin: 11px 2px 2px; text-align: center; font-family: var(--font-body); font-size: 0.95rem; color: var(--texto); }
+.carta-video-x {
+  position: absolute; top: -14px; right: -14px; width: 38px; height: 38px; flex: none;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  color: #fff; background: var(--acento-deep); border: 2px solid var(--card-bg); border-radius: 50%;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+.carta-video-x svg { width: 18px; height: 18px; }
 
 /* Dica "Continuar" — botão fantasma que rola até o lacre (transparente, seta pulsa) */
 .carta-continuar {

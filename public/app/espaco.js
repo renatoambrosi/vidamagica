@@ -331,6 +331,40 @@
   // ════════════════════════════════════════════════════════════
   let cartaDiasEscolhido = null;   // dias do preset (30/90/180/365) ou 'custom'
 
+  // Temas de sugestão (afirmações de exemplo que aparecem no corpo da carta).
+  const CARTA_SUGESTOES = [
+    { tema: 'Identidade e Conexão Espiritual', linhas: [
+      'Eu sou a imagem e semelhança do Criador, meu potencial é ilimitado e eu nasci para triunfar.',
+      'Eu estou em perfeito alinhamento divino com O Mestre e vivo debaixo da graça que me fortalece todos os dias.',
+      'O Grande Livro diz que tudo posso naquele que me fortalece, por isso eu afasto toda mente fraca e tomo posse da minha verdadeira identidade.',
+      'Eu vivo o hoje presente conscientemente, sabendo que o amor de Deus por mim é inabalável e perfeito.',
+    ] },
+    { tema: 'Prosperidade e Finanças', linhas: [
+      'A riqueza e a abundância divina são a vontade de Deus para a minha vida; eu nasci para fluir na prosperidade.',
+      'Eu ativo hoje as 3 leis da riqueza: mantenho minha Imagem Fixa, minha Fé Firme e minha Gratidão Plena.',
+      'O dinheiro é energia de riqueza e ele vem até mim de forma mágica, limpa e abundante.',
+      'Eu rompo com todo pensamento pequeno e com a escassez; minha mente expandida enxerga inúmeras possibilidades de crescimento.',
+    ] },
+    { tema: 'Saúde e Mentalidade', linhas: [
+      'Eu domino a minha mente e comando os meus pensamentos para que eles gerem vida, saúde e energia de vitória.',
+      'O meu corpo é o templo do Espírito Santo, cheio de vitalidade, força e saúde perfeita.',
+      'Eu liberto o meu passado, ressignifico todas as travas e escolho o slogan da minha nova realidade: pense novo, viva o novo!',
+      'Quando eu agradeço, coisas boas acontecem. Eu blindo a minha mente contra a negatividade e a reclamação.',
+    ] },
+    { tema: 'Relacionamentos e Autoestima', linhas: [
+      'Eu me amo, me respeito e não aceito menos do que a harmonia do amor, respeito e valorização nas minhas relações.',
+      'O meu lar é um ambiente de paz, harmonia e alinhamento com o propósito divino.',
+      'Eu não reclamo do que eu permito; por isso, estabeleço limites saudáveis com amor, sabedoria e firmeza, ainda que o outro não goste no começo.',
+      'Eu atraio conexões que me elevam, que estão na mesma frequência de prosperidade e que expandem minha visão.',
+    ] },
+    { tema: 'Carreira, Sucesso e Propósito', linhas: [
+      'O meu trabalho é um canal de bênção e eu sou extremamente guiada a tomar as melhores e mais lucrativas decisões.',
+      'Eu sou uma profissional realizada e realizadora, de mente expandida, e as portas das inúmeras possibilidades se abrem para mim agora e todos os dias.',
+      'Eu não aceito uma vida morna ou travada; eu fui chamada para fazer a diferença e governar a minha própria história.',
+      'Pense grande, seja grande! Eu aceito o sucesso, a promoção e a liderança que me pertencem por direito divino. Eu me permito prosperar e crescer sempre.',
+    ] },
+  ];
+
   function ligarFormCarta() {
     const ta = el('carta-conteudo');
     const cnt = el('carta-contador');
@@ -401,58 +435,139 @@
       }
     });
 
-    // Submit
+    // ── SUGESTÕES — setas cilcam temas; o exemplo aparece no corpo; tocar limpa ──
+    let sugIdx = -1;            // -1 = "Sugestões" (vazio); 0..N = tema
+    let exemploAtivo = false;   // true quando o corpo mostra exemplo (não foi escrito pela aluna)
+    const sugLabel = el('sug-label');
+    function mostrarSugestao() {
+      const s = CARTA_SUGESTOES[sugIdx];
+      if (sugLabel) sugLabel.textContent = s.tema;
+      if (ta) {
+        ta.value = s.linhas.join('\n\n');
+        ta.classList.add('carta-corpo-exemplo');
+        exemploAtivo = true;
+        if (cnt) cnt.textContent = String(ta.value.trim().length);
+      }
+    }
+    function limparExemplo() {
+      if (!exemploAtivo) return;
+      if (ta) { ta.value = ''; ta.classList.remove('carta-corpo-exemplo'); }
+      exemploAtivo = false;
+      sugIdx = -1;
+      if (sugLabel) sugLabel.textContent = 'Sugestões';
+      if (cnt) cnt.textContent = '0';
+    }
+    el('sug-next')?.addEventListener('click', () => {
+      sugIdx = (sugIdx < 0) ? 0 : (sugIdx + 1) % CARTA_SUGESTOES.length;
+      mostrarSugestao();
+    });
+    el('sug-prev')?.addEventListener('click', () => {
+      sugIdx = (sugIdx <= 0) ? CARTA_SUGESTOES.length - 1 : sugIdx - 1;
+      mostrarSugestao();
+    });
+    // Tocar no corpo enquanto mostra exemplo → limpa pra escrever a sua
+    ta?.addEventListener('focus', limparExemplo);
+    ta?.addEventListener('pointerdown', limparExemplo);
+
+    // ── ENVIAR vs SÓ SALVAR ──
+    let cartaModo = 'enviar';
+    const quandoBox = el('carta-quando');
+    const modoDica = el('carta-modo-dica');
+    document.querySelectorAll('.carta-modo-opt').forEach(opt => {
+      opt.addEventListener('click', () => {
+        document.querySelectorAll('.carta-modo-opt').forEach(o => o.classList.remove('ativo'));
+        opt.classList.add('ativo');
+        cartaModo = opt.dataset.modo;
+        const span = el('carta-lacrar')?.querySelector('span');
+        if (cartaModo === 'salvar') {
+          if (quandoBox) quandoBox.style.display = 'none';
+          if (modoDica) modoDica.textContent = 'Ela entra agora no Correio Temporal, pra você reler quando quiser.';
+          if (span) span.textContent = 'Salvar carta';
+        } else {
+          if (quandoBox) quandoBox.style.display = '';
+          if (modoDica) modoDica.textContent = 'Fica lacrada até a data — você é avisada quando chegar.';
+          if (span) span.textContent = 'Lacrar carta';
+        }
+      });
+    });
+
+    // ── VÍDEO "como usar" (modal translúcido por cima da carta) ──
+    const VIDEO_ID = 'UCK4EA_MVTA';
+    const vmodal = el('carta-video-modal');
+    const vframe = el('carta-video-frame');
+    function abrirVideo() {
+      if (!vmodal || !vframe) return;
+      vframe.innerHTML = '<iframe src="https://www.youtube.com/embed/' + VIDEO_ID + '?autoplay=1&rel=0&modestbranding=1&playsinline=1" title="Como usar a Carta do Tempo" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>';
+      vmodal.classList.add('aberto'); vmodal.setAttribute('aria-hidden', 'false');
+    }
+    function fecharVideo() {
+      if (!vmodal || !vframe) return;
+      vmodal.classList.remove('aberto'); vmodal.setAttribute('aria-hidden', 'true');
+      vframe.innerHTML = '';   // remove o iframe = para o vídeo
+    }
+    el('carta-video-btn')?.addEventListener('click', abrirVideo);
+    document.querySelectorAll('[data-fechar-video]').forEach(x => x.addEventListener('click', fecharVideo));
+
+    // ── SUBMIT (enviar OU salvar) ──
     el('form-carta')?.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (exemploAtivo) { toast('Toque na carta e escreva a sua antes de salvar.'); ta?.focus(); return; }
       const titulo = (el('carta-titulo')?.value || '').trim();
       const conteudo = (ta?.value || '').trim();
       if (conteudo.length < 10) { toast('Escreva pelo menos 10 caracteres.'); return; }
-      if (!cartaDiasEscolhido) { toast('Escolha quando reler.'); return; }
-      let abrirEm = null;
-      if (cartaDiasEscolhido === 'custom') {
-        if (!dataIn?.value) { toast('Escolha a data.'); return; }
-        abrirEm = new Date(dataIn.value + 'T12:00:00');
-      } else if (cartaDiasEscolhido === 'dev') {
-        abrirEm = new Date(Date.now() + 20 * 1000);   // ~20s — modo teste
-      } else {
-        const dias = parseInt(cartaDiasEscolhido, 10);
-        abrirEm = new Date(Date.now() + dias * 24 * 3600 * 1000);
-      }
-      // Em modo teste (dev) o mínimo cai pra alguns segundos; senão exige 1 dia.
-      const minMs = cartaDiasEscolhido === 'dev' ? 10 * 1000 : 24 * 3600 * 1000;
-      if (!(abrirEm.getTime() > Date.now() + minMs)) {
-        toast(cartaDiasEscolhido === 'dev' ? 'Escolha uma data no futuro.' : 'A data precisa estar pelo menos 1 dia no futuro.'); return;
+
+      const corpoReq = {
+        titulo, conteudo, modo: cartaModo,
+        carta_de: el('carta-de')?.value || null,
+        carta_para: el('carta-para')?.value || null,
+      };
+
+      if (cartaModo === 'enviar') {
+        if (!cartaDiasEscolhido) { toast('Escolha quando reler.'); return; }
+        let abrirEm = null;
+        if (cartaDiasEscolhido === 'custom') {
+          if (!dataIn?.value) { toast('Escolha a data.'); return; }
+          abrirEm = new Date(dataIn.value + 'T12:00:00');
+        } else if (cartaDiasEscolhido === 'dev') {
+          abrirEm = new Date(Date.now() + 20 * 1000);
+        } else {
+          const dias = parseInt(cartaDiasEscolhido, 10);
+          abrirEm = new Date(Date.now() + dias * 24 * 3600 * 1000);
+        }
+        const minMs = cartaDiasEscolhido === 'dev' ? 10 * 1000 : 24 * 3600 * 1000;
+        if (!(abrirEm.getTime() > Date.now() + minMs)) {
+          toast(cartaDiasEscolhido === 'dev' ? 'Escolha uma data no futuro.' : 'A data precisa estar pelo menos 1 dia no futuro.'); return;
+        }
+        corpoReq.abrir_em = abrirEm.toISOString();
       }
 
       const btn = el('carta-lacrar');
-      if (btn) { btn.disabled = true; btn.querySelector('span').textContent = 'Lacrando...'; }
+      const span = btn?.querySelector('span');
+      const labelOrig = span?.textContent || (cartaModo === 'salvar' ? 'Salvar carta' : 'Lacrar carta');
+      if (btn) { btn.disabled = true; if (span) span.textContent = cartaModo === 'salvar' ? 'Salvando...' : 'Lacrando...'; }
       try {
-        const r = await fetchAutenticado('/api/app/espaco/cartas', {
-          method: 'POST',
-          body: JSON.stringify({ titulo, conteudo, abrir_em: abrirEm.toISOString() }),
-        });
+        const r = await fetchAutenticado('/api/app/espaco/cartas', { method: 'POST', body: JSON.stringify(corpoReq) });
         if (!r) return;
         const d = await r.json().catch(() => ({}));
-        if (!d?.ok) { toast(d?.erro || 'Não consegui lacrar a carta.'); return; }
+        if (!d?.ok) { toast(d?.erro || 'Não consegui salvar a carta.'); return; }
         // Limpa o form
-        if (ta) ta.value = ''; if (cnt) cnt.textContent = '0';
+        if (ta) { ta.value = ''; ta.classList.remove('carta-corpo-exemplo'); } exemploAtivo = false;
+        if (cnt) cnt.textContent = '0';
         const tit = el('carta-titulo'); if (tit) tit.value = '';
         document.querySelectorAll('.espaco-data-preset').forEach(b => b.classList.remove('selecionado'));
-        dataIn?.classList.remove('aberto');
-        if (dataIn) dataIn.value = '';
+        dataIn?.classList.remove('aberto'); if (dataIn) dataIn.value = '';
         if (resumo) resumo.textContent = 'Escolha quando a carta deve ser aberta.';
-        cartaDiasEscolhido = null;
-        // Cerimônia do portal (lacrar) → depois cai em "Minhas cartas"
-        tocarCerimoniaLacre(() => {
-          irPara('view-minhas-cartas');
-          carregarMinhasCartas();
-          toast('Carta lacrada ✨');
-        });
+        cartaDiasEscolhido = null; sugIdx = -1; if (sugLabel) sugLabel.textContent = 'Sugestões';
+        if (cartaModo === 'salvar') {
+          irPara('view-minhas-cartas'); carregarMinhasCartas(); toast('Carta salva ✨');
+        } else {
+          tocarCerimoniaLacre(() => { irPara('view-minhas-cartas'); carregarMinhasCartas(); toast('Carta lacrada ✨'); });
+        }
       } catch (err) {
-        console.warn('[espaco] lacrar carta:', err);
-        toast('Não consegui lacrar agora. Tenta de novo.');
+        console.warn('[espaco] salvar carta:', err);
+        toast('Não consegui salvar agora. Tenta de novo.');
       } finally {
-        if (btn) { btn.disabled = false; btn.querySelector('span').textContent = 'Lacrar carta'; }
+        if (btn) { btn.disabled = false; if (span) span.textContent = labelOrig; }
       }
     });
   }

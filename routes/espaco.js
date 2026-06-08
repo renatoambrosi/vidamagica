@@ -104,18 +104,34 @@ router.post('/cartas', autenticar, async (req, res) => {
     const usuarioId = req.usuario.sub;
     const titulo = String(req.body?.titulo || '').slice(0, 200).trim();
     const conteudo = String(req.body?.conteudo || '').slice(0, 20000).trim();
-    const abrirEm = req.body?.abrir_em ? new Date(req.body.abrir_em) : null;
+    const modo = req.body?.modo === 'salvar' ? 'salvar' : 'enviar';
+    const CTX = ['eu_passado', 'eu_presente', 'eu_futuro'];
+    const cartaDe = CTX.includes(req.body?.carta_de) ? req.body.carta_de : null;
+    const cartaPara = CTX.includes(req.body?.carta_para) ? req.body.carta_para : null;
     if (!conteudo || conteudo.length < 10) return erro(res, 400, 'escreva pelo menos 10 caracteres');
-    if (!abrirEm || isNaN(abrirEm) || abrirEm.getTime() < Date.now() + CARTA_MIN_FUTURO_MS) {
-      return erro(res, 400, CARTA_DEV_SEM_MINIMO ? 'escolha uma data/hora no futuro' : 'a carta precisa abrir pelo menos 1 dia no futuro');
+
+    // Modo "salvar" = não envia: entra com a data de criação, já madura no Correio,
+    // SEM notificação (aviso_enviado_em = agora faz o worker pular). Modo "enviar" = lacra
+    // até a data escolhida e o worker avisa quando madura.
+    let abrirEm, avisoEnviadoEm;
+    if (modo === 'salvar') {
+      abrirEm = new Date();
+      avisoEnviadoEm = new Date();
+    } else {
+      abrirEm = req.body?.abrir_em ? new Date(req.body.abrir_em) : null;
+      if (!abrirEm || isNaN(abrirEm) || abrirEm.getTime() < Date.now() + CARTA_MIN_FUTURO_MS) {
+        return erro(res, 400, CARTA_DEV_SEM_MINIMO ? 'escolha uma data/hora no futuro' : 'a carta precisa abrir pelo menos 1 dia no futuro');
+      }
+      avisoEnviadoEm = null;
     }
+
     const r = await poolEspaco.query(
-      `INSERT INTO cartas_do_tempo (usuario_id, titulo, conteudo, abrir_em)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO cartas_do_tempo (usuario_id, titulo, conteudo, abrir_em, aviso_enviado_em, carta_de, carta_para)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id, titulo, abrir_em, criado_em`,
-      [usuarioId, titulo || null, conteudo, abrirEm.toISOString()]
+      [usuarioId, titulo || null, conteudo, abrirEm.toISOString(), avisoEnviadoEm ? avisoEnviadoEm.toISOString() : null, cartaDe, cartaPara]
     );
-    console.log(`💌 ${tag(usuarioId)} lacrou carta do tempo #${r.rows[0].id} pra ${abrirEm.toISOString().slice(0,10)}`);
+    console.log(`💌 ${tag(usuarioId)} ${modo === 'salvar' ? 'salvou' : 'lacrou'} carta do tempo #${r.rows[0].id}`);
 
     // Religação do gatilho da ofensiva: a Carta do Tempo é uma "escrita" do Espaço.
     // O alvo_tipo 'caderno_escrita' segue sendo o evento canônico (ver memória
@@ -211,7 +227,7 @@ router.get('/cartas', autenticar, async (req, res) => {
   try {
     const usuarioId = req.usuario.sub;
     const r = await poolEspaco.query(
-      `SELECT id, titulo, abrir_em, aberta_em, criado_em,
+      `SELECT id, titulo, abrir_em, aberta_em, criado_em, carta_de, carta_para,
               (abrir_em > NOW()) AS trancada,
               CASE WHEN abrir_em > NOW() THEN NULL ELSE conteudo END AS conteudo
          FROM cartas_do_tempo

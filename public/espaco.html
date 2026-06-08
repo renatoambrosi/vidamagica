@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=41" />
+  <link rel="stylesheet" href="/espaco.css?v=43" />
   <!-- Lottie (mesma lib/CDN do baú no /app) — usado na abertura mágica da carta -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -202,13 +202,40 @@
 
         <div class="espaco-saudacao carta-intro">
           <p class="espaco-eyebrow">Carta do tempo</p>
+          <button type="button" class="carta-video-btn" id="carta-video-btn">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9.2" stroke="currentColor" stroke-width="1.6"/><path d="M10 8.4l6 3.6-6 3.6z" fill="currentColor"/></svg>
+            <span>Primeira vez? Comece por aqui ✨</span>
+          </button>
         </div>
 
         <form class="espaco-form-carta" id="form-carta" autocomplete="off" novalidate>
           <!-- O PAPEL — ambiente aconchegante: data do dia + saudação + corpo da carta -->
           <div class="carta-papel">
             <p class="carta-dateline" id="carta-dateline"></p>
-            <p class="carta-salutacao">Para você do futuro,</p>
+            <!-- Contexto: de quem → para quem (dropdowns) -->
+            <div class="carta-contexto">
+              <label class="carta-ctx"><span class="carta-ctx-lbl">De</span>
+                <select id="carta-de" class="carta-ctx-sel" aria-label="De quem">
+                  <option value="eu_passado">eu do passado</option>
+                  <option value="eu_presente" selected>eu do presente</option>
+                  <option value="eu_futuro">eu do futuro</option>
+                </select>
+              </label>
+              <span class="carta-ctx-seta" aria-hidden="true">→</span>
+              <label class="carta-ctx"><span class="carta-ctx-lbl">Para</span>
+                <select id="carta-para" class="carta-ctx-sel" aria-label="Para quem">
+                  <option value="eu_passado">eu do passado</option>
+                  <option value="eu_presente">eu do presente</option>
+                  <option value="eu_futuro" selected>eu do futuro</option>
+                </select>
+              </label>
+            </div>
+            <!-- Sugestões: setas cilcam os temas; o exemplo aparece no corpo. Tocar no corpo limpa. -->
+            <div class="carta-sugestoes">
+              <button type="button" class="carta-sug-seta" id="sug-prev" aria-label="Tema anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+              <span class="carta-sug-label" id="sug-label">Sugestões</span>
+              <button type="button" class="carta-sug-seta" id="sug-next" aria-label="Próximo tema"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+            </div>
             <textarea id="carta-conteudo" class="carta-corpo" maxlength="20000" placeholder="Escreva com calma. O que você está vivendo, sonhando e sentindo agora — e o que quer que ela lembre quando reler…" rows="9"></textarea>
             <p class="carta-corpo-dica"><span id="carta-contador">0</span> caracteres · mínimo 10</p>
           </div>
@@ -228,6 +255,15 @@
             </label>
 
             <div class="espaco-campo">
+              <span class="espaco-campo-rotulo">O que fazer com ela?</span>
+              <div class="carta-modo" role="radiogroup" aria-label="Enviar ou salvar">
+                <button type="button" class="carta-modo-opt ativo" data-modo="enviar">Enviar no tempo</button>
+                <button type="button" class="carta-modo-opt" data-modo="salvar">Só salvar</button>
+              </div>
+              <span class="espaco-campo-dica" id="carta-modo-dica">Fica lacrada até a data — você é avisada quando chegar.</span>
+            </div>
+
+            <div class="espaco-campo" id="carta-quando">
               <span class="espaco-campo-rotulo">Quando reabrir?</span>
               <div class="espaco-data-presets" role="radiogroup" aria-label="Quando abrir a carta">
                 <button type="button" class="espaco-data-preset" data-dias="30">Em 1 mês</button>
@@ -400,8 +436,23 @@
     </div>
   </div>
 
+  <!-- ════════════════════════════════════════════════════════════
+       MODAL DO VÍDEO "como usar" — translúcido por cima da carta.
+       O iframe é injetado ao abrir e removido ao fechar (não toca antes/depois).
+       ════════════════════════════════════════════════════════════ -->
+  <div class="carta-video-modal" id="carta-video-modal" aria-hidden="true">
+    <div class="carta-video-overlay" data-fechar-video></div>
+    <div class="carta-video-box">
+      <button type="button" class="carta-video-x" data-fechar-video aria-label="Fechar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="carta-video-frame" id="carta-video-frame"></div>
+      <p class="carta-video-cap">Como usar a Carta do Tempo</p>
+    </div>
+  </div>
+
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=31"></script>
+  <script src="/app/espaco.js?v=32"></script>
 </body>
 </html>
