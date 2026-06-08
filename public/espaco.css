@@ -430,20 +430,42 @@ body[data-tema="universo"] .espaco-fx-universo { display: block; }
 /* MEDIEVAL — 2 Lotties no fundo. Camada atrás dos cards (z-index 1), só no
    tema medieval (JS carrega/destrói as animações). Cada slot tem posição,
    tamanho e opacidade ajustáveis por variável — default tela cheia. */
-.espaco-fx-medieval { position: fixed; inset: 0; pointer-events: none; z-index: 1; display: none; overflow: hidden; }
+/* z-index -1: a borboleta voa ACIMA do bg (imagem em -2) e ATRÁS do conteúdo
+   (cards/header em z-index ≥ 20). Nunca cobre a interface. */
+.espaco-fx-medieval { position: fixed; inset: 0; pointer-events: none; z-index: -1; display: none; overflow: hidden; }
 body[data-tema="medieval"] .espaco-fx-medieval { display: block; }
 .espaco-fx-lottie {
   position: absolute;
   top: var(--fx-top, 0); left: var(--fx-left, 0);
   width: var(--fx-w, 100%); height: var(--fx-h, 100%);
   opacity: var(--fx-op, 1);
+  will-change: transform, opacity; transform-origin: center;
 }
 .espaco-fx-lottie svg,
 .espaco-fx-lottie canvas { display: block; width: 100%; height: 100%; }
-/* Ajuste fino por slot — calibrar posição/tamanho aqui (butterfly 04 é 500×500).
-   Default: uma borboleta grande no terço superior. */
-#fx-medieval-1 { --fx-top: 8%; --fx-left: 6%; --fx-w: 52vw; --fx-h: 52vw; --fx-op: 0.95; }
-#fx-medieval-2 { --fx-top: 40%; --fx-left: 50%; --fx-w: 46vw; --fx-h: 46vw; --fx-op: 0.95; }
+
+/* Slot 1 = borboleta. Pequena, ancorada no terço superior-esquerdo; o VOO
+   (vaivém + profundidade) é a animação abaixo. Calibrar tamanho em --fx-w/h. */
+#fx-medieval-1 { --fx-top: 16%; --fx-left: 4%; --fx-w: 13vw; --fx-h: 13vw; }
+#fx-medieval-2 { --fx-top: 44%; --fx-left: 52%; --fx-w: 12vw; --fx-h: 12vw; }
+
+/* VOO da borboleta — vaivém pela tela com profundidade (escala) e opacidade
+   (longe = menor/mais apagada; perto = maior/nítida). Só transform+opacity (GPU).
+   As asses batem pela própria animação do Lottie; isto move o corpo pelo cenário. */
+body[data-tema="medieval"] #fx-medieval-1 { animation: medieval-borboleta-voo 28s ease-in-out infinite; }
+@keyframes medieval-borboleta-voo {
+  0%   { transform: translate3d(0,0,0)         scale(0.55) rotate(-6deg); opacity: 0.5; }
+  12%  { transform: translate3d(16vw,-4vh,0)   scale(0.72) rotate(5deg);  opacity: 0.78; }
+  26%  { transform: translate3d(42vw,5vh,0)    scale(1.0)  rotate(-3deg); opacity: 1; }    /* perto */
+  40%  { transform: translate3d(60vw,17vh,0)   scale(0.78) rotate(6deg);  opacity: 0.8; }
+  55%  { transform: translate3d(40vw,30vh,0)   scale(0.48) rotate(-5deg); opacity: 0.55; } /* longe */
+  70%  { transform: translate3d(14vw,20vh,0)   scale(0.62) rotate(5deg);  opacity: 0.7; }
+  85%  { transform: translate3d(4vw,7vh,0)     scale(0.84) rotate(-3deg); opacity: 0.88; }
+  100% { transform: translate3d(0,0,0)         scale(0.55) rotate(-6deg); opacity: 0.5; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-tema="medieval"] #fx-medieval-1 { animation: none; opacity: 0.7; }
+}
 .cadente {
   position: absolute; top: var(--cd-top); left: var(--cd-left);
   width: 2.5px; height: 2.5px; border-radius: 50%; background: #fff;

@@ -242,7 +242,10 @@
           _fxMedievalAnims.push(lottie.loadAnimation({
             container: mount, renderer: 'canvas', loop: true, autoplay: true,
             animationData: data, assetsPath: slot.assets,
-            rendererSettings: { preserveAspectRatio: 'xMidYMid meet', clearCanvas: true },
+            rendererSettings: {
+              preserveAspectRatio: 'xMidYMid meet', clearCanvas: true,
+              dpr: Math.min(2, window.devicePixelRatio || 1),
+            },
           }));
         } catch (e) {}
       };
