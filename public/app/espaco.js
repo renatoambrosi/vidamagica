@@ -313,8 +313,7 @@
     document.querySelectorAll('[data-voltar]').forEach(b => {
       b.addEventListener('click', () => irPara('view-' + b.dataset.voltar));
     });
-    // Botão central "Ambiente" (timer + música + afirmações) — painel vem depois
-    el('ferr-ambiente')?.addEventListener('click', () => toast('Ambiente (timer · música · afirmações) — em breve ✨'));
+    // Botão central "Ambiente" → abre o painel (ligado em ligarAmbiente()).
     // Início — volta ao topo da Meditação Guiada
     el('nav-inicio')?.addEventListener('click', () => {
       irPara('view-entrada');
@@ -1149,6 +1148,237 @@
   // ════════════════════════════════════════════════════════════
   // CONTEXTO + INIT
   // ════════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════
+  // AMBIENTE + PLAYER DE AFIRMAÇÕES
+  // Ambiente = bottom sheet (afirmações · timer · música). Afirmações:
+  // a aluna escolhe até 7 frases (na ordem), define ritmo/narração/repetir
+  // e roda um player de tela cheia com a imagem do tema. Seleção efêmera.
+  // ════════════════════════════════════════════════════════════
+  function escAfirm(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  let _afirmTodas = [];        // catálogo carregado (flat, ordenado por categoria)
+  let _afirmSel = [];          // selecionadas, NA ORDEM (máx 7)
+  let _afirmCarregou = false;
+  // gapMs = INTERVALO (espaço) que a aluna define entre uma afirmação e a próxima.
+  // Com narração: a contagem do intervalo só começa DEPOIS do áudio terminar
+  // (áudio a áudio, duração real — nunca estimativa/média).
+  const _afirmCfg = { gapMs: 4000, narracao: true, repetir: false };
+
+  // ── Ambiente (bottom sheet) ──
+  function abrirAmbiente() {
+    const a = el('espaco-ambiente'); if (!a) return;
+    a.classList.add('aberto'); a.setAttribute('aria-hidden', 'false');
+  }
+  function fecharAmbiente() {
+    const a = el('espaco-ambiente'); if (!a) return;
+    a.classList.remove('aberto'); a.setAttribute('aria-hidden', 'true');
+  }
+
+  // ── Afirmações: setup ──
+  async function abrirAfirmSetup() {
+    const ov = el('espaco-afirm-setup'); if (!ov) return;
+    ov.classList.add('aberto'); ov.setAttribute('aria-hidden', 'false');
+    if (!_afirmCarregou) { _afirmCarregou = true; await carregarAfirmacoes(); }
+  }
+  function fecharAfirmSetup() {
+    const ov = el('espaco-afirm-setup'); if (!ov) return;
+    ov.classList.remove('aberto'); ov.setAttribute('aria-hidden', 'true');
+  }
+  async function carregarAfirmacoes() {
+    const cont = el('afirm-lista');
+    try {
+      const r = await fetchAutenticado('/api/app/espaco/afirmacoes');
+      if (!r) return;
+      const d = await r.json();
+      if (d?.ok) { _afirmTodas = d.afirmacoes || []; renderAfirmLista(); }
+      else if (cont) cont.innerHTML = '<div class="espaco-afirm-load">Não consegui carregar agora.</div>';
+    } catch (e) {
+      console.warn('[espaco] afirmacoes:', e);
+      if (cont) cont.innerHTML = '<div class="espaco-afirm-load">Não consegui carregar agora.</div>';
+    }
+  }
+  function renderAfirmLista() {
+    const cont = el('afirm-lista'); if (!cont) return;
+    if (!_afirmTodas.length) { cont.innerHTML = '<div class="espaco-afirm-load">Nenhuma afirmação disponível ainda.</div>'; return; }
+    let html = ''; let catAtual;
+    _afirmTodas.forEach(a => {
+      if (a.categoria !== catAtual) { catAtual = a.categoria; html += `<div class="espaco-afirm-grupo">${escAfirm(catAtual)}</div>`; }
+      const idx = _afirmSel.findIndex(s => s.id === a.id);
+      const sel = idx >= 0;
+      html += `<button type="button" class="espaco-afirm-frase${sel ? ' sel' : ''}" data-aid="${a.id}">
+        <span class="espaco-afirm-num">${sel ? (idx + 1) : ''}</span>
+        <span class="espaco-afirm-txt">${escAfirm(a.texto)}</span>
+      </button>`;
+    });
+    cont.innerHTML = html;
+    _atualizarContador();
+  }
+  function _refreshSelUI() {
+    document.querySelectorAll('#afirm-lista .espaco-afirm-frase').forEach(btn => {
+      const id = Number(btn.dataset.aid);
+      const idx = _afirmSel.findIndex(s => s.id === id);
+      const sel = idx >= 0;
+      btn.classList.toggle('sel', sel);
+      const num = btn.querySelector('.espaco-afirm-num');
+      if (num) num.textContent = sel ? (idx + 1) : '';
+    });
+    _atualizarContador();
+  }
+  function _atualizarContador() {
+    const c = el('afirm-contador'); if (c) c.textContent = `${_afirmSel.length}/7`;
+    const ini = el('afirm-iniciar'); if (ini) ini.disabled = _afirmSel.length === 0;
+  }
+  function toggleAfirmSel(id) {
+    const i = _afirmSel.findIndex(s => s.id === id);
+    if (i >= 0) { _afirmSel.splice(i, 1); }
+    else {
+      if (_afirmSel.length >= 7) { toast('Você já escolheu 7 — toque numa pra tirar e trocar.'); return; }
+      const a = _afirmTodas.find(x => x.id === id); if (a) _afirmSel.push(a);
+    }
+    _refreshSelUI();
+  }
+
+  // ── Afirmações: player tela cheia ──
+  let _pLista = [], _pIdx = 0, _pPlaying = false, _pFase = 'gap';  // _pFase: 'audio' | 'gap'
+  let _pTimer = null, _pFadeTimer = null, _pAudio = null, _visHandler = null;
+
+  const SVG_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+  const SVG_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>';
+  function _setToggleIcon(playing) {
+    const b = el('afirm-player-toggle');
+    if (b) { b.innerHTML = playing ? SVG_PAUSE : SVG_PLAY; b.setAttribute('aria-label', playing ? 'Pausar' : 'Continuar'); }
+  }
+
+  function iniciarPlayer() {
+    if (!_afirmSel.length) return;
+    _pLista = _afirmSel.slice();
+    _pIdx = 0; _pPlaying = true;
+    _pAudio = el('afirm-player-audio');
+    const pl = el('espaco-afirm-player');
+    pl.classList.add('aberto'); pl.setAttribute('aria-hidden', 'false');
+    _setToggleIcon(true);
+    _ligarVisibilidade();
+    _mostrarFrase(0);
+  }
+  function _mostrarFrase(i) {
+    _pIdx = i;
+    const fr = el('afirm-player-frase'); const it = _pLista[i]; if (!fr || !it) return;
+    const pos = el('afirm-player-pos'); if (pos) pos.textContent = `${i + 1} / ${_pLista.length}`;
+    fr.classList.remove('visivel');
+    clearTimeout(_pFadeTimer); clearTimeout(_pTimer);
+    _pFadeTimer = setTimeout(() => {
+      fr.textContent = it.texto;
+      requestAnimationFrame(() => requestAnimationFrame(() => fr.classList.add('visivel')));
+      _tocarOuEsperar(it);
+    }, 320);
+  }
+  // Decide o que controla o avanço desta frase:
+  // - narração ON + tem MP3 → espera o ÁUDIO TERMINAR (duração real), depois o intervalo;
+  // - senão (sem narração ou frase sem áudio) → o intervalo é o tempo da frase na tela.
+  function _tocarOuEsperar(it) {
+    const usarAudio = _afirmCfg.narracao && it && it.audio_url && _pAudio;
+    if (usarAudio) {
+      _pFase = 'audio';
+      try {
+        _pAudio.onended = _aposAudio;
+        _pAudio.onerror = _aposAudio;   // se o MP3 falhar, não trava — segue
+        _pAudio.src = it.audio_url;
+        _pAudio.currentTime = 0;
+        const pp = _pAudio.play();
+        if (pp && pp.catch) pp.catch(() => _aposAudio());
+      } catch { _aposAudio(); }
+    } else {
+      if (_pAudio) _pAudio.pause();
+      _pFase = 'gap';
+      _pTimer = setTimeout(_playerProximo, _afirmCfg.gapMs);
+    }
+  }
+  // Áudio terminou (de verdade) → conta o INTERVALO escolhido e só então avança.
+  function _aposAudio() {
+    if (_pAudio) { _pAudio.onended = null; _pAudio.onerror = null; }
+    if (!_pPlaying) return;
+    _pFase = 'gap';
+    clearTimeout(_pTimer);
+    _pTimer = setTimeout(_playerProximo, _afirmCfg.gapMs);
+  }
+  function _playerProximo() {
+    if (!_pPlaying) return;
+    let n = _pIdx + 1;
+    if (n >= _pLista.length) {
+      if (_afirmCfg.repetir) n = 0;
+      else return _finalizarPlayer();
+    }
+    _mostrarFrase(n);
+  }
+  function playerPausar() {
+    _pPlaying = false;
+    clearTimeout(_pTimer); clearTimeout(_pFadeTimer);
+    if (_pAudio && _pFase === 'audio') _pAudio.pause();
+    _setToggleIcon(false);
+  }
+  function playerRetomar() {
+    _pPlaying = true; _setToggleIcon(true);
+    if (_pFase === 'audio' && _pAudio) {
+      // retoma o áudio de onde parou; ao terminar, _aposAudio conta o intervalo
+      try { const pp = _pAudio.play(); if (pp && pp.catch) pp.catch(() => _aposAudio()); } catch { _aposAudio(); }
+    } else {
+      clearTimeout(_pTimer);
+      _pTimer = setTimeout(_playerProximo, _afirmCfg.gapMs);
+    }
+  }
+  function playerToggle() { _pPlaying ? playerPausar() : playerRetomar(); }
+  function _finalizarPlayer() { fecharPlayer(); toast('Sessão concluída ✨'); }
+  function fecharPlayer() {
+    _pPlaying = false;
+    clearTimeout(_pTimer); clearTimeout(_pFadeTimer);
+    if (_pAudio) { _pAudio.pause(); _pAudio.onended = null; _pAudio.onerror = null; }
+    _desligarVisibilidade();
+    const pl = el('espaco-afirm-player');
+    if (pl) { pl.classList.remove('aberto'); pl.setAttribute('aria-hidden', 'true'); }
+    el('afirm-player-frase')?.classList.remove('visivel');
+  }
+  // Monetização: não-Clube só ouve com a tela aberta (pausa ao esconder).
+  function _ligarVisibilidade() {
+    _desligarVisibilidade();
+    if (window._espacoCtx?.tem_clube) return; // Clube pode background
+    _visHandler = () => { if (document.hidden && _pPlaying) playerPausar(); };
+    document.addEventListener('visibilitychange', _visHandler);
+  }
+  function _desligarVisibilidade() {
+    if (_visHandler) { document.removeEventListener('visibilitychange', _visHandler); _visHandler = null; }
+  }
+
+  // ── Wiring do Ambiente/Afirmações ──
+  function ligarAmbiente() {
+    el('ferr-ambiente')?.addEventListener('click', abrirAmbiente);
+    document.querySelectorAll('[data-fechar-ambiente]').forEach(o => o.addEventListener('click', fecharAmbiente));
+    el('ferr-afirmacoes')?.addEventListener('click', () => { fecharAmbiente(); abrirAfirmSetup(); });
+    el('ferr-timer')?.addEventListener('click', () => toast('Timer — em breve ✨'));
+    el('ferr-musica')?.addEventListener('click', () => toast('Música — em breve ✨'));
+    el('afirm-setup-x')?.addEventListener('click', fecharAfirmSetup);
+    el('afirm-lista')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.espaco-afirm-frase'); if (!btn) return;
+      toggleAfirmSel(Number(btn.dataset.aid));
+    });
+    el('afirm-cadencia')?.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-cad]'); if (!b) return;
+      el('afirm-cadencia').querySelectorAll('button').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel'); _afirmCfg.gapMs = Number(b.dataset.cad);
+    });
+    const ligarToggle = (id, key) => {
+      el(id)?.addEventListener('click', () => {
+        _afirmCfg[key] = !_afirmCfg[key];
+        el(id).classList.toggle('sel', _afirmCfg[key]);
+        el(id).setAttribute('aria-checked', _afirmCfg[key] ? 'true' : 'false');
+      });
+    };
+    ligarToggle('afirm-narracao', 'narracao');
+    ligarToggle('afirm-repetir', 'repetir');
+    el('afirm-iniciar')?.addEventListener('click', iniciarPlayer);
+    el('afirm-player-x')?.addEventListener('click', fecharPlayer);
+    el('afirm-player-toggle')?.addEventListener('click', playerToggle);
+  }
+
   function hidratar(ctx) {
     window._espacoCtx = ctx;
     if (!ctx) return;
@@ -1198,6 +1428,7 @@
     ligarGiroBotoes();
     ligarFormCarta();
     ligarModais();
+    ligarAmbiente();
     el('espaco-loading-pular')?.addEventListener('click', pularLoading);
 
     // Dispara a animação de abertura imediatamente

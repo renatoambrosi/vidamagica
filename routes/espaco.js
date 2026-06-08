@@ -71,6 +71,33 @@ router.get('/contexto', autenticar, async (req, res) => {
 });
 
 // ════════════════════════════════════════════════════════════
+// AFIRMAÇÕES — catálogo pra aluna (player do Ambiente). Só ativas.
+// Base de URL configurável: hoje serve do repo (/assets/afirmacoes/);
+// no futuro é só trocar AUDIO_AFIRMACOES_BASE pra um CDN (sem recadastrar —
+// o banco guarda só o NOME do arquivo).
+// ════════════════════════════════════════════════════════════
+const AUDIO_AFIRMACOES_BASE = '/assets/afirmacoes/';
+router.get('/afirmacoes', autenticar, async (req, res) => {
+  try {
+    const r = await poolEspaco.query(
+      `SELECT id, texto, categoria, audio_arquivo, ordem
+         FROM afirmacoes WHERE ativo = TRUE
+        ORDER BY categoria NULLS LAST, ordem, id`
+    );
+    const afirmacoes = r.rows.map(a => ({
+      id: a.id,
+      texto: a.texto,
+      categoria: a.categoria || 'Outras',
+      audio_url: a.audio_arquivo ? (AUDIO_AFIRMACOES_BASE + encodeURIComponent(a.audio_arquivo)) : null,
+    }));
+    return res.json({ ok: true, base_audio: AUDIO_AFIRMACOES_BASE, afirmacoes });
+  } catch (e) {
+    console.error(`❌ [espaco] GET /afirmacoes u=${tag(req.usuario?.sub)}:`, e.message);
+    return erro(res, 500, 'erro ao carregar afirmações');
+  }
+});
+
+// ════════════════════════════════════════════════════════════
 // TEMA — salvar a escolha da aluna (vira o default dela)
 // ════════════════════════════════════════════════════════════
 router.put('/tema', autenticar, async (req, res) => {

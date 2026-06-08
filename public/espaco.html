@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=44" />
+  <link rel="stylesheet" href="/espaco.css?v=46" />
   <!-- Lottie (mesma lib/CDN do baú no /app) — usado na abertura mágica da carta -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -447,8 +447,100 @@
     </div>
   </div>
 
+  <!-- ════════════════════════════════════════════════════════════
+       PAINEL AMBIENTE — bottom sheet (afirmações · timer · música).
+       Abre POR CIMA da tela atual (não troca de view). As ferramentas
+       rodam independentes. Hoje: Afirmações funcional; Timer/Música em breve.
+       ════════════════════════════════════════════════════════════ -->
+  <div class="espaco-ambiente" id="espaco-ambiente" aria-hidden="true">
+    <div class="espaco-ambiente-overlay" data-fechar-ambiente></div>
+    <div class="espaco-ambiente-sheet" role="dialog" aria-label="Ambiente">
+      <div class="espaco-ambiente-grip"></div>
+      <h2 class="espaco-ambiente-titulo">Ambiente</h2>
+      <p class="espaco-ambiente-sub">Ferramentas pra acompanhar a sua prática.</p>
+      <div class="espaco-ambiente-grid">
+        <button type="button" class="espaco-ferr" id="ferr-afirmacoes">
+          <span class="espaco-ferr-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.4L12 15l-1.9-4.6L5.5 9l4.6-1.4z"/><path d="M19 14l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span>
+          <span class="espaco-ferr-nome">Afirmações</span>
+          <span class="espaco-ferr-desc">Frases de poder em tela cheia</span>
+        </button>
+        <button type="button" class="espaco-ferr" id="ferr-timer">
+          <span class="espaco-ferr-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9 2h6"/></svg></span>
+          <span class="espaco-ferr-nome">Timer</span>
+          <span class="espaco-ferr-desc">Em breve</span>
+        </button>
+        <button type="button" class="espaco-ferr" id="ferr-musica">
+          <span class="espaco-ferr-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></span>
+          <span class="espaco-ferr-nome">Música</span>
+          <span class="espaco-ferr-desc">Em breve</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       AFIRMAÇÕES — SETUP. A aluna escolhe até 7 frases (na ordem),
+       define ritmo, narração e repetir, e inicia o player de tela cheia.
+       A seleção é efêmera (não salva). Lógica em espaco.js.
+       ════════════════════════════════════════════════════════════ -->
+  <div class="espaco-afirm" id="espaco-afirm-setup" aria-hidden="true">
+    <div class="espaco-afirm-top">
+      <button type="button" class="espaco-afirm-x" id="afirm-setup-x" aria-label="Fechar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <h2 class="espaco-afirm-titulo">Afirmações</h2>
+      <span class="espaco-afirm-contador" id="afirm-contador">0/7</span>
+    </div>
+    <p class="espaco-afirm-dica">Escolha até 7 frases, na ordem que quiser. Toque para selecionar.</p>
+    <div class="espaco-afirm-lista" id="afirm-lista"><div class="espaco-afirm-load">Carregando…</div></div>
+
+    <div class="espaco-afirm-rodape">
+      <div class="espaco-afirm-cfg">
+        <div class="espaco-afirm-cfg-linha">
+          <span class="espaco-afirm-cfg-rot">Intervalo<small>pausa entre cada uma</small></span>
+          <div class="espaco-seg" id="afirm-cadencia">
+            <button type="button" data-cad="2000">2s</button>
+            <button type="button" data-cad="4000" class="sel">4s</button>
+            <button type="button" data-cad="6000">6s</button>
+            <button type="button" data-cad="9000">9s</button>
+          </div>
+        </div>
+        <div class="espaco-afirm-cfg-linha">
+          <span class="espaco-afirm-cfg-rot">Narração</span>
+          <button type="button" class="espaco-toggle sel" id="afirm-narracao" role="switch" aria-checked="true"><span class="espaco-toggle-bola"></span></button>
+        </div>
+        <div class="espaco-afirm-cfg-linha">
+          <span class="espaco-afirm-cfg-rot">Repetir</span>
+          <button type="button" class="espaco-toggle" id="afirm-repetir" role="switch" aria-checked="false"><span class="espaco-toggle-bola"></span></button>
+        </div>
+      </div>
+      <button type="button" class="espaco-afirm-iniciar" id="afirm-iniciar" disabled>Iniciar</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       AFIRMAÇÕES — PLAYER tela cheia. Imagem do tema ao fundo (a .espaco-bg
+       aparece por trás). As frases vão surgindo; o MP3 de cada uma toca se a
+       narração estiver ligada. Lógica em espaco.js.
+       ════════════════════════════════════════════════════════════ -->
+  <div class="espaco-afirm-player" id="espaco-afirm-player" aria-hidden="true">
+    <button type="button" class="espaco-player-x" id="afirm-player-x" aria-label="Encerrar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="espaco-player-frase-area">
+      <p class="espaco-player-frase" id="afirm-player-frase"></p>
+    </div>
+    <div class="espaco-player-barra">
+      <span class="espaco-player-pos" id="afirm-player-pos">1 / 1</span>
+      <button type="button" class="espaco-player-toggle" id="afirm-player-toggle" aria-label="Pausar">
+        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+      </button>
+    </div>
+    <audio id="afirm-player-audio" preload="auto"></audio>
+  </div>
+
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=33"></script>
+  <script src="/app/espaco.js?v=35"></script>
 </body>
 </html>
