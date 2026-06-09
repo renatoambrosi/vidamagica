@@ -219,7 +219,9 @@
   // Slot 2 entra quando ele subir o 2º arquivo.
   const FX_MEDIEVAL_SLOTS = [
     { mount: 'fx-medieval-1', json: '/assets/medieval-fx-1/animation.json', assets: '/assets/medieval-fx-1/images/' },
-    // { mount: 'fx-medieval-2', json: '/assets/medieval-fx-2/animation.json', assets: '/assets/medieval-fx-2/images/' },
+    // Slot 2 reusa a MESMA arte (rota/tempo diferentes no CSS) até o Renato
+    // subir um 2º Lottie próprio — aí é só trocar json/assets aqui.
+    { mount: 'fx-medieval-2', json: '/assets/medieval-fx-1/animation.json', assets: '/assets/medieval-fx-1/images/' },
   ];
   let _fxMedievalAnims = [];
   const _fxMedievalCache = {};
@@ -241,7 +243,8 @@
         try {
           _fxMedievalAnims.push(lottie.loadAnimation({
             container: mount, renderer: 'canvas', loop: true, autoplay: true,
-            animationData: data, assetsPath: slot.assets,
+            // clona o JSON: duas instâncias não podem compartilhar o mesmo objeto
+            animationData: JSON.parse(JSON.stringify(data)), assetsPath: slot.assets,
             rendererSettings: {
               preserveAspectRatio: 'xMidYMid meet', clearCanvas: true,
               dpr: Math.min(2, window.devicePixelRatio || 1),

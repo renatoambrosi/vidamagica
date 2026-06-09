@@ -444,30 +444,64 @@ body[data-tema="medieval"] .espaco-fx-medieval { display: block; }
 .espaco-fx-lottie svg,
 .espaco-fx-lottie canvas { display: block; width: 100%; height: 100%; }
 
-/* Slot 1 = borboleta. Pequena; opacidade CONSTANTE (sem fade). O VOO é a
-   animação abaixo. Calibrar tamanho em --fx-w/h (--fx-op = transparência). */
-#fx-medieval-1 { --fx-top: 30%; --fx-left: 30%; --fx-w: 10vw; --fx-h: 10vw; --fx-op: 0.95; }
-#fx-medieval-2 { --fx-top: 44%; --fx-left: 52%; --fx-w: 10vw; --fx-h: 10vw; --fx-op: 0.95; }
+/* Slot 1 = borboleta. Pequena; opacidade CONSTANTE (sem fade). Âncora no
+   canto superior-esquerdo; todo o trajeto é via translate na animação.
+   Calibrar tamanho em --fx-w/h (--fx-op = transparência). */
+#fx-medieval-1 { --fx-top: 6%; --fx-left: 4%; --fx-w: 10vw; --fx-h: 10vw; --fx-op: 0.95; }
+#fx-medieval-2 { --fx-top: 18%; --fx-left: 84%; --fx-w: 9vw; --fx-h: 9vw; --fx-op: 0.92; }
 
-/* VOO da borboleta — trajeto oval com a CABEÇA sempre liderando (o corpo gira
-   360° ao longo da volta, acompanhando a direção). Profundidade só pela ESCALA
-   (perto embaixo = maior; longe em cima = menor). SEM fade — opacidade fixa.
-   Só transform (GPU). As asas batem pela própria animação do Lottie.
-   rotate(90deg) no início porque a arte aponta a cabeça pro norte (cima). */
-body[data-tema="medieval"] #fx-medieval-1 { animation: medieval-borboleta-voo 30s linear infinite; }
+/* VOO da borboleta — coreografia "viva":
+   (1) entra pela esquerda e faz um S LARGO atravessando a tela;
+   (2) do nada um giro 360° (floreio);
+   (3) sai pela direita;
+   (4) reposiciona FORA da tela (pelas bordas — invisível, não é fade) e
+       reentra por OUTRO lugar (canto superior-esquerdo), fechando o loop.
+   A CABEÇA (norte da arte) lidera a direção; profundidade pela ESCALA.
+   Só transform (GPU). As asas batem pela própria animação do Lottie. */
+body[data-tema="medieval"] #fx-medieval-1 { animation: medieval-borboleta-voo 28s linear infinite; }
 @keyframes medieval-borboleta-voo {
-  0%    { transform: translate3d(0vw,-15vh,0)      rotate(90deg)  scale(0.62); }
-  12.5% { transform: translate3d(18.4vw,-10.6vh,0) rotate(135deg) scale(0.68); }
-  25%   { transform: translate3d(26vw,0vh,0)       rotate(180deg) scale(0.81); }
-  37.5% { transform: translate3d(18.4vw,10.6vh,0)  rotate(225deg) scale(0.94); }
-  50%   { transform: translate3d(0vw,15vh,0)       rotate(270deg) scale(1.0); }
-  62.5% { transform: translate3d(-18.4vw,10.6vh,0) rotate(315deg) scale(0.94); }
-  75%   { transform: translate3d(-26vw,0vh,0)      rotate(360deg) scale(0.81); }
-  87.5% { transform: translate3d(-18.4vw,-10.6vh,0) rotate(405deg) scale(0.68); }
-  100%  { transform: translate3d(0vw,-15vh,0)      rotate(450deg) scale(0.62); }
+  /* entrada + S largo */
+  0%   { transform: translate3d(-8vw,-8vh,0)    rotate(150deg) scale(0.55); }
+  6%   { transform: translate3d(6vw,4vh,0)      rotate(150deg) scale(0.62); }
+  14%  { transform: translate3d(24vw,14vh,0)    rotate(120deg) scale(0.72); }
+  22%  { transform: translate3d(44vw,7vh,0)     rotate(62deg)  scale(0.85); }  /* sobe (S) */
+  30%  { transform: translate3d(62vw,18vh,0)    rotate(120deg) scale(0.95); }  /* desce (S) */
+  36%  { transform: translate3d(73vw,30vh,0)    rotate(110deg) scale(1.0); }
+  /* do nada, um 360° (gira quase no lugar) */
+  42%  { transform: translate3d(76vw,34vh,0)    rotate(110deg) scale(1.0); }
+  46%  { transform: translate3d(78vw,33vh,0)    rotate(290deg) scale(1.0); }
+  50%  { transform: translate3d(80vw,34vh,0)    rotate(470deg) scale(1.0); }  /* 110→470 = 360 */
+  /* sai pela direita */
+  58%  { transform: translate3d(120vw,44vh,0)   rotate(450deg) scale(0.95); }
+  /* reposiciona FORA da tela (bordas) — invisível */
+  66%  { transform: translate3d(120vw,-32vh,0)  rotate(360deg) scale(0.7); }
+  74%  { transform: translate3d(-32vw,-30vh,0)  rotate(200deg) scale(0.58); }
+  /* reentra pelo canto superior-esquerdo (outro lugar), fecha o loop */
+  100% { transform: translate3d(-8vw,-8vh,0)    rotate(150deg) scale(0.55); }
 }
+/* 2ª borboleta — ESPELHADA (entra pela direita, S pra esquerda, 360° à
+   esquerda, sai pela esquerda, reentra pela direita). Mais lenta (35s) e com
+   delay negativo (-15s) pra começar fora de fase — nunca sincroniza com a 1ª. */
+body[data-tema="medieval"] #fx-medieval-2 { animation: medieval-borboleta-voo-2 35s linear -15s infinite; }
+@keyframes medieval-borboleta-voo-2 {
+  0%   { transform: translate3d(8vw,-8vh,0)     rotate(210deg) scale(0.5); }
+  6%   { transform: translate3d(-6vw,4vh,0)     rotate(210deg) scale(0.56); }
+  14%  { transform: translate3d(-24vw,14vh,0)   rotate(240deg) scale(0.66); }
+  22%  { transform: translate3d(-44vw,7vh,0)    rotate(298deg) scale(0.78); }  /* sobe (S) */
+  30%  { transform: translate3d(-62vw,18vh,0)   rotate(240deg) scale(0.88); }  /* desce (S) */
+  36%  { transform: translate3d(-73vw,30vh,0)   rotate(250deg) scale(0.92); }
+  42%  { transform: translate3d(-76vw,34vh,0)   rotate(250deg) scale(0.92); }
+  46%  { transform: translate3d(-78vw,33vh,0)   rotate(430deg) scale(0.92); }
+  50%  { transform: translate3d(-80vw,34vh,0)   rotate(610deg) scale(0.92); }  /* 250→610 = 360 */
+  58%  { transform: translate3d(-120vw,44vh,0)  rotate(590deg) scale(0.82); }  /* sai pela esquerda */
+  66%  { transform: translate3d(-120vw,-32vh,0) rotate(500deg) scale(0.6); }   /* reposiciona fora */
+  74%  { transform: translate3d(32vw,-30vh,0)   rotate(320deg) scale(0.5); }
+  100% { transform: translate3d(8vw,-8vh,0)     rotate(210deg) scale(0.5); }   /* reentra pela direita */
+}
+
 @media (prefers-reduced-motion: reduce) {
-  body[data-tema="medieval"] #fx-medieval-1 { animation: none; }
+  body[data-tema="medieval"] #fx-medieval-1,
+  body[data-tema="medieval"] #fx-medieval-2 { animation: none; }
 }
 .cadente {
   position: absolute; top: var(--cd-top); left: var(--cd-left);
