@@ -78,6 +78,8 @@ body[data-tema="magico"] {
   --particula: rgba(255, 240, 190, 0.9);
   --sombra: 0 6px 26px rgba(90, 70, 160, 0.18);
   --glow: 0 0 24px rgba(150, 120, 230, 0.35), 0 0 48px rgba(180, 160, 255, 0.20);
+  /* Cores do contorno "luzes do Google" (reusadas em vários elementos do tema) */
+  --luz-conic-cores: #4285F4, #00C2FF, #34A853, #FBBC05, #FF6D3D, #EA4335, #E84CC8, #8A5CF6, #4285F4;
 }
 /* TEMA: UNIVERSO — céu noturno azul estrelado (universo.webp) + estrelas cadentes */
 body[data-tema="universo"] {
@@ -423,10 +425,33 @@ body[data-tema="magico"] .espaco-caminho {
   border: 2px solid transparent;
   background:
     linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
-    conic-gradient(from var(--espaco-ang),
-      #4285F4, #00C2FF, #34A853, #FBBC05, #FF6D3D, #EA4335, #E84CC8, #8A5CF6, #4285F4) border-box;
+    conic-gradient(from var(--espaco-ang), var(--luz-conic-cores)) border-box;
   animation: espaco-luz-girar 5s linear infinite;
   outline: none;
+}
+/* Mesmo contorno colorido em outros pontos do tema. Cada um tem o SEU
+   preenchimento interno (padding-box): claro no "Primeira vez", e o acento
+   nos botões/chip com texto branco (legibilidade). */
+body[data-tema="magico"] .carta-video-btn {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
+    conic-gradient(from var(--espaco-ang), var(--luz-conic-cores)) border-box;
+  animation: espaco-luz-girar 5s linear infinite;
+}
+body[data-tema="magico"] .espaco-btn-primario {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--acento), var(--acento-deep)) padding-box,
+    conic-gradient(from var(--espaco-ang), var(--luz-conic-cores)) border-box;
+  animation: espaco-luz-girar 5s linear infinite;
+}
+body[data-tema="magico"] .espaco-data-preset.selecionado {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--acento-deep), var(--acento)) padding-box,
+    conic-gradient(from var(--espaco-ang), var(--luz-conic-cores)) border-box;
+  animation: espaco-luz-girar 5s linear infinite;
 }
 @keyframes espaco-luz-girar { to { --espaco-ang: 360deg; } }
 
@@ -786,8 +811,8 @@ body[data-tema="medieval"] .espaco-caminho-icone {
 }
 .espaco-data-preset:active { transform: scale(0.96); }
 .espaco-data-preset.selecionado {
-  background: linear-gradient(135deg, var(--acento), var(--acento-2));
-  border-color: var(--acento); color: var(--acento-deep);
+  background: linear-gradient(135deg, var(--acento-deep), var(--acento));
+  border-color: var(--acento); color: #fff;
   box-shadow: var(--glow);
 }
 .espaco-data-input { display: none; }
@@ -989,11 +1014,10 @@ body[data-tema="magico"] {
 .carta-continuar {
   display: flex; flex-direction: column; align-items: center; gap: 1px;
   margin: auto auto 34px; padding: 8px 18px;   /* margin-top:auto empurra pro fundo; bottom sobe um tico */
-  background: none; border: none; cursor: pointer; font: inherit;
-  font-size: 0.85rem; font-weight: 700; letter-spacing: 0.04em;
-  /* cor do acento do tema + sombra leve = legível sobre fundo claro OU escuro */
+  background: none; border: none; cursor: pointer;
+  /* mesma fonte dos títulos, sem letras espaçadas, sem sombra (legível e limpo) */
+  font-family: var(--font-display); font-size: 0.98rem; font-weight: 700; letter-spacing: normal;
   color: var(--acento); opacity: 1;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
   transition: opacity 0.2s ease, filter 0.2s ease;
 }
 .carta-continuar svg { width: 22px; height: 22px; animation: cartaContinuarBounce 1.8s ease-in-out infinite; }
@@ -1098,8 +1122,8 @@ body[data-tema="magico"] {
 .espaco-btn-primario {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
   padding: 0.95rem 1.2rem; font: inherit; font-weight: 700; font-size: 1rem;
-  color: var(--acento-deep); cursor: pointer;
-  background: linear-gradient(135deg, var(--acento-2), var(--acento));
+  color: #fff; cursor: pointer;
+  background: linear-gradient(135deg, var(--acento), var(--acento-deep));
   border: 1px solid var(--acento); border-radius: var(--radius-md);
   box-shadow: var(--sombra), var(--glow);
   transition: transform 0.16s ease, filter 0.2s ease;
