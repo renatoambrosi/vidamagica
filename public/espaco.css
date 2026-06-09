@@ -460,43 +460,57 @@ body[data-tema="medieval"] .espaco-fx-medieval { display: block; }
    Só transform (GPU). As asas batem pela própria animação do Lottie. */
 body[data-tema="medieval"] #fx-medieval-1 { animation: medieval-borboleta-voo 28s linear infinite; }
 @keyframes medieval-borboleta-voo {
-  /* entrada + S largo — rotação = direção REAL do voo (ajustada à proporção da tela) */
-  0%   { transform: translate3d(-8vw,-8vh,0)    rotate(152deg) scale(0.55); }
-  6%   { transform: translate3d(6vw,4vh,0)      rotate(140deg) scale(0.62); }
-  14%  { transform: translate3d(24vw,14vh,0)    rotate(53deg)  scale(0.72); }  /* sobe (S) */
-  22%  { transform: translate3d(44vw,7vh,0)     rotate(143deg) scale(0.85); }  /* desce (S) */
-  30%  { transform: translate3d(62vw,18vh,0)    rotate(157deg) scale(0.95); }
-  36%  { transform: translate3d(73vw,30vh,0)    rotate(161deg) scale(1.0); }
+  /* Mesmo trajeto de antes. Truque anti-drift: a rotação SEGURA durante cada
+     trecho reto (mesmo ângulo nos dois pontos do segmento) e só VIRA num
+     respiro de 2% ao chegar na curva — a borboleta "flita" no ponto de virada. */
+  0%   { transform: translate3d(-8vw,-8vh,0)   rotate(152deg) scale(0.55); }
+  4%   { transform: translate3d(6vw,4vh,0)     rotate(152deg) scale(0.62); }  /* reto */
+  6%   { transform: translate3d(6vw,4vh,0)     rotate(140deg) scale(0.62); }  /* vira */
+  12%  { transform: translate3d(24vw,14vh,0)   rotate(140deg) scale(0.72); }
+  14%  { transform: translate3d(24vw,14vh,0)   rotate(53deg)  scale(0.72); }  /* vira (sobe S) */
+  20%  { transform: translate3d(44vw,7vh,0)    rotate(53deg)  scale(0.85); }
+  22%  { transform: translate3d(44vw,7vh,0)    rotate(143deg) scale(0.85); }  /* vira (desce S) */
+  28%  { transform: translate3d(62vw,18vh,0)   rotate(143deg) scale(0.95); }
+  30%  { transform: translate3d(62vw,18vh,0)   rotate(157deg) scale(0.95); }
+  34%  { transform: translate3d(73vw,30vh,0)   rotate(157deg) scale(1.0); }
+  36%  { transform: translate3d(73vw,30vh,0)   rotate(161deg) scale(1.0); }
   /* do nada, um 360° (gira quase no lugar) */
-  42%  { transform: translate3d(76vw,34vh,0)    rotate(161deg) scale(1.0); }
-  46%  { transform: translate3d(78vw,33vh,0)    rotate(341deg) scale(1.0); }
-  50%  { transform: translate3d(80vw,34vh,0)    rotate(521deg) scale(1.0); }  /* 161→521 = 360 */
-  /* sai pela direita */
-  58%  { transform: translate3d(120vw,44vh,0)   rotate(478deg) scale(0.95); }
+  42%  { transform: translate3d(76vw,34vh,0)   rotate(161deg) scale(1.0); }
+  46%  { transform: translate3d(78vw,33vh,0)   rotate(341deg) scale(1.0); }
+  50%  { transform: translate3d(80vw,34vh,0)   rotate(521deg) scale(1.0); }  /* 161→521 = 360 */
+  52%  { transform: translate3d(90vw,36vh,0)   rotate(478deg) scale(0.98); } /* vira pra saída */
+  58%  { transform: translate3d(120vw,44vh,0)  rotate(478deg) scale(0.95); } /* sai reto pela direita */
   /* reposiciona FORA da tela (bordas) — invisível */
-  66%  { transform: translate3d(120vw,-32vh,0)  rotate(360deg) scale(0.7); }
-  74%  { transform: translate3d(-32vw,-30vh,0)  rotate(240deg) scale(0.58); }
-  /* reentra pelo canto superior-esquerdo (outro lugar), fecha o loop */
-  100% { transform: translate3d(-8vw,-8vh,0)    rotate(152deg) scale(0.55); }
+  66%  { transform: translate3d(120vw,-32vh,0) rotate(360deg) scale(0.7); }
+  74%  { transform: translate3d(-32vw,-30vh,0) rotate(240deg) scale(0.58); }
+  /* reentra pelo canto superior-esquerdo, fecha o loop */
+  100% { transform: translate3d(-8vw,-8vh,0)   rotate(152deg) scale(0.55); }
 }
 /* 2ª borboleta — ESPELHADA (entra pela direita, S pra esquerda, 360° à
    esquerda, sai pela esquerda, reentra pela direita). Mais lenta (35s) e com
    delay negativo (-15s) pra começar fora de fase — nunca sincroniza com a 1ª. */
 body[data-tema="medieval"] #fx-medieval-2 { animation: medieval-borboleta-voo-2 35s linear -15s infinite; }
 @keyframes medieval-borboleta-voo-2 {
+  /* mesma técnica anti-drift (segura no reto, vira na curva) — espelhada */
   0%   { transform: translate3d(8vw,-8vh,0)     rotate(208deg) scale(0.5); }
+  4%   { transform: translate3d(-6vw,4vh,0)     rotate(208deg) scale(0.56); }
   6%   { transform: translate3d(-6vw,4vh,0)     rotate(220deg) scale(0.56); }
+  12%  { transform: translate3d(-24vw,14vh,0)   rotate(220deg) scale(0.66); }
   14%  { transform: translate3d(-24vw,14vh,0)   rotate(307deg) scale(0.66); }  /* sobe (S) */
+  20%  { transform: translate3d(-44vw,7vh,0)    rotate(307deg) scale(0.78); }
   22%  { transform: translate3d(-44vw,7vh,0)    rotate(217deg) scale(0.78); }  /* desce (S) */
+  28%  { transform: translate3d(-62vw,18vh,0)   rotate(217deg) scale(0.88); }
   30%  { transform: translate3d(-62vw,18vh,0)   rotate(203deg) scale(0.88); }
+  34%  { transform: translate3d(-73vw,30vh,0)   rotate(203deg) scale(0.92); }
   36%  { transform: translate3d(-73vw,30vh,0)   rotate(199deg) scale(0.92); }
   42%  { transform: translate3d(-76vw,34vh,0)   rotate(199deg) scale(0.92); }
   46%  { transform: translate3d(-78vw,33vh,0)   rotate(379deg) scale(0.92); }
   50%  { transform: translate3d(-80vw,34vh,0)   rotate(559deg) scale(0.92); }  /* 199→559 = 360 */
-  58%  { transform: translate3d(-120vw,44vh,0)  rotate(602deg) scale(0.82); }  /* sai pela esquerda */
-  66%  { transform: translate3d(-120vw,-32vh,0) rotate(480deg) scale(0.6); }   /* reposiciona fora */
+  52%  { transform: translate3d(-90vw,36vh,0)   rotate(602deg) scale(0.88); }  /* vira pra saída */
+  58%  { transform: translate3d(-120vw,44vh,0)  rotate(602deg) scale(0.82); }  /* sai reto pela esquerda */
+  66%  { transform: translate3d(-120vw,-32vh,0) rotate(480deg) scale(0.6); }
   74%  { transform: translate3d(32vw,-30vh,0)   rotate(340deg) scale(0.5); }
-  100% { transform: translate3d(8vw,-8vh,0)     rotate(208deg) scale(0.5); }   /* reentra pela direita */
+  100% { transform: translate3d(8vw,-8vh,0)     rotate(208deg) scale(0.5); }
 }
 
 @media (prefers-reduced-motion: reduce) {
