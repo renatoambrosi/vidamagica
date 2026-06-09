@@ -416,8 +416,9 @@ body[data-tema="magico"] .espaco-caminho.selecionado {
   border: 2px solid transparent;
   background:
     linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
-    conic-gradient(from var(--espaco-ang), #ff6ec4, #7873f5, #45c4f5, #4ade80, #ffd93d, #ff9a3d, #ff6ec4) border-box;
-  animation: espaco-luz-girar 4s linear infinite;
+    conic-gradient(from var(--espaco-ang),
+      #4285F4, #00C2FF, #34A853, #FBBC05, #FF6D3D, #EA4335, #E84CC8, #8A5CF6, #4285F4) border-box;
+  animation: espaco-luz-girar 5s linear infinite;
   outline: none;
 }
 @keyframes espaco-luz-girar { to { --espaco-ang: 360deg; } }
