@@ -322,7 +322,13 @@ body[data-tema="medieval"] {
   transition: transform 0.16s ease, border-color 0.2s ease, box-shadow 0.25s ease;
 }
 .espaco-caminho:active { transform: scale(0.98); }
-.espaco-caminho:hover { border-color: var(--acento); box-shadow: var(--sombra), var(--glow); }
+/* Hover só em quem tem mouse de verdade — no touch o iOS "gruda" o :hover
+   (era o roxo preso ao tocar). */
+@media (hover: hover) {
+  .espaco-caminho:hover { border-color: var(--acento); box-shadow: var(--sombra), var(--glow); }
+  /* No Mágico a borda é o conic (transparente): hover só reforça o glow, sem virar roxo */
+  body[data-tema="magico"] .espaco-caminho:hover { border-color: transparent; box-shadow: var(--sombra), var(--glow); }
+}
 .espaco-caminho-icone {
   width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0;
   display: grid; place-items: center; color: var(--acento-deep);
@@ -335,8 +341,10 @@ body[data-tema="medieval"] {
 .espaco-caminho-seta { margin-left: auto; color: var(--texto-suave); transition: transform 0.2s ease, color 0.2s ease; }
 .espaco-caminho-seta svg { width: 20px; height: 20px; }
 /* Microinterações premium: seta desliza + ícone reage ao toque */
-.espaco-caminho:hover .espaco-caminho-seta,
 .espaco-caminho:active .espaco-caminho-seta { transform: translateX(4px); color: var(--acento); }
+@media (hover: hover) {
+  .espaco-caminho:hover .espaco-caminho-seta { transform: translateX(4px); color: var(--acento); }
+}
 .espaco-caminho-icone { transition: transform 0.2s ease; }
 .espaco-caminho:active .espaco-caminho-icone { transform: scale(1.08) rotate(-3deg); }
 
@@ -404,15 +412,14 @@ body[data-tema="medieval"] {
 /* ═══════════════════════════════════════════════════════════════════
    EFEITOS POR TEMA (leves — GPU. Outros efeitos: ver memória da remodelação)
    ═══════════════════════════════════════════════════════════════════ */
-/* MÁGICO — contorno dos cards com luz multicolorida correndo (estilo Google).
+/* MÁGICO — contorno colorido (estilo Google) é a IDENTIDADE do tema: as luzes
+   correm SEMPRE nos cards (não dependem de hover/clique → mouse e touch ficam
+   IGUAIS, sem o "roxo grudado" do :hover do iOS, e o efeito pode ser apreciado).
    Técnica: 2 camadas de background (fundo padding-box + conic border-box) +
    borda transparente, animando o ângulo do conic via @property (iOS 16.4+;
    abaixo disso a borda fica colorida estática — degrada bem). */
-/* Só no card SELECIONADO/em foco (toque). Sem seleção, o card fica normal. */
 @property --espaco-ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
-body[data-tema="magico"] .espaco-caminho:focus,
-body[data-tema="magico"] .espaco-caminho:active,
-body[data-tema="magico"] .espaco-caminho.selecionado {
+body[data-tema="magico"] .espaco-caminho {
   border: 2px solid transparent;
   background:
     linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
