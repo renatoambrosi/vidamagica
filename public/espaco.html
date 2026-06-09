@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=60" />
+  <link rel="stylesheet" href="/espaco.css?v=61" />
   <!-- Lottie (mesma lib/CDN do baú no /app) — usado na abertura mágica da carta -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -229,6 +229,11 @@
             <span class="carta-sug-label" id="sug-label">Sugestões</span>
             <button type="button" class="carta-sug-seta" id="sug-next" aria-label="Próximo tema"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
           </div>
+          <!-- Aparece só quando uma sugestão está ativa: limpa de volta pra "Sugestões" -->
+          <button type="button" class="carta-sug-limpar" id="sug-limpar" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg>
+            <span>Limpar</span>
+          </button>
 
           <div class="carta-papel">
             <!-- TOPO: contexto (esquerda) + data (direita) -->
@@ -252,7 +257,8 @@
               <p class="carta-dateline" id="carta-dateline"></p>
             </div>
             <textarea id="carta-conteudo" class="carta-corpo" maxlength="20000" placeholder="Escreva com calma. O que você está vivendo, sonhando e sentindo agora — e o que quer que ela lembre quando reler…" rows="9"></textarea>
-            <p class="carta-corpo-dica"><span id="carta-contador">0</span> caracteres · mínimo 10</p>
+            <p class="carta-corpo-dica" id="carta-corpo-dica"><span id="carta-contador">0</span> caracteres · mínimo 10</p>
+            <p class="carta-corpo-hint" id="carta-corpo-hint" style="display:none">Sugestão de inspiração · toque na carta para editar ou limpar</p>
           </div>
 
           <!-- "Continuar" — empurrado pro fundo da faixa visível, abaixo do papel,
@@ -427,6 +433,19 @@
     </div>
   </div>
 
+  <!-- Diálogo ao tocar numa SUGESTÃO ativa: editar (deixar com a sua cara) ou limpar -->
+  <div class="espaco-modal" id="modal-sugestao" aria-hidden="true">
+    <div class="espaco-modal-overlay" data-fechar-modal="modal-sugestao"></div>
+    <div class="espaco-modal-card espaco-confirmar">
+      <p class="espaco-confirmar-msg">Isto é só uma <strong>sugestão pra te inspirar</strong> ✨<br>O que você quer fazer com ela?</p>
+      <div class="espaco-confirmar-acoes espaco-confirmar-coluna">
+        <button type="button" class="espaco-confirmar-ok" id="sug-acao-editar">Editar e deixar com a minha cara</button>
+        <button type="button" class="espaco-confirmar-cancelar" id="sug-acao-limpar">Limpar e escrever do zero</button>
+        <button type="button" class="espaco-confirmar-voltar" data-fechar-modal="modal-sugestao">Continuar lendo</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ════════════════════════════════════════════════════════════
        CERIMÔNIA DE LACRAR — palco do portal (SVG injetado via JS no submit).
        ════════════════════════════════════════════════════════════ -->
@@ -593,6 +612,6 @@
 
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=41"></script>
+  <script src="/app/espaco.js?v=42"></script>
 </body>
 </html>

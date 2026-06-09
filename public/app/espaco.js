@@ -482,28 +482,54 @@
       }
     });
 
-    // ── SUGESTÕES — setas cilcam temas; o exemplo aparece no corpo; tocar limpa ──
+    // ── SUGESTÕES — as setas ciclam temas; o exemplo aparece COMPLETO (read-only)
+    // e rolável (não some ao scrollar). "Limpar" volta pra vazio; tocar no exemplo
+    // abre o diálogo custom (editar a sugestão OU limpar e escrever do zero). ──
     let sugIdx = -1;            // -1 = "Sugestões" (vazio); 0..N = tema
-    let exemploAtivo = false;   // true quando o corpo mostra exemplo (não foi escrito pela aluna)
+    let exemploAtivo = false;   // true quando o corpo mostra exemplo (read-only)
     const sugLabel = el('sug-label');
+    const sugLimparBtn = el('sug-limpar');
+    const dicaEl = el('carta-corpo-dica');
+    const hintEl = el('carta-corpo-hint');
+
+    // Cresce o textarea pra caber todo o conteúdo (sem rolagem interna; a página rola)
+    function autoGrow() {
+      if (!ta) return;
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
+    }
+    function toggleHint(modoExemplo) {
+      if (dicaEl) dicaEl.style.display = modoExemplo ? 'none' : '';
+      if (hintEl) hintEl.style.display = modoExemplo ? '' : 'none';
+    }
     function mostrarSugestao() {
       const s = CARTA_SUGESTOES[sugIdx];
       if (sugLabel) sugLabel.textContent = s.tema;
-      if (ta) {
-        ta.value = s.linhas.join('\n\n');
-        ta.classList.add('carta-corpo-exemplo');
-        exemploAtivo = true;
-        if (cnt) cnt.textContent = String(ta.value.trim().length);
-      }
+      if (!ta) return;
+      ta.value = s.linhas.join('\n\n');
+      ta.readOnly = true;                 // read-only: tocar não digita; o diálogo decide
+      ta.classList.add('carta-corpo-exemplo');
+      exemploAtivo = true;
+      toggleHint(true);
+      if (sugLimparBtn) sugLimparBtn.style.display = '';
+      autoGrow();
     }
-    function limparExemplo() {
-      if (!exemploAtivo) return;
-      if (ta) { ta.value = ''; ta.classList.remove('carta-corpo-exemplo'); }
+    // Sai do modo exemplo. manterTexto=true (editar) mantém o texto; false (limpar) zera.
+    function sairExemplo(manterTexto, focar) {
+      if (!ta) return;
+      ta.readOnly = false;
+      if (!manterTexto) ta.value = '';
+      ta.classList.remove('carta-corpo-exemplo');
       exemploAtivo = false;
       sugIdx = -1;
       if (sugLabel) sugLabel.textContent = 'Sugestões';
-      if (cnt) cnt.textContent = '0';
+      if (sugLimparBtn) sugLimparBtn.style.display = 'none';
+      toggleHint(false);
+      if (cnt) cnt.textContent = String((ta.value || '').trim().length);
+      autoGrow();
+      if (focar) ta.focus();
     }
+
     el('sug-next')?.addEventListener('click', () => {
       sugIdx = (sugIdx < 0) ? 0 : (sugIdx + 1) % CARTA_SUGESTOES.length;
       mostrarSugestao();
@@ -512,9 +538,17 @@
       sugIdx = (sugIdx <= 0) ? CARTA_SUGESTOES.length - 1 : sugIdx - 1;
       mostrarSugestao();
     });
-    // Tocar no corpo enquanto mostra exemplo → limpa pra escrever a sua
-    ta?.addEventListener('focus', limparExemplo);
-    ta?.addEventListener('pointerdown', limparExemplo);
+    // "Limpar" da barra → volta pra "Sugestões" vazio (sem abrir o teclado)
+    sugLimparBtn?.addEventListener('click', () => sairExemplo(false, false));
+
+    // Tocar no exemplo → diálogo custom. 'click' só dispara em TOQUE (não em
+    // rolagem) → rolar a tela pra ler NÃO abre o diálogo.
+    ta?.addEventListener('click', () => { if (exemploAtivo) abrirModal('modal-sugestao'); });
+    el('sug-acao-editar')?.addEventListener('click', () => { fecharModal('modal-sugestao'); sairExemplo(true, true); });
+    el('sug-acao-limpar')?.addEventListener('click', () => { fecharModal('modal-sugestao'); sairExemplo(false, true); });
+
+    // Textarea cresce conforme a aluna digita (a página rola, sem scroll interno)
+    ta?.addEventListener('input', autoGrow);
 
     // ── VÍDEO "como usar" (modal translúcido por cima da carta) ──
     const VIDEO_ID = 'UCK4EA_MVTA';
@@ -579,8 +613,12 @@
         if (!r) return;
         const d = await r.json().catch(() => ({}));
         if (!d?.ok) { toast(d?.erro || 'Não consegui salvar a carta.'); return; }
-        // Limpa o form
-        if (ta) { ta.value = ''; ta.classList.remove('carta-corpo-exemplo'); } exemploAtivo = false;
+        // Limpa o form (reseta também read-only/altura/estado de sugestão)
+        if (ta) { ta.value = ''; ta.classList.remove('carta-corpo-exemplo'); ta.readOnly = false; ta.style.height = ''; }
+        exemploAtivo = false;
+        if (sugLabel) sugLabel.textContent = 'Sugestões';
+        if (sugLimparBtn) sugLimparBtn.style.display = 'none';
+        toggleHint(false);
         if (cnt) cnt.textContent = '0';
         const tit = el('carta-titulo'); if (tit) tit.value = '';
         document.querySelectorAll('.espaco-data-preset').forEach(b => b.classList.remove('selecionado'));

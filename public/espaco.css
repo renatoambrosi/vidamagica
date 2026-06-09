@@ -899,8 +899,9 @@ body[data-tema="magico"] {
 }
 .carta-corpo::placeholder { color: var(--carta-suave); opacity: 0.75; font-style: italic; }
 .carta-corpo-dica { margin: 10px 2px 0; text-align: right; font-size: 0.74rem; color: var(--carta-suave); }
-/* Corpo mostrando EXEMPLO (sugestão) — mais ameno; tocar limpa pra escrever a sua. */
-.carta-corpo.carta-corpo-exemplo { color: var(--carta-suave); opacity: 0.9; font-style: italic; }
+.carta-corpo-hint { margin: 10px 2px 0; text-align: center; font-size: 0.76rem; font-style: italic; color: var(--carta-suave); }
+/* Corpo mostrando EXEMPLO (sugestão) — read-only, completo e rolável; tocar abre o diálogo. */
+.carta-corpo.carta-corpo-exemplo { color: var(--carta-suave); opacity: 0.92; font-style: italic; cursor: pointer; resize: none; }
 
 /* ── Botão do vídeo "como usar" (perto do eyebrow) ── */
 .carta-video-btn {
@@ -958,6 +959,17 @@ body[data-tema="magico"] {
   font-size: 0.74rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
   color: var(--texto); line-height: 1.2;
 }
+/* "Limpar" — aparece sob as setas quando há sugestão ativa (volta pra vazio) */
+.carta-sug-limpar {
+  display: inline-flex; align-items: center; gap: 0.35rem; margin: 0.45rem auto 0;
+  padding: 0.32rem 0.85rem; font-family: var(--font-ui); font-size: 0.76rem; font-weight: 600;
+  color: var(--texto-suave); background: transparent; cursor: pointer;
+  border: 1px solid var(--card-borda); border-radius: 999px;
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+.carta-sug-limpar svg { width: 14px; height: 14px; }
+.carta-sug-limpar:active { transform: scale(0.96); }
+@media (hover: hover) { .carta-sug-limpar:hover { color: var(--acento); border-color: var(--acento); } }
 
 /* ── Botão "Só salvar" — abaixo do "Lacrar e enviar", secundário (fantasma) ── */
 .carta-btn-salvar {
@@ -1303,6 +1315,12 @@ body[data-tema="magico"] {
   color: var(--acento-deep); border-color: var(--acento);
 }
 .espaco-confirmar-ok.perigo { background: linear-gradient(135deg, #E2574C, #C0392B); color: #fff; border-color: transparent; }
+/* Variante em coluna (2+ ações empilhadas) + botão "voltar" discreto (dismiss) */
+.espaco-confirmar-acoes.espaco-confirmar-coluna { flex-direction: column; gap: 8px; }
+.espaco-confirmar-voltar {
+  background: transparent; border-color: transparent; color: var(--texto-suave);
+  font-weight: 600; font-size: 0.88rem; padding: 0.45rem 0.6rem;
+}
 
 /* ── SWIPE nos cards (revela Excluir / Cancelar envio temporal) ── */
 .espaco-carta-row { position: relative; border-radius: var(--radius-lg); }
