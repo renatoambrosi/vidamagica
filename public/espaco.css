@@ -1337,16 +1337,18 @@ body[data-tema="magico"] {
 /* ── SWIPE nos cards (revela Excluir / Cancelar envio temporal) ── */
 .espaco-carta-row { position: relative; border-radius: var(--radius-lg); }
 .espaco-carta-row .espaco-carta-item { width: 100%; position: relative; z-index: 1; will-change: transform; }
+/* Compacto, estilo WhatsApp: largura fixa, ícone + rótulo curto empilhados */
 .espaco-carta-excluir {
   position: absolute; top: 0; right: 0; bottom: 0; z-index: 0;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 0 22px; border: none; cursor: pointer; border-radius: var(--radius-lg);
+  width: 78px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  padding: 0; border: none; cursor: pointer; border-radius: var(--radius-lg);
   background: linear-gradient(135deg, #E2574C, #C0392B); color: #fff;
-  font: inherit; font-size: 0.9rem; font-weight: 700; white-space: nowrap;
+  font: inherit; font-size: 0.62rem; font-weight: 700; line-height: 1; white-space: nowrap;
   opacity: 0; pointer-events: none; transition: opacity 0.15s ease;
 }
 .espaco-carta-row.cancelar .espaco-carta-excluir { background: linear-gradient(135deg, #D89A33, #A8701C); }
-.espaco-carta-excluir svg { width: 18px; height: 18px; }
+.espaco-carta-excluir svg { width: 21px; height: 21px; }
 .espaco-carta-row.aberto .espaco-carta-excluir,
 .espaco-carta-row.arrastando .espaco-carta-excluir { opacity: 1; pointer-events: auto; }
 

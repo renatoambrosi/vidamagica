@@ -875,7 +875,7 @@
         const devAcao = (trancada && devCarta)
           ? `<button type="button" class="espaco-carta-devacao" data-amadurecer="${c.id}">⚡ Fazer chegar agora (teste)</button>`
           : '';
-        const rotuloExcluir = trancada ? 'Cancelar envio temporal' : 'Excluir';
+        const rotuloExcluir = trancada ? 'Cancelar' : 'Excluir';
         return sep + `
           <div class="espaco-carta-row${trancada ? ' cancelar' : ''}" data-id="${c.id}">
             <button type="button" class="espaco-carta-excluir" data-excluir="${c.id}">
@@ -942,10 +942,10 @@
           const ehTrancada = item.dataset.trancada === '1';
           const ok = await confirmarAcao({
             mensagem: ehTrancada
-              ? 'Quer mesmo cancelar o envio dela? A carta não vai chegar — e some pra sempre.'
-              : 'Quer guardar isso só na memória e apagar a carta? Não tem como voltar atrás.',
-            okLabel: ehTrancada ? 'Cancelar envio' : 'Apagar carta',
-            cancelLabel: 'Deixa pra lá',
+              ? 'Essa carta ainda está a caminho do seu futuro. Se você cancelar a viagem dela, ela não chega — e não tem como recuperar.'
+              : 'Você quer mesmo tirar essa carta do seu acervo? Ela se vai pra sempre, sem volta.',
+            okLabel: ehTrancada ? 'Cancelar a viagem' : 'Apagar carta',
+            cancelLabel: ehTrancada ? 'Deixar viajar' : 'Manter no acervo',
             perigo: true,
           });
           if (!ok) return;
