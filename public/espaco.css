@@ -1322,6 +1322,18 @@ body[data-tema="magico"] {
   font-weight: 600; font-size: 0.88rem; padding: 0.45rem 0.6rem;
 }
 
+/* Divisor de grupo no acervo — linha fina + rótulo à esquerda (pouco espaço) */
+.espaco-cartas-sep {
+  display: flex; align-items: center; gap: 0.6rem;
+  margin: 0.5rem 0 0.1rem;
+  font-family: var(--font-ui); font-size: 0.66rem; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--texto-suave);
+}
+.espaco-cartas-sep:first-child { margin-top: 0; }
+.espaco-cartas-sep::after {
+  content: ''; flex: 1; height: 1px; background: var(--card-borda);
+}
+
 /* ── SWIPE nos cards (revela Excluir / Cancelar envio temporal) ── */
 .espaco-carta-row { position: relative; border-radius: var(--radius-lg); }
 .espaco-carta-row .espaco-carta-item { width: 100%; position: relative; z-index: 1; will-change: transform; }

@@ -253,13 +253,24 @@ router.post('/cartas/testar-envio', autenticar, async (req, res) => {
 router.get('/cartas', autenticar, async (req, res) => {
   try {
     const usuarioId = req.usuario.sub;
+    // Ordem do acervo (3 grupos):
+    //  0) PRONTAS/maduras (já chegaram e ainda não lidas) — no topo;
+    //  1) TRANCADAS — as mais próximas de chegar primeiro (abrir_em ASC);
+    //  2) LIDAS — por chegada, a mais nova acima (abrir_em DESC).
     const r = await poolEspaco.query(
       `SELECT id, titulo, abrir_em, aberta_em, criado_em, carta_de, carta_para,
               (abrir_em > NOW()) AS trancada,
               CASE WHEN abrir_em > NOW() THEN NULL ELSE conteudo END AS conteudo
          FROM cartas_do_tempo
         WHERE usuario_id = $1
-        ORDER BY abrir_em DESC`,
+        ORDER BY
+          CASE
+            WHEN aberta_em IS NULL AND abrir_em <= NOW() THEN 0
+            WHEN aberta_em IS NULL AND abrir_em >  NOW() THEN 1
+            ELSE 2
+          END,
+          CASE WHEN aberta_em IS NULL AND abrir_em > NOW() THEN abrir_em END ASC NULLS LAST,
+          abrir_em DESC`,
       [usuarioId]
     );
     return res.json({ ok: true, cartas: r.rows });

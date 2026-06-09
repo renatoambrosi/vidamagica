@@ -852,10 +852,19 @@
           </div>`;
         return;
       }
+      // Divisor entre grupos (linha fina + rótulo à esquerda). A lista já vem
+      // agrupada do backend (prontas → a caminho → lidas).
+      const ROTULO_GRUPO = { chegou: 'Prontas pra abrir', trancada: 'A caminho', lida: 'Já lidas' };
+      let grupoAnterior = null;
       wrap.innerHTML = cartas.map(c => {
         const trancada = !!c.trancada;
         const lida = !trancada && !!c.aberta_em;
         const estado = trancada ? 'trancada' : (lida ? 'lida' : 'chegou');
+        let sep = '';
+        if (estado !== grupoAnterior) {
+          sep = `<div class="espaco-cartas-sep"><span>${ROTULO_GRUPO[estado] || ''}</span></div>`;
+          grupoAnterior = estado;
+        }
         const titulo = (c.titulo || 'Carta sem título').replace(/</g, '&lt;');
         const meta = trancada
           ? `Lacrada · ${fmtRelativoFuturo(c.abrir_em)}`
@@ -867,7 +876,7 @@
           ? `<button type="button" class="espaco-carta-devacao" data-amadurecer="${c.id}">⚡ Fazer chegar agora (teste)</button>`
           : '';
         const rotuloExcluir = trancada ? 'Cancelar envio temporal' : 'Excluir';
-        return `
+        return sep + `
           <div class="espaco-carta-row${trancada ? ' cancelar' : ''}" data-id="${c.id}">
             <button type="button" class="espaco-carta-excluir" data-excluir="${c.id}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
