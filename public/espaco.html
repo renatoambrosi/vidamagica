@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=59" />
+  <link rel="stylesheet" href="/espaco.css?v=60" />
   <!-- Lottie (mesma lib/CDN do baú no /app) — usado na abertura mágica da carta -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -455,8 +455,11 @@
       <button type="button" class="carta-video-x" data-fechar-video aria-label="Fechar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
+      <h2 class="carta-video-titulo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M10 8.4l6 3.6-6 3.6z" fill="currentColor"/></svg>
+        <span>Como usar a Carta do Tempo</span>
+      </h2>
       <div class="carta-video-frame" id="carta-video-frame"></div>
-      <p class="carta-video-cap">Como usar a Carta do Tempo</p>
     </div>
   </div>
 
@@ -590,6 +593,6 @@
 
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=40"></script>
+  <script src="/app/espaco.js?v=41"></script>
 </body>
 </html>

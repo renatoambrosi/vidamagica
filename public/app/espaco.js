@@ -522,7 +522,10 @@
     const vframe = el('carta-video-frame');
     function abrirVideo() {
       if (!vmodal || !vframe) return;
-      vframe.innerHTML = '<iframe src="https://www.youtube.com/embed/' + VIDEO_ID + '?autoplay=1&rel=0&modestbranding=1&playsinline=1" title="Como usar a Carta do Tempo" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>';
+      // SEM autoplay: no iOS o autoplay é bloqueado e o player fica PRETO. Sem
+      // ele, o YouTube mostra a capa + play de forma confiável; a aluna toca e
+      // roda com som (gesto do usuário). playsinline = toca embutido, não em fullscreen.
+      vframe.innerHTML = '<iframe src="https://www.youtube.com/embed/' + VIDEO_ID + '?rel=0&modestbranding=1&playsinline=1" title="Como usar a Carta do Tempo" allow="encrypted-media; fullscreen" allowfullscreen></iframe>';
       vmodal.classList.add('aberto'); vmodal.setAttribute('aria-hidden', 'false');
     }
     function fecharVideo() {

@@ -994,14 +994,20 @@ body[data-tema="magico"] {
 .carta-video-overlay { position: absolute; inset: 0; }
 .carta-video-box {
   position: relative; width: 100%; max-width: 460px;
-  background: var(--card-bg); border: 1px solid var(--acento); border-radius: var(--radius-lg);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5); padding: 14px;
+  background: var(--card-bg); border: 1px solid var(--card-borda); border-radius: var(--radius-lg);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5), var(--glow, 0 0 0 transparent); padding: 16px;
   transform: translateY(12px) scale(0.98); transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .carta-video-modal.aberto .carta-video-box { transform: translateY(0) scale(1); }
-.carta-video-frame { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius-md); overflow: hidden; background: #000; }
+/* Título no TOPO (cabeçalho), harmônico ao tema (fonte de título + acento no ícone) */
+.carta-video-titulo {
+  display: flex; align-items: center; justify-content: center; gap: 0.45rem;
+  margin: 2px 0 13px; text-align: center;
+  font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; color: var(--texto);
+}
+.carta-video-titulo svg { width: 19px; height: 19px; color: var(--acento); flex: none; }
+.carta-video-frame { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius-md); overflow: hidden; background: #000; border: 1px solid var(--card-borda); }
 .carta-video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-.carta-video-cap { margin: 11px 2px 2px; text-align: center; font-family: var(--font-body); font-size: 0.95rem; color: var(--texto); }
 .carta-video-x {
   position: absolute; top: -14px; right: -14px; width: 38px; height: 38px; flex: none;
   display: flex; align-items: center; justify-content: center; cursor: pointer;
