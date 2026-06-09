@@ -429,9 +429,9 @@
     });
 
     // Presets de data
-    document.querySelectorAll('.espaco-data-preset').forEach(btn => {
+    document.querySelectorAll('#carta-quando .espaco-data-preset').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.espaco-data-preset').forEach(b => b.classList.remove('selecionado'));
+        document.querySelectorAll('#carta-quando .espaco-data-preset').forEach(b => b.classList.remove('selecionado'));
         btn.classList.add('selecionado');
         const v = btn.dataset.dias;
         cartaDiasEscolhido = v;
@@ -621,7 +621,7 @@
         toggleHint(false);
         if (cnt) cnt.textContent = '0';
         const tit = el('carta-titulo'); if (tit) tit.value = '';
-        document.querySelectorAll('.espaco-data-preset').forEach(b => b.classList.remove('selecionado'));
+        document.querySelectorAll('#carta-quando .espaco-data-preset').forEach(b => b.classList.remove('selecionado'));
         dataIn?.classList.remove('aberto'); if (dataIn) dataIn.value = '';
         if (resumo) resumo.textContent = 'Escolha quando a carta deve ser aberta.';
         cartaDiasEscolhido = null; sugIdx = -1; if (sugLabel) sugLabel.textContent = 'Sugestões';
@@ -738,6 +738,74 @@
       if (cb) cb();
     }, 3200);
   }
+  // ── REENVIAR carta (swipe → Reenviar): modal de data → cerimônia → POST ──
+  function calcAbrirEm(dias, dataVal) {
+    if (dias === 'custom') return dataVal ? new Date(dataVal + 'T12:00:00') : null;
+    if (dias === 'dev') return new Date(Date.now() + 20 * 1000);
+    const n = parseInt(dias, 10);
+    return isNaN(n) ? null : new Date(Date.now() + n * 24 * 3600 * 1000);
+  }
+  function abrirEmValido(abrirEm, dias) {
+    if (!abrirEm || isNaN(abrirEm)) return false;
+    const minMs = dias === 'dev' ? 10 * 1000 : 24 * 3600 * 1000;
+    return abrirEm.getTime() > Date.now() + minMs;
+  }
+  let _reenviarCartaId = null, _reenvDias = null;
+  function abrirReenviar(c) {
+    _reenviarCartaId = c.id; _reenvDias = null;
+    document.querySelectorAll('#modal-reenviar .espaco-data-preset').forEach(b => b.classList.remove('selecionado'));
+    const di = el('reenviar-data'); if (di) { di.value = ''; di.classList.remove('aberto'); }
+    const rs = el('reenviar-resumo'); if (rs) rs.textContent = 'Escolha quando ela deve voltar.';
+    const dp = el('reenviar-preset-dev'); if (dp) dp.style.display = devCarta ? '' : 'none';
+    abrirModal('modal-reenviar');
+  }
+  function ligarReenviar() {
+    const di = el('reenviar-data');
+    const fmtAlvo = (d) => `Ela volta em ${d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}.`;
+    document.querySelectorAll('#modal-reenviar .espaco-data-preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#modal-reenviar .espaco-data-preset').forEach(b => b.classList.remove('selecionado'));
+        btn.classList.add('selecionado');
+        _reenvDias = btn.dataset.redias;
+        const rs = el('reenviar-resumo');
+        if (_reenvDias === 'custom') {
+          di?.classList.add('aberto');
+          if (di) di.min = new Date(Date.now() + 24 * 3600 * 1000).toISOString().slice(0, 10);
+          if (rs) rs.textContent = 'Escolha a data exata abaixo.';
+          setTimeout(() => di?.focus(), 80);
+        } else if (_reenvDias === 'dev') {
+          di?.classList.remove('aberto');
+          if (rs) rs.textContent = 'Modo teste: ela volta em ~20 segundos.';
+        } else {
+          di?.classList.remove('aberto');
+          const d = calcAbrirEm(_reenvDias, null);
+          if (rs && d) rs.textContent = fmtAlvo(d);
+        }
+      });
+    });
+    di?.addEventListener('change', () => {
+      if (!di.value) return;
+      const rs = el('reenviar-resumo');
+      if (rs) rs.textContent = fmtAlvo(new Date(di.value + 'T12:00:00'));
+    });
+    el('reenviar-confirmar')?.addEventListener('click', async () => {
+      if (!_reenvDias) { toast('Escolha quando ela volta.'); return; }
+      const abrirEm = calcAbrirEm(_reenvDias, di?.value);
+      if (!abrirEmValido(abrirEm, _reenvDias)) {
+        toast(_reenvDias === 'dev' ? 'Escolha uma data no futuro.' : 'A data precisa estar pelo menos 1 dia no futuro.'); return;
+      }
+      const id = _reenviarCartaId;
+      fecharModal('modal-reenviar');
+      try {
+        const r = await fetchAutenticado(`/api/app/espaco/cartas/${id}/reenviar`, { method: 'POST', body: JSON.stringify({ abrir_em: abrirEm.toISOString() }) });
+        if (!r) return;
+        const d = await r.json().catch(() => ({}));
+        if (!d?.ok) { toast(d?.erro || 'Não consegui reenviar.'); return; }
+        tocarCerimoniaLacre(() => { carregarMinhasCartas(); toast('Carta reenviada pro futuro ✨'); });
+      } catch (e) { toast('Não consegui reenviar agora.'); }
+    });
+  }
+
   // ── ABERTURA MÁGICA DA CARTA (Lottie carta.json recolorido por tema) ──
   function _hx(h) { h = h.replace('#', ''); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
   function _toHex(r) { return '#' + r.map(x => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0')).join(''); }
@@ -876,12 +944,20 @@
           ? `<button type="button" class="espaco-carta-devacao" data-amadurecer="${c.id}">⚡ Fazer chegar agora (teste)</button>`
           : '';
         const rotuloExcluir = trancada ? 'Cancelar' : 'Excluir';
+        // Só nas LIDAS: botão "Reenviar" à esquerda do excluir (manda pro futuro de novo)
+        const btnReenviarHtml = lida ? `
+              <button type="button" class="espaco-carta-reenviar" data-reenviar="${c.id}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>
+                <span>Reenviar</span>
+              </button>` : '';
         return sep + `
           <div class="espaco-carta-row${trancada ? ' cancelar' : ''}" data-id="${c.id}">
-            <button type="button" class="espaco-carta-excluir" data-excluir="${c.id}">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-              <span>${rotuloExcluir}</span>
-            </button>
+            <div class="espaco-carta-acoes">${btnReenviarHtml}
+              <button type="button" class="espaco-carta-excluir" data-excluir="${c.id}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                <span>${rotuloExcluir}</span>
+              </button>
+            </div>
             <button type="button" class="espaco-carta-item ${estado}" data-id="${c.id}" data-trancada="${trancada ? '1' : '0'}">
               <span class="espaco-carta-icone carta-anim">${icone}</span>
               <span class="espaco-carta-info">
@@ -896,7 +972,9 @@
       // Por linha: swipe horizontal revela "Excluir"/"Cancelar"; tap abre a carta
       wrap.querySelectorAll('.espaco-carta-row').forEach(row => {
         const item = row.querySelector('.espaco-carta-item');
-        const acao = row.querySelector('.espaco-carta-excluir');
+        const acao = row.querySelector('.espaco-carta-acoes');     // container (1 ou 2 botões)
+        const btnExcluir = row.querySelector('[data-excluir]');
+        const btnReenviar = row.querySelector('[data-reenviar]');
         const id = row.dataset.id;
         const c = cartas.find(x => String(x.id) === String(id));
         let startX = 0, startY = 0, base = 0, curX = 0, dragging = false, locked = null, moved = false;
@@ -936,8 +1014,14 @@
             abrirModalCarta(c);
           }
         });
+        // Botão revelado "Reenviar" (só nas lidas) → abre o modal da data
+        btnReenviar?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          fechar();
+          if (c) abrirReenviar(c);
+        });
         // Botão revelado: excluir / cancelar envio
-        acao.addEventListener('click', async (e) => {
+        btnExcluir?.addEventListener('click', async (e) => {
           e.stopPropagation();
           const ehTrancada = item.dataset.trancada === '1';
           const ok = await confirmarAcao({
@@ -1155,7 +1239,12 @@
       ? `<img src="${alunaFoto}" alt="">`
       : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>`;
     const t = el('carta-aberta-titulo'); if (t) t.textContent = c.titulo || 'Sua Carta do Tempo';
-    const d = el('carta-aberta-data');   if (d) d.textContent = `Escrita em ${fmtData(c.criado_em || c.abrir_em)}`;
+    const d = el('carta-aberta-data');
+    if (d) {
+      let txt = `Escrita em ${fmtData(c.criado_em || c.abrir_em)}`;
+      if (c.reenviado_em) txt += ` · Reenviada em ${fmtData(c.reenviado_em)}`;
+      d.textContent = txt;
+    }
     const co = el('carta-aberta-conteudo'); if (co) co.textContent = c.conteudo || '';
     // Botão "Compartilhar" — gera o card da marca e abre o share nativo
     // (WhatsApp, Status, Instagram Stories/Feed — a pessoa escolhe onde postar).
@@ -1642,6 +1731,7 @@
     ligarCaminhos();
     ligarGiroBotoes();
     ligarFormCarta();
+    ligarReenviar();
     ligarModais();
     ligarAmbiente();
     el('espaco-loading-pular')?.addEventListener('click', pularLoading);

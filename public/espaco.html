@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=63" />
+  <link rel="stylesheet" href="/espaco.css?v=65" />
   <!-- Lottie (mesma lib/CDN do baú no /app) — usado na abertura mágica da carta -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -433,6 +433,28 @@
     </div>
   </div>
 
+  <!-- Reenviar uma carta já lida pro futuro de novo (swipe → Reenviar) -->
+  <div class="espaco-modal" id="modal-reenviar" aria-hidden="true">
+    <div class="espaco-modal-overlay" data-fechar-modal="modal-reenviar"></div>
+    <div class="espaco-modal-card espaco-confirmar">
+      <p class="espaco-confirmar-msg">Pra quando você quer mandar essa carta de novo?</p>
+      <div class="espaco-data-presets" role="radiogroup" aria-label="Quando reenviar">
+        <button type="button" class="espaco-data-preset" data-redias="30">Em 1 mês</button>
+        <button type="button" class="espaco-data-preset" data-redias="90">Em 3 meses</button>
+        <button type="button" class="espaco-data-preset" data-redias="180">Em 6 meses</button>
+        <button type="button" class="espaco-data-preset" data-redias="365">Em 1 ano</button>
+        <button type="button" class="espaco-data-preset" data-redias="custom">Outra data</button>
+        <button type="button" class="espaco-data-preset espaco-data-preset-dev" data-redias="dev" id="reenviar-preset-dev" style="display:none">Em instantes (teste)</button>
+      </div>
+      <input type="date" id="reenviar-data" class="espaco-data-input" />
+      <span class="espaco-campo-dica" id="reenviar-resumo">Escolha quando ela deve voltar.</span>
+      <div class="espaco-confirmar-acoes" style="margin-top:1.2rem">
+        <button type="button" class="espaco-confirmar-cancelar" data-fechar-modal="modal-reenviar">Voltar</button>
+        <button type="button" class="espaco-confirmar-ok" id="reenviar-confirmar">Reenviar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Diálogo ao tocar numa SUGESTÃO ativa: editar (deixar com a sua cara) ou limpar -->
   <div class="espaco-modal" id="modal-sugestao" aria-hidden="true">
     <div class="espaco-modal-overlay" data-fechar-modal="modal-sugestao"></div>
@@ -612,6 +634,6 @@
 
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=44"></script>
+  <script src="/app/espaco.js?v=45"></script>
 </body>
 </html>

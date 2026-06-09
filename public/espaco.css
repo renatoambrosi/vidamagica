@@ -453,6 +453,28 @@ body[data-tema="magico"] .espaco-data-preset.selecionado {
     conic-gradient(from var(--espaco-ang), var(--luz-conic-cores)) border-box;
   animation: espaco-luz-girar 5s linear infinite;
 }
+/* Carta aberta (leitura): contorno no card, no avatar e no botão compartilhar */
+body[data-tema="magico"] .espaco-modal-card.carta {
+  border: 2px solid transparent;
+  background:
+    var(--carta-bg) padding-box,
+    conic-gradient(from var(--espaco-ang), var(--luz-conic-cores)) border-box;
+  animation: espaco-luz-girar 5s linear infinite;
+}
+body[data-tema="magico"] .espaco-carta-selo {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(135deg, var(--acento-2), var(--acento)) padding-box,
+    conic-gradient(from var(--espaco-ang), var(--luz-conic-cores)) border-box;
+  animation: espaco-luz-girar 5s linear infinite;
+}
+body[data-tema="magico"] .espaco-btn-compartilhar {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(135deg, var(--acento), var(--acento-deep)) padding-box,
+    conic-gradient(from var(--espaco-ang), var(--luz-conic-cores)) border-box;
+  animation: espaco-luz-girar 5s linear infinite;
+}
 @keyframes espaco-luz-girar { to { --espaco-ang: 360deg; } }
 
 /* UNIVERSO — estrelas cadentes (riscos que cruzam o céu). Só transform+opacity
@@ -1099,8 +1121,8 @@ body[data-tema="magico"] {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
   margin: 1.5rem auto 0.2rem; padding: 0.95rem 1.6rem;
   font: inherit; font-weight: 700; font-size: 1rem; letter-spacing: 0.2px;
-  color: var(--acento-deep); cursor: pointer;
-  background: linear-gradient(135deg, var(--acento-2), var(--acento));
+  color: #fff; cursor: pointer;
+  background: linear-gradient(135deg, var(--acento), var(--acento-deep));
   border: 1px solid var(--acento); border-radius: var(--radius-md);
   box-shadow: var(--sombra), var(--glow);
   transition: transform 0.16s ease, filter 0.2s ease;
@@ -1337,20 +1359,24 @@ body[data-tema="magico"] {
 /* ── SWIPE nos cards (revela Excluir / Cancelar envio temporal) ── */
 .espaco-carta-row { position: relative; border-radius: var(--radius-lg); }
 .espaco-carta-row .espaco-carta-item { width: 100%; position: relative; z-index: 1; will-change: transform; }
-/* Compacto, estilo WhatsApp: largura fixa, ícone + rótulo curto empilhados */
-.espaco-carta-excluir {
+/* Ações reveladas pelo swipe — container à direita; 1 botão (Excluir) ou 2
+   (Reenviar + Excluir, só nas lidas). Compacto, estilo WhatsApp. */
+.espaco-carta-acoes {
   position: absolute; top: 0; right: 0; bottom: 0; z-index: 0;
-  width: 78px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-  padding: 0; border: none; cursor: pointer; border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, #E2574C, #C0392B); color: #fff;
-  font: inherit; font-size: 0.62rem; font-weight: 700; line-height: 1; white-space: nowrap;
+  display: flex; align-items: stretch; overflow: hidden; border-radius: var(--radius-lg);
   opacity: 0; pointer-events: none; transition: opacity 0.15s ease;
 }
+.espaco-carta-row.aberto .espaco-carta-acoes,
+.espaco-carta-row.arrastando .espaco-carta-acoes { opacity: 1; pointer-events: auto; }
+.espaco-carta-acoes button {
+  width: 78px; border: none; cursor: pointer; color: #fff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  font: inherit; font-size: 0.62rem; font-weight: 700; line-height: 1; white-space: nowrap;
+}
+.espaco-carta-acoes button svg { width: 21px; height: 21px; }
+.espaco-carta-reenviar { background: linear-gradient(135deg, #6E8BE6, #4555C0); }
+.espaco-carta-excluir { background: linear-gradient(135deg, #E2574C, #C0392B); }
 .espaco-carta-row.cancelar .espaco-carta-excluir { background: linear-gradient(135deg, #D89A33, #A8701C); }
-.espaco-carta-excluir svg { width: 21px; height: 21px; }
-.espaco-carta-row.aberto .espaco-carta-excluir,
-.espaco-carta-row.arrastando .espaco-carta-excluir { opacity: 1; pointer-events: auto; }
 
 /* Em telas pequenas (iPhone SE), reduz padding e tamanho do título do modal */
 @media (max-width: 380px) {

@@ -258,7 +258,7 @@ router.get('/cartas', autenticar, async (req, res) => {
     //  1) TRANCADAS — as mais próximas de chegar primeiro (abrir_em ASC);
     //  2) LIDAS — por chegada, a mais nova acima (abrir_em DESC).
     const r = await poolEspaco.query(
-      `SELECT id, titulo, abrir_em, aberta_em, criado_em, carta_de, carta_para,
+      `SELECT id, titulo, abrir_em, aberta_em, criado_em, reenviado_em, carta_de, carta_para,
               (abrir_em > NOW()) AS trancada,
               CASE WHEN abrir_em > NOW() THEN NULL ELSE conteudo END AS conteudo
          FROM cartas_do_tempo
@@ -295,6 +295,42 @@ router.post('/cartas/:id/lida', autenticar, async (req, res) => {
   } catch (e) {
     console.error(`❌ [espaco] POST /cartas/:id/lida u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao marcar lida');
+  }
+});
+
+// REENVIAR — manda uma carta (já lida) pro futuro de novo, numa nova data.
+// Volta a ser "a caminho" (aberta_em = NULL), guarda reenviado_em, e RESETA o
+// ciclo de aviso (aviso_enviado_em = NULL + apaga avisos antigos) pra o worker
+// notificar de novo quando ela chegar.
+router.post('/cartas/:id/reenviar', autenticar, async (req, res) => {
+  const client = await poolEspaco.connect();
+  try {
+    const usuarioId = req.usuario.sub;
+    const cartaId = parseInt(req.params.id, 10);
+    if (!cartaId) return erro(res, 400, 'id inválido');
+    const abrirEm = req.body?.abrir_em ? new Date(req.body.abrir_em) : null;
+    if (!abrirEm || isNaN(abrirEm) || abrirEm.getTime() < Date.now() + CARTA_MIN_FUTURO_MS) {
+      return erro(res, 400, CARTA_DEV_SEM_MINIMO ? 'escolha uma data/hora no futuro' : 'a carta precisa abrir pelo menos 1 dia no futuro');
+    }
+    await client.query('BEGIN');
+    const r = await client.query(
+      `UPDATE cartas_do_tempo
+          SET abrir_em = $1, aberta_em = NULL, reenviado_em = NOW(), aviso_enviado_em = NULL
+        WHERE id = $2 AND usuario_id = $3
+        RETURNING id`,
+      [abrirEm.toISOString(), cartaId, usuarioId]
+    );
+    if (!r.rows[0]) { await client.query('ROLLBACK'); return erro(res, 404, 'carta não encontrada'); }
+    await client.query(`DELETE FROM cartas_do_tempo_avisos WHERE carta_id = $1`, [cartaId]);
+    await client.query('COMMIT');
+    console.log(`📨 ${tag(usuarioId)} reenviou carta #${cartaId} (abre ${abrirEm.toISOString()})`);
+    return res.json({ ok: true });
+  } catch (e) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error(`❌ [espaco] POST /cartas/:id/reenviar u=${tag(req.usuario?.sub)}:`, e.message);
+    return erro(res, 500, 'erro ao reenviar carta');
+  } finally {
+    client.release();
   }
 });
 

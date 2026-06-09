@@ -2304,6 +2304,8 @@ async function initEspaco() {
     // Contexto da carta (de quem → para quem): eu_passado | eu_presente | eu_futuro. Migration idempotente.
     await c.query(`ALTER TABLE cartas_do_tempo ADD COLUMN IF NOT EXISTS carta_de VARCHAR(20)`);
     await c.query(`ALTER TABLE cartas_do_tempo ADD COLUMN IF NOT EXISTS carta_para VARCHAR(20)`);
+    // Data do último reenvio (a aluna pode reenviar uma carta já lida pro futuro de novo).
+    await c.query(`ALTER TABLE cartas_do_tempo ADD COLUMN IF NOT EXISTS reenviado_em TIMESTAMPTZ`);
 
     // CARTAS DO TEMPO — log idempotente de avisos (worker dispara WhatsApp/email/in_app).
     // UNIQUE(carta_id, canal) faz o worker rodar N vezes sem duplicar aviso.
