@@ -444,27 +444,30 @@ body[data-tema="medieval"] .espaco-fx-medieval { display: block; }
 .espaco-fx-lottie svg,
 .espaco-fx-lottie canvas { display: block; width: 100%; height: 100%; }
 
-/* Slot 1 = borboleta. Pequena, ancorada no terço superior-esquerdo; o VOO
-   (vaivém + profundidade) é a animação abaixo. Calibrar tamanho em --fx-w/h. */
-#fx-medieval-1 { --fx-top: 16%; --fx-left: 4%; --fx-w: 13vw; --fx-h: 13vw; }
-#fx-medieval-2 { --fx-top: 44%; --fx-left: 52%; --fx-w: 12vw; --fx-h: 12vw; }
+/* Slot 1 = borboleta. Pequena; opacidade CONSTANTE (sem fade). O VOO é a
+   animação abaixo. Calibrar tamanho em --fx-w/h (--fx-op = transparência). */
+#fx-medieval-1 { --fx-top: 30%; --fx-left: 30%; --fx-w: 10vw; --fx-h: 10vw; --fx-op: 0.95; }
+#fx-medieval-2 { --fx-top: 44%; --fx-left: 52%; --fx-w: 10vw; --fx-h: 10vw; --fx-op: 0.95; }
 
-/* VOO da borboleta — vaivém pela tela com profundidade (escala) e opacidade
-   (longe = menor/mais apagada; perto = maior/nítida). Só transform+opacity (GPU).
-   As asses batem pela própria animação do Lottie; isto move o corpo pelo cenário. */
-body[data-tema="medieval"] #fx-medieval-1 { animation: medieval-borboleta-voo 28s ease-in-out infinite; }
+/* VOO da borboleta — trajeto oval com a CABEÇA sempre liderando (o corpo gira
+   360° ao longo da volta, acompanhando a direção). Profundidade só pela ESCALA
+   (perto embaixo = maior; longe em cima = menor). SEM fade — opacidade fixa.
+   Só transform (GPU). As asas batem pela própria animação do Lottie.
+   rotate(90deg) no início porque a arte aponta a cabeça pro norte (cima). */
+body[data-tema="medieval"] #fx-medieval-1 { animation: medieval-borboleta-voo 30s linear infinite; }
 @keyframes medieval-borboleta-voo {
-  0%   { transform: translate3d(0,0,0)         scale(0.55) rotate(-6deg); opacity: 0.5; }
-  12%  { transform: translate3d(16vw,-4vh,0)   scale(0.72) rotate(5deg);  opacity: 0.78; }
-  26%  { transform: translate3d(42vw,5vh,0)    scale(1.0)  rotate(-3deg); opacity: 1; }    /* perto */
-  40%  { transform: translate3d(60vw,17vh,0)   scale(0.78) rotate(6deg);  opacity: 0.8; }
-  55%  { transform: translate3d(40vw,30vh,0)   scale(0.48) rotate(-5deg); opacity: 0.55; } /* longe */
-  70%  { transform: translate3d(14vw,20vh,0)   scale(0.62) rotate(5deg);  opacity: 0.7; }
-  85%  { transform: translate3d(4vw,7vh,0)     scale(0.84) rotate(-3deg); opacity: 0.88; }
-  100% { transform: translate3d(0,0,0)         scale(0.55) rotate(-6deg); opacity: 0.5; }
+  0%    { transform: translate3d(0vw,-15vh,0)      rotate(90deg)  scale(0.62); }
+  12.5% { transform: translate3d(18.4vw,-10.6vh,0) rotate(135deg) scale(0.68); }
+  25%   { transform: translate3d(26vw,0vh,0)       rotate(180deg) scale(0.81); }
+  37.5% { transform: translate3d(18.4vw,10.6vh,0)  rotate(225deg) scale(0.94); }
+  50%   { transform: translate3d(0vw,15vh,0)       rotate(270deg) scale(1.0); }
+  62.5% { transform: translate3d(-18.4vw,10.6vh,0) rotate(315deg) scale(0.94); }
+  75%   { transform: translate3d(-26vw,0vh,0)      rotate(360deg) scale(0.81); }
+  87.5% { transform: translate3d(-18.4vw,-10.6vh,0) rotate(405deg) scale(0.68); }
+  100%  { transform: translate3d(0vw,-15vh,0)      rotate(450deg) scale(0.62); }
 }
 @media (prefers-reduced-motion: reduce) {
-  body[data-tema="medieval"] #fx-medieval-1 { animation: none; opacity: 0.7; }
+  body[data-tema="medieval"] #fx-medieval-1 { animation: none; }
 }
 .cadente {
   position: absolute; top: var(--cd-top); left: var(--cd-left);
