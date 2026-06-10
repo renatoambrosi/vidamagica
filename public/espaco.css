@@ -953,8 +953,18 @@ body[data-tema="magico"] {
 /* Modo COMPACTO (metas/gratidão): sem empurrar o "Continuar" pro fundo; caixas
    crescem com o texto (sem o bloco vazio de 220px). Carta do tempo não usa. */
 .espaco-form-carta.compacto { min-height: 0; }
-/* min-height igual nas DUAS caixas (mesmo tamanho inicial) ~ 3 linhas */
-.espaco-form-carta.compacto .carta-corpo { min-height: 100px; resize: none; }
+/* Em Metas/Gratidão o guia fica num parágrafo à parte → o textarea precisa ter
+   CARA DE CAMPO (fundo + borda suave), senão parece só "espaço em branco" e a
+   aluna não percebe onde escrever. min-height igual nas duas (~3 linhas). */
+.espaco-form-carta.compacto .carta-corpo {
+  min-height: 100px; resize: none;
+  background: rgba(120, 90, 40, 0.05);
+  border: 1px solid var(--carta-borda); border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+}
+.espaco-form-carta.compacto .carta-corpo:focus { border-color: var(--acento); background: rgba(120, 90, 40, 0.025); }
+/* Guia clicável: tocar no exemplo foca o campo abaixo */
+.carta-guia { cursor: pointer; }
 .espaco-form-carta.compacto .carta-continuar { margin: 14px auto 24px; }
 
 /* ── METAS & SONHOS (leitura): itens checáveis no papel da carta ── */

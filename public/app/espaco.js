@@ -456,6 +456,7 @@
     const PH_GRAT_QUERO = 'Agradeça pelas coisas que você quer ou te preocupam, como já realizadas ou resolvidas!\nEx.\n• Meu carro novo.\n• Por estar vendendo muito todo dia.\n• Por meu relacionamento estar feliz do jeito que eu queria.\n• Porque sou cliente daquela loja que eu sempre quis comprar.';
     const H_GRAT_TENHO = 'Agradeço pelo que já tenho';
     const H_GRAT_QUERO = 'Agradeço pelo que quero (como se já tivesse)';
+    const PH_CAMPO = 'Toque e escreva — uma por linha';
 
     const CARTA_TIPOS = [
       { id: 'tempo',    rotulo: 'Carta do tempo' },
@@ -509,15 +510,15 @@
         if (desc1) desc1.style.display = 'none';
         if (guia1) { guia1.style.display = ''; guia1.textContent = PH_METAS; }
         if (bloco2) bloco2.style.display = 'none';
-        if (ta) ta.placeholder = '';
+        if (ta) ta.placeholder = PH_CAMPO;
       } else { // gratidao — guia(s) visível(is) + cabeçalho(s)
         const modo = gratModo();
         if (desc1) { desc1.style.display = ''; desc1.textContent = (modo === 'quero') ? H_GRAT_QUERO : H_GRAT_TENHO; }
         if (guia1) { guia1.style.display = ''; guia1.textContent = (modo === 'quero') ? PH_GRAT_QUERO : PH_GRAT_TENHO; }
-        if (ta) ta.placeholder = '';
+        if (ta) ta.placeholder = PH_CAMPO;
         if (bloco2) bloco2.style.display = (modo === 'ambos') ? '' : 'none';
         if (modo === 'ambos' && guia2) { guia2.style.display = ''; guia2.textContent = PH_GRAT_QUERO; }
-        if (ta2) ta2.placeholder = '';
+        if (ta2) ta2.placeholder = PH_CAMPO;
       }
       atualizarContador();
       autoGrow(); if (ta2) autoGrow(ta2);
@@ -561,6 +562,9 @@
       });
     }
     ligarTopicos(ta); ligarTopicos(ta2);
+    // Tocar no guia de exemplos foca o campo de escrita logo abaixo
+    el('carta-guia1')?.addEventListener('click', () => ta?.focus());
+    el('carta-guia2')?.addEventListener('click', () => ta2?.focus());
 
     // Monta o conteúdo final por tipo. Normaliza tópicos (toda linha com "•")
     // e TRIM de cada metade — elimina linhas vazias encostadas no divisor.
