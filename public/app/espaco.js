@@ -467,10 +467,12 @@
     const ta2 = el('carta-conteudo-2');               // metade de baixo (Gratidão "ambos")
     const tipoAtual = () => CARTA_TIPOS[tipoIdx].id;
 
-    // Cresce o textarea pra caber todo o conteúdo (sem rolagem interna; a página rola)
+    // Cresce o textarea pra caber o conteúdo (sem rolagem interna; a página rola).
+    // Colapsa pra '0' antes de medir — senão o atributo `rows` infla a caixa vazia.
+    // O tamanho mínimo (vazio) vem do CSS (min-height), igual nas duas caixas.
     function autoGrow(t) {
       t = t || ta; if (!t) return;
-      t.style.height = 'auto';
+      t.style.height = '0px';
       t.style.height = t.scrollHeight + 'px';
     }
 
