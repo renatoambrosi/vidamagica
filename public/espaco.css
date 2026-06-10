@@ -953,18 +953,8 @@ body[data-tema="magico"] {
 /* Modo COMPACTO (metas/gratidão): sem empurrar o "Continuar" pro fundo; caixas
    crescem com o texto (sem o bloco vazio de 220px). Carta do tempo não usa. */
 .espaco-form-carta.compacto { min-height: 0; }
-/* Em Metas/Gratidão o guia fica num parágrafo à parte → o textarea precisa ter
-   CARA DE CAMPO (fundo + borda suave), senão parece só "espaço em branco" e a
-   aluna não percebe onde escrever. min-height igual nas duas (~3 linhas). */
-.espaco-form-carta.compacto .carta-corpo {
-  min-height: 100px; resize: none;
-  background: rgba(120, 90, 40, 0.05);
-  border: 1px solid var(--carta-borda); border-radius: 12px;
-  padding: 0.7rem 0.85rem;
-}
-.espaco-form-carta.compacto .carta-corpo:focus { border-color: var(--acento); background: rgba(120, 90, 40, 0.025); }
-/* Guia clicável: tocar no exemplo foca o campo abaixo */
-.carta-guia { cursor: pointer; }
+/* min-height igual nas DUAS caixas (mesmo tamanho inicial) ~ 3 linhas */
+.espaco-form-carta.compacto .carta-corpo { min-height: 100px; resize: none; }
 .espaco-form-carta.compacto .carta-continuar { margin: 14px auto 24px; }
 
 /* ── METAS & SONHOS (leitura): itens checáveis no papel da carta ── */
@@ -1025,19 +1015,6 @@ body[data-tema="magico"] {
 }
 .carta-ctx-sel:focus { outline: none; border-bottom-style: solid; }
 .carta-ctx-seta { color: var(--carta-suave); opacity: 0.75; font-size: 1.15rem; }
-
-/* ── MOLDURA — frame temático ATRÁS da carta; segura o seletor (não no papel).
-   O papel fica como uma folha sobre a bandeja; o seletor vira o cabeçalho. ── */
-.carta-moldura {
-  position: relative;
-  width: 100%; max-width: 540px; margin: 0.3rem auto 0; box-sizing: border-box;
-  padding: 0.55rem 0.7rem 0.8rem; border-radius: 26px;
-  background: var(--card-bg); border: 1px solid var(--card-borda);
-  box-shadow: var(--sombra);
-  display: flex; flex-direction: column; align-items: center;
-}
-.carta-moldura .carta-sugestoes { background: transparent; border: none; box-shadow: none; margin: 0.25rem auto 0.5rem; padding: 0; }
-.carta-moldura .carta-papel { margin: 0; max-width: none; width: 100%; }
 
 /* ── Sugestões — FORA do papel: pill harmônico no vidro do tema, setas cilcam temas ── */
 .carta-sugestoes {
