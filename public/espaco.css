@@ -927,22 +927,34 @@ body[data-tema="magico"] {
 
 /* ── TEMA DA CARTA (tempo · metas & sonhos · gratidão) ── */
 .carta-ctx-grupo { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0; }
-/* Chips da Gratidão (agradeço por: 1 ou 2 marcados). color explícita: é <button>. */
-.carta-grat-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 2px; }
-.carta-grat-chip {
-  padding: 0.38rem 0.75rem; font-family: var(--font-ui); font-size: 0.78rem; font-weight: 600;
-  color: var(--carta-suave); background: transparent; cursor: pointer;
-  border: 1.5px dashed var(--carta-borda); border-radius: 999px;
-  transition: all 0.18s ease;
+/* Gratidão: CHECKBOXES compactos (agradeço por: 1 ou 2). color explícita: é <button>. */
+.carta-grat-checks { display: flex; flex-direction: column; gap: 0.45rem; margin-top: 4px; }
+.carta-grat-check { display: flex; align-items: center; gap: 0.55rem; background: none; border: none; padding: 0.1rem 0; cursor: pointer; color: var(--carta-texto); font: inherit; text-align: left; }
+.carta-grat-check > span:last-child { font-family: var(--font-ui); font-size: 0.88rem; font-weight: 600; line-height: 1.2; }
+.carta-grat-check small { font-weight: 400; font-size: 0.78rem; color: var(--carta-suave); }
+.carta-grat-checkbox {
+  flex: none; width: 22px; height: 22px; border-radius: 7px; border: 2px solid var(--carta-borda);
+  display: grid; place-items: center; color: transparent; background: transparent;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.14s ease;
 }
-.carta-grat-chip.sel { color: #fff; background: linear-gradient(135deg, var(--acento), var(--acento-deep)); border: 1.5px solid var(--acento); }
+.carta-grat-check:active .carta-grat-checkbox { transform: scale(0.9); }
+.carta-grat-checkbox svg { width: 13px; height: 13px; }
+.carta-grat-check.sel .carta-grat-checkbox { background: linear-gradient(135deg, var(--acento), var(--acento-deep)); border-color: var(--acento); color: #fff; }
 /* Descritivo de seção (Gratidão) — acima de cada metade */
 .carta-grat-desc {
   font-family: var(--font-ui); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em;
   text-transform: uppercase; color: var(--carta-salut, var(--carta-texto)); margin: 4px 2px 6px;
 }
+/* Guia de exemplos (metas/gratidão) — texto visível e compacto, NÃO placeholder gigante */
+.carta-guia { white-space: pre-line; font-family: var(--font-body); font-style: italic; font-size: 0.92rem; line-height: 1.5; color: var(--carta-suave); opacity: 0.9; margin: 0 2px 8px; }
 /* Divisor tracejado entre as metades — sobe/desce sozinho (a metade de cima cresce) */
 .carta-grat-divisor { border-top: 2px dashed var(--carta-borda); margin: 12px 0; }
+
+/* Modo COMPACTO (metas/gratidão): sem empurrar o "Continuar" pro fundo; caixas
+   crescem com o texto (sem o bloco vazio de 220px). Carta do tempo não usa. */
+.espaco-form-carta.compacto { min-height: 0; }
+.espaco-form-carta.compacto .carta-corpo { min-height: 2.6rem; resize: none; }
+.espaco-form-carta.compacto .carta-continuar { margin: 14px auto 24px; }
 
 /* ── METAS & SONHOS (leitura): itens checáveis no papel da carta ── */
 .meta-check {

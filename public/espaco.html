@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=66" />
+  <link rel="stylesheet" href="/espaco.css?v=67" />
   <!-- Lottie (mesma lib/CDN do baú no /app) — usado na abertura mágica da carta -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -264,23 +264,32 @@
                 <!-- GRATIDÃO: agradeço por (1 ou 2 seleções) -->
                 <div class="carta-ctx-grupo" id="ctx-gratidao" style="display:none">
                   <span class="carta-ctx-lbl">Agradeço por</span>
-                  <div class="carta-grat-chips">
-                    <button type="button" class="carta-grat-chip sel" id="grat-tenho">O que já tenho</button>
-                    <button type="button" class="carta-grat-chip sel" id="grat-quero">O que quero (como se já tivesse)</button>
+                  <div class="carta-grat-checks">
+                    <button type="button" class="carta-grat-check sel" id="grat-tenho">
+                      <span class="carta-grat-checkbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+                      <span>O que já tenho</span>
+                    </button>
+                    <button type="button" class="carta-grat-check sel" id="grat-quero">
+                      <span class="carta-grat-checkbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+                      <span>O que quero <small>(como se já tivesse)</small></span>
+                    </button>
                   </div>
                 </div>
               </div>
               <p class="carta-dateline" id="carta-dateline"></p>
             </div>
-            <!-- Descritivo da seção (Gratidão) — acima da metade de cima -->
+            <!-- Descritivo da seção (Gratidão) + guia de exemplos (metas/gratidão).
+                 O guia é texto visível e compacto — NÃO um placeholder gigante. -->
             <p class="carta-grat-desc" id="carta-grat-desc1" style="display:none">Agradeço pelo que já tenho</p>
+            <p class="carta-guia" id="carta-guia1" style="display:none"></p>
             <textarea id="carta-conteudo" class="carta-corpo" maxlength="20000" placeholder="Escreva com calma. O que você está vivendo, sonhando e sentindo agora — e o que quer que ela lembre quando reler…" rows="9"></textarea>
             <!-- GRATIDÃO com os DOIS marcados: divisor tracejado + metade de baixo.
                  O tracejado sobe/desce sozinho — a metade de cima cresce com o texto. -->
             <div class="carta-grat-bloco2" id="carta-grat-bloco2" style="display:none">
               <div class="carta-grat-divisor" aria-hidden="true"></div>
-              <p class="carta-grat-desc">Agradeço pelo que quero (como se já tivesse)</p>
-              <textarea id="carta-conteudo-2" class="carta-corpo" maxlength="20000" rows="5"></textarea>
+              <p class="carta-grat-desc" id="carta-grat-desc2">Agradeço pelo que quero (como se já tivesse)</p>
+              <p class="carta-guia" id="carta-guia2" style="display:none"></p>
+              <textarea id="carta-conteudo-2" class="carta-corpo" maxlength="20000" rows="3"></textarea>
             </div>
             <p class="carta-corpo-dica" id="carta-corpo-dica"><span id="carta-contador">0</span> caracteres · mínimo 10</p>
           </div>
@@ -645,6 +654,6 @@
 
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=46"></script>
+  <script src="/app/espaco.js?v=47"></script>
 </body>
 </html>

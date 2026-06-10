@@ -492,18 +492,30 @@
       g('ctx-tempo', tipo === 'tempo');
       g('ctx-metas', tipo === 'metas');
       g('ctx-gratidao', tipo === 'gratidao');
-      const desc1 = el('carta-grat-desc1');
+      // Metas/Gratidão: form COMPACTO (guia visível + caixas que crescem, sem
+      // empurrar o "Continuar" pro fundo). Carta do tempo segue como antes.
+      const form = el('form-carta');
+      if (form) form.classList.toggle('compacto', tipo !== 'tempo');
+      const desc1 = el('carta-grat-desc1'), guia1 = el('carta-guia1'), guia2 = el('carta-guia2');
       const bloco2 = el('carta-grat-bloco2');
-      if (tipo === 'gratidao') {
+      if (tipo === 'tempo') {
+        if (desc1) desc1.style.display = 'none';
+        if (guia1) guia1.style.display = 'none';
+        if (bloco2) bloco2.style.display = 'none';
+        if (ta) ta.placeholder = PH_TEMPO;
+      } else if (tipo === 'metas') {
+        if (desc1) desc1.style.display = 'none';
+        if (guia1) { guia1.style.display = ''; guia1.textContent = PH_METAS; }
+        if (bloco2) bloco2.style.display = 'none';
+        if (ta) ta.placeholder = '';
+      } else { // gratidao — guia(s) visível(is) + cabeçalho(s)
         const modo = gratModo();
         if (desc1) { desc1.style.display = ''; desc1.textContent = (modo === 'quero') ? H_GRAT_QUERO : H_GRAT_TENHO; }
+        if (guia1) { guia1.style.display = ''; guia1.textContent = (modo === 'quero') ? PH_GRAT_QUERO : PH_GRAT_TENHO; }
+        if (ta) ta.placeholder = '';
         if (bloco2) bloco2.style.display = (modo === 'ambos') ? '' : 'none';
-        if (ta) ta.placeholder = (modo === 'quero') ? PH_GRAT_QUERO : PH_GRAT_TENHO;
-        if (ta2) ta2.placeholder = PH_GRAT_QUERO;
-      } else {
-        if (desc1) desc1.style.display = 'none';
-        if (bloco2) bloco2.style.display = 'none';
-        if (ta) ta.placeholder = (tipo === 'metas') ? PH_METAS : PH_TEMPO;
+        if (modo === 'ambos' && guia2) { guia2.style.display = ''; guia2.textContent = PH_GRAT_QUERO; }
+        if (ta2) ta2.placeholder = '';
       }
       atualizarContador();
       autoGrow(); if (ta2) autoGrow(ta2);
