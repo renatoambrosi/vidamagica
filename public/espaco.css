@@ -953,8 +953,8 @@ body[data-tema="magico"] {
 /* Modo COMPACTO (metas/gratidão): sem empurrar o "Continuar" pro fundo; caixas
    crescem com o texto (sem o bloco vazio de 220px). Carta do tempo não usa. */
 .espaco-form-carta.compacto { min-height: 0; }
-/* min-height igual nas DUAS caixas (mesmo tamanho inicial) ~ metade do que era */
-.espaco-form-carta.compacto .carta-corpo { min-height: 150px; resize: none; }
+/* min-height igual nas DUAS caixas (mesmo tamanho inicial) ~ 3 linhas */
+.espaco-form-carta.compacto .carta-corpo { min-height: 100px; resize: none; }
 .espaco-form-carta.compacto .carta-continuar { margin: 14px auto 24px; }
 
 /* ── METAS & SONHOS (leitura): itens checáveis no papel da carta ── */
