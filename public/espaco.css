@@ -1016,6 +1016,19 @@ body[data-tema="magico"] {
 .carta-ctx-sel:focus { outline: none; border-bottom-style: solid; }
 .carta-ctx-seta { color: var(--carta-suave); opacity: 0.75; font-size: 1.15rem; }
 
+/* ── MOLDURA — frame temático ATRÁS da carta; segura o seletor (não no papel).
+   O papel fica como uma folha sobre a bandeja; o seletor vira o cabeçalho. ── */
+.carta-moldura {
+  position: relative;
+  width: 100%; max-width: 540px; margin: 0.3rem auto 0; box-sizing: border-box;
+  padding: 0.55rem 0.7rem 0.8rem; border-radius: 26px;
+  background: var(--card-bg); border: 1px solid var(--card-borda);
+  box-shadow: var(--sombra);
+  display: flex; flex-direction: column; align-items: center;
+}
+.carta-moldura .carta-sugestoes { background: transparent; border: none; box-shadow: none; margin: 0.25rem auto 0.5rem; padding: 0; }
+.carta-moldura .carta-papel { margin: 0; max-width: none; width: 100%; }
+
 /* ── Sugestões — FORA do papel: pill harmônico no vidro do tema, setas cilcam temas ── */
 .carta-sugestoes {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem;

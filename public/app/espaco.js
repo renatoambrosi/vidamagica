@@ -476,8 +476,8 @@
       t.style.height = t.scrollHeight + 'px';
     }
 
-    // Gratidão: estado dos dois marcadores (pelo menos UM sempre marcado)
-    let gratTenho = true, gratQuero = true;
+    // Gratidão: por padrão só "O que já tenho"; a aluna liga o outro se quiser.
+    let gratTenho = true, gratQuero = false;
     const gratModo = () => (gratTenho && gratQuero) ? 'ambos' : (gratTenho ? 'tenho' : 'quero');
 
     function atualizarContador() {

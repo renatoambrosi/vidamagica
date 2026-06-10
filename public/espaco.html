@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=69" />
+  <link rel="stylesheet" href="/espaco.css?v=70" />
   <!-- Lottie (mesma lib/CDN do baú no /app) — usado na abertura mágica da carta -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -222,9 +222,10 @@
         </div>
 
         <form class="espaco-form-carta" id="form-carta" autocomplete="off" novalidate>
-          <!-- O PAPEL — ambiente aconchegante: data do dia + saudação + corpo da carta -->
-          <!-- TEMA DA CARTA — setas ciclam os 3 tipos: Carta do tempo · Metas & sonhos · Gratidão.
-               Cada tipo muda o topo do papel e o texto-guia (placeholder). -->
+          <!-- MOLDURA — frame temático ATRÁS da carta. Segura o seletor de tipo
+               (NÃO vai dentro do papel) + o papel da carta como uma folha sobre a bandeja. -->
+          <div class="carta-moldura">
+          <!-- TEMA DA CARTA — setas ciclam os 3 tipos: Carta do tempo · Metas & sonhos · Gratidão. -->
           <div class="carta-sugestoes">
             <button type="button" class="carta-sug-seta" id="sug-prev" aria-label="Tema anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
             <span class="carta-sug-label" id="sug-label">Carta do tempo</span>
@@ -269,7 +270,7 @@
                       <span class="carta-grat-checkbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
                       <span>O que já tenho</span>
                     </button>
-                    <button type="button" class="carta-grat-check sel" id="grat-quero">
+                    <button type="button" class="carta-grat-check" id="grat-quero">
                       <span class="carta-grat-checkbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
                       <span>O que quero <small>(como se já tivesse)</small></span>
                     </button>
@@ -293,6 +294,7 @@
             </div>
             <p class="carta-corpo-dica" id="carta-corpo-dica"><span id="carta-contador">0</span> caracteres · mínimo 10</p>
           </div>
+          </div><!-- /carta-moldura -->
 
           <!-- "Continuar" — empurrado pro fundo da faixa visível, abaixo do papel,
                centralizado, acima da nav (margin-top:auto no form que preenche a tela). -->
@@ -654,6 +656,6 @@
 
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=48"></script>
+  <script src="/app/espaco.js?v=49"></script>
 </body>
 </html>
