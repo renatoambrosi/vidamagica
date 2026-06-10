@@ -925,6 +925,47 @@ body[data-tema="magico"] {
 /* Corpo mostrando EXEMPLO (sugestão) — read-only, completo e rolável; tocar abre o diálogo. */
 .carta-corpo.carta-corpo-exemplo { color: var(--carta-suave); opacity: 0.92; font-style: italic; cursor: pointer; resize: none; }
 
+/* ── TEMA DA CARTA (tempo · metas & sonhos · gratidão) ── */
+.carta-ctx-grupo { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0; }
+/* Chips da Gratidão (agradeço por: 1 ou 2 marcados). color explícita: é <button>. */
+.carta-grat-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 2px; }
+.carta-grat-chip {
+  padding: 0.38rem 0.75rem; font-family: var(--font-ui); font-size: 0.78rem; font-weight: 600;
+  color: var(--carta-suave); background: transparent; cursor: pointer;
+  border: 1.5px dashed var(--carta-borda); border-radius: 999px;
+  transition: all 0.18s ease;
+}
+.carta-grat-chip.sel { color: #fff; background: linear-gradient(135deg, var(--acento), var(--acento-deep)); border: 1.5px solid var(--acento); }
+/* Descritivo de seção (Gratidão) — acima de cada metade */
+.carta-grat-desc {
+  font-family: var(--font-ui); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--carta-salut, var(--carta-texto)); margin: 4px 2px 6px;
+}
+/* Divisor tracejado entre as metades — sobe/desce sozinho (a metade de cima cresce) */
+.carta-grat-divisor { border-top: 2px dashed var(--carta-borda); margin: 12px 0; }
+
+/* ── METAS & SONHOS (leitura): itens checáveis no papel da carta ── */
+.meta-check {
+  display: flex; align-items: flex-start; gap: 0.65rem; width: 100%;
+  background: none; border: none; padding: 0.45rem 0.15rem; cursor: pointer;
+  color: var(--carta-texto); font: inherit; text-align: left;
+}
+.meta-check-box {
+  flex: none; width: 26px; height: 26px; margin-top: 1px; border-radius: 50%;
+  border: 2px solid var(--carta-borda); display: grid; place-items: center;
+  color: transparent; background: transparent;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+.meta-check:active .meta-check-box { transform: scale(0.9); }
+.meta-check-box svg { width: 15px; height: 15px; }
+.meta-check.feita .meta-check-box {
+  background: linear-gradient(135deg, var(--acento), var(--acento-deep));
+  border-color: var(--acento); color: #fff;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.14);
+}
+.meta-check-txt { font-family: var(--font-body); font-size: 1.04rem; line-height: 1.6; }
+.meta-check.feita .meta-check-txt { font-weight: 600; }
+
 /* ── Botão do vídeo "como usar" (perto do eyebrow) ── */
 .carta-video-btn {
   display: inline-flex; align-items: center; gap: 0.45rem; margin: 0.7rem auto 0;
@@ -1421,7 +1462,9 @@ body[data-tema="magico"] {
 .espaco-afirm-lista { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0.3rem 1.1rem 1rem; }
 .espaco-afirm-load { text-align: center; color: var(--texto-suave); padding: 2.5rem 1rem; font-size: 0.9rem; }
 .espaco-afirm-grupo { font-family: var(--font-display); font-weight: 700; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--acento-deep); padding: 0.9rem 0.2rem 0.5rem; }
-.espaco-afirm-frase { display: flex; align-items: flex-start; gap: 0.7rem; padding: 0.8rem 0.9rem; margin-bottom: 0.5rem; border-radius: var(--radius-md); border: 1px solid var(--card-borda); background: var(--card-bg); cursor: pointer; transition: border-color 0.2s ease, transform 0.12s ease; }
+/* color explícita: <button> NÃO herda cor — sem isso o Safari pinta o texto
+   com o AZUL padrão de botão do sistema (em qualquer tema). */
+.espaco-afirm-frase { display: flex; align-items: flex-start; gap: 0.7rem; padding: 0.8rem 0.9rem; margin-bottom: 0.5rem; border-radius: var(--radius-md); border: 1px solid var(--card-borda); background: var(--card-bg); color: var(--texto); font: inherit; text-align: left; cursor: pointer; transition: border-color 0.2s ease, transform 0.12s ease; }
 .espaco-afirm-frase:active { transform: scale(0.99); }
 .espaco-afirm-frase.sel { border-color: var(--acento); box-shadow: inset 0 0 0 1px var(--acento); }
 .espaco-afirm-num { flex-shrink: 0; width: 25px; height: 25px; border-radius: 50%; border: 1.5px solid var(--card-borda); display: grid; place-items: center; font-size: 0.74rem; font-weight: 700; color: var(--texto-suave); transition: all 0.18s ease; }

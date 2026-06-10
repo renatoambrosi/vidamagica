@@ -135,6 +135,12 @@ router.post('/cartas', autenticar, async (req, res) => {
     const CTX = ['eu_passado', 'eu_presente', 'eu_futuro'];
     const cartaDe = CTX.includes(req.body?.carta_de) ? req.body.carta_de : null;
     const cartaPara = CTX.includes(req.body?.carta_para) ? req.body.carta_para : null;
+    // Tipo da carta: tempo (clássica, com de/para) | metas (• checáveis) | gratidao.
+    // Subtipo: metas → meta|sonho · gratidao → tenho|quero|ambos.
+    const TIPOS = ['tempo', 'metas', 'gratidao'];
+    const tipo = TIPOS.includes(req.body?.tipo) ? req.body.tipo : 'tempo';
+    const SUBTIPOS = { metas: ['meta', 'sonho'], gratidao: ['tenho', 'quero', 'ambos'] };
+    const subtipo = (SUBTIPOS[tipo] || []).includes(req.body?.subtipo) ? req.body.subtipo : null;
     if (!conteudo || conteudo.length < 10) return erro(res, 400, 'escreva pelo menos 10 caracteres');
 
     // Modo "salvar" = não envia: entra com a data de criação, já madura no Correio,
@@ -153,10 +159,10 @@ router.post('/cartas', autenticar, async (req, res) => {
     }
 
     const r = await poolEspaco.query(
-      `INSERT INTO cartas_do_tempo (usuario_id, titulo, conteudo, abrir_em, aviso_enviado_em, carta_de, carta_para)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO cartas_do_tempo (usuario_id, titulo, conteudo, abrir_em, aviso_enviado_em, carta_de, carta_para, tipo, subtipo)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING id, titulo, abrir_em, criado_em`,
-      [usuarioId, titulo || null, conteudo, abrirEm.toISOString(), avisoEnviadoEm ? avisoEnviadoEm.toISOString() : null, cartaDe, cartaPara]
+      [usuarioId, titulo || null, conteudo, abrirEm.toISOString(), avisoEnviadoEm ? avisoEnviadoEm.toISOString() : null, cartaDe, cartaPara, tipo, subtipo]
     );
     console.log(`💌 ${tag(usuarioId)} ${modo === 'salvar' ? 'salvou' : 'lacrou'} carta do tempo #${r.rows[0].id}`);
 
@@ -258,7 +264,7 @@ router.get('/cartas', autenticar, async (req, res) => {
     //  1) TRANCADAS — as mais próximas de chegar primeiro (abrir_em ASC);
     //  2) LIDAS — por chegada, a mais nova acima (abrir_em DESC).
     const r = await poolEspaco.query(
-      `SELECT id, titulo, abrir_em, aberta_em, criado_em, reenviado_em, carta_de, carta_para,
+      `SELECT id, titulo, abrir_em, aberta_em, criado_em, reenviado_em, carta_de, carta_para, tipo, subtipo,
               (abrir_em > NOW()) AS trancada,
               CASE WHEN abrir_em > NOW() THEN NULL ELSE conteudo END AS conteudo
          FROM cartas_do_tempo
@@ -295,6 +301,30 @@ router.post('/cartas/:id/lida', autenticar, async (req, res) => {
   } catch (e) {
     console.error(`❌ [espaco] POST /cartas/:id/lida u=${tag(req.usuario?.sub)}:`, e.message);
     return erro(res, 500, 'erro ao marcar lida');
+  }
+});
+
+// CONTEÚDO — atualiza o texto de uma carta já MADURA. Usado pelos checks das
+// "Metas & sonhos": a linha feita troca '• ' por '✓ ' no PRÓPRIO texto da carta
+// (sem tabela nova — decisão do Renato: simples de administrar).
+router.put('/cartas/:id/conteudo', autenticar, async (req, res) => {
+  try {
+    const usuarioId = req.usuario.sub;
+    const cartaId = parseInt(req.params.id, 10);
+    if (!cartaId) return erro(res, 400, 'id inválido');
+    const conteudo = String(req.body?.conteudo || '').slice(0, 20000);
+    if (!conteudo.trim()) return erro(res, 400, 'conteúdo vazio');
+    const r = await poolEspaco.query(
+      `UPDATE cartas_do_tempo SET conteudo = $1
+        WHERE id = $2 AND usuario_id = $3 AND abrir_em <= NOW()
+        RETURNING id`,
+      [conteudo, cartaId, usuarioId]
+    );
+    if (!r.rows[0]) return erro(res, 404, 'carta não encontrada');
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error(`❌ [espaco] PUT /cartas/:id/conteudo u=${tag(req.usuario?.sub)}:`, e.message);
+    return erro(res, 500, 'erro ao salvar');
   }
 });
 

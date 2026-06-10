@@ -7,7 +7,7 @@
   <title>Espaço da Manifestação · Vida Mágica</title>
   <!-- Fontes self-hostadas do app (Montserrat / Lora / Open Sans) — sem Google -->
   <link rel="stylesheet" href="/assets/fonts/fonts.css" />
-  <link rel="stylesheet" href="/espaco.css?v=65" />
+  <link rel="stylesheet" href="/espaco.css?v=66" />
   <!-- Lottie (mesma lib/CDN do baú no /app) — usado na abertura mágica da carta -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js" defer></script>
 </head>
@@ -223,42 +223,66 @@
 
         <form class="espaco-form-carta" id="form-carta" autocomplete="off" novalidate>
           <!-- O PAPEL — ambiente aconchegante: data do dia + saudação + corpo da carta -->
-          <!-- Sugestões — FORA do papel (setas cilcam os temas; o exemplo aparece no corpo) -->
+          <!-- TEMA DA CARTA — setas ciclam os 3 tipos: Carta do tempo · Metas & sonhos · Gratidão.
+               Cada tipo muda o topo do papel e o texto-guia (placeholder). -->
           <div class="carta-sugestoes">
             <button type="button" class="carta-sug-seta" id="sug-prev" aria-label="Tema anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-            <span class="carta-sug-label" id="sug-label">Sugestões</span>
+            <span class="carta-sug-label" id="sug-label">Carta do tempo</span>
             <button type="button" class="carta-sug-seta" id="sug-next" aria-label="Próximo tema"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
           </div>
-          <!-- Aparece só quando uma sugestão está ativa: limpa de volta pra "Sugestões" -->
-          <button type="button" class="carta-sug-limpar" id="sug-limpar" style="display:none">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg>
-            <span>Limpar</span>
-          </button>
 
           <div class="carta-papel">
             <!-- TOPO: contexto (esquerda) + data (direita) -->
             <div class="carta-topo">
               <div class="carta-contexto">
-                <label class="carta-ctx"><span class="carta-ctx-lbl">De</span>
-                  <select id="carta-de" class="carta-ctx-sel" aria-label="De quem">
-                    <option value="eu_passado">eu do passado</option>
-                    <option value="eu_presente" selected>eu do presente</option>
-                    <option value="eu_futuro">eu do futuro</option>
-                  </select>
-                </label>
-                <label class="carta-ctx"><span class="carta-ctx-lbl">Para</span>
-                  <select id="carta-para" class="carta-ctx-sel" aria-label="Para quem">
-                    <option value="eu_passado">eu do passado</option>
-                    <option value="eu_presente">eu do presente</option>
-                    <option value="eu_futuro" selected>eu do futuro</option>
-                  </select>
-                </label>
+                <!-- CARTA DO TEMPO: de/para (clássico) -->
+                <div class="carta-ctx-grupo" id="ctx-tempo">
+                  <label class="carta-ctx"><span class="carta-ctx-lbl">De</span>
+                    <select id="carta-de" class="carta-ctx-sel" aria-label="De quem">
+                      <option value="eu_passado">eu do passado</option>
+                      <option value="eu_presente" selected>eu do presente</option>
+                      <option value="eu_futuro">eu do futuro</option>
+                    </select>
+                  </label>
+                  <label class="carta-ctx"><span class="carta-ctx-lbl">Para</span>
+                    <select id="carta-para" class="carta-ctx-sel" aria-label="Para quem">
+                      <option value="eu_passado">eu do passado</option>
+                      <option value="eu_presente">eu do presente</option>
+                      <option value="eu_futuro" selected>eu do futuro</option>
+                    </select>
+                  </label>
+                </div>
+                <!-- METAS & SONHOS: escolher meta ou sonho (no lugar do de/para) -->
+                <div class="carta-ctx-grupo" id="ctx-metas" style="display:none">
+                  <label class="carta-ctx"><span class="carta-ctx-lbl">Escrever</span>
+                    <select id="carta-metasonho" class="carta-ctx-sel" aria-label="Meta ou sonho">
+                      <option value="meta" selected>minhas metas</option>
+                      <option value="sonho">meus sonhos</option>
+                    </select>
+                  </label>
+                </div>
+                <!-- GRATIDÃO: agradeço por (1 ou 2 seleções) -->
+                <div class="carta-ctx-grupo" id="ctx-gratidao" style="display:none">
+                  <span class="carta-ctx-lbl">Agradeço por</span>
+                  <div class="carta-grat-chips">
+                    <button type="button" class="carta-grat-chip sel" id="grat-tenho">O que já tenho</button>
+                    <button type="button" class="carta-grat-chip sel" id="grat-quero">O que quero (como se já tivesse)</button>
+                  </div>
+                </div>
               </div>
               <p class="carta-dateline" id="carta-dateline"></p>
             </div>
+            <!-- Descritivo da seção (Gratidão) — acima da metade de cima -->
+            <p class="carta-grat-desc" id="carta-grat-desc1" style="display:none">Agradeço pelo que já tenho</p>
             <textarea id="carta-conteudo" class="carta-corpo" maxlength="20000" placeholder="Escreva com calma. O que você está vivendo, sonhando e sentindo agora — e o que quer que ela lembre quando reler…" rows="9"></textarea>
+            <!-- GRATIDÃO com os DOIS marcados: divisor tracejado + metade de baixo.
+                 O tracejado sobe/desce sozinho — a metade de cima cresce com o texto. -->
+            <div class="carta-grat-bloco2" id="carta-grat-bloco2" style="display:none">
+              <div class="carta-grat-divisor" aria-hidden="true"></div>
+              <p class="carta-grat-desc">Agradeço pelo que quero (como se já tivesse)</p>
+              <textarea id="carta-conteudo-2" class="carta-corpo" maxlength="20000" rows="5"></textarea>
+            </div>
             <p class="carta-corpo-dica" id="carta-corpo-dica"><span id="carta-contador">0</span> caracteres · mínimo 10</p>
-            <p class="carta-corpo-hint" id="carta-corpo-hint" style="display:none">Sugestão de inspiração · toque na carta para editar ou limpar</p>
           </div>
 
           <!-- "Continuar" — empurrado pro fundo da faixa visível, abaixo do papel,
@@ -455,19 +479,6 @@
     </div>
   </div>
 
-  <!-- Diálogo ao tocar numa SUGESTÃO ativa: editar (deixar com a sua cara) ou limpar -->
-  <div class="espaco-modal" id="modal-sugestao" aria-hidden="true">
-    <div class="espaco-modal-overlay" data-fechar-modal="modal-sugestao"></div>
-    <div class="espaco-modal-card espaco-confirmar">
-      <p class="espaco-confirmar-msg">Isto é só uma <strong>sugestão pra te inspirar</strong> ✨<br>O que você quer fazer com ela?</p>
-      <div class="espaco-confirmar-acoes espaco-confirmar-coluna">
-        <button type="button" class="espaco-confirmar-ok" id="sug-acao-editar">Editar e deixar com a minha cara</button>
-        <button type="button" class="espaco-confirmar-cancelar" id="sug-acao-limpar">Limpar e escrever do zero</button>
-        <button type="button" class="espaco-confirmar-voltar" data-fechar-modal="modal-sugestao">Continuar lendo</button>
-      </div>
-    </div>
-  </div>
-
   <!-- ════════════════════════════════════════════════════════════
        CERIMÔNIA DE LACRAR — palco do portal (SVG injetado via JS no submit).
        ════════════════════════════════════════════════════════════ -->
@@ -634,6 +645,6 @@
 
   <div id="espaco-toast" style="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%) translateY(20px);background:rgba(20,15,8,0.92);color:#f3e8d0;padding:0.7rem 1.2rem;border-radius:999px;font-size:0.9rem;opacity:0;pointer-events:none;transition:opacity .3s ease, transform .3s ease;z-index:120;max-width:88vw;text-align:center"></div>
 
-  <script src="/app/espaco.js?v=45"></script>
+  <script src="/app/espaco.js?v=46"></script>
 </body>
 </html>

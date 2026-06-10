@@ -378,48 +378,13 @@
   // ════════════════════════════════════════════════════════════
   let cartaDiasEscolhido = null;   // dias do preset (30/90/180/365) ou 'custom'
 
-  // Temas de sugestão (afirmações de exemplo que aparecem no corpo da carta).
-  const CARTA_SUGESTOES = [
-    { tema: 'Identidade e Conexão Espiritual', linhas: [
-      'Eu sou a imagem e semelhança do Criador, meu potencial é ilimitado e eu nasci para triunfar.',
-      'Eu estou em perfeito alinhamento divino com O Mestre e vivo debaixo da graça que me fortalece todos os dias.',
-      'O Grande Livro diz que tudo posso naquele que me fortalece, por isso eu afasto toda mente fraca e tomo posse da minha verdadeira identidade.',
-      'Eu vivo o hoje presente conscientemente, sabendo que o amor de Deus por mim é inabalável e perfeito.',
-    ] },
-    { tema: 'Prosperidade e Finanças', linhas: [
-      'A riqueza e a abundância divina são a vontade de Deus para a minha vida; eu nasci para fluir na prosperidade.',
-      'Eu ativo hoje as 3 leis da riqueza: mantenho minha Imagem Fixa, minha Fé Firme e minha Gratidão Plena.',
-      'O dinheiro é energia de riqueza e ele vem até mim de forma mágica, limpa e abundante.',
-      'Eu rompo com todo pensamento pequeno e com a escassez; minha mente expandida enxerga inúmeras possibilidades de crescimento.',
-    ] },
-    { tema: 'Saúde e Mentalidade', linhas: [
-      'Eu domino a minha mente e comando os meus pensamentos para que eles gerem vida, saúde e energia de vitória.',
-      'O meu corpo é o templo do Espírito Santo, cheio de vitalidade, força e saúde perfeita.',
-      'Eu liberto o meu passado, ressignifico todas as travas e escolho o slogan da minha nova realidade: pense novo, viva o novo!',
-      'Quando eu agradeço, coisas boas acontecem. Eu blindo a minha mente contra a negatividade e a reclamação.',
-    ] },
-    { tema: 'Relacionamentos e Autoestima', linhas: [
-      'Eu me amo, me respeito e não aceito menos do que a harmonia do amor, respeito e valorização nas minhas relações.',
-      'O meu lar é um ambiente de paz, harmonia e alinhamento com o propósito divino.',
-      'Eu não reclamo do que eu permito; por isso, estabeleço limites saudáveis com amor, sabedoria e firmeza, ainda que o outro não goste no começo.',
-      'Eu atraio conexões que me elevam, que estão na mesma frequência de prosperidade e que expandem minha visão.',
-    ] },
-    { tema: 'Carreira, Sucesso e Propósito', linhas: [
-      'O meu trabalho é um canal de bênção e eu sou extremamente guiada a tomar as melhores e mais lucrativas decisões.',
-      'Eu sou uma profissional realizada e realizadora, de mente expandida, e as portas das inúmeras possibilidades se abrem para mim agora e todos os dias.',
-      'Eu não aceito uma vida morna ou travada; eu fui chamada para fazer a diferença e governar a minha própria história.',
-      'Pense grande, seja grande! Eu aceito o sucesso, a promoção e a liderança que me pertencem por direito divino. Eu me permito prosperar e crescer sempre.',
-    ] },
-  ];
-
   function ligarFormCarta() {
     const ta = el('carta-conteudo');
     const cnt = el('carta-contador');
     const dataIn = el('carta-data');
     const resumo = el('carta-data-resumo');
 
-    // Contador de caracteres
-    ta?.addEventListener('input', () => { if (cnt) cnt.textContent = String(ta.value.trim().length); });
+    // (contador de caracteres atualiza dentro de ligarTopicos/atualizarContador)
 
     // "Continuar" → rola a tela até o fim (revela o lacre)
     el('carta-continuar')?.addEventListener('click', () => {
@@ -482,73 +447,135 @@
       }
     });
 
-    // ── SUGESTÕES — as setas ciclam temas; o exemplo aparece COMPLETO (read-only)
-    // e rolável (não some ao scrollar). "Limpar" volta pra vazio; tocar no exemplo
-    // abre o diálogo custom (editar a sugestão OU limpar e escrever do zero). ──
-    let sugIdx = -1;            // -1 = "Sugestões" (vazio); 0..N = tema
-    let exemploAtivo = false;   // true quando o corpo mostra exemplo (read-only)
+    // ── TEMA DA CARTA — 3 tipos: Carta do tempo · Metas & sonhos · Gratidão.
+    // As setas ciclam o tipo; cada um muda o topo do papel (de/para | meta-ou-
+    // sonho | agradeço-por) e o texto-guia (placeholder — some ao digitar). ──
+    const PH_TEMPO = '* Dê boas notícias do futuro:\nex. Vim pra dizer que nós conseguimos!\n\n* Declare como quem JÁ RECEBEU no futuro:\nex. Mc 11:24 — Você não precisa mais se preocupar com isso que incomoda agora, porque nós vencemos e deu tudo certo nisso.\n\n* Dê conselhos pro seu eu do futuro do que focar pra chegar lá:\nex. Não esquece que quando a gente tá tranquila, as coisas fluem.';
+    const PH_METAS = 'Escreva suas metas e sonhos mais ousados, de forma breve.\nExemplos:\n• tirar a carteira de motorista nos próximos meses\n• fazer a viagem dos meus sonhos esse ano\n• comprar uma casa com jardim e uma vizinhança calma e segura';
+    const PH_GRAT_TENHO = 'Agradeça pelos detalhes que te alegram no dia a dia.\nEx.\n• Ter um carro confortável e poder dirigir todo dia.\n• Termos ido naquele restaurante incrível ontem.\n• Por eu ter feito todas as minhas metas nessa semana…';
+    const PH_GRAT_QUERO = 'Agradeça pelas coisas que você quer ou te preocupam, como já realizadas ou resolvidas!\nEx.\n• Meu carro novo.\n• Por estar vendendo muito todo dia.\n• Por meu relacionamento estar feliz do jeito que eu queria.\n• Porque sou cliente daquela loja que eu sempre quis comprar.';
+    const H_GRAT_TENHO = 'Agradeço pelo que já tenho';
+    const H_GRAT_QUERO = 'Agradeço pelo que quero (como se já tivesse)';
+
+    const CARTA_TIPOS = [
+      { id: 'tempo',    rotulo: 'Carta do tempo' },
+      { id: 'metas',    rotulo: 'Metas & sonhos' },
+      { id: 'gratidao', rotulo: 'Gratidão' },
+    ];
+    let tipoIdx = 0;                                  // default: Carta do tempo
     const sugLabel = el('sug-label');
-    const sugLimparBtn = el('sug-limpar');
-    const dicaEl = el('carta-corpo-dica');
-    const hintEl = el('carta-corpo-hint');
+    const ta2 = el('carta-conteudo-2');               // metade de baixo (Gratidão "ambos")
+    const tipoAtual = () => CARTA_TIPOS[tipoIdx].id;
 
     // Cresce o textarea pra caber todo o conteúdo (sem rolagem interna; a página rola)
-    function autoGrow() {
-      if (!ta) return;
-      ta.style.height = 'auto';
-      ta.style.height = ta.scrollHeight + 'px';
-    }
-    function toggleHint(modoExemplo) {
-      if (dicaEl) dicaEl.style.display = modoExemplo ? 'none' : '';
-      if (hintEl) hintEl.style.display = modoExemplo ? '' : 'none';
-    }
-    function mostrarSugestao() {
-      const s = CARTA_SUGESTOES[sugIdx];
-      if (sugLabel) sugLabel.textContent = s.tema;
-      if (!ta) return;
-      ta.value = s.linhas.join('\n\n');
-      ta.readOnly = true;                 // read-only: tocar não digita; o diálogo decide
-      ta.classList.add('carta-corpo-exemplo');
-      exemploAtivo = true;
-      toggleHint(true);
-      if (sugLimparBtn) sugLimparBtn.style.display = '';
-      autoGrow();
-    }
-    // Sai do modo exemplo. manterTexto=true (editar) mantém o texto; false (limpar) zera.
-    function sairExemplo(manterTexto, focar) {
-      if (!ta) return;
-      ta.readOnly = false;
-      if (!manterTexto) ta.value = '';
-      ta.classList.remove('carta-corpo-exemplo');
-      exemploAtivo = false;
-      sugIdx = -1;
-      if (sugLabel) sugLabel.textContent = 'Sugestões';
-      if (sugLimparBtn) sugLimparBtn.style.display = 'none';
-      toggleHint(false);
-      if (cnt) cnt.textContent = String((ta.value || '').trim().length);
-      autoGrow();
-      if (focar) ta.focus();
+    function autoGrow(t) {
+      t = t || ta; if (!t) return;
+      t.style.height = 'auto';
+      t.style.height = t.scrollHeight + 'px';
     }
 
-    el('sug-next')?.addEventListener('click', () => {
-      sugIdx = (sugIdx < 0) ? 0 : (sugIdx + 1) % CARTA_SUGESTOES.length;
-      mostrarSugestao();
-    });
-    el('sug-prev')?.addEventListener('click', () => {
-      sugIdx = (sugIdx <= 0) ? CARTA_SUGESTOES.length - 1 : sugIdx - 1;
-      mostrarSugestao();
-    });
-    // "Limpar" da barra → volta pra "Sugestões" vazio (sem abrir o teclado)
-    sugLimparBtn?.addEventListener('click', () => sairExemplo(false, false));
+    // Gratidão: estado dos dois marcadores (pelo menos UM sempre marcado)
+    let gratTenho = true, gratQuero = true;
+    const gratModo = () => (gratTenho && gratQuero) ? 'ambos' : (gratTenho ? 'tenho' : 'quero');
 
-    // Tocar no exemplo → diálogo custom. 'click' só dispara em TOQUE (não em
-    // rolagem) → rolar a tela pra ler NÃO abre o diálogo.
-    ta?.addEventListener('click', () => { if (exemploAtivo) abrirModal('modal-sugestao'); });
-    el('sug-acao-editar')?.addEventListener('click', () => { fecharModal('modal-sugestao'); sairExemplo(true, true); });
-    el('sug-acao-limpar')?.addEventListener('click', () => { fecharModal('modal-sugestao'); sairExemplo(false, true); });
+    function atualizarContador() {
+      if (!cnt) return;
+      let n = (ta?.value || '').trim().length;
+      if (tipoAtual() === 'gratidao' && gratModo() === 'ambos') n += (ta2?.value || '').trim().length;
+      cnt.textContent = String(n);
+    }
 
-    // Textarea cresce conforme a aluna digita (a página rola, sem scroll interno)
-    ta?.addEventListener('input', autoGrow);
+    function aplicarTipoCarta() {
+      const tipo = tipoAtual();
+      if (sugLabel) sugLabel.textContent = CARTA_TIPOS[tipoIdx].rotulo;
+      const g = (id, on) => { const x = el(id); if (x) x.style.display = on ? '' : 'none'; };
+      g('ctx-tempo', tipo === 'tempo');
+      g('ctx-metas', tipo === 'metas');
+      g('ctx-gratidao', tipo === 'gratidao');
+      const desc1 = el('carta-grat-desc1');
+      const bloco2 = el('carta-grat-bloco2');
+      if (tipo === 'gratidao') {
+        const modo = gratModo();
+        if (desc1) { desc1.style.display = ''; desc1.textContent = (modo === 'quero') ? H_GRAT_QUERO : H_GRAT_TENHO; }
+        if (bloco2) bloco2.style.display = (modo === 'ambos') ? '' : 'none';
+        if (ta) ta.placeholder = (modo === 'quero') ? PH_GRAT_QUERO : PH_GRAT_TENHO;
+        if (ta2) ta2.placeholder = PH_GRAT_QUERO;
+      } else {
+        if (desc1) desc1.style.display = 'none';
+        if (bloco2) bloco2.style.display = 'none';
+        if (ta) ta.placeholder = (tipo === 'metas') ? PH_METAS : PH_TEMPO;
+      }
+      atualizarContador();
+      autoGrow(); if (ta2) autoGrow(ta2);
+    }
+    el('sug-next')?.addEventListener('click', () => { tipoIdx = (tipoIdx + 1) % CARTA_TIPOS.length; aplicarTipoCarta(); });
+    el('sug-prev')?.addEventListener('click', () => { tipoIdx = (tipoIdx + CARTA_TIPOS.length - 1) % CARTA_TIPOS.length; aplicarTipoCarta(); });
+
+    // Chips da Gratidão
+    function toggleGrat(qual) {
+      const novoTenho = qual === 'tenho' ? !gratTenho : gratTenho;
+      const novoQuero = qual === 'quero' ? !gratQuero : gratQuero;
+      if (!novoTenho && !novoQuero) { toast('Escolha pelo menos um.'); return; }
+      gratTenho = novoTenho; gratQuero = novoQuero;
+      el('grat-tenho')?.classList.toggle('sel', gratTenho);
+      el('grat-quero')?.classList.toggle('sel', gratQuero);
+      aplicarTipoCarta();
+    }
+    el('grat-tenho')?.addEventListener('click', () => toggleGrat('tenho'));
+    el('grat-quero')?.addEventListener('click', () => toggleGrat('quero'));
+
+    // TÓPICOS automáticos (metas e gratidão): Enter abre linha nova com "• ";
+    // a primeira digitação num campo vazio ganha "• " sozinha.
+    const modoTopicos = () => tipoAtual() !== 'tempo';
+    function ligarTopicos(t) {
+      if (!t) return;
+      t.addEventListener('keydown', (e) => {
+        if (!modoTopicos() || e.key !== 'Enter') return;
+        e.preventDefault();
+        const i = t.selectionStart, f = t.selectionEnd;
+        t.value = t.value.slice(0, i) + '\n• ' + t.value.slice(f);
+        t.selectionStart = t.selectionEnd = i + 3;
+        autoGrow(t); atualizarContador();
+      });
+      t.addEventListener('input', () => {
+        if (modoTopicos() && t.value && !/^[•✓]/.test(t.value)) {
+          const p = t.selectionStart;
+          t.value = '• ' + t.value;
+          t.selectionStart = t.selectionEnd = p + 2;
+        }
+        autoGrow(t); atualizarContador();
+      });
+    }
+    ligarTopicos(ta); ligarTopicos(ta2);
+
+    // Monta o conteúdo final por tipo. Normaliza tópicos (toda linha com "•")
+    // e TRIM de cada metade — elimina linhas vazias encostadas no divisor.
+    function normalizarTopicos(txt) {
+      return String(txt || '').split('\n').map(l => {
+        const t = l.trim();
+        if (!t) return '';
+        return /^[•✓]/.test(t) ? t : ('• ' + t);
+      }).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+    }
+    function montarConteudo() {
+      const tipo = tipoAtual();
+      if (tipo === 'metas') return normalizarTopicos(ta?.value);
+      if (tipo === 'gratidao') {
+        const modo = gratModo();
+        if (modo === 'ambos') {
+          const p1 = normalizarTopicos(ta?.value), p2 = normalizarTopicos(ta2?.value);
+          const blocos = [];
+          if (p1) blocos.push(`${H_GRAT_TENHO}\n${p1}`);
+          if (p2) blocos.push(`${H_GRAT_QUERO}\n${p2}`);
+          return blocos.join('\n\n');
+        }
+        const h = (modo === 'tenho') ? H_GRAT_TENHO : H_GRAT_QUERO;
+        const p = normalizarTopicos(ta?.value);
+        return p ? `${h}\n${p}` : '';
+      }
+      return (ta?.value || '').trim();
+    }
+    aplicarTipoCarta();   // estado inicial (Carta do tempo)
 
     // ── VÍDEO "como usar" (modal translúcido por cima da carta) ──
     const VIDEO_ID = 'UCK4EA_MVTA';
@@ -572,16 +599,20 @@
 
     // ── SALVAR a carta — "Lacrar e enviar" (modo='enviar') OU "Só salvar" (modo='salvar') ──
     async function salvarCarta(modo) {
-      if (exemploAtivo) { toast('Toque na carta e escreva a sua antes de salvar.'); ta?.focus(); return; }
       const titulo = (el('carta-titulo')?.value || '').trim();
-      const conteudo = (ta?.value || '').trim();
+      const tipo = tipoAtual();
+      const conteudo = montarConteudo();   // normaliza tópicos + trim das metades
       if (conteudo.length < 10) { toast('Escreva pelo menos 10 caracteres.'); return; }
 
-      const corpoReq = {
-        titulo, conteudo, modo,
-        carta_de: el('carta-de')?.value || null,
-        carta_para: el('carta-para')?.value || null,
-      };
+      const corpoReq = { titulo, conteudo, modo, tipo };
+      if (tipo === 'tempo') {
+        corpoReq.carta_de = el('carta-de')?.value || null;
+        corpoReq.carta_para = el('carta-para')?.value || null;
+      } else if (tipo === 'metas') {
+        corpoReq.subtipo = el('carta-metasonho')?.value || 'meta';
+      } else if (tipo === 'gratidao') {
+        corpoReq.subtipo = gratModo();
+      }
 
       if (modo === 'enviar') {
         if (!cartaDiasEscolhido) { toast('Escolha quando reler.'); return; }
@@ -613,18 +644,15 @@
         if (!r) return;
         const d = await r.json().catch(() => ({}));
         if (!d?.ok) { toast(d?.erro || 'Não consegui salvar a carta.'); return; }
-        // Limpa o form (reseta também read-only/altura/estado de sugestão)
-        if (ta) { ta.value = ''; ta.classList.remove('carta-corpo-exemplo'); ta.readOnly = false; ta.style.height = ''; }
-        exemploAtivo = false;
-        if (sugLabel) sugLabel.textContent = 'Sugestões';
-        if (sugLimparBtn) sugLimparBtn.style.display = 'none';
-        toggleHint(false);
+        // Limpa o form (mantém o TIPO escolhido; só zera textos e data)
+        if (ta) { ta.value = ''; ta.style.height = ''; }
+        if (ta2) { ta2.value = ''; ta2.style.height = ''; }
         if (cnt) cnt.textContent = '0';
         const tit = el('carta-titulo'); if (tit) tit.value = '';
         document.querySelectorAll('#carta-quando .espaco-data-preset').forEach(b => b.classList.remove('selecionado'));
         dataIn?.classList.remove('aberto'); if (dataIn) dataIn.value = '';
         if (resumo) resumo.textContent = 'Escolha quando a carta deve ser aberta.';
-        cartaDiasEscolhido = null; sugIdx = -1; if (sugLabel) sugLabel.textContent = 'Sugestões';
+        cartaDiasEscolhido = null;
         if (modo === 'salvar') {
           irPara('view-minhas-cartas'); carregarMinhasCartas(); toast('Carta salva ✨');
         } else {
@@ -1232,6 +1260,46 @@
       abrirModal('modal-confirmar');
     });
   }
+  // ── METAS & SONHOS (leitura): linhas "•" viram itens checáveis ────────
+  // Tocar numa linha alterna feito/não-feito; o estado vai pro próprio texto
+  // da carta ('• ' vira '✓ ') e é salvo no backend com debounce.
+  let _ctSaveTimer = null;
+  function salvarConteudoDebounced(id, conteudo) {
+    clearTimeout(_ctSaveTimer);
+    _ctSaveTimer = setTimeout(() => {
+      fetchAutenticado(`/api/app/espaco/cartas/${id}/conteudo`, {
+        method: 'PUT', body: JSON.stringify({ conteudo }),
+      }).catch(() => {});
+    }, 600);
+  }
+  function renderMetasChecks(cont, c) {
+    const linhas = String(c.conteudo || '').split('\n');
+    const draw = () => {
+      cont.innerHTML = '';
+      linhas.forEach((l, i) => {
+        const t = l.trim();
+        if (!t) return;
+        const feita = t.startsWith('✓');
+        const texto = t.replace(/^[•✓]\s*/, '');
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'meta-check' + (feita ? ' feita' : '');
+        row.innerHTML = '<span class="meta-check-box" aria-hidden="true">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+          '</span><span class="meta-check-txt"></span>';
+        row.querySelector('.meta-check-txt').textContent = texto;
+        row.addEventListener('click', () => {
+          linhas[i] = (feita ? '• ' : '✓ ') + texto;
+          c.conteudo = linhas.join('\n');
+          draw();
+          salvarConteudoDebounced(c.id, c.conteudo);
+        });
+        cont.appendChild(row);
+      });
+    };
+    draw();
+  }
+
   function abrirModalCarta(c) {
     // Selo = foto da aluna (ela escreveu pra si mesma); sem foto, cai no envelope
     const selo = el('carta-aberta-selo');
@@ -1245,7 +1313,13 @@
       if (c.reenviado_em) txt += ` · Reenviada em ${fmtData(c.reenviado_em)}`;
       d.textContent = txt;
     }
-    const co = el('carta-aberta-conteudo'); if (co) co.textContent = c.conteudo || '';
+    const co = el('carta-aberta-conteudo');
+    if (co) {
+      // Metas & sonhos: cada "•" vira um item CHECÁVEL (check SVG bonito).
+      // O check é gravado no PRÓPRIO texto da carta ('• ' → '✓ ') — sem tabela nova.
+      if (c.tipo === 'metas') renderMetasChecks(co, c);
+      else co.textContent = c.conteudo || '';
+    }
     // Botão "Compartilhar" — gera o card da marca e abre o share nativo
     // (WhatsApp, Status, Instagram Stories/Feed — a pessoa escolhe onde postar).
     const share = el('carta-aberta-share');
