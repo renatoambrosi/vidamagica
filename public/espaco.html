@@ -407,8 +407,8 @@
         <span>Meditação Guiada</span>
       </button>
 
-      <!-- BOTÃO CENTRAL — Ambiente (timer + música + afirmações). Painel vem depois. -->
-      <button type="button" class="espaco-bottom-central" id="ferr-ambiente" aria-label="Ambiente — timer, música e afirmações">
+      <!-- BOTÃO CENTRAL — Ambiente (timer + afirmações). -->
+      <button type="button" class="espaco-bottom-central" id="ferr-ambiente" aria-label="Ambiente — timer e afirmações">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9v6M10 5v14M14 7v10M18 10v4"/></svg>
       </button>
 
@@ -525,9 +525,9 @@
   </div>
 
   <!-- ════════════════════════════════════════════════════════════
-       PAINEL AMBIENTE — bottom sheet (afirmações · timer · música).
+       PAINEL AMBIENTE — bottom sheet (afirmações · timer).
        Abre POR CIMA da tela atual (não troca de view). As ferramentas
-       rodam independentes. Hoje: Afirmações funcional; Timer/Música em breve.
+       rodam independentes. Música foi removida (decisão do Renato 2026-06-01).
        ════════════════════════════════════════════════════════════ -->
   <div class="espaco-ambiente" id="espaco-ambiente" aria-hidden="true">
     <div class="espaco-ambiente-overlay" data-fechar-ambiente></div>
@@ -545,11 +545,6 @@
           <span class="espaco-ferr-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9 2h6"/></svg></span>
           <span class="espaco-ferr-nome">Timer</span>
           <span class="espaco-ferr-desc">Tempo de prática</span>
-        </button>
-        <button type="button" class="espaco-ferr em-breve" id="ferr-musica">
-          <span class="espaco-ferr-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></span>
-          <span class="espaco-ferr-nome">Música</span>
-          <span class="espaco-ferr-desc">Em breve</span>
         </button>
       </div>
     </div>

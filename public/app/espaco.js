@@ -1425,7 +1425,7 @@
   // ════════════════════════════════════════════════════════════
   // ════════════════════════════════════════════════════════════
   // AMBIENTE + PLAYER DE AFIRMAÇÕES
-  // Ambiente = bottom sheet (afirmações · timer · música). Afirmações:
+  // Ambiente = bottom sheet (afirmações · timer). Afirmações:
   // a aluna escolhe até 7 frases (na ordem), define ritmo/narração/repetir
   // e roda um player de tela cheia com a imagem do tema. Seleção efêmera.
   // ════════════════════════════════════════════════════════════
@@ -1731,7 +1731,6 @@
     document.querySelectorAll('[data-fechar-ambiente]').forEach(o => o.addEventListener('click', fecharAmbiente));
     el('ferr-afirmacoes')?.addEventListener('click', () => { fecharAmbiente(); abrirAfirmSetup(); });
     el('ferr-timer')?.addEventListener('click', () => { fecharAmbiente(); abrirTimer(); });
-    el('ferr-musica')?.addEventListener('click', () => toast('Música — em breve ✨'));
     // Timer: chip do header reabre a folha; controles
     el('espaco-timer-chip')?.addEventListener('click', abrirTimer);
     document.querySelectorAll('[data-fechar-timer]').forEach(o => o.addEventListener('click', fecharTimer));
