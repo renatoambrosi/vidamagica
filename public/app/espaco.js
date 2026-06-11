@@ -6,7 +6,7 @@
    - fetchAutenticado com renovação de token (mescla preservando refresh_token)
    - Animação de abertura (cérebro dourado) — PORTADA do Caderno, fiel
    - Sistema de 3 temas (preview → confirma com check → reverte se sair)
-   - Dropup do avatar (cartas/manifestações/voltar) + navegação dos caminhos
+   - Dropup do avatar (cartas/voltar) + navegação dos caminhos
 
    NOTA: o VmSession aqui é cópia do app.js (sessão compartilhada via mesma
    chave 'vm_s'). Unificar num sessao.js compartilhado é faxina futura.
@@ -323,7 +323,6 @@
       irPara('view-minhas-cartas');
       carregarMinhasCartas();
     });
-    el('menu-manifestacoes')?.addEventListener('click', () => { fecharMenuAvatar(); toast('Minhas manifestações — em breve ✨'); });
     el('menu-voltar')?.addEventListener('click', () => { window.location.href = '/app'; });
 
     // Fecha menus ao tocar FORA deles (e fora dos botões que os abrem).
@@ -353,7 +352,6 @@
       btn.addEventListener('click', () => {
         const c = btn.dataset.caminho;
         if (c === 'carta')      return irPara('view-carta');
-        if (c === 'manifestar') return toast('Quero manifestar — em breve ✨');
         if (c === 'meditar')    return toast('Quero meditar — em breve ✨');
       });
     });
