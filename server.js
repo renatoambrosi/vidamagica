@@ -149,6 +149,13 @@ app.get('/relatos', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'relatos.html'));
 });
 
+// ── ROTA AMIGÁVEL: /resultado (sem id) → ponte de retorno do checkout ─────
+// O checkout do Teste redireciona pra cá após o pagamento (URL fixa por produto).
+// A ponte recupera o id do teste (query/localStorage) e encaminha pra /resultado/:id.
+app.get('/resultado', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'resultado-redirect.html'));
+});
+
 // ── ROTA AMIGÁVEL: /resultado/:id serve resultado.html ─────
 // O frontend recebe o ID via window.location e busca via /api/teste/resultado/:id
 app.get('/resultado/:id', (req, res) => {

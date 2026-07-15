@@ -1,0 +1,82 @@
+<!--
+  === VIDA MÁGICA — resultado-redirect.html ===
+  PONTE de retorno do checkout do Teste do Subconsciente.
+  O checkout (Kiwify) tem "redirecionar após compra" FIXO por produto e não
+  consegue mandar o :id dinâmico. Então ele aponta pra /resultado (sem id) e
+  esta página recupera o id do teste (query ?teste= | localStorage | sessionStorage)
+  e encaminha pra /resultado/:id. Sem exigir login — o resultado é público por id.
+  Servida pela rota app.get('/resultado', ...) em server.js.
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Preparando seu resultado — Vida Mágica</title>
+<style>
+  :root{ --bg:#0a1428; --gold:#c8922a; --ciano:#4fd6e0; --texto:#f5f0e8; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; }
+  body{
+    background: radial-gradient(1200px 600px at 50% -10%, rgba(79,214,224,0.12), transparent 60%), var(--bg);
+    color: var(--texto);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    display:flex; align-items:center; justify-content:center;
+    padding: 24px; text-align:center;
+  }
+  .wrap{ max-width: 420px; }
+  .spinner{
+    width:44px; height:44px; margin:0 auto 22px;
+    border:3px solid rgba(245,240,232,0.15);
+    border-top-color: var(--gold);
+    border-radius:50%;
+    animation: girar 0.9s linear infinite;
+  }
+  @keyframes girar{ to{ transform: rotate(360deg); } }
+  h1{ font-size:1.25rem; font-weight:700; margin:0 0 8px; }
+  p{ font-size:0.95rem; line-height:1.5; color: rgba(245,240,232,0.7); margin:0 0 18px; }
+  a.btn{
+    display:inline-block; text-decoration:none;
+    color:#0a1428; background: var(--gold); font-weight:700;
+    padding: 11px 22px; border-radius: 999px; font-size:0.92rem;
+  }
+  .fallback{ display:none; }
+</style>
+
+<div class="wrap">
+  <div id="carregando">
+    <div class="spinner" aria-hidden="true"></div>
+    <h1>Preparando seu resultado…</h1>
+    <p>Um instante — estamos abrindo sua análise personalizada.</p>
+  </div>
+
+  <div id="semId" class="fallback">
+    <h1>Não achamos seu resultado</h1>
+    <p>O link do seu resultado pode ter expirado neste navegador. Verifique também seu WhatsApp e e-mail — enviamos o resultado por lá.</p>
+    <a class="btn" href="/teste">Voltar ao teste</a>
+  </div>
+</div>
+
+<script>
+  (function(){
+    function pegarId(){
+      try{
+        var q = new URLSearchParams(window.location.search);
+        var byQuery = q.get('uid') || q.get('teste') || q.get('teste_id') || q.get('id');
+        if (byQuery) return byQuery.trim();
+      }catch(e){}
+      try{ var l = localStorage.getItem('vm_teste_pendente'); if (l) return l.trim(); }catch(e){}
+      try{ var s = sessionStorage.getItem('teste_id'); if (s) return s.trim(); }catch(e){}
+      return '';
+    }
+
+    var id = pegarId().replace(/^VM/i, ''); // tolera prefixo "VM" de origem
+    if (id) {
+      try{ localStorage.removeItem('vm_teste_pendente'); }catch(e){}
+      window.location.replace('/resultado/' + encodeURIComponent(id));
+    } else {
+      var c = document.getElementById('carregando');
+      var f = document.getElementById('semId');
+      if (c) c.style.display = 'none';
+      if (f) f.style.display = 'block';
+    }
+  })();
+</script>

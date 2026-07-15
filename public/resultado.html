@@ -120,14 +120,48 @@
 
     /* ─── Erro ─── */
     .erro-box {
-      background: rgba(229,115,115,0.12);
-      border: 1px solid rgba(229,115,115,0.3);
-      border-radius: 12px;
-      padding: 1.5rem;
+      background: rgba(245,240,232,0.045);
+      border: 1px solid rgba(245,240,232,0.12);
+      border-radius: 18px;
+      padding: 2.25rem 1.75rem;
       text-align: center;
-      color: #F09090;
       margin: 2rem 0;
     }
+    .erro-selo {
+      width: 54px; height: 54px; margin: 0 auto 1.2rem;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(circle at 50% 40%, rgba(232,201,122,0.22), rgba(200,146,42,0.07));
+      border: 1px solid rgba(232,201,122,0.35);
+    }
+    .erro-selo svg { width: 25px; height: 25px; stroke: var(--gold, #E8C97A); stroke-width: 1.7; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    #erro-msg {
+      color: var(--pearl, #f5f0e8);
+      font-family: var(--font-display);
+      font-size: 1.06rem; font-weight: 600; line-height: 1.55;
+      margin: 0 auto; max-width: 30rem;
+    }
+    .erro-acoes { margin-top: 1.75rem; display: flex; flex-direction: column; gap: 0.9rem; }
+    .erro-divisor { height: 1px; background: rgba(245,240,232,0.1); margin: 0.4rem 0; }
+    .erro-bloco { display: flex; flex-direction: column; gap: 0.75rem; }
+    .erro-bloco-txt {
+      color: var(--pearl-dim, rgba(245,240,232,0.65));
+      font-family: var(--font-body);
+      font-size: 0.9rem; line-height: 1.55; margin: 0;
+    }
+    .erro-cta {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
+      width: 100%; padding: 0.95rem 1.25rem; border-radius: 10px;
+      font-family: var(--font-display); font-size: 0.95rem; font-weight: 700;
+      letter-spacing: 0.01em; text-decoration: none; cursor: pointer;
+      transition: transform 0.18s, box-shadow 0.18s, background 0.18s, border-color 0.18s;
+      border: none;
+    }
+    .erro-cta-pagar { background: linear-gradient(135deg, var(--gold, #C8922A), var(--gold-2, #c8923b)); color: #fff; }
+    .erro-cta-pagar:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(248,220,150,0.28); }
+    .erro-cta-suporte { background: transparent; color: var(--pearl, #f5f0e8); border: 1px solid rgba(245,240,232,0.28); }
+    .erro-cta-suporte:hover { border-color: rgba(245,240,232,0.5); background: rgba(245,240,232,0.05); }
+    .erro-cta-suporte svg { width: 18px; height: 18px; fill: currentColor; }
 
     /* ═══════════════════════════════════════════════════
        BLOCO 1 — Imagem + Título
@@ -1298,7 +1332,27 @@
 
   <!-- Estado: erro -->
   <div id="erro" class="erro-box" style="display:none">
+    <div class="erro-selo" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg>
+    </div>
     <p id="erro-msg">Não foi possível carregar este resultado.</p>
+
+    <div id="erro-acoes" class="erro-acoes" style="display:none">
+      <!-- Momento 1: concluir o pagamento -->
+      <div class="erro-bloco">
+        <p class="erro-bloco-txt">Se você ainda não finalizou, é só concluir o pagamento — seu resultado abre na hora.</p>
+        <a id="erro-btn-pagar" class="erro-cta erro-cta-pagar" href="#" style="display:none">Concluir pagamento</a>
+      </div>
+      <div class="erro-divisor"></div>
+      <!-- Momento 2: falar com o suporte -->
+      <div class="erro-bloco">
+        <p class="erro-bloco-txt">Já pagou e o resultado não abriu? Fale com a gente, resolvemos com você.</p>
+        <a id="erro-btn-suporte" class="erro-cta erro-cta-suporte" href="#" target="_blank" rel="noopener">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3C9 3 3.5 8.5 3.5 15.5c0 2.4.7 4.6 1.8 6.5L3 29l7.2-2.3c1.8 1 3.9 1.5 6 1.5 7 0 12.5-5.5 12.5-12.5S23 3 16 3zm0 22.8c-1.9 0-3.7-.5-5.2-1.4l-.4-.2-4.3 1.4 1.4-4.2-.3-.4a10 10 0 0 1-1.6-5.3C5.7 9.7 10.3 5.2 16 5.2s10.3 4.5 10.3 10.3S21.7 25.8 16 25.8zm5.7-7.7c-.3-.2-1.8-.9-2.1-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-.9 1.1-.2.2-.3.2-.6.1-1.8-.9-3-1.6-4.2-3.6-.3-.5.3-.5.8-1.5.1-.2 0-.4 0-.5 0-.2-.7-1.7-1-2.3-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.1 3.3 5.2 4.6 3.1 1.3 3.1.9 3.7.8.5-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.2-.3-.2-.5-.4z"/></svg>
+          <span>Falar com o suporte</span>
+        </a>
+      </div>
+    </div>
   </div>
 
   <!-- Conteúdo principal (preenchido via JS) -->
@@ -1408,9 +1462,10 @@
 
 <script>
 (async function() {
-  // ID vem da URL: /resultado/<uuid>
+  // ID vem da URL: /resultado/<uuid>. Tolera prefixo "VM" (marca de origem do
+  // checkout) — se vier /resultado/VM<uuid>, captura só o UUID.
   const path = window.location.pathname;
-  const match = path.match(/\/resultado\/([a-f0-9-]+)/i);
+  const match = path.match(/\/resultado\/(?:VM)?([a-f0-9-]+)/i);
   const testeId = match ? match[1] : null;
 
   const elLoading = document.getElementById('loading');
@@ -1418,10 +1473,54 @@
   const elErroMsg = document.getElementById('erro-msg');
   const elConteudo = document.getElementById('conteudo');
 
+  // Suporte via WhatsApp — ⚠️ CONFIRMAR número do suporte (hoje: comunidade).
+  const SUPORTE_WA_NUMERO = '5562999884411';
+  const SUPORTE_WA_TEXTO = 'Estou com problemas no teste do subconsciente.';
+
+  // Monta os 2 caminhos de recuperação na tela de erro:
+  //   1) Fazer o pagamento — só aparece se temos testeId + link de checkout.
+  //   2) Falar com o suporte — sempre (abre WhatsApp com a frase pronta).
+  async function montarAcoesErro() {
+    const acoes = document.getElementById('erro-acoes');
+    const btnPagar = document.getElementById('erro-btn-pagar');
+    const btnSuporte = document.getElementById('erro-btn-suporte');
+    if (!acoes) return;
+
+    if (btnSuporte) {
+      btnSuporte.href = 'https://wa.me/' + SUPORTE_WA_NUMERO + '?text=' + encodeURIComponent(SUPORTE_WA_TEXTO);
+    }
+
+    if (btnPagar && testeId) {
+      try {
+        const r = await fetch('/api/precos', { headers: { 'Accept': 'application/json' } });
+        if (r.ok) {
+          const data = await r.json();
+          const p = data && data.teste_subconsciente;
+          const base = ((p && p.link_checkout_padrao) || '').trim();
+          if (base) {
+            let dest;
+            try {
+              const u = new URL(base);
+              u.searchParams.set('uid', 'VM' + testeId); // mesma marca de origem do teste
+              dest = u.toString();
+            } catch {
+              dest = base + (base.includes('?') ? '&' : '?') + 'uid=VM' + encodeURIComponent(testeId);
+            }
+            btnPagar.href = dest;
+            btnPagar.style.display = '';
+          }
+        }
+      } catch (e) {}
+    }
+
+    acoes.style.display = '';
+  }
+
   function mostrarErro(msg) {
     elLoading.style.display = 'none';
     elErroMsg.textContent = msg;
     elErro.style.display = 'block';
+    montarAcoesErro();
   }
 
   if (!testeId) {
@@ -1436,6 +1535,8 @@
     if (!r.ok) {
       if (r.status === 404) {
         mostrarErro('Resultado não encontrado. Verifique o link.');
+      } else if (r.status === 402) {
+        mostrarErro('Estamos identificando o seu pagamento. Assim que ele for confirmado, o seu resultado aparece aqui — e também chega no seu WhatsApp e e-mail.');
       } else {
         mostrarErro('Não foi possível carregar este resultado. Tente novamente em alguns instantes.');
       }

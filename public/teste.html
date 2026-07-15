@@ -1079,6 +1079,8 @@
         const data=await res.json();
         const p=data&&data[KEY];
         if(!p){document.querySelectorAll('[data-preco-inline],[data-preco-grande]').forEach(el=>el.style.display='none');return;}
+        // Guarda o link de checkout do produto pra usar no fim do teste (pergunta 15 → pagamento).
+        try{ window.__TESTE_CHECKOUT__ = (p.link_checkout_padrao||'').trim(); }catch{}
         const v=p.exibir_avista||p.preco_avista||p.preco_padrao;
         if(!v) return;
         const{reais,centavos}=fmt(v);
@@ -1237,10 +1239,10 @@
               <div class="modal-tela modal-tela-finalizado" data-tela="finalizado">
                 <div class="modal-iniciar-icon"><i class="fas fa-check"></i></div>
                 <h2 class="modal-iniciar-titulo">Tudo pronto!</h2>
-                <p class="modal-iniciar-subtitulo">Você terminou o teste. Estamos preparando sua jornada personalizada.</p>
+                <p class="modal-iniciar-subtitulo">Você terminou o teste. Falta só o último passo pra liberar seu resultado personalizado.</p>
                 <p style="text-align:center;color:rgba(245,240,232,0.5);font-size:0.85rem;margin-top:1rem;">
                   <i class="fas fa-spinner fa-spin" style="margin-right:0.4rem;"></i>
-                  Levando você pra sua área…
+                  Indo pro pagamento…
                 </p>
               </div>
             </div>
@@ -1812,17 +1814,36 @@
               // Persiste resultado pra próxima etapa
               sessionStorage.setItem('teste_id', data.teste_id);
               sessionStorage.setItem('teste_perfil', data.perfil_dominante);
+              // Guarda o id do teste pra recuperar quando a aluna voltar do checkout.
+              // localStorage sobrevive ao ida-e-volta pro domínio do pagamento (mesma aba).
+              try { localStorage.setItem('vm_teste_pendente', data.teste_id); } catch {}
               window._testeTrocarTela('finalizado');
 
-              // Se a aluna está logada (tem sessão), leva ela pro /app pra ver
-              // a jornada/trilha personalizada. Se for lead anônima, fica na
-              // tela de "Tudo pronto" (placeholder até integrarmos pagamento).
-              try {
-                const temSessao = !!(window.VmSession && window.VmSession.getAccess && window.VmSession.getAccess());
-                if (temSessao) {
-                  setTimeout(() => { window.location.replace('/app'); }, 1800);
+              // Fluxo novo: TODO MUNDO (logada ou não) vai pro checkout do teste,
+              // levando o uid (= teste_id) na URL. O checkout faz o polling do Pix
+              // e, após o pagamento, redireciona sozinho pra /resultado/<uid>.
+              // Sem exigir login — o resultado é público por id.
+              // Formato do checkout: https://pagamento.suellenseragi.com.br/?uid=<UID>
+              // Fallback: se o link de checkout não estiver configurado no admin,
+              // vai direto pro resultado (mantém o teste utilizável em dev).
+              // Prefixo "VM" marca a origem: no checkout, uid que começa com VM
+              // = Vida Mágica (redireciona pro resultado daqui); sem VM = Tally
+              // (segue pro resultado4, fluxo antigo intacto). O checkout tira o
+              // "VM" pra recuperar o teste_id (UUID puro) na volta.
+              const checkoutBase = (window.__TESTE_CHECKOUT__ || '').trim();
+              const uidCheckout = 'VM' + data.teste_id;
+              let destino = `/resultado/${data.teste_id}`;
+              if (checkoutBase) {
+                try {
+                  const u = new URL(checkoutBase, window.location.origin);
+                  u.searchParams.set('uid', uidCheckout); // sobrescreve qualquer placeholder de uid
+                  destino = u.toString();
+                } catch {
+                  const sep = checkoutBase.includes('?') ? '&' : '?';
+                  destino = checkoutBase + sep + 'uid=' + encodeURIComponent(uidCheckout);
                 }
-              } catch {}
+              }
+              setTimeout(() => { window.location.href = destino; }, 1400);
             } else {
               if (indiceAtual < perguntas.length - 1) {
                 indiceAtual++;

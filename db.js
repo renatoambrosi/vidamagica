@@ -131,6 +131,11 @@ async function initCore() {
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS genero VARCHAR(20)`);
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS ocupacao TEXT`);
 
+    // Nome completo coletado no CHECKOUT do teste (payer name). Guardado à parte
+    // do `nome` (que vem do teste, geralmente curto) — completa o cadastro sem
+    // sobrescrever. Preenchido pelo webhook POST /api/teste/marcar-pago.
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS nome_completo VARCHAR(255)`);
+
     // Antes de criar índices únicos, normalizar strings vazias pra NULL.
     // Cadastros antigos gravavam email='' quando vazio — isso quebra o índice
     // porque o WHERE email IS NOT NULL não filtra string vazia.

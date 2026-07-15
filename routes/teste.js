@@ -26,6 +26,18 @@ const {
 const { calcularJornadaVigente, temClubeVidaMagica, temTravaForte, SLUG } = require('../core/jornadas');
 const { autenticar } = require('../middleware/autenticar');
 
+// ⚠️ DEV FLAG — GATE DE PAGAMENTO DO RESULTADO ⚠️
+// Fluxo real: pergunta 15 → checkout externo (pagamento.suellenseragi.com.br)
+// → Pix → checkout dispara POST /api/teste/marcar-pago → testes.pago=TRUE
+// → checkout redireciona pra /resultado/<uid> → resultado abre.
+//
+// Enquanto FALSE (padrão): o teste nasce com pago=TRUE e o resultado abre sem
+// checar pagamento — pra o Renato validar layout/texto/e-mail sem pagar Pix real
+// (mesma filosofia do `|| true` em routes/app.js e do TESOURO_INFINITO_DEV).
+// Trocar pra TRUE no lançamento: o teste passa a nascer pago=FALSE e o resultado
+// só abre com pagamento confirmado. Reverter = 1 linha.
+const PAGAMENTO_OBRIGATORIO_RESULTADO = false;
+
 // ── Validações simples ──────────────────────────────────────
 function validarNome(nome) {
   if (!nome || typeof nome !== 'string') return null;
@@ -357,18 +369,18 @@ router.post('/responder', async (req, res) => {
     }
 
     // INSERT sempre — o registro novo nasce não visto.
-    // ⚠️ TEMPORÁRIO ⚠️ — `pago=TRUE` na criação mantém todos os testes
-    // como "pago" enquanto o gateway não está implementado. Isso casa com
-    // o bypass `|| true` em routes/app.js. Quando o webhook do Kiwify
-    // entrar, REMOVER `pago` do INSERT (volta ao default FALSE) — daí
-    // só vira pago via /api/teste/marcar-pago disparado pelo webhook.
+    // `pago` inicial depende da DEV FLAG PAGAMENTO_OBRIGATORIO_RESULTADO (topo do arquivo):
+    //   - flag FALSE (padrão/dev): nasce pago=TRUE, resultado abre sem cobrar.
+    //   - flag TRUE  (lançamento): nasce pago=FALSE, só vira pago via
+    //     POST /api/teste/marcar-pago (webhook do checkout após o Pix).
+    const pagoInicial = !PAGAMENTO_OBRIGATORIO_RESULTADO;
     const insR = await poolTeste.query(
       `INSERT INTO testes
          (usuario_id, lead_id, versao_id, telefone_canonico, respostas,
           contagem, percentuais,
           perfil_dominante, percentual_prosperidade, nivel_prosperidade,
           pago)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, TRUE)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING id`,
       [
         lead.usuario_id,
@@ -381,6 +393,7 @@ router.post('/responder', async (req, res) => {
         resultado.perfil_dominante,
         resultado.percentual_prosperidade,
         resultado.nivel_prosperidade,
+        pagoInicial,
       ]
     );
     const testeId = insR.rows[0].id;
@@ -407,6 +420,207 @@ router.post('/responder', async (req, res) => {
   }
 });
 
+// ── POST /api/teste/marcar-pago ─────────────────────────────
+// Webhook do checkout externo (pagamento.suellenseragi.com.br).
+// Chamado quando o Pix é confirmado. Faz DUAS coisas:
+//   1. Marca o teste como pago (libera o gate em GET /resultado/:teste_id).
+//   2. ENRIQUECE O CADASTRO da aluna com os dados que ela digitou no checkout
+//      (email, nome, CPF) — "completa o cadastro" que o teste deixou incompleto
+//      (o /iniciar cria usuarios com status='incompleta', só telefone+nome).
+// Idempotente — pode ser chamado várias vezes (MP dispara created + updated).
+//
+// Contrato flexível — aceita:
+//   uid:      body.uid | body.teste_id | body.id | query.uid | query.teste_id (UUID)
+//   email:    body.email | body.payer_email
+//   nome:     body.nome | body.name | body.first_name (+ last_name)
+//   cpf:      body.cpf | body.documento
+//   telefone: body.telefone | body.phone | body.whatsapp
+// Enriquecimento preenche SÓ campos vazios (COALESCE). Conflito de email/CPF
+// (já pertence a outra aluna) é logado e ignorado — NUNCA quebra a confirmação
+// do pagamento.
+//
+// Segurança: se PAGAMENTO_WEBHOOK_TOKEN estiver no .env, exige o mesmo token
+// via header 'x-webhook-token' | query.token | body.token. Sem o env, apenas
+// registra um aviso e prossegue (não trava o Renato antes de configurar).
+router.post('/marcar-pago', async (req, res) => {
+  try {
+    const b = req.body || {};
+    const q = req.query || {};
+
+    // ── Auth por token compartilhado (opcional até configurar o env) ──
+    const tokenEsperado = (process.env.PAGAMENTO_WEBHOOK_TOKEN || '').trim();
+    if (tokenEsperado) {
+      const tokenRecebido = (
+        req.get('x-webhook-token') || q.token || b.token || ''
+      ).toString().trim();
+      if (tokenRecebido !== tokenEsperado) {
+        console.warn('⚠️ [teste/marcar-pago] token inválido — recusado.');
+        return res.status(403).json({ ok: false, erro: 'token inválido' });
+      }
+    } else {
+      console.warn('⚠️ [teste/marcar-pago] PAGAMENTO_WEBHOOK_TOKEN não configurado — webhook sem autenticação.');
+    }
+
+    // ── Extrai o uid (teste_id) de qualquer campo plausível ──
+    // Tolera prefixo "VM" (marca de origem posta pelo Vida Mágica) — remove
+    // pra recuperar o teste_id (UUID puro), caso o checkout não tenha tirado.
+    const uid = (b.uid || b.teste_id || b.id || q.uid || q.teste_id || '')
+      .toString().trim().replace(/^VM/i, '');
+    if (!uid) {
+      return res.status(400).json({ ok: false, erro: 'uid ausente' });
+    }
+    // teste_id é UUID — valida o formato pra evitar UPDATE com lixo.
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uid)) {
+      return res.status(400).json({ ok: false, erro: 'uid inválido' });
+    }
+
+    // ── 1) Marca pago e recupera a identidade ligada ao teste ──
+    const upd = await poolTeste.query(
+      `UPDATE testes SET pago = TRUE
+        WHERE id = $1
+        RETURNING id, usuario_id, telefone_canonico`,
+      [uid]
+    );
+    if (!upd.rows[0]) {
+      console.warn(`⚠️ [teste/marcar-pago] teste não encontrado: ${uid}`);
+      return res.status(404).json({ ok: false, erro: 'teste não encontrado' });
+    }
+    const { usuario_id, telefone_canonico } = upd.rows[0];
+    console.log(`✅ [teste/marcar-pago] teste ${uid} marcado como pago.`);
+
+    // ── 2) Normaliza os dados do checkout pra enriquecer o cadastro ──
+    const emailRaw = (b.email || b.payer_email || q.email || '').toString().trim().toLowerCase();
+    const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw) ? emailRaw : null;
+
+    const nomeMontado = (b.nome || b.name ||
+      [b.first_name, b.last_name].filter(Boolean).join(' ') || '').toString().trim();
+    const nome = nomeMontado ? validarNome(nomeMontado) : null;
+
+    const cpfDigitos = (b.cpf || b.documento || '').toString().replace(/\D/g, '');
+    const cpf = cpfDigitos.length === 11 ? cpfDigitos : null;
+
+    const telRaw = (b.telefone || b.phone || b.whatsapp || '').toString().trim();
+    const telChk = telRaw ? formatarTelefone(telRaw) : null;
+
+    // Descobre qual usuária completar (por id do teste; senão pelo telefone).
+    let alvoId = usuario_id || null;
+    if (!alvoId) {
+      const telBusca = telefone_canonico || (validarTelefoneCanonico(telChk) ? telChk : null);
+      if (telBusca) {
+        const u = await poolCore.query(
+          `SELECT id FROM usuarios WHERE telefone = $1 LIMIT 1`, [telBusca]
+        ).catch(() => null);
+        if (u && u.rows[0]) alvoId = u.rows[0].id;
+      }
+    }
+
+    // Enriquece o lead do teste (tem coluna email própria).
+    if (email && (usuario_id || telefone_canonico)) {
+      await poolTeste.query(
+        `UPDATE teste_leads
+            SET email = COALESCE(NULLIF(email, ''), $1), atualizado_em = NOW()
+          WHERE usuario_id = $2 OR telefone_canonico = $3`,
+        [email, usuario_id, telefone_canonico]
+      ).catch(e => console.warn('⚠️ [teste/marcar-pago] lead email:', e.message));
+    }
+
+    // Enriquece o cadastro (usuarios). Cada campo em query própria pra que um
+    // conflito de UNIQUE (email/cpf) não impeça os outros de preencher.
+    if (alvoId) {
+      if (nome) {
+        // Nome do checkout vai pra coluna dedicada `nome_completo` — não toca no
+        // `nome` (que veio do teste). Preenche só se ainda estiver vazio.
+        await poolCore.query(
+          `UPDATE usuarios SET nome_completo = COALESCE(NULLIF(nome_completo, ''), $2), atualizado_em = NOW() WHERE id = $1`,
+          [alvoId, nome]
+        ).catch(e => console.warn('⚠️ [teste/marcar-pago] usuario nome_completo:', e.message));
+      }
+      if (email) {
+        // COALESCE só preenche se estiver NULL; se já tem email, mantém (sem conflito consigo).
+        await poolCore.query(
+          `UPDATE usuarios SET email = COALESCE(email, $2), atualizado_em = NOW() WHERE id = $1`,
+          [alvoId, email]
+        ).catch(e => console.warn('⚠️ [teste/marcar-pago] usuario email (provável duplicado):', e.message));
+      }
+      if (cpf) {
+        await poolCore.query(
+          `UPDATE usuarios SET cpf = COALESCE(cpf, $2), atualizado_em = NOW() WHERE id = $1`,
+          [alvoId, cpf]
+        ).catch(e => console.warn('⚠️ [teste/marcar-pago] usuario cpf (provável duplicado):', e.message));
+      }
+    }
+
+    return res.json({
+      ok: true,
+      pago: true,
+      teste_id: uid,
+      cadastro_enriquecido: !!alvoId,
+    });
+  } catch (err) {
+    console.error('❌ [teste/marcar-pago] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ── GET /api/teste/cliente/:teste_id ────────────────────────
+// Contato da aluna (nome, telefone, email) pelo teste_id. É o "análogo VM"
+// da planilha do Tally: o checkout usa isto pra montar as mensagens do fluxo
+// Teste do Subconsciente (WhatsApp), já que o telefone foi coletado no /iniciar.
+// Aceita o teste_id com ou sem prefixo "VM". Retorna PII → protegido pelo mesmo
+// token do webhook (se PAGAMENTO_WEBHOOK_TOKEN estiver setado).
+router.get('/cliente/:teste_id', async (req, res) => {
+  try {
+    const tokenEsperado = (process.env.PAGAMENTO_WEBHOOK_TOKEN || '').trim();
+    if (tokenEsperado) {
+      const rec = (req.get('x-webhook-token') || req.query.token || '').toString().trim();
+      if (rec !== tokenEsperado) {
+        return res.status(403).json({ ok: false, erro: 'token inválido' });
+      }
+    }
+
+    const testeId = (req.params.teste_id || '').toString().trim().replace(/^VM/i, '');
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(testeId)) {
+      return res.status(400).json({ ok: false, erro: 'teste_id inválido' });
+    }
+
+    const t = await poolTeste.query(
+      `SELECT usuario_id, lead_id, telefone_canonico FROM testes WHERE id = $1`,
+      [testeId]
+    );
+    if (!t.rows[0]) return res.status(404).json({ ok: false, erro: 'teste não encontrado' });
+    const { usuario_id, lead_id, telefone_canonico } = t.rows[0];
+
+    let nome = null, email = null, telefone = telefone_canonico || null;
+
+    if (lead_id) {
+      const l = await poolTeste.query(
+        `SELECT nome, email, telefone_canonico FROM teste_leads WHERE id = $1`, [lead_id]
+      );
+      if (l.rows[0]) {
+        nome = l.rows[0].nome || nome;
+        email = l.rows[0].email || email;
+        telefone = l.rows[0].telefone_canonico || telefone;
+      }
+    }
+    // Completa o que faltar com o cadastro (poolCore) — sem JOIN entre bancos.
+    if (usuario_id && (!nome || !email || !telefone)) {
+      const u = await poolCore.query(
+        `SELECT nome, email, telefone FROM usuarios WHERE id = $1`, [usuario_id]
+      );
+      if (u.rows[0]) {
+        nome = nome || u.rows[0].nome;
+        email = email || u.rows[0].email;
+        telefone = telefone || u.rows[0].telefone;
+      }
+    }
+
+    return res.json({ ok: true, teste_id: testeId, nome, telefone, email });
+  } catch (err) {
+    console.error('❌ [teste/cliente] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
 // ── GET /api/teste/resultado/:teste_id ──────────────────────
 // Devolve TODO o pacote de dados pra renderizar a página de resultado.
 // Frontend só renderiza, não calcula nada.
@@ -425,6 +639,13 @@ router.get('/resultado/:teste_id', async (req, res) => {
     );
     if (!tRows.rows[0]) return res.status(404).json({ ok: false, erro: 'teste não encontrado' });
     const teste = tRows.rows[0];
+
+    // GATE DE PAGAMENTO — só quando a DEV FLAG está ligada (lançamento).
+    // Antes de pagar, o resultado não é revelado nem a trilha é ativada:
+    // devolve 402 pra o frontend mostrar "finalize seu pagamento".
+    if (PAGAMENTO_OBRIGATORIO_RESULTADO && !teste.pago) {
+      return res.status(402).json({ ok: false, erro: 'pagamento_pendente', pago: false });
+    }
 
     // Recalcula com a lógica oficial (não confia 100% no que está salvo —
     // se a regra mudar, novos acessos refletem a regra nova).
