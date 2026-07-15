@@ -1069,6 +1069,20 @@
       });
     })();
 
+    /* ═══════════════════════════════════════════════════════════════
+       ⚠️ FLAGS DO FLUXO DO TESTE
+       TESTE_RECONHECER_E_RETOMAR (hoje false):
+         false = entrada simples: nome+telefone vai DIRETO pras perguntas,
+                 SEM reconhecer usuário e SEM tela de retomar.
+         true  = volta reconhecimento (pré-preencher / "que bom te ver") + retomar.
+       TESTE_PAGAMENTO (hoje true):
+         true  = no fim do teste ABRE O CHECKOUT (pagamento). Precisa do
+                 link_checkout_padrao do teste_subconsciente no admin.
+         false = fim do teste vai direto pro /resultado (sem pagar).
+       ═══════════════════════════════════════════════════════════════ */
+    window.TESTE_RECONHECER_E_RETOMAR = false;
+    window.TESTE_PAGAMENTO = true;
+
     /* PREÇO — fonte única: /api/precos. Nunca hardcoded. */
     (async function(){
       const KEY='teste_subconsciente';
@@ -1239,10 +1253,10 @@
               <div class="modal-tela modal-tela-finalizado" data-tela="finalizado">
                 <div class="modal-iniciar-icon"><i class="fas fa-check"></i></div>
                 <h2 class="modal-iniciar-titulo">Tudo pronto!</h2>
-                <p class="modal-iniciar-subtitulo">Você terminou o teste. Falta só o último passo pra liberar seu resultado personalizado.</p>
+                <p class="modal-iniciar-subtitulo">Você terminou o teste. Estamos preparando o seu resultado.</p>
                 <p style="text-align:center;color:rgba(245,240,232,0.5);font-size:0.85rem;margin-top:1rem;">
                   <i class="fas fa-spinner fa-spin" style="margin-right:0.4rem;"></i>
-                  Indo pro pagamento…
+                  Só um instante…
                 </p>
               </div>
             </div>
@@ -1319,6 +1333,7 @@
       // automaticamente. Aluna ainda vê a tela de instruções (com o botão
       // Começar) — só pula a fricção do cadastro.
       (async () => {
+        if (!window.TESTE_RECONHECER_E_RETOMAR) return; // reconhecimento desligado
         const params = new URLSearchParams(window.location.search);
         if (params.get('from') !== 'app') return;
 
@@ -1437,6 +1452,7 @@
       });
 
       inputTel.addEventListener('blur', async () => {
+        if (!window.TESTE_RECONHECER_E_RETOMAR) return; // reconhecimento de usuário desligado
         if (!telefoneValido()) return;
         try {
           const r = await fetch('/api/teste/buscar-usuario', {
@@ -1544,6 +1560,14 @@
           }
           const versaoId = respPerg.versao_id;
           sessionStorage.setItem('teste_versao_id', versaoId);
+
+          // Entrada simples → nome+telefone vai DIRETO pras perguntas
+          // (sem checar teste pendente / sem tela de retomar). Voltar ao ligar a flag.
+          if (!window.TESTE_RECONHECER_E_RETOMAR) {
+            await Quiz.iniciar(leadId, respPerg);
+            trocarTela('perguntas');
+            return;
+          }
 
           // 2. Carrega progresso da MESMA versão
           let respondidas = 0;
@@ -1816,34 +1840,33 @@
               sessionStorage.setItem('teste_perfil', data.perfil_dominante);
               // Guarda o id do teste pra recuperar quando a aluna voltar do checkout.
               // localStorage sobrevive ao ida-e-volta pro domínio do pagamento (mesma aba).
-              try { localStorage.setItem('vm_teste_pendente', data.teste_id); } catch {}
               window._testeTrocarTela('finalizado');
 
-              // Fluxo novo: TODO MUNDO (logada ou não) vai pro checkout do teste,
-              // levando o uid (= teste_id) na URL. O checkout faz o polling do Pix
-              // e, após o pagamento, redireciona sozinho pra /resultado/<uid>.
-              // Sem exigir login — o resultado é público por id.
-              // Formato do checkout: https://pagamento.suellenseragi.com.br/?uid=<UID>
-              // Fallback: se o link de checkout não estiver configurado no admin,
-              // vai direto pro resultado (mantém o teste utilizável em dev).
-              // Prefixo "VM" marca a origem: no checkout, uid que começa com VM
-              // = Vida Mágica (redireciona pro resultado daqui); sem VM = Tally
-              // (segue pro resultado4, fluxo antigo intacto). O checkout tira o
-              // "VM" pra recuperar o teste_id (UUID puro) na volta.
-              const checkoutBase = (window.__TESTE_CHECKOUT__ || '').trim();
-              const uidCheckout = 'VM' + data.teste_id;
-              let destino = `/resultado/${data.teste_id}`;
-              if (checkoutBase) {
-                try {
-                  const u = new URL(checkoutBase, window.location.origin);
-                  u.searchParams.set('uid', uidCheckout); // sobrescreve qualquer placeholder de uid
-                  destino = u.toString();
-                } catch {
-                  const sep = checkoutBase.includes('?') ? '&' : '?';
-                  destino = checkoutBase + sep + 'uid=' + encodeURIComponent(uidCheckout);
+              if (!window.TESTE_PAGAMENTO) {
+                // Pagamento desligado: vai direto pro resultado (sem pagar).
+                setTimeout(() => { window.location.href = `/resultado/${data.teste_id}`; }, 1400);
+              } else {
+                // LIGADO: manda pro checkout do teste levando o uid (= teste_id).
+                // O checkout faz o polling do Pix e, após pagar, redireciona sozinho
+                // pra /resultado/<uid>. Sem login — o resultado é público por id.
+                // Prefixo "VM" marca a origem (Vida Mágica) pro checkout. Fallback:
+                // sem link de checkout no admin, vai direto pro resultado.
+                try { localStorage.setItem('vm_teste_pendente', data.teste_id); } catch {}
+                const checkoutBase = (window.__TESTE_CHECKOUT__ || '').trim();
+                const uidCheckout = 'VM' + data.teste_id;
+                let destino = `/resultado/${data.teste_id}`;
+                if (checkoutBase) {
+                  try {
+                    const u = new URL(checkoutBase, window.location.origin);
+                    u.searchParams.set('uid', uidCheckout); // sobrescreve qualquer placeholder de uid
+                    destino = u.toString();
+                  } catch {
+                    const sep = checkoutBase.includes('?') ? '&' : '?';
+                    destino = checkoutBase + sep + 'uid=' + encodeURIComponent(uidCheckout);
+                  }
                 }
+                setTimeout(() => { window.location.href = destino; }, 1400);
               }
-              setTimeout(() => { window.location.href = destino; }, 1400);
             } else {
               if (indiceAtual < perguntas.length - 1) {
                 indiceAtual++;
