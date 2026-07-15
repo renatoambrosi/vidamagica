@@ -38,6 +38,14 @@ const { autenticar } = require('../middleware/autenticar');
 // só abre com pagamento confirmado. Reverter = 1 linha.
 const PAGAMENTO_OBRIGATORIO_RESULTADO = false;
 
+// ⚠️ DEV FLAG — ATIVAÇÃO DA TRILHA (jornada da aluna) ⚠️
+// false (agora) = ver o resultado NÃO ativa a trilha/jornada: não marca
+//   ativou_trilha, não atualiza usuarios.perfil_teste, não cria celebração,
+//   não mostra splash "Criando sua jornada" nem popup de re-teste. O resultado
+//   continua sendo exibido normalmente (perfil, energias, livros, curso).
+// true = comportamento completo (ativa a jornada no app). Reverter = 1 linha.
+const TRILHA_ATIVA = false;
+
 // ── Validações simples ──────────────────────────────────────
 function validarNome(nome) {
   if (!nome || typeof nome !== 'string') return null;
@@ -663,7 +671,8 @@ router.get('/resultado/:teste_id', async (req, res) => {
     let ehReteste = false;
     let trilhaAtivadaAgora = false;
 
-    if (!teste.visto_em) {
+    // TRILHA_ATIVA=false → não ativa a jornada (nem marca visto/celebração).
+    if (TRILHA_ATIVA && !teste.visto_em) {
       // Marca como visto
       try {
         await poolTeste.query(
@@ -922,6 +931,9 @@ router.get('/resultado/:teste_id', async (req, res) => {
 // Idempotente — se já está ativo, não faz nada.
 router.post('/ativar-trilha/:teste_id', async (req, res) => {
   try {
+    // Trilha desligada nesta fase — não ativa nada (mas responde ok pra não quebrar o front).
+    if (!TRILHA_ATIVA) return res.json({ ok: true, ignorado: true });
+
     const testeId = (req.params.teste_id || '').toString().trim();
     if (!testeId) return res.status(400).json({ ok: false, erro: 'teste_id ausente' });
 

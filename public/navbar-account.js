@@ -24,10 +24,18 @@
 (function () {
   'use strict';
 
+  // ⚠️ FLAG — bloco de conta na navbar das LPs (Entrar / Criar conta / avatar).
+  // false (agora) = navbar-actions fica VAZIO (nada de "Entrar" nas LPs), pois o
+  //   login/app ainda não foi liberado. true = volta o comportamento completo.
+  const NAV_CONTA_ATIVA = false;
+
   function bootstrap() {
     if (!window.VmSession) return; // VmSession ainda não carregou — sai silencioso
     const actions = document.getElementById('navbar-actions');
     if (!actions) return; // página sem container — não é erro, só não há nada a fazer
+
+    // Fase atual: sem botões de conta nas LPs.
+    if (!NAV_CONTA_ATIVA) { actions.innerHTML = ''; return; }
 
     const API = '';
 

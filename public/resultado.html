@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Resultado Teste de Prosperidade — Vida Mágica</title>
+  <title>Resultado Teste do Subconsciente — Vida Mágica</title>
   <link rel="stylesheet" href="/colors_and_type.css">
   <link rel="icon" href="/assets/favicon.webp">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1362,7 +1362,7 @@
     <div class="b1-imagem-wrap">
       <img id="b1-imagem" class="b1-imagem" src="" alt="">
     </div>
-    <h1 class="b1-titulo">Resultado Teste de Prosperidade</h1>
+    <h1 class="b1-titulo">Resultado Teste do Subconsciente</h1>
 
     <!-- BLOCO 2 -->
     <div class="b2-wrap">
@@ -1834,7 +1834,10 @@
     // ── BLOCO 2: nome + energia predominante ──
     document.getElementById('b2-nome').textContent = d.aluna && d.aluna.nome ? d.aluna.nome : '';
     const nomeEnergia = (d.conteudo && d.conteudo.nome_exibicao) ? d.conteudo.nome_exibicao : '—';
-    document.getElementById('b2-energia').textContent = 'Energia da ' + nomeEnergia;
+    // Concordância de gênero: "Energia do Medo" (masc) vs "Energia da Desordem/
+    // Sobrevivência/Validação/Prosperidade" (fem). Só 'medo' é masculino.
+    const artigoEnergia = (slug) => (String(slug || '').toLowerCase() === 'medo' ? 'do' : 'da');
+    document.getElementById('b2-energia').textContent = 'Energia ' + artigoEnergia(d.perfil_dominante_bruto) + ' ' + nomeEnergia;
 
     // ── BLOCO 3: lista das 5 energias ──
     const listaWrap = document.getElementById('b3-lista');
@@ -1843,7 +1846,7 @@
       const isDominante = (e.slug === d.perfil_dominante_bruto);
       return (
         '<div class="b3-energia-row' + (isDominante ? ' is-dominante' : '') + '">' +
-          '<span class="b3-energia-label">Energia da ' + escapeHtml(e.label) + '</span>' +
+          '<span class="b3-energia-label">Energia ' + artigoEnergia(e.slug) + ' ' + escapeHtml(e.label) + '</span>' +
           '<span class="b3-energia-perc">' + e.percentual_inteiro + '%</span>' +
         '</div>'
       );
@@ -1852,7 +1855,7 @@
     // ── BLOCO 4: botão de compartilhar ──
     document.getElementById('b4-btn').addEventListener('click', () => {
       const texto = (d.compartilhar_texto || 'Acabei de descobrir minha energia predominante no Teste do Subconsciente da Vida Mágica.') +
-                    '\n\nEnergia da ' + nomeEnergia + '\n\n' + window.location.href;
+                    '\n\nEnergia ' + artigoEnergia(d.perfil_dominante_bruto) + ' ' + nomeEnergia + '\n\n' + window.location.href;
       const url = 'https://wa.me/?text=' + encodeURIComponent(texto);
       window.open(url, '_blank');
     });

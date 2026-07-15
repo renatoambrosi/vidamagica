@@ -89,6 +89,13 @@ app.get('/health', async (req, res) => {
   });
 });
 
+// ⚠️ FLAG — ÁREA LOGADA DA ALUNA (ainda não finalizada) ⚠️
+// false (agora) = /auth, /cadastro, /app(/*) e /espaco(/*) redirecionam pra home.
+//   Permite subir o site público (LPs + Teste) sem expor a área logada incompleta.
+//   NÃO afeta /admin nem /atendimento (áreas do Renato/Suellen).
+// true = libera a área logada da aluna. Reverter = 1 linha.
+const AREA_LOGADA_ATIVA = false;
+
 // ── ROTA AMIGÁVEL: /atendimento serve atendimento.html ─────
 app.get('/atendimento', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'atendimento.html'));
@@ -101,11 +108,13 @@ app.get('/admin', (req, res) => {
 
 // ── ROTA AMIGÁVEL: /auth serve auth.html (login da aluna) ──
 app.get('/auth', (req, res) => {
+  if (!AREA_LOGADA_ATIVA) return res.redirect('/');
   res.sendFile(path.join(__dirname, 'public', 'auth.html'));
 });
 
 // ── ROTA AMIGÁVEL: /cadastro serve cadastro.html ───────────
 app.get('/cadastro', (req, res) => {
+  if (!AREA_LOGADA_ATIVA) return res.redirect('/');
   res.sendFile(path.join(__dirname, 'public', 'cadastro.html'));
 });
 
@@ -166,12 +175,14 @@ app.get('/resultado/:id', (req, res) => {
 // Permite /app/dashboard, /app/perfil etc. — sem .html
 // Exclui /app/app.css, /app/app.js, /app/scene.js, /app/assets/*
 app.get(/^\/app(\/(dashboard|perfil|chat|loja|sementes|jornada|conquistas)?)?$/, (req, res) => {
+  if (!AREA_LOGADA_ATIVA) return res.redirect('/');
   res.sendFile(path.join(__dirname, 'public', 'app.html'));
 });
 
 // ── ROTA AMIGÁVEL: /espaco → Espaço da Manifestação (página própria) ──
 // Página separada do /app (mais leve). Sub-seções trocadas via JS.
 app.get(/^\/espaco(\/(meditar|carta|manifestar|manifestacoes|cartas)?)?$/, (req, res) => {
+  if (!AREA_LOGADA_ATIVA) return res.redirect('/');
   res.sendFile(path.join(__dirname, 'public', 'espaco.html'));
 });
 
