@@ -84,6 +84,7 @@ async function initCore() {
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS email_verificado BOOLEAN DEFAULT FALSE`);
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_hash TEXT`);
     await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_url TEXT`);
+    await c.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS aceite_marketing BOOLEAN DEFAULT FALSE`);
     // Limpeza de legado (2026-05-23): o fluxo antigo de reset de senha
     // gravava token + expira em usuarios. Foi substituído pelo fluxo
     // zap-first com magic token em otp_tokens (tipo='reset_senha').
@@ -965,6 +966,7 @@ async function initTeste() {
     `);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_teste_leads_tel ON teste_leads(telefone_canonico)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_teste_leads_usuario ON teste_leads(usuario_id)`);
+    await c.query(`ALTER TABLE teste_leads ADD COLUMN IF NOT EXISTS aceite_marketing BOOLEAN DEFAULT FALSE`);
 
     // ── VERSIONAMENTO ─────────────────────────────────────
     // Cada versão é um snapshot imutável depois de publicada.

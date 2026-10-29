@@ -57,6 +57,12 @@ function validarTelefoneCanonico(telCanonico) {
   if (!telCanonico) return false;
   return /^55\d{10,11}$/.test(telCanonico);
 }
+function validarEmail(email) {
+  if (!email || typeof email !== 'string') return null;
+  const limpo = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(limpo) || limpo.length > 255) return null;
+  return limpo;
+}
 function sanitizarUtm(valor) {
   if (!valor || typeof valor !== 'string') return null;
   const limpo = valor.trim().slice(0, 100);
@@ -92,7 +98,7 @@ router.post('/buscar-usuario', async (req, res) => {
 // ── POST /api/teste/iniciar ─────────────────────────────────
 router.post('/iniciar', async (req, res) => {
   try {
-    const { nome, telefone, utm_source, utm_medium, utm_campaign } = req.body || {};
+    const { nome, telefone, email, aceite_marketing, utm_source, utm_medium, utm_campaign } = req.body || {};
 
     const nomeLimpo = validarNome(nome);
     if (!nomeLimpo) return res.status(400).json({ ok: false, erro: 'Nome inválido' });
@@ -101,6 +107,11 @@ router.post('/iniciar', async (req, res) => {
     if (!validarTelefoneCanonico(telCanonico)) {
       return res.status(400).json({ ok: false, erro: 'Telefone inválido' });
     }
+
+    const emailLimpo = validarEmail(email);
+    if (!emailLimpo) return res.status(400).json({ ok: false, erro: 'E-mail inválido' });
+
+    const aceiteMarketing = aceite_marketing === true;
 
     const utms = {
       source:   sanitizarUtm(utm_source),
@@ -118,13 +129,36 @@ router.post('/iniciar', async (req, res) => {
           [nomeLimpo, usuarioId]
         );
       }
+      // E-mail não sobrescreve se já existir (pode ser de outra origem/verificado);
+      // aceite de marketing só evolui de false→true, nunca regride sozinho.
+      await poolCore.query(
+        `UPDATE usuarios
+            SET email = COALESCE(email, $1),
+                aceite_marketing = aceite_marketing OR $2,
+                atualizado_em = NOW()
+          WHERE id = $3`,
+        [emailLimpo, aceiteMarketing, usuarioId]
+      ).catch(e => console.warn('⚠️ [teste/iniciar] usuario email (provável duplicado):', e.message));
     } else {
-      const r = await poolCore.query(
-        `INSERT INTO usuarios (telefone, telefone_formatado, nome, status, origem_cadastro)
-         VALUES ($1, $1, $2, 'incompleta', 'teste')
-         RETURNING id`,
-        [telCanonico, nomeLimpo]
-      );
+      let r;
+      try {
+        r = await poolCore.query(
+          `INSERT INTO usuarios (telefone, telefone_formatado, nome, email, aceite_marketing, status, origem_cadastro)
+           VALUES ($1, $1, $2, $3, $4, 'incompleta', 'teste')
+           RETURNING id`,
+          [telCanonico, nomeLimpo, emailLimpo, aceiteMarketing]
+        );
+      } catch (e) {
+        // E-mail já usado por outra conta (índice único) — não pode travar um
+        // telefone novo por causa disso; cadastra sem o e-mail.
+        console.warn('⚠️ [teste/iniciar] email duplicado no cadastro novo, seguindo sem email:', e.message);
+        r = await poolCore.query(
+          `INSERT INTO usuarios (telefone, telefone_formatado, nome, aceite_marketing, status, origem_cadastro)
+           VALUES ($1, $1, $2, $3, 'incompleta', 'teste')
+           RETURNING id`,
+          [telCanonico, nomeLimpo, aceiteMarketing]
+        );
+      }
       usuarioId = r.rows[0].id;
     }
 
@@ -140,19 +174,20 @@ router.post('/iniciar', async (req, res) => {
       leadId = leadExistente.rows[0].id;
       await poolTeste.query(
         `UPDATE teste_leads
-            SET nome=$1, telefone_canonico=$2, usuario_id=$3,
-                utm_source=COALESCE($4, utm_source),
-                utm_medium=COALESCE($5, utm_medium),
-                utm_campaign=COALESCE($6, utm_campaign),
+            SET nome=$1, telefone_canonico=$2, usuario_id=$3, email=$4,
+                aceite_marketing=aceite_marketing OR $5,
+                utm_source=COALESCE($6, utm_source),
+                utm_medium=COALESCE($7, utm_medium),
+                utm_campaign=COALESCE($8, utm_campaign),
                 atualizado_em=NOW()
-          WHERE id=$7`,
-        [nomeLimpo, telCanonico, usuarioId, utms.source, utms.medium, utms.campaign, leadId]
+          WHERE id=$9`,
+        [nomeLimpo, telCanonico, usuarioId, emailLimpo, aceiteMarketing, utms.source, utms.medium, utms.campaign, leadId]
       );
     } else {
       const r = await poolTeste.query(
-        `INSERT INTO teste_leads (telefone_canonico, nome, usuario_id, utm_source, utm_medium, utm_campaign)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-        [telCanonico, nomeLimpo, usuarioId, utms.source, utms.medium, utms.campaign]
+        `INSERT INTO teste_leads (telefone_canonico, nome, usuario_id, email, aceite_marketing, utm_source, utm_medium, utm_campaign)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+        [telCanonico, nomeLimpo, usuarioId, emailLimpo, aceiteMarketing, utms.source, utms.medium, utms.campaign]
       );
       leadId = r.rows[0].id;
     }

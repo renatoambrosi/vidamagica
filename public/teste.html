@@ -210,6 +210,14 @@
       transform: translateY(0) !important;
     }
 
+    /* INTRO (topo da página: logo + texto + preço + formulário, antes da hero) */
+    .teste-intro { text-align: center; padding-bottom: 3rem; }
+    #form-iniciar-teste { scroll-margin-top: 100px; }
+    .teste-intro-inner { max-width: 560px; margin: 0 auto; }
+    .teste-intro-preco { margin: 0.5rem 0 2rem; }
+    .teste-intro-inner form { text-align: left; }
+    .teste-intro-video { margin-top: 2.5rem; text-align: center; }
+
     /* HERO */
     .hero { min-height: calc(100vh - 88px); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 3rem 1.5rem 4rem; position: relative; overflow: hidden; }
     .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 50% 35% at 18% 22%, rgba(30,143,170,0.55) 0%, transparent 60%), radial-gradient(ellipse 35% 28% at 78% 18%, rgba(43,165,200,0.42) 0%, transparent 65%), radial-gradient(ellipse 40% 30% at 88% 70%, rgba(20,110,135,0.5) 0%, transparent 60%), radial-gradient(ellipse 45% 32% at 12% 78%, rgba(15,95,120,0.5) 0%, transparent 65%), linear-gradient(160deg, #093a4f 0%, #0a4866 35%, #062c3e 70%, #03192a 100%); z-index: -1; }
@@ -428,6 +436,8 @@
     .modal-video-placeholder span { font-size: 0.85rem; color: rgba(245,240,232,0.5); }
 
     .modal-form-grupo { margin-bottom: 1.1rem; }
+    .modal-form-linha { display: flex; gap: 0.85rem; margin-bottom: 1.1rem; }
+    .modal-form-linha .modal-form-grupo { flex: 1; min-width: 0; margin-bottom: 0; }
     .modal-form-label { display: block; font-family: var(--font-display); font-size: 0.78rem; font-weight: 600; color: var(--sub-bright); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 0.45rem; }
     .modal-form-input { width: 100%; padding: 0.95rem 1.1rem; background: rgba(5,25,41,0.6); border: 1px solid rgba(43,165,232,0.25); border-radius: var(--r-md); color: var(--pearl); font-size: 1rem; font-family: var(--font-body); transition: all 0.2s; -webkit-appearance: none; appearance: none; }
     .modal-form-input:focus { outline: none; border-color: var(--sub-bright); box-shadow: 0 0 0 3px rgba(43,165,232,0.15); background: rgba(5,25,41,0.8); }
@@ -639,6 +649,7 @@
     .quiz-voltar i { font-size: 0.75rem; }
 
     @media (max-width: 480px) {
+      .modal-form-linha { flex-direction: column; gap: 1.1rem; }
       .modal-iniciar-content { padding: 1rem 1rem 2.5rem; }
       .modal-iniciar-titulo { font-size: 1.25rem; }
       .modal-iniciar-subtitulo { font-size: 0.9rem; }
@@ -704,55 +715,120 @@
 
   <main>
 
-    <section class="hero">
-      <div class="hero-logo-wrap">
-        <img src="/assets/products/teste-subconsciente.webp" alt="Teste do Subconsciente" class="hero-logo" onerror="this.src='/assets/teste-subconsciente-logo.webp'">
-      </div>
-      <p class="hero-eyebrow" data-reveal>O primeiro passo da sua jornada</p>
-      <h1 data-reveal>Descubra o que sua <span class="glow">mente esconde</span> de você</h1>
-      <p class="hero-sub" data-reveal>Em 15 perguntas baseadas em lógica comportamental e ciência cognitiva, o teste revela qual padrão invisível do seu subconsciente está dirigindo sua vida — em silêncio, há anos.</p>
-      <p class="hero-sub" data-reveal>Assista ao recado direto da Suellen explicando como o teste foi construído e o que você vai descobrir no resultado.</p>
-      <div class="video-wrap" data-reveal="zoom">
-        <div class="video-placeholder">
-          <i class="fas fa-play-circle"></i>
-          <span>Vídeo em breve</span>
-        </div>
-      </div>
-      <div class="selos" data-reveal>
-        <span class="selo"><i class="fas fa-brain"></i> Lógica comportamental</span>
-        <span class="selo"><i class="fas fa-bolt"></i> Resultado imediato</span>
-        <span class="selo"><i class="fas fa-heart"></i> Autoconhecimento profundo</span>
-      </div>
-      <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-hero" data-reveal>
-        <i class="fas fa-arrow-right"></i> Começar o teste
-      </a>
-      <p class="btn-cta-sub" data-reveal>15 perguntas · 7 minutos · <span class="price-tag" data-preco-inline><span class="price-loading"></span></span></p>
-      <div class="scroll-hint">
-        Role para entender
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-      </div>
-    </section>
+    <section class="teste-intro" id="iniciar-teste">
+      <div class="teste-intro-inner">
+        <img src="/assets/logo-teste-pura.webp" alt="Teste do Subconsciente" class="modal-iniciar-logo-teste" data-reveal>
+        <h2 class="modal-iniciar-titulo" data-reveal>Descubra quais energias que estão travando seu subconsciente.</h2>
+        <p class="modal-iniciar-subtitulo" data-reveal>Você já parou pra pensar que padrões mentais podem travar a sua vida? O Teste do Subconsciente revela exatamente quais são esses padrões e como eles se manifestam no seu dia a dia.</p>
 
-    <section id="sobre">
-      <div class="container">
-        <span class="section-eyebrow" data-reveal>Você se reconhece?</span>
-        <h2 class="section-title" data-reveal>Algumas verdades que <span class="glow">ninguém te conta</span></h2>
-        <p class="section-lead" data-reveal>A diferença entre quem prospera e quem fica travado não está no talento, na sorte ou nas circunstâncias — está nos padrões mentais inconscientes que dirigem cada decisão sua.</p>
-        <div class="dor-grid">
-          <div class="dor-card" data-reveal><div class="dor-emoji">😰</div><p class="dor-texto">"Tenho medo do que vão pensar de mim."</p></div>
-          <div class="dor-card" data-reveal><div class="dor-emoji">😓</div><p class="dor-texto">"Eu me cobro demais, mesmo sabendo que não preciso."</p></div>
-          <div class="dor-card" data-reveal><div class="dor-emoji">😔</div><p class="dor-texto">"Eu me esforço tanto, mas não saio do lugar."</p></div>
-          <div class="dor-card" data-reveal><div class="dor-emoji">🤯</div><p class="dor-texto">"Minha cabeça não desliga nunca."</p></div>
-          <div class="dor-card" data-reveal><div class="dor-emoji">😨</div><p class="dor-texto">"Tenho medo de não dar conta."</p></div>
-          <div class="dor-card" data-reveal><div class="dor-emoji">🔒</div><p class="dor-texto">"Sinto que tem algo me travando, mas não sei o quê."</p></div>
+        <div class="selos" data-reveal>
+          <span class="selo"><i class="fas fa-brain"></i> Lógica comportamental</span>
+          <span class="selo"><i class="fas fa-bolt"></i> Resultado imediato</span>
+          <span class="selo"><i class="fas fa-heart"></i> Autoconhecimento profundo</span>
         </div>
-        <div class="reveal-box" data-reveal="zoom">
-          <div class="reveal-box-icon"><i class="fas fa-brain"></i></div>
-          <h3>O Teste do Subconsciente revela qual desses padrões está dirigindo sua vida</h3>
-          <p>Em apenas 15 perguntas, você descobre qual energia mental está bloqueando seu subconsciente — e recebe orientações específicas pra transformar essa limitação em crescimento.</p>
+
+        <div class="teste-intro-preco" data-reveal="zoom">
+          <span class="price-big" data-preco-grande><span class="price-loading" style="width:140px;height:2.5rem"></span></span>
         </div>
-        <div style="text-align:center" data-reveal>
-          <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-meio-1"><i class="fas fa-arrow-right"></i> Descobrir meu padrão agora</a>
+
+        <form id="form-iniciar-teste" novalidate data-reveal>
+          <div class="modal-form-grupo">
+            <label class="modal-form-label" for="campo-nome">Seu nome</label>
+            <input
+              type="text"
+              id="campo-nome"
+              class="modal-form-input"
+              placeholder="Ex: Maria"
+              autocomplete="given-name"
+              maxlength="100"
+              required
+            />
+            <div class="modal-form-erro" id="erro-nome">Digite seu nome (mínimo 2 letras).</div>
+          </div>
+
+          <div class="modal-form-linha">
+            <div class="modal-form-grupo">
+              <div class="modal-form-label-row">
+                <label class="modal-form-label" for="campo-telefone">WhatsApp</label>
+                <button
+                  type="button"
+                  class="modal-form-info-btn"
+                  id="info-telefone"
+                  tabindex="0"
+                  aria-label="Por que não posso editar?"
+                  style="display:none"
+                >
+                  i
+                  <span class="modal-form-info-tooltip">
+                    Você está logada — o número está vinculado à sua conta. Pra alterar, vá no perfil ou clique em "Não sou eu" abaixo.
+                  </span>
+                </button>
+              </div>
+              <input
+                type="tel"
+                id="campo-telefone"
+                class="modal-form-input"
+                placeholder="(00) 00000-0000"
+                inputmode="numeric"
+                autocomplete="tel"
+                maxlength="16"
+                required
+              />
+              <div class="modal-form-erro" id="erro-telefone">Digite um número de WhatsApp válido com DDD.</div>
+              <div class="modal-form-aviso" id="aviso-encontrou"><i class="fas fa-check-circle"></i> <span>Que bom te ver de novo!</span></div>
+            </div>
+
+            <div class="modal-form-grupo">
+              <label class="modal-form-label" for="campo-email">E-mail</label>
+              <input
+                type="email"
+                id="campo-email"
+                class="modal-form-input"
+                placeholder="ex: maria@gmail.com"
+                inputmode="email"
+                autocomplete="email"
+                maxlength="255"
+                required
+              />
+              <div class="modal-form-erro" id="erro-email">Digite um e-mail válido.</div>
+            </div>
+          </div>
+
+          <label class="modal-form-checkbox" for="campo-aceite">
+            <input type="checkbox" id="campo-aceite" required>
+            <span class="modal-form-checkbox-mark"><i class="fas fa-check"></i></span>
+            <span class="modal-form-checkbox-texto">
+              Concordo com os <a href="/termos" target="_blank" rel="noopener">termos de uso</a> e autorizo receber o resultado do teste em meu WhatsApp.
+            </span>
+          </label>
+
+          <label class="modal-form-checkbox" for="campo-aceite-marketing">
+            <input type="checkbox" id="campo-aceite-marketing">
+            <span class="modal-form-checkbox-mark"><i class="fas fa-check"></i></span>
+            <span class="modal-form-checkbox-texto">
+              Quero receber novidades, conteúdos e promoções da Vida Mágica por WhatsApp e e-mail.
+            </span>
+          </label>
+
+          <button type="submit" class="modal-form-submit" id="btn-comecar" disabled>
+            <span class="spinner"></span>
+            <span class="submit-text">Começar agora</span>
+            <i class="fas fa-arrow-right submit-icon"></i>
+          </button>
+
+          <button type="button" class="modal-form-sair" id="btn-nao-sou-eu" style="display:none">
+            Não sou eu — sair
+          </button>
+        </form>
+
+        <div class="teste-intro-video" data-reveal="zoom">
+          <p class="modal-iniciar-subtitulo">Assista as instruções abaixo antes de começar:</p>
+          <div class="modal-video-wrap">
+            <div class="modal-video-placeholder">
+              <i class="fas fa-play-circle"></i>
+              <span>Vídeo de instruções em breve</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -761,9 +837,10 @@
       <div class="container">
         <span class="section-eyebrow" data-reveal>O que é</span>
         <h2 class="section-title" data-reveal>Teste do <span class="glow">Subconsciente</span></h2>
-        <div class="quote-box" data-reveal="left">
-          <p class="quote-text">"Prosperidade não é só sobre dinheiro. Prosperidade é ter e sentir plenitude por completo. É ter sucesso em todas as áreas, é crescer em tudo e sempre."</p>
-          <p class="quote-author">— Suellen Seragi</p>
+        <div class="reveal-box" data-reveal="zoom">
+          <div class="reveal-box-icon"><i class="fas fa-brain"></i></div>
+          <h3>O Teste do Subconsciente revela qual desses padrões está dirigindo sua vida</h3>
+          <p>Em apenas 15 perguntas, você descobre qual energia mental está bloqueando seu subconsciente — e recebe orientações específicas pra transformar essa limitação em crescimento.</p>
         </div>
         <p class="section-lead" data-reveal style="margin-bottom:1.25rem">Você já parou pra pensar que <strong style="color:var(--sub-bright)">padrões do subconsciente podem travar sua vida inteira</strong> sem você notar? Esse teste revela exatamente quais são esses padrões.</p>
         <p class="section-lead" data-reveal>Todos nós carregamos crenças mentais que moldam nossos resultados. Algumas nos impulsionam. Outras, <em>invisíveis</em>, nos travam — em silêncio, há anos.</p>
@@ -773,7 +850,7 @@
           <div class="pillar" data-reveal><div class="pillar-icon"><i class="fas fa-compass"></i></div><h4>Direção concreta</h4><p>Descobre padrões invisíveis que fazem você se sabotar — e o caminho pra destravar.</p></div>
         </div>
         <div style="text-align:center;margin-top:2rem" data-reveal>
-          <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-meio-2">Fazer o teste agora</a>
+          <a href="#iniciar-teste" class="btn-cta" id="cta-meio-2">Fazer o teste agora</a>
         </div>
       </div>
     </section>
@@ -788,13 +865,13 @@
         <div class="dep-track" id="dep-track"></div>
       </div>
       <div class="container" style="text-align:center;margin-top:2rem" data-reveal>
-        <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-dep">Quero descobrir o meu</a>
+        <a href="#iniciar-teste" class="btn-cta" id="cta-dep">Quero descobrir o meu</a>
       </div>
     </section>
 
     <section class="criadores-section">
       <div class="container-narrow">
-        <span class="section-eyebrow" data-reveal>Quem criou</span>
+        <span class="section-eyebrow" data-reveal>Criadores</span>
         <h2 class="section-title" data-reveal>Renato &amp; <span class="glow">Suellen Seragi</span></h2>
         <img src="/assets/casal-creators.webp" alt="Renato e Suellen Seragi" class="criadores-foto" data-reveal="zoom" onerror="this.style.display='none'">
         <div class="criadores-texto" data-reveal>
@@ -822,7 +899,7 @@
           <span class="badge-info"><i class="fas fa-shield-halved"></i> 100% seguro</span>
         </div>
         <div style="text-align:center;margin-top:2rem" data-reveal>
-          <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-passos">Começar agora</a>
+          <a href="#iniciar-teste" class="btn-cta" id="cta-passos">Começar agora</a>
         </div>
       </div>
     </section>
@@ -843,6 +920,23 @@
       </div>
     </section>
 
+    <section id="sobre">
+      <div class="container">
+        <span class="section-eyebrow" data-reveal>Antes de decidir</span>
+        <h2 class="section-title" data-reveal>Algumas verdades que <span class="glow">ninguém te conta</span></h2>
+        <p class="section-lead" data-reveal>Tem frases que a gente repete tanto pra si mesma que para de perceber o quanto elas travam. Antes de seguir, uma pergunta simples: alguma dessas frases te soa familiar?</p>
+        <div class="dor-grid">
+          <div class="dor-card" data-reveal><div class="dor-emoji">😰</div><p class="dor-texto">"Tenho medo do que vão pensar de mim."</p></div>
+          <div class="dor-card" data-reveal><div class="dor-emoji">😓</div><p class="dor-texto">"Eu me cobro demais, mesmo sabendo que não preciso."</p></div>
+          <div class="dor-card" data-reveal><div class="dor-emoji">😔</div><p class="dor-texto">"Eu me esforço tanto, mas não saio do lugar."</p></div>
+          <div class="dor-card" data-reveal><div class="dor-emoji">🤯</div><p class="dor-texto">"Minha cabeça não desliga nunca."</p></div>
+          <div class="dor-card" data-reveal><div class="dor-emoji">😨</div><p class="dor-texto">"Tenho medo de não dar conta."</p></div>
+          <div class="dor-card" data-reveal><div class="dor-emoji">🔒</div><p class="dor-texto">"Sinto que tem algo me travando, mas não sei o quê."</p></div>
+        </div>
+        <p class="section-lead" data-reveal style="margin-top:2rem">Se você se reconheceu em pelo menos uma delas, seu subconsciente já está te avisando — e é exatamente isso que o teste revela com clareza.</p>
+      </div>
+    </section>
+
     <section class="cta-final">
       <div class="cta-final-box">
         <span class="section-eyebrow" data-reveal>Está pronta?</span>
@@ -857,7 +951,7 @@
         <div data-reveal="zoom">
           <span class="price-big" data-preco-grande><span class="price-loading" style="width:140px;height:2.5rem"></span></span>
           <p class="price-caption">Pagamento único · sem mensalidade</p>
-          <a href="#iniciar-teste" data-iniciar-teste class="btn-cta" id="cta-final" style="font-size:1rem;padding:1.2rem 2.4rem">
+          <a href="#iniciar-teste" class="btn-cta" id="cta-final" style="font-size:1rem;padding:1.2rem 2.4rem">
             <i class="fas fa-arrow-right"></i> Fazer o teste agora
           </a>
         </div>
@@ -1109,7 +1203,7 @@
     (function(){
       // ── Cria o HTML do modal e injeta no body ──
       const modalHTML = `
-        <div id="modal-iniciar" role="dialog" aria-modal="true" aria-labelledby="modal-iniciar-titulo">
+        <div id="modal-iniciar" role="dialog" aria-modal="true" aria-label="Teste do Subconsciente">
           <div class="modal-iniciar-bg"></div>
           <div class="modal-iniciar-content">
             <div class="modal-iniciar-header">
@@ -1123,84 +1217,9 @@
               </button>
             </div>
             <div class="modal-iniciar-body">
-              <!-- ──────────── TELA 1: Captura (nome, telefone, aceite) ──────────── -->
-              <div class="modal-tela modal-tela-captura is-ativa" data-tela="captura">
-              <img src="/assets/logo-teste-pura.webp" alt="Teste do Subconsciente" class="modal-iniciar-logo-teste">
-              <h2 id="modal-iniciar-titulo" class="modal-iniciar-titulo">Descubra quais energias que estão travando seu subconsciente.</h2>
-              <p class="modal-iniciar-subtitulo">Você já parou pra pensar que padrões mentais podem travar a sua vida? O Teste do Subconsciente revela exatamente quais são esses padrões e como eles se manifestam no seu dia a dia. Por apenas R$ 19,00 → você recebe por WhatsApp o seu resultado personalizado logo após o pagamento. Assista as instruções abaixo antes de começar:</p>
-
-              <div class="modal-video-wrap">
-                <div class="modal-video-placeholder">
-                  <i class="fas fa-play-circle"></i>
-                  <span>Vídeo de instruções em breve</span>
-                </div>
-              </div>
-
-              <form id="form-iniciar-teste" novalidate>
-                <div class="modal-form-grupo">
-                  <div class="modal-form-label-row">
-                    <label class="modal-form-label" for="campo-telefone">Seu WhatsApp</label>
-                    <button
-                      type="button"
-                      class="modal-form-info-btn"
-                      id="info-telefone"
-                      tabindex="0"
-                      aria-label="Por que não posso editar?"
-                      style="display:none"
-                    >
-                      i
-                      <span class="modal-form-info-tooltip">
-                        Você está logada — o número está vinculado à sua conta. Pra alterar, vá no perfil ou clique em "Não sou eu" abaixo.
-                      </span>
-                    </button>
-                  </div>
-                  <input
-                    type="tel"
-                    id="campo-telefone"
-                    class="modal-form-input"
-                    placeholder="(00) 00000-0000"
-                    inputmode="numeric"
-                    autocomplete="tel"
-                    maxlength="16"
-                    required
-                  />
-                  <div class="modal-form-erro" id="erro-telefone">Digite um número de WhatsApp válido com DDD.</div>
-                  <div class="modal-form-aviso" id="aviso-encontrou"><i class="fas fa-check-circle"></i> <span>Que bom te ver de novo!</span></div>
-                </div>
-
-                <div class="modal-form-grupo">
-                  <label class="modal-form-label" for="campo-nome">Seu nome</label>
-                  <input
-                    type="text"
-                    id="campo-nome"
-                    class="modal-form-input"
-                    placeholder="Seu primeiro nome"
-                    autocomplete="given-name"
-                    maxlength="100"
-                    required
-                  />
-                  <div class="modal-form-erro" id="erro-nome">Digite seu nome (mínimo 2 letras).</div>
-                </div>
-
-                <label class="modal-form-checkbox" for="campo-aceite">
-                  <input type="checkbox" id="campo-aceite" required>
-                  <span class="modal-form-checkbox-mark"><i class="fas fa-check"></i></span>
-                  <span class="modal-form-checkbox-texto">
-                    Concordo com os <a href="/termos" target="_blank" rel="noopener">termos de uso</a> e autorizo receber o resultado do teste em meu WhatsApp.
-                  </span>
-                </label>
-
-                <button type="submit" class="modal-form-submit" id="btn-comecar" disabled>
-                  <span class="spinner"></span>
-                  <span class="submit-text">Começar agora</span>
-                  <i class="fas fa-arrow-right submit-icon"></i>
-                </button>
-
-                <button type="button" class="modal-form-sair" id="btn-nao-sou-eu" style="display:none">
-                  Não sou eu — sair
-                </button>
-              </form>
-              </div>
+              <!-- TELA 1 (captura) foi removida daqui: o formulário agora mora
+                   inline na página, na seção #iniciar-teste. O modal só é
+                   aberto já direto na tela de perguntas (ver iniciarFluxoTeste). -->
 
               <!-- ──────────── TELA 1.5: Retomar ou recomeçar ──────────── -->
               <div class="modal-tela modal-tela-retomar" data-tela="retomar">
@@ -1274,10 +1293,13 @@
       const form       = document.getElementById('form-iniciar-teste');
       const inputNome  = document.getElementById('campo-nome');
       const inputTel   = document.getElementById('campo-telefone');
+      const inputEmail = document.getElementById('campo-email');
       const inputAceite = document.getElementById('campo-aceite');
+      const inputAceiteMkt = document.getElementById('campo-aceite-marketing');
       const labelAceite = document.querySelector('.modal-form-checkbox');
       const erroNome   = document.getElementById('erro-nome');
       const erroTel    = document.getElementById('erro-telefone');
+      const erroEmail  = document.getElementById('erro-email');
       const avisoEnc   = document.getElementById('aviso-encontrou');
       const btnEnviar  = document.getElementById('btn-comecar');
 
@@ -1303,8 +1325,11 @@
       function telefoneValido(){
         return tel ? tel.valido() : false;
       }
+      function emailValido(){
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inputEmail.value.trim());
+      }
       function atualizarBotao(){
-        btnEnviar.disabled = !(nomeValido() && telefoneValido() && inputAceite.checked);
+        btnEnviar.disabled = !(nomeValido() && telefoneValido() && emailValido() && inputAceite.checked);
       }
 
       // ── Abrir / fechar ──
@@ -1480,6 +1505,13 @@
         atualizarBotao();
       });
 
+      // ── E-mail: validação ──
+      inputEmail.addEventListener('input', () => {
+        inputEmail.classList.remove('is-erro');
+        erroEmail.classList.remove('is-visivel');
+        atualizarBotao();
+      });
+
       // ── Aceite (checkbox): validação ──
       inputAceite.addEventListener('change', () => {
         labelAceite.classList.remove('is-erro');
@@ -1500,6 +1532,11 @@
         if (!nomeValido()) {
           inputNome.classList.add('is-erro');
           erroNome.classList.add('is-visivel');
+          temErro = true;
+        }
+        if (!emailValido()) {
+          inputEmail.classList.add('is-erro');
+          erroEmail.classList.add('is-visivel');
           temErro = true;
         }
         if (!inputAceite.checked) {
@@ -1525,6 +1562,8 @@
             body: JSON.stringify({
               nome: inputNome.value.trim(),
               telefone: telDigitos(),
+              email: inputEmail.value.trim(),
+              aceite_marketing: inputAceiteMkt.checked,
               ...utms,
             }),
           });
@@ -1553,6 +1592,12 @@
       // ── Decide se mostra tela de "retomar" ou vai direto pra pergunta 1 ──
       async function iniciarFluxoTeste(leadId) {
         try {
+          // O formulário de captura agora é inline na página — o modal só
+          // existe pra mostrar perguntas/retomar/finalizado. Abre aqui,
+          // já carregando o que for necessário por trás.
+          modal.classList.add('is-open');
+          document.body.classList.add('modal-aberto');
+
           // 1. Carrega perguntas (precisa do versao_id)
           const respPerg = await fetch('/api/teste/perguntas').then(r => r.json());
           if (!respPerg.ok || !Array.isArray(respPerg.perguntas)) {
@@ -1563,7 +1608,18 @@
 
           // Entrada simples → nome+telefone vai DIRETO pras perguntas
           // (sem checar teste pendente / sem tela de retomar). Voltar ao ligar a flag.
+          // Apaga qualquer progresso anterior desse lead nessa versão (telefone
+          // já usado antes) pra garantir que o teste SEMPRE começa do zero.
           if (!window.TESTE_RECONHECER_E_RETOMAR) {
+            try {
+              await fetch('/api/teste/reiniciar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lead_id: leadId, versao_id: versaoId }),
+              });
+            } catch (err) {
+              console.warn('Não foi possível reiniciar progresso anterior:', err);
+            }
             await Quiz.iniciar(leadId, respPerg);
             trocarTela('perguntas');
             return;
@@ -1592,6 +1648,8 @@
           }
         } catch (err) {
           console.error('[iniciarFluxoTeste] erro:', err);
+          // Fecha o modal (ainda vazio/sem tela) pra erro aparecer no formulário da página.
+          fecharModal();
           erroTel.textContent = 'Algo deu errado. Tente novamente em alguns segundos.';
           erroTel.classList.add('is-visivel');
         }
@@ -1906,13 +1964,22 @@
       sessionStorage.setItem('utm_medium',utms.utm_medium);
       sessionStorage.setItem('utm_campaign',utms.utm_campaign);
       function addUtms(el,c){if(!el||!el.href)return;try{const u=new URL(el.href,window.location.origin);if(utms.utm_source)u.searchParams.set('utm_source',utms.utm_source);if(utms.utm_medium)u.searchParams.set('utm_medium',utms.utm_medium);u.searchParams.set('utm_campaign',c);el.href=u.toString();}catch{}}
-      addUtms(document.getElementById('cta-hero'),  'lp-hero');
-      addUtms(document.getElementById('cta-meio-1'),'lp-dor');
       addUtms(document.getElementById('cta-meio-2'),'lp-sobre');
-      addUtms(document.getElementById('cta-video'), 'lp-video');
       addUtms(document.getElementById('cta-dep'),   'lp-depoimentos');
       addUtms(document.getElementById('cta-passos'),'lp-passos');
       addUtms(document.getElementById('cta-final'), 'lp-final');
+
+      // Todo CTA que aponta pro formulário é só um âncora pra UTM (addUtms
+      // acima muda a URL dele) — sem isso, o clique causaria um reload da
+      // página inteira em vez de um scroll suave até o form. Intercepta
+      // SEMPRE e rola na mão, ignorando a URL que o link tiver.
+      document.addEventListener('click', function(e){
+        const a = e.target.closest('a[href*="#iniciar-teste"]');
+        if (!a) return;
+        e.preventDefault();
+        const alvo = document.getElementById('form-iniciar-teste');
+        if (alvo) alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
     })();
   </script>
 
