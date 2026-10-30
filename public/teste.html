@@ -214,7 +214,20 @@
     .teste-intro { text-align: center; padding-bottom: 3rem; }
     #form-iniciar-teste { scroll-margin-top: 100px; }
     .teste-intro-inner { max-width: 560px; margin: 0 auto; }
-    .teste-intro-preco { margin: 0.5rem 0 2rem; }
+    .teste-intro-preco {
+      margin: 0.5rem auto 2rem;
+      max-width: 300px;
+      padding: 1.5rem 1.75rem 1.3rem;
+      background: linear-gradient(135deg, rgba(43,165,232,0.18) 0%, rgba(10,72,102,0.4) 100%);
+      border: 1px solid rgba(92,194,240,0.35);
+      border-radius: var(--r-lg);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: var(--shadow-glow);
+    }
+    .teste-intro-preco .price-big { margin: 0.5rem 0 0.3rem; }
+    .teste-intro-preco .price-caption { margin-bottom: 0; }
+    .price-eyebrow { display: block; font-family: var(--font-display); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--sub-bright); }
     .teste-intro-inner form { text-align: left; }
     .teste-intro-video { margin-top: 2.5rem; text-align: center; }
 
@@ -728,7 +741,9 @@
         </div>
 
         <div class="teste-intro-preco" data-reveal="zoom">
+          <span class="price-eyebrow">Valor de acesso</span>
           <span class="price-big" data-preco-grande><span class="price-loading" style="width:140px;height:2.5rem"></span></span>
+          <p class="price-caption">Acesso imediato ao seu resultado personalizado</p>
         </div>
 
         <form id="form-iniciar-teste" novalidate data-reveal>

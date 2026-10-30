@@ -1,3 +1,6 @@
 .claude/
 .env
 .DS_Store
+node_modules/
+AGENTS.md
+texto-resultado-sobrevivencia.html

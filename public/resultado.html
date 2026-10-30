@@ -327,6 +327,14 @@
     .b6-wrap {
       margin-bottom: 3rem;
     }
+    /* Textos vindos do admin: cores claras sobre o fundo escuro.
+       Sem isso, o `p` global de colors_and_type.css deixa o texto marrom. */
+    .b6-texto, .passo-texto, .b8-texto {
+      --pearl: #f5f0e8;
+      --pearl-dim: #d9d3c7;
+      --gold: #f8dc96;
+    }
+    .b6-texto p, .passo-texto p, .b8-texto p { color: inherit; }
     .b6-texto {
       color: var(--pearl);
       font-size: 1rem;

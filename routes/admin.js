@@ -29,7 +29,8 @@ const {
 } = require('../core/usuarios');
 const { enfileirarAtendimento } = require('../core/gateway');
 const { formatarTelefone } = require('../core/utils');
-const { PERFIS_VALIDOS, PERFIS_LABELS, PERFIS_CORES } = require('../core/teste-conteudo');
+const { PERFIS_VALIDOS, PERFIS_LABELS, PERFIS_CORES, PERGUNTAS } = require('../core/teste-conteudo');
+const { calcularResultado } = require('../core/teste-resultado');
 
 // ── Middleware: só admin pode usar tudo aqui (escopo='admin')
 router.use(autenticarPainel('admin'));
@@ -1520,6 +1521,558 @@ router.put('/feed-relevancia-config', async (req, res) => {
   } catch (err) {
     console.error('[admin/feed-relevancia-config PUT] erro:', err);
     return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 20. TESTE DO SUBCONSCIENTE — RESULTADOS (lista paginada + envio)
+// Tabela `testes` vive em poolTeste. Nome/telefone/email vêm de
+// teste_leads (mesmo pool — sem cruzar banco). usuario_id é só
+// referência lógica, não cruzamos com poolCore aqui.
+// ════════════════════════════════════════════════════════════
+
+router.get('/testes-resultados', async (req, res) => {
+  try {
+    const {
+      page = '1', limit = '25', status = 'todos',
+      data_de = '', data_ate = '', q = '',
+    } = req.query;
+
+    const pag = Math.max(1, parseInt(page, 10) || 1);
+    const lim = Math.min(100, Math.max(1, parseInt(limit, 10) || 25));
+    const offset = (pag - 1) * lim;
+
+    const where = ['t.eh_legado = FALSE'];
+    const params = [];
+
+    if (status === 'pago') where.push('t.pago = TRUE');
+    else if (status === 'pendente') where.push('t.pago = FALSE');
+
+    if (data_de) { params.push(data_de); where.push(`t.feito_em >= $${params.length}`); }
+    if (data_ate) { params.push(data_ate); where.push(`t.feito_em <= $${params.length}`); }
+
+    if (q && q.trim()) {
+      params.push(`%${q.trim().toLowerCase()}%`);
+      const i = params.length;
+      where.push(`(LOWER(l.nome) LIKE $${i} OR LOWER(l.email) LIKE $${i} OR t.telefone_canonico LIKE $${i})`);
+    }
+
+    const whereSql = where.join(' AND ');
+
+    const totalR = await poolTeste.query(
+      `SELECT COUNT(*)::int AS total FROM testes t LEFT JOIN teste_leads l ON l.id = t.lead_id WHERE ${whereSql}`,
+      params
+    );
+    const total = totalR.rows[0].total;
+
+    params.push(lim, offset);
+    const r = await poolTeste.query(
+      `SELECT t.id, t.telefone_canonico, t.perfil_dominante, t.percentual_prosperidade,
+              t.pago, t.feito_em, t.visto_em,
+              l.nome, l.email
+         FROM testes t
+         LEFT JOIN teste_leads l ON l.id = t.lead_id
+        WHERE ${whereSql}
+     ORDER BY t.feito_em DESC
+        LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+
+    const baseUrl = process.env.APP_URL || 'https://www.vidamagica.com.br';
+    const testes = r.rows.map(t => ({
+      id: t.id,
+      nome: t.nome || null,
+      email: t.email || null,
+      telefone_canonico: t.telefone_canonico,
+      perfil_dominante: t.perfil_dominante,
+      perfil_label: PERFIS_LABELS[t.perfil_dominante] || t.perfil_dominante,
+      pago: !!t.pago,
+      feito_em: t.feito_em,
+      visto_em: t.visto_em,
+      link_resultado: `${baseUrl}/resultado/${t.id}`,
+    }));
+
+    res.json({ ok: true, testes, total, page: pag, totalPages: Math.max(1, Math.ceil(total / lim)) });
+  } catch (err) {
+    console.error('❌ /testes-resultados:', err.message);
+    res.status(500).json({ ok: false, erro: 'Erro ao listar testes' });
+  }
+});
+
+router.post('/testes-resultados/:id/enviar-whatsapp', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const r = await poolTeste.query(
+      `SELECT t.id, t.telefone_canonico, l.nome
+         FROM testes t
+         LEFT JOIN teste_leads l ON l.id = t.lead_id
+        WHERE t.id = $1`,
+      [id]
+    );
+    const teste = r.rows[0];
+    if (!teste) return res.status(404).json({ ok: false, erro: 'Teste não encontrado' });
+
+    const baseUrl = process.env.APP_URL || 'https://www.vidamagica.com.br';
+    const link = `${baseUrl}/resultado/${teste.id}`;
+    const primeiroNome = (teste.nome || '').trim().split(' ')[0] || null;
+
+    const { atendimento_id } = await enfileirarAtendimento({
+      telefone: teste.telefone_canonico,
+      tipo: 'ativo',
+      categoria: 'manual_admin',
+      origem: 'admin_testes_resultados',
+      nome: teste.nome || null,
+      mensagens: [
+        `Oi${primeiroNome ? ', ' + primeiroNome : ''}! Aqui está o link do seu resultado no Teste do Subconsciente: ${link}`,
+      ],
+    });
+
+    res.json({ ok: true, atendimento_id });
+  } catch (err) {
+    console.error('❌ /testes-resultados/:id/enviar-whatsapp:', err.message);
+    res.status(500).json({ ok: false, erro: 'Erro ao enviar WhatsApp' });
+  }
+});
+
+router.post('/testes-resultados/:id/enviar-email', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const r = await poolTeste.query(
+      `SELECT t.id, l.nome, l.email
+         FROM testes t
+         LEFT JOIN teste_leads l ON l.id = t.lead_id
+        WHERE t.id = $1`,
+      [id]
+    );
+    const teste = r.rows[0];
+    if (!teste) return res.status(404).json({ ok: false, erro: 'Teste não encontrado' });
+    if (!teste.email) return res.status(400).json({ ok: false, erro: 'Esse teste não tem e-mail cadastrado' });
+
+    const axios = require('axios');
+    const apiKey = process.env.BREVO_API_KEY;
+    const senderEmail = process.env.SENDER_EMAIL || 'contato@suellenseragi.com.br';
+    if (!apiKey) return res.status(500).json({ ok: false, erro: 'E-mail não configurado (BREVO_API_KEY ausente)' });
+
+    const baseUrl = process.env.APP_URL || 'https://www.vidamagica.com.br';
+    const link = `${baseUrl}/resultado/${teste.id}`;
+    const primeiroNome = (teste.nome || '').trim().split(' ')[0] || 'você';
+
+    await axios.post('https://api.brevo.com/v3/smtp/email', {
+      sender: { name: 'Vida Mágica', email: senderEmail },
+      to: [{ email: teste.email }],
+      subject: 'Seu resultado do Teste do Subconsciente',
+      htmlContent: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0a1628;border-radius:12px">
+          <h2 style="color:#E8C97A;font-size:18px;margin:0 0 12px">Olá, ${primeiroNome}!</h2>
+          <p style="color:#c8c0a8;font-size:14px;margin:0 0 20px">Seu resultado do Teste do Subconsciente está pronto:</p>
+          <div style="text-align:center;margin-bottom:20px">
+            <a href="${link}" style="display:inline-block;background:#E8C97A;color:#0a1628;font-weight:700;padding:12px 28px;border-radius:8px;text-decoration:none">Ver meu resultado</a>
+          </div>
+          <p style="color:#888;font-size:12px;margin:0">${link}</p>
+        </div>`,
+    }, {
+      headers: { 'accept': 'application/json', 'api-key': apiKey, 'content-type': 'application/json' },
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('❌ /testes-resultados/:id/enviar-email:', err.message);
+    res.status(500).json({ ok: false, erro: 'Erro ao enviar e-mail' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 21. TESTE DO SUBCONSCIENTE — INSIGHTS (funil + respostas por pergunta)
+// Mesma fonte de dados do item 20, poolTeste. "Iniciaram" e o funil
+// usam teste_leads.criado_em como referência de período (quando a
+// pessoa entrou no teste); "completaram" usa testes.feito_em.
+// ════════════════════════════════════════════════════════════
+
+// Filtro de UTM reutilizado pelos 4 endpoints de insights/UTM abaixo.
+// Valor especial '__none__' representa "sem UTM" (coluna NULL ou vazia).
+function _condUtm(alias, campo, valor, params) {
+  if (valor === '__none__') return `COALESCE(NULLIF(TRIM(${alias}.${campo}), ''), '') = ''`;
+  params.push(valor);
+  return `${alias}.${campo} = $${params.length}`;
+}
+function _aplicarFiltrosUtm(alias, query, where, params, exceto = null) {
+  const { utm_source = '', utm_medium = '', utm_campaign = '' } = query;
+  if (utm_source && exceto !== 'utm_source') where.push(_condUtm(alias, 'utm_source', utm_source, params));
+  if (utm_medium && exceto !== 'utm_medium') where.push(_condUtm(alias, 'utm_medium', utm_medium, params));
+  if (utm_campaign && exceto !== 'utm_campaign') where.push(_condUtm(alias, 'utm_campaign', utm_campaign, params));
+}
+
+router.get('/testes-insights', async (req, res) => {
+  try {
+    const { data_de = '', data_ate = '' } = req.query;
+    const temFiltroUtm = !!(req.query.utm_source || req.query.utm_medium || req.query.utm_campaign);
+
+    const whereLead = ['1=1'];
+    const paramsLead = [];
+    if (data_de) { paramsLead.push(data_de); whereLead.push(`l.criado_em >= $${paramsLead.length}`); }
+    if (data_ate) { paramsLead.push(data_ate); whereLead.push(`l.criado_em <= $${paramsLead.length}`); }
+    _aplicarFiltrosUtm('l', req.query, whereLead, paramsLead);
+    const whereLeadSql = whereLead.join(' AND ');
+
+    // "completaram" normalmente não precisa de JOIN com teste_leads — só entra
+    // quando há filtro de UTM (nem todo `testes` tem lead_id; sem filtro, mantém
+    // o universo original pra não perder teste feito via usuario_id direto).
+    const whereTeste = ['t.eh_legado = FALSE'];
+    const paramsTeste = [];
+    if (data_de) { paramsTeste.push(data_de); whereTeste.push(`t.feito_em >= $${paramsTeste.length}`); }
+    if (data_ate) { paramsTeste.push(data_ate); whereTeste.push(`t.feito_em <= $${paramsTeste.length}`); }
+    const joinLeadTeste = temFiltroUtm ? 'JOIN teste_leads l ON l.id = t.lead_id' : '';
+    if (temFiltroUtm) _aplicarFiltrosUtm('l', req.query, whereTeste, paramsTeste);
+    const whereTesteSql = whereTeste.join(' AND ');
+
+    const [iniciaramR, completaramR, funilR, perfilR, versaoAtivaR] = await Promise.all([
+      poolTeste.query(`SELECT COUNT(*)::int AS n FROM teste_leads l WHERE ${whereLeadSql}`, paramsLead),
+      poolTeste.query(`SELECT COUNT(*)::int AS n FROM testes t ${joinLeadTeste} WHERE ${whereTesteSql}`, paramsTeste),
+      poolTeste.query(
+        `SELECT tr.pergunta_ordem AS ordem, COUNT(DISTINCT tr.lead_id)::int AS n
+           FROM teste_respostas tr
+           JOIN teste_leads l ON l.id = tr.lead_id
+          WHERE ${whereLeadSql}
+          GROUP BY tr.pergunta_ordem`,
+        paramsLead
+      ),
+      poolTeste.query(
+        `SELECT tr.pergunta_ordem AS ordem, tr.perfil, COUNT(DISTINCT tr.lead_id)::int AS n
+           FROM teste_respostas tr
+           JOIN teste_leads l ON l.id = tr.lead_id
+          WHERE ${whereLeadSql}
+          GROUP BY tr.pergunta_ordem, tr.perfil`,
+        paramsLead
+      ),
+      poolTeste.query(`SELECT id FROM teste_versoes WHERE status = 'ativa' LIMIT 1`),
+    ]);
+
+    const iniciaram = iniciaramR.rows[0].n;
+    const completaram = completaramR.rows[0].n;
+
+    const porOrdem = new Map();
+    for (const row of funilR.rows) porOrdem.set(row.ordem, row.n);
+
+    // Texto das perguntas/alternativas: versão ativa no banco, com fallback
+    // pro conteúdo v1.0 hardcoded (core/teste-conteudo.js) se não houver versão ativa
+    // ou a pergunta/alternativa não estiver cadastrada nela.
+    let textoMap = new Map(); // ordem -> { pergunta, alternativas: {perfil: texto} }
+    if (versaoAtivaR.rows[0]) {
+      const r = await poolTeste.query(
+        `SELECT p.ordem, p.pergunta, a.perfil, a.texto
+           FROM teste_perguntas p
+           JOIN teste_alternativas a ON a.versao_id = p.versao_id AND a.pergunta_ordem = p.ordem
+          WHERE p.versao_id = $1`,
+        [versaoAtivaR.rows[0].id]
+      );
+      for (const row of r.rows) {
+        if (!textoMap.has(row.ordem)) textoMap.set(row.ordem, { pergunta: row.pergunta, alternativas: {} });
+        textoMap.get(row.ordem).alternativas[row.perfil] = row.texto;
+      }
+    }
+    for (const p of PERGUNTAS) {
+      if (!textoMap.has(p.ordem)) textoMap.set(p.ordem, { pergunta: p.pergunta, alternativas: {} });
+      const entry = textoMap.get(p.ordem);
+      for (const alt of p.alternativas) {
+        if (!entry.alternativas[alt.perfil]) entry.alternativas[alt.perfil] = alt.texto;
+      }
+    }
+
+    const perfilPorOrdem = new Map(); // ordem -> { perfil: n }
+    for (const row of perfilR.rows) {
+      if (!perfilPorOrdem.has(row.ordem)) perfilPorOrdem.set(row.ordem, {});
+      perfilPorOrdem.get(row.ordem)[row.perfil] = row.n;
+    }
+
+    const totalPerguntas = PERGUNTAS.length;
+    const funil = [];
+    let anterior = iniciaram;
+    for (let ordem = 1; ordem <= totalPerguntas; ordem++) {
+      const responderam = porOrdem.get(ordem) || 0;
+      const info = textoMap.get(ordem) || { pergunta: `Pergunta ${ordem}` };
+      funil.push({
+        ordem,
+        pergunta: info.pergunta,
+        responderam,
+        taxa_desde_inicio: iniciaram > 0 ? Math.round((responderam / iniciaram) * 1000) / 10 : 0,
+        taxa_desde_anterior: anterior > 0 ? Math.round((responderam / anterior) * 1000) / 10 : 0,
+      });
+      anterior = responderam;
+    }
+    funil.push({
+      ordem: 'completo',
+      pergunta: 'Completou o teste',
+      responderam: completaram,
+      taxa_desde_inicio: iniciaram > 0 ? Math.round((completaram / iniciaram) * 1000) / 10 : 0,
+      taxa_desde_anterior: anterior > 0 ? Math.round((completaram / anterior) * 1000) / 10 : 0,
+    });
+
+    const perguntas = PERGUNTAS.map(p => {
+      const info = textoMap.get(p.ordem) || { pergunta: p.pergunta, alternativas: {} };
+      const contagens = perfilPorOrdem.get(p.ordem) || {};
+      const totalRespostas = porOrdem.get(p.ordem) || 0;
+      const alternativas = PERFIS_VALIDOS.map(perfil => {
+        const n = contagens[perfil] || 0;
+        return {
+          perfil,
+          perfil_label: PERFIS_LABELS[perfil] || perfil,
+          cor: PERFIS_CORES[perfil] || null,
+          texto: info.alternativas[perfil] || '',
+          qtd: n,
+          pct: totalRespostas > 0 ? Math.round((n / totalRespostas) * 1000) / 10 : 0,
+        };
+      }).sort((a, b) => b.qtd - a.qtd);
+      return { ordem: p.ordem, pergunta: info.pergunta, total_respostas: totalRespostas, alternativas };
+    });
+
+    res.json({
+      ok: true,
+      resumo: {
+        iniciaram,
+        completaram,
+        taxa_conclusao: iniciaram > 0 ? Math.round((completaram / iniciaram) * 1000) / 10 : 0,
+      },
+      funil,
+      perguntas,
+    });
+  } catch (err) {
+    console.error('❌ /testes-insights:', err.message);
+    res.status(500).json({ ok: false, erro: 'Erro ao carregar insights' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 22. TESTE DO SUBCONSCIENTE — VISÃO GERAL (distribuição de perfis)
+// % de cada um dos 7 perfis (medo/desordem/sobrevivencia/validacao/
+// prosperidade_nv1/nv2/nv3) sobre todos os resultados, filtrável por
+// concluídos / pagos / não concluídos. Rótulos vêm de
+// teste_perfis_conteudo (mesma fonte da aba "Conteúdo dos Resultados"),
+// sem cruzar bancos em SQL — merge em JS.
+// ════════════════════════════════════════════════════════════
+
+const _SLUGS_7_PERFIS = [
+  'medo', 'desordem', 'sobrevivencia', 'validacao',
+  'prosperidade_nv1', 'prosperidade_nv2', 'prosperidade_nv3',
+];
+const _CORES_7_PERFIS = {
+  medo: PERFIS_CORES.medo,
+  desordem: PERFIS_CORES.desordem,
+  sobrevivencia: PERFIS_CORES.sobrevivencia,
+  validacao: PERFIS_CORES.validacao,
+  prosperidade_nv1: '#5db8ec',
+  prosperidade_nv2: '#2ba5e8',
+  prosperidade_nv3: '#1573ad',
+};
+const _NOMES_7_PERFIS_FALLBACK = {
+  medo: 'Medo',
+  desordem: 'Desordem',
+  sobrevivencia: 'Sobrevivência',
+  validacao: 'Validação',
+  prosperidade_nv1: 'Prosperidade (nível 1)',
+  prosperidade_nv2: 'Prosperidade (nível 2)',
+  prosperidade_nv3: 'Prosperidade (nível 3)',
+};
+
+router.get('/testes-insights/geral', async (req, res) => {
+  try {
+    const { status = 'concluidos', data_de = '', data_ate = '' } = req.query;
+
+    const contagem = {};
+    for (const slug of _SLUGS_7_PERFIS) contagem[slug] = 0;
+    let total = 0;
+
+    if (status === 'nao_concluidos') {
+      const whereLead = ['NOT EXISTS (SELECT 1 FROM testes t WHERE t.lead_id = l.id)'];
+      const paramsLead = [];
+      if (data_de) { paramsLead.push(data_de); whereLead.push(`l.criado_em >= $${paramsLead.length}`); }
+      if (data_ate) { paramsLead.push(data_ate); whereLead.push(`l.criado_em <= $${paramsLead.length}`); }
+      _aplicarFiltrosUtm('l', req.query, whereLead, paramsLead);
+
+      const leadsR = await poolTeste.query(
+        `SELECT l.id FROM teste_leads l WHERE ${whereLead.join(' AND ')}`,
+        paramsLead
+      );
+      const leadIds = leadsR.rows.map(r => r.id);
+
+      if (leadIds.length) {
+        const respR = await poolTeste.query(
+          `SELECT lead_id, perfil FROM teste_respostas WHERE lead_id = ANY($1::uuid[])`,
+          [leadIds]
+        );
+        const porLead = new Map();
+        for (const row of respR.rows) {
+          if (!porLead.has(row.lead_id)) porLead.set(row.lead_id, []);
+          porLead.get(row.lead_id).push({ perfil: row.perfil });
+        }
+        // Só conta lead que já respondeu pelo menos 1 pergunta — lead com
+        // zero respostas não tem sinal nenhum (classificar daria resultado
+        // artificial, viés do critério de desempate).
+        for (const [, respostas] of porLead) {
+          if (!respostas.length) continue;
+          const resultado = calcularResultado(respostas);
+          if (contagem[resultado.perfil_dominante] !== undefined) {
+            contagem[resultado.perfil_dominante]++;
+            total++;
+          }
+        }
+      }
+    } else {
+      const temFiltroUtm = !!(req.query.utm_source || req.query.utm_medium || req.query.utm_campaign);
+      const where = ['t.eh_legado = FALSE'];
+      const params = [];
+      if (status === 'pagos') where.push('t.pago = TRUE');
+      if (data_de) { params.push(data_de); where.push(`t.feito_em >= $${params.length}`); }
+      if (data_ate) { params.push(data_ate); where.push(`t.feito_em <= $${params.length}`); }
+      if (temFiltroUtm) _aplicarFiltrosUtm('l', req.query, where, params);
+
+      const r = await poolTeste.query(
+        `SELECT perfil_dominante, COUNT(*)::int AS n
+           FROM testes t ${temFiltroUtm ? 'JOIN teste_leads l ON l.id = t.lead_id' : ''}
+          WHERE ${where.join(' AND ')}
+          GROUP BY perfil_dominante`,
+        params
+      );
+      for (const row of r.rows) {
+        if (contagem[row.perfil_dominante] !== undefined) {
+          contagem[row.perfil_dominante] += row.n;
+          total += row.n;
+        }
+      }
+    }
+
+    const nomesR = await poolComunicacao.query(
+      `SELECT slug, nome_exibicao FROM teste_perfis_conteudo WHERE slug = ANY($1::text[])`,
+      [_SLUGS_7_PERFIS]
+    );
+    const nomes = {};
+    for (const row of nomesR.rows) nomes[row.slug] = row.nome_exibicao;
+
+    const distribuicao = _SLUGS_7_PERFIS.map(slug => ({
+      slug,
+      nome: nomes[slug] || _NOMES_7_PERFIS_FALLBACK[slug],
+      cor: _CORES_7_PERFIS[slug],
+      qtd: contagem[slug],
+      pct: total > 0 ? Math.round((contagem[slug] / total) * 1000) / 10 : 0,
+    })).sort((a, b) => b.qtd - a.qtd);
+
+    res.json({ ok: true, status, total, distribuicao });
+  } catch (err) {
+    console.error('❌ /testes-insights/geral:', err.message);
+    res.status(500).json({ ok: false, erro: 'Erro ao carregar visão geral' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 23. TESTE DO SUBCONSCIENTE — UTMs (origem/mídia/campanha)
+// Captura já existe desde a entrada (routes/teste.js POST /iniciar).
+// Aqui só agrega o que já está salvo em teste_leads. Sem cruzar banco:
+// LEFT JOIN testes dentro do mesmo poolTeste.
+// ════════════════════════════════════════════════════════════
+
+router.get('/testes-insights/utms', async (req, res) => {
+  try {
+    const { data_de = '', data_ate = '' } = req.query;
+
+    const whereBase = ['1=1'];
+    const paramsBase = [];
+    if (data_de) { paramsBase.push(data_de); whereBase.push(`l.criado_em >= $${paramsBase.length}`); }
+    if (data_ate) { paramsBase.push(data_ate); whereBase.push(`l.criado_em <= $${paramsBase.length}`); }
+
+    // Drill-down facetado: cada agrupamento aplica os filtros das OUTRAS duas
+    // dimensões (não a própria) — assim, filtrar por origem="instagram" deixa
+    // o bloco "Origem" mostrando todas as origens (pra comparar), enquanto
+    // "Mídia" e "Campanha" já vêm recortados só dentro do Instagram.
+    async function agrupar(coluna, limite) {
+      const where = [...whereBase];
+      const params = [...paramsBase];
+      _aplicarFiltrosUtm('l', req.query, where, params, coluna);
+      const whereSql = where.join(' AND ');
+      const r = await poolTeste.query(
+        `SELECT COALESCE(NULLIF(TRIM(l.${coluna}), ''), '(direto / sem UTM)') AS valor,
+                COUNT(DISTINCT l.id)::int AS leads,
+                COUNT(DISTINCT t.id)::int AS completos,
+                COUNT(DISTINCT t.id) FILTER (WHERE t.pago)::int AS pagos
+           FROM teste_leads l
+           LEFT JOIN testes t ON t.lead_id = l.id AND t.eh_legado = FALSE
+          WHERE ${whereSql}
+          GROUP BY valor
+          ORDER BY leads DESC
+          LIMIT ${limite}`,
+        params
+      );
+      return r.rows.map(row => ({
+        valor: row.valor,
+        leads: row.leads,
+        completos: row.completos,
+        pagos: row.pagos,
+        taxa_conclusao: row.leads > 0 ? Math.round((row.completos / row.leads) * 1000) / 10 : 0,
+        taxa_pagamento: row.completos > 0 ? Math.round((row.pagos / row.completos) * 1000) / 10 : 0,
+      }));
+    }
+
+    // Total reflete o filtro COMPLETO (as 3 dimensões, quando selecionadas).
+    const whereTotal = [...whereBase];
+    const paramsTotal = [...paramsBase];
+    _aplicarFiltrosUtm('l', req.query, whereTotal, paramsTotal);
+
+    const [totalR, por_origem, por_midia, por_campanha] = await Promise.all([
+      poolTeste.query(`SELECT COUNT(DISTINCT l.id)::int AS n FROM teste_leads l WHERE ${whereTotal.join(' AND ')}`, paramsTotal),
+      agrupar('utm_source', 20),
+      agrupar('utm_medium', 20),
+      agrupar('utm_campaign', 25),
+    ]);
+
+    res.json({ ok: true, total_leads: totalR.rows[0].n, por_origem, por_midia, por_campanha });
+  } catch (err) {
+    console.error('❌ /testes-insights/utms:', err.message);
+    res.status(500).json({ ok: false, erro: 'Erro ao carregar UTMs' });
+  }
+});
+
+// ── GET /testes-insights/utm-opcoes ─────────────────────────
+// Popula os 3 dropdowns de filtro de forma "inteligente": cada lista só
+// mostra valores que realmente existem nos dados, ordenados por frequência,
+// e cada uma já leva em conta os filtros das OUTRAS dimensões já escolhidas
+// (facetado/em cascata — escolher origem="instagram" estreita as opções de
+// mídia/campanha pro que de fato ocorre dentro do Instagram).
+router.get('/testes-insights/utm-opcoes', async (req, res) => {
+  try {
+    const { data_de = '', data_ate = '' } = req.query;
+    const whereBase = ['1=1'];
+    const paramsBase = [];
+    if (data_de) { paramsBase.push(data_de); whereBase.push(`l.criado_em >= $${paramsBase.length}`); }
+    if (data_ate) { paramsBase.push(data_ate); whereBase.push(`l.criado_em <= $${paramsBase.length}`); }
+
+    async function opcoes(coluna) {
+      const where = [...whereBase];
+      const params = [...paramsBase];
+      _aplicarFiltrosUtm('l', req.query, where, params, coluna);
+      const r = await poolTeste.query(
+        `SELECT COALESCE(NULLIF(TRIM(l.${coluna}), ''), '__none__') AS valor, COUNT(*)::int AS n
+           FROM teste_leads l
+          WHERE ${where.join(' AND ')}
+          GROUP BY valor
+          ORDER BY n DESC
+          LIMIT 50`,
+        params
+      );
+      return r.rows.map(row => ({
+        valor: row.valor,
+        label: row.valor === '__none__' ? '(direto / sem UTM)' : row.valor,
+        n: row.n,
+      }));
+    }
+
+    const [sources, mediums, campaigns] = await Promise.all([
+      opcoes('utm_source'),
+      opcoes('utm_medium'),
+      opcoes('utm_campaign'),
+    ]);
+
+    res.json({ ok: true, sources, mediums, campaigns });
+  } catch (err) {
+    console.error('❌ /testes-insights/utm-opcoes:', err.message);
+    res.status(500).json({ ok: false, erro: 'Erro ao carregar opções de UTM' });
   }
 });
 

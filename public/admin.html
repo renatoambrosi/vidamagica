@@ -602,6 +602,12 @@ select option { background: #1a1205; }
   <div class="nav-item" id="nav-teste-perfis" onclick="goTab('teste-perfis', this)">
     <span class="nav-icon">📜</span> Conteúdo dos Resultados
   </div>
+  <div class="nav-item" id="nav-teste-resultados" onclick="goTab('teste-resultados', this)">
+    <span class="nav-icon">📊</span> Resultados
+  </div>
+  <div class="nav-item" id="nav-teste-insights" onclick="goTab('teste-insights', this)">
+    <span class="nav-icon">📈</span> Insights
+  </div>
 
   <div class="sidebar-section-label" style="margin-top:0.15rem">Espaço da Manifestação</div>
   <div class="nav-item" id="nav-espaco-afirmacoes" onclick="goTab('espaco-afirmacoes', this)">
@@ -1361,6 +1367,116 @@ select option { background: #1a1205; }
       </div>
     </div>
 
+    <!-- ════════════════════ TESTE DO SUBCONSCIENTE — RESULTADOS ════════════════════ -->
+    <div class="tab-panel" id="tab-teste-resultados">
+      <div class="wz-section">
+        <div class="wz-section-header">
+          <div>
+            <div class="wz-section-title">📊 Resultados do Teste</div>
+            <div class="wz-section-sub">Todos os testes completos, com link pro resultado de cada um</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="testesResultados.carregar(1)">↺ Atualizar</button>
+        </div>
+
+        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem">
+          <div id="tr-status-tabs" style="display:flex;gap:0.4rem">
+            <button class="btn btn-ghost btn-sm tr-status-btn" data-status="todos" onclick="testesResultados.setStatus('todos')">Todos <span id="tr-count-todos" class="nav-tag">…</span></button>
+            <button class="btn btn-ghost btn-sm tr-status-btn" data-status="pago" onclick="testesResultados.setStatus('pago')">Pagos</button>
+            <button class="btn btn-ghost btn-sm tr-status-btn" data-status="pendente" onclick="testesResultados.setStatus('pendente')">Pendentes</button>
+          </div>
+
+          <select id="tr-periodo" class="field-input" style="width:auto" onchange="testesResultados.setPeriodo(this.value)">
+            <option value="">Período: todo o tempo</option>
+            <option value="hoje">Hoje</option>
+            <option value="ontem">Ontem</option>
+            <option value="7d">Últimos 7 dias</option>
+            <option value="30d">Últimos 30 dias</option>
+            <option value="3m">Últimos 3 meses</option>
+            <option value="6m">Últimos 6 meses</option>
+            <option value="12m">Últimos 12 meses</option>
+          </select>
+
+          <input id="tr-busca" class="field-input" style="width:auto;min-width:200px" placeholder="Buscar nome, telefone ou e-mail…" oninput="testesResultados.debounceBusca()">
+        </div>
+
+        <div id="tr-container"><div class="loading">Carregando…</div></div>
+
+        <div id="tr-paginacao" style="display:flex;gap:0.4rem;align-items:center;justify-content:center;margin-top:1rem"></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════ TESTE DO SUBCONSCIENTE — INSIGHTS ════════════════════
+         Funil de abandono (quantos responderam cada pergunta) + distribuição
+         de respostas por pergunta (qual energia cada alternativa reforça).
+         API: /api/admin/testes-insights -->
+    <div class="tab-panel" id="tab-teste-insights">
+      <div class="wz-section">
+        <div class="wz-section-header">
+          <div>
+            <div class="wz-section-title">📈 Insights do Teste</div>
+            <div class="wz-section-sub">Onde as pessoas abandonam e como respondem cada pergunta</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="testesInsights.carregar();testesInsights.carregarGeral();testesInsights.carregarUtms();testesInsights.carregarUtmOpcoes()">↺ Atualizar</button>
+        </div>
+
+        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem">
+          <select id="ti-periodo" class="field-input" style="width:auto" onchange="testesInsights.setPeriodo(this.value)">
+            <option value="">Período: todo o tempo</option>
+            <option value="hoje">Hoje</option>
+            <option value="ontem">Ontem</option>
+            <option value="7d">Últimos 7 dias</option>
+            <option value="30d">Últimos 30 dias</option>
+            <option value="3m">Últimos 3 meses</option>
+            <option value="6m">Últimos 6 meses</option>
+            <option value="12m">Últimos 12 meses</option>
+          </select>
+        </div>
+
+        <div id="ti-resumo" style="display:flex;gap:0.8rem;flex-wrap:wrap;margin-bottom:1.2rem"></div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.6rem;margin-bottom:0.6rem">
+          <div class="wz-section-title" style="font-size:0.95rem;margin:0">Visão geral — % por perfil dominante</div>
+          <div id="ti-geral-status-tabs" style="display:flex;gap:0.4rem">
+            <button class="btn btn-ghost btn-sm ti-geral-status-btn" data-status="concluidos" style="background:rgba(232,201,122,0.15);border-color:var(--color-gold-light)" onclick="testesInsights.setGeralStatus('concluidos')">Concluídos</button>
+            <button class="btn btn-ghost btn-sm ti-geral-status-btn" data-status="pagos" onclick="testesInsights.setGeralStatus('pagos')">Pagos</button>
+            <button class="btn btn-ghost btn-sm ti-geral-status-btn" data-status="nao_concluidos" onclick="testesInsights.setGeralStatus('nao_concluidos')">Não concluídos</button>
+          </div>
+        </div>
+        <div id="ti-geral" style="margin-bottom:1.8rem"><div class="loading">Carregando…</div></div>
+
+        <div class="wz-section-title" style="font-size:0.95rem;margin-bottom:0.6rem">Funil — quantos chegam em cada pergunta</div>
+        <div id="ti-funil" style="margin-bottom:1.6rem"><div class="loading">Carregando…</div></div>
+
+        <div class="wz-section-title" style="font-size:0.95rem;margin-bottom:0.6rem">Respostas por pergunta</div>
+        <div id="ti-perguntas"></div>
+      </div>
+
+      <div class="wz-section">
+        <div class="wz-section-header">
+          <div>
+            <div class="wz-section-title">🔗 UTMs — de onde vêm os leads</div>
+            <div class="wz-section-sub">Origem, mídia e campanha de quem iniciou o teste, com conclusão e pagamento de cada grupo. O filtro abaixo afeta a aba inteira (resumo, funil, visão geral e UTMs).</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem">
+          <select id="ti-utm-source" class="field-input" style="width:auto;min-width:170px" onchange="testesInsights.setUtmFiltro('utm_source', this.value)">
+            <option value="">Origem: todas</option>
+          </select>
+          <select id="ti-utm-medium" class="field-input" style="width:auto;min-width:170px" onchange="testesInsights.setUtmFiltro('utm_medium', this.value)">
+            <option value="">Mídia: todas</option>
+          </select>
+          <select id="ti-utm-campaign" class="field-input" style="width:auto;min-width:170px" onchange="testesInsights.setUtmFiltro('utm_campaign', this.value)">
+            <option value="">Campanha: todas</option>
+          </select>
+          <button id="ti-utm-limpar" class="btn btn-ghost btn-sm" style="display:none" onclick="testesInsights.limparUtmFiltro()">✕ Limpar filtro de UTM</button>
+        </div>
+        <div id="ti-utm-filtro-ativo" style="display:none;font-size:0.76rem;color:var(--color-gold-light);margin:-0.5rem 0 1rem">🔎 Filtrando a aba inteira por este UTM</div>
+
+        <div id="ti-utms"><div class="loading">Carregando…</div></div>
+      </div>
+    </div>
+
     <!-- (Aba "Livros" foi removida — fonte da verdade dos livros agora é a aba Preços, com slugs vencendo_medo/desordem/validacao/sobrevivencia) -->
 
     <!-- ════════════════════ ESPAÇO DA MANIFESTAÇÃO — AFIRMAÇÕES ════════════════════
@@ -1651,6 +1767,8 @@ const tabMeta = {
   legado:      { title: 'Legado',               sub: 'Dados invisíveis pra aluna · visíveis só pra você' },
   teste:        { title: 'Teste do Subconsciente', sub: 'Versões do questionário — perguntas, alternativas e publicação' },
   'teste-perfis': { title: 'Conteúdo dos Resultados', sub: 'Textos, vídeos e produtos exibidos pra cada perfil dominante' },
+  'teste-resultados': { title: 'Resultados do Teste', sub: 'Todos os testes completos, com link pro resultado de cada um' },
+  'teste-insights': { title: 'Insights do Teste', sub: 'Funil de abandono e distribuição de respostas por pergunta' },
   'espaco-afirmacoes': { title: 'Espaço · Afirmações', sub: 'Catálogo de afirmações + áudio opcional (MP3 em assets/afirmacoes/)' },
   caderno:      { title: 'Caderno da Mentalização', sub: 'Prompts, afirmações e áudios de foco' },
   gamificacao:  { title: 'Gamificação',              sub: 'Tabela de prêmios, missões e ranking mensal' },
@@ -1691,6 +1809,8 @@ function goTab(id, el) {
   if (id === 'legado') { carregarLegado(); }
   if (id === 'teste') { testeAdmin.carregar(); }
   if (id === 'teste-perfis') { perfisAdmin.carregar(); }
+  if (id === 'teste-resultados') { testesResultados.carregar(1); }
+  if (id === 'teste-insights') { testesInsights.carregar(); testesInsights.carregarGeral(); testesInsights.carregarUtms(); testesInsights.carregarUtmOpcoes(); }
   if (id === 'caderno') { cadCarregarPrompts(); }
   if (id === 'espaco-afirmacoes') { espAfirmCarregar(); }
   if (id === 'gamificacao') { gamCarregarPremios(); }
@@ -3844,6 +3964,450 @@ async function apagarLegado(tabela, id, descricao) {
     toast(err.message || 'Erro', 'error');
   }
 }
+
+// ── TESTE DO SUBCONSCIENTE — RESULTADOS (lista + envio manual) ──
+const testesResultados = (function(){
+  let status = 'todos';
+  let periodo = '';
+  let busca = '';
+  let paginaAtual = 1;
+  let buscaTimer = null;
+
+  function periodoParaDatas(p) {
+    const agora = new Date();
+    const fim = new Date(agora);
+    let inicio = null;
+    if (p === 'hoje') {
+      inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+    } else if (p === 'ontem') {
+      inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() - 1);
+      fim.setTime(new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime() - 1);
+    } else if (p === '7d') { inicio = new Date(agora); inicio.setDate(inicio.getDate() - 7); }
+    else if (p === '30d') { inicio = new Date(agora); inicio.setDate(inicio.getDate() - 30); }
+    else if (p === '3m') { inicio = new Date(agora); inicio.setMonth(inicio.getMonth() - 3); }
+    else if (p === '6m') { inicio = new Date(agora); inicio.setMonth(inicio.getMonth() - 6); }
+    else if (p === '12m') { inicio = new Date(agora); inicio.setFullYear(inicio.getFullYear() - 1); }
+    return { data_de: inicio ? inicio.toISOString() : '', data_ate: p ? fim.toISOString() : '' };
+  }
+
+  function setStatus(s) {
+    status = s;
+    document.querySelectorAll('.tr-status-btn').forEach(b => {
+      b.style.background = (b.dataset.status === s) ? 'rgba(232,201,122,0.15)' : '';
+      b.style.borderColor = (b.dataset.status === s) ? 'var(--color-gold-light)' : '';
+    });
+    carregar(1);
+  }
+
+  function setPeriodo(p) {
+    periodo = p;
+    carregar(1);
+  }
+
+  function debounceBusca() {
+    clearTimeout(buscaTimer);
+    buscaTimer = setTimeout(() => {
+      busca = document.getElementById('tr-busca').value || '';
+      carregar(1);
+    }, 400);
+  }
+
+  function dataFmt(s) { return s ? new Date(s).toLocaleString('pt-BR') : '—'; }
+
+  async function carregar(pagina) {
+    paginaAtual = pagina || 1;
+    const wrap = document.getElementById('tr-container');
+    if (!wrap) return;
+    wrap.innerHTML = '<div class="loading">Carregando…</div>';
+    try {
+      const { data_de, data_ate } = periodoParaDatas(periodo);
+      const qs = new URLSearchParams({
+        page: String(paginaAtual), limit: '25', status,
+        data_de, data_ate, q: busca,
+      });
+      const r = await fetch(`${API}/api/admin/testes-resultados?${qs}`, {
+        headers: { 'Authorization': authHeader() },
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+
+      // Atualiza contador "Todos" só na primeira carga sem filtro de status
+      if (status === 'todos') {
+        const el = document.getElementById('tr-count-todos');
+        if (el) el.textContent = d.total;
+      }
+
+      if (!d.testes.length) {
+        wrap.innerHTML = '<div style="padding:1.5rem;color:var(--text-muted);text-align:center">Nenhum teste encontrado com esse filtro.</div>';
+        document.getElementById('tr-paginacao').innerHTML = '';
+        return;
+      }
+
+      wrap.innerHTML = `
+        <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:0.84rem">
+          <thead>
+            <tr style="text-align:left;color:var(--text-muted);border-bottom:1px solid var(--border)">
+              <th style="padding:0.5rem 0.6rem">Data</th>
+              <th style="padding:0.5rem 0.6rem">Nome</th>
+              <th style="padding:0.5rem 0.6rem">Telefone</th>
+              <th style="padding:0.5rem 0.6rem">E-mail</th>
+              <th style="padding:0.5rem 0.6rem">Perfil</th>
+              <th style="padding:0.5rem 0.6rem">Pago</th>
+              <th style="padding:0.5rem 0.6rem">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${d.testes.map(t => `
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+                <td style="padding:0.55rem 0.6rem;white-space:nowrap">${dataFmt(t.feito_em)}</td>
+                <td style="padding:0.55rem 0.6rem">${escHtml(t.nome || '(sem nome)')}</td>
+                <td style="padding:0.55rem 0.6rem;white-space:nowrap">${escHtml(t.telefone_canonico || '')}</td>
+                <td style="padding:0.55rem 0.6rem">${t.email ? escHtml(t.email) : '<span style="color:var(--text-muted)">—</span>'}</td>
+                <td style="padding:0.55rem 0.6rem">${escHtml(t.perfil_label || '?')}</td>
+                <td style="padding:0.55rem 0.6rem">${t.pago ? '✅' : '⏳'}</td>
+                <td style="padding:0.55rem 0.6rem;white-space:nowrap">
+                  <button class="btn btn-ghost btn-sm" title="Copiar link do resultado" onclick="testesResultados.copiarLink('${t.link_resultado}')">🔗 Copiar</button>
+                  <button class="btn btn-ghost btn-sm" title="Enviar pelo WhatsApp" onclick="testesResultados.enviarWhatsapp('${t.id}', this)">💬 WhatsApp</button>
+                  <button class="btn btn-ghost btn-sm" title="Enviar por e-mail" ${t.email ? '' : 'disabled'} onclick="testesResultados.enviarEmail('${t.id}', this)">✉️ E-mail</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        </div>
+      `;
+
+      const pagWrap = document.getElementById('tr-paginacao');
+      if (d.totalPages > 1) {
+        pagWrap.innerHTML = `
+          <button class="btn btn-ghost btn-sm" ${d.page <= 1 ? 'disabled' : ''} onclick="testesResultados.carregar(${d.page - 1})">← Anterior</button>
+          <span style="color:var(--text-muted);font-size:0.82rem">Página ${d.page} de ${d.totalPages} (${d.total} testes)</span>
+          <button class="btn btn-ghost btn-sm" ${d.page >= d.totalPages ? 'disabled' : ''} onclick="testesResultados.carregar(${d.page + 1})">Próxima →</button>
+        `;
+      } else {
+        pagWrap.innerHTML = `<span style="color:var(--text-muted);font-size:0.82rem">${d.total} teste(s)</span>`;
+      }
+    } catch (err) {
+      wrap.innerHTML = `<div style="color:#F09090;padding:1rem">Erro: ${escHtml(err.message || 'falha')}</div>`;
+    }
+  }
+
+  function copiarLink(link) {
+    navigator.clipboard.writeText(link)
+      .then(() => toast('🔗 Link copiado!'))
+      .catch(() => toast('Não consegui copiar — copie manualmente: ' + link, 'error'));
+  }
+
+  async function enviarWhatsapp(id, btn) {
+    if (btn) btn.disabled = true;
+    try {
+      const r = await fetch(`${API}/api/admin/testes-resultados/${id}/enviar-whatsapp`, {
+        method: 'POST',
+        headers: { 'Authorization': authHeader() },
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+      toast('💬 Enviado pra fila do WhatsApp!');
+    } catch (err) {
+      toast(err.message || 'Erro ao enviar', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function enviarEmail(id, btn) {
+    if (btn) btn.disabled = true;
+    try {
+      const r = await fetch(`${API}/api/admin/testes-resultados/${id}/enviar-email`, {
+        method: 'POST',
+        headers: { 'Authorization': authHeader() },
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+      toast('✉️ E-mail enviado!');
+    } catch (err) {
+      toast(err.message || 'Erro ao enviar', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  return { carregar, setStatus, setPeriodo, debounceBusca, copiarLink, enviarWhatsapp, enviarEmail };
+})();
+
+const testesInsights = (function(){
+  let periodo = '';
+  let geralStatus = 'concluidos';
+  let utmFiltro = { utm_source: '', utm_medium: '', utm_campaign: '' };
+
+  function utmParams() {
+    const p = {};
+    if (utmFiltro.utm_source)   p.utm_source   = utmFiltro.utm_source;
+    if (utmFiltro.utm_medium)   p.utm_medium   = utmFiltro.utm_medium;
+    if (utmFiltro.utm_campaign) p.utm_campaign = utmFiltro.utm_campaign;
+    return p;
+  }
+
+  function periodoParaDatas(p) {
+    const agora = new Date();
+    const fim = new Date(agora);
+    let inicio = null;
+    if (p === 'hoje') {
+      inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+    } else if (p === 'ontem') {
+      inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() - 1);
+      fim.setTime(new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime() - 1);
+    } else if (p === '7d') { inicio = new Date(agora); inicio.setDate(inicio.getDate() - 7); }
+    else if (p === '30d') { inicio = new Date(agora); inicio.setDate(inicio.getDate() - 30); }
+    else if (p === '3m') { inicio = new Date(agora); inicio.setMonth(inicio.getMonth() - 3); }
+    else if (p === '6m') { inicio = new Date(agora); inicio.setMonth(inicio.getMonth() - 6); }
+    else if (p === '12m') { inicio = new Date(agora); inicio.setFullYear(inicio.getFullYear() - 1); }
+    return { data_de: inicio ? inicio.toISOString() : '', data_ate: p ? fim.toISOString() : '' };
+  }
+
+  function setPeriodo(p) {
+    periodo = p;
+    carregar();
+    carregarGeral();
+    carregarUtms();
+    carregarUtmOpcoes();
+  }
+
+  function setUtmFiltro(campo, valor) {
+    utmFiltro[campo] = valor;
+    atualizarBadgeUtmFiltro();
+    carregar();
+    carregarGeral();
+    carregarUtms();
+    carregarUtmOpcoes();
+  }
+
+  function limparUtmFiltro() {
+    utmFiltro = { utm_source: '', utm_medium: '', utm_campaign: '' };
+    ['ti-utm-source', 'ti-utm-medium', 'ti-utm-campaign'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    atualizarBadgeUtmFiltro();
+    carregar();
+    carregarGeral();
+    carregarUtms();
+    carregarUtmOpcoes();
+  }
+
+  function atualizarBadgeUtmFiltro() {
+    const ativo = !!(utmFiltro.utm_source || utmFiltro.utm_medium || utmFiltro.utm_campaign);
+    const btn = document.getElementById('ti-utm-limpar');
+    if (btn) btn.style.display = ativo ? '' : 'none';
+    const badge = document.getElementById('ti-utm-filtro-ativo');
+    if (badge) badge.style.display = ativo ? '' : 'none';
+  }
+
+  async function carregarUtmOpcoes() {
+    try {
+      const { data_de, data_ate } = periodoParaDatas(periodo);
+      const qs = new URLSearchParams({ data_de, data_ate, ...utmParams() });
+      const r = await fetch(`${API}/api/admin/testes-insights/utm-opcoes?${qs}`, {
+        headers: { 'Authorization': authHeader() },
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+
+      function popular(id, campo, rotulo, lista) {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const atual = utmFiltro[campo];
+        const existeAtual = atual && lista.some(o => o.valor === atual);
+        sel.innerHTML = `<option value="">${rotulo}: todas${lista.length ? ` (${lista.length})` : ''}</option>` +
+          lista.map(o => `<option value="${escHtml(o.valor)}" ${o.valor === atual ? 'selected' : ''}>${escHtml(o.label)} · ${o.n}</option>`).join('');
+        if (atual && !existeAtual) {
+          // valor selecionado não existe mais nas opções atuais (filtro das outras dimensões mudou) — limpa só esse campo
+          utmFiltro[campo] = '';
+          sel.value = '';
+        }
+      }
+      popular('ti-utm-source', 'utm_source', 'Origem', d.sources);
+      popular('ti-utm-medium', 'utm_medium', 'Mídia', d.mediums);
+      popular('ti-utm-campaign', 'utm_campaign', 'Campanha', d.campaigns);
+    } catch (err) {
+      console.error('Erro ao carregar opções de UTM:', err);
+    }
+  }
+
+  function setGeralStatus(s) {
+    geralStatus = s;
+    document.querySelectorAll('.ti-geral-status-btn').forEach(b => {
+      b.style.background = (b.dataset.status === s) ? 'rgba(232,201,122,0.15)' : '';
+      b.style.borderColor = (b.dataset.status === s) ? 'var(--color-gold-light)' : '';
+    });
+    carregarGeral();
+  }
+
+  async function carregarGeral() {
+    const wrap = document.getElementById('ti-geral');
+    if (!wrap) return;
+    wrap.innerHTML = '<div class="loading">Carregando…</div>';
+    try {
+      const { data_de, data_ate } = periodoParaDatas(periodo);
+      const qs = new URLSearchParams({ status: geralStatus, data_de, data_ate, ...utmParams() });
+      const r = await fetch(`${API}/api/admin/testes-insights/geral?${qs}`, {
+        headers: { 'Authorization': authHeader() },
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+
+      if (!d.total) {
+        wrap.innerHTML = `<div style="padding:1rem;color:var(--text-muted);text-align:center">Nenhum resultado nesse filtro.</div>`;
+        return;
+      }
+
+      wrap.innerHTML = `
+        <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.5rem">${d.total} resultado(s)</div>
+        ${d.distribuicao.map(p => `
+          <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.35rem">
+            <div style="width:170px;font-size:0.8rem;flex-shrink:0;color:${p.cor}">${escHtml(p.nome)}</div>
+            <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:5px;height:20px;position:relative;overflow:hidden">
+              <div style="background:${p.cor};height:100%;width:${p.pct}%;border-radius:5px;opacity:0.85"></div>
+            </div>
+            <div style="width:70px;text-align:right;font-size:0.8rem;font-weight:600;flex-shrink:0">${p.pct}% <span style="color:var(--text-muted);font-weight:400">(${p.qtd})</span></div>
+          </div>
+        `).join('')}
+      `;
+    } catch (err) {
+      wrap.innerHTML = `<div style="color:#F09090;padding:1rem">Erro: ${escHtml(err.message || 'falha')}</div>`;
+    }
+  }
+
+  function barraFunil(item, max) {
+    const pct = max > 0 ? Math.round((item.responderam / max) * 100) : 0;
+    const quebraPct = 100 - item.taxa_desde_anterior;
+    const corQuebra = quebraPct >= 20 ? '#F09090' : 'var(--text-muted)';
+    return `
+      <div style="display:flex;align-items:center;gap:0.7rem;margin-bottom:0.45rem">
+        <div style="width:170px;font-size:0.8rem;color:var(--text-muted);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escHtml(item.pergunta)}">
+          ${item.ordem === 'completo' ? 'Concluiu' : `P${item.ordem}`} — ${escHtml(item.pergunta)}
+        </div>
+        <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:6px;height:22px;position:relative;overflow:hidden">
+          <div style="background:linear-gradient(90deg,var(--color-gold-light),var(--color-gold));height:100%;width:${pct}%;border-radius:6px"></div>
+        </div>
+        <div style="width:48px;text-align:right;font-size:0.82rem;font-weight:600;flex-shrink:0">${item.responderam}</div>
+        <div style="width:90px;text-align:right;font-size:0.76rem;color:${corQuebra};flex-shrink:0">
+          ${item.taxa_desde_anterior < 100 ? `-${quebraPct.toFixed(1)}%` : '—'}
+        </div>
+      </div>`;
+  }
+
+  async function carregar() {
+    const resumoWrap = document.getElementById('ti-resumo');
+    const funilWrap = document.getElementById('ti-funil');
+    const pergWrap = document.getElementById('ti-perguntas');
+    if (!funilWrap) return;
+    funilWrap.innerHTML = '<div class="loading">Carregando…</div>';
+    pergWrap.innerHTML = '';
+    try {
+      const { data_de, data_ate } = periodoParaDatas(periodo);
+      const qs = new URLSearchParams({ data_de, data_ate, ...utmParams() });
+      const r = await fetch(`${API}/api/admin/testes-insights?${qs}`, {
+        headers: { 'Authorization': authHeader() },
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+
+      resumoWrap.innerHTML = `
+        <div class="wz-stat" style="flex:1;min-width:140px">
+          <div class="wz-stat-n">${d.resumo.iniciaram}</div>
+          <div class="wz-stat-l">Iniciaram o teste</div>
+        </div>
+        <div class="wz-stat" style="flex:1;min-width:140px">
+          <div class="wz-stat-n">${d.resumo.completaram}</div>
+          <div class="wz-stat-l">Completaram</div>
+        </div>
+        <div class="wz-stat" style="flex:1;min-width:140px">
+          <div class="wz-stat-n">${d.resumo.taxa_conclusao}%</div>
+          <div class="wz-stat-l">Taxa de conclusão</div>
+        </div>`;
+
+      if (!d.resumo.iniciaram) {
+        funilWrap.innerHTML = '<div style="padding:1.5rem;color:var(--text-muted);text-align:center">Nenhum teste iniciado nesse período.</div>';
+        return;
+      }
+
+      const max = d.resumo.iniciaram;
+      funilWrap.innerHTML = d.funil.map(item => barraFunil(item, max)).join('');
+
+      pergWrap.innerHTML = d.perguntas.map(p => `
+        <div class="wz-grupo-card" style="margin-bottom:0.7rem">
+          <div style="font-weight:600;margin-bottom:0.5rem">P${p.ordem}. ${escHtml(p.pergunta)} <span style="color:var(--text-muted);font-weight:400;font-size:0.8rem">(${p.total_respostas} respostas)</span></div>
+          ${p.alternativas.map(a => `
+            <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.3rem">
+              <div style="width:110px;font-size:0.78rem;flex-shrink:0;color:${a.cor || 'var(--text)'}">${escHtml(a.perfil_label)}</div>
+              <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:5px;height:18px;position:relative;overflow:hidden">
+                <div style="background:${a.cor || 'var(--color-gold-light)'};height:100%;width:${a.pct}%;border-radius:5px;opacity:0.85"></div>
+              </div>
+              <div style="width:40px;text-align:right;font-size:0.78rem;font-weight:600;flex-shrink:0">${a.pct}%</div>
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+    } catch (err) {
+      funilWrap.innerHTML = `<div style="color:#F09090;padding:1rem">Erro: ${escHtml(err.message || 'falha')}</div>`;
+    }
+  }
+
+  function blocoUtm(titulo, itens) {
+    if (!itens.length) {
+      return `<div style="margin-bottom:1.2rem"><div style="font-weight:600;margin-bottom:0.4rem">${titulo}</div><div style="color:var(--text-muted);font-size:0.8rem">Sem dados.</div></div>`;
+    }
+    const max = Math.max(...itens.map(i => i.leads), 1);
+    return `
+      <div style="margin-bottom:1.2rem">
+        <div style="font-weight:600;margin-bottom:0.5rem">${titulo}</div>
+        ${itens.map(i => `
+          <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.4rem">
+            <div style="width:130px;font-size:0.8rem;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(i.valor)}">${escHtml(i.valor)}</div>
+            <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:5px;height:20px;position:relative;overflow:hidden">
+              <div style="background:linear-gradient(90deg,var(--color-gold-light),var(--color-gold));height:100%;width:${Math.round((i.leads / max) * 100)}%;border-radius:5px;opacity:0.85"></div>
+            </div>
+            <div style="width:200px;text-align:right;font-size:0.76rem;color:var(--text-muted);flex-shrink:0">
+              <b style="color:var(--text-light)">${i.leads}</b> leads · ${i.taxa_conclusao}% concl. · <span style="color:var(--color-gold-light)">${i.pagos} pago${i.pagos === 1 ? '' : 's'}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>`;
+  }
+
+  async function carregarUtms() {
+    const wrap = document.getElementById('ti-utms');
+    if (!wrap) return;
+    wrap.innerHTML = '<div class="loading">Carregando…</div>';
+    try {
+      const { data_de, data_ate } = periodoParaDatas(periodo);
+      const qs = new URLSearchParams({ data_de, data_ate, ...utmParams() });
+      const r = await fetch(`${API}/api/admin/testes-insights/utms?${qs}`, {
+        headers: { 'Authorization': authHeader() },
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+
+      if (!d.total_leads) {
+        wrap.innerHTML = '<div style="padding:1rem;color:var(--text-muted);text-align:center">Nenhum lead nesse período.</div>';
+        return;
+      }
+
+      wrap.innerHTML = `
+        <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.8rem">${d.total_leads} lead(s) no total</div>
+        ${blocoUtm('Origem (utm_source)', d.por_origem)}
+        ${blocoUtm('Mídia (utm_medium)', d.por_midia)}
+        ${blocoUtm('Campanha (utm_campaign)', d.por_campanha)}
+      `;
+    } catch (err) {
+      wrap.innerHTML = `<div style="color:#F09090;padding:1rem">Erro: ${escHtml(err.message || 'falha')}</div>`;
+    }
+  }
+
+  return { carregar, setPeriodo, setGeralStatus, carregarGeral, carregarUtms, carregarUtmOpcoes, setUtmFiltro, limparUtmFiltro };
+})();
 
 // ── CRIAR USUÁRIO MANUAL ────────────────────────────────────
 function abrirCriarUsuario() {
