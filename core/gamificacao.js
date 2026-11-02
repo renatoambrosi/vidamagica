@@ -52,9 +52,9 @@
    await progressoEvento(usuarioId, 'caderno_escrita');
    === */
 
-const { poolCore, poolTeste, poolComunicacao } = require('../db');
+const { poolCore, poolComunicacao } = require('../db');
 const { creditarSementes } = require('./sementes');
-const { calcularJornadaVigente } = require('./jornadas');
+const { calcularJornadaVigente, buscarTesteDaJornada } = require('./jornadas');
 
 function tag(usuario_id) { return String(usuario_id || '?').slice(0, 8); }
 
@@ -76,17 +76,8 @@ async function resolverJornadaSlug(usuario_id) {
     if (!u.rows[0]) return null;
     const tel = u.rows[0].telefone;
 
-    // Teste concluído mais recente
-    const tR = await poolTeste.query(
-      `SELECT perfil_dominante, percentuais, nivel_prosperidade
-         FROM testes
-        WHERE (usuario_id = $1 OR telefone_canonico = $2)
-        ORDER BY feito_em DESC
-        LIMIT 1`,
-      [usuario_id, tel]
-    );
-    if (!tR.rows[0]) return null;
-    const t = tR.rows[0];
+    const t = await buscarTesteDaJornada(usuario_id, tel);
+    if (!t) return null;
 
     // Produtos comprados (pra `calcularJornadaVigente` decidir avanços)
     const pR = await poolCore.query(
@@ -99,9 +90,6 @@ async function resolverJornadaSlug(usuario_id) {
 
     const j = calcularJornadaVigente({
       perfil_dominante: t.perfil_dominante,
-      perfil_dominante_bruto: (t.perfil_dominante || '').replace(/_nv\d$/, ''),
-      percentuais_exibicao: t.percentuais || {},
-      nivel_prosperidade: t.nivel_prosperidade || 0,
       slugsComprados,
     });
     return j?.slug || null;

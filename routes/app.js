@@ -18,11 +18,9 @@ const { poolCore, poolTeste, poolComunicacao } = require('../db');
 const { autenticar } = require('../middleware/autenticar');
 const {
   calcularResultado,
-  montarLivrosRecomendados,
   montarListaEnergias,
-  montarJornada,
 } = require('../core/teste-resultado');
-const { calcularJornadaVigente, temClubeVidaMagica } = require('../core/jornadas');
+const { calcularJornadaVigente, montarJornadaExibicao, buscarTesteDaJornada, temClubeVidaMagica } = require('../core/jornadas');
 const { creditarSementes } = require('../core/sementes');
 const { registrarLogin, lerIndicadoresGamificacao } = require('../core/gamificacao');
 
@@ -214,58 +212,24 @@ router.get('/contexto', autenticar, async (req, res) => {
         conteudo: conteudoPerfil,
       };
 
-      // ── 6. Jornada atual da aluna ───────────────────────
-      // Usa o mapa perfil → jornada, monta os passos com estado de "comprado"
-      try {
-        const mapR = await poolComunicacao.query(
-          `SELECT j.slug, j.numero, j.nome_exibicao, j.subtitulo, j.cor
-             FROM jornadas_perfis_map m
-             JOIN jornadas_metodo j ON j.slug = m.jornada_slug
-            WHERE m.perfil_slug = $1`,
-          [calc.perfil_dominante]
-        );
-        const jornadaCfg = mapR.rows[0];
-        if (jornadaCfg) {
-          // Passos da jornada
-          const passosR = await poolComunicacao.query(
-            `SELECT ordem, produto_slug, titulo_passo, descricao_passo
-               FROM jornadas_passos
-              WHERE jornada_slug = $1
-              ORDER BY ordem`,
-            [jornadaCfg.slug]
-          );
-          jornadaCfg.passos = passosR.rows;
-
-          // Dados dos produtos da jornada — fonte: tabela `precos` (banco Comunicação)
-          const slugsPassos = passosR.rows.map(p => p.produto_slug);
-          const precosR = await poolComunicacao.query(
-            `SELECT key, dados FROM precos WHERE key = ANY($1::text[])`,
-            [slugsPassos]
-          );
-          const precosBySlug = {};
-          precosR.rows.forEach(r => { precosBySlug[r.key] = r.dados || {}; });
-
-          jornadaAtual = montarJornada(jornadaCfg, slugsComprados, precosBySlug, { fezTeste: true });
-        }
-      } catch (e) {
-        console.warn('[contexto] erro ao montar jornada:', e.message);
-      }
-      // ── 6.b Jornada vigente (via core/jornadas.js) ───────
-      // Função canônica que substitui a lógica antiga baseada em tabelas
-      // `jornadas_metodo`/`jornadas_passos`/`jornadas_perfis_map`. Aqui
-      // calculamos tudo em código: aplica regra do override (trava forte
-      // >20%), distribui pesos (P1/P2/P3), cruza com slugsComprados pra
-      // marcar concluído. Mantém `jornadaAtual` ao lado pra retrocompat.
+      // ── 6. Jornada da aluna (via core/jornadas.js) ──────
+      // `jornadaVigente` traz a regra; `jornadaAtual` é a mesma jornada com
+      // nome, capa e link de cada produto, pra trilha e Materiais.
       try {
         jornadaVigente = calcularJornadaVigente({
           perfil_dominante: calc.perfil_dominante,
-          perfil_dominante_bruto: calc.perfil_dominante_bruto,
-          percentuais_exibicao: calc.percentuais_exibicao,
-          nivel_prosperidade: calc.nivel_prosperidade,
           slugsComprados,
         });
+        const slugsPassos = jornadaVigente.passos.flatMap(p => p.produtos);
+        const precosR = await poolComunicacao.query(
+          `SELECT key, dados FROM precos WHERE key = ANY($1::text[])`,
+          [slugsPassos]
+        );
+        const precosBySlug = {};
+        precosR.rows.forEach(r => { precosBySlug[r.key] = r.dados || {}; });
+        jornadaAtual = montarJornadaExibicao(jornadaVigente, precosBySlug);
       } catch (e) {
-        console.warn('[contexto] erro ao calcular jornadaVigente:', e.message);
+        console.warn('[contexto] erro ao montar jornada:', e.message);
       }
     }
 
@@ -447,8 +411,8 @@ router.get('/contexto', autenticar, async (req, res) => {
       // app, com a barra de progresso real animando 0 → percentual atual.
       atualizacoes_pendentes: atualizacoesPendentes,
       jornada_atual: jornadaAtual,
-      // jornada_vigente: nova fonte da verdade (core/jornadas.js).
-      // Frontend novo lê daqui; o `jornada_atual` fica pra retrocompat.
+      // jornada_vigente: regra pura; jornada_atual: mesma jornada + dados
+      // dos produtos. As duas vêm de core/jornadas.js.
       jornada_vigente: jornadaVigente,
       // tem_clube: aluna tem Clube Vida Mágica ativo (plano !== 'gratuito')
       tem_clube: temClubeVidaMagica({ plano: aluna.plano }),
@@ -837,24 +801,13 @@ router.get('/relatos-feed', autenticar, async (req, res) => {
     try {
       const aluna = await poolCore.query(`SELECT id, telefone, plano FROM usuarios WHERE id=$1`, [usuarioId]);
       if (aluna.rows[0]) {
-        const testes = await poolTeste.query(
-          `SELECT * FROM testes
-            WHERE (usuario_id=$1 OR telefone_canonico=$2) AND status='concluido'
-            ORDER BY feito_em DESC LIMIT 1`,
-          [usuarioId, aluna.rows[0].telefone]
-        );
-        if (testes.rows[0]) {
+        const teste = await buscarTesteDaJornada(usuarioId, aluna.rows[0].telefone);
+        if (teste) {
           const vigente = calcularJornadaVigente({
-            perfilDominante: testes.rows[0].perfil_dominante,
-            nivelProsperidade: testes.rows[0].nivel_prosperidade,
-            percentualProsperidade: testes.rows[0].percentual_prosperidade,
-            plano: aluna.rows[0].plano,
-            energiasBrutas: testes.rows[0].energias_brutas,
+            perfil_dominante: teste.perfil_dominante,
           });
-          if (vigente && Array.isArray(vigente.passos)) {
-            for (const p of vigente.passos) {
-              if (p.produto_slug) slugsJornada.add(p.produto_slug);
-            }
+          for (const p of vigente.passos) {
+            p.produtos.forEach(s => slugsJornada.add(s));
           }
         }
       }

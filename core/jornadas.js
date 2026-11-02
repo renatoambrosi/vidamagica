@@ -1,28 +1,30 @@
 /* ============================================================
    VIDA MÁGICA — core/jornadas.js
 
-   Calcula a JORNADA VIGENTE da aluna baseado no resultado do
-   teste e nos produtos que ela possui. É a fonte da verdade.
+   FONTE ÚNICA da jornada da aluna e dos materiais indicados por
+   resultado. Resultado, /app, admin e atendimento leem daqui.
 
-   Estrutura de jornadas (ordem fixa):
-   1. Conhecer e Despertar  → default, pra quem tem trava
-   2. Vida Mágica           → prosperidade dominante nv1 ou nv2
-                              SEM nenhuma trava > 20%
-   3. Multiplicando a Vida Mágica → prosperidade dominante nv3
-                                    SEM nenhuma trava > 20%
+   Jornadas (ordem fixa):
+   1. Conhecer e Despertar → Medo, Desordem, Validação, Sobrevivência
+   2. Vida Mágica          → Otimismo (nv1) e Expansão (nv2)
+   3. Poder e Plenitude    → Plenitude (nv3)
 
-   Regra do override:
-   - Mesmo se Prosperidade for dominante, se alguma energia-
-     problema (medo/desordem/validacao/sobrevivencia) > 20%,
-     aluna fica em "Conhecer e Despertar". Trava forte tem
-     prioridade.
+   As jornadas são as Fases 1, 2 e 3 da página inicial.
+
+   A energia dominante decide tudo. Prosperidade dominante vai pra
+   Vida Mágica ou Poder e Plenitude mesmo com outra energia alta
+   (não existe mais o rebaixamento por trava forte).
 
    Pesos dos passos:
-   - Jornada 1: P1=25%, P2=25%, P3=50%
-   - Jornada 2: P1=50%, P2=25%, P3=25%
-   - Jornada 3: P1=100%
+   - Com curso: Teste 25%, Livro 25%, Curso 50%
+   - Sem curso (Plenitude): Teste 50%, Livro 50%
+
+   Slugs imutáveis: `prosperidade_nv1/2/3` seguem no banco; Otimismo,
+   Expansão e Plenitude são os nomes de exibição.
 
    ============================================================ */
+
+const { poolTeste } = require('../db');
 
 // Slugs canônicos dos produtos
 const SLUG = {
@@ -39,119 +41,74 @@ const SLUG = {
   ATAL_CURSO: 'atal_maneira_curso',
 };
 
-// Mapa de energia → livro da Série Conhecer e Despertar
-const LIVRO_POR_ENERGIA = {
-  medo: SLUG.VENCENDO_MEDO,
-  desordem: SLUG.VENCENDO_DESORDEM,
-  validacao: SLUG.VENCENDO_VALIDACAO,
-  sobrevivencia: SLUG.VENCENDO_SOBREVIVENCIA,
+const JORNADAS = {
+  1: { slug: 'conhecer_e_despertar', nome: 'Conhecer e Despertar', subtitulo: 'Despertando a mente', cor: '#C8922A' },
+  2: { slug: 'vida_magica', nome: 'Vida Mágica', subtitulo: 'Operando a abundância', cor: '#2BA5E8' },
+  3: { slug: 'poder_e_plenitude', nome: 'Poder e Plenitude', subtitulo: 'Vivendo em plenitude', cor: '#F4D060' },
 };
 
-// Limite de trava forte: se qualquer energia-problema for > 20%,
-// aluna fica em Conhecer e Despertar mesmo que Prosperidade seja dominante.
-const LIMITE_TRAVA_FORTE = 20;
-
-// Limites das tags de prioridade dos livros (em %):
-// - 16% a 25% = Necessário (conta na trilha)
-// - > 25%     = Urgente    (conta na trilha)
-const TAG_NECESSARIO_MIN = 16;
-const TAG_URGENTE_MIN = 25;
+// Tabela de indicação: perfil dominante → jornada + livro + curso.
+// curso: null = perfil sem curso indicado.
+const INDICACAO_POR_PERFIL = {
+  medo:             { jornada: 1, livro: SLUG.VENCENDO_MEDO,          curso: SLUG.OURO,       titulo_livro: 'Despertar',  titulo_curso: 'Reprogramação' },
+  desordem:         { jornada: 1, livro: SLUG.VENCENDO_DESORDEM,      curso: SLUG.OURO,       titulo_livro: 'Despertar',  titulo_curso: 'Reprogramação' },
+  validacao:        { jornada: 1, livro: SLUG.VENCENDO_VALIDACAO,     curso: SLUG.OURO,       titulo_livro: 'Despertar',  titulo_curso: 'Reprogramação' },
+  sobrevivencia:    { jornada: 1, livro: SLUG.VENCENDO_SOBREVIVENCIA, curso: SLUG.LDA,        titulo_livro: 'Despertar',  titulo_curso: 'Reprogramação' },
+  prosperidade_nv1: { jornada: 2, livro: SLUG.GUIA_PRATICO,           curso: SLUG.LDA,        titulo_livro: 'Prática',    titulo_curso: 'Reprogramação' },
+  prosperidade_nv2: { jornada: 2, livro: SLUG.ATAL_LIVRO,             curso: SLUG.ATAL_CURSO, titulo_livro: 'Expansão',   titulo_curso: 'Riqueza Bíblica' },
+  prosperidade_nv3: { jornada: 3, livro: SLUG.MAGICA_FLUIR,           curso: null,            titulo_livro: 'Plenitude',  titulo_curso: null },
+};
 
 /**
- * Determina se aluna tem alguma trava forte (>20% em qualquer energia-problema).
- * Usa percentuais inteiros de exibição.
+ * Devolve { jornada, livro, curso, titulo_livro, titulo_curso } do perfil.
+ * Perfil desconhecido cai na indicação do Medo (jornada 1).
  */
-function temTravaForte(percentuais_exibicao) {
-  const p = percentuais_exibicao || {};
-  return ['medo', 'desordem', 'validacao', 'sobrevivencia'].some(
-    e => (p[e] || 0) > LIMITE_TRAVA_FORTE
+function indicacaoDoPerfil(perfil_dominante) {
+  return INDICACAO_POR_PERFIL[perfil_dominante] || INDICACAO_POR_PERFIL.medo;
+}
+
+/**
+ * Teste que define a jornada da aluna: o mais recente com trilha ativada.
+ * Refazer o teste só muda a jornada depois de ativar o novo resultado.
+ */
+async function buscarTesteDaJornada(usuario_id, telefone) {
+  const r = await poolTeste.query(
+    `SELECT id, respostas, perfil_dominante, feito_em
+       FROM testes
+      WHERE (usuario_id = $1 OR telefone_canonico = $2)
+        AND ativou_trilha = TRUE
+      ORDER BY feito_em DESC
+      LIMIT 1`,
+    [usuario_id, telefone]
   );
+  return r.rows[0] || null;
 }
 
 /**
- * Regra especial do Medo: aparece como Necessário se >0% (mesmo que <16%).
- * Demais energias: 16-25% Necessário, >25% Urgente.
- * Retorna 'urgente' | 'necessario' | null (não conta na trilha).
- */
-function tagPrioridade(energia, percentual) {
-  const p = percentual || 0;
-  if (energia === 'medo') {
-    if (p > TAG_URGENTE_MIN) return 'urgente';
-    if (p > 0) return 'necessario'; // medo >0% sempre conta
-    return null;
-  }
-  // Outras: precisa de pelo menos 16%
-  if (p > TAG_URGENTE_MIN) return 'urgente';
-  if (p >= TAG_NECESSARIO_MIN) return 'necessario';
-  return null;
-}
-
-/**
- * Lista de energias-problema que CONTAM na trilha (urgente ou necessário),
- * ordenadas: urgente primeiro, depois por percentual decrescente.
- * Não inclui prosperidade.
- */
-function energiasQueContam(percentuais_exibicao) {
-  const p = percentuais_exibicao || {};
-  const lista = [];
-  ['medo', 'desordem', 'validacao', 'sobrevivencia'].forEach(e => {
-    const tag = tagPrioridade(e, p[e]);
-    if (tag) lista.push({ energia: e, percentual: p[e] || 0, tag });
-  });
-  // Urgente antes de necessário; dentro disso, % decrescente
-  lista.sort((a, b) => {
-    const pa = a.tag === 'urgente' ? 0 : 1;
-    const pb = b.tag === 'urgente' ? 0 : 1;
-    if (pa !== pb) return pa - pb;
-    return b.percentual - a.percentual;
-  });
-  return lista;
-}
-
-/**
- * Identifica qual curso de reprogramação entra no Passo 3 da Jornada 1.
- * Regra: Sobrevivência dominante → LDA Bíblica; outras → Ouro.
- */
-function cursoJornada1(perfil_dominante_bruto) {
-  if (perfil_dominante_bruto === 'sobrevivencia') return SLUG.LDA;
-  return SLUG.OURO;
-}
-
-/**
- * Função principal. Recebe o resultado do teste + produtos que aluna possui,
+ * Função principal. Recebe o perfil dominante + produtos que aluna possui
  * e devolve a jornada vigente com passos e progresso.
  *
  * Parâmetros:
- *   perfil_dominante        - ex: 'medo' | 'prosperidade_nv1' | etc
- *   perfil_dominante_bruto  - ex: 'medo' | 'prosperidade' (sem subdivisão)
- *   percentuais_exibicao    - { medo, desordem, validacao, sobrevivencia, prosperidade } inteiros
- *   nivel_prosperidade      - 0 | 1 | 2 | 3
- *   slugsComprados          - Set ou array com slugs que aluna possui (ativo=true)
+ *   perfil_dominante - ex: 'medo' | 'prosperidade_nv1' | etc
+ *   slugsComprados   - Set ou array com slugs que aluna possui (ativo=true)
  *
  * Retorna:
  *   {
  *     numero: 1 | 2 | 3,
- *     slug: 'conhecer_e_despertar' | 'vida_magica' | 'multiplicando_vida_magica',
- *     nome: 'Conhecer e Despertar' | 'Vida Mágica' | 'Multiplicando a Vida Mágica',
+ *     slug: 'conhecer_e_despertar' | 'vida_magica' | 'poder_e_plenitude',
+ *     nome, subtitulo, cor,
  *     passos: [{
  *       ordem,
  *       titulo,
- *       produtos: [slug...],
+ *       produtos: [slug],
  *       peso,           // soma dos pesos = 100
- *       concluido,      // true se aluna tem TODOS os produtos do passo
+ *       concluido,      // true se aluna tem o produto do passo
  *       eh_proximo,     // primeiro não-concluído
  *     }],
  *     progresso_percentual,  // soma dos pesos dos passos concluídos
- *     analise: string | null, // explicação automatizada quando relevante
  *   }
  */
-function calcularJornadaVigente({
-  perfil_dominante,
-  perfil_dominante_bruto,
-  percentuais_exibicao,
-  nivel_prosperidade,
-  slugsComprados,
-}) {
+function calcularJornadaVigente({ perfil_dominante, slugsComprados }) {
   // Normaliza slugsComprados pra Set
   const possui = (slugsComprados instanceof Set)
     ? slugsComprados
@@ -160,134 +117,19 @@ function calcularJornadaVigente({
   // Aluna que chegou aqui fez o teste → garante teste no set
   possui.add(SLUG.TESTE);
 
-  const ehProsperidadeDominante = (perfil_dominante_bruto === 'prosperidade');
-  const trava = temTravaForte(percentuais_exibicao);
+  const ind = indicacaoDoPerfil(perfil_dominante);
+  const jornada = JORNADAS[ind.jornada];
 
-  // ──────────────────────────────────────────────────────────
-  // Decisão de jornada
-  // ──────────────────────────────────────────────────────────
-  let numero = 1;
-  let analise = null;
-
-  if (ehProsperidadeDominante && !trava) {
-    // Sem trava forte → liberada pra próxima jornada.
-    //
-    // Faixas de Prosperidade (definidas pelo Renato):
-    //   nv1 (< 50%)       → Vida Mágica
-    //   nv2 (50% a 79,99%) → ⚠️ ainda não tem jornada própria; Renato vai criar
-    //                        produtos pra essa faixa. ENQUANTO ISSO,
-    //                        nv2 segue a mesma trilha de nv1 (Vida Mágica).
-    //                        Quando os produtos novos forem criados, troque
-    //                        este `numero = 2` por `numero = X` (jornada nova)
-    //                        ou crie um branch separado pra nv2.
-    //   nv3 (>= 80%)      → Multiplicando a Vida Mágica
-    if (nivel_prosperidade >= 3) {
-      numero = 3;  // Multiplicando a Vida Mágica
-    } else {
-      numero = 2;  // Vida Mágica — placeholder enquanto nv2 não tem jornada própria
-    }
-  } else if (ehProsperidadeDominante && trava) {
-    // Prosperidade dominante MAS tem trava forte → fica em Conhecer e Despertar
-    numero = 1;
-    analise = 'Sua energia dominante é a Prosperidade — ótimo sinal. Mas você ainda tem uma trava com percentual elevado, e por isso sua jornada precisa começar (ou recomeçar) no Conhecer e Despertar. Vamos resolver essa trava antes de avançar.';
-  } else {
-    // Energia-problema dominante
-    numero = 1;
+  const passos = [
+    { ordem: 1, titulo: 'Conhecer', produtos: [SLUG.TESTE], peso: ind.curso ? 25 : 50 },
+    { ordem: 2, titulo: ind.titulo_livro, produtos: [ind.livro], peso: ind.curso ? 25 : 50 },
+  ];
+  if (ind.curso) {
+    passos.push({ ordem: 3, titulo: ind.titulo_curso, produtos: [ind.curso], peso: 50 });
   }
 
   // ──────────────────────────────────────────────────────────
-  // Monta passos da jornada escolhida
-  // ──────────────────────────────────────────────────────────
-  let passos = [];
-  let slug;
-  let nome;
-
-  if (numero === 1) {
-    slug = 'conhecer_e_despertar';
-    nome = 'Conhecer e Despertar';
-
-    // P1 - Teste (25%)
-    passos.push({
-      ordem: 1,
-      titulo: 'Conhecer',
-      subtitulo: 'Teste do Subconsciente',
-      produtos: [SLUG.TESTE],
-      peso: 25,
-    });
-
-    // P2 - Livros das energias que contam (Necessário/Urgente) (25%)
-    const energias = energiasQueContam(percentuais_exibicao);
-    const slugsP2 = energias
-      .map(e => LIVRO_POR_ENERGIA[e.energia])
-      .filter(Boolean);
-    // Sempre tem pelo menos um (Medo sempre conta se >0%)
-    passos.push({
-      ordem: 2,
-      titulo: 'Despertar',
-      subtitulo: 'Livros da Série Conhecer e Despertar',
-      produtos: slugsP2.length > 0 ? slugsP2 : [SLUG.VENCENDO_MEDO],
-      peso: 25,
-    });
-
-    // P3 - Curso de reprogramação (50%)
-    const curso = cursoJornada1(perfil_dominante_bruto);
-    passos.push({
-      ordem: 3,
-      titulo: 'Reprogramação',
-      subtitulo: curso === SLUG.LDA ? 'Curso Lei da Atração Bíblica' : 'Curso Ouro da Reprogramação Mental',
-      produtos: [curso],
-      peso: 50,
-    });
-
-  } else if (numero === 2) {
-    slug = 'vida_magica';
-    nome = 'Vida Mágica';
-
-    // P1 - LDA Bíblica (50%)
-    passos.push({
-      ordem: 1,
-      titulo: 'Reprogramação',
-      subtitulo: 'Curso Lei da Atração Bíblica',
-      produtos: [SLUG.LDA],
-      peso: 50,
-    });
-
-    // P2 - Guia Prático + Mágica do Fluir (25% — precisa dos 2)
-    passos.push({
-      ordem: 2,
-      titulo: 'Prática diária',
-      subtitulo: 'Guia Prático para Reprogramar a Mente + Guia de Bolso Mágica do Fluir',
-      produtos: [SLUG.GUIA_PRATICO, SLUG.MAGICA_FLUIR],
-      peso: 25,
-    });
-
-    // P3 - A Tal Maneira (livro) (25%)
-    passos.push({
-      ordem: 3,
-      titulo: 'Aprofundamento',
-      subtitulo: 'Livro Digital A Tal Maneira',
-      produtos: [SLUG.ATAL_LIVRO],
-      peso: 25,
-    });
-
-  } else {
-    // numero === 3
-    slug = 'multiplicando_vida_magica';
-    nome = 'Multiplicando a Vida Mágica';
-
-    // P1 - A Tal Maneira (curso) (100%)
-    passos.push({
-      ordem: 1,
-      titulo: 'Multiplicar',
-      subtitulo: 'Curso A Tal Maneira — O Curso Definitivo da Riqueza Bíblica',
-      produtos: [SLUG.ATAL_CURSO],
-      peso: 100,
-    });
-  }
-
-  // ──────────────────────────────────────────────────────────
-  // Marca concluído (passo concluído = aluna tem TODOS os produtos)
-  // e calcula próximo + progresso
+  // Marca concluído e calcula próximo + progresso
   // ──────────────────────────────────────────────────────────
   passos.forEach(p => {
     p.concluido = p.produtos.every(s => possui.has(s));
@@ -303,12 +145,56 @@ function calcularJornadaVigente({
     .reduce((soma, p) => soma + (p.peso || 0), 0);
 
   return {
-    numero,
-    slug,
-    nome,
+    numero: ind.jornada,
+    slug: jornada.slug,
+    nome: jornada.nome,
+    subtitulo: jornada.subtitulo,
+    cor: jornada.cor,
     passos,
     progresso_percentual,
-    analise,
+  };
+}
+
+/**
+ * Junta a jornada vigente com os dados do produto (nome, capa, links, preço)
+ * no formato usado pelas telas de jornada (/app, admin, atendimento).
+ * precosBySlug: { slug: dados } da tabela `precos` — fonte da verdade do produto.
+ */
+function montarJornadaExibicao(vigente, precosBySlug) {
+  if (!vigente) return null;
+  const dadosBySlug = precosBySlug || {};
+
+  const passos = vigente.passos.map(p => {
+    const produto_slug = p.produtos[0];
+    const dadosProd = dadosBySlug[produto_slug] || {};
+    return {
+      ordem: p.ordem,
+      titulo: p.titulo,
+      descricao: '',
+      produto_slug,
+      produto_nome: dadosProd.nome || produto_slug,
+      produto_imagem: dadosProd.imagem_url || '',
+      link_checkout_padrao: dadosProd.link_checkout_padrao || '',
+      link_checkout_aluno: dadosProd.link_checkout_aluno || '',
+      preco_padrao: dadosProd.preco_padrao || '',
+      preco_aluno: dadosProd.preco_alunos || '',
+      comprado: p.concluido,
+      eh_proximo: p.eh_proximo,
+    };
+  });
+
+  return {
+    slug: vigente.slug,
+    numero: vigente.numero,
+    nome_exibicao: vigente.nome,
+    subtitulo: vigente.subtitulo,
+    cor: vigente.cor,
+    passos,
+    progresso: {
+      passos_concluidos: passos.filter(p => p.comprado).length,
+      passos_totais: passos.length,
+      percentual: vigente.progresso_percentual,
+    },
   };
 }
 
@@ -324,10 +210,9 @@ function temClubeVidaMagica(usuario) {
 
 module.exports = {
   calcularJornadaVigente,
+  montarJornadaExibicao,
+  indicacaoDoPerfil,
+  buscarTesteDaJornada,
   temClubeVidaMagica,
   SLUG,
-  LIVRO_POR_ENERGIA,
-  tagPrioridade,
-  energiasQueContam,
-  temTravaForte,
 };

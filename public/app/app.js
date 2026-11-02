@@ -2736,9 +2736,9 @@ function sincronizarAvisosComContexto(ctx) {
         id: 'av-compra-' + a.id,
         tag: 'Sua jornada',
         titulo: 'Sua jornada avançou! ✦',
-        desc: `${produtoNome} foi liberado e atualizou sua trilha.`,
+        desc: `${produtoNome} foi liberado e atualizou seu caminho.`,
         data: 'Agora',
-        acao: { tipo: 'celebrar-compra', payload: a.id, label: 'Ver minha trilha →' },
+        acao: { tipo: 'celebrar-compra', payload: a.id, label: 'Ver meu caminho →' },
       });
     });
   }
@@ -2752,9 +2752,9 @@ const PERFIS_LABELS_FRONT = {
   desordem: 'Desordem',
   validacao: 'Validação',
   sobrevivencia: 'Sobrevivência',
-  prosperidade_nv1: 'Prosperidade Nível 1',
-  prosperidade_nv2: 'Prosperidade Nível 2',
-  prosperidade_nv3: 'Prosperidade Nível 3',
+  prosperidade_nv1: 'Otimismo',
+  prosperidade_nv2: 'Expansão',
+  prosperidade_nv3: 'Plenitude',
 };
 // Artigo correto pra cada perfil — "Energia DO Medo", "Energia DA Desordem"
 const PERFIS_ARTIGO = {
@@ -2762,7 +2762,7 @@ const PERFIS_ARTIGO = {
   desordem: 'da',
   validacao: 'da',
   sobrevivencia: 'da',
-  prosperidade_nv1: 'da',
+  prosperidade_nv1: 'do',
   prosperidade_nv2: 'da',
   prosperidade_nv3: 'da',
 };
@@ -4368,7 +4368,7 @@ function renderBannerAtualizarPorCompra(ctx) {
     <div class="banner-atualizar-textos">
       <div class="banner-atualizar-titulo">Pensou, falou, viveu — e avançou. ✦</div>
       <button class="banner-atualizar-btn" data-atualizacao-id="${a.id}">
-        Ver minha trilha →
+        Ver meu caminho →
       </button>
     </div>
   `;
@@ -4466,7 +4466,7 @@ function rodarSplashJornada({ contexto = 'atualizando', jornadaInfo = null, prim
         const titEl = splash.querySelector('.jornada-splash-titulo');
         const subEl = splash.querySelector('.jornada-splash-sub');
         if (titEl) titEl.innerHTML = tituloFase2;
-        if (subEl) subEl.textContent = 'Sua trilha está pronta';
+        if (subEl) subEl.textContent = 'Seu caminho está pronto';
         splash.classList.remove('fase-transicao');
       }, 400);
     }, 2000);
@@ -4755,7 +4755,7 @@ function renderMateriais(ctx) {
         const acoesRow = pago
           ? `<div class="teste-mini-acoes-row">
               <span class="teste-mini-link teste-mini-link-resultado">Ver resultado →</span>
-              ${ehAguardando ? '<button class="teste-mini-link teste-mini-link-atualizar" onclick="event.stopPropagation();window.app.ativarTrilhaDoCard(\'' + t.id + '\')">Atualizar Trilha</button>' : ''}
+              ${ehAguardando ? '<button class="teste-mini-link teste-mini-link-atualizar" onclick="event.stopPropagation();window.app.ativarTrilhaDoCard(\'' + t.id + '\')">Atualizar Caminho</button>' : ''}
             </div>`
           : '<div class="teste-mini-status teste-mini-bloqueado">🔒 Liberação pendente</div>';
 
@@ -4979,49 +4979,17 @@ function renderTrilhaJornada(ctx) {
   }
 
   // Caso 2: aluna tem teste mas não tem jornada (não deveria acontecer)
-  if (!ctx.jornada_atual && !ctx.jornada_vigente) {
+  if (!ctx.jornada_atual) {
     trilha.innerHTML =
       '<div class="trilha-header">' +
-        '<h2 class="trilha-titulo">Sua trilha</h2>' +
+        '<h2 class="trilha-titulo">Seu caminho</h2>' +
         '<p class="trilha-sub">Aguardando próximos passos.</p>' +
       '</div>';
     return;
   }
 
   // Caso 3: jornada ativa — renderiza barra + passos
-  // Preferimos jornada_vigente (novo, via core/jornadas.js). Se ainda não
-  // estiver presente no payload, caímos pra jornada_atual (antigo) e
-  // mapeamos os campos pra ter compatibilidade.
-  const vigente = ctx.jornada_vigente;
-  const j = vigente
-    ? {
-        numero: vigente.numero,
-        nome_exibicao: vigente.nome,
-        subtitulo: '',
-        cor: '#C8922A',
-        passos: (vigente.passos || []).map(p => ({
-          titulo: p.titulo,
-          // No formato vigente, "produtos" é array (P2 da Vida Mágica tem 2 produtos).
-          // Pra trilha da Home/Materiais, usamos o primeiro produto como representante visual.
-          produto_slug: (p.produtos && p.produtos[0]) || null,
-          produto_nome: p.subtitulo || p.titulo,
-          produto_imagem: '',
-          descricao: '',
-          comprado: !!p.concluido,
-          eh_proximo: !!p.eh_proximo,
-          link_checkout_padrao: '',
-          // Lista completa de produtos do passo (pra Materiais mostrar todos)
-          produtos_do_passo: p.produtos || [],
-          peso: p.peso || 0,
-        })),
-        progresso: {
-          passos_concluidos: (vigente.passos || []).filter(p => p.concluido).length,
-          passos_totais: (vigente.passos || []).length,
-          percentual: Math.round(vigente.progresso_percentual || 0),
-        },
-        analise: vigente.analise || null,
-      }
-    : ctx.jornada_atual;
+  const j = ctx.jornada_atual;
   const cor = j.cor || '#C8922A';
   const passosHtml = j.passos.map((p, idx) => {
     const num = idx + 1;
@@ -5067,18 +5035,12 @@ function renderTrilhaJornada(ctx) {
     );
   }).join('');
 
-  // Análise automatizada (texto da jornada — ex: trava forte mesmo com Prosperidade)
-  const analiseHtml = j.analise
-    ? '<div class="trilha-analise">' + escHtml(j.analise) + '</div>'
-    : '';
-
   // A barra de progresso e o nome da jornada ficam na seção
   // "Saudação + Jornada" (#saudacao-jornada), renderizada por
   // renderSaudacaoJornada(). O convite pro Clube foi pra um pop-up
-  // flutuante (renderPopupClube). Aqui só análise + lista de passos.
+  // flutuante (renderPopupClube). Aqui só a lista de passos.
   trilha.innerHTML =
     '<div class="trilha-header">' +
-      analiseHtml +
       '<h2 class="trilha-titulo" style="margin-top:0.5rem">Seu caminho</h2>' +
     '</div>' +
     '<ol class="trilha-lista">' + passosHtml + '</ol>';
@@ -5112,7 +5074,7 @@ window.app = {
   // Ativa trilha (re-teste): roda o popup → splash → recarrega
   async ativarTrilhaDoCard(testeId) {
     if (!testeId) return;
-    if (!confirm('Atualizar sua trilha de conhecimento agora?\nEssa escolha não pode ser desfeita.')) return;
+    if (!confirm('Atualizar seu caminho de conhecimento agora?\nEssa escolha não pode ser desfeita.')) return;
     try {
       await ativarTrilhaComSplash(testeId);
     } catch (e) {

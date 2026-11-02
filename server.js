@@ -358,6 +358,12 @@ server.listen(PORT, async () => {
       // Não derruba o servidor — o seed é um nice-to-have, não bloqueante
     }
 
+    try {
+      await require('./routes/seed').alinharPerfisGravados();
+    } catch (err) {
+      console.error('⚠️ Alinhamento dos testes gravados não rodou:', err.message);
+    }
+
     // Seed dos temas + relatos iniciais (Fase 1 do refactor de Relatos).
     // - seedTemas: idempotente via ON CONFLICT (slug). Roda sempre, só insere
     //   o que falta.

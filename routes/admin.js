@@ -20,7 +20,7 @@ const {
 } = require('../core/gateway');
 const {
   arquivarUsuario, desarquivarUsuario, apagarUsuarioPermanente,
-  trocarTelefonePrincipal, marcarComoAtiva,
+  trocarTelefonePrincipal,
   criarMagicToken,
   normalizarCpf, validarCpf, verificarDuplicidade,
   listarEnderecos, criarEndereco, atualizarEndereco, deletarEndereco,
@@ -29,8 +29,9 @@ const {
 } = require('../core/usuarios');
 const { enfileirarAtendimento } = require('../core/gateway');
 const { formatarTelefone } = require('../core/utils');
-const { PERFIS_VALIDOS, PERFIS_LABELS, PERFIS_CORES, PERGUNTAS } = require('../core/teste-conteudo');
+const { PERFIS_VALIDOS, PERFIS_RESULTADO, PERFIS_LABELS, PERFIS_CORES, PERGUNTAS } = require('../core/teste-conteudo');
 const { calcularResultado } = require('../core/teste-resultado');
+const { lerModoDevTeste, salvarModoDevTeste } = require('../core/teste-config');
 
 // ── Middleware: só admin pode usar tudo aqui (escopo='admin')
 router.use(autenticarPainel('admin'));
@@ -1288,11 +1289,6 @@ router.delete('/teste/versoes/:id', async (req, res) => {
 //   PUT   /teste/livros/:slug               → atualiza um livro
 // ════════════════════════════════════════════════════════════
 
-// Slugs aceitos (proteção: só edita os 7 perfis canônicos)
-const _SLUGS_PERFIS_VALIDOS = [
-  'medo', 'desordem', 'sobrevivencia', 'validacao',
-  'prosperidade_nv1', 'prosperidade_nv2', 'prosperidade_nv3',
-];
 const _SLUGS_LIVROS_VALIDOS = [
   'vencendo_medo', 'vencendo_desordem', 'vencendo_validacao', 'vencendo_sobrevivencia',
 ];
@@ -1329,7 +1325,7 @@ router.get('/teste/perfis-conteudo', async (req, res) => {
 router.get('/teste/perfis-conteudo/:slug', async (req, res) => {
   try {
     const slug = req.params.slug;
-    if (!_SLUGS_PERFIS_VALIDOS.includes(slug)) {
+    if (!PERFIS_RESULTADO.includes(slug)) {
       return res.status(400).json({ ok: false, erro: 'slug inválido' });
     }
     const r = await poolComunicacao.query(
@@ -1348,7 +1344,7 @@ router.get('/teste/perfis-conteudo/:slug', async (req, res) => {
 router.put('/teste/perfis-conteudo/:slug', async (req, res) => {
   try {
     const slug = req.params.slug;
-    if (!_SLUGS_PERFIS_VALIDOS.includes(slug)) {
+    if (!PERFIS_RESULTADO.includes(slug)) {
       return res.status(400).json({ ok: false, erro: 'slug inválido' });
     }
 
@@ -1850,10 +1846,6 @@ router.get('/testes-insights', async (req, res) => {
 // sem cruzar bancos em SQL — merge em JS.
 // ════════════════════════════════════════════════════════════
 
-const _SLUGS_7_PERFIS = [
-  'medo', 'desordem', 'sobrevivencia', 'validacao',
-  'prosperidade_nv1', 'prosperidade_nv2', 'prosperidade_nv3',
-];
 const _CORES_7_PERFIS = {
   medo: PERFIS_CORES.medo,
   desordem: PERFIS_CORES.desordem,
@@ -1863,22 +1855,13 @@ const _CORES_7_PERFIS = {
   prosperidade_nv2: '#2ba5e8',
   prosperidade_nv3: '#1573ad',
 };
-const _NOMES_7_PERFIS_FALLBACK = {
-  medo: 'Medo',
-  desordem: 'Desordem',
-  sobrevivencia: 'Sobrevivência',
-  validacao: 'Validação',
-  prosperidade_nv1: 'Prosperidade (nível 1)',
-  prosperidade_nv2: 'Prosperidade (nível 2)',
-  prosperidade_nv3: 'Prosperidade (nível 3)',
-};
 
 router.get('/testes-insights/geral', async (req, res) => {
   try {
     const { status = 'concluidos', data_de = '', data_ate = '' } = req.query;
 
     const contagem = {};
-    for (const slug of _SLUGS_7_PERFIS) contagem[slug] = 0;
+    for (const slug of PERFIS_RESULTADO) contagem[slug] = 0;
     let total = 0;
 
     if (status === 'nao_concluidos') {
@@ -1942,14 +1925,14 @@ router.get('/testes-insights/geral', async (req, res) => {
 
     const nomesR = await poolComunicacao.query(
       `SELECT slug, nome_exibicao FROM teste_perfis_conteudo WHERE slug = ANY($1::text[])`,
-      [_SLUGS_7_PERFIS]
+      [PERFIS_RESULTADO]
     );
     const nomes = {};
     for (const row of nomesR.rows) nomes[row.slug] = row.nome_exibicao;
 
-    const distribuicao = _SLUGS_7_PERFIS.map(slug => ({
+    const distribuicao = PERFIS_RESULTADO.map(slug => ({
       slug,
-      nome: nomes[slug] || _NOMES_7_PERFIS_FALLBACK[slug],
+      nome: nomes[slug] || PERFIS_LABELS[slug],
       cor: _CORES_7_PERFIS[slug],
       qtd: contagem[slug],
       pct: total > 0 ? Math.round((contagem[slug] / total) * 1000) / 10 : 0,
@@ -2073,6 +2056,108 @@ router.get('/testes-insights/utm-opcoes', async (req, res) => {
   } catch (err) {
     console.error('❌ /testes-insights/utm-opcoes:', err.message);
     res.status(500).json({ ok: false, erro: 'Erro ao carregar opções de UTM' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 24. TESTE DO SUBCONSCIENTE — AVALIAÇÕES
+// Estrelas + comentário opcional que a aluna deixa em /resultado/:id
+// (routes/teste.js POST /avaliacao/:teste_id grava em teste_avaliacoes).
+// ════════════════════════════════════════════════════════════
+
+router.get('/testes-avaliacoes', async (req, res) => {
+  try {
+    const {
+      page = '1', limit = '25', nota = '', data_de = '', data_ate = '',
+    } = req.query;
+
+    const pag = Math.max(1, parseInt(page, 10) || 1);
+    const lim = Math.min(100, Math.max(1, parseInt(limit, 10) || 25));
+    const offset = (pag - 1) * lim;
+
+    const where = ['1=1'];
+    const params = [];
+
+    if (nota && Number.isInteger(parseInt(nota, 10))) {
+      params.push(parseInt(nota, 10));
+      where.push(`a.nota = $${params.length}`);
+    }
+    if (data_de) { params.push(data_de); where.push(`a.criado_em >= $${params.length}`); }
+    if (data_ate) { params.push(data_ate); where.push(`a.criado_em <= $${params.length}`); }
+
+    const whereSql = where.join(' AND ');
+
+    const totalR = await poolTeste.query(
+      `SELECT COUNT(*)::int AS total FROM teste_avaliacoes a WHERE ${whereSql}`,
+      params
+    );
+    const total = totalR.rows[0].total;
+
+    const mediaR = await poolTeste.query(
+      `SELECT ROUND(AVG(nota)::numeric, 2) AS media, COUNT(*)::int AS n FROM teste_avaliacoes a WHERE ${whereSql}`,
+      params
+    );
+
+    params.push(lim, offset);
+    const r = await poolTeste.query(
+      `SELECT a.teste_id, a.nota, a.comentario, a.criado_em,
+              t.perfil_dominante, l.nome
+         FROM teste_avaliacoes a
+         JOIN testes t ON t.id = a.teste_id
+         LEFT JOIN teste_leads l ON l.id = t.lead_id
+        WHERE ${whereSql}
+     ORDER BY a.criado_em DESC
+        LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+
+    const baseUrl = process.env.APP_URL || 'https://www.vidamagica.com.br';
+    const avaliacoes = r.rows.map(a => ({
+      teste_id: a.teste_id,
+      nome: a.nome || null,
+      nota: a.nota,
+      comentario: a.comentario || null,
+      criado_em: a.criado_em,
+      perfil_dominante: a.perfil_dominante,
+      perfil_label: PERFIS_LABELS[a.perfil_dominante] || a.perfil_dominante,
+      link_resultado: `${baseUrl}/resultado/${a.teste_id}`,
+    }));
+
+    res.json({
+      ok: true,
+      avaliacoes,
+      total,
+      page: pag,
+      totalPages: Math.max(1, Math.ceil(total / lim)),
+      media: mediaR.rows[0].media ? Number(mediaR.rows[0].media) : null,
+    });
+  } catch (err) {
+    console.error('❌ /testes-avaliacoes:', err.message);
+    res.status(500).json({ ok: false, erro: 'Erro ao listar avaliações' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 25. TESTE DO SUBCONSCIENTE — MODO DEV
+// Ligado: fim do teste vai direto pro resultado, sem cobrar.
+// ════════════════════════════════════════════════════════════
+
+router.get('/teste/modo-dev', async (req, res) => {
+  res.json({ ok: true, ativo: await lerModoDevTeste() });
+});
+
+router.put('/teste/modo-dev', async (req, res) => {
+  try {
+    const ativo = req.body && req.body.ativo;
+    if (typeof ativo !== 'boolean') {
+      return res.status(400).json({ ok: false, erro: 'ativo inválido' });
+    }
+    await salvarModoDevTeste(ativo);
+    console.log(`⚠️ [admin] modo dev do teste ${ativo ? 'LIGADO' : 'DESLIGADO'}`);
+    res.json({ ok: true, ativo });
+  } catch (err) {
+    console.error('❌ /teste/modo-dev:', err.message);
+    res.status(500).json({ ok: false, erro: 'Erro ao salvar' });
   }
 });
 

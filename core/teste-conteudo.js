@@ -14,12 +14,8 @@
    - validacao
    - prosperidade
 
-   Após responder as 15, conta-se quantas respostas caíram em cada perfil.
-   O perfil dominante é o que mais aparece. Se for "prosperidade",
-   subdivide em 3 níveis pelo percentual:
-   - <= 50%  → prosperidade_nv1
-   - <= 80%  → prosperidade_nv2
-   - >  80%  → prosperidade_nv3
+   Fonte única das constantes de perfil. O cálculo do resultado mora em
+   core/teste-resultado.js.
 
    Esse arquivo é a fonte da verdade da PRIMEIRA versão do teste (v1.0).
    Edições futuras das perguntas são feitas pelo painel admin (cria nova versão).
@@ -195,13 +191,29 @@ const PERGUNTAS = [
 
 const PERFIS_VALIDOS = ['medo', 'desordem', 'sobrevivencia', 'validacao', 'prosperidade'];
 
+// Os 7 resultados possíveis (Prosperidade subdividida em 3 níveis).
+const PERFIS_RESULTADO = [
+  'medo', 'desordem', 'sobrevivencia', 'validacao',
+  'prosperidade_nv1', 'prosperidade_nv2', 'prosperidade_nv3',
+];
+
 // Rótulos legíveis (para o painel admin e relatórios)
 const PERFIS_LABELS = {
-  medo:          'Medo',
-  desordem:      'Desordem',
-  sobrevivencia: 'Sobrevivência',
-  validacao:     'Validação',
-  prosperidade:  'Prosperidade',
+  medo:             'Medo',
+  desordem:         'Desordem',
+  sobrevivencia:    'Sobrevivência',
+  validacao:        'Validação',
+  prosperidade:     'Prosperidade',
+  prosperidade_nv1: 'Otimismo',
+  prosperidade_nv2: 'Expansão',
+  prosperidade_nv3: 'Plenitude',
+};
+
+// Linha menor abaixo do nome da energia, no resultado.
+const FAIXA_PROSPERIDADE = {
+  prosperidade_nv1: 'Prosperidade < 50%',
+  prosperidade_nv2: 'Prosperidade > 50%',
+  prosperidade_nv3: 'Prosperidade ≥ 80%',
 };
 
 // Cores para badges/labels no admin
@@ -213,54 +225,11 @@ const PERFIS_CORES = {
   prosperidade:  '#2ba5e8',
 };
 
-// ── Cálculo do perfil dominante ──────────────────────────────
-function calcularPerfil(respostas) {
-  const contagem = { medo: 0, desordem: 0, sobrevivencia: 0, validacao: 0, prosperidade: 0 };
-
-  for (const r of respostas) {
-    if (PERFIS_VALIDOS.includes(r.perfil)) {
-      contagem[r.perfil]++;
-    }
-  }
-
-  const total = respostas.length || 1;
-  const percentuais = {};
-  for (const p of PERFIS_VALIDOS) {
-    percentuais[p] = Math.round((contagem[p] / total) * 100);
-  }
-
-  // Perfil dominante = maior contagem.
-  // Em empate: prosperidade > validacao > sobrevivencia > desordem > medo
-  const ordemPrioridade = ['prosperidade', 'validacao', 'sobrevivencia', 'desordem', 'medo'];
-  let dominanteBruto = ordemPrioridade[0];
-  for (const p of ordemPrioridade) {
-    if (contagem[p] > contagem[dominanteBruto]) dominanteBruto = p;
-  }
-
-  // Se dominante = prosperidade, subdivide em níveis
-  let perfilDominante = dominanteBruto;
-  let nivelProsperidade = 0;
-  const percProsp = percentuais.prosperidade;
-
-  if (dominanteBruto === 'prosperidade') {
-    if (percProsp <= 50)      { perfilDominante = 'prosperidade_nv1'; nivelProsperidade = 1; }
-    else if (percProsp <= 80) { perfilDominante = 'prosperidade_nv2'; nivelProsperidade = 2; }
-    else                      { perfilDominante = 'prosperidade_nv3'; nivelProsperidade = 3; }
-  }
-
-  return {
-    contagem,
-    percentuais,
-    perfil_dominante: perfilDominante,
-    percentual_prosperidade: percProsp,
-    nivel_prosperidade: nivelProsperidade,
-  };
-}
-
 module.exports = {
   PERGUNTAS,
   PERFIS_VALIDOS,
+  PERFIS_RESULTADO,
   PERFIS_LABELS,
   PERFIS_CORES,
-  calcularPerfil,
+  FAIXA_PROSPERIDADE,
 };

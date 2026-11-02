@@ -1033,7 +1033,7 @@
       <div class="dropdown-wrap dropdown-wrap-primary">
         <button class="btn-entry btn-entry-primary" onclick="toggleDrop('drop-trilha')">
           <span>
-            <span class="btn-tag">Trilha completa</span>
+            <span class="btn-tag">Caminho completo</span>
             Quero transformar minha mente e minha vida
           </span>
           <span class="btn-icon" id="icon-trilha">
@@ -1092,12 +1092,12 @@
           <div class="fase-label">Onde tudo começa — Diagnóstico</div>
           <p class="narrativa-texto">Antes de qualquer passo, você precisa saber o que está te travando. O Teste do Subconsciente revela em 15 perguntas qual padrão mental bloqueia sua prosperidade — e define qual caminho é o seu.</p>
           <div class="produtos-grid">
-            <div class="produto-card">
-              <img src="/assets/products/teste-prosperidade.webp" alt="Teste do Subconsciente">
+            <div class="produto-card" data-produto="teste_subconsciente">
+              <img alt="">
               <div class="produto-info">
-                <strong>Teste do Subconsciente</strong>
-                <p>15 perguntas. 6 perfis possíveis. Resultado imediato. O ponto de partida obrigatório para qualquer trilha.</p>
-                <div class="produto-preco" id="preco-teste">R$ 19</div>
+                <strong data-produto-nome></strong>
+                <p>15 perguntas. 7 resultados possíveis. Resultado imediato. O ponto de partida obrigatório para qualquer caminho.</p>
+                <div class="produto-preco" data-produto-preco></div>
                 <div class="produto-links">
                   <a href="/teste?utm_source=vidamagica&utm_campaign=home-produtos" class="btn-lp" id="lp-teste">Ver mais</a>
                   <a href="/teste?utm_source=vidamagica&utm_campaign=checkout-teste" class="btn-checkout" id="checkout-teste">Fazer agora</a>
@@ -1107,43 +1107,30 @@
           </div>
 
           <div class="fase-label">Fase 1 — Despertando a Prosperidade Bíblica</div>
-          <p class="narrativa-texto">Aqui você sai do controle das energias que te bloqueiam — medo, autossuficiência, validação, desordem. Sem vencer isso, nenhuma técnica de prosperidade funciona de verdade.</p>
+          <p class="narrativa-texto">Aqui você sai do controle das energias que te bloqueiam — medo, sobrevivência, validação, desordem. Sem vencer isso, nenhuma técnica de prosperidade funciona de verdade.</p>
           <div class="produtos-grid">
-            <div class="produto-card">
-              <img src="/assets/products/serie-despertando.webp" alt="Série Despertando">
+            <div class="produto-card" data-produto="serie_conhecer_despertar">
+              <img alt="">
               <div class="produto-info">
-                <strong>Série Despertando</strong>
+                <strong data-produto-nome></strong>
                 <p>Um e-book por perfil de energia. Direcionado pelo seu resultado no Teste — trabalha exatamente a trava que é a sua.</p>
-                <div class="produto-preco">R$ 39</div>
+                <div class="produto-preco" data-produto-preco></div>
                 <div class="produto-links">
                   <a href="/teste" class="btn-lp">Ver mais</a>
-                  <a href="https://pay.kiwify.com.br/F62VNpy" class="btn-checkout" target="_blank">Comprar</a>
+                  <a class="btn-checkout" target="_blank" data-produto-checkout style="display:none">Comprar</a>
                 </div>
               </div>
             </div>
 
-            <div class="produto-card">
-              <img src="/assets/products/guia-pratico.webp" alt="Guia Prático">
+            <div class="produto-card destaque" data-produto="ouro_reprogramacao">
+              <img alt="">
               <div class="produto-info">
-                <strong>Guia Prático da RM</strong>
-                <p>Ferramentas práticas de reprogramação mental para aplicar no dia a dia. Material de suporte ao curso Ouro da RM.</p>
-                <div class="produto-preco" id="preco-guia">Carregando...</div>
-                <div class="produto-links">
-                  <a href="/guia-pratico-reprogramacao-mental?utm_source=vidamagica&utm_campaign=lp-guia" class="btn-lp" id="lp-guia" target="_blank">Ver mais</a>
-                  <a href="https://pay.kiwify.com.br/itNhMPe" class="btn-checkout" target="_blank">Comprar</a>
-                </div>
-              </div>
-            </div>
-
-            <div class="produto-card destaque">
-              <img src="/assets/products/ouro-reprogramacao.webp" alt="Ouro da RM">
-              <div class="produto-info">
-                <strong>O Ouro da Reprogramação Mental</strong>
+                <strong data-produto-nome></strong>
                 <p>A ferramenta definitiva da Fase 1. O curso completo que transforma o padrão mental na raiz — não na superfície.</p>
-                <div class="produto-preco" id="preco-ouro">Carregando...</div>
+                <div class="produto-preco" data-produto-preco></div>
                 <div class="produto-links">
                   <a href="/ouro-da-reprogramacao-mental?utm_source=vidamagica&utm_campaign=lp-ouro" class="btn-lp" id="lp-ouro" target="_blank">Ver mais</a>
-                  <a href="https://pay.kiwify.com.br/F62VNpy" class="btn-checkout" target="_blank">Comprar</a>
+                  <a class="btn-checkout" target="_blank" data-produto-checkout style="display:none">Comprar</a>
                 </div>
               </div>
             </div>
@@ -1152,45 +1139,71 @@
           <div class="fase-label">Fase 2 — Vivendo uma Vida Mágica</div>
           <p class="narrativa-texto">Você saiu das travas. Agora é hora de aprender a atrair — com fé, com propósito e com as leis espirituais que poucos entendem de verdade.</p>
           <div class="produtos-grid">
-            <div class="produto-card destaque">
-              <img src="/assets/products/lda-biblica.webp" alt="Lei da Atração Bíblica">
+            <div class="produto-card" data-produto="guia_pratico">
+              <img alt="">
               <div class="produto-info">
-                <strong>Lei da Atração Bíblica</strong>
-                <p>14 aulas + extras + músicas. As leis espirituais da prosperidade ensinadas com profundidade e base bíblica real.</p>
-                <div class="produto-preco" id="preco-lda">Carregando...</div>
+                <strong data-produto-nome></strong>
+                <p>Ferramentas práticas de reprogramação mental para aplicar no dia a dia.</p>
+                <div class="produto-preco" data-produto-preco></div>
                 <div class="produto-links">
-                  <a href="/lei-da-atracao-biblica?utm_source=vidamagica&utm_campaign=lp-lda" class="btn-lp" id="lp-lda" target="_blank">Ver mais</a>
-                  <a href="https://pay.kiwify.com.br/8BoTzTD" class="btn-checkout" target="_blank">Comprar</a>
+                  <a href="/guia-pratico-reprogramacao-mental?utm_source=vidamagica&utm_campaign=lp-guia" class="btn-lp" id="lp-guia" target="_blank">Ver mais</a>
+                  <a class="btn-checkout" target="_blank" data-produto-checkout style="display:none">Comprar</a>
                 </div>
               </div>
             </div>
 
-            <div class="produto-card">
-              <img src="/assets/products/atal-maneira-livro.webp" alt="A Tal Maneira Livro">
+            <div class="produto-card destaque" data-produto="lda_biblica">
+              <img alt="">
               <div class="produto-info">
-                <strong>A Tal Maneira — Livro</strong>
+                <strong data-produto-nome></strong>
+                <p>14 aulas + extras + músicas. As leis espirituais da prosperidade ensinadas com profundidade e base bíblica real.</p>
+                <div class="produto-preco" data-produto-preco></div>
+                <div class="produto-links">
+                  <a href="/lei-da-atracao-biblica?utm_source=vidamagica&utm_campaign=lp-lda" class="btn-lp" id="lp-lda" target="_blank">Ver mais</a>
+                  <a class="btn-checkout" target="_blank" data-produto-checkout style="display:none">Comprar</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="produto-card" data-produto="atal_maneira_livro">
+              <img alt="">
+              <div class="produto-info">
+                <strong data-produto-nome></strong>
                 <p>O momento certo para este livro é depois da reprogramação espiritual. Aqui as leis de riqueza têm profundidade máxima.</p>
-                <div class="produto-preco" id="preco-livro">Carregando...</div>
+                <div class="produto-preco" data-produto-preco></div>
                 <div class="produto-links">
                   <a href="/a-tal-maneira?utm_source=vidamagica&utm_campaign=lp-livro" class="btn-lp" id="lp-livro" target="_blank">Ver mais</a>
-                  <a href="https://pay.kiwify.com.br/IId7xgS" class="btn-checkout" target="_blank">Comprar</a>
+                  <a class="btn-checkout" target="_blank" data-produto-checkout style="display:none">Comprar</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="produto-card" data-produto="atal_maneira_curso">
+              <img alt="">
+              <div class="produto-info">
+                <strong data-produto-nome></strong>
+                <p>Para quem já vive a atração bíblica e está pronto para o próximo nível. Aqui você aprende a operar, não apenas a acreditar.</p>
+                <div class="produto-preco" data-produto-preco></div>
+                <div class="produto-links">
+                  <a href="/a-tal-maneira?utm_source=vidamagica&utm_campaign=lp-curso" class="btn-lp" id="lp-curso" target="_blank">Ver mais</a>
+                  <a class="btn-checkout" target="_blank" data-produto-checkout style="display:none">Comprar</a>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="fase-label">Fase 3 — Multiplicação</div>
-          <p class="narrativa-texto">Você foi transformado. Agora você aprende a multiplicar — a operar as leis de riqueza no nível mais alto e transformar seus talentos em visibilidade e impacto real.</p>
+          <div class="fase-label">Fase 3 — Poder e Plenitude</div>
+          <p class="narrativa-texto">Você foi transformado. Agora é viver em plenitude — fluir no dia a dia com o poder de quem já mudou por dentro.</p>
           <div class="produtos-grid">
-            <div class="produto-card">
-              <img src="/assets/products/atal-maneira-curso.webp" alt="A Tal Maneira Curso">
+            <div class="produto-card" data-produto="magica_fluir">
+              <img alt="">
               <div class="produto-info">
-                <strong>A Tal Maneira — Curso</strong>
-                <p>Para quem já vive a atração bíblica e está pronto para o próximo nível. Aqui você aprende a operar, não apenas a acreditar.</p>
-                <div class="produto-preco" id="preco-curso">Carregando...</div>
+                <strong data-produto-nome></strong>
+                <p>O guia de bolso para manter o estado de fluir nas pequenas coisas do dia a dia.</p>
+                <div class="produto-preco" data-produto-preco></div>
                 <div class="produto-links">
-                  <a href="/a-tal-maneira?utm_source=vidamagica&utm_campaign=lp-curso" class="btn-lp" id="lp-curso" target="_blank">Ver mais</a>
-                  <a href="https://pay.kiwify.com.br/csxtcEQ" class="btn-checkout" target="_blank">Comprar</a>
+                  <a href="/magica-do-fluir?utm_source=vidamagica&utm_campaign=lp-fluir" class="btn-lp" id="lp-fluir" target="_blank">Ver mais</a>
+                  <a class="btn-checkout" target="_blank" data-produto-checkout style="display:none">Comprar</a>
                 </div>
               </div>
             </div>
@@ -1403,6 +1416,7 @@
       document.getElementById('lp-lda').href         = addUtms('/lei-da-atracao-biblica', 'lp-lda');
       document.getElementById('lp-livro').href       = addUtms('/a-tal-maneira/', 'lp-livro');
       document.getElementById('lp-curso').href       = addUtms('/a-tal-maneira/', 'lp-curso');
+      document.getElementById('lp-fluir').href       = addUtms('/magica-do-fluir', 'lp-fluir');
     })();
 
     // ===== PREÇOS =====
@@ -1434,17 +1448,22 @@
           return html;
         }
 
-        const mapa = {
-          'preco-teste':  d.teste_subconsciente,
-          'preco-guia':   d.guia_pratico,
-          'preco-ouro':   d.ouro_reprogramacao,
-          'preco-lda':    d.lda_biblica,
-          'preco-livro':  d.atal_maneira_livro,
-          'preco-curso':  d.atal_maneira_curso,
-        };
-        Object.entries(mapa).forEach(([id, preco]) => {
-          const el = document.getElementById(id);
-          if (el && preco) el.innerHTML = formatPreco(preco);
+        // Cards de produto: nome, capa, preço e checkout vêm do admin.
+        // Sem preço ou sem checkout cadastrado, o elemento fica oculto.
+        document.querySelectorAll('[data-produto]').forEach(card => {
+          const p = d[card.dataset.produto];
+          if (!p) return;
+          const img = card.querySelector('img');
+          if (p.imagem_url) { img.src = p.imagem_url; img.alt = p.nome || ''; }
+          card.querySelector('[data-produto-nome]').textContent = p.nome || '';
+          if (parseFloat(String(p.exibir_avista || '0').replace(',', '.')) > 0) {
+            card.querySelector('[data-produto-preco]').innerHTML = formatPreco(p);
+          }
+          const checkout = card.querySelector('[data-produto-checkout]');
+          if (checkout && p.link_checkout_padrao) {
+            checkout.href = p.link_checkout_padrao;
+            checkout.style.display = '';
+          }
         });
       } catch (e) {
         console.warn('Preços indisponíveis:', e);

@@ -46,6 +46,8 @@ body { font-family: var(--font-body); background: var(--bg-dark); color: var(--t
 .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.42rem 1.25rem; cursor: pointer; color: var(--text-muted); font-size: 0.82rem; font-weight: 500; border-left: 2px solid transparent; transition: all 0.15s; user-select: none; }
 .nav-item:hover { color: var(--text-light); background: rgba(200,146,42,0.05); }
 .nav-item.active { color: var(--color-gold-light); border-left-color: var(--color-gold-amber); background: rgba(200,146,42,0.08); }
+.sidebar-modo-dev { display: flex; align-items: center; gap: 0.6rem; padding: 0.42rem 1.25rem; font-size: 0.82rem; color: var(--text-muted); }
+.sidebar-modo-dev-label { flex: 1; }
 .nav-item.disabled { opacity: 0.35; cursor: default; pointer-events: none; }
 .nav-icon { font-size: 0.95rem; width: 18px; text-align: center; flex-shrink: 0; }
 .nav-tag { margin-left: auto; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.05em; padding: 2px 7px; border-radius: var(--radius-full); background: rgba(200,146,42,0.1); color: var(--color-gold-amber); border: 1px solid rgba(200,146,42,0.2); }
@@ -607,6 +609,15 @@ select option { background: #1a1205; }
   </div>
   <div class="nav-item" id="nav-teste-insights" onclick="goTab('teste-insights', this)">
     <span class="nav-icon">📈</span> Insights
+  </div>
+  <div class="nav-item" id="nav-teste-avaliacoes" onclick="goTab('teste-avaliacoes', this)">
+    <span class="nav-icon">⭐</span> Avaliações
+  </div>
+  <div class="sidebar-modo-dev">
+    <span class="nav-icon">🛠️</span>
+    <span class="sidebar-modo-dev-label">Modo dev</span>
+    <label class="toggle"><input type="checkbox" id="teste-modo-dev" disabled><span class="toggle-slider"></span></label>
+    <button class="btn btn-ghost btn-sm" id="btn-modo-dev" onclick="salvarModoDev()" disabled>Salvar</button>
   </div>
 
   <div class="sidebar-section-label" style="margin-top:0.15rem">Espaço da Manifestação</div>
@@ -1477,6 +1488,49 @@ select option { background: #1a1205; }
       </div>
     </div>
 
+    <!-- ════════════════════ TESTE DO SUBCONSCIENTE — AVALIAÇÕES ════════════════════
+         Estrelas (1-5) + comentário opcional deixados em /resultado/:id.
+         API: /api/admin/testes-avaliacoes -->
+    <div class="tab-panel" id="tab-teste-avaliacoes">
+      <div class="wz-section">
+        <div class="wz-section-header">
+          <div>
+            <div class="wz-section-title">⭐ Avaliações do Teste</div>
+            <div class="wz-section-sub">Estrelas e comentários deixados pelas alunas na tela de resultado</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="testesAvaliacoes.carregar(1)">↺ Atualizar</button>
+        </div>
+
+        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem">
+          <select id="ta-nota" class="field-input" style="width:auto" onchange="testesAvaliacoes.setNota(this.value)">
+            <option value="">Nota: todas</option>
+            <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+            <option value="4">⭐⭐⭐⭐ (4)</option>
+            <option value="3">⭐⭐⭐ (3)</option>
+            <option value="2">⭐⭐ (2)</option>
+            <option value="1">⭐ (1)</option>
+          </select>
+
+          <select id="ta-periodo" class="field-input" style="width:auto" onchange="testesAvaliacoes.setPeriodo(this.value)">
+            <option value="">Período: todo o tempo</option>
+            <option value="hoje">Hoje</option>
+            <option value="ontem">Ontem</option>
+            <option value="7d">Últimos 7 dias</option>
+            <option value="30d">Últimos 30 dias</option>
+            <option value="3m">Últimos 3 meses</option>
+            <option value="6m">Últimos 6 meses</option>
+            <option value="12m">Últimos 12 meses</option>
+          </select>
+        </div>
+
+        <div id="ta-resumo" style="display:flex;gap:0.8rem;flex-wrap:wrap;margin-bottom:1.2rem"></div>
+
+        <div id="ta-container"><div class="loading">Carregando…</div></div>
+
+        <div id="ta-paginacao" style="display:flex;gap:0.4rem;align-items:center;justify-content:center;margin-top:1rem"></div>
+      </div>
+    </div>
+
     <!-- (Aba "Livros" foi removida — fonte da verdade dos livros agora é a aba Preços, com slugs vencendo_medo/desordem/validacao/sobrevivencia) -->
 
     <!-- ════════════════════ ESPAÇO DA MANIFESTAÇÃO — AFIRMAÇÕES ════════════════════
@@ -1576,7 +1630,7 @@ select option { background: #1a1205; }
           <div class="wz-section-header">
             <div>
               <div class="wz-section-title">🎯 Missões</div>
-              <div class="wz-section-sub">Crie missões por jornada (Conhecer e Despertar / Vida Mágica / Multiplicando) ou universais.</div>
+              <div class="wz-section-sub">Crie missões por jornada (Conhecer e Despertar / Vida Mágica / Poder e Plenitude) ou universais.</div>
             </div>
             <button class="btn btn-primary btn-sm" onclick="gamMissaoNova()">+ Nova missão</button>
           </div>
@@ -1769,6 +1823,7 @@ const tabMeta = {
   'teste-perfis': { title: 'Conteúdo dos Resultados', sub: 'Textos, vídeos e produtos exibidos pra cada perfil dominante' },
   'teste-resultados': { title: 'Resultados do Teste', sub: 'Todos os testes completos, com link pro resultado de cada um' },
   'teste-insights': { title: 'Insights do Teste', sub: 'Funil de abandono e distribuição de respostas por pergunta' },
+  'teste-avaliacoes': { title: 'Avaliações do Teste', sub: 'Estrelas e comentários deixados pelas alunas no resultado' },
   'espaco-afirmacoes': { title: 'Espaço · Afirmações', sub: 'Catálogo de afirmações + áudio opcional (MP3 em assets/afirmacoes/)' },
   caderno:      { title: 'Caderno da Mentalização', sub: 'Prompts, afirmações e áudios de foco' },
   gamificacao:  { title: 'Gamificação',              sub: 'Tabela de prêmios, missões e ranking mensal' },
@@ -1811,6 +1866,7 @@ function goTab(id, el) {
   if (id === 'teste-perfis') { perfisAdmin.carregar(); }
   if (id === 'teste-resultados') { testesResultados.carregar(1); }
   if (id === 'teste-insights') { testesInsights.carregar(); testesInsights.carregarGeral(); testesInsights.carregarUtms(); testesInsights.carregarUtmOpcoes(); }
+  if (id === 'teste-avaliacoes') { testesAvaliacoes.carregar(1); }
   if (id === 'caderno') { cadCarregarPrompts(); }
   if (id === 'espaco-afirmacoes') { espAfirmCarregar(); }
   if (id === 'gamificacao') { gamCarregarPremios(); }
@@ -1822,7 +1878,8 @@ function toast(msg, tipo = 'success') {
   setTimeout(() => t.className = '', 3200);
 }
 
-const API = 'https://vidamagica-production.up.railway.app';
+// No localhost, o admin fala com o servidor local (banco local).
+const API = location.hostname === 'localhost' ? '' : 'https://vidamagica-production.up.railway.app';
 const ADMIN_USER = 'admin';
 const ADMIN_PASS = 'admin';
 // === AUTH OTP ADMIN (Vida Mágica) ===
@@ -2029,12 +2086,14 @@ function buildPreco(key, p) {
   let corpo = buildClassificacao(key, p);
   const precosHtml = p.tipo==='comunidade' ? buildComunidade(key,p) : (buildPadrao(key,p)+buildPromo(key,p)+buildAlunos(key,p));
   corpo += buildDropdown('Preços e Promos', precosHtml);
+  corpo += buildDropdown('Qualificações', buildAtributosFields(key, p));
   corpo += buildDropdown('Imagem & Links de Vendas', buildLinksImagem(key, p));
   return `<div class="card" data-key="${key}"><div class="card-header"><img class="card-img" src="${imgPreview}" alt="${p.nome}" onerror="${onerrorAttr}"><div style="flex:1;min-width:0"><div class="card-title">${p.nome}</div><div class="card-badge">${badge}</div></div></div><div class="card-body">${corpo}</div></div>`;
 }
 function buildPadrao(key,p){if(p.tipo==='promo')return`<div class="fields-grid"><div class="field"><label>Preço Padrão (R$)</label><input type="text" data-field="preco_padrao" value="${p.preco_padrao}" oninput="recalc('${key}')"></div></div>`;return`<div class="fields-grid three"><div class="field"><label>Preço Padrão (R$)</label><input type="text" data-field="preco_padrao" value="${p.preco_padrao}" oninput="recalc('${key}')"></div><div class="field"><label>Nº Parcelas</label><input type="text" data-field="parcelas_qtd" value="${p.parcelas_qtd}"></div><div class="field"><label>Parcela Padrão (R$)</label><input type="text" data-field="parcelas_valor_padrao" value="${p.parcelas_valor_padrao}"></div></div>`;}
 function buildPromo(key,p){const ativo=p.mostrar_promo||false;const pct=calcDesc(p.preco_padrao,p.preco_promo);const fields=p.tipo==='curso'?`<div class="field"><label>Promo à vista (R$)</label><input type="text" data-field="preco_promo" value="${p.preco_promo||''}" oninput="recalc('${key}')"></div><div class="field"><label>Parcela Promo (R$)</label><input type="text" data-field="parcelas_valor_promo" value="${p.parcelas_valor_promo||''}"></div>${p.parcelas_qtd_promo!=null?`<div class="field"><label>Nº Parcelas Promo</label><input type="text" data-field="parcelas_qtd_promo" value="${p.parcelas_qtd_promo}"></div>`:''}`:`<div class="field"><label>Preço Promo (R$)</label><input type="text" data-field="preco_promo" value="${p.preco_promo||''}" oninput="recalc('${key}')"></div>`;return`<div class="secao"><div class="toggle-row"><div><div class="tl-titulo">Exibir Preço Promo</div><div class="tl-sub" id="sub-${key}">De R$ ${p.preco_padrao} por R$ ${p.preco_promo}</div></div><label class="toggle"><input type="checkbox" data-field="mostrar_promo" ${ativo?'checked':''} onchange="togglePromo('${key}',this.checked)"><span class="toggle-slider"></span></label></div><div class="promo-fields ${ativo?'visible':''}" id="promo-${key}">${fields}</div><div class="desconto-tag promo ${ativo&&pct?'visible':''}" id="desc-promo-${key}">Desconto exibido: <strong id="pct-promo-${key}">${pct?pct+'% off':'—'}</strong></div></div>`;}
 function buildAlunos(key,p){if(p.tipo!=='curso')return'';const pct=calcDesc(p.preco_padrao,p.preco_alunos);const temParcela=p.parcelas_valor_alunos!=null;const temQtd=p.parcelas_qtd_alunos!=null;return`<div class="secao"><div class="secao-titulo">Preço Alunos</div><div class="fields-grid ${temParcela?'three':''}"><div class="field"><label>Alunos à vista (R$)</label><input type="text" data-field="preco_alunos" value="${p.preco_alunos||''}" oninput="recalc('${key}')"></div>${temParcela?`<div class="field"><label>Parcela Alunos (R$)</label><input type="text" data-field="parcelas_valor_alunos" value="${p.parcelas_valor_alunos||''}"></div>`:''}${temQtd?`<div class="field"><label>Nº Parcelas Alunos</label><input type="text" data-field="parcelas_qtd_alunos" value="${p.parcelas_qtd_alunos}"></div>`:''}</div><div class="desconto-tag alunos ${pct?'visible':''}" id="desc-alunos-${key}">Desconto ao aluno: <strong id="pct-alunos-${key}">${pct?pct+'% off':'—'}</strong></div></div>`;}
+function buildAtributosFields(key,p){const val=(p.atributos||'').replace(/</g,'&lt;');return`<div class="secao"><div class="field"><label>Qualificações do produto — uma por linha. Cada linha vira um item, todas juntas numa linha só no site (ex: "✨ 4 Módulos · 14 Aulas Práticas · Exercícios práticos")</label><textarea data-field="atributos" rows="6" style="width:100%;font-family:inherit;font-size:0.85rem;padding:0.6rem;border-radius:6px;background:rgba(255,255,255,0.03);border:1px solid var(--border);color:inherit" placeholder="4 Módulos&#10;14 Aulas Práticas&#10;Exercícios práticos&#10;Inclui Aulão com a Suellen">${val}</textarea></div></div>`;}
 function buildComunidade(key,p){const pO=calcDesc(p.preco_ouro,p.preco_ouro_promo);const pM=calcDesc(p.preco_magico,p.preco_magico_promo);return`<div class="secao"><div class="secao-titulo">Plano Ouro</div><div class="fields-grid"><div class="field"><label>Preço Ouro (R$)</label><input type="text" data-field="preco_ouro" value="${p.preco_ouro}" oninput="recalc('${key}')"></div><div class="field"><label>Promo Ouro (R$)</label><input type="text" data-field="preco_ouro_promo" value="${p.preco_ouro_promo}" oninput="recalc('${key}')"></div></div><div class="toggle-row"><div><div class="tl-titulo">Exibir Promo Ouro</div></div><label class="toggle"><input type="checkbox" data-field="mostrar_promo_ouro" ${p.mostrar_promo_ouro?'checked':''} onchange="recalc('${key}')"><span class="toggle-slider"></span></label></div><div class="desconto-tag promo ${p.mostrar_promo_ouro&&pO?'visible':''}" id="desc-ouro-${key}">Desconto: <strong id="pct-ouro-${key}">${pO?pO+'% off':'—'}</strong></div></div><div class="secao"><div class="secao-titulo">Plano Mágico</div><div class="fields-grid"><div class="field"><label>Preço Mágico (R$)</label><input type="text" data-field="preco_magico" value="${p.preco_magico}" oninput="recalc('${key}')"></div><div class="field"><label>Promo Mágico (R$)</label><input type="text" data-field="preco_magico_promo" value="${p.preco_magico_promo}" oninput="recalc('${key}')"></div></div><div class="toggle-row"><div><div class="tl-titulo">Exibir Promo Mágico</div></div><label class="toggle"><input type="checkbox" data-field="mostrar_promo_magico" ${p.mostrar_promo_magico?'checked':''} onchange="recalc('${key}')"><span class="toggle-slider"></span></label></div><div class="desconto-tag alunos ${p.mostrar_promo_magico&&pM?'visible':''}" id="desc-magico-${key}">Desconto: <strong id="pct-magico-${key}">${pM?pM+'% off':'—'}</strong></div></div>`;}
 function togglePromo(key,ativo){document.getElementById(`promo-${key}`)?.classList.toggle('visible',ativo);if(!ativo)document.getElementById(`desc-promo-${key}`)?.classList.remove('visible');else recalc(key);}
 function recalc(key){const card=document.querySelector(`.card[data-key="${key}"]`);const p=dadosProdutos[key];if(!card||!p)return;if(p.tipo==='comunidade'){['ouro','magico'].forEach(pl=>{const de=getVal(card,`preco_${pl}`),por=getVal(card,`preco_${pl}_promo`);const chk=card.querySelector(`[data-field="mostrar_promo_${pl}"]`);const el=document.getElementById(`desc-${pl}-${key}`),ep=document.getElementById(`pct-${pl}-${key}`);if(el&&ep){const pct=chk?.checked?calcDesc(de,por):null;if(pct){ep.textContent=pct+'% off';el.classList.add('visible');}else el.classList.remove('visible');}});return;}const pad=getVal(card,'preco_padrao'),pro=getVal(card,'preco_promo'),alu=getVal(card,'preco_alunos');const chk=card.querySelector('[data-field="mostrar_promo"]');const sub=document.getElementById(`sub-${key}`);if(sub)sub.textContent=`De R$ ${pad} por R$ ${pro}`;const elP=document.getElementById(`desc-promo-${key}`),epP=document.getElementById(`pct-promo-${key}`);if(elP&&epP&&chk?.checked){const pct=calcDesc(pad,pro);epP.textContent=pct?pct+'% off':'—';elP.classList.toggle('visible',!!pct);}const elA=document.getElementById(`desc-alunos-${key}`),epA=document.getElementById(`pct-alunos-${key}`);if(elA&&epA&&alu){const pct=calcDesc(pad,alu);epA.textContent=pct?pct+'% off':'—';elA.classList.toggle('visible',!!pct);}}
@@ -3965,6 +4024,38 @@ async function apagarLegado(tabela, id, descricao) {
   }
 }
 
+// ── TESTE DO SUBCONSCIENTE — MODO DEV (chave na barra lateral) ──
+async function carregarModoDev() {
+  const chave = document.getElementById('teste-modo-dev');
+  const btn = document.getElementById('btn-modo-dev');
+  try {
+    const r = await fetch(`${API}/api/admin/teste/modo-dev`, { headers: { Authorization: authHeader() } });
+    const d = await r.json();
+    if (!d.ok) return;
+    chave.checked = d.ativo;
+    chave.disabled = false;
+    btn.disabled = false;
+  } catch (e) {
+    console.warn('Modo dev indisponível:', e);
+  }
+}
+
+async function salvarModoDev() {
+  const ativo = document.getElementById('teste-modo-dev').checked;
+  try {
+    const r = await fetch(`${API}/api/admin/teste/modo-dev`, {
+      method: 'PUT',
+      headers: { Authorization: authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ativo }),
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.erro || 'Erro');
+    toast(ativo ? 'Modo dev ligado: teste sem cobrança' : 'Modo dev desligado: cobrança ativa');
+  } catch (e) {
+    toast('Não consegui salvar o modo dev', 'error');
+  }
+}
+
 // ── TESTE DO SUBCONSCIENTE — RESULTADOS (lista + envio manual) ──
 const testesResultados = (function(){
   let status = 'todos';
@@ -4134,6 +4225,106 @@ const testesResultados = (function(){
   }
 
   return { carregar, setStatus, setPeriodo, debounceBusca, copiarLink, enviarWhatsapp, enviarEmail };
+})();
+
+const testesAvaliacoes = (function(){
+  let nota = '';
+  let periodo = '';
+  let paginaAtual = 1;
+
+  function periodoParaDatas(p) {
+    const agora = new Date();
+    const fim = new Date(agora);
+    let inicio = null;
+    if (p === 'hoje') {
+      inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+    } else if (p === 'ontem') {
+      inicio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() - 1);
+      fim.setTime(new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime() - 1);
+    } else if (p === '7d') { inicio = new Date(agora); inicio.setDate(inicio.getDate() - 7); }
+    else if (p === '30d') { inicio = new Date(agora); inicio.setDate(inicio.getDate() - 30); }
+    else if (p === '3m') { inicio = new Date(agora); inicio.setMonth(inicio.getMonth() - 3); }
+    else if (p === '6m') { inicio = new Date(agora); inicio.setMonth(inicio.getMonth() - 6); }
+    else if (p === '12m') { inicio = new Date(agora); inicio.setFullYear(inicio.getFullYear() - 1); }
+    return { data_de: inicio ? inicio.toISOString() : '', data_ate: p ? fim.toISOString() : '' };
+  }
+
+  function setNota(n) { nota = n; carregar(1); }
+  function setPeriodo(p) { periodo = p; carregar(1); }
+
+  function dataFmt(s) { return s ? new Date(s).toLocaleString('pt-BR') : '—'; }
+  function estrelasFmt(n) { return '⭐'.repeat(n) + '☆'.repeat(5 - n); }
+
+  async function carregar(pagina) {
+    paginaAtual = pagina || 1;
+    const wrap = document.getElementById('ta-container');
+    if (!wrap) return;
+    wrap.innerHTML = '<div class="loading">Carregando…</div>';
+    try {
+      const { data_de, data_ate } = periodoParaDatas(periodo);
+      const qs = new URLSearchParams({ page: String(paginaAtual), limit: '25', nota, data_de, data_ate });
+      const r = await fetch(`${API}/api/admin/testes-avaliacoes?${qs}`, {
+        headers: { 'Authorization': authHeader() },
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+
+      const resumoWrap = document.getElementById('ta-resumo');
+      if (resumoWrap) {
+        resumoWrap.innerHTML = `
+          <div class="wz-stat" style="flex:1;min-width:140px">
+            <div class="wz-stat-n">${d.media !== null ? d.media.toFixed(2) : '—'}</div>
+            <div class="wz-stat-l">Nota média</div>
+          </div>
+          <div class="wz-stat" style="flex:1;min-width:140px">
+            <div class="wz-stat-n">${d.total}</div>
+            <div class="wz-stat-l">Avaliações</div>
+          </div>
+        `;
+      }
+
+      if (!d.avaliacoes.length) {
+        wrap.innerHTML = '<div style="padding:1.5rem;color:var(--text-muted);text-align:center">Nenhuma avaliação encontrada com esse filtro.</div>';
+        document.getElementById('ta-paginacao').innerHTML = '';
+        return;
+      }
+
+      wrap.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:0.6rem">
+          ${d.avaliacoes.map(a => `
+            <div class="wz-grupo-card">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.4rem">
+                <div>
+                  <div style="color:var(--color-gold-light);font-size:1rem;letter-spacing:0.05em">${estrelasFmt(a.nota)}</div>
+                  <div style="font-size:0.84rem;margin-top:0.2rem">${escHtml(a.nome || '(sem nome)')} · <span style="color:var(--text-muted)">${escHtml(a.perfil_label || '?')}</span></div>
+                </div>
+                <div style="text-align:right;font-size:0.76rem;color:var(--text-muted);white-space:nowrap">
+                  ${dataFmt(a.criado_em)}<br>
+                  <a href="${a.link_resultado}" target="_blank" style="color:var(--color-gold-light)">🔗 Ver resultado</a>
+                </div>
+              </div>
+              ${a.comentario ? `<div style="margin-top:0.55rem;font-size:0.86rem;color:var(--text);white-space:pre-wrap">${escHtml(a.comentario)}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      const pagWrap = document.getElementById('ta-paginacao');
+      if (d.totalPages > 1) {
+        pagWrap.innerHTML = `
+          <button class="btn btn-ghost btn-sm" ${d.page <= 1 ? 'disabled' : ''} onclick="testesAvaliacoes.carregar(${d.page - 1})">← Anterior</button>
+          <span style="color:var(--text-muted);font-size:0.82rem">Página ${d.page} de ${d.totalPages} (${d.total} avaliações)</span>
+          <button class="btn btn-ghost btn-sm" ${d.page >= d.totalPages ? 'disabled' : ''} onclick="testesAvaliacoes.carregar(${d.page + 1})">Próxima →</button>
+        `;
+      } else {
+        pagWrap.innerHTML = `<span style="color:var(--text-muted);font-size:0.82rem">${d.total} avaliação(ões)</span>`;
+      }
+    } catch (err) {
+      wrap.innerHTML = `<div style="color:#F09090;padding:1rem">Erro: ${escHtml(err.message || 'falha')}</div>`;
+    }
+  }
+
+  return { carregar, setNota, setPeriodo };
 })();
 
 const testesInsights = (function(){
@@ -5049,7 +5240,6 @@ const perfisAdmin = (function(){
 
   function renderForm(p) {
     document.getElementById('perfis-editor-nome').textContent = p.nome_exibicao + ' (' + p.slug + ')';
-    const ehProsperidade = (p.slug === 'prosperidade_nv1' || p.slug === 'prosperidade_nv2');
 
     const html =
       '<div class="pf-form-secao">' +
@@ -5078,7 +5268,7 @@ const perfisAdmin = (function(){
       '</div>' +
 
       '<div class="pf-form-secao">' +
-        '<div class="pf-form-secao-titulo">Bloco 7 — Trilha (textos por passo)</div>' +
+        '<div class="pf-form-secao-titulo">Bloco 7 — Caminho (textos por passo)</div>' +
         '<div class="pf-campo">' +
           '<label class="pf-campo-label">Passo 1 — Conhecer</label>' +
           '<textarea class="pf-textarea" id="pf-passo1_texto">' + escapeText(p.passo1_texto || '') + '</textarea>' +
@@ -5980,7 +6170,7 @@ async function gamCarregarMissoes() {
       </table>
       <p style="margin-top:1rem;font-size:0.78rem;color:var(--text-muted)">
         Tipos de alvo aceitos: <code>caderno_escrita</code>, <code>tesouro_resgatado</code>, <code>video_assistido</code>, <code>produto_comprado</code>, <code>teste_concluido</code>.
-        Jornadas: <code>conhecer_e_despertar</code>, <code>vida_magica</code>, <code>multiplicando_vida_magica</code>, vazio = universal.
+        Jornadas: <code>conhecer_e_despertar</code>, <code>vida_magica</code>, <code>poder_e_plenitude</code>, vazio = universal.
       </p>
     `;
   } catch { cont.innerHTML = '<div class="loading">Erro ao carregar.</div>'; }
@@ -6062,6 +6252,7 @@ async function gamFecharRankingAtual() {
 
 // ===== INIT =====
 carregarProdutos();
+carregarModoDev();
 bootDepoimentos();
 </script>
 </body>

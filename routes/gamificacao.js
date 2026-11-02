@@ -25,7 +25,7 @@ const {
   calcularRankingMensalPreview,
   isoMonth,
 } = require('../core/gamificacao');
-const { calcularJornadaVigente } = require('../core/jornadas');
+const { calcularJornadaVigente, buscarTesteDaJornada } = require('../core/jornadas');
 
 function erro(res, code, msg) {
   return res.status(code).json({ ok: false, erro: msg });
@@ -56,16 +56,8 @@ router.get('/missoes', autenticar, async (req, res) => {
     try {
       const uR = await poolCore.query(`SELECT telefone FROM usuarios WHERE id = $1`, [usuarioId]);
       const tel = uR.rows[0]?.telefone;
-      const { poolTeste } = require('../db');
-      const tR = await poolTeste.query(
-        `SELECT perfil_dominante, percentuais, nivel_prosperidade
-           FROM testes
-          WHERE (usuario_id = $1 OR telefone_canonico = $2)
-          ORDER BY feito_em DESC LIMIT 1`,
-        [usuarioId, tel]
-      );
-      if (tR.rows[0]) {
-        const t = tR.rows[0];
+      const t = await buscarTesteDaJornada(usuarioId, tel);
+      if (t) {
         const pR = await poolCore.query(
           `SELECT p.slug FROM usuario_produtos up
            LEFT JOIN produtos p ON p.id = up.produto_id
@@ -75,9 +67,6 @@ router.get('/missoes', autenticar, async (req, res) => {
         const slugsComprados = new Set(pR.rows.map(r => r.slug).filter(Boolean));
         const j = calcularJornadaVigente({
           perfil_dominante: t.perfil_dominante,
-          perfil_dominante_bruto: (t.perfil_dominante || '').replace(/_nv\d$/, ''),
-          percentuais_exibicao: t.percentuais || {},
-          nivel_prosperidade: t.nivel_prosperidade || 0,
           slugsComprados,
         });
         jornadaSlug = j?.slug || null;

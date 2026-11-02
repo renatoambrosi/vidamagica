@@ -8,6 +8,21 @@
   <link rel="icon" href="/assets/favicon.webp">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    /* Paleta desta página — colors_and_type.css não define --gold/--pearl/--ink
+       (são tokens só desta tela, dark). Sem isso, qualquer var(--gold) etc. usado
+       sem fallback no resto do arquivo resolve pra inválido e quebra a regra
+       inteira (ex: fundo de botão sumindo). Valores batem com os fallbacks já
+       usados em todo o arquivo — fonte única agora. */
+    :root {
+      --gold: #f8dc96;
+      --gold-2: #c8923b;
+      --gold-deep: #A17523;
+      --gold-light: #F4D060;
+      --pearl: #f5f0e8;
+      --pearl-dim: #d9d3c7;
+      --ink: #051929;
+      --sub-bright: #2ba5e8;
+    }
     /* ─── Base ─── */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html { -webkit-text-size-adjust: 100%; }
@@ -40,6 +55,10 @@
       font-size: 0.9rem; font-weight: 500;
       color: var(--pearl-dim, rgba(245,240,232,0.7));
       letter-spacing: 0.01em;
+      /* Alinhamento visual: a base das letras "VIDA MÁGICA" fica acima da base da
+         imagem (70% da altura), por causa do brilho da estrela. */
+      position: relative;
+      top: -2.4px;
     }
     .topo-fechar {
       flex-shrink: 0;
@@ -223,6 +242,11 @@
       padding: 1.5rem 1.5rem 1.25rem;
       margin-bottom: 2rem;
     }
+    .b2-faixa {
+      margin-top: 0.3rem;
+      font-size: 0.95rem;
+      color: var(--pearl-dim);
+    }
     .b3-titulo {
       font-size: 0.78rem;
       color: var(--pearl-dim);
@@ -283,6 +307,75 @@
     }
     .b4-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,211,102,0.3); }
     .b4-btn i { font-size: 1.2rem; }
+
+    /* ═══════════════════════════════════════════════════
+       BLOCO 4.5 — Avaliação (estrelas + comentário curto)
+       Compacto de propósito: nada de ocupar muita altura.
+       ═══════════════════════════════════════════════════ */
+    .b45-wrap {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(245,240,232,0.1);
+      border-radius: 14px;
+      padding: 0.8rem 1.25rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .b45-titulo {
+      font-size: 0.88rem;
+      color: var(--pearl-dim, rgba(245,240,232,0.7));
+      margin-bottom: 0.4rem;
+    }
+    .b45-estrelas {
+      display: flex; justify-content: center; gap: 0.45rem;
+    }
+    /* Comentário e envio só aparecem depois de escolher a nota. */
+    .b45-wrap:not(.is-aberta) .b45-texto,
+    .b45-wrap:not(.is-aberta) .b45-btn { display: none; }
+    .b45-wrap.is-aberta .b45-estrelas { margin-bottom: 0.75rem; }
+    .b45-estrelas i {
+      font-size: 1.5rem;
+      color: rgba(245,240,232,0.25);
+      cursor: pointer;
+      transition: color 0.15s, transform 0.15s;
+    }
+    .b45-estrelas i:hover { transform: scale(1.12); }
+    .b45-estrelas i.is-ativa { color: var(--gold, #f8dc96); }
+    .b45-texto {
+      width: 100%;
+      resize: none;
+      overflow: hidden;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(245,240,232,0.15);
+      border-radius: 10px;
+      padding: 0.65rem 0.85rem;
+      color: var(--pearl, #f5f0e8);
+      font-family: var(--font-body, 'Inter', sans-serif);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 0.75rem;
+    }
+    .b45-texto::placeholder { color: rgba(245,240,232,0.35); }
+    .b45-texto:focus { outline: none; border-color: var(--gold, #f8dc96); }
+    .b45-btn {
+      padding: 0.6rem 1.5rem;
+      background: linear-gradient(135deg, var(--gold, #C8922A), var(--gold-2, #c8923b));
+      color: #1a1408;
+      border: none;
+      border-radius: 10px;
+      font-family: var(--font-display);
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .b45-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .b45-btn:not(:disabled):hover { transform: translateY(-1px); }
+    .b45-obrigado {
+      font-size: 0.88rem;
+      color: var(--gold, #f8dc96);
+      font-weight: 600;
+      margin: 0.25rem 0 0;
+    }
 
     /* ═══════════════════════════════════════════════════
        BLOCO 5 — Vídeo
@@ -456,7 +549,7 @@
     }
     .livro-capa {
       width: 80px; flex-shrink: 0;
-      aspect-ratio: 2/3;
+      aspect-ratio: 1/1;
       border-radius: 6px;
       object-fit: cover;
       background: rgba(245,240,232,0.05);
@@ -464,7 +557,7 @@
     }
     .livro-capa-placeholder {
       width: 80px; flex-shrink: 0;
-      aspect-ratio: 2/3;
+      aspect-ratio: 1/1;
       border-radius: 6px;
       background: rgba(245,240,232,0.05);
       border: 1px dashed rgba(245,240,232,0.15);
@@ -485,6 +578,8 @@
       font-weight: 800;
       letter-spacing: 0.06em;
       text-transform: uppercase;
+      background: rgba(248,220,150,0.15);
+      color: var(--gold);
     }
     .livro-titulo {
       font-family: var(--font-display);
@@ -503,30 +598,66 @@
       color: var(--gold);
       font-weight: 500;
     }
+    /* Bloco inteiro do preço: 1 só gap controla o espaço entre TODAS as
+       linhas (de/por, justificativa, parcelas+botão) — ritmo uniforme. */
+    .livro-preco-bloco { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.5rem; }
     .livro-rodape {
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 0.75rem;
-      margin-top: 0.5rem;
-      flex-wrap: wrap;
+      display: flex; justify-content: space-between; align-items: flex-end;
+      gap: 0.4rem;
+      flex-wrap: nowrap;
+      /* O preço grande tem leading (espaço interno da linha) que sobra
+         embaixo do texto mesmo com line-height apertado — isso soma ao gap
+         e deixa esse espaço maior que os outros de verdade. Sobe parcelas
+         + botão pra cobrir essa sobra. */
+      margin-top: -1.125rem;
+    }
+    .livro-preco-de {
+      font-size: 0.7rem;
+      color: var(--pearl-dim);
+    }
+    .livro-preco-de s { opacity: 0.8; }
+    .livro-preco-badge {
+      font-size: 0.58rem;
+      font-weight: 700;
+      color: var(--gold);
+      background: rgba(248,220,150,0.12);
+      padding: 0.08rem 0.32rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .livro-preco-justificativa {
+      font-size: 0.62rem;
+      color: var(--pearl-dim);
+      font-style: italic;
+      opacity: 0.85;
     }
     .livro-preco {
+      display: block;
       font-family: var(--font-display);
       font-weight: 700;
       font-size: 1.05rem;
+      line-height: 1.2;
       color: var(--gold);
     }
+    .livro-preco-parcelas {
+      font-size: 0.72rem;
+      color: var(--pearl-dim);
+      white-space: nowrap;
+    }
     .livro-cta {
-      padding: 0.55rem 1rem;
+      flex-shrink: 0;
+      padding: 0.55rem 0.85rem;
       background: linear-gradient(135deg, var(--gold), var(--gold-2, #c8923b));
       color: var(--ink, #051929);
       border: none;
       border-radius: 8px;
       font-family: var(--font-display);
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 700;
       cursor: pointer;
       text-decoration: none;
       transition: all 0.2s;
+      white-space: nowrap;
     }
     .livro-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(248,220,150,0.3); }
 
@@ -564,6 +695,18 @@
       flex: 1; min-width: 0;
       display: flex; flex-direction: column; gap: 0.45rem;
     }
+    .curso-tag {
+      display: inline-block;
+      align-self: flex-start;
+      padding: 0.18rem 0.55rem;
+      border-radius: 4px;
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: rgba(248,220,150,0.15);
+      color: var(--gold);
+    }
     .curso-titulo {
       font-family: var(--font-display);
       font-weight: 700;
@@ -576,31 +719,83 @@
       color: var(--pearl-dim);
       line-height: 1.5;
     }
+    /* Bloco inteiro do preço: 1 só gap controla o espaço entre TODAS as
+       linhas (de/por, justificativa, parcelas+botão) — ritmo uniforme. */
+    .curso-preco-bloco { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.5rem; }
     .curso-rodape {
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 0.75rem;
-      margin-top: 0.5rem;
-      flex-wrap: wrap;
+      display: flex; justify-content: space-between; align-items: flex-end;
+      gap: 0.4rem;
+      flex-wrap: nowrap;
+      /* O preço grande tem leading (espaço interno da linha) que sobra
+         embaixo do texto mesmo com line-height apertado — isso soma ao gap
+         e deixa esse espaço maior que os outros de verdade. Sobe parcelas
+         + botão pra cobrir essa sobra. */
+      margin-top: -1.125rem;
+    }
+    .curso-preco-de {
+      font-size: 0.72rem;
+      color: var(--pearl-dim);
+    }
+    .curso-preco-de s { opacity: 0.8; }
+    .curso-preco-badge {
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: var(--gold);
+      background: rgba(248,220,150,0.12);
+      padding: 0.08rem 0.32rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .curso-preco-justificativa {
+      font-size: 0.64rem;
+      color: var(--pearl-dim);
+      font-style: italic;
+      opacity: 0.85;
+    }
+    .curso-saiba-mais {
+      display: inline-block;
+      font-size: 0.78rem;
+      color: var(--gold);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      margin-top: 0.15rem;
+    }
+    .curso-saiba-mais:hover { color: var(--gold-light, #F4D060); }
+    /* Mesmo padrão do .livro-selo: tamanho, cor e peso idênticos.
+       Usado tanto no card do curso quanto no do livro. */
+    .produto-atributos {
+      font-size: 0.72rem;
+      color: var(--gold);
+      font-weight: 500;
     }
     .curso-preco {
+      display: block;
       font-family: var(--font-display);
       font-weight: 700;
       font-size: 1.15rem;
+      line-height: 1.2;
       color: var(--gold);
     }
     .curso-preco.indefinido { color: var(--pearl-dim); font-size: 0.95rem; font-style: italic; }
+    .curso-preco-parcelas {
+      font-size: 0.74rem;
+      color: var(--pearl-dim);
+      white-space: nowrap;
+    }
     .curso-cta {
-      padding: 0.6rem 1.25rem;
+      flex-shrink: 0;
+      padding: 0.55rem 0.85rem;
       background: linear-gradient(135deg, var(--gold), var(--gold-2, #c8923b));
       color: var(--ink);
       border: none;
       border-radius: 8px;
       font-family: var(--font-display);
-      font-size: 0.88rem;
+      font-size: 0.8rem;
       font-weight: 700;
       cursor: pointer;
       text-decoration: none;
       transition: all 0.2s;
+      white-space: nowrap;
     }
     .curso-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(248,220,150,0.3); }
 
@@ -1176,17 +1371,6 @@
     }
 
     /* Análise automatizada da jornada */
-    .b7-analise {
-      margin: 0.4rem 0 1.4rem;
-      padding: 0.9rem 1rem;
-      background: rgba(43,165,232,0.06);
-      border-left: 3px solid var(--sub-bright, #2ba5e8);
-      border-radius: 8px;
-      font-size: 0.85rem;
-      line-height: 1.55;
-      color: var(--pearl, #F5F0E8);
-      font-style: italic;
-    }
 
     /* ═══════════════════════════════════════════════════
        Modal: Conheça o Clube Vida Mágica
@@ -1377,6 +1561,7 @@
       <p class="b2-nome" id="b2-nome">—</p>
       <p class="b2-frase">A sua energia predominante é:</p>
       <p class="b2-energia" id="b2-energia">—</p>
+      <p class="b2-faixa" id="b2-faixa" style="display:none"></p>
     </div>
 
     <!-- BLOCO 3 -->
@@ -1390,6 +1575,21 @@
       <i class="fab fa-whatsapp"></i>
       Compartilhar resultado
     </button>
+
+    <!-- BLOCO 4.5 — Avaliação (estrelas + comentário) -->
+    <div class="b45-wrap" id="b45-wrap">
+      <p class="b45-titulo">O que você achou do seu resultado?</p>
+      <div class="b45-estrelas" id="b45-estrelas">
+        <i class="far fa-star" data-nota="1"></i>
+        <i class="far fa-star" data-nota="2"></i>
+        <i class="far fa-star" data-nota="3"></i>
+        <i class="far fa-star" data-nota="4"></i>
+        <i class="far fa-star" data-nota="5"></i>
+      </div>
+      <textarea class="b45-texto" id="b45-texto" rows="2" placeholder="Quer deixar uma sugestão ou opinião?"></textarea>
+      <button class="b45-btn" id="b45-btn" type="button" disabled>Enviar</button>
+      <p class="b45-obrigado" id="b45-obrigado" style="display:none">Obrigada pela sua avaliação!</p>
+    </div>
 
     <!-- BLOCO 5 -->
     <div class="b5-wrap">
@@ -1407,46 +1607,26 @@
       <div class="b6-texto" id="b6-texto"></div>
     </div>
 
+    <!-- BLOCO 4.5b — Avaliação (espelho do bloco 4.5, após o texto longo) -->
+    <div class="b45-wrap" id="b45-wrap-2">
+      <p class="b45-titulo">O que você achou do seu resultado?</p>
+      <div class="b45-estrelas" id="b45-estrelas-2">
+        <i class="far fa-star" data-nota="1"></i>
+        <i class="far fa-star" data-nota="2"></i>
+        <i class="far fa-star" data-nota="3"></i>
+        <i class="far fa-star" data-nota="4"></i>
+        <i class="far fa-star" data-nota="5"></i>
+      </div>
+      <textarea class="b45-texto" id="b45-texto-2" rows="2" placeholder="Quer deixar uma sugestão ou opinião?"></textarea>
+      <button class="b45-btn" id="b45-btn-2" type="button" disabled>Enviar</button>
+      <p class="b45-obrigado" id="b45-obrigado-2" style="display:none">Obrigada pela sua avaliação!</p>
+    </div>
+
     <!-- BLOCO 7: Trilha — passos renderizados dinamicamente baseado em jornada+produtos -->
     <div class="b7-trilha">
-      <div class="b7-trilha-titulo" id="b7-trilha-titulo">Trilha Conhecer e Despertar</div>
-
-      <!-- Barra de progresso (com cadeado quando sem Clube) -->
-      <div class="b7-progresso-wrap" id="b7-progresso-wrap" style="display:none">
-        <div class="b7-progresso-info">
-          <span class="b7-progresso-label">Sua trilha</span>
-          <span class="b7-progresso-valor" id="b7-progresso-valor">0%</span>
-        </div>
-        <div class="b7-progresso-bar">
-          <div class="b7-progresso-fill" id="b7-progresso-fill" style="width:0%"></div>
-        </div>
-        <!-- Cadeado de assinatura (só aparece pra quem não tem Clube) -->
-        <button class="b7-cadeado-clube" id="b7-cadeado-clube" type="button" style="display:none">
-          <span class="b7-cadeado-icon">🔒</span>
-          <span class="b7-cadeado-texto">
-            <strong>Acompanhamento bloqueado</strong>
-            <span>Toque pra conhecer o Clube Vida Mágica</span>
-          </span>
-        </button>
-      </div>
-
-      <!-- Análise automatizada (quando relevante — ex: prosperidade com trava forte) -->
-      <div class="b7-analise" id="b7-analise" style="display:none"></div>
+      <div class="b7-trilha-titulo" id="b7-trilha-titulo">Caminho Conhecer e Despertar</div>
 
       <div id="b7-passos-container"></div>
-    </div>
-
-    <!-- BLOCO 8 -->
-    <div class="b8-wrap">
-      <div class="b8-texto" id="b8-texto"></div>
-    </div>
-
-    <!-- BLOCO JORNADA - Sua jornada começa aqui -->
-    <div class="bj-wrap" id="bj-wrap" style="display:none">
-      <div class="bj-eyebrow" id="bj-eyebrow">Sua jornada começa aqui</div>
-      <h2 class="bj-titulo" id="bj-titulo">—</h2>
-      <p class="bj-sub" id="bj-sub">—</p>
-      <div class="bj-passos" id="bj-passos"></div>
     </div>
 
     <!-- Rodapé meta -->
@@ -1539,7 +1719,13 @@
   // Buscar dados do resultado
   let dados;
   try {
-    const r = await fetch('/api/teste/resultado/' + encodeURIComponent(testeId));
+    let r = await fetch('/api/teste/resultado/' + encodeURIComponent(testeId));
+    // Vindo do checkout, a confirmação do pagamento pode chegar segundos
+    // depois: tenta por até 1 minuto antes de mostrar a mensagem.
+    for (let i = 0; r.status === 402 && i < 20; i++) {
+      await new Promise(ok => setTimeout(ok, 3000));
+      r = await fetch('/api/teste/resultado/' + encodeURIComponent(testeId));
+    }
     if (!r.ok) {
       if (r.status === 404) {
         mostrarErro('Resultado não encontrado. Verifique o link.');
@@ -1591,16 +1777,14 @@
   elLoading.style.display = 'none';
   elConteudo.style.display = 'block';
 
-  // ── Barra de progresso da jornada + cadeado de Clube ──
-  renderizarBarraJornada(dados);
+  // ── Título do caminho ──
+  // A barra de progresso (bloqueada atrás do Clube) e o Passo 1 "✓ Concluído"
+  // saíram do resultado — não agregavam, já que a aluna não acessa o
+  // acompanhamento sem assinar. O que importa aqui são os materiais indicados.
+  renderizarTituloCaminho(dados);
 
-  function renderizarBarraJornada(d) {
-    const wrap = document.getElementById('b7-progresso-wrap');
+  function renderizarTituloCaminho(d) {
     const titulo = document.getElementById('b7-trilha-titulo');
-    const fill = document.getElementById('b7-progresso-fill');
-    const valor = document.getElementById('b7-progresso-valor');
-    const cadeado = document.getElementById('b7-cadeado-clube');
-    const analiseEl = document.getElementById('b7-analise');
 
     const j = d && d.jornada;
     if (!j) return;
@@ -1608,26 +1792,7 @@
     // Título dinâmico baseado na jornada vigente
     if (titulo) {
       const nome = j.nome || 'Conhecer e Despertar';
-      titulo.textContent = 'Trilha ' + nome;
-    }
-
-    // Barra de progresso ponderada (vem do backend: progresso_percentual)
-    const pct = Math.max(0, Math.min(100, Math.round(j.progresso_percentual || 0)));
-    if (wrap) wrap.style.display = '';
-    if (valor) valor.textContent = pct + '%';
-    // Anima o fill com pequeno delay pra ter efeito visual
-    setTimeout(() => { if (fill) fill.style.width = pct + '%'; }, 200);
-
-    // Análise automatizada (texto que vem do backend quando há override etc)
-    if (analiseEl && j.analise) {
-      analiseEl.textContent = j.analise;
-      analiseEl.style.display = '';
-    }
-
-    // Cadeado de assinatura — só aparece se aluna NÃO tem Clube Vida Mágica
-    const temClube = !!d.tem_clube;
-    if (cadeado) {
-      cadeado.style.display = temClube ? 'none' : '';
+      titulo.textContent = 'Caminho ' + nome;
     }
   }
 
@@ -1643,11 +1808,11 @@
       '.b2-wrap',
       '.b3-wrap',
       '.b4-btn',
+      '#b45-wrap',
       '.b5-wrap',
       '.b6-wrap',
+      '#b45-wrap-2',
       '.b7-trilha',
-      '.b8-wrap',
-      '.bj-wrap',
       '.rodape-meta',
       '.voltar-home-wrap',
     ];
@@ -1709,8 +1874,8 @@
       overlay.innerHTML = `
         <div class="reteste-popup">
           <div class="reteste-popup-icone">✨</div>
-          <h3 class="reteste-popup-titulo">Quer atualizar sua trilha de conhecimento agora?</h3>
-          <p class="reteste-popup-aviso">Essa escolha não pode ser desfeita. Sua trilha vai refletir o resultado deste novo teste.</p>
+          <h3 class="reteste-popup-titulo">Quer atualizar seu caminho de conhecimento agora?</h3>
+          <p class="reteste-popup-aviso">Essa escolha não pode ser desfeita. Seu caminho vai refletir o resultado deste novo teste.</p>
           <div class="reteste-popup-botoes">
             <button class="reteste-btn reteste-btn-secundario" data-acao="nao">Não, manter atual</button>
             <button class="reteste-btn reteste-btn-primario" data-acao="sim">Sim, atualizar</button>
@@ -1743,7 +1908,7 @@
       const ehCriando = contexto === 'criando';
       const tituloFase1 = ehCriando ? 'Criando sua jornada' : 'Atualizando sua jornada';
       const tituloFase2 = ehCriando ? 'Jornada criada com sucesso' : 'Jornada atualizada com sucesso';
-      const subFase1 = 'Estamos preparando sua trilha personalizada';
+      const subFase1 = 'Estamos preparando seu caminho personalizado';
 
       // Calcula progresso da jornada com base no payload público
       // (jornada vem do /api/teste/resultado — genérica, sem cruzamento
@@ -1753,8 +1918,8 @@
         : 0;
       const passosConcluidos = 0;  // página pública não conhece produtos da aluna
       const percentual = 0;
-      const nomeJornada = (jornadaPayload && jornadaPayload.nome_exibicao)
-        ? jornadaPayload.nome_exibicao
+      const nomeJornada = (jornadaPayload && jornadaPayload.nome)
+        ? jornadaPayload.nome
         : 'Sua jornada';
 
       const splash = document.createElement('div');
@@ -1798,7 +1963,7 @@
           const titEl = splash.querySelector('.jornada-splash-titulo');
           const subEl = splash.querySelector('.jornada-splash-sub');
           if (titEl) titEl.innerHTML = tituloFase2 + ' ✦';
-          if (subEl) subEl.textContent = 'Sua trilha está pronta';
+          if (subEl) subEl.textContent = 'Seu caminho está pronto';
           splash.classList.remove('fase-transicao');
         }, 400);
       }, 2000);
@@ -1842,10 +2007,15 @@
     // ── BLOCO 2: nome + energia predominante ──
     document.getElementById('b2-nome').textContent = d.aluna && d.aluna.nome ? d.aluna.nome : '';
     const nomeEnergia = (d.conteudo && d.conteudo.nome_exibicao) ? d.conteudo.nome_exibicao : '—';
-    // Concordância de gênero: "Energia do Medo" (masc) vs "Energia da Desordem/
-    // Sobrevivência/Validação/Prosperidade" (fem). Só 'medo' é masculino.
-    const artigoEnergia = (slug) => (String(slug || '').toLowerCase() === 'medo' ? 'do' : 'da');
-    document.getElementById('b2-energia').textContent = 'Energia ' + artigoEnergia(d.perfil_dominante_bruto) + ' ' + nomeEnergia;
+    // Concordância de gênero: "Energia do Medo/Otimismo" (masc) vs "Energia da
+    // Desordem/Sobrevivência/Validação/Expansão/Plenitude" (fem).
+    const artigoEnergia = (nome) => (['medo', 'otimismo'].includes(String(nome || '').toLowerCase()) ? 'do' : 'da');
+    document.getElementById('b2-energia').textContent = 'Energia ' + artigoEnergia(nomeEnergia) + ' ' + nomeEnergia;
+    if (d.faixa_prosperidade) {
+      const faixaEl = document.getElementById('b2-faixa');
+      faixaEl.textContent = d.faixa_prosperidade;
+      faixaEl.style.display = '';
+    }
 
     // ── BLOCO 3: lista das 5 energias ──
     const listaWrap = document.getElementById('b3-lista');
@@ -1863,10 +2033,101 @@
     // ── BLOCO 4: botão de compartilhar ──
     document.getElementById('b4-btn').addEventListener('click', () => {
       const texto = (d.compartilhar_texto || 'Acabei de descobrir minha energia predominante no Teste do Subconsciente da Vida Mágica.') +
-                    '\n\nEnergia ' + artigoEnergia(d.perfil_dominante_bruto) + ' ' + nomeEnergia + '\n\n' + window.location.href;
+                    '\n\nEnergia ' + artigoEnergia(nomeEnergia) + ' ' + nomeEnergia + '\n\n' + window.location.href;
       const url = 'https://wa.me/?text=' + encodeURIComponent(texto);
       window.open(url, '_blank');
     });
+
+    // ── BLOCO 4.5: avaliação (estrelas + comentário) ──
+    // Existe em 2 posições na página (logo após compartilhar, e depois do
+    // texto longo de diagnóstico). São espelhos: mexer em uma reflete na
+    // outra instantaneamente, e só existe 1 envio por trás das duas.
+    (function () {
+      const instancias = ['', '-2'].map(suf => {
+        const estrelasEl = document.getElementById('b45-estrelas' + suf);
+        if (!estrelasEl) return null;
+        return {
+          estrelasEl,
+          estrelas: Array.from(estrelasEl.querySelectorAll('i')),
+          textoEl: document.getElementById('b45-texto' + suf),
+          btnEl: document.getElementById('b45-btn' + suf),
+          obrigadoEl: document.getElementById('b45-obrigado' + suf),
+        };
+      }).filter(Boolean);
+      if (!instancias.length) return;
+
+      let notaEscolhida = 0;
+      let enviando = false;
+
+      function pintarEstrelas(ate) {
+        instancias.forEach(inst => {
+          inst.estrelas.forEach(st => {
+            const n = parseInt(st.dataset.nota, 10);
+            st.classList.toggle('is-ativa', n <= ate);
+            st.classList.toggle('fas', n <= ate);
+            st.classList.toggle('far', n > ate);
+          });
+        });
+      }
+
+      function ajustarAltura(el) {
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+      }
+
+      instancias.forEach(inst => {
+        inst.estrelas.forEach(st => {
+          st.addEventListener('mouseenter', () => pintarEstrelas(parseInt(st.dataset.nota, 10)));
+          st.addEventListener('click', () => {
+            notaEscolhida = parseInt(st.dataset.nota, 10);
+            pintarEstrelas(notaEscolhida);
+            instancias.forEach(i => {
+              i.estrelasEl.closest('.b45-wrap').classList.add('is-aberta');
+              i.btnEl.disabled = false;
+            });
+          });
+        });
+        inst.estrelasEl.addEventListener('mouseleave', () => pintarEstrelas(notaEscolhida));
+
+        // Auto-grow: começa com 2 linhas visíveis e cresce com o texto.
+        // Digitar em uma instância espelha o texto (e a altura) na outra.
+        inst.textoEl.addEventListener('input', () => {
+          const valor = inst.textoEl.value;
+          instancias.forEach(i => {
+            if (i.textoEl !== inst.textoEl) i.textoEl.value = valor;
+            ajustarAltura(i.textoEl);
+          });
+        });
+
+        inst.btnEl.addEventListener('click', enviarAvaliacao);
+      });
+
+      async function enviarAvaliacao() {
+        const comentario = instancias[0].textoEl.value.trim();
+        if (!notaEscolhida || !testeId || enviando) return;
+        enviando = true;
+        instancias.forEach(i => { i.btnEl.disabled = true; });
+        let enviado = false;
+        try {
+          const r = await fetch('/api/teste/avaliacao/' + encodeURIComponent(testeId), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nota: notaEscolhida, comentario }),
+          });
+          enviado = r.ok;
+        } catch {}
+        enviando = false;
+        if (!enviado) {
+          instancias.forEach(i => { i.btnEl.disabled = false; });
+          return;
+        }
+        instancias.forEach(i => {
+          i.textoEl.style.display = 'none';
+          i.btnEl.style.display = 'none';
+          i.obrigadoEl.style.display = '';
+        });
+      }
+    })();
 
     // ── BLOCO 5: vídeo ──
     if (d.conteudo && d.conteudo.video_url) {
@@ -1900,101 +2161,44 @@
       // É re-teste pendente? (aluna abriu, é re-teste, mas ainda não ativou)
       const ehRetestePendente = !!(dados.eh_reteste && dados.teste && dados.teste.ativou_trilha === false);
 
-      const textosPorOrdem = {
-        1: dados.conteudo && dados.conteudo.passo1_texto,
-        2: dados.conteudo && dados.conteudo.passo2_texto,
-        3: dados.conteudo && dados.conteudo.passo3_texto,
-      };
-      const titulosPadrao = { 1: 'Conhecer', 2: 'Despertar', 3: 'Reprogramação de Base' };
-
       const passosBackend = (dados.jornada && Array.isArray(dados.jornada.passos))
         ? dados.jornada.passos : [];
+      const tituloPasso1 = (passosBackend.find(x => x.ordem === 1) || {}).titulo || 'Conhecer';
 
-      const passos = [1, 2, 3].map(ordem => {
-        const p = passosBackend.find(x => x.ordem === ordem) || {};
-        return {
-          ordem,
-          titulo: p.titulo || titulosPadrao[ordem],
-          subtitulo: p.subtitulo || '',
-          comprado: !!(p.concluido || p.comprado),  // novo formato usa "concluido"
-          eh_proximo: !!p.eh_proximo,
-          produtos: Array.isArray(p.produtos) ? p.produtos : (p.produto_slug ? [p.produto_slug] : []),
-        };
-      });
+      let html = '';
 
-      // Quem chegou aqui fez o teste → Passo 1 concluído por padrão
-      // (a menos que seja re-teste pendente — aí Passo 1 vira o CTA de ativação)
-      if (!ehRetestePendente) {
-        passos[0].comprado = true;
-      } else {
-        passos[0].comprado = false;
+      // Re-teste pendente: CTA pulsando "Atualizar pra esta jornada".
+      // Fora disso, fica implícito (quem está aqui já fez o teste).
+      if (ehRetestePendente) {
+        html +=
+          '<div class="passo-card is-ativador-pulse" data-passo-ordem="1">' +
+            '<div class="passo-header">' +
+              '<span class="passo-numero">Passo 1</span>' +
+              '<span class="passo-status-tag pulsando">Atualize sua jornada</span>' +
+            '</div>' +
+            '<div class="passo-titulo-principal">' + escapeHtml(tituloPasso1) + '</div>' +
+            '<div class="passo-texto"><p>Você fez um novo Teste do Subconsciente. Quer atualizar seu caminho pra refletir esse resultado?</p></div>' +
+            '<button class="passo-cta-ativar" id="btn-ativar-trilha-resultado" type="button">' +
+              '<span>Atualizar pra esta jornada</span>' +
+              '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
+            '</button>' +
+          '</div>';
       }
 
-      // Recalcula "próximo" no front
-      const idxProx = passos.findIndex(p => !p.comprado);
-      passos.forEach((p, i) => { p.eh_proximo = (i === idxProx); });
+      // Materiais indicados pro resultado: curso primeiro, depois o livro
+      // único mais relevante. Sem numeração "Passo N" / status — isso é
+      // moldura de trilha, e a trilha não aparece mais aqui (fica bloqueada
+      // atrás do Clube, então não agrega nada mostrar nesta tela).
+      const classeOculta = ehRetestePendente ? ' is-pre-revelacao' : '';
+      html +=
+        '<div class="passo-card' + classeOculta + '" data-materiais="curso">' +
+          '<div id="cursos-lista"></div>' +
+        '</div>' +
+        '<div class="passo-card' + classeOculta + '" data-materiais="livro">' +
+          '<div class="livros-lista" id="livros-lista"></div>' +
+        '</div>';
 
-      const passosHtml = passos.map((p, i) => {
-        const classes = ['passo-card'];
-
-        // Estado especial: re-teste pendente → Passo 1 vira o "ativador" pulsando
-        if (ehRetestePendente && i === 0) {
-          classes.push('is-ativador-pulse');
-          return (
-            '<div class="' + classes.join(' ') + '" data-passo-ordem="1">' +
-              '<div class="passo-header">' +
-                '<span class="passo-numero">Passo 1</span>' +
-                '<span class="passo-status-tag pulsando">Atualize sua jornada</span>' +
-              '</div>' +
-              '<div class="passo-titulo-principal">' + escapeHtml(p.titulo) + '</div>' +
-              '<div class="passo-texto"><p>Você fez um novo Teste do Subconsciente. Quer atualizar sua trilha pra refletir esse resultado?</p></div>' +
-              '<button class="passo-cta-ativar" id="btn-ativar-trilha-resultado" type="button">' +
-                '<span>Atualizar pra esta jornada</span>' +
-                '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
-              '</button>' +
-            '</div>'
-          );
-        }
-
-        // Re-teste pendente: passos 2-3 ficam INVISÍVEIS (revelados após ativar)
-        if (ehRetestePendente && i > 0) {
-          classes.push('is-pre-revelacao');
-        } else if (p.comprado) {
-          classes.push('is-concluido');
-        } else if (p.eh_proximo) {
-          classes.push('is-proximo');
-        }
-
-        const tag = p.comprado
-          ? '<span class="passo-status-tag concluido">✓ Concluído</span>'
-          : (p.eh_proximo
-              ? '<span class="passo-status-tag proximo">Seu próximo passo</span>'
-              : '<span class="passo-status-tag aberto">Aberto</span>');
-
-        const textoHtml = textosPorOrdem[p.ordem]
-          ? '<div class="passo-texto">' + textoSimplesParaHtml(textosPorOrdem[p.ordem]) + '</div>'
-          : '<div class="passo-texto"></div>';
-
-        const slotExtra = (p.ordem === 2)
-          ? '<div class="livros-lista" id="livros-lista"></div>'
-          : (p.ordem === 3)
-            ? '<div id="cursos-lista"></div>'
-            : '';
-
-        return (
-          '<div class="' + classes.join(' ') + '" data-passo-ordem="' + p.ordem + '">' +
-            '<div class="passo-header">' +
-              '<span class="passo-numero">Passo ' + p.ordem + '</span>' +
-              tag +
-            '</div>' +
-            '<div class="passo-titulo-principal">' + escapeHtml(p.titulo) + '</div>' +
-            textoHtml +
-            slotExtra +
-          '</div>'
-        );
-      }).join('');
-
-      wrap.innerHTML = passosHtml;
+      wrap.innerHTML = html;
 
       // Listener do CTA "Atualizar pra esta jornada"
       if (ehRetestePendente) {
@@ -2065,10 +2269,13 @@
       document.dispatchEvent(evt);
     }
 
-    // Livros (Passo 2)
+    // Livro indicado pro perfil. Sem curso (Plenitude), ele é o próximo passo.
+    const temCurso = !!(d.conteudo && d.conteudo.passo3_curso_titulo);
     const livrosWrap = document.getElementById('livros-lista');
     if (Array.isArray(d.livros) && d.livros.length > 0) {
-      livrosWrap.innerHTML = d.livros.map(renderLivro).join('');
+      livrosWrap.innerHTML = d.livros.slice(0, 1)
+        .map(l => renderLivro(l, temCurso ? 'Opção econômica' : 'Seu próximo passo'))
+        .join('');
     }
 
     // Cursos (Passo 3) — pode ter 1 ou 2 cards
@@ -2081,7 +2288,13 @@
           capa_url: d.conteudo.passo3_curso_capa_url,
           descricao: d.conteudo.passo3_curso_descricao,
           preco: d.conteudo.passo3_curso_preco,
+          preco_de: d.conteudo.passo3_curso_preco_de,
+          desconto_pct: d.conteudo.passo3_curso_desconto_pct,
+          parcelas_qtd: d.conteudo.passo3_curso_parcelas_qtd,
+          parcelas_valor: d.conteudo.passo3_curso_parcelas_valor,
           link: d.conteudo.passo3_curso_link_checkout,
+          lp: d.conteudo.passo3_curso_lp,
+          atributos: d.conteudo.passo3_curso_atributos,
         });
       }
       if (d.conteudo.passo3_curso_titulo_2) {
@@ -2095,28 +2308,10 @@
       }
       cursosWrap.innerHTML = cursos.map(renderCurso).join('');
     }
-
-    // ── BLOCO 8: fechamento ──
-    if (d.conteudo && d.conteudo.texto_fechamento_final) {
-      document.getElementById('b8-texto').innerHTML = textoSimplesParaHtml(d.conteudo.texto_fechamento_final);
-    }
-
-    // ── BLOCO JORNADA: Sua jornada começa aqui ──
-    if (d.jornada && Array.isArray(d.jornada.passos) && d.jornada.passos.length > 0) {
-      const j = d.jornada;
-      document.getElementById('bj-eyebrow').textContent = 'Sua Jornada ' + j.numero + ' começa aqui';
-      document.getElementById('bj-titulo').textContent = j.nome_exibicao;
-      document.getElementById('bj-sub').textContent = j.subtitulo || '';
-      document.getElementById('bj-passos').innerHTML = j.passos.map(p => (
-        '<div class="bj-passo">' +
-          '<div class="bj-passo-num">' + p.ordem + '</div>' +
-          '<div class="bj-passo-texto">' +
-            '<div class="bj-passo-titulo">' + escapeHtml(p.titulo) + '</div>' +
-            (p.descricao ? '<div class="bj-passo-desc">' + escapeHtml(p.descricao) + '</div>' : '') +
-          '</div>' +
-        '</div>'
-      )).join('');
-      document.getElementById('bj-wrap').style.display = '';
+    // Perfil sem curso: esconde o card vazio.
+    if (!temCurso) {
+      const cardCurso = document.querySelector('[data-materiais="curso"]');
+      if (cardCurso) cardCurso.style.display = 'none';
     }
 
     // ── Rodapé meta ──
@@ -2172,13 +2367,51 @@
     return null;
   }
 
-  function renderLivro(l) {
+  // Monta o mesmo "pacote" de preço usado nas LPs (de/por + parcelas) —
+  // ver data-preco-de/-avista/-parcelas em lei-da-atracao-biblica.html etc.
+  // preco: exibir_avista (já considera promo); preco_de/desconto_pct só
+  // vêm preenchidos quando a promo está ativa no admin.
+  //
+  // Tudo (linha de/por, justificativa, preço, parcelas+botão) é filho direto
+  // do mesmo container flex-column — 1 só "gap" controla o espaço entre as
+  // linhas. O preço grande continua sozinho na sua própria linha, como
+  // sempre foi; a linha "de" só acrescenta "por [20% OFF]" acima dele, sem
+  // repetir o valor em R$.
+  function precoBlocoHtml(preco, precoDe, descontoPct, parcelasQtd, parcelasValor, ctaHtml, classePrefixo) {
+    const linhas = [];
+
+    if (precoDe) {
+      linhas.push(
+        '<div class="' + classePrefixo + '-preco-de">' +
+          'de <s>R$ ' + escapeHtml(precoDe) + '</s> por' +
+          (descontoPct ? ' <span class="' + classePrefixo + '-preco-badge">' + descontoPct + '% OFF</span>' : '') +
+        '</div>'
+      );
+      if (descontoPct) {
+        linhas.push('<div class="' + classePrefixo + '-preco-justificativa">Desconto do Teste do Subconsciente</div>');
+      }
+    }
+
+    linhas.push(
+      preco
+        ? '<span class="' + classePrefixo + '-preco">R$ ' + escapeHtml(preco) + '</span>'
+        : '<span class="' + classePrefixo + '-preco" style="color:var(--pearl-dim);font-size:0.85rem;font-style:italic">Preço em breve</span>'
+    );
+
+    const parcelasHtml = (parcelasQtd && parcelasValor)
+      ? '<span class="' + classePrefixo + '-preco-parcelas">ou ' + parcelasQtd + 'x de R$ ' + escapeHtml(parcelasValor) + '</span>'
+      : '<span></span>';
+    linhas.push(
+      '<div class="' + classePrefixo + '-rodape">' + parcelasHtml + ctaHtml + '</div>'
+    );
+
+    return '<div class="' + classePrefixo + '-preco-bloco">' + linhas.join('') + '</div>';
+  }
+
+  function renderLivro(l, rotulo) {
     const capa = l.capa_url
       ? '<img class="livro-capa" src="' + escapeHtml(l.capa_url) + '" alt="' + escapeHtml(l.titulo) + '">'
       : '<div class="livro-capa-placeholder"><i class="fas fa-book"></i></div>';
-    // Preço: a página de resultado é pública, então mostra o preço padrão.
-    const precoStr = l.preco_padrao || '';
-    const preco = precoStr ? ('R$ ' + precoStr) : null;
     // Link: a página é pública (lead anônima) — usa link padrão. Aluna logada
     // que acessar tem o link padrão também (a versão "aluno" só aparece no
     // painel de atendimento e no /app autenticado).
@@ -2186,41 +2419,56 @@
     const cta = link
       ? '<a href="' + escapeHtml(link) + '" class="livro-cta" target="_blank" rel="noopener">Quero este livro</a>'
       : '<a href="#" class="livro-cta" onclick="alert(\'Em breve\');return false;">Quero este livro</a>';
+    const precoHtml = precoBlocoHtml(l.preco_padrao, l.preco_de, l.desconto_pct, l.parcelas_qtd, l.parcelas_valor, cta, 'livro');
+    const atributosBlocoHtml = atributosHtml(l.atributos);
     return (
       '<div class="livro-card">' +
         capa +
         '<div class="livro-info">' +
-          '<span class="livro-tag" style="background:' + escapeHtml(l.cor_fundo) + ';color:' + escapeHtml(l.cor_texto) + '">' + escapeHtml(l.tag) + '</span>' +
+          '<span class="livro-tag">' + escapeHtml(rotulo) + '</span>' +
           '<div class="livro-titulo">' + escapeHtml(l.titulo) + '</div>' +
-          '<div class="livro-evidencia">' + escapeHtml(l.linha_evidencia) + '</div>' +
           (l.selo ? '<div class="livro-selo">' + escapeHtml(l.selo) + '</div>' : '') +
-          '<div class="livro-rodape">' +
-            (preco ? '<span class="livro-preco">' + preco + '</span>' : '<span class="livro-preco" style="color:var(--pearl-dim);font-size:0.85rem;font-style:italic">Preço em breve</span>') +
-            cta +
-          '</div>' +
+          atributosBlocoHtml +
+          precoHtml +
         '</div>' +
       '</div>'
     );
+  }
+
+  // Qualificações do produto (texto livre do admin de Produtos, campo
+  // `atributos`) — usado tanto no card do curso quanto no do livro. Mesmo
+  // padrão visual do selo do livro (.livro-selo): 1 linha, mesmo tamanho/cor,
+  // um único ✨ no início — não um emoji diferente por item. Cada linha não
+  // vazia vira um item, juntos numa linha só separados por "·".
+  function atributosHtml(texto) {
+    if (!texto) return '';
+    const itens = texto.split('\n').map(l => l.trim()).filter(Boolean).map(escapeHtml);
+    if (!itens.length) return '';
+    return '<div class="produto-atributos">✨ ' + itens.join(' · ') + '</div>';
   }
 
   function renderCurso(c) {
     const capa = c.capa_url
       ? '<img class="curso-capa" src="' + escapeHtml(c.capa_url) + '" alt="' + escapeHtml(c.titulo) + '">'
       : '<div class="curso-capa-placeholder"><i class="fas fa-graduation-cap"></i></div>';
-    const preco = formatarPreco(c.preco);
     const cta = c.link
       ? '<a href="' + escapeHtml(c.link) + '" class="curso-cta" target="_blank">Quero este curso</a>'
       : '<a href="#" class="curso-cta" onclick="alert(\'Em breve\');return false;">Quero este curso</a>';
+    const precoHtml = precoBlocoHtml(c.preco, c.preco_de, c.desconto_pct, c.parcelas_qtd, c.parcelas_valor, cta, 'curso');
+    const saibaMais = c.lp
+      ? '<a href="' + escapeHtml(c.lp) + '" class="curso-saiba-mais" target="_blank" rel="noopener">Conhecer mais sobre o curso →</a>'
+      : '';
+    const atributosBlocoHtml = atributosHtml(c.atributos);
     return (
       '<div class="curso-card">' +
         capa +
         '<div class="curso-info">' +
+          '<span class="curso-tag">Seu próximo passo</span>' +
           '<div class="curso-titulo">' + escapeHtml(c.titulo) + '</div>' +
           (c.descricao ? '<div class="curso-descricao">' + escapeHtml(c.descricao) + '</div>' : '') +
-          '<div class="curso-rodape">' +
-            (preco ? '<span class="curso-preco">' + preco + '</span>' : '<span class="curso-preco indefinido">Preço em breve</span>') +
-            cta +
-          '</div>' +
+          atributosBlocoHtml +
+          saibaMais +
+          precoHtml +
         '</div>' +
       '</div>'
     );

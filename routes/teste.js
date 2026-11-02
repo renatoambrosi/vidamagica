@@ -17,26 +17,28 @@ const router = express.Router();
 const { poolCore, poolTeste, poolComunicacao } = require('../db');
 const { formatarTelefone } = require('../core/utils');
 const { buscarUsuarioPorIdentificador } = require('../core/usuarios');
-const { calcularPerfil, PERFIS_VALIDOS } = require('../core/teste-conteudo');
+const { PERFIS_VALIDOS, PERFIS_LABELS, FAIXA_PROSPERIDADE } = require('../core/teste-conteudo');
 const {
   calcularResultado,
   montarLivrosRecomendados,
   montarListaEnergias,
 } = require('../core/teste-resultado');
-const { calcularJornadaVigente, temClubeVidaMagica, temTravaForte, SLUG } = require('../core/jornadas');
+const { calcularJornadaVigente, indicacaoDoPerfil, temClubeVidaMagica, SLUG } = require('../core/jornadas');
 const { autenticar } = require('../middleware/autenticar');
+const { enfileirarAtendimento } = require('../core/gateway');
+const { lerModoDevTeste } = require('../core/teste-config');
+const { processarProdutos } = require('./produtos');
 
-// ⚠️ DEV FLAG — GATE DE PAGAMENTO DO RESULTADO ⚠️
-// Fluxo real: pergunta 15 → checkout externo (pagamento.suellenseragi.com.br)
-// → Pix → checkout dispara POST /api/teste/marcar-pago → testes.pago=TRUE
-// → checkout redireciona pra /resultado/<uid> → resultado abre.
-//
-// Enquanto FALSE (padrão): o teste nasce com pago=TRUE e o resultado abre sem
-// checar pagamento — pra o Renato validar layout/texto/e-mail sem pagar Pix real
-// (mesma filosofia do `|| true` em routes/app.js e do TESOURO_INFINITO_DEV).
-// Trocar pra TRUE no lançamento: o teste passa a nascer pago=FALSE e o resultado
-// só abre com pagamento confirmado. Reverter = 1 linha.
-const PAGAMENTO_OBRIGATORIO_RESULTADO = false;
+// Número do Renato — recebe aviso no WhatsApp a cada avaliação nova do resultado.
+const TELEFONE_ADMIN_AVALIACOES = formatarTelefone('62983086320');
+
+// LP própria de cada curso indicado — pro botão "Conhecer mais" no resultado.
+// Rotas amigáveis definidas em server.js.
+const LP_POR_SLUG_CURSO = {
+  [SLUG.OURO]: '/ouro-da-reprogramacao-mental',
+  [SLUG.LDA]: '/lei-da-atracao-biblica',
+  [SLUG.ATAL_CURSO]: '/a-tal-maneira',
+};
 
 // ⚠️ DEV FLAG — ATIVAÇÃO DA TRILHA (jornada da aluna) ⚠️
 // false (agora) = ver o resultado NÃO ativa a trilha/jornada: não marca
@@ -381,49 +383,21 @@ router.post('/responder', async (req, res) => {
       pergunta_ordem: r.pergunta_ordem,
       perfil: r.perfil,
     }));
-    const resultado = calcularPerfil(respostasArr);
+    const resultado = calcularResultado(respostasArr);
 
-    // ──────────────────────────────────────────────────────────
-    // REGRA DE PERSISTÊNCIA DO TESTE
-    // ──────────────────────────────────────────────────────────
-    // - Sem teste prévio                       → INSERT linha nova
-    // - Tem teste prévio, NÃO PAGO             → DELETE antigo + INSERT (sobrescreve)
-    // - Tem teste prévio, PAGO                 → INSERT linha nova (preserva histórico)
-    //
-    // Justificativa: testes pagos viram histórico permanente (a aluna pagou,
-    // tem direito ao registro). Testes não pagos podem ser sobrescritos quando
-    // refeitos, evitando lixo no banco.
-    // Aluna pode ter VÁRIOS testes do mesmo lead+versão se todos estão pagos.
-    const testesPrevios = await poolTeste.query(
-      `SELECT id, pago FROM testes
-        WHERE lead_id=$1 AND versao_id=$2
-        ORDER BY feito_em DESC`,
-      [lead_id, versaoIdNum]
-    );
-
-    // Separa: pagos preservar / não pagos deletar
-    const naoPagos = testesPrevios.rows.filter(t => !t.pago);
-    if (naoPagos.length > 0) {
-      const idsPraDeletar = naoPagos.map(t => t.id);
-      await poolTeste.query(
-        `DELETE FROM testes WHERE id = ANY($1::uuid[])`,
-        [idsPraDeletar]
-      );
-    }
-
-    // INSERT sempre — o registro novo nasce não visto.
-    // `pago` inicial depende da DEV FLAG PAGAMENTO_OBRIGATORIO_RESULTADO (topo do arquivo):
-    //   - flag FALSE (padrão/dev): nasce pago=TRUE, resultado abre sem cobrar.
-    //   - flag TRUE  (lançamento): nasce pago=FALSE, só vira pago via
-    //     POST /api/teste/marcar-pago (webhook do checkout após o Pix).
-    const pagoInicial = !PAGAMENTO_OBRIGATORIO_RESULTADO;
+    // Cada teste concluído é um registro próprio e nunca é apagado: um checkout
+    // aberto de um teste anterior ainda pode ser pago e precisa encontrá-lo.
+    // INSERT sempre — o registro novo nasce não visto e não pago.
+    // Só vira pago via POST /api/teste/marcar-pago (webhook do checkout).
+    // Feito com Modo dev ligado, guarda isso e o resultado fica aberto.
+    const modoDev = await lerModoDevTeste();
     const insR = await poolTeste.query(
       `INSERT INTO testes
          (usuario_id, lead_id, versao_id, telefone_canonico, respostas,
           contagem, percentuais,
           perfil_dominante, percentual_prosperidade, nivel_prosperidade,
-          pago)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          pago, modo_dev)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE, $11)
        RETURNING id`,
       [
         lead.usuario_id,
@@ -432,11 +406,11 @@ router.post('/responder', async (req, res) => {
         lead.telefone_canonico,
         JSON.stringify(respostasArr),
         JSON.stringify(resultado.contagem),
-        JSON.stringify(resultado.percentuais),
+        JSON.stringify(resultado.percentuais_exibicao),
         resultado.perfil_dominante,
         resultado.percentual_prosperidade,
         resultado.nivel_prosperidade,
-        pagoInicial,
+        modoDev,
       ]
     );
     const testeId = insR.rows[0].id;
@@ -455,7 +429,8 @@ router.post('/responder', async (req, res) => {
       perfil_dominante: resultado.perfil_dominante,
       percentual_prosperidade: resultado.percentual_prosperidade,
       contagem: resultado.contagem,
-      percentuais: resultado.percentuais,
+      percentuais: resultado.percentuais_exibicao,
+      pagamento_obrigatorio: !modoDev,
     });
   } catch (err) {
     console.error('[teste/responder] erro:', err);
@@ -683,10 +658,11 @@ router.get('/resultado/:teste_id', async (req, res) => {
     if (!tRows.rows[0]) return res.status(404).json({ ok: false, erro: 'teste não encontrado' });
     const teste = tRows.rows[0];
 
-    // GATE DE PAGAMENTO — só quando a DEV FLAG está ligada (lançamento).
+    // GATE DE PAGAMENTO — não vale pra teste feito em modo dev nem enquanto
+    // o modo dev do admin estiver ligado.
     // Antes de pagar, o resultado não é revelado nem a trilha é ativada:
     // devolve 402 pra o frontend mostrar "finalize seu pagamento".
-    if (PAGAMENTO_OBRIGATORIO_RESULTADO && !teste.pago) {
+    if (!teste.pago && !teste.modo_dev && !(await lerModoDevTeste())) {
       return res.status(402).json({ ok: false, erro: 'pagamento_pendente', pago: false });
     }
 
@@ -789,18 +765,24 @@ router.get('/resultado/:teste_id', async (req, res) => {
     const conteudoPerfil = conteudoR.rows[0] || null;
 
     // Produtos relevantes pro resultado:
-    //   - Livros do Passo 2: 4 livros da Série Conhecer e Despertar
-    //   - Cursos do Passo 3: Ouro, LDA, A Tal Maneira (livro e curso)
+    //   - Livro indicado: Série Conhecer e Despertar, Guia Prático,
+    //     A Tal Maneira (livro) ou Mágica do Fluir
+    //   - Curso indicado: Ouro, LDA ou A Tal Maneira (curso)
     // Tudo da mesma tabela `precos` (= produtos).
     const livrosR = await poolComunicacao.query(
       `SELECT key, dados FROM precos
         WHERE key IN (
           'vencendo_medo','vencendo_desordem','vencendo_validacao','vencendo_sobrevivencia',
-          'ouro_reprogramacao','lda_biblica','atal_maneira_livro','atal_maneira_curso'
+          'guia_pratico','atal_maneira_livro','magica_fluir',
+          'ouro_reprogramacao','lda_biblica','atal_maneira_curso'
         )`
     );
     const precosBySlug = {};
     livrosR.rows.forEach(r => { precosBySlug[r.key] = r.dados || {}; });
+    // Aplica a mesma regra de preço usada em /api/produtos (promo ativa vs
+    // padrão) — sem isso, o resultado mostrava sempre preco_padrao e ignorava
+    // promoção configurada no admin.
+    processarProdutos(precosBySlug);
     const livrosRecomendados = montarLivrosRecomendados(precosBySlug, resultado);
 
     // ── Passo 3 — Curso recomendado (vem da regra, NÃO do admin) ──
@@ -808,41 +790,29 @@ router.get('/resultado/:teste_id', async (req, res) => {
     // (passo3_curso_titulo, _capa_url, _preco, _link_checkout) pela
     // leitura automática do produto da tabela `precos` baseado no perfil.
     //
-    // Regra:
-    //   - Sobrevivência dominante → Lei da Atração Bíblica
-    //   - Demais perfis bloqueadores dominantes (medo/desordem/validação) → Ouro
-    //   - Prosperidade COM trava forte → cai em Conhecer e Despertar; mesma regra
-    //     dos perfis bloqueadores (Ouro, porque dominante bruto vira 'prosperidade')
-    //   - Prosperidade nv1 ou nv2 SEM trava → A Tal Maneira (livro)
-    //   - Prosperidade nv3 SEM trava → A Tal Maneira (curso)
-    //
-    // ⚠️ Quando a Frente 4.B for executada (regra nova: prosperidade + trava
-    // vai pra Vida Mágica/Multiplicando com adições), revisar esta função.
+    // A indicação vem de core/jornadas.js (perfil dominante → curso).
+    // Plenitude não tem curso: os campos ficam vazios e o card some.
     if (conteudoPerfil) {
-      const trava = temTravaForte(resultado.percentuais_exibicao);
-      const ehProsp = (resultado.perfil_dominante_bruto === 'prosperidade');
-      let slugCurso = SLUG.OURO;
-
-      if (ehProsp && !trava) {
-        slugCurso = (resultado.nivel_prosperidade >= 3)
-          ? SLUG.ATAL_CURSO
-          : SLUG.ATAL_LIVRO;
-      } else if (resultado.perfil_dominante_bruto === 'sobrevivencia') {
-        slugCurso = SLUG.LDA;
-      } else {
-        slugCurso = SLUG.OURO;
-      }
-
-      const produto = precosBySlug[slugCurso] || {};
+      const slugCurso = indicacaoDoPerfil(resultado.perfil_dominante).curso;
+      const produto = (slugCurso && precosBySlug[slugCurso]) || {};
       conteudoPerfil.passo3_curso_slug         = slugCurso;
       conteudoPerfil.passo3_curso_titulo       = produto.nome || '';
       conteudoPerfil.passo3_curso_capa_url     = produto.imagem_url || '';
-      conteudoPerfil.passo3_curso_preco        = produto.preco_padrao || '';
+      conteudoPerfil.passo3_curso_preco        = produto.exibir_avista || produto.preco_padrao || '';
       conteudoPerfil.passo3_curso_link_checkout = produto.link_checkout_padrao || '';
+      // Mesmo "pacote" de preço das LPs (de/por + parcelas) — processarProdutos
+      // já calculou tudo isso acima, em cima da promo real configurada no admin.
+      conteudoPerfil.passo3_curso_preco_de       = produto.exibir_de || '';
+      conteudoPerfil.passo3_curso_desconto_pct   = produto.desconto_pct || null;
+      conteudoPerfil.passo3_curso_parcelas_qtd   = produto.exibir_parcelas_qtd || '';
+      conteudoPerfil.passo3_curso_parcelas_valor = produto.exibir_parcelas_valor || '';
+      conteudoPerfil.passo3_curso_lp             = (slugCurso && LP_POR_SLUG_CURSO[slugCurso]) || '';
+      // Qualificações do curso (ex: "4 Módulos" / "14 Aulas Práticas") —
+      // texto livre cadastrado pelo Renato no admin de Produtos, campo
+      // `atributos`. Fonte do produto, não hardcoded aqui.
+      conteudoPerfil.passo3_curso_atributos      = produto.atributos || '';
       // descricao: não vem do produto. Mantém vazio (frontend esconde
-      // o trecho se for falsy). Quem precisar de descrição contextualizada
-      // pode preencher no admin de Produtos (descricao do próprio produto
-      // — Fase 4.B pode introduzir um campo lá).
+      // o trecho se for falsy).
       conteudoPerfil.passo3_curso_descricao = conteudoPerfil.passo3_curso_descricao || '';
       // Limpa o "2 de 2" — não usamos mais a duplicação de Prosperidade.
       conteudoPerfil.passo3_curso_titulo_2 = null;
@@ -867,15 +837,9 @@ router.get('/resultado/:teste_id', async (req, res) => {
     // ── Jornada vigente (via core/jornadas.js) ──
     // Função canônica que determina:
     //   - qual jornada a aluna está (1, 2 ou 3)
-    //   - quais passos com pesos (P1/P2/P3) e produtos
+    //   - quais passos com pesos e produtos
     //   - quais passos estão concluídos (cruzando com usuario_produtos)
     //   - progresso ponderado em %
-    //   - análise automatizada (texto pra exibir quando relevante)
-    //
-    // Regras:
-    //   - Conhecer e Despertar = default ou quando há trava forte (>20%)
-    //   - Vida Mágica          = prosperidade dominante (nv1 ou nv2) sem trava
-    //   - Multiplicando Vida Mágica = prosperidade nv3 sem trava
 
     // Slugs que a aluna possui (com cortesia/manual entrando naturalmente)
     const slugsComprados = new Set();
@@ -908,9 +872,6 @@ router.get('/resultado/:teste_id', async (req, res) => {
 
     const jornadaInfo = calcularJornadaVigente({
       perfil_dominante: resultado.perfil_dominante,
-      perfil_dominante_bruto: resultado.perfil_dominante_bruto,
-      percentuais_exibicao: resultado.percentuais_exibicao,
-      nivel_prosperidade: resultado.nivel_prosperidade,
       slugsComprados,
     });
 
@@ -931,6 +892,7 @@ router.get('/resultado/:teste_id', async (req, res) => {
       // Cálculo
       perfil_dominante: resultado.perfil_dominante,            // ex: 'medo' ou 'prosperidade_nv2'
       perfil_dominante_bruto: resultado.perfil_dominante_bruto, // ex: 'medo' ou 'prosperidade'
+      faixa_prosperidade: FAIXA_PROSPERIDADE[resultado.perfil_dominante] || null,
       energias,                                                 // [{slug,label,percentual_inteiro}, ...]
       // Conteúdo do perfil
       conteudo: conteudoPerfil,                                 // tudo de teste_perfis_conteudo
@@ -1032,6 +994,75 @@ router.post('/ativar-trilha/:teste_id', async (req, res) => {
     return res.json({ ok: true });
   } catch (err) {
     console.error('[teste/ativar-trilha] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ──────────────────────────────────────────────────────────
+// POST /api/teste/avaliacao/:teste_id
+// Estrelas (1-5) + comentário, exibidos logo após o botão "Compartilhar
+// resultado" em /resultado/:id. Cada envio grava e avisa o Renato por
+// WhatsApp (reativo).
+// ──────────────────────────────────────────────────────────
+router.post('/avaliacao/:teste_id', async (req, res) => {
+  try {
+    const testeId = (req.params.teste_id || '').toString().trim();
+    if (!testeId) return res.status(400).json({ ok: false, erro: 'teste_id ausente' });
+
+    const nota = parseInt(req.body && req.body.nota, 10);
+    if (!Number.isInteger(nota) || nota < 1 || nota > 5) {
+      return res.status(400).json({ ok: false, erro: 'nota inválida' });
+    }
+    const comentario = ((req.body && req.body.comentario) || '').toString().trim().slice(0, 2000) || null;
+
+    const tRows = await poolTeste.query(
+      `SELECT t.id, t.perfil_dominante, l.nome
+         FROM testes t
+         LEFT JOIN teste_leads l ON l.id = t.lead_id
+        WHERE t.id = $1`,
+      [testeId]
+    );
+    if (!tRows.rows[0]) return res.status(404).json({ ok: false, erro: 'teste não encontrado' });
+    const teste = tRows.rows[0];
+
+    await poolTeste.query(
+      `INSERT INTO teste_avaliacoes (teste_id, nota, comentario)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (teste_id) DO UPDATE
+         SET nota = $2,
+             comentario = $3,
+             criado_em = NOW()`,
+      [testeId, nota, comentario]
+    );
+
+    try {
+      // Mesmo conteúdo exibido no card do admin (aba Avaliações): estrelas,
+      // nome + perfil, data, comentário e link pro resultado.
+      const nomeAluna = teste.nome || 'Aluna sem nome cadastrado';
+      const perfilLabel = PERFIS_LABELS[teste.perfil_dominante] || teste.perfil_dominante || '—';
+      const estrelas = '⭐'.repeat(nota) + '☆'.repeat(5 - nota);
+      const agora = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+      const baseUrl = process.env.APP_URL || 'https://www.vidamagica.com.br';
+      const linkResultado = `${baseUrl}/resultado/${testeId}`;
+
+      let texto = `📝 Nova avaliação do resultado do Teste do Subconsciente\n\n${estrelas} (${nota}/5)\n${nomeAluna} · ${perfilLabel}\n${agora}`;
+      if (comentario) texto += `\n\n"${comentario}"`;
+      texto += `\n\n🔗 ${linkResultado}`;
+
+      await enfileirarAtendimento({
+        telefone: TELEFONE_ADMIN_AVALIACOES,
+        tipo: 'reativo',
+        origem: 'teste-avaliacao',
+        nome: 'Renato',
+        mensagens: [{ texto }],
+      });
+    } catch (e) {
+      console.warn('[teste/avaliacao] falha ao notificar admin no WhatsApp:', e.message);
+    }
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[teste/avaliacao] erro:', err);
     return res.status(500).json({ ok: false, erro: 'erro interno' });
   }
 });

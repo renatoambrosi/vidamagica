@@ -1054,7 +1054,21 @@ async function initTeste() {
     // Legado: teste vai pra cá quando aluna excluiu conta no caminho B/C.
     // Invisível pra aluna (frontend filtra), visível pro admin na aba Legado.
     await c.query(`ALTER TABLE testes ADD COLUMN IF NOT EXISTS eh_legado BOOLEAN DEFAULT FALSE`);
+    // Feito com o Modo dev ligado: resultado fica aberto mesmo depois de desligar.
+    await c.query(`ALTER TABLE testes ADD COLUMN IF NOT EXISTS modo_dev BOOLEAN DEFAULT FALSE`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_testes_legado ON testes(usuario_id, eh_legado) WHERE usuario_id IS NOT NULL`);
+
+    // Avaliação da aluna sobre o resultado (estrelas + comentário opcional).
+    // 1 avaliação por teste — reenvio faz upsert (ON CONFLICT no teste_id).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS teste_avaliacoes (
+        teste_id UUID PRIMARY KEY REFERENCES testes(id) ON DELETE CASCADE,
+        nota SMALLINT NOT NULL CHECK (nota BETWEEN 1 AND 5),
+        comentario TEXT,
+        criado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_avaliacoes_data ON teste_avaliacoes(criado_em)`);
 
     // ── MIGRAÇÃO INTELIGENTE: testes feitos ANTES dessa coluna existir ──
     // Antes, a aluna tinha 1 teste = era a trilha ativa por padrão. Após o
@@ -1499,7 +1513,7 @@ async function initComunicacao() {
          'acesso', 3),
         ('primeiro_contato_sem_cadastro',
          'Primeiro contato — sem cadastro',
-         E'Seja bem-vinda ao Vida Mágica. ✨\n\nAqui é onde pessoas se reencontram com o próprio caminho — através de uma mente alinhada com Deus, de um método eficaz e nossos produtos de autoconhecimento.\n\nPra começar sua jornada com a gente, toque no caminho abaixo. É lá que você vai:\n\n🌱 Fazer o Teste do Subconsciente\n📿 Iniciar sua trilha de conhecimento\n💛 Falar com a Su e nosso suporte\n\nTe vejo por lá.',
+         E'Seja bem-vinda ao Vida Mágica. ✨\n\nAqui é onde pessoas se reencontram com o próprio caminho — através de uma mente alinhada com Deus, de um método eficaz e nossos produtos de autoconhecimento.\n\nPra começar sua jornada com a gente, toque no caminho abaixo. É lá que você vai:\n\n🌱 Fazer o Teste do Subconsciente\n📿 Iniciar seu caminho de conhecimento\n💛 Falar com a Su e nosso suporte\n\nTe vejo por lá.',
          'acesso', 4),
         ('telefone_alterado',
          'Telefone alterado — número antigo tentou logar',
@@ -1966,10 +1980,26 @@ async function initComunicacao() {
         ('desordem',          'Desordem',                'O Ouro da Reprogramação Mental'),
         ('sobrevivencia',     'Sobrevivência',           'Lei da Atração Bíblica'),
         ('validacao',         'Validação',               'O Ouro da Reprogramação Mental'),
-        ('prosperidade_nv1',  'Prosperidade Nível 1',    'Lei da Atração Bíblica'),
-        ('prosperidade_nv2',  'Prosperidade Nível 2',    'Lei da Atração Bíblica'),
-        ('prosperidade_nv3',  'Prosperidade Nível 3',    'A Tal Maneira (Curso)')
+        ('prosperidade_nv1',  'Otimismo',                'Lei da Atração Bíblica'),
+        ('prosperidade_nv2',  'Expansão',                'Lei da Atração Bíblica'),
+        ('prosperidade_nv3',  'Plenitude',               'A Tal Maneira (Curso)')
       ON CONFLICT (slug) DO NOTHING
+    `);
+
+    // Nomes oficiais dos 3 níveis. Só troca o nome antigo; o que o admin
+    // editou depois fica como está.
+    await c.query(`
+      UPDATE teste_perfis_conteudo
+         SET nome_exibicao = CASE slug
+           WHEN 'prosperidade_nv1' THEN 'Otimismo'
+           WHEN 'prosperidade_nv2' THEN 'Expansão'
+           WHEN 'prosperidade_nv3' THEN 'Plenitude'
+         END
+       WHERE (slug, nome_exibicao) IN (
+         ('prosperidade_nv1', 'Prosperidade Nível 1'),
+         ('prosperidade_nv2', 'Prosperidade Nível 2'),
+         ('prosperidade_nv3', 'Prosperidade Nível 3')
+       )
     `);
 
     // Seed do segundo curso pros perfis nv1 e nv2 (que recomendam LDA + Tal Maneira)
@@ -2006,139 +2036,8 @@ async function initComunicacao() {
       ON CONFLICT (chave) DO NOTHING
     `);
 
-    // ════════════════════════════════════════════════════════
-    // JORNADAS DO MÉTODO (3 jornadas: Subconsciente, Vida Mágica, Transbordar)
-    // ════════════════════════════════════════════════════════
-    // Cada aluna está em UMA jornada por vez. A jornada é determinada pelo perfil
-    // dominante do teste mais recente. O progresso dentro da jornada é determinado
-    // pelas compras (linhas em usuario_produtos).
-
-    // ── Definição das 3 jornadas ──
-    await c.query(`
-      CREATE TABLE IF NOT EXISTS jornadas_metodo (
-        slug VARCHAR(40) PRIMARY KEY,
-        numero INTEGER NOT NULL UNIQUE,
-        nome_exibicao VARCHAR(100) NOT NULL,
-        subtitulo VARCHAR(200),
-        descricao TEXT,
-        cor VARCHAR(20),
-        atualizado_em TIMESTAMPTZ DEFAULT NOW()
-      )
-    `);
-    await c.query(`
-      INSERT INTO jornadas_metodo (slug, numero, nome_exibicao, subtitulo, cor) VALUES
-        ('subconsciente', 1, 'Subconsciente', 'Despertando a mente',          '#C8922A'),
-        ('vida_magica',   2, 'Vida Mágica',   'Operando a abundância',       '#2BA5E8'),
-        ('transbordar',   3, 'Transbordar',   'Vivendo no transbordo',       '#F4D060')
-      ON CONFLICT (slug) DO NOTHING
-    `);
-
-    // ── Mapa: perfil dominante → qual jornada a aluna está ──
-    await c.query(`
-      CREATE TABLE IF NOT EXISTS jornadas_perfis_map (
-        perfil_slug VARCHAR(40) PRIMARY KEY,
-        jornada_slug VARCHAR(40) NOT NULL REFERENCES jornadas_metodo(slug)
-      )
-    `);
-    await c.query(`
-      INSERT INTO jornadas_perfis_map (perfil_slug, jornada_slug) VALUES
-        ('medo',              'subconsciente'),
-        ('desordem',          'subconsciente'),
-        ('sobrevivencia',     'subconsciente'),
-        ('validacao',         'subconsciente'),
-        ('prosperidade_nv1',  'vida_magica'),
-        ('prosperidade_nv2',  'vida_magica'),
-        ('prosperidade_nv3',  'transbordar')
-      ON CONFLICT (perfil_slug) DO UPDATE SET jornada_slug = EXCLUDED.jornada_slug
-    `);
-
-    // ── Passos de cada jornada (sequência ordenada de produtos) ──
-    // Cada passo tem um título no contexto do método (ex: "Despertar", "Reprogramar a Base")
-    // e referencia um produto cadastrado na tabela produtos (banco Core) pelo slug.
-    await c.query(`
-      CREATE TABLE IF NOT EXISTS jornadas_passos (
-        id SERIAL PRIMARY KEY,
-        jornada_slug VARCHAR(40) NOT NULL REFERENCES jornadas_metodo(slug) ON DELETE CASCADE,
-        ordem INTEGER NOT NULL,
-        produto_slug VARCHAR(80) NOT NULL,
-        titulo_passo VARCHAR(120) NOT NULL,
-        descricao_passo TEXT,
-        atualizado_em TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE (jornada_slug, ordem)
-      )
-    `);
-    await c.query(`CREATE INDEX IF NOT EXISTS idx_jornadas_passos_jornada ON jornadas_passos(jornada_slug, ordem)`);
-
-    // Seed dos passos:
-    // JORNADA 1 — Subconsciente
-    //   1: Conhecer        → Teste do Subconsciente
-    //   2: Despertar       → Conhecer e Despertar (4 livros — passo composto, qualquer livro completa parte)
-    //   3: Reprogramar     → Ouro da Reprogramação Mental
-    //   4: Permanecer      → Comunidade Vida Mágica
-    //
-    // Observação importante: o passo "Despertar" da Jornada 1 é representado pelos 4 livros.
-    // Pra simplificar a estrutura tabular, cada livro é um passo separado. A UI agrupa
-    // eles visualmente como "Despertar — Série Conhecer e Despertar" no app.
-
-    await c.query(`
-      INSERT INTO jornadas_passos (jornada_slug, ordem, produto_slug, titulo_passo, descricao_passo) VALUES
-        ('subconsciente', 1, 'teste_subconsciente',     'Conhecer',                              'Identifique o padrão que trava sua prosperidade.'),
-        ('subconsciente', 2, 'vencendo_medo',           'Despertar — Vencendo o Medo',           'Liberar a energia transversal que paralisa.'),
-        ('subconsciente', 3, 'vencendo_desordem',       'Despertar — Vencendo a Desordem',       'Trazer ordem ao que está disperso.'),
-        ('subconsciente', 4, 'vencendo_validacao',      'Despertar — Vencendo a Validação',      'Soltar o vício da aprovação externa.'),
-        ('subconsciente', 5, 'vencendo_sobrevivencia',  'Despertar — Vencendo a Sobrevivência',  'Sair do modo de fazer demais na própria força.'),
-        ('subconsciente', 6, 'ouro_reprogramacao',      'Reprogramar a Base',                    'Instalar a nova identidade. A ferramenta-chave da Fase 1.'),
-        ('subconsciente', 7, 'clube_vida_magica',       'Permanecer em Comunidade',              'Sustentar a transformação no convívio diário.')
-      ON CONFLICT (jornada_slug, ordem) DO NOTHING
-    `);
-
-    // JORNADA 2 — Vida Mágica
-    await c.query(`
-      INSERT INTO jornadas_passos (jornada_slug, ordem, produto_slug, titulo_passo, descricao_passo) VALUES
-        ('vida_magica', 1, 'teste_subconsciente',  'Diagnosticar o nível',                     'Confirmar que sua energia evoluiu para Prosperidade.'),
-        ('vida_magica', 2, 'guia_pratico',         'Guia Prático para Reprogramar a Mente',    'Operar a reprogramação no dia a dia.'),
-        ('vida_magica', 3, 'magica_fluir',         'Guia de Bolso Mágica do Fluir',            'Manter o estado de fluir nas pequenas coisas.'),
-        ('vida_magica', 4, 'atal_maneira_livro',   'A Tal Maneira — Livro',                    'Conhecer o método de manifestação bíblica.'),
-        ('vida_magica', 5, 'lda_biblica',          'Lei da Atração Bíblica',                   'Ativar a Lei da Atração à luz da fé.'),
-        ('vida_magica', 6, 'clube_vida_magica',    'Permanecer em Comunidade',                 'Crescer entre pessoas que vivem o mesmo método.')
-      ON CONFLICT (jornada_slug, ordem) DO NOTHING
-    `);
-
-    // JORNADA 3 — Transbordar
-    await c.query(`
-      INSERT INTO jornadas_passos (jornada_slug, ordem, produto_slug, titulo_passo, descricao_passo) VALUES
-        ('transbordar', 1, 'teste_subconsciente',  'Confirmar o transbordo',  'Atestar o nível mais alto de prosperidade.'),
-        ('transbordar', 2, 'atal_maneira_curso',   'A Tal Maneira — Curso',   'Ferramenta completa pra quem vive no transbordo.')
-      ON CONFLICT (jornada_slug, ordem) DO NOTHING
-    `);
-
-    // ── Migration de slugs (deploys anteriores usavam slugs com hífen) ──
-    // Atualiza linhas existentes que tinham slugs antigos pra os slugs alinhados com Preços.
-    await c.query(`
-      UPDATE jornadas_passos SET produto_slug = CASE produto_slug
-        WHEN 'teste-subconsciente'           THEN 'teste_subconsciente'
-        WHEN 'livro-vencendo-medo'           THEN 'vencendo_medo'
-        WHEN 'livro-vencendo-desordem'       THEN 'vencendo_desordem'
-        WHEN 'livro-vencendo-validacao'      THEN 'vencendo_validacao'
-        WHEN 'livro-vencendo-sobrevivencia'  THEN 'vencendo_sobrevivencia'
-        WHEN 'curso-ouro-reprogramacao'      THEN 'ouro_reprogramacao'
-        WHEN 'assinatura-comunidade'         THEN 'clube_vida_magica'
-        WHEN 'guia-pratico-reprogramar'      THEN 'guia_pratico'
-        WHEN 'guia-bolso-magica-fluir'       THEN 'magica_fluir'
-        WHEN 'livro-tal-maneira'             THEN 'atal_maneira_livro'
-        WHEN 'curso-lda-biblica'             THEN 'lda_biblica'
-        WHEN 'curso-tal-maneira'             THEN 'atal_maneira_curso'
-        ELSE produto_slug
-      END,
-      atualizado_em = NOW()
-      WHERE produto_slug IN (
-        'teste-subconsciente', 'livro-vencendo-medo', 'livro-vencendo-desordem',
-        'livro-vencendo-validacao', 'livro-vencendo-sobrevivencia',
-        'curso-ouro-reprogramacao', 'assinatura-comunidade',
-        'guia-pratico-reprogramar', 'guia-bolso-magica-fluir',
-        'livro-tal-maneira', 'curso-lda-biblica', 'curso-tal-maneira'
-      )
-    `);
+    // Jornadas: regra em core/jornadas.js. As tabelas antigas jornadas_metodo,
+    // jornadas_perfis_map e jornadas_passos ficaram sem uso (não são mais lidas).
 
     // ─────────────────────────────────────────────────────────
     // CADERNO DA MENTALIZAÇÃO — conteúdo cadastrado pelo admin

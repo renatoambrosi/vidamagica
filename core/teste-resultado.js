@@ -6,42 +6,26 @@
    - Receber as 15 respostas e calcular percentuais com alta resolução
    - Aplicar regra de desempate (Validação > Sobrevivência > Desordem > Medo)
    - Determinar o perfil dominante (incluindo subdivisão de Prosperidade em nv1/2/3)
-   - Filtrar e ordenar os livros do Passo 2 conforme regras de gatilho/tag
+   - Montar o card do livro indicado (indicação vem de core/jornadas.js)
 
    Princípios:
-   - Cálculo INTERNO em alta resolução (frações com casas decimais)
-   - Cálculo da dominante e desempate operam sobre valor INTERNO
+   - Fonte ÚNICA do cálculo: tudo que grava ou mostra resultado passa por aqui
+   - Percentual = respostas da energia / total de respostas
    - Exibição arredonda pra inteiro (regra: 0,5 sobe — Math.round)
-   - Empates VISUAIS são possíveis (27% e 27%), mas internamente o sistema sabe quem ganha
+   - Percentuais iguais são possíveis (33% e 33%); a vencedora sai do desempate
    ============================================================ */
 
-const PERFIS_BLOQUEADORES = ['medo', 'desordem', 'sobrevivencia', 'validacao'];
-const PERFIS_VALIDOS = [...PERFIS_BLOQUEADORES, 'prosperidade'];
+const { indicacaoDoPerfil } = require('./jornadas');
+const { PERFIS_VALIDOS, PERFIS_LABELS } = require('./teste-conteudo');
 
-const PERFIS_LABELS = {
-  medo:          'Medo',
-  desordem:      'Desordem',
-  sobrevivencia: 'Sobrevivência',
-  validacao:     'Validação',
-  prosperidade:  'Prosperidade',
-};
-
-const PERFIS_CORES = {
-  medo:          '#9b59b6',
-  desordem:      '#e67e22',
-  sobrevivencia: '#34495e',
-  validacao:     '#e74c3c',
-  prosperidade:  '#2ba5e8',
-};
-
-// Regra de desempate (energia mais alta vence em empate literal):
-// Validação > Sobrevivência > Desordem > Medo
-// Prosperidade não entra nessa regra porque, se for dominante, leva direto.
+// Regra de desempate: Validação > Sobrevivência > Desordem > Medo > Prosperidade.
+// Prosperidade só é dominante quando vence sozinha.
 const DESEMPATE_PRIORIDADE = {
   validacao: 4,
   sobrevivencia: 3,
   desordem: 2,
   medo: 1,
+  prosperidade: 0,
 };
 
 // ── Cálculo do resultado ──────────────────────────────────
@@ -80,16 +64,15 @@ function calcularResultado(respostas) {
 
   // ── Determinar dominante BRUTO ──
   // Maior contagem; em empate, prioridade fixa (Validação > Sobrevivência > Desordem > Medo).
-  // Prosperidade só vence se tiver MAIOR sozinha — em empate de Prosperidade com qualquer
-  // bloqueadora, a regra clássica do produto é que Prosperidade NÃO leva (a aluna ainda
-  // tem trava). Implementação: damos prioridade 0 a Prosperidade no desempate.
+  // Prosperidade só vence se tiver MAIOR sozinha — em empate com qualquer bloqueadora,
+  // a bloqueadora leva.
   let dominanteBruto = null;
   let maiorContagem = -1;
   let maiorPrioridade = -1;
 
   for (const p of PERFIS_VALIDOS) {
     const cnt = contagem[p];
-    const pri = (DESEMPATE_PRIORIDADE[p] !== undefined) ? DESEMPATE_PRIORIDADE[p] : 0;
+    const pri = DESEMPATE_PRIORIDADE[p];
 
     if (cnt > maiorContagem) {
       maiorContagem = cnt;
@@ -103,11 +86,9 @@ function calcularResultado(respostas) {
 
   // ── Subdivisão de Prosperidade em nv1/2/3 ──
   // Faixas oficiais (definidas pelo Renato):
-  //   < 50%        → prosperidade_nv1  (até 49,99%)   → libera Vida Mágica se dominante
-  //   50% a < 80%  → prosperidade_nv2  (50 a 79,99%)  → NV2 ainda não tem jornada própria
-  //                                                       (produtos serão criados — até lá,
-  //                                                        comportamento idêntico ao nv1)
-  //   >= 80%       → prosperidade_nv3  (80% ou mais)  → libera Multiplicando a Vida Mágica
+  //   < 50%        → prosperidade_nv1 = Otimismo   (até 49,99%)
+  //   50% a < 80%  → prosperidade_nv2 = Expansão   (50 a 79,99%)
+  //   >= 80%       → prosperidade_nv3 = Plenitude  (80% ou mais)
   // Usamos o percentual INTERNO (com decimais) pra essa decisão.
   let perfilDominante = dominanteBruto;
   let nivelProsperidade = 0;
@@ -146,92 +127,65 @@ function tagPorPercentual(percInteiro) {
   return                          { tag: 'Urgente',     cor_fundo: '#3D2E1A', cor_texto: '#F4D060' };
 }
 
-// Ordem de prioridade da tag (pra ordenação)
-const ORDEM_TAG = { 'Urgente': 4, 'Necessário': 3, 'Útil': 2, 'Complemento': 1 };
+// Os 4 livros da Série Conhecer e Despertar — só eles têm o selo do Aulão.
+const LIVROS_DA_SERIE = new Set([
+  'vencendo_medo', 'vencendo_desordem', 'vencendo_validacao', 'vencendo_sobrevivencia',
+]);
 
-// Mapa: cada slug em precos → energia que ele resolve.
-// Os 4 livros da Série Conhecer e Despertar.
-const LIVROS_DA_SERIE = [
-  { slug: 'vencendo_medo',          energia: 'medo' },
-  { slug: 'vencendo_desordem',      energia: 'desordem' },
-  { slug: 'vencendo_validacao',     energia: 'validacao' },
-  { slug: 'vencendo_sobrevivencia', energia: 'sobrevivencia' },
-];
+const SELO_PADRAO_LIVRO = '✨ Inclui Aulão com a Suellen';
 
-const SELO_PADRAO_LIVRO = '✨ Inclui Aulão ao vivo com a Suellen';
-
-// ── Filtrar e ordenar os livros do Passo 2 ────────────────
+// ── Livro indicado pro resultado ──────────────────────────
+// A indicação vem da tabela de core/jornadas.js (perfil dominante → livro).
 // precosBySlug: objeto { 'vencendo_medo': {...dados de precos}, ... }
 //               vindo da tabela `precos` (banco Comunicação).
 // resultado:    saída de calcularResultado()
-// retorna: array de livros já filtrados/ordenados, prontos pra renderizar.
-//          Cada item: {
+// retorna: array com o livro indicado, pronto pra renderizar. Item: {
 //            slug, energia, titulo, capa_url, link_checkout_padrao,
-//            link_checkout_aluno, preco_aluno, preco_padrao, selo,
+//            link_checkout_aluno, preco_aluno, preco_padrao, preco_de,
+//            desconto_pct, parcelas_qtd, parcelas_valor, atributos, selo,
 //            tag, cor_fundo, cor_texto, percentual_inteiro,
 //            percentual_interno, linha_evidencia
 //          }
 function montarLivrosRecomendados(precosBySlug, resultado) {
-  const lista = [];
+  const slug = indicacaoDoPerfil(resultado.perfil_dominante).livro;
+  const energia = resultado.perfil_dominante_bruto;
+  const percInt = resultado.percentuais_exibicao[energia] || 0;
+  const tagInfo = tagPorPercentual(percInt);
+  const labelEnergia = PERFIS_LABELS[energia] || energia;
 
-  for (const livro of LIVROS_DA_SERIE) {
-    const energia = livro.energia;
-    const percInt = resultado.percentuais_exibicao[energia] || 0;
-    const percReal = resultado.percentuais[energia] || 0;
+  // Dados do produto (vêm de precos)
+  const p = (precosBySlug && precosBySlug[slug]) || {};
 
-    // Regra geral: Desordem/Validação/Sobrevivência só aparecem se > 0%.
-    // Regra especial: Medo aparece SEMPRE (mesmo com 0%).
-    const apareceSempre = (energia === 'medo');
-    if (!apareceSempre && percInt === 0) continue;
-
-    const tagInfo = tagPorPercentual(percInt);
-
-    // Linha de evidência muda quando é Medo com 0%
-    let linhaEvidencia;
-    if (energia === 'medo' && percInt === 0) {
-      linhaEvidencia = 'O medo é uma energia transversal — vale como apoio em qualquer jornada.';
-    } else {
-      const labelEnergia = PERFIS_LABELS[energia] || energia;
-      linhaEvidencia = percInt + '% de ' + labelEnergia + ' no seu teste';
-    }
-
-    // Dados do produto (vêm de precos)
-    const p = (precosBySlug && precosBySlug[livro.slug]) || {};
-
-    lista.push({
-      slug: livro.slug,
-      energia,
-      titulo: p.nome || livro.slug,
-      capa_url: p.imagem_url || '',
-      link_checkout_padrao: p.link_checkout_padrao || '',
-      link_checkout_aluno: p.link_checkout_aluno || '',
-      preco_padrao: p.preco_padrao || '',
-      preco_aluno: p.preco_alunos || '',
-      selo: SELO_PADRAO_LIVRO,
-      tag: tagInfo.tag,
-      cor_fundo: tagInfo.cor_fundo,
-      cor_texto: tagInfo.cor_texto,
-      percentual_inteiro: percInt,
-      percentual_interno: percReal,
-      linha_evidencia: linhaEvidencia,
-    });
-  }
-
-  // Ordenar: Urgente → Necessário → Útil → Complemento
-  // Em empate de tag: maior percentual interno primeiro
-  lista.sort((a, b) => {
-    const ordemA = ORDEM_TAG[a.tag] || 0;
-    const ordemB = ORDEM_TAG[b.tag] || 0;
-    if (ordemA !== ordemB) return ordemB - ordemA;
-    return b.percentual_interno - a.percentual_interno;
-  });
-
-  return lista;
+  return [{
+    slug,
+    energia,
+    titulo: p.nome || slug,
+    capa_url: p.imagem_url || '',
+    link_checkout_padrao: p.link_checkout_padrao || '',
+    link_checkout_aluno: p.link_checkout_aluno || '',
+    // exibir_avista/_de/parcelas já consideram promo ativa (processarProdutos,
+    // em routes/produtos.js) — mesmo "pacote" de preço usado nas LPs.
+    preco_padrao: p.exibir_avista || p.preco_padrao || '',
+    preco_de: p.exibir_de || '',
+    desconto_pct: p.desconto_pct || null,
+    parcelas_qtd: p.exibir_parcelas_qtd || '',
+    parcelas_valor: p.exibir_parcelas_valor || '',
+    preco_aluno: p.preco_alunos || '',
+    atributos: p.atributos || '',
+    selo: LIVROS_DA_SERIE.has(slug) ? SELO_PADRAO_LIVRO : '',
+    tag: tagInfo.tag,
+    cor_fundo: tagInfo.cor_fundo,
+    cor_texto: tagInfo.cor_texto,
+    percentual_inteiro: percInt,
+    percentual_interno: resultado.percentuais[energia] || 0,
+    linha_evidencia: percInt + '% de ' + labelEnergia + ' no seu teste',
+  }];
 }
 
 // ── Lista de energias pra exibir no Bloco 3 (5 energias) ──
-// Devolve array ordenado por percentual decrescente (interno, pra desempate),
+// Devolve array ordenado por percentual decrescente,
 // no formato: [{ slug, label, percentual_inteiro }]
+// Em percentuais iguais, segue o desempate — a vencedora fica em primeiro.
 function montarListaEnergias(resultado) {
   const arr = PERFIS_VALIDOS.map(p => ({
     slug: p,
@@ -239,91 +193,15 @@ function montarListaEnergias(resultado) {
     percentual_inteiro: resultado.percentuais_exibicao[p] || 0,
     percentual_interno: resultado.percentuais[p] || 0,
   }));
-  arr.sort((a, b) => b.percentual_interno - a.percentual_interno);
+  arr.sort((a, b) =>
+    (b.percentual_interno - a.percentual_interno)
+    || (DESEMPATE_PRIORIDADE[b.slug] - DESEMPATE_PRIORIDADE[a.slug])
+  );
   return arr;
 }
 
-// ── Montar a JORNADA do método pra uma aluna ─────────────
-// Recebe:
-//   jornadaCfg:      { slug, numero, nome_exibicao, subtitulo, cor, passos: [...] }
-//                    passos vêm com { ordem, produto_slug, titulo_passo, descricao_passo }
-//   slugsComprados:  Set ou array com os slugs dos produtos que a aluna já tem
-//   precosBySlug:    objeto { 'vencendo_medo': {...}, 'ouro_reprogramacao': {...}, ... }
-//                    vindo da tabela `precos` (banco Comunicação) — fonte da verdade
-//                    pra nome, capa, preço e link de checkout.
-//   opts:            { fezTeste: bool }  — se a aluna já fez o teste, considera
-//                    o passo "teste_subconsciente" como concluído mesmo sem pagamento.
-//                    Pagar serve pra liberar o RESULTADO; fazer já conta como concluir
-//                    o passo "Conhecer" da jornada.
-//
-// Devolve a estrutura pronta pra UI:
-//   {
-//     slug, numero, nome_exibicao, subtitulo, cor,
-//     passos: [{
-//       ordem, titulo, descricao, produto_slug, produto_nome, produto_imagem,
-//       link_checkout_padrao, link_checkout_aluno, preco_padrao, preco_aluno,
-//       comprado, eh_proximo
-//     }],
-//     progresso: { passos_concluidos, passos_totais, percentual }
-//   }
-function montarJornada(jornadaCfg, slugsComprados, precosBySlug, opts) {
-  if (!jornadaCfg) return null;
-  const fezTeste = !!(opts && opts.fezTeste);
-  const compradosSet = new Set(Array.isArray(slugsComprados) ? slugsComprados : Array.from(slugsComprados || []));
-  const dadosBySlug = precosBySlug || {};
-
-  const passos = (jornadaCfg.passos || []).map(p => {
-    // Regra especial: teste_subconsciente é "concluído" se a aluna fez o teste,
-    // independente de ter pago. Fazer o teste já cumpre o passo do método.
-    const ehPassoDoTeste = (p.produto_slug === 'teste_subconsciente');
-    const comprado = compradosSet.has(p.produto_slug) || (ehPassoDoTeste && fezTeste);
-    const dadosProd = dadosBySlug[p.produto_slug] || {};
-    return {
-      ordem: p.ordem,
-      titulo: p.titulo_passo,
-      descricao: p.descricao_passo,
-      produto_slug: p.produto_slug,
-      produto_nome: dadosProd.nome || p.produto_slug,
-      produto_imagem: dadosProd.imagem_url || '',
-      link_checkout_padrao: dadosProd.link_checkout_padrao || '',
-      link_checkout_aluno: dadosProd.link_checkout_aluno || '',
-      preco_padrao: dadosProd.preco_padrao || '',
-      preco_aluno: dadosProd.preco_alunos || '',
-      comprado,
-      eh_proximo: false,  // marcado abaixo
-    };
-  });
-
-  // O "próximo" é o primeiro NÃO comprado em ordem
-  const idxProximo = passos.findIndex(p => !p.comprado);
-  if (idxProximo >= 0) passos[idxProximo].eh_proximo = true;
-
-  const concluidos = passos.filter(p => p.comprado).length;
-  const total = passos.length;
-
-  return {
-    slug: jornadaCfg.slug,
-    numero: jornadaCfg.numero,
-    nome_exibicao: jornadaCfg.nome_exibicao,
-    subtitulo: jornadaCfg.subtitulo,
-    cor: jornadaCfg.cor,
-    passos,
-    progresso: {
-      passos_concluidos: concluidos,
-      passos_totais: total,
-      percentual: total > 0 ? Math.round((concluidos / total) * 100) : 0,
-    },
-  };
-}
-
 module.exports = {
-  PERFIS_BLOQUEADORES,
-  PERFIS_VALIDOS,
-  PERFIS_LABELS,
-  PERFIS_CORES,
   calcularResultado,
-  tagPorPercentual,
   montarLivrosRecomendados,
   montarListaEnergias,
-  montarJornada,
 };

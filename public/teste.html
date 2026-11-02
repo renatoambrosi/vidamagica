@@ -1184,13 +1184,10 @@
          false = entrada simples: nome+telefone vai DIRETO pras perguntas,
                  SEM reconhecer usuário e SEM tela de retomar.
          true  = volta reconhecimento (pré-preencher / "que bom te ver") + retomar.
-       TESTE_PAGAMENTO (hoje true):
-         true  = no fim do teste ABRE O CHECKOUT (pagamento). Precisa do
-                 link_checkout_padrao do teste_subconsciente no admin.
-         false = fim do teste vai direto pro /resultado (sem pagar).
+       Checkout no fim do teste: vem do Modo dev no admin (Teste do
+         Subconsciente), via `pagamento_obrigatorio` do /api/teste/responder.
        ═══════════════════════════════════════════════════════════════ */
     window.TESTE_RECONHECER_E_RETOMAR = false;
-    window.TESTE_PAGAMENTO = true;
 
     /* PREÇO — fonte única: /api/precos. Nunca hardcoded. */
     (async function(){
@@ -1915,7 +1912,7 @@
               // localStorage sobrevive ao ida-e-volta pro domínio do pagamento (mesma aba).
               window._testeTrocarTela('finalizado');
 
-              if (!window.TESTE_PAGAMENTO) {
+              if (!data.pagamento_obrigatorio) {
                 // Pagamento desligado: vai direto pro resultado (sem pagar).
                 setTimeout(() => { window.location.href = `/resultado/${data.teste_id}`; }, 1400);
               } else {

@@ -38,7 +38,7 @@ const {
 } = require('../core/admins');
 
 const { enfileirarAtendimento } = require('../core/gateway');
-const { gerarTokenPainel, autenticarPainel } = require('../middleware/autenticar');
+const { gerarTokenPainel } = require('../middleware/autenticar');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../middleware/autenticar');
 

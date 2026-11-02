@@ -51,9 +51,9 @@ Deploy alvo: Railway (`vidamagica-production.up.railway.app`). Origins CORS est�
 | **Tema de relato** (vínculo produto ↔ relato) | Tabela `temas` (poolComunicacao). Cada tema aponta pra `produto_slug`. Cada relato aponta pra `tema_id`. | Tag paralela, categoria nova |
 | **Imagem/preço/link checkout de um produto** | `/api/precos` (ou `/api/produtos` — alias). Frontend SEMPRE puxa de lá via `data-preco-key`. | Hardcode no HTML |
 | **Carrossel de relatos numa LP nova** | `<script src="/relatos-card.js"></script>` antes de `</body>`. Não reimplementar swipe/modal. | Reescrever interatividade |
-| **Cálculo de jornada da aluna** | `calcularJornadaVigente()` em `core/jornadas.js`. Fonte da verdade. | Outra lógica de "qual jornada" |
-| **Cálculo de resultado do teste** | `calcularResultado()` em `core/teste-resultado.js`. | Recalcular percentuais |
-| **Lista de livros do Passo 2** | `montarLivrosRecomendados()` em `core/teste-resultado.js`. Regra de tag (Urgente/Necessário/Útil/Complemento) já aplicada. | Filtragem custom |
+| **Cálculo de jornada da aluna** | `calcularJornadaVigente()` em `core/jornadas.js`. Fonte da verdade. | Outra lógica de "qual jornada". Telas usam `montarJornadaExibicao()`; as tabelas `jornadas_*` estão sem uso |
+| **Cálculo de resultado do teste** | `calcularResultado()` em `core/teste-resultado.js`. Fonte única, também do que é gravado. | Recalcular percentuais |
+| **Livro e curso indicados por resultado** | `indicacaoDoPerfil()` em `core/jornadas.js`; card do livro em `montarLivrosRecomendados()` (`core/teste-resultado.js`). | Filtragem custom |
 | **Sessão da aluna no frontend** | Helper global `VmSession` (localStorage/sessionStorage). | Cookie próprio |
 | **Cadastrar produto novo** | Adicionar em `PRECOS_INICIAIS` de `routes/seed.js`. Seed insere no próximo boot (sem sobrescrever). | INSERT manual no banco |
 | **Creditar/debitar SEMENTES** (qualquer motivo) | `core/sementes.js` → `creditarSementes({ client, usuario_id, delta, motivo, origem_tipo, origem_id })` ou `debitarSementes(...)`. Sempre dentro de transação (`poolCore.connect()` + `BEGIN`/`COMMIT`/`ROLLBACK`). Helper grava no ledger `sementes_movimentacoes`, faz `SELECT … FOR UPDATE` no usuário, atualiza `usuarios.sementes` atomicamente. | `UPDATE usuarios SET sementes = sementes + N` solto, soma no cliente, qualquer atalho |
@@ -76,7 +76,6 @@ Este projeto tem frentes em construção. Antes de fazer qualquer alteração qu
 
 | Área do código | Memória a ler antes | O que está pendente |
 |---|---|---|
-| `core/jornadas.js` ou regras de jornada | `project_frente_4b_jornadas.md` | Jornada 2 vai virar 4 passos. Prosperidade + trava deixa de rebaixar pra Conhecer e Despertar. 6 decisões do Renato faltam. |
 | Sistema de análise/leitura inteligente do teste | `project_analise_renato.md` | Produto "Análise do Renato" (Sub-fase 1A) — backend + admin sem expor ao frontend ainda. Modelo PSN-com-cadeado. |
 | Tabela `depoimentos` ou UI de relatos | `project_relatos_fases234.md` | Fase 2 (aluna envia pelo /app), Fase 3 (moderação no admin), Fase 4 (auto-off por arquivamento). Infra já pronta. |
 | Criação de nova LP de produto | `project_lps_blueprint.md` | 4 LPs da Série Conhecer e Despertar + 1 LP "só dela" pendentes. NÃO mexer no esqueleto comum entre LPs. |
@@ -98,6 +97,8 @@ Se você não tem certeza se uma mudança afeta alguma dessas áreas, **leia a m
 - O sistema está **em produção no Railway**, mas hoje só o **Renato** (dono do projeto) usa. Ainda não foi aberto pra alunas reais.
 - Renato **não é programador** e **não usa terminal**. Ele edita arquivos via interface web do GitHub e o Railway auto-deploya em 1-2 min. "Ver funcionando" pra ele = ver no site de produção.
 - **Não há ambiente de staging.** O que entra na branch principal vai direto pra produção. Mudanças arriscadas precisam de cuidado proporcional — mas sem alunas reais hoje, ainda há espaço pra experimentar.
+
+**Cobrança do Teste:** controlada pelo Modo dev na barra lateral do admin (`core/teste-config.js`, chave `teste_modo_dev` em `config`). Desligado, sem configuração ou com erro de leitura = checkout + resultado só com pagamento. Ligado = sem checkout e resultado aberto. Todo teste nasce `pago=FALSE`; feito com Modo dev ligado grava `testes.modo_dev=TRUE` e o resultado fica aberto para sempre.
 
 **Decisões deliberadas que NÃO são bug:**
 
@@ -232,9 +233,10 @@ Os 5 routers montados em `/api` raiz definem seus próprios subpaths internament
 | `core/admins.js`         | `poolComunicacao`        | Helpers de admin (`admins`, `admin_otp_tokens`, `admin_sessoes`)                    |
 | `core/gateway.js`        | `poolComunicacao`        | Gateway unificado de saída WhatsApp + worker em loop                                |
 | `core/whatsapp.js`       | —                        | Cliente HTTP baixo nível da Evolution (sem fila/retry; quem chama decide)           |
-| `core/jornadas.js`       | `poolCore` + `poolTeste` | Calcula jornada vigente da aluna (Conhecer → Vida Mágica → Multiplicando)           |
-| `core/teste-conteudo.js` | —                        | Conteúdo estático do Teste (15 perguntas × 5 alternativas, 5 perfis)                |
-| `core/teste-resultado.js`| —                        | Lógica de cálculo do resultado (alta resolução interna, arredondamento visual)      |
+| `core/jornadas.js`       | `poolCore` + `poolTeste` | Fonte única da jornada e dos materiais indicados por resultado           |
+| `core/teste-conteudo.js` | —                        | Conteúdo estático do Teste (15 perguntas × 5 alternativas) + constantes únicas de perfil |
+| `core/teste-config.js`   | `poolComunicacao`        | Modo dev do Teste (liga/desliga cobrança pelo admin)                                |
+| `core/teste-resultado.js`| —                        | Cálculo único do resultado, desempate, lista de energias e card do livro            |
 | `core/atualizacoes.js`   | `poolCore`               | `criarAtualizacaoCompra` / `criarAtualizacaoTeste` — gera celebração na Home        |
 | `core/utils.js`          | —                        | Normalização canônica de telefone (E.164 sem `+`). Não reimplementar em outro lugar.|
 | `core/gamificacao.js`    | `poolCore` + `poolTeste` + `poolComunicacao` | Motor TRANSVERSAL: `registrarLogin`, `progressoEvento`, `concederPremio`, `fecharRankingMensal`, `lerIndicadoresGamificacao`. Avança 3 ofensivas (mensal cumulativa, trimestral cumulativa, rápida consecutiva), missões por jornada, ranking. NÃO é do Caderno — Caderno é só uma das fontes (escrever = `alvo_tipo='caderno_escrita'`). |
@@ -250,11 +252,25 @@ Nomes e conceitos do produto. **Escrever sempre por extenso, na grafia exata** �
 
 ### As 3 Jornadas (ordem fixa)
 
-1. **Conhecer e Despertar** (`conhecer_e_despertar`) — default; pra quem tem trava forte
-2. **Vida Mágica** (`vida_magica`) — Prosperidade dominante nv1 ou nv2, SEM trava > 20%
-3. **Multiplicando a Vida Mágica** (`multiplicando_vida_magica`) — Prosperidade dominante nv3, SEM trava > 20%
+1. **Conhecer e Despertar** (`conhecer_e_despertar`) — Medo, Desordem, Validação ou Sobrevivência dominante
+2. **Vida Mágica** (`vida_magica`) — Otimismo ou Expansão dominante
+3. **Poder e Plenitude** (`poder_e_plenitude`) — Plenitude dominante
 
-**Regra do override** (em `core/jornadas.js`): mesmo se Prosperidade for dominante, se QUALQUER perfil bloqueador (medo/desordem/sobrevivencia/validacao) > 20%, a aluna fica na Jornada 1 (Conhecer e Despertar). Trava forte tem prioridade. **Não bypassar** — é regra do produto.
+As jornadas são as Fases 1, 2 e 3 da seção de produtos do `index.html`. Qual produto aparece em cada fase é escolha editorial do HTML; nome, capa, preço e checkout vêm de `/api/precos` por `data-produto`.
+
+**Teste que vale pra jornada:** o mais recente com `ativou_trilha=TRUE`, via `buscarTesteDaJornada()` em `core/jornadas.js`. Tudo que precisa da jornada da aluna usa esse helper.
+
+**A energia dominante decide tudo** (em `core/jornadas.js`, `INDICACAO_POR_PERFIL`). Não existe mais rebaixamento por trava forte: Prosperidade dominante segue a jornada do seu nível mesmo com outra energia acima de 20%. A jornada "Multiplicando a Vida Mágica" foi extinta em 2026-11-02.
+
+| Resultado | Jornada | Livro | Curso |
+|---|---|---|---|
+| Medo | Conhecer e Despertar | `vencendo_medo` | `ouro_reprogramacao` |
+| Desordem | Conhecer e Despertar | `vencendo_desordem` | `ouro_reprogramacao` |
+| Validação | Conhecer e Despertar | `vencendo_validacao` | `ouro_reprogramacao` |
+| Sobrevivência | Conhecer e Despertar | `vencendo_sobrevivencia` | `lda_biblica` |
+| Otimismo (`prosperidade_nv1`) | Vida Mágica | `guia_pratico` | `lda_biblica` |
+| Expansão (`prosperidade_nv2`) | Vida Mágica | `atal_maneira_livro` | `atal_maneira_curso` |
+| Plenitude (`prosperidade_nv3`) | Poder e Plenitude | `magica_fluir` | nenhum |
 
 ### Os 5 perfis do Teste do Subconsciente
 
@@ -263,11 +279,11 @@ Nomes e conceitos do produto. **Escrever sempre por extenso, na grafia exata** �
 - **Sobrevivência** (`sobrevivencia`) — antes `autossuficiencia`, renomeado; mesma lógica
 - **Validação** (`validacao`)
 - **Prosperidade** (`prosperidade`), subdividida em 3 níveis (faixas oficiais — não confundir com versões antigas do código):
-  - `prosperidade_nv1` — **< 50%** (até 49,99) → abre **Vida Mágica** se dominante
-  - `prosperidade_nv2` — **≥ 50% e < 80%** (50 a 79,99) → ⚠️ ainda **não tem jornada própria**; Renato vai criar produtos pra essa faixa. Enquanto isso, segue mesma trilha de nv1 (Vida Mágica) como placeholder
-  - `prosperidade_nv3` — **≥ 80%** → abre **Multiplicando a Vida Mágica**
+  - `prosperidade_nv1` = **Otimismo** — **< 50%** (até 49,99)
+  - `prosperidade_nv2` = **Expansão** — **≥ 50% e < 80%** (50 a 79,99)
+  - `prosperidade_nv3` = **Plenitude** — **≥ 80%**
 
-Os 4 primeiros são "perfis bloqueadores". Cálculo interno usa alta resolução (fração decimal); exibição usa `Math.round`. Empates visuais são possíveis (ex: 27% e 27%) mas o desempate interno é fixo: `validacao > sobrevivencia > desordem > medo`.
+Os 4 primeiros são "perfis bloqueadores". Percentual = respostas da energia ÷ total de respostas; exibição usa `Math.round`. O cálculo é um só: `calcularResultado()` em `core/teste-resultado.js`, inclusive para o que é gravado em `testes`. Percentuais iguais são possíveis (33% e 33%) e o desempate é fixo: `validacao > sobrevivencia > desordem > medo > prosperidade`. Prosperidade só é dominante quando vence sozinha, e a vencedora sempre aparece primeiro na lista de energias. Constantes de perfil (`PERFIS_VALIDOS`, `PERFIS_RESULTADO`, `PERFIS_LABELS`, `PERFIS_CORES`) moram só em `core/teste-conteudo.js`.
 
 ### Outros termos de marca
 
@@ -277,21 +293,13 @@ Os 4 primeiros são "perfis bloqueadores". Cálculo interno usa alta resolução
 - **Sementes** — moeda virtual da aluna (`usuarios.sementes`), ganhas em interações com o app.
 - **Suellen** (ou **Su**) — face do atendimento pra aluna. Renato é o admin/dono.
 
-### Passo 3 do Resultado — automático (não editável no admin)
+### Materiais do Resultado — automáticos (não editáveis no admin)
 
-A página `/resultado/:id` mostra um "Passo 3 — Curso recomendado". **Os 5 campos manuais antigos** (`passo3_curso_titulo`, `passo3_curso_capa_url`, `passo3_curso_descricao`, `passo3_curso_preco`, `passo3_curso_link_checkout`) e seus duplicados `_2` **NÃO são mais editáveis no admin** (foram removidos da tela "Conteúdo dos Resultados").
+A página `/resultado/:id` mostra 1 curso + 1 livro, lidos da tabela `INDICACAO_POR_PERFIL` em `core/jornadas.js` (ver "As 3 Jornadas"). Plenitude não tem curso: o card some e o livro vira "Seu próximo passo". O selo do Aulão só aparece nos 4 livros da Série Conhecer e Despertar.
 
-O backend (`routes/teste.js`) preenche esses campos automaticamente lendo do produto vinculado, via regra de jornada:
+Os campos antigos `passo3_curso_*` continuam no banco (`teste_perfis_conteudo`) por compat e são sobrescritos no `GET /api/teste/resultado/:id`, lendo nome/capa/preço/link do produto.
 
-- **Sobrevivência** dominante → `lda_biblica`
-- **Medo / Desordem / Validação** dominantes → `ouro_reprogramacao`
-- **Prosperidade dominante COM trava forte** (>20% em alguma energia-problema) → hoje cai em Conhecer e Despertar e recebe `ouro_reprogramacao` (⚠️ Frente 4.B pendente: Renato definiu que essa aluna deveria ir pra Vida Mágica/Multiplicando com livros e Ouro adicionados no início — ainda não implementado)
-- **Prosperidade nv1 ou nv2 SEM trava** → `atal_maneira_livro`
-- **Prosperidade nv3 SEM trava** → `atal_maneira_curso`
-
-Os campos antigos continuam no banco (`teste_perfis_conteudo`) por compat, mas são sobrescritos no envio da resposta. Frontend (`resultado.html`) não muda — recebe os mesmos nomes de campo.
-
-**Pra mudar qual produto aparece**: ajustar a regra em `routes/teste.js` (bloco "Passo 3 — Curso recomendado") ou alterar dados do produto na aba "Produtos" do admin.
+**Pra mudar qual produto aparece**: ajustar `INDICACAO_POR_PERFIL` em `core/jornadas.js` ou alterar dados do produto na aba "Produtos" do admin.
 
 ### Atualizações pendentes
 

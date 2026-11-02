@@ -7,7 +7,9 @@
 
 const express = require('express');
 const router = express.Router();
-const { poolComunicacao } = require('../db');
+const { poolComunicacao, poolTeste } = require('../db');
+const { calcularResultado } = require('../core/teste-resultado');
+const { PERFIS_VALIDOS } = require('../core/teste-conteudo');
 const { autenticarPainel } = require('../middleware/autenticar');
 
 const PRECOS_INICIAIS = {
@@ -371,6 +373,41 @@ async function seedPrecos() {
   }
 }
 
+/* ============================================================
+   Alinha testes já gravados com a regra única de core/teste-resultado.js.
+   Roda 1 vez (seed_log). Só corrige perfil_dominante e nivel_prosperidade;
+   percentuais e respostas não mudam. Teste com perfil antigo nas respostas
+   fica como está.
+   ============================================================ */
+async function alinharPerfisGravados() {
+  const chave = 'testes_perfil_regra_unica_v1';
+  const feito = await poolComunicacao.query(`SELECT 1 FROM seed_log WHERE seed_key = $1`, [chave]);
+  if (feito.rowCount > 0) return 0;
+
+  const r = await poolTeste.query(`SELECT id, respostas, perfil_dominante, nivel_prosperidade FROM testes`);
+  let corrigidos = 0;
+  for (const t of r.rows) {
+    const respostas = Array.isArray(t.respostas) ? t.respostas : JSON.parse(t.respostas || '[]');
+    if (!respostas.length || !respostas.every(x => PERFIS_VALIDOS.includes(x.perfil))) continue;
+
+    const calc = calcularResultado(respostas);
+    if (calc.perfil_dominante === t.perfil_dominante && calc.nivel_prosperidade === t.nivel_prosperidade) continue;
+
+    await poolTeste.query(
+      `UPDATE testes SET perfil_dominante = $1, nivel_prosperidade = $2 WHERE id = $3`,
+      [calc.perfil_dominante, calc.nivel_prosperidade, t.id]
+    );
+    corrigidos++;
+  }
+
+  await poolComunicacao.query(
+    `INSERT INTO seed_log (seed_key) VALUES ($1) ON CONFLICT DO NOTHING`,
+    [chave]
+  );
+  console.log(`✅ Testes alinhados com a regra única: ${corrigidos} corrigido(s)`);
+  return corrigidos;
+}
+
 router.post('/admin/seed', autenticarPainel('admin'), async (req, res) => {
   try {
     const inseridos = await seedPrecos();
@@ -385,3 +422,4 @@ router.post('/admin/seed', autenticarPainel('admin'), async (req, res) => {
 
 module.exports = router;
 module.exports.seedPrecos = seedPrecos;
+module.exports.alinharPerfisGravados = alinharPerfisGravados;

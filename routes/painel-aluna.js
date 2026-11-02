@@ -197,47 +197,21 @@ router.delete('/usuarios/:id/produtos/:upId', async (req, res) => {
 // ── GET /usuarios/:id/jornada ───────────────────────────────
 router.get('/usuarios/:id/jornada', async (req, res) => {
   try {
-    const { poolCore, poolTeste, poolComunicacao } = require('../db');
-    const { calcularResultado, montarJornada } = require('../core/teste-resultado');
+    const { poolCore, poolComunicacao } = require('../db');
+    const { calcularResultado } = require('../core/teste-resultado');
+    const { calcularJornadaVigente, montarJornadaExibicao, buscarTesteDaJornada } = require('../core/jornadas');
 
     const usuarioId = req.params.id;
     const u = await poolCore.query(`SELECT telefone FROM usuarios WHERE id = $1`, [usuarioId]);
     if (!u.rows[0]) return res.status(404).json({ ok: false, erro: 'usuário não encontrado' });
     const telefone = u.rows[0].telefone;
 
-    const tR = await poolTeste.query(
-      `SELECT id, respostas, perfil_dominante, feito_em
-         FROM testes
-        WHERE usuario_id = $1 OR telefone_canonico = $2
-        ORDER BY feito_em DESC LIMIT 1`,
-      [usuarioId, telefone]
-    );
-    if (!tR.rows[0]) {
-      return res.json({ ok: true, jornada: null, motivo: 'Aluna ainda não fez o teste.' });
+    const teste = await buscarTesteDaJornada(usuarioId, telefone);
+    if (!teste) {
+      return res.json({ ok: true, jornada: null, motivo: 'Aluna ainda não tem jornada ativada.' });
     }
-    const teste = tR.rows[0];
     const respostas = Array.isArray(teste.respostas) ? teste.respostas : JSON.parse(teste.respostas || '[]');
     const calc = calcularResultado(respostas);
-
-    const mapR = await poolComunicacao.query(
-      `SELECT j.slug, j.numero, j.nome_exibicao, j.subtitulo, j.cor
-         FROM jornadas_perfis_map m
-         JOIN jornadas_metodo j ON j.slug = m.jornada_slug
-        WHERE m.perfil_slug = $1`,
-      [calc.perfil_dominante]
-    );
-    if (!mapR.rows[0]) {
-      return res.json({ ok: true, jornada: null, motivo: 'Sem jornada mapeada para o perfil ' + calc.perfil_dominante });
-    }
-    const jornadaCfg = mapR.rows[0];
-
-    const passosR = await poolComunicacao.query(
-      `SELECT ordem, produto_slug, titulo_passo, descricao_passo
-         FROM jornadas_passos
-        WHERE jornada_slug = $1 ORDER BY ordem`,
-      [jornadaCfg.slug]
-    );
-    jornadaCfg.passos = passosR.rows;
 
     const compR = await poolCore.query(
       `SELECT p.slug FROM usuario_produtos up
@@ -247,8 +221,13 @@ router.get('/usuarios/:id/jornada', async (req, res) => {
     );
     const slugsComprados = new Set(compR.rows.map(r => r.slug));
 
+    const vigente = calcularJornadaVigente({
+      perfil_dominante: calc.perfil_dominante,
+      slugsComprados,
+    });
+
     // Dados dos produtos da jornada — fonte: tabela `precos`
-    const slugsPassos = passosR.rows.map(p => p.produto_slug);
+    const slugsPassos = vigente.passos.flatMap(p => p.produtos);
     const precosR = await poolComunicacao.query(
       `SELECT key, dados FROM precos WHERE key = ANY($1::text[])`,
       [slugsPassos]
@@ -256,7 +235,7 @@ router.get('/usuarios/:id/jornada', async (req, res) => {
     const precosBySlug = {};
     precosR.rows.forEach(r => { precosBySlug[r.key] = r.dados || {}; });
 
-    const jornada = montarJornada(jornadaCfg, slugsComprados, precosBySlug, { fezTeste: true });
+    const jornada = montarJornadaExibicao(vigente, precosBySlug);
 
     return res.json({
       ok: true,
