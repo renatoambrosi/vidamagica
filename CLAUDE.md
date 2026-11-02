@@ -100,7 +100,7 @@ Se você não tem certeza se uma mudança afeta alguma dessas áreas, **leia a m
 
 **Cobrança do Teste:** controlada pelo Modo dev na barra lateral do admin (`core/teste-config.js`, chave `teste_modo_dev` em `config`). Desligado, sem configuração ou com erro de leitura = checkout + resultado só com pagamento. Ligado = sem checkout e resultado aberto. Todo teste nasce `pago=FALSE`; feito com Modo dev ligado grava `testes.modo_dev=TRUE` e o resultado fica aberto para sempre.
 
-**Log do Teste:** chave "Mostrar log do teste" na barra lateral do admin (`core/teste-config.js`, chave `teste_mostrar_log` em `config`). Ligada, `/resultado/:id` mostra o box Log, que lê cada campo direto do gravado em `testes` e `teste_alternativas`, sem passar pelo cálculo da tela: perguntas computadas, respostas por energia, percentuais gravados x tela, primeira menção e letra de cada resposta. Desligada, o log nem sai do servidor. A letra é a posição atual da alternativa.
+**Log do Teste:** chave "Mostrar log do teste" na barra lateral do admin (`core/teste-config.js`, chave `teste_mostrar_log` em `config`). Ligada, `/resultado/:id` mostra o box Log, que lê cada campo direto do gravado em `testes` e `teste_alternativas`, sem passar pelo cálculo da tela: perguntas computadas, respostas por energia, percentual real x tela, primeira menção e letra de cada resposta. O verificador põe check ou X ao lado de cada linha, conforme ela bate com a regra. Desligada, o log nem sai do servidor. A letra é a posição atual da alternativa.
 
 **Decisões deliberadas que NÃO são bug:**
 

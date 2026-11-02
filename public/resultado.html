@@ -160,6 +160,12 @@
       font-size: 1.06rem; font-weight: 600; line-height: 1.55;
       margin: 0 auto; max-width: 30rem;
     }
+    .erro-texto {
+      color: var(--pearl-dim, rgba(245,240,232,0.65));
+      font-family: var(--font-body);
+      font-size: 0.95rem; line-height: 1.6;
+      margin: 0.75rem auto 0; max-width: 30rem;
+    }
     .erro-acoes { margin-top: 1.75rem; display: flex; flex-direction: column; gap: 0.9rem; }
     .erro-divisor { height: 1px; background: rgba(245,240,232,0.1); margin: 0.4rem 0; }
     .erro-bloco { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -303,9 +309,24 @@
       line-height: 1.6;
       margin-bottom: 0.75rem;
     }
+    .b-log-item {
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem;
+    }
+    .b-log-selo {
+      flex-shrink: 0;
+      width: 1.05rem; height: 1.05rem;
+      margin-top: 0.2rem;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .b-log-selo.is-ok { color: #4ade80; }
+    .b-log-selo.is-erro { color: #f87171; }
     .b-log-linha {
       display: grid;
-      grid-template-columns: 2rem 1.75rem 1fr;
+      grid-template-columns: 2rem 1.75rem 1fr auto;
       padding: 0.3rem 0;
       font-size: 0.88rem;
       color: var(--pearl);
@@ -1551,22 +1572,21 @@
 
   <!-- Estado: erro -->
   <div id="erro" class="erro-box" style="display:none">
-    <div class="erro-selo" aria-hidden="true">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg>
-    </div>
-    <p id="erro-msg">Não foi possível carregar este resultado.</p>
+    <div class="erro-selo" id="erro-selo" aria-hidden="true"></div>
+    <p id="erro-msg"></p>
+    <p id="erro-texto" class="erro-texto"></p>
 
     <div id="erro-acoes" class="erro-acoes" style="display:none">
-      <!-- Momento 1: concluir o pagamento -->
-      <div class="erro-bloco">
+      <!-- Só no pagamento pendente: concluir o pagamento -->
+      <div class="erro-bloco" id="erro-bloco-pagar" style="display:none">
         <p class="erro-bloco-txt">Se você ainda não finalizou, é só concluir o pagamento — seu resultado abre na hora.</p>
         <a id="erro-btn-pagar" class="erro-cta erro-cta-pagar" href="#" style="display:none">Concluir pagamento</a>
       </div>
-      <div class="erro-divisor"></div>
-      <!-- Momento 2: falar com o suporte -->
+      <div class="erro-divisor" id="erro-divisor" style="display:none"></div>
       <div class="erro-bloco">
-        <p class="erro-bloco-txt">Já pagou e o resultado não abriu? Fale com a gente, resolvemos com você.</p>
-        <a id="erro-btn-suporte" class="erro-cta erro-cta-suporte" href="#" target="_blank" rel="noopener">
+        <p class="erro-bloco-txt" id="erro-txt-suporte" style="display:none">Já pagou e o resultado não abriu? Fale com a gente, resolvemos com você.</p>
+        <button id="erro-btn-tentar" class="erro-cta erro-cta-pagar" type="button" style="display:none">Tentar de novo</button>
+        <a id="erro-btn-suporte" class="erro-cta erro-cta-suporte" href="#" target="_blank" rel="noopener" style="display:none">
           <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3C9 3 3.5 8.5 3.5 15.5c0 2.4.7 4.6 1.8 6.5L3 29l7.2-2.3c1.8 1 3.9 1.5 6 1.5 7 0 12.5-5.5 12.5-12.5S23 3 16 3zm0 22.8c-1.9 0-3.7-.5-5.2-1.4l-.4-.2-4.3 1.4 1.4-4.2-.3-.4a10 10 0 0 1-1.6-5.3C5.7 9.7 10.3 5.2 16 5.2s10.3 4.5 10.3 10.3S21.7 25.8 16 25.8zm5.7-7.7c-.3-.2-1.8-.9-2.1-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-.9 1.1-.2.2-.3.2-.6.1-1.8-.9-3-1.6-4.2-3.6-.3-.5.3-.5.8-1.5.1-.2 0-.4 0-.5 0-.2-.7-1.7-1-2.3-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.1 3.3 5.2 4.6 3.1 1.3 3.1.9 3.7.8.5-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.2-.3-.2-.5-.4z"/></svg>
           <span>Falar com o suporte</span>
         </a>
@@ -1688,8 +1708,9 @@
   // ID vem da URL: /resultado/<uuid>. Tolera prefixo "VM" (marca de origem do
   // checkout) — se vier /resultado/VM<uuid>, captura só o UUID.
   const path = window.location.pathname;
-  const match = path.match(/\/resultado\/(?:VM)?([a-f0-9-]+)/i);
-  const testeId = match ? match[1] : null;
+  const match = path.match(/\/resultado\/(?:VM)?([a-f0-9-]+)\/?$/i);
+  const FORMATO_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const testeId = match && FORMATO_ID.test(match[1]) ? match[1] : null;
 
   const elLoading = document.getElementById('loading');
   const elErro = document.getElementById('erro');
@@ -1700,20 +1721,63 @@
   const SUPORTE_WA_NUMERO = '5562999884411';
   const SUPORTE_WA_TEXTO = 'Estou com problemas no teste do subconsciente.';
 
-  // Monta os 2 caminhos de recuperação na tela de erro:
-  //   1) Fazer o pagamento — só aparece se temos testeId + link de checkout.
-  //   2) Falar com o suporte — sempre (abre WhatsApp com a frase pronta).
-  async function montarAcoesErro() {
+  // As 4 situações da tela de erro. Cada uma tem ícone, título e explicação
+  // próprios. Pagamento e relógio só aparecem no pagamento pendente.
+  const ESTADOS_ERRO = {
+    pagamento: {
+      icone: '<circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/>',
+      titulo: 'Estamos identificando o seu pagamento',
+      texto: 'Assim que ele for confirmado, o seu resultado aparece aqui — e também chega no seu WhatsApp e e-mail.',
+      pagar: true,
+      suporte: true,
+    },
+    link: {
+      icone: '<path d="m18.84 12.25 1.72-1.71a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="m5.17 11.75-1.71 1.71a5 5 0 0 0 7.07 7.07l1.71-1.71"/><path d="M8 2v3M2 8h3M16 22v-3M22 16h-3"/>',
+      titulo: 'Não encontramos seu teste por este link',
+      texto: 'O link pode ter sido copiado pela metade ou alterado. Se você já pagou, seu resultado foi enviado para o WhatsApp e o e-mail que você informou. Abra por lá. Se não encontrar, fale com a gente.',
+      suporte: true,
+    },
+    falha: {
+      icone: '<path d="M6 10H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><path d="M6 14H4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-2"/><path d="M6 6h.01M6 18h.01"/><path d="m13 6-4 6h6l-4 6"/>',
+      titulo: 'Não conseguimos abrir seu resultado agora',
+      texto: 'O problema é do nosso lado. Seu teste continua salvo. Tente de novo em alguns minutos.',
+      tentar: true,
+      suporte: true,
+    },
+    conexao: {
+      icone: '<path d="M12 20h.01"/><path d="M8.5 16.43a5 5 0 0 1 7 0"/><path d="M5 12.86a10 10 0 0 1 5.17-2.69"/><path d="M19 12.86a10 10 0 0 0-2-1.52"/><path d="M2 8.82a15 15 0 0 1 4.18-2.64"/><path d="M22 8.82a15 15 0 0 0-11.29-3.76"/><path d="m2 2 20 20"/>',
+      titulo: 'Sem conexão com a internet',
+      texto: 'Confira sua internet e tente de novo. Seu teste continua salvo.',
+      tentar: true,
+    },
+  };
+
+  // Monta as ações da situação. "Concluir pagamento" só aparece se temos
+  // testeId + link de checkout; o suporte abre o WhatsApp com a frase pronta.
+  async function montarAcoesErro(estado) {
     const acoes = document.getElementById('erro-acoes');
     const btnPagar = document.getElementById('erro-btn-pagar');
     const btnSuporte = document.getElementById('erro-btn-suporte');
+    const btnTentar = document.getElementById('erro-btn-tentar');
     if (!acoes) return;
 
-    if (btnSuporte) {
+    if (estado.suporte) {
       btnSuporte.href = 'https://wa.me/' + SUPORTE_WA_NUMERO + '?text=' + encodeURIComponent(SUPORTE_WA_TEXTO);
+      btnSuporte.style.display = '';
     }
 
-    if (btnPagar && testeId) {
+    if (estado.tentar) {
+      btnTentar.addEventListener('click', () => window.location.reload());
+      btnTentar.style.display = '';
+    }
+
+    if (estado.pagar) {
+      document.getElementById('erro-bloco-pagar').style.display = '';
+      document.getElementById('erro-divisor').style.display = '';
+      document.getElementById('erro-txt-suporte').style.display = '';
+    }
+
+    if (estado.pagar && btnPagar && testeId) {
       try {
         const r = await fetch('/api/precos', { headers: { 'Accept': 'application/json' } });
         if (r.ok) {
@@ -1739,15 +1803,18 @@
     acoes.style.display = '';
   }
 
-  function mostrarErro(msg) {
+  function mostrarErro(situacao) {
+    const estado = ESTADOS_ERRO[situacao];
     elLoading.style.display = 'none';
-    elErroMsg.textContent = msg;
+    document.getElementById('erro-selo').innerHTML = '<svg viewBox="0 0 24 24">' + estado.icone + '</svg>';
+    elErroMsg.textContent = estado.titulo;
+    document.getElementById('erro-texto').textContent = estado.texto;
     elErro.style.display = 'block';
-    montarAcoesErro();
+    montarAcoesErro(estado);
   }
 
   if (!testeId) {
-    mostrarErro('Link inválido.');
+    mostrarErro('link');
     return;
   }
 
@@ -1763,22 +1830,22 @@
     }
     if (!r.ok) {
       if (r.status === 404) {
-        mostrarErro('Resultado não encontrado. Verifique o link.');
+        mostrarErro('link');
       } else if (r.status === 402) {
-        mostrarErro('Estamos identificando o seu pagamento. Assim que ele for confirmado, o seu resultado aparece aqui — e também chega no seu WhatsApp e e-mail.');
+        mostrarErro('pagamento');
       } else {
-        mostrarErro('Não foi possível carregar este resultado. Tente novamente em alguns instantes.');
+        mostrarErro('falha');
       }
       return;
     }
     dados = await r.json();
     if (!dados.ok) {
-      mostrarErro(dados.erro || 'Erro ao carregar resultado.');
+      mostrarErro('falha');
       return;
     }
   } catch (err) {
     console.error('[resultado] erro:', err);
-    mostrarErro('Sem conexão. Tente novamente.');
+    mostrarErro('conexao');
     return;
   }
 
@@ -2066,47 +2133,69 @@
     }).join('');
 
     // ── LOG: só vem do servidor com a chave do admin ligada ──
-    // Cada campo do log é o gravado; "tela" é o que a página acabou de mostrar.
+    // "Real" vem das respostas cruas; "tela" é o que a página acabou de mostrar.
+    // Verificador: cada linha ganha check se bater com a regra, ou X se não bater.
     if (d.log) {
       const nomeLog = (slug) => escapeHtml(d.log.labels[slug] || slug);
-      const gravados = d.log.percentuais_gravados || {};
-      const somaGravada = d.energias.reduce((s, e) => s + (Number(gravados[e.slug]) || 0), 0);
-      const somaTela = d.energias.reduce((s, e) => s + e.percentual_inteiro, 0);
+      const selo = (ok) => ok
+        ? '<svg class="b-log-selo is-ok" viewBox="0 0 24 24" role="img" aria-label="Confere"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+        : '<svg class="b-log-selo is-erro" viewBox="0 0 24 24" role="img" aria-label="Não confere"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+      const item = (texto, ok) => '<div class="b-log-item"><span>' + texto + '</span>' + selo(ok) + '</div>';
+      const decimal = (n) => n.toFixed(2).replace('.', ',');
+
+      const reais = d.log.percentuais_reais;
+      const somaReal = Object.values(reais).reduce((s, n) => s + n, 0);
+      const telas = d.energias.map(e => e.percentual_inteiro);
+      const somaTela = telas.reduce((s, n) => s + n, 0);
       document.getElementById('b-log-resumo').innerHTML =
-        'Perguntas computadas: <strong>' + d.log.total + '</strong><br>' +
-        'Soma gravada: <strong>' + somaGravada + '%</strong><br>' +
-        'Soma na tela: <strong>' + somaTela + '%</strong>';
+        item('Perguntas computadas: <strong>' + d.log.total + '</strong>', d.log.total === d.log.perguntas_da_versao) +
+        item('Soma real: <strong>' + decimal(somaReal) + '%</strong>', Math.abs(somaReal - 100) < 0.01) +
+        item('Soma na tela: <strong>' + somaTela + '%</strong>', somaTela === 100);
+
       document.getElementById('b-log-energias').innerHTML = d.energias.map(e => {
         const qtd = d.log.contagem[e.slug] || 0;
-        return '<div>' + escapeHtml(e.label) + ' ' + qtd + (qtd === 1 ? ' resposta' : ' respostas') +
-          ' = <strong>' + e.percentual_inteiro + '%</strong> na tela · ' +
-          '<strong>' + (gravados[e.slug] ?? '?') + '%</strong> gravado</div>';
+        const real = reais[e.slug] || 0;
+        const tela = e.percentual_inteiro;
+        return item(
+          escapeHtml(e.label) + ' ' + qtd + (qtd === 1 ? ' resposta' : ' respostas') +
+          ' = <strong>' + decimal(real) + '%</strong> real · <strong>' + tela + '%</strong> na tela',
+          Number.isInteger(tela) && Math.abs(tela - real) < 2
+        );
       }).join('');
 
       const pm = d.log.primeira_mencao;
       const gravadaBruta = String(d.log.predominante_gravada || '').split('_nv')[0];
-      const linhasMencao = ['<strong>Primeira menção</strong>'];
+      const dominanteTela = d.energias.find(e => e.slug === d.perfil_dominante_bruto);
+      const linhasMencao = ['<div><strong>Primeira menção</strong></div>'];
       if (!pm.empate) {
-        linhasMencao.push('Sem empate no 1º lugar: não se aplica');
+        linhasMencao.push('<div>Sem empate no 1º lugar: não se aplica</div>');
       } else {
-        linhasMencao.push('Empate no 1º lugar: ' + pm.empatadas.map(escapeHtml).join(', ') +
-          ' (' + pm.respostas_empate + (pm.respostas_empate === 1 ? ' resposta' : ' respostas') + ' cada)');
-        linhasMencao.push(pm.pergunta
-          ? 'Primeira a aparecer: pergunta ' + pm.pergunta + ', letra ' + escapeHtml(pm.letra) + ', ' + nomeLog(pm.vencedora)
-          : 'Prosperidade não vence empate');
+        linhasMencao.push('<div>Empate no 1º lugar: ' + pm.empatadas.map(escapeHtml).join(', ') +
+          ' (' + pm.respostas_empate + (pm.respostas_empate === 1 ? ' resposta' : ' respostas') + ' cada)</div>');
+        if (pm.pergunta) {
+          linhasMencao.push('<div>Primeira a aparecer: pergunta ' + pm.pergunta + ', letra ' +
+            escapeHtml(pm.letra) + ', ' + nomeLog(pm.vencedora) + '</div>');
+        }
+        if (pm.empatadas.includes(d.log.labels.prosperidade)) {
+          linhasMencao.push(item('Prosperidade não venceu o empate', d.perfil_dominante_bruto !== 'prosperidade'));
+        }
       }
-      linhasMencao.push('Predominante pela primeira menção: <strong>' + nomeLog(pm.vencedora) + '</strong>');
-      linhasMencao.push('Predominante gravada: <strong>' + nomeLog(gravadaBruta) + '</strong>');
-      linhasMencao.push('Predominante na tela: <strong>' + nomeLog(d.perfil_dominante_bruto) + '</strong>');
-      const confere = pm.vencedora === gravadaBruta && pm.vencedora === d.perfil_dominante_bruto;
-      linhasMencao.push('Confere: <strong>' + (confere ? 'Sim' : 'Não') + '</strong>');
-      document.getElementById('b-log-mencao').innerHTML = linhasMencao.join('<br>');
+      linhasMencao.push('<div>Predominante pela primeira menção: <strong>' + nomeLog(pm.vencedora) + '</strong></div>');
+      linhasMencao.push(item('Predominante gravada: <strong>' + nomeLog(gravadaBruta) + '</strong>', gravadaBruta === pm.vencedora));
+      linhasMencao.push(item('Predominante na tela: <strong>' + nomeLog(d.perfil_dominante_bruto) + '</strong>', d.perfil_dominante_bruto === pm.vencedora));
+      linhasMencao.push(item(
+        'Predominante sozinha no maior número: <strong>' + (dominanteTela ? dominanteTela.percentual_inteiro : '?') + '%</strong>',
+        !!dominanteTela && d.energias.every(e => e === dominanteTela || e.percentual_inteiro < dominanteTela.percentual_inteiro)
+      ));
+      linhasMencao.push(item('Lista do maior para o menor', telas.every((n, i) => i === 0 || n <= telas[i - 1])));
+      document.getElementById('b-log-mencao').innerHTML = linhasMencao.join('');
 
       document.getElementById('b-log-lista').innerHTML = d.log.respostas.map(r => (
         '<div class="b-log-linha">' +
           '<span>' + r.pergunta + '</span>' +
           '<span class="b-log-letra">' + escapeHtml(r.letra) + '</span>' +
           '<span>Energia ' + artigoEnergia(r.slug) + ' ' + escapeHtml(r.label) + '</span>' +
+          selo(r.letra !== '?' && !!d.log.labels[r.slug]) +
         '</div>'
       )).join('');
       document.getElementById('b-log').style.display = '';

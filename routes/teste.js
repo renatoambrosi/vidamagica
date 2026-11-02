@@ -1004,8 +1004,8 @@ router.post('/ativar-trilha/:teste_id', async (req, res) => {
 
 // ── Box Log da página de resultado ──────────────────────────
 // Conferência: cada campo sai direto do que está gravado, sem passar pelo
-// cálculo da tela. A primeira menção é refeita aqui, à parte, sobre as respostas
-// cruas, pra comparar com core/teste-resultado.js.
+// cálculo da tela. Percentual real e primeira menção são refeitos aqui, à parte,
+// sobre as respostas cruas, pra comparar com core/teste-resultado.js.
 // Letra = posição atual da alternativa. Teste feito antes de uma mudança
 // de ordem mostra a letra de hoje, não a que a pessoa viu.
 async function montarLogTeste(testeId) {
@@ -1021,7 +1021,7 @@ async function montarLogTeste(testeId) {
     [testeId]
   );
   const gravadoR = await poolTeste.query(
-    `SELECT percentuais, perfil_dominante, versao_id FROM testes WHERE id = $1`,
+    `SELECT perfil_dominante, versao_id FROM testes WHERE id = $1`,
     [testeId]
   );
   const respostasR = await poolTeste.query(
@@ -1034,6 +1034,10 @@ async function montarLogTeste(testeId) {
   const gravado = gravadoR.rows[0];
   const letrasR = await poolTeste.query(
     `SELECT pergunta_ordem, perfil, ordem_exibicao FROM teste_alternativas WHERE versao_id = $1`,
+    [gravado.versao_id]
+  );
+  const perguntasR = await poolTeste.query(
+    `SELECT COUNT(*)::int AS total FROM teste_perguntas WHERE versao_id = $1`,
     [gravado.versao_id]
   );
 
@@ -1061,8 +1065,11 @@ async function montarLogTeste(testeId) {
 
   return {
     total: totalR.rows[0].total,
+    perguntas_da_versao: perguntasR.rows[0].total,
     contagem,
-    percentuais_gravados: gravado.percentuais,
+    percentuais_reais: Object.fromEntries(
+      Object.entries(contagem).map(([p, n]) => [p, (n * 100) / totalR.rows[0].total])
+    ),
     predominante_gravada: gravado.perfil_dominante,
     respostas,
     primeira_mencao: {
