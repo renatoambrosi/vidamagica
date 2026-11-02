@@ -4,36 +4,83 @@
 
    Responsabilidades:
    - Receber as 15 respostas e calcular percentuais com alta resolução
-   - Aplicar regra de desempate (Validação > Sobrevivência > Desordem > Medo)
+   - Aplicar a primeira menção no empate (Prosperidade nunca vence empate)
    - Determinar o perfil dominante (incluindo subdivisão de Prosperidade em nv1/2/3)
    - Montar o card do livro indicado (indicação vem de core/jornadas.js)
 
    Princípios:
    - Fonte ÚNICA do cálculo: tudo que grava ou mostra resultado passa por aqui
    - Percentual = respostas da energia / total de respostas
-   - Exibição arredonda pra inteiro (regra: 0,5 sobe — Math.round)
-   - Percentuais iguais são possíveis (33% e 33%); a vencedora sai do desempate
+   - Exibição usa inteiros que sempre somam 100
+   - A predominante nunca empata na tela: fica sozinha no número mais alto
    ============================================================ */
 
 const { indicacaoDoPerfil } = require('./jornadas');
 const { PERFIS_VALIDOS, PERFIS_LABELS } = require('./teste-conteudo');
 
-// Regra de desempate: Validação > Sobrevivência > Desordem > Medo > Prosperidade.
-// Prosperidade só é dominante quando vence sozinha.
-const DESEMPATE_PRIORIDADE = {
-  validacao: 4,
-  sobrevivencia: 3,
-  desordem: 2,
-  medo: 1,
-  prosperidade: 0,
-};
+// Lei da primeira menção: energias na ordem em que apareceram nas respostas.
+// Prosperidade fica sempre por último, então só é dominante quando vence sozinha.
+function ordemPrimeiraMencao(respostas) {
+  const ordem = [];
+  [...respostas]
+    .sort((a, b) => (a.pergunta_ordem || 0) - (b.pergunta_ordem || 0))
+    .forEach((r) => {
+      if (PERFIS_VALIDOS.includes(r.perfil) && !ordem.includes(r.perfil)) ordem.push(r.perfil);
+    });
+  PERFIS_VALIDOS.forEach((p) => { if (!ordem.includes(p)) ordem.push(p); });
+  return [...ordem.filter((p) => p !== 'prosperidade'), 'prosperidade'];
+}
+
+// Percentuais de exibição: inteiros que somam 100, com a predominante sozinha
+// no número mais alto.
+// 1. Cada energia começa na parte inteira.
+// 2. O 1º ponto que falta vai pra predominante.
+// 3. Os demais vão pras maiores sobras. Quem empatou com a predominante fica na
+//    parte inteira e, nesse caso, só sobra de meio ponto pra cima arredonda.
+// 4. O que restar vai pra predominante.
+// 5. Se ela ainda empatar (percentual exato), a última empatada entrega 1 ponto.
+function montarPercentuaisExibicao(contagem, total, ordem, dominante) {
+  const exibicao = {};
+  const sobra = (p) => (contagem[p] * 100) % total;
+  let somaExibicao = 0;
+  let somaContagem = 0;
+  for (const p of PERFIS_VALIDOS) {
+    exibicao[p] = Math.floor((contagem[p] * 100) / total);
+    somaExibicao += exibicao[p];
+    somaContagem += contagem[p];
+  }
+  let faltam = Math.round((somaContagem * 100) / total) - somaExibicao;
+
+  if (faltam > 0 && sobra(dominante) > 0) {
+    exibicao[dominante]++;
+    faltam--;
+  }
+
+  const empatou = ordem.some((p) => p !== dominante && contagem[p] === contagem[dominante]);
+  const candidatas = ordem
+    .filter((p) => contagem[p] !== contagem[dominante] && sobra(p) > 0)
+    .filter((p) => !empatou || sobra(p) * 2 >= total)
+    .sort((a, b) => (sobra(b) - sobra(a)) || (ordem.indexOf(a) - ordem.indexOf(b)));
+  for (const p of candidatas.slice(0, faltam)) {
+    exibicao[p]++;
+    faltam--;
+  }
+  exibicao[dominante] += faltam;
+
+  const empatadasNaTela = ordem.filter((p) => p !== dominante && exibicao[p] >= exibicao[dominante]);
+  if (empatadasNaTela.length && contagem[dominante] > 0) {
+    exibicao[empatadasNaTela[empatadasNaTela.length - 1]]--;
+    exibicao[dominante]++;
+  }
+  return exibicao;
+}
 
 // ── Cálculo do resultado ──────────────────────────────────
 // respostas: array de { pergunta_ordem, perfil }
 // retorna: {
 //   contagem:     { medo, desordem, sobrevivencia, validacao, prosperidade } (inteiros)
 //   percentuais:  { ...mesma estrutura, mas com decimais (percentual interno) }
-//   percentuais_exibicao: { ...mesma estrutura, inteiros arredondados }
+//   percentuais_exibicao: { ...mesma estrutura, inteiros que somam 100 }
 //   perfil_dominante:           'medo'|'desordem'|...|'prosperidade_nv1'|'prosperidade_nv2'|'prosperidade_nv3'
 //   perfil_dominante_bruto:     'medo'|...|'prosperidade' (sem subdivisão)
 //   percentual_prosperidade:    inteiro
@@ -56,33 +103,15 @@ function calcularResultado(respostas) {
     percentuais[p] = (contagem[p] / total) * 100;
   }
 
-  // Percentuais de exibição (inteiros, arredondados — 0,5 sobe)
-  const percentuaisExibicao = {};
-  for (const p of PERFIS_VALIDOS) {
-    percentuaisExibicao[p] = Math.round(percentuais[p]);
-  }
-
   // ── Determinar dominante BRUTO ──
-  // Maior contagem; em empate, prioridade fixa (Validação > Sobrevivência > Desordem > Medo).
-  // Prosperidade só vence se tiver MAIOR sozinha — em empate com qualquer bloqueadora,
-  // a bloqueadora leva.
-  let dominanteBruto = null;
-  let maiorContagem = -1;
-  let maiorPrioridade = -1;
+  // Maior contagem; em empate, a primeira menção entre as empatadas.
+  // Prosperidade só vence se tiver MAIOR sozinha — em empate com qualquer
+  // bloqueadora, a bloqueadora leva.
+  const ordemEnergias = ordemPrimeiraMencao(respostas);
+  const maiorContagem = Math.max(...PERFIS_VALIDOS.map((p) => contagem[p]));
+  const dominanteBruto = ordemEnergias.find((p) => contagem[p] === maiorContagem);
 
-  for (const p of PERFIS_VALIDOS) {
-    const cnt = contagem[p];
-    const pri = DESEMPATE_PRIORIDADE[p];
-
-    if (cnt > maiorContagem) {
-      maiorContagem = cnt;
-      maiorPrioridade = pri;
-      dominanteBruto = p;
-    } else if (cnt === maiorContagem && pri > maiorPrioridade) {
-      maiorPrioridade = pri;
-      dominanteBruto = p;
-    }
-  }
+  const percentuaisExibicao = montarPercentuaisExibicao(contagem, total, ordemEnergias, dominanteBruto);
 
   // ── Subdivisão de Prosperidade em nv1/2/3 ──
   // Faixas oficiais (definidas pelo Renato):
@@ -106,6 +135,7 @@ function calcularResultado(respostas) {
     percentuais_exibicao: percentuaisExibicao,    // inteiros (UI)
     perfil_dominante: perfilDominante,
     perfil_dominante_bruto: dominanteBruto,
+    ordem_energias: ordemEnergias,                // primeira menção, Prosperidade por último
     percentual_prosperidade: percentuaisExibicao.prosperidade,
     nivel_prosperidade: nivelProsperidade,
   };
@@ -185,7 +215,7 @@ function montarLivrosRecomendados(precosBySlug, resultado) {
 // ── Lista de energias pra exibir no Bloco 3 (5 energias) ──
 // Devolve array ordenado por percentual decrescente,
 // no formato: [{ slug, label, percentual_inteiro }]
-// Em percentuais iguais, segue o desempate — a vencedora fica em primeiro.
+// Em percentuais iguais, segue a primeira menção.
 function montarListaEnergias(resultado) {
   const arr = PERFIS_VALIDOS.map(p => ({
     slug: p,
@@ -194,8 +224,8 @@ function montarListaEnergias(resultado) {
     percentual_interno: resultado.percentuais[p] || 0,
   }));
   arr.sort((a, b) =>
-    (b.percentual_interno - a.percentual_interno)
-    || (DESEMPATE_PRIORIDADE[b.slug] - DESEMPATE_PRIORIDADE[a.slug])
+    (b.percentual_inteiro - a.percentual_inteiro)
+    || (resultado.ordem_energias.indexOf(a.slug) - resultado.ordem_energias.indexOf(b.slug))
   );
   return arr;
 }

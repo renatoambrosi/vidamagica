@@ -1,38 +1,53 @@
 /* ============================================================
    VIDA MÁGICA — core/teste-config.js
-   Modo dev do Teste do Subconsciente, ligado pelo painel admin.
+   Chaves do Teste do Subconsciente, ligadas pelo painel admin.
 
-   Banco: poolComunicacao, tabela `config`, chave 'teste_modo_dev'.
+   Banco: poolComunicacao, tabela `config`.
 
+   Modo dev (chave 'teste_modo_dev'):
    Desligado (padrão): o fim do teste abre o checkout e o resultado
    só aparece com pagamento confirmado.
    Ligado: o fim do teste vai direto pro resultado, sem cobrar.
 
-   Sem configuração salva ou com erro de leitura, vale desligado
-   (cobrança ativa).
+   Mostrar log (chave 'teste_mostrar_log'):
+   Ligado: a página de resultado mostra o box Log com as respostas.
+   Desligado (padrão): o log nem sai do servidor.
+
+   Sem configuração salva ou com erro de leitura, vale desligado.
    ============================================================ */
 
 const { poolComunicacao } = require('../db');
 
-const CHAVE = 'teste_modo_dev';
+const CHAVE_MODO_DEV = 'teste_modo_dev';
+const CHAVE_MOSTRAR_LOG = 'teste_mostrar_log';
 
-async function lerModoDevTeste() {
+async function lerChave(chave) {
   try {
-    const r = await poolComunicacao.query(`SELECT dados FROM config WHERE chave = $1`, [CHAVE]);
+    const r = await poolComunicacao.query(`SELECT dados FROM config WHERE chave = $1`, [chave]);
     return !!(r.rows[0] && r.rows[0].dados && r.rows[0].dados.ativo === true);
   } catch (e) {
-    console.warn('⚠️ [teste-config] falha ao ler modo dev, mantendo cobrança:', e.message);
+    console.warn(`⚠️ [teste-config] falha ao ler ${chave}, mantendo desligado:`, e.message);
     return false;
   }
 }
 
-async function salvarModoDevTeste(ativo) {
+async function salvarChave(chave, ativo) {
   await poolComunicacao.query(
     `INSERT INTO config (chave, dados, atualizado_em)
      VALUES ($1, $2, NOW())
      ON CONFLICT (chave) DO UPDATE SET dados = $2, atualizado_em = NOW()`,
-    [CHAVE, JSON.stringify({ ativo: ativo === true })]
+    [chave, JSON.stringify({ ativo: ativo === true })]
   );
 }
 
-module.exports = { lerModoDevTeste, salvarModoDevTeste };
+const lerModoDevTeste = () => lerChave(CHAVE_MODO_DEV);
+const salvarModoDevTeste = (ativo) => salvarChave(CHAVE_MODO_DEV, ativo);
+const lerMostrarLogTeste = () => lerChave(CHAVE_MOSTRAR_LOG);
+const salvarMostrarLogTeste = (ativo) => salvarChave(CHAVE_MOSTRAR_LOG, ativo);
+
+module.exports = {
+  lerModoDevTeste,
+  salvarModoDevTeste,
+  lerMostrarLogTeste,
+  salvarMostrarLogTeste,
+};

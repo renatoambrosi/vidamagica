@@ -100,6 +100,8 @@ Se você não tem certeza se uma mudança afeta alguma dessas áreas, **leia a m
 
 **Cobrança do Teste:** controlada pelo Modo dev na barra lateral do admin (`core/teste-config.js`, chave `teste_modo_dev` em `config`). Desligado, sem configuração ou com erro de leitura = checkout + resultado só com pagamento. Ligado = sem checkout e resultado aberto. Todo teste nasce `pago=FALSE`; feito com Modo dev ligado grava `testes.modo_dev=TRUE` e o resultado fica aberto para sempre.
 
+**Log do Teste:** chave "Mostrar log do teste" na barra lateral do admin (`core/teste-config.js`, chave `teste_mostrar_log` em `config`). Ligada, `/resultado/:id` mostra o box Log, que lê cada campo direto do gravado em `testes` e `teste_alternativas`, sem passar pelo cálculo da tela: perguntas computadas, respostas por energia, percentuais gravados x tela, primeira menção e letra de cada resposta. Desligada, o log nem sai do servidor. A letra é a posição atual da alternativa.
+
 **Decisões deliberadas que NÃO são bug:**
 
 1. ⚠️ `routes/app.js:164` e `routes/app.js:337` contêm `|| true` que considera **qualquer teste como pago**, ignorando o gateway de pagamento. Isso é **proposital** e os próprios comentários no código marcam como ⚠️ TEMPORÁRIO ⚠️. Razão técnica: **o Kiwify não tem modo sandbox/teste** — toda transação é dinheiro real. Renato precisa rodar o fluxo do Teste do Subconsciente várias vezes pra validar texto, layout do resultado, e-mail, etc. Se o pagamento estivesse ligado, cada validação custaria uma compra real. O `|| true` é o "modo desenvolvedor" caseiro que o Kiwify não oferece. **Não tratar como bug nem sugerir remover** até que Renato diga explicitamente "vou plugar o Kiwify pra valer" / "vou abrir pras alunas". Nesse momento, essas 2 linhas (e qualquer outra similar) saem.
@@ -283,7 +285,7 @@ As jornadas são as Fases 1, 2 e 3 da seção de produtos do `index.html`. Qual 
   - `prosperidade_nv2` = **Expansão** — **≥ 50% e < 80%** (50 a 79,99)
   - `prosperidade_nv3` = **Plenitude** — **≥ 80%**
 
-Os 4 primeiros são "perfis bloqueadores". Percentual = respostas da energia ÷ total de respostas; exibição usa `Math.round`. O cálculo é um só: `calcularResultado()` em `core/teste-resultado.js`, inclusive para o que é gravado em `testes`. Percentuais iguais são possíveis (33% e 33%) e o desempate é fixo: `validacao > sobrevivencia > desordem > medo > prosperidade`. Prosperidade só é dominante quando vence sozinha, e a vencedora sempre aparece primeiro na lista de energias. Constantes de perfil (`PERFIS_VALIDOS`, `PERFIS_RESULTADO`, `PERFIS_LABELS`, `PERFIS_CORES`) moram só em `core/teste-conteudo.js`.
+Os 4 primeiros são "perfis bloqueadores". Percentual = respostas da energia ÷ total de respostas; exibição usa inteiros que sempre somam 100, com a predominante sozinha no número mais alto (`montarPercentuaisExibicao`). O cálculo é um só: `calcularResultado()` em `core/teste-resultado.js`, inclusive para o que é gravado em `testes`. Empate no 1º lugar segue a lei da primeira menção: vence a primeira energia empatada que apareceu nas respostas. Prosperidade nunca vence empate, só é dominante quando vence sozinha. Energias abaixo da primeira podem aparecer com o mesmo número, mas a predominante nunca empata na tela. Constantes de perfil (`PERFIS_VALIDOS`, `PERFIS_RESULTADO`, `PERFIS_LABELS`, `PERFIS_CORES`) moram só em `core/teste-conteudo.js`.
 
 ### Outros termos de marca
 

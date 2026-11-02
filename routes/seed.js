@@ -375,27 +375,44 @@ async function seedPrecos() {
 
 /* ============================================================
    Alinha testes já gravados com a regra única de core/teste-resultado.js.
-   Roda 1 vez (seed_log). Só corrige perfil_dominante e nivel_prosperidade;
-   percentuais e respostas não mudam. Teste com perfil antigo nas respostas
-   fica como está.
+   Roda 1 vez (seed_log). Corrige predominante, nível e percentuais gravados;
+   respostas não mudam. Teste com perfil antigo nas respostas fica como está.
    ============================================================ */
 async function alinharPerfisGravados() {
-  const chave = 'testes_perfil_regra_unica_v1';
+  const chave = 'testes_primeira_mencao_v1';
   const feito = await poolComunicacao.query(`SELECT 1 FROM seed_log WHERE seed_key = $1`, [chave]);
   if (feito.rowCount > 0) return 0;
 
-  const r = await poolTeste.query(`SELECT id, respostas, perfil_dominante, nivel_prosperidade FROM testes`);
+  const r = await poolTeste.query(
+    `SELECT id, respostas, percentuais, perfil_dominante, nivel_prosperidade, percentual_prosperidade FROM testes`
+  );
   let corrigidos = 0;
   for (const t of r.rows) {
     const respostas = Array.isArray(t.respostas) ? t.respostas : JSON.parse(t.respostas || '[]');
     if (!respostas.length || !respostas.every(x => PERFIS_VALIDOS.includes(x.perfil))) continue;
 
     const calc = calcularResultado(respostas);
-    if (calc.perfil_dominante === t.perfil_dominante && calc.nivel_prosperidade === t.nivel_prosperidade) continue;
+    const percentuaisIguais = PERFIS_VALIDOS.every(
+      p => Number((t.percentuais || {})[p]) === calc.percentuais_exibicao[p]
+    );
+    if (
+      percentuaisIguais
+      && calc.perfil_dominante === t.perfil_dominante
+      && calc.nivel_prosperidade === t.nivel_prosperidade
+    ) continue;
 
     await poolTeste.query(
-      `UPDATE testes SET perfil_dominante = $1, nivel_prosperidade = $2 WHERE id = $3`,
-      [calc.perfil_dominante, calc.nivel_prosperidade, t.id]
+      `UPDATE testes
+          SET perfil_dominante = $1, nivel_prosperidade = $2,
+              percentuais = $3, percentual_prosperidade = $4
+        WHERE id = $5`,
+      [
+        calc.perfil_dominante,
+        calc.nivel_prosperidade,
+        JSON.stringify(calc.percentuais_exibicao),
+        calc.percentual_prosperidade,
+        t.id,
+      ]
     );
     corrigidos++;
   }

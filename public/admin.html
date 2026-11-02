@@ -619,6 +619,12 @@ select option { background: #1a1205; }
     <label class="toggle"><input type="checkbox" id="teste-modo-dev" disabled><span class="toggle-slider"></span></label>
     <button class="btn btn-ghost btn-sm" id="btn-modo-dev" onclick="salvarModoDev()" disabled>Salvar</button>
   </div>
+  <div class="sidebar-modo-dev">
+    <span class="nav-icon">📋</span>
+    <span class="sidebar-modo-dev-label">Mostrar log do teste</span>
+    <label class="toggle"><input type="checkbox" id="teste-mostrar-log" disabled><span class="toggle-slider"></span></label>
+    <button class="btn btn-ghost btn-sm" id="btn-mostrar-log" onclick="salvarMostrarLog()" disabled>Salvar</button>
+  </div>
 
   <div class="sidebar-section-label" style="margin-top:0.15rem">Espaço da Manifestação</div>
   <div class="nav-item" id="nav-espaco-afirmacoes" onclick="goTab('espaco-afirmacoes', this)">
@@ -4056,6 +4062,38 @@ async function salvarModoDev() {
   }
 }
 
+// ── TESTE DO SUBCONSCIENTE — MOSTRAR LOG (chave na barra lateral) ──
+async function carregarMostrarLog() {
+  const chave = document.getElementById('teste-mostrar-log');
+  const btn = document.getElementById('btn-mostrar-log');
+  try {
+    const r = await fetch(`${API}/api/admin/teste/mostrar-log`, { headers: { Authorization: authHeader() } });
+    const d = await r.json();
+    if (!d.ok) return;
+    chave.checked = d.ativo;
+    chave.disabled = false;
+    btn.disabled = false;
+  } catch (e) {
+    console.warn('Mostrar log indisponível:', e);
+  }
+}
+
+async function salvarMostrarLog() {
+  const ativo = document.getElementById('teste-mostrar-log').checked;
+  try {
+    const r = await fetch(`${API}/api/admin/teste/mostrar-log`, {
+      method: 'PUT',
+      headers: { Authorization: authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ativo }),
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.erro || 'Erro');
+    toast(ativo ? 'Log do teste ligado' : 'Log do teste desligado');
+  } catch (e) {
+    toast('Não consegui salvar o log do teste', 'error');
+  }
+}
+
 // ── TESTE DO SUBCONSCIENTE — RESULTADOS (lista + envio manual) ──
 const testesResultados = (function(){
   let status = 'todos';
@@ -6253,6 +6291,7 @@ async function gamFecharRankingAtual() {
 // ===== INIT =====
 carregarProdutos();
 carregarModoDev();
+carregarMostrarLog();
 bootDepoimentos();
 </script>
 </body>

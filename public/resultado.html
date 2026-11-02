@@ -288,6 +288,33 @@
     }
 
     /* ═══════════════════════════════════════════════════
+       LOG — respostas do teste (chave no admin)
+       ═══════════════════════════════════════════════════ */
+    .b-log {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(245,240,232,0.1);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .b-log-resumo {
+      font-size: 0.9rem;
+      color: var(--pearl);
+      line-height: 1.6;
+      margin-bottom: 0.75rem;
+    }
+    .b-log-linha {
+      display: grid;
+      grid-template-columns: 2rem 1.75rem 1fr;
+      padding: 0.3rem 0;
+      font-size: 0.88rem;
+      color: var(--pearl);
+      border-bottom: 1px solid rgba(245,240,232,0.08);
+    }
+    .b-log-linha:last-child { border-bottom: none; }
+    .b-log-letra { color: var(--gold); font-weight: 700; }
+
+    /* ═══════════════════════════════════════════════════
        BLOCO 4 — Compartilhar
        ═══════════════════════════════════════════════════ */
     .b4-btn {
@@ -1570,6 +1597,14 @@
       <div id="b3-lista"></div>
     </div>
 
+    <div class="b-log" id="b-log" style="display:none">
+      <div class="b3-titulo">Log</div>
+      <div class="b-log-resumo" id="b-log-resumo"></div>
+      <div class="b-log-resumo" id="b-log-energias"></div>
+      <div class="b-log-resumo" id="b-log-mencao"></div>
+      <div id="b-log-lista"></div>
+    </div>
+
     <!-- BLOCO 4 -->
     <button class="b4-btn" id="b4-btn">
       <i class="fab fa-whatsapp"></i>
@@ -2029,6 +2064,53 @@
         '</div>'
       );
     }).join('');
+
+    // ── LOG: só vem do servidor com a chave do admin ligada ──
+    // Cada campo do log é o gravado; "tela" é o que a página acabou de mostrar.
+    if (d.log) {
+      const nomeLog = (slug) => escapeHtml(d.log.labels[slug] || slug);
+      const gravados = d.log.percentuais_gravados || {};
+      const somaGravada = d.energias.reduce((s, e) => s + (Number(gravados[e.slug]) || 0), 0);
+      const somaTela = d.energias.reduce((s, e) => s + e.percentual_inteiro, 0);
+      document.getElementById('b-log-resumo').innerHTML =
+        'Perguntas computadas: <strong>' + d.log.total + '</strong><br>' +
+        'Soma gravada: <strong>' + somaGravada + '%</strong><br>' +
+        'Soma na tela: <strong>' + somaTela + '%</strong>';
+      document.getElementById('b-log-energias').innerHTML = d.energias.map(e => {
+        const qtd = d.log.contagem[e.slug] || 0;
+        return '<div>' + escapeHtml(e.label) + ' ' + qtd + (qtd === 1 ? ' resposta' : ' respostas') +
+          ' = <strong>' + e.percentual_inteiro + '%</strong> na tela · ' +
+          '<strong>' + (gravados[e.slug] ?? '?') + '%</strong> gravado</div>';
+      }).join('');
+
+      const pm = d.log.primeira_mencao;
+      const gravadaBruta = String(d.log.predominante_gravada || '').split('_nv')[0];
+      const linhasMencao = ['<strong>Primeira menção</strong>'];
+      if (!pm.empate) {
+        linhasMencao.push('Sem empate no 1º lugar: não se aplica');
+      } else {
+        linhasMencao.push('Empate no 1º lugar: ' + pm.empatadas.map(escapeHtml).join(', ') +
+          ' (' + pm.respostas_empate + (pm.respostas_empate === 1 ? ' resposta' : ' respostas') + ' cada)');
+        linhasMencao.push(pm.pergunta
+          ? 'Primeira a aparecer: pergunta ' + pm.pergunta + ', letra ' + escapeHtml(pm.letra) + ', ' + nomeLog(pm.vencedora)
+          : 'Prosperidade não vence empate');
+      }
+      linhasMencao.push('Predominante pela primeira menção: <strong>' + nomeLog(pm.vencedora) + '</strong>');
+      linhasMencao.push('Predominante gravada: <strong>' + nomeLog(gravadaBruta) + '</strong>');
+      linhasMencao.push('Predominante na tela: <strong>' + nomeLog(d.perfil_dominante_bruto) + '</strong>');
+      const confere = pm.vencedora === gravadaBruta && pm.vencedora === d.perfil_dominante_bruto;
+      linhasMencao.push('Confere: <strong>' + (confere ? 'Sim' : 'Não') + '</strong>');
+      document.getElementById('b-log-mencao').innerHTML = linhasMencao.join('<br>');
+
+      document.getElementById('b-log-lista').innerHTML = d.log.respostas.map(r => (
+        '<div class="b-log-linha">' +
+          '<span>' + r.pergunta + '</span>' +
+          '<span class="b-log-letra">' + escapeHtml(r.letra) + '</span>' +
+          '<span>Energia ' + artigoEnergia(r.slug) + ' ' + escapeHtml(r.label) + '</span>' +
+        '</div>'
+      )).join('');
+      document.getElementById('b-log').style.display = '';
+    }
 
     // ── BLOCO 4: botão de compartilhar ──
     document.getElementById('b4-btn').addEventListener('click', () => {

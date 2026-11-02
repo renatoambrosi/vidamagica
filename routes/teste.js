@@ -26,7 +26,7 @@ const {
 const { calcularJornadaVigente, indicacaoDoPerfil, temClubeVidaMagica, SLUG } = require('../core/jornadas');
 const { autenticar } = require('../middleware/autenticar');
 const { enfileirarAtendimento } = require('../core/gateway');
-const { lerModoDevTeste } = require('../core/teste-config');
+const { lerModoDevTeste, lerMostrarLogTeste } = require('../core/teste-config');
 const { processarProdutos } = require('./produtos');
 
 // Número do Renato — recebe aviso no WhatsApp a cada avaliação nova do resultado.
@@ -824,6 +824,9 @@ router.get('/resultado/:teste_id', async (req, res) => {
 
     // Lista das 5 energias (Bloco 3)
     const energias = montarListaEnergias(resultado);
+    const log = (await lerMostrarLogTeste())
+      ? await montarLogTeste(testeId).catch(() => null)
+      : null;
 
     // Texto do compartilhamento
     let textoCompartilhar = '';
@@ -894,6 +897,7 @@ router.get('/resultado/:teste_id', async (req, res) => {
       perfil_dominante_bruto: resultado.perfil_dominante_bruto, // ex: 'medo' ou 'prosperidade'
       faixa_prosperidade: FAIXA_PROSPERIDADE[resultado.perfil_dominante] || null,
       energias,                                                 // [{slug,label,percentual_inteiro}, ...]
+      log,                                                      // box Log, só com a chave do admin ligada
       // Conteúdo do perfil
       conteudo: conteudoPerfil,                                 // tudo de teste_perfis_conteudo
       // Livros do Passo 2
@@ -997,6 +1001,81 @@ router.post('/ativar-trilha/:teste_id', async (req, res) => {
     return res.status(500).json({ ok: false, erro: 'erro interno' });
   }
 });
+
+// ── Box Log da página de resultado ──────────────────────────
+// Conferência: cada campo sai direto do que está gravado, sem passar pelo
+// cálculo da tela. A primeira menção é refeita aqui, à parte, sobre as respostas
+// cruas, pra comparar com core/teste-resultado.js.
+// Letra = posição atual da alternativa. Teste feito antes de uma mudança
+// de ordem mostra a letra de hoje, não a que a pessoa viu.
+async function montarLogTeste(testeId) {
+  const totalR = await poolTeste.query(
+    `SELECT jsonb_array_length(respostas) AS total FROM testes WHERE id = $1`,
+    [testeId]
+  );
+  const contagemR = await poolTeste.query(
+    `SELECT r->>'perfil' AS perfil, COUNT(*)::int AS respostas
+       FROM testes t, jsonb_array_elements(t.respostas) r
+      WHERE t.id = $1
+      GROUP BY 1`,
+    [testeId]
+  );
+  const gravadoR = await poolTeste.query(
+    `SELECT percentuais, perfil_dominante, versao_id FROM testes WHERE id = $1`,
+    [testeId]
+  );
+  const respostasR = await poolTeste.query(
+    `SELECT (r->>'pergunta_ordem')::int AS pergunta, r->>'perfil' AS perfil
+       FROM testes t, jsonb_array_elements(t.respostas) r
+      WHERE t.id = $1
+      ORDER BY 1`,
+    [testeId]
+  );
+  const gravado = gravadoR.rows[0];
+  const letrasR = await poolTeste.query(
+    `SELECT pergunta_ordem, perfil, ordem_exibicao FROM teste_alternativas WHERE versao_id = $1`,
+    [gravado.versao_id]
+  );
+
+  const letras = new Map(
+    letrasR.rows.map(a => [a.pergunta_ordem + '|' + a.perfil, 'ABCDE'[a.ordem_exibicao - 1]])
+  );
+  const respostas = respostasR.rows.map(x => ({
+    pergunta: x.pergunta,
+    letra: letras.get(x.pergunta + '|' + x.perfil) || '?',
+    slug: x.perfil,
+    label: PERFIS_LABELS[x.perfil] || x.perfil,
+  }));
+  const contagem = Object.fromEntries(contagemR.rows.map(x => [x.perfil, x.respostas]));
+
+  // Primeira menção: no empate do 1º lugar, vence a primeira energia que
+  // apareceu nas respostas. Prosperidade nunca vence empate.
+  const maior = Math.max(...Object.values(contagem));
+  const empatadas = Object.keys(contagem).filter(p => contagem[p] === maior);
+  const candidatas = empatadas.filter(p => p !== 'prosperidade');
+  const primeira = respostas.find(x => candidatas.includes(x.slug));
+  const usouPrimeira = candidatas.length > 1;
+  const vencedora = empatadas.length === 1
+    ? empatadas[0]
+    : (usouPrimeira ? primeira.slug : candidatas[0]);
+
+  return {
+    total: totalR.rows[0].total,
+    contagem,
+    percentuais_gravados: gravado.percentuais,
+    predominante_gravada: gravado.perfil_dominante,
+    respostas,
+    primeira_mencao: {
+      empate: empatadas.length > 1,
+      empatadas: empatadas.map(p => PERFIS_LABELS[p] || p),
+      respostas_empate: maior,
+      pergunta: usouPrimeira ? primeira.pergunta : null,
+      letra: usouPrimeira ? primeira.letra : null,
+      vencedora,
+    },
+    labels: PERFIS_LABELS,
+  };
+}
 
 // ──────────────────────────────────────────────────────────
 // POST /api/teste/avaliacao/:teste_id

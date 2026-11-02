@@ -31,7 +31,12 @@ const { enfileirarAtendimento } = require('../core/gateway');
 const { formatarTelefone } = require('../core/utils');
 const { PERFIS_VALIDOS, PERFIS_RESULTADO, PERFIS_LABELS, PERFIS_CORES, PERGUNTAS } = require('../core/teste-conteudo');
 const { calcularResultado } = require('../core/teste-resultado');
-const { lerModoDevTeste, salvarModoDevTeste } = require('../core/teste-config');
+const {
+  lerModoDevTeste,
+  salvarModoDevTeste,
+  lerMostrarLogTeste,
+  salvarMostrarLogTeste,
+} = require('../core/teste-config');
 
 // ── Middleware: só admin pode usar tudo aqui (escopo='admin')
 router.use(autenticarPainel('admin'));
@@ -1879,13 +1884,13 @@ router.get('/testes-insights/geral', async (req, res) => {
 
       if (leadIds.length) {
         const respR = await poolTeste.query(
-          `SELECT lead_id, perfil FROM teste_respostas WHERE lead_id = ANY($1::uuid[])`,
+          `SELECT lead_id, pergunta_ordem, perfil FROM teste_respostas WHERE lead_id = ANY($1::uuid[])`,
           [leadIds]
         );
         const porLead = new Map();
         for (const row of respR.rows) {
           if (!porLead.has(row.lead_id)) porLead.set(row.lead_id, []);
-          porLead.get(row.lead_id).push({ perfil: row.perfil });
+          porLead.get(row.lead_id).push({ pergunta_ordem: row.pergunta_ordem, perfil: row.perfil });
         }
         // Só conta lead que já respondeu pelo menos 1 pergunta — lead com
         // zero respostas não tem sinal nenhum (classificar daria resultado
@@ -2157,6 +2162,30 @@ router.put('/teste/modo-dev', async (req, res) => {
     res.json({ ok: true, ativo });
   } catch (err) {
     console.error('❌ /teste/modo-dev:', err.message);
+    res.status(500).json({ ok: false, erro: 'Erro ao salvar' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 26. TESTE DO SUBCONSCIENTE — MOSTRAR LOG
+// Ligado: a página de resultado mostra o box Log com as respostas.
+// ════════════════════════════════════════════════════════════
+
+router.get('/teste/mostrar-log', async (req, res) => {
+  res.json({ ok: true, ativo: await lerMostrarLogTeste() });
+});
+
+router.put('/teste/mostrar-log', async (req, res) => {
+  try {
+    const ativo = req.body && req.body.ativo;
+    if (typeof ativo !== 'boolean') {
+      return res.status(400).json({ ok: false, erro: 'ativo inválido' });
+    }
+    await salvarMostrarLogTeste(ativo);
+    console.log(`⚠️ [admin] log do teste ${ativo ? 'LIGADO' : 'DESLIGADO'}`);
+    res.json({ ok: true, ativo });
+  } catch (err) {
+    console.error('❌ /teste/mostrar-log:', err.message);
     res.status(500).json({ ok: false, erro: 'Erro ao salvar' });
   }
 });
