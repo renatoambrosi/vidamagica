@@ -9,7 +9,7 @@ const express = require('express');
 const router = express.Router();
 const { poolComunicacao, poolTeste } = require('../db');
 const { calcularResultado } = require('../core/teste-resultado');
-const { PERFIS_VALIDOS } = require('../core/teste-conteudo');
+const { PERFIS_VALIDOS, PERGUNTAS } = require('../core/teste-conteudo');
 const { autenticarPainel } = require('../middleware/autenticar');
 
 const PRECOS_INICIAIS = {
@@ -408,6 +408,105 @@ async function alinharPerfisGravados() {
   return corrigidos;
 }
 
+/* ============================================================
+   Coloca as alternativas gravadas na ordem A-E de core/teste-conteudo.js.
+   O seed das perguntas só roda em banco vazio, então produção ficou com a
+   ordem antiga (Medo sempre na A). Roda 1 vez (seed_log). Só muda a ordem:
+   texto e energia de cada alternativa continuam iguais.
+   ============================================================ */
+async function corrigirOrdemAlternativas() {
+  const chave = 'teste_alternativas_ordem_v1';
+  const feito = await poolComunicacao.query(`SELECT 1 FROM seed_log WHERE seed_key = $1`, [chave]);
+  if (feito.rowCount > 0) return;
+
+  const client = await poolTeste.connect();
+  try {
+    await client.query('BEGIN');
+    // Afasta a ordem atual antes, pra não bater na regra de ordem única por pergunta.
+    await client.query(`UPDATE teste_alternativas SET ordem_exibicao = ordem_exibicao + 100`);
+    for (const p of PERGUNTAS) {
+      for (let i = 0; i < p.alternativas.length; i++) {
+        await client.query(
+          `UPDATE teste_alternativas SET ordem_exibicao = $1
+            WHERE pergunta_ordem = $2 AND perfil = $3`,
+          [i + 1, p.ordem, p.alternativas[i].perfil]
+        );
+      }
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  await poolComunicacao.query(
+    `INSERT INTO seed_log (seed_key) VALUES ($1) ON CONFLICT DO NOTHING`,
+    [chave]
+  );
+  console.log('✅ Alternativas do Teste na ordem A-E oficial');
+}
+
+// Desfaz texto UTF-8 que foi lido como Mac Roman ("não" virou "n√£o").
+// Devolve null se o texto não for 100% reversível, pra nunca piorar o que existe.
+function desfazerTextoQuebrado(texto) {
+  const macRoman = new TextDecoder('macintosh');
+  const bytePorLetra = { '¤': 0xDB };
+  for (let b = 128; b <= 255; b++) bytePorLetra[macRoman.decode(Uint8Array.of(b))] = b;
+
+  const bytes = [];
+  for (const letra of texto) {
+    const codigo = letra.codePointAt(0);
+    const byte = codigo < 128 ? codigo : bytePorLetra[letra];
+    if (byte === undefined) return null;
+    bytes.push(byte);
+  }
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(bytes));
+  } catch {
+    return null;
+  }
+}
+
+/* ============================================================
+   Repara os textos de resultado gravados com acentos quebrados.
+   Roda 1 vez (seed_log). Campo sem sinal de texto quebrado fica intacto.
+   ============================================================ */
+async function repararAcentosResultados() {
+  const chave = 'teste_perfis_acentos_v1';
+  const feito = await poolComunicacao.query(`SELECT 1 FROM seed_log WHERE seed_key = $1`, [chave]);
+  if (feito.rowCount > 0) return;
+
+  const campos = [
+    'nome_exibicao', 'texto_diagnostico', 'passo1_texto', 'passo2_texto', 'passo3_texto',
+    'passo3_curso_descricao', 'passo3_curso_descricao_2', 'texto_fechamento_final',
+  ];
+  const r = await poolComunicacao.query(`SELECT slug, ${campos.join(', ')} FROM teste_perfis_conteudo`);
+  for (const perfil of r.rows) {
+    for (const campo of campos) {
+      const atual = perfil[campo];
+      if (!atual || !/√|‚Ä/.test(atual)) continue;
+
+      const reparado = desfazerTextoQuebrado(atual);
+      if (!reparado) {
+        console.warn(`⚠️ Texto de ${perfil.slug}.${campo} não reparado: edite no admin`);
+        continue;
+      }
+      await poolComunicacao.query(
+        `UPDATE teste_perfis_conteudo SET ${campo} = $1 WHERE slug = $2`,
+        [reparado, perfil.slug]
+      );
+      console.log(`✅ Acentos reparados: ${perfil.slug}.${campo}`);
+    }
+  }
+
+  await poolComunicacao.query(
+    `INSERT INTO seed_log (seed_key) VALUES ($1) ON CONFLICT DO NOTHING`,
+    [chave]
+  );
+}
+
 router.post('/admin/seed', autenticarPainel('admin'), async (req, res) => {
   try {
     const inseridos = await seedPrecos();
@@ -423,3 +522,5 @@ router.post('/admin/seed', autenticarPainel('admin'), async (req, res) => {
 module.exports = router;
 module.exports.seedPrecos = seedPrecos;
 module.exports.alinharPerfisGravados = alinharPerfisGravados;
+module.exports.corrigirOrdemAlternativas = corrigirOrdemAlternativas;
+module.exports.repararAcentosResultados = repararAcentosResultados;

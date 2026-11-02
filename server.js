@@ -364,6 +364,18 @@ server.listen(PORT, async () => {
       console.error('⚠️ Alinhamento dos testes gravados não rodou:', err.message);
     }
 
+    try {
+      await require('./routes/seed').corrigirOrdemAlternativas();
+    } catch (err) {
+      console.error('⚠️ Ordem das alternativas não corrigida:', err.message);
+    }
+
+    try {
+      await require('./routes/seed').repararAcentosResultados();
+    } catch (err) {
+      console.error('⚠️ Acentos dos resultados não reparados:', err.message);
+    }
+
     // Seed dos temas + relatos iniciais (Fase 1 do refactor de Relatos).
     // - seedTemas: idempotente via ON CONFLICT (slug). Roda sempre, só insere
     //   o que falta.
