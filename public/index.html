@@ -1192,7 +1192,7 @@
     <p class="section-eyebrow">No nosso canal</p>
     <h2 class="validacao-headline">Assista ao vídeo mais recente</h2>
     <div class="video-home-quadro">
-      <iframe src="https://www.youtube.com/embed/videoseries?list=UUmFlggcUIWIHSAaS2piLYmw" title="Último vídeo de Suellen Seragi" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+      <iframe id="video-home-player" title="Último vídeo de Suellen Seragi" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
     </div>
     <div class="redes-home">
       <span>Acompanhe a gente</span>
@@ -1513,6 +1513,25 @@
             cardSelector: '.depoimento-card',
           });
         }
+      }
+    })();
+
+    // ===== VÍDEO MAIS RECENTE =====
+    // O YouTube não toca mais a playlist de envios embutida; o servidor
+    // devolve o id do último vídeo do canal (sem Shorts).
+    (async function() {
+      const player = document.getElementById('video-home-player');
+      if (!player) return;
+      try {
+        const r = await fetch(`${API_BASE}/api/youtube/ultimo`, { headers: { 'Accept': 'application/json' }, mode: 'cors' });
+        const v = await r.json();
+        if (!r.ok || !v.id) throw new Error('sem vídeo');
+        player.src = `https://www.youtube.com/embed/${encodeURIComponent(v.id)}?rel=0`;
+        if (v.titulo) player.title = v.titulo;
+      } catch (e) {
+        // Sem vídeo, some o quadro e o título; as redes sociais ficam.
+        const secao = player.closest('.video-home');
+        secao.querySelectorAll('.section-eyebrow, .validacao-headline, .video-home-quadro').forEach(el => { el.hidden = true; });
       }
     })();
 

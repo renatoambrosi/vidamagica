@@ -208,6 +208,7 @@ app.use('/api',               require('./routes/depoimentos'));
 app.use('/api',               require('./routes/categorias-relato')); // Fase 2.1a — categorias de vida
 app.use('/api',               require('./routes/feed'));
 app.use('/api',               require('./routes/config'));
+app.use('/api',               require('./routes/youtube'));    // vídeo mais recente da home
 app.use('/api',               require('./routes/seed'));
 app.use('/api/chat',              chat.routerAluna);
 app.use('/api/atendimento/chat',  chat.routerAtendimento);
