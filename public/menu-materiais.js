@@ -5,8 +5,8 @@
    lista capa e nome, sem preço.
 
    Nome e capa vêm de /api/precos. Produto sem LP vai direto pro
-   checkout. O botão fica fora de #navbar-actions, que é limpo
-   pelo navbar-account.js.
+   checkout, com a campanha <página>-<produto>-header (ex.: VM-Medo-header).
+   O botão fica fora de #navbar-actions, que é limpo pelo navbar-account.js.
 
    Uso: <script src="/menu-materiais.js" defer></script>
    ============================================================ */
@@ -14,7 +14,7 @@
 (function () {
   const ITENS = [
     ['teste_subconsciente', '/teste'],
-    ['vencendo_medo', null],
+    ['vencendo_medo', null, 'Medo'],
     ['ouro_reprogramacao', '/ouro-da-reprogramacao-mental'],
     ['guia_pratico', '/guia-pratico-reprogramacao-mental/'],
     ['lda_biblica', '/lei-da-atracao-biblica'],
@@ -66,12 +66,12 @@
 
     try {
       const dados = await fetch('/api/precos').then((r) => r.json());
-      ITENS.forEach(([slug, lp]) => {
+      ITENS.forEach(([slug, lp, nomeUtm]) => {
         const p = dados[slug];
         const href = lp || (p && p.link_checkout_padrao);
         if (!p || !href) return;
         const a = document.createElement('a');
-        a.href = href;
+        a.href = (!lp && window.VmUtm) ? VmUtm.checkout(href, `${VmUtm.pagina}-${nomeUtm}-header`) : href;
         if (!lp) { a.target = '_blank'; a.rel = 'noopener'; }
         const img = document.createElement('img');
         img.src = p.imagem_url || '';

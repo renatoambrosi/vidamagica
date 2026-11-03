@@ -1547,6 +1547,7 @@
     .clube-modal-depois:hover { color: var(--pearl, #F5F0E8); }
 
   </style>
+  <script src="/utm.js" data-padrao="VmResultado"></script>
 </head>
 <body>
 
@@ -2588,7 +2589,7 @@
     // painel de atendimento e no /app autenticado).
     const link = l.link_checkout_padrao || '';
     const cta = link
-      ? '<a href="' + escapeHtml(link) + '" class="livro-cta" target="_blank" rel="noopener">Quero este livro</a>'
+      ? '<a href="' + escapeHtml(VmUtm.checkout(link, 'VmResultado-livro')) + '" class="livro-cta" target="_blank" rel="noopener">Quero este livro</a>'
       : '<a href="#" class="livro-cta" onclick="alert(\'Em breve\');return false;">Quero este livro</a>';
     const precoHtml = precoBlocoHtml(l.preco_padrao, l.preco_de, l.desconto_pct, l.parcelas_qtd, l.parcelas_valor, cta, 'livro');
     const atributosBlocoHtml = atributosHtml(l.atributos);
@@ -2623,7 +2624,7 @@
       ? '<img class="curso-capa" src="' + escapeHtml(c.capa_url) + '" alt="' + escapeHtml(c.titulo) + '">'
       : '<div class="curso-capa-placeholder"><i class="fas fa-graduation-cap"></i></div>';
     const cta = c.link
-      ? '<a href="' + escapeHtml(c.link) + '" class="curso-cta" target="_blank">Quero este curso</a>'
+      ? '<a href="' + escapeHtml(VmUtm.checkout(c.link, 'VmResultado-curso')) + '" class="curso-cta" target="_blank">Quero este curso</a>'
       : '<a href="#" class="curso-cta" onclick="alert(\'Em breve\');return false;">Quero este curso</a>';
     const precoHtml = precoBlocoHtml(c.preco, c.preco_de, c.desconto_pct, c.parcelas_qtd, c.parcelas_valor, cta, 'curso');
     const saibaMais = c.lp

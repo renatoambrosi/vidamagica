@@ -967,6 +967,7 @@ async function initTeste() {
     await c.query(`CREATE INDEX IF NOT EXISTS idx_teste_leads_tel ON teste_leads(telefone_canonico)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_teste_leads_usuario ON teste_leads(usuario_id)`);
     await c.query(`ALTER TABLE teste_leads ADD COLUMN IF NOT EXISTS aceite_marketing BOOLEAN DEFAULT FALSE`);
+    await c.query(`ALTER TABLE teste_leads ADD COLUMN IF NOT EXISTS utm_content VARCHAR(100)`);
 
     // ── VERSIONAMENTO ─────────────────────────────────────
     // Cada versão é um snapshot imutável depois de publicada.

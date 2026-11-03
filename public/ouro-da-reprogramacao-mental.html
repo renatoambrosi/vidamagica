@@ -3,8 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>O Ouro da Reprogramação Mental — Você foi criada para mais | Suellen Seragi</title>
-  <meta name="description" content="Curso da Suellen Seragi: 3 módulos de reprogramação mental com base bíblica. Linguagem leve, conteúdo profundo, acesso por 1 ano. Comece a escrever sua nova história.">
+  <title>O Ouro da Reprogramação Mental | Vida Mágica - Suellen Seragi</title>
+  <meta name="description" content="Curso de reprogramação mental com base bíblica: 3 módulos e 9 aulas, com linguagem leve e conteúdo profundo. Comece a escrever sua nova história.">
+  <link rel="canonical" href="https://vidamagica.com.br/ouro-da-reprogramacao-mental">
+  <meta property="og:site_name" content="Vida Mágica - Suellen Seragi">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:url" content="https://vidamagica.com.br/ouro-da-reprogramacao-mental">
+  <meta property="og:title" content="O Ouro da Reprogramação Mental | Vida Mágica - Suellen Seragi">
+  <meta property="og:description" content="Curso de reprogramação mental com base bíblica: 3 módulos e 9 aulas, com linguagem leve e conteúdo profundo. Comece a escrever sua nova história.">
+  <meta property="og:image" content="https://vidamagica.com.br/assets/compartilhar-vida-magica.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#5c3f1a">
 
   <link rel="icon" href="/assets/favicon.webp">
@@ -319,6 +330,7 @@
     .whats-flutuante:hover { transform: scale(1.07); }
     .back-top { right: 23px; bottom: calc(88px + env(safe-area-inset-bottom)); }
   </style>
+  <script src="/utm.js" data-padrao="VmLpOuro"></script>
 </head>
 <body class="lp-ouro">
 
@@ -509,7 +521,7 @@
             <p class="preco-vista" data-preco-avista>ou R$ 711,00 à vista</p>
           </div>
 
-          <a href="https://pay.kiwify.com.br/F62VNpy" class="btn-cta" id="cta-final-btn" style="font-size:1rem;padding:1.2rem 2.4rem" target="_blank" rel="noopener" data-checkout-link data-utm="LpOuro-cta">
+          <a href="https://pay.kiwify.com.br/F62VNpy" class="btn-cta" id="cta-final-btn" style="font-size:1rem;padding:1.2rem 2.4rem" target="_blank" rel="noopener" data-checkout-link data-utm="VmLpOuro-cta">
             <i class="fas fa-arrow-right"></i> Clique aqui e comece sua transformação
           </a>
         </div>
@@ -540,7 +552,7 @@
       <a href="https://www.instagram.com/suellenseragi" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
       <a href="https://www.tiktok.com/@suellenseragi" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
     </div>
-    <p class="footer-text">Renato &amp; Suellen Seragi · Vida Mágica · 2025</p>
+    <p class="footer-text">© 2026 Vida Mágica - Suellen Seragi</p>
     <p class="footer-text" style="margin-top:0.6rem"><a href="/privacidade" style="color:inherit">Política de privacidade</a> · <a href="/termos" style="color:inherit">Termos de uso</a> · <a href="mailto:contato@suellenseragi.com.br" style="color:inherit">Fale com a gente</a></p>
   </footer>
 
@@ -559,7 +571,7 @@
        - [data-preco-parcelas] → "12x <small>R$</small> 42,51"
        - [data-preco-avista]   → "ou R$ 411,00 à vista"
        - [data-preco-de]       → "de <s>R$ 511,00</s>" + badge "% OFF" (esconde se sem promo)
-       - [data-checkout-link]  → href com link_checkout_padrao + UTM do data-utm
+       - [data-checkout-link]  → href com link_checkout_padrao + UTMs de /utm.js (campanha = data-utm)
        Fallback: HTML mantém valores do seed pra caso /api/precos falhe. */
     (async function carregarPrecos(){
       try{
@@ -588,9 +600,7 @@
         const link = p.link_checkout_padrao;
         if (link) {
           document.querySelectorAll('[data-checkout-link]').forEach(el => {
-            const utm = el.getAttribute('data-utm') || 'LpOuro';
-            const sep = link.includes('?') ? '&' : '?';
-            el.href = `${link}${sep}utm_source=vidamagica&utm_campaign=${utm}`;
+            el.href = VmUtm.checkout(link, el.getAttribute('data-utm') || VmUtm.pagina + '-cta');
           });
         }
       }catch(e){ /* mantém valores do HTML como fallback */ }
@@ -755,6 +765,6 @@
 
   <script src="/relatos-card.js"></script>
 
-  <a class="whats-flutuante" href="https://wa.me/5562999884411?text=Ol%C3%A1!%20Vim%20pelo%20site%20Vida%20M%C3%A1gica%20e%20quero%20falar%20com%20voc%C3%AAs." target="_blank" rel="noopener noreferrer" aria-label="Falar pelo WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+  <a class="whats-flutuante" href="https://wa.me/5562999884411?text=Ol%C3%A1%21%20Vim%20pelo%20site%20Vida%20M%C3%A1gica%20e%20gostaria%20de%20saber%20mais%20sobre%20os%20materiais." target="_blank" rel="noopener noreferrer" aria-label="Falar pelo WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
 </body>
 </html>

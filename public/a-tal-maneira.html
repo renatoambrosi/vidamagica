@@ -3,8 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>A Tal Maneira — 3 Leis para a Riqueza e para a Vida | Suellen Seragi</title>
+  <title>A Tal Maneira | Vida Mágica - Suellen Seragi</title>
   <meta name="description" content="As 3 leis de Suellen Seragi: Imagem Fixa, Fé Firme e Gratidão Plena. Livro e curso com mentalidade e ação, de forma prática e com base no Grande Livro.">
+  <link rel="canonical" href="https://vidamagica.com.br/a-tal-maneira">
+  <meta property="og:site_name" content="Vida Mágica - Suellen Seragi">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:url" content="https://vidamagica.com.br/a-tal-maneira">
+  <meta property="og:title" content="A Tal Maneira | Vida Mágica - Suellen Seragi">
+  <meta property="og:description" content="As 3 leis de Suellen Seragi: Imagem Fixa, Fé Firme e Gratidão Plena. Livro e curso com mentalidade e ação, de forma prática e com base no Grande Livro.">
+  <meta property="og:image" content="https://vidamagica.com.br/assets/compartilhar-vida-magica.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#C8922A">
 
   <link rel="icon" href="/assets/favicon.webp">
@@ -319,6 +330,7 @@
     .whats-flutuante:hover { transform: scale(1.07); }
     .back-top { right: 23px; bottom: calc(88px + env(safe-area-inset-bottom)); }
   </style>
+  <script src="/utm.js" data-padrao="VmLpTalManeira"></script>
 </head>
 <body class="lp-talmaneira">
 
@@ -496,7 +508,7 @@
               <li><i class="fas fa-check"></i> <span>Acesso imediato</span></li>
             </ul>
             <div class="plano-cta">
-              <a href="https://pay.kiwify.com.br/IId7xgS" class="btn-cta btn-cta-secundario" target="_blank" rel="noopener" data-checkout-link data-preco-key="atal_maneira_livro" data-utm="LpTalManeira-livro">
+              <a href="https://pay.kiwify.com.br/IId7xgS" class="btn-cta btn-cta-secundario" target="_blank" rel="noopener" data-checkout-link data-preco-key="atal_maneira_livro" data-utm="VmLpTalManeira-cta">
                 <i class="fas fa-book"></i> Quero o livro
               </a>
             </div>
@@ -520,7 +532,7 @@
               <li><i class="fas fa-check"></i> <span>Relatos e bônus extras</span></li>
             </ul>
             <div class="plano-cta">
-              <a href="https://pay.kiwify.com.br/csxtcEQ" class="btn-cta btn-cta-secundario" target="_blank" rel="noopener" data-checkout-link data-preco-key="atal_maneira_curso" data-utm="LpTalManeira-curso">
+              <a href="https://pay.kiwify.com.br/csxtcEQ" class="btn-cta btn-cta-secundario" target="_blank" rel="noopener" data-checkout-link data-preco-key="atal_maneira_curso" data-utm="VmLpTalManeira-cta">
                 <i class="fas fa-graduation-cap"></i> Quero o curso
               </a>
             </div>
@@ -545,7 +557,7 @@
               <li><i class="fas fa-check"></i> <span>Sua transformação total</span></li>
             </ul>
             <div class="plano-cta">
-              <a href="https://pay.kiwify.com.br/c7dRjkL" class="btn-cta" target="_blank" rel="noopener" data-checkout-link data-preco-key="atal_maneira_combo" data-utm="LpTalManeira-combo">
+              <a href="https://pay.kiwify.com.br/c7dRjkL" class="btn-cta" target="_blank" rel="noopener" data-checkout-link data-preco-key="atal_maneira_combo" data-utm="VmLpTalManeira-cta">
                 <i class="fas fa-crown"></i> Quero o combo
               </a>
             </div>
@@ -681,7 +693,7 @@
       <a href="https://www.instagram.com/suellenseragi" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
       <a href="https://www.tiktok.com/@suellenseragi" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
     </div>
-    <p class="footer-text">Renato &amp; Suellen Seragi · Vida Mágica · 2026</p>
+    <p class="footer-text">© 2026 Vida Mágica - Suellen Seragi</p>
     <p class="footer-text" style="margin-top:0.6rem"><a href="/privacidade" style="color:inherit">Política de privacidade</a> · <a href="/termos" style="color:inherit">Termos de uso</a> · <a href="mailto:contato@suellenseragi.com.br" style="color:inherit">Fale com a gente</a></p>
   </footer>
 
@@ -743,9 +755,7 @@
           const link = p.link_checkout_padrao;
           if (link) {
             document.querySelectorAll(`[data-checkout-link][data-preco-key="${slug}"]`).forEach(el => {
-              const utm = el.getAttribute('data-utm') || 'LpTalManeira';
-              const sep = link.includes('?') ? '&' : '?';
-              el.href = `${link}${sep}utm_source=vidamagica&utm_campaign=${utm}`;
+              el.href = VmUtm.checkout(link, el.getAttribute('data-utm') || VmUtm.pagina + '-cta');
             });
           }
         });
@@ -882,6 +892,6 @@
 
   <script src="/relatos-card.js"></script>
 
-  <a class="whats-flutuante" href="https://wa.me/5562999884411?text=Ol%C3%A1!%20Vim%20pelo%20site%20Vida%20M%C3%A1gica%20e%20quero%20falar%20com%20voc%C3%AAs." target="_blank" rel="noopener noreferrer" aria-label="Falar pelo WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+  <a class="whats-flutuante" href="https://wa.me/5562999884411?text=Ol%C3%A1%21%20Vim%20pelo%20site%20Vida%20M%C3%A1gica%20e%20gostaria%20de%20saber%20mais%20sobre%20os%20materiais." target="_blank" rel="noopener noreferrer" aria-label="Falar pelo WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
 </body>
 </html>

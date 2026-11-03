@@ -164,6 +164,8 @@ O carrossel de relatos da home usa `/api/depoimentos` sem os temas sem produto �
 
 **Relatos e anúncios (2026-11):** home, LPs e Teste recebem anúncio. Nelas, `GET /api/depoimentos` troca `texto` por `trecho_anuncio` quando ele está preenchido, e o texto completo nem sai do servidor. A `/relatos` (via `/depoimentos/agrupados`) e o `/app` (`?completo=1`) mostram o relato inteiro. O trecho é editado no admin, no card do relato. Relato com valor, prazo ou cura ganha trecho com as palavras da própria aluna; nunca reescrever o texto original. A política de privacidade fica em `/privacidade`.
 
+**UTMs (2026-11):** `public/utm.js` é a regra única, carregado no `<head>` de cada página com `data-padrao` (origem padrão e prefixo das campanhas: `VM` na home, `VmLpTesteSub`, `VmLpOuro`, `VmLpLda`, `VmLpGuia`, `VmLpTalManeira`, `VmLpFluir`, `VmRelatos`, `VmResultado`). Mesma lógica do suellenseragi.com.br: `utm_source`/`utm_medium` vêm da URL, senão da sessão, senão do padrão; `utm_campaign` é sempre o botão de compra (`data-utm`, ex. `VM-Ouro-cta`, `VmLpLda-hero`); `utm_content` só passa quando a URL traz (ou a página de campanha marca `data-conteudo`), nunca copiado de outro campo. Link de compra novo usa `VmUtm.checkout(url, campanha)`. Nomes aprovados pelo Renato; não inventar nome novo sem mostrar para ele.
+
 `public/menu-materiais.js` é o menu "Materiais" do topo, na home e nas 5 LPs de produto. Nome e capa vêm de `/api/precos`; a lista de slugs e rotas fica no arquivo. Fora do `teste.html` de propósito, para não tirar a pessoa do fluxo.
 
 ### "Produto" vs "preço" — vocabulário canônico

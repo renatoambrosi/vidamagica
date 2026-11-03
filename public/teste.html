@@ -3,8 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Teste do Subconsciente — Descubra o que sua mente esconde de você | Vida Mágica</title>
-  <meta name="description" content="Em 15 perguntas, descubra qual padrão do seu subconsciente está dirigindo sua vida sem você saber. Baseado em lógica comportamental e ciência cognitiva.">
+  <title>Teste do Subconsciente | Vida Mágica - Suellen Seragi</title>
+  <meta name="description" content="Descubra em 15 perguntas qual padrão do seu subconsciente está no comando. Baseado em lógica comportamental e ciência cognitiva. Resultado na hora.">
+  <link rel="canonical" href="https://vidamagica.com.br/teste">
+  <meta property="og:site_name" content="Vida Mágica - Suellen Seragi">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:url" content="https://vidamagica.com.br/teste">
+  <meta property="og:title" content="Teste do Subconsciente | Vida Mágica - Suellen Seragi">
+  <meta property="og:description" content="Descubra em 15 perguntas qual padrão do seu subconsciente está no comando. Baseado em lógica comportamental e ciência cognitiva. Resultado na hora.">
+  <meta property="og:image" content="https://vidamagica.com.br/assets/compartilhar-vida-magica.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0a4866">
 
   <link rel="icon" href="/assets/favicon.webp">
@@ -699,6 +710,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@23.6.1/build/css/intlTelInput.css">
   <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@23.6.1/build/js/intlTelInput.min.js"></script>
   <script src="/vm-tel-input.js"></script>
+  <script src="/utm.js" data-padrao="VmLpTesteSub"></script>
 </head>
 <body>
 
@@ -869,7 +881,7 @@
           <div class="pillar" data-reveal><div class="pillar-icon"><i class="fas fa-compass"></i></div><h4>Direção concreta</h4><p>Descobre padrões invisíveis que fazem você se sabotar — e o caminho pra destravar.</p></div>
         </div>
         <div style="text-align:center;margin-top:2rem" data-reveal>
-          <a href="#iniciar-teste" class="btn-cta" id="cta-meio-2">Fazer o teste agora</a>
+          <a href="#iniciar-teste" class="btn-cta" id="cta-meio-2" data-utm="VmLpTesteSub-about">Fazer o teste agora</a>
         </div>
       </div>
     </section>
@@ -887,7 +899,7 @@
         <a href="/relatos#ts" style="color:var(--gold-light);font-weight:600;font-size:0.9rem;text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:2px">Ver todos os relatos <i class="fas fa-arrow-right" style="font-size:0.75em"></i></a>
       </div>
       <div class="container" style="text-align:center;margin-top:2rem" data-reveal>
-        <a href="#iniciar-teste" class="btn-cta" id="cta-dep">Quero descobrir o meu</a>
+        <a href="#iniciar-teste" class="btn-cta" id="cta-dep" data-utm="VmLpTesteSub-testimonials">Quero descobrir o meu</a>
       </div>
     </section>
 
@@ -921,7 +933,7 @@
           <span class="badge-info"><i class="fas fa-shield-halved"></i> 100% seguro</span>
         </div>
         <div style="text-align:center;margin-top:2rem" data-reveal>
-          <a href="#iniciar-teste" class="btn-cta" id="cta-passos">Começar agora</a>
+          <a href="#iniciar-teste" class="btn-cta" id="cta-passos" data-utm="VmLpTesteSub-howto">Começar agora</a>
         </div>
       </div>
     </section>
@@ -973,7 +985,7 @@
         <div data-reveal="zoom">
           <span class="price-big" data-preco-grande><span class="price-loading" style="width:140px;height:2.5rem"></span></span>
           <p class="price-caption">Pagamento único · sem mensalidade</p>
-          <a href="#iniciar-teste" class="btn-cta" id="cta-final" style="font-size:1rem;padding:1.2rem 2.4rem">
+          <a href="#iniciar-teste" class="btn-cta" id="cta-final" data-utm="VmLpTesteSub-cta" style="font-size:1rem;padding:1.2rem 2.4rem">
             <i class="fas fa-arrow-right"></i> Fazer o teste agora
           </a>
         </div>
@@ -985,7 +997,7 @@
 
   <!-- FOOTER — IDÊNTICO AO INDEX.HTML -->
   <footer>
-    <p class="footer-text">Renato &amp; Suellen Seragi · Vida Mágica · 2025</p>
+    <p class="footer-text">© 2026 Vida Mágica - Suellen Seragi</p>
     <p class="footer-text" style="margin-top:0.6rem"><a href="/privacidade" style="color:inherit">Política de privacidade</a> · <a href="/termos" style="color:inherit">Termos de uso</a> · <a href="mailto:contato@suellenseragi.com.br" style="color:inherit">Fale com a gente</a></p>
   </footer>
 
@@ -1567,9 +1579,10 @@
 
         // Captura UTMs persistidas (foram salvas no bloco abaixo)
         const utms = {
-          utm_source:   sessionStorage.getItem('utm_source')   || 'lp_teste_subconsciente',
-          utm_medium:   sessionStorage.getItem('utm_medium')   || 'organic',
-          utm_campaign: sessionStorage.getItem('utm_campaign') || '',
+          utm_source:   VmUtm.ler('utm_source'),
+          utm_medium:   VmUtm.ler('utm_medium'),
+          utm_content:  VmUtm.ler('utm_content'),
+          utm_campaign: VmUtm.ler('vm_utm_botao') || 'VmLpTesteSub-hero',
         };
 
         btnEnviar.classList.add('is-loading');
@@ -1972,31 +1985,16 @@
       })();
     })();
 
-    /* UTMs */
+    /* UTMs — regra única em /utm.js. Aqui só o botão que levou ao formulário:
+       vira a utm_campaign do lead (padrão: o formulário do topo, VmLpTesteSub-hero). */
     (function(){
-      const p=new URLSearchParams(window.location.search);
-      const utms={
-        utm_source:  p.get('utm_source')  ||sessionStorage.getItem('utm_source')  ||'lp_teste_subconsciente',
-        utm_medium:  p.get('utm_medium')  ||sessionStorage.getItem('utm_medium')  ||'organic',
-        utm_campaign:p.get('utm_campaign')||sessionStorage.getItem('utm_campaign')||'',
-      };
-      sessionStorage.setItem('utm_source',utms.utm_source);
-      sessionStorage.setItem('utm_medium',utms.utm_medium);
-      sessionStorage.setItem('utm_campaign',utms.utm_campaign);
-      function addUtms(el,c){if(!el||!el.href)return;try{const u=new URL(el.href,window.location.origin);if(utms.utm_source)u.searchParams.set('utm_source',utms.utm_source);if(utms.utm_medium)u.searchParams.set('utm_medium',utms.utm_medium);u.searchParams.set('utm_campaign',c);el.href=u.toString();}catch{}}
-      addUtms(document.getElementById('cta-meio-2'),'lp-sobre');
-      addUtms(document.getElementById('cta-dep'),   'lp-depoimentos');
-      addUtms(document.getElementById('cta-passos'),'lp-passos');
-      addUtms(document.getElementById('cta-final'), 'lp-final');
-
-      // Todo CTA que aponta pro formulário é só um âncora pra UTM (addUtms
-      // acima muda a URL dele) — sem isso, o clique causaria um reload da
-      // página inteira em vez de um scroll suave até o form. Intercepta
-      // SEMPRE e rola na mão, ignorando a URL que o link tiver.
+      // Todo CTA que aponta pro formulário rola até ele na mão, sem recarregar
+      // a página, e guarda o próprio nome para a utm_campaign do lead.
       document.addEventListener('click', function(e){
         const a = e.target.closest('a[href*="#iniciar-teste"]');
         if (!a) return;
         e.preventDefault();
+        if (a.dataset.utm) { try { sessionStorage.setItem('vm_utm_botao', a.dataset.utm); } catch {} }
         const alvo = document.getElementById('form-iniciar-teste');
         if (alvo) alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
@@ -2006,6 +2004,6 @@
   <!-- Modal + swipe dos cards de relatos (compartilhado entre as 7 LPs) -->
   <script src="/relatos-card.js"></script>
 <script src="/navbar-account.js" defer></script>
-  <a class="whats-flutuante" href="https://wa.me/5562999884411?text=Ol%C3%A1!%20Vim%20pelo%20site%20Vida%20M%C3%A1gica%20e%20quero%20falar%20com%20voc%C3%AAs." target="_blank" rel="noopener noreferrer" aria-label="Falar pelo WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+  <a class="whats-flutuante" href="https://wa.me/5562999884411?text=Ol%C3%A1%21%20Vim%20pelo%20site%20Vida%20M%C3%A1gica%20e%20gostaria%20de%20saber%20mais%20sobre%20os%20materiais." target="_blank" rel="noopener noreferrer" aria-label="Falar pelo WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
 </body>
 </html>

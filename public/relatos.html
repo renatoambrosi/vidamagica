@@ -4,7 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1A1205">
-<title>Relatos — Vida Mágica</title>
+<title>Relatos de alunas | Vida Mágica - Suellen Seragi</title>
+<meta name="description" content="Histórias reais de alunas que praticaram os cursos e materiais de Suellen Seragi.">
+<link rel="canonical" href="https://vidamagica.com.br/relatos">
+<meta property="og:site_name" content="Vida Mágica - Suellen Seragi">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:url" content="https://vidamagica.com.br/relatos">
+<meta property="og:title" content="Relatos de alunas | Vida Mágica - Suellen Seragi">
+<meta property="og:description" content="Histórias reais de alunas que praticaram os cursos e materiais de Suellen Seragi.">
+<meta property="og:image" content="https://vidamagica.com.br/assets/compartilhar-vida-magica.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 
 <link rel="icon" href="/assets/favicon.webp">
 <link rel="stylesheet" href="/colors_and_type.css">
@@ -336,6 +348,7 @@
     .modal-texto { font-size: 0.9rem; }
   }
 </style>
+  <script src="/utm.js" data-padrao="VmRelatos"></script>
 </head>
 <body>
 
@@ -537,8 +550,12 @@ function abrirModal(grupoIdx, relIdx){
 
     const btn = document.getElementById('m-cta-btn');
     const checkout = produto.link_checkout_padrao;
-    if (checkout){
-      btn.href = checkout;
+    if (produtoSlug === 'teste_subconsciente'){
+      // O Teste não se compra direto: leva para a LP do Teste.
+      btn.href = '/teste';
+      btn.classList.remove('disabled');
+    } else if (checkout){
+      btn.href = VmUtm.checkout(checkout, 'VmRelatos-cta');
       btn.classList.remove('disabled');
     } else {
       btn.removeAttribute('href');

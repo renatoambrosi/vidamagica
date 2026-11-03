@@ -100,7 +100,7 @@ router.post('/buscar-usuario', async (req, res) => {
 // ── POST /api/teste/iniciar ─────────────────────────────────
 router.post('/iniciar', async (req, res) => {
   try {
-    const { nome, telefone, email, aceite_marketing, utm_source, utm_medium, utm_campaign } = req.body || {};
+    const { nome, telefone, email, aceite_marketing, utm_source, utm_medium, utm_campaign, utm_content } = req.body || {};
 
     const nomeLimpo = validarNome(nome);
     if (!nomeLimpo) return res.status(400).json({ ok: false, erro: 'Nome inválido' });
@@ -119,6 +119,7 @@ router.post('/iniciar', async (req, res) => {
       source:   sanitizarUtm(utm_source),
       medium:   sanitizarUtm(utm_medium),
       campaign: sanitizarUtm(utm_campaign),
+      content:  sanitizarUtm(utm_content),
     };
 
     let usuario = await buscarUsuarioPorIdentificador({ telefone: telCanonico });
@@ -181,15 +182,16 @@ router.post('/iniciar', async (req, res) => {
                 utm_source=COALESCE($6, utm_source),
                 utm_medium=COALESCE($7, utm_medium),
                 utm_campaign=COALESCE($8, utm_campaign),
+                utm_content=COALESCE($10, utm_content),
                 atualizado_em=NOW()
           WHERE id=$9`,
-        [nomeLimpo, telCanonico, usuarioId, emailLimpo, aceiteMarketing, utms.source, utms.medium, utms.campaign, leadId]
+        [nomeLimpo, telCanonico, usuarioId, emailLimpo, aceiteMarketing, utms.source, utms.medium, utms.campaign, leadId, utms.content]
       );
     } else {
       const r = await poolTeste.query(
-        `INSERT INTO teste_leads (telefone_canonico, nome, usuario_id, email, aceite_marketing, utm_source, utm_medium, utm_campaign)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-        [telCanonico, nomeLimpo, usuarioId, emailLimpo, aceiteMarketing, utms.source, utms.medium, utms.campaign]
+        `INSERT INTO teste_leads (telefone_canonico, nome, usuario_id, email, aceite_marketing, utm_source, utm_medium, utm_campaign, utm_content)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+        [telCanonico, nomeLimpo, usuarioId, emailLimpo, aceiteMarketing, utms.source, utms.medium, utms.campaign, utms.content]
       );
       leadId = r.rows[0].id;
     }

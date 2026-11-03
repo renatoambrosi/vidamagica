@@ -515,6 +515,11 @@
     try {
       const xBtn = document.getElementById('vmr-x');
       if (xBtn) xBtn.addEventListener('click', fecharModal);
+      // Botão que rola até o formulário do Teste fecha a janela antes.
+      const ctaBtn = document.getElementById('vmr-cta-btn');
+      if (ctaBtn) ctaBtn.addEventListener('click', () => {
+        if ((ctaBtn.getAttribute('href') || '').startsWith('#')) fecharModal();
+      });
       const modalEl = document.getElementById('vmr-modal');
       if (modalEl) {
         modalEl.addEventListener('click', (e) => {
@@ -559,8 +564,10 @@
     const resposta = document.getElementById('vmr-resposta');
     const produtoSlug = relato.produto_slug || null;
     const produto = produtoSlug && PRECOS ? PRECOS[produtoSlug] : null;
-    // Só oferece produto à venda. Clube ainda não foi lançado.
-    const aVenda = produto && produto.link_checkout_padrao && produtoSlug !== 'clube_vida_magica';
+    // Só oferece produto à venda. Clube ainda não foi lançado. O Teste
+    // não depende do checkout: o botão leva ao formulário ou à LP.
+    const aVenda = produto && (produto.link_checkout_padrao || produtoSlug === 'teste_subconsciente')
+      && produtoSlug !== 'clube_vida_magica';
 
     if (!aVenda){
       resposta.classList.add('vmr-sem-produto');
@@ -580,7 +587,24 @@
 
       const btn = document.getElementById('vmr-cta-btn');
       const checkout = produto.link_checkout_padrao;
-      if (checkout){ btn.href = checkout; btn.classList.remove('vmr-disabled'); }
+      const utm = window.VmUtm;
+      btn.target = '_blank';
+      delete btn.dataset.utm;
+      if (produtoSlug === 'teste_subconsciente'){
+        // O Teste não se compra direto: na LP do Teste rola até o formulário
+        // (campanha <página>-relato); nas outras páginas leva para a LP.
+        if (document.getElementById('form-iniciar-teste')){
+          btn.href = '#iniciar-teste';
+          btn.removeAttribute('target');
+          if (utm) btn.dataset.utm = utm.pagina + '-relato';
+        } else {
+          btn.href = '/teste';
+        }
+        btn.classList.remove('vmr-disabled');
+      } else if (checkout){
+        btn.href = utm ? utm.checkout(checkout, utm.pagina + '-relato') : checkout;
+        btn.classList.remove('vmr-disabled');
+      }
       else { btn.removeAttribute('href'); btn.classList.add('vmr-disabled'); }
     }
 
