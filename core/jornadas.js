@@ -49,11 +49,13 @@ const JORNADAS = {
 
 // Tabela de indicação: perfil dominante → jornada + livro + curso.
 // curso: null = perfil sem curso indicado.
+// livro_reserva: aparece no resultado enquanto o livro estiver sem link de
+// checkout. Com o link preenchido no admin, o livro volta sozinho.
 const INDICACAO_POR_PERFIL = {
   medo:             { jornada: 1, livro: SLUG.VENCENDO_MEDO,          curso: SLUG.OURO,       titulo_livro: 'Despertar',  titulo_curso: 'Reprogramação' },
-  desordem:         { jornada: 1, livro: SLUG.VENCENDO_DESORDEM,      curso: SLUG.OURO,       titulo_livro: 'Despertar',  titulo_curso: 'Reprogramação' },
-  validacao:        { jornada: 1, livro: SLUG.VENCENDO_VALIDACAO,     curso: SLUG.OURO,       titulo_livro: 'Despertar',  titulo_curso: 'Reprogramação' },
-  sobrevivencia:    { jornada: 1, livro: SLUG.VENCENDO_SOBREVIVENCIA, curso: SLUG.LDA,        titulo_livro: 'Despertar',  titulo_curso: 'Reprogramação' },
+  desordem:         { jornada: 1, livro: SLUG.VENCENDO_DESORDEM,      livro_reserva: SLUG.GUIA_PRATICO, curso: SLUG.OURO,       titulo_livro: 'Despertar',  titulo_curso: 'Reprogramação' },
+  validacao:        { jornada: 1, livro: SLUG.VENCENDO_VALIDACAO,     livro_reserva: SLUG.GUIA_PRATICO, curso: SLUG.OURO,       titulo_livro: 'Despertar',  titulo_curso: 'Reprogramação' },
+  sobrevivencia:    { jornada: 1, livro: SLUG.VENCENDO_SOBREVIVENCIA, livro_reserva: SLUG.GUIA_PRATICO, curso: SLUG.LDA,        titulo_livro: 'Despertar',  titulo_curso: 'Reprogramação' },
   prosperidade_nv1: { jornada: 2, livro: SLUG.GUIA_PRATICO,           curso: SLUG.LDA,        titulo_livro: 'Prática',    titulo_curso: 'Reprogramação' },
   prosperidade_nv2: { jornada: 2, livro: SLUG.ATAL_LIVRO,             curso: SLUG.ATAL_CURSO, titulo_livro: 'Expansão',   titulo_curso: 'Riqueza Bíblica' },
   prosperidade_nv3: { jornada: 3, livro: SLUG.MAGICA_FLUIR,           curso: null,            titulo_livro: 'Plenitude',  titulo_curso: null },

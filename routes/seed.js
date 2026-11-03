@@ -230,6 +230,69 @@ const PRECOS_INICIAIS = {
     preco_alunos: '0,00',
     parcelas_valor_alunos: '0,00'
   },
+  // Combos de cursos: todas as possibilidades entre Ouro, LDA e Curso A Tal
+  // Maneira. Preços e links lidos da Kiwify em 2026-11-02. O trio ainda não
+  // existe na Kiwify: fica sem link até ser criado lá.
+  combo_ouro_lda: {
+    nome: 'Combo O Ouro da RM + LDA Bíblica',
+    tipo: 'curso',
+    imagem_url: '/assets/products/combo-ouro-lda.jpg',
+    link_checkout_padrao: 'https://pay.kiwify.com.br/LgV25LB',
+    link_checkout_aluno: '',
+    mostrar_promo: false,
+    preco_padrao: '868,00',
+    parcelas_qtd: 12,
+    parcelas_valor_padrao: '89,77',
+    preco_promo: '0,00',
+    parcelas_valor_promo: '0,00',
+    preco_alunos: '0,00',
+    parcelas_valor_alunos: '0,00'
+  },
+  combo_ouro_atal_curso: {
+    nome: 'Combo O Ouro da RM + Curso A Tal Maneira',
+    tipo: 'curso',
+    imagem_url: '/assets/products/combo-ouro-atal-curso.jpg',
+    link_checkout_padrao: 'https://pay.kiwify.com.br/pxjM2rh',
+    link_checkout_aluno: '',
+    mostrar_promo: false,
+    preco_padrao: '822,00',
+    parcelas_qtd: 12,
+    parcelas_valor_padrao: '85,01',
+    preco_promo: '0,00',
+    parcelas_valor_promo: '0,00',
+    preco_alunos: '0,00',
+    parcelas_valor_alunos: '0,00'
+  },
+  combo_lda_atal_curso: {
+    nome: 'Combo LDA Bíblica + Curso A Tal Maneira',
+    tipo: 'curso',
+    imagem_url: '/assets/products/combo-lda-atal-curso.jpg',
+    link_checkout_padrao: 'https://pay.kiwify.com.br/ENLkOQQ',
+    link_checkout_aluno: '',
+    mostrar_promo: false,
+    preco_padrao: '822,00',
+    parcelas_qtd: 12,
+    parcelas_valor_padrao: '85,01',
+    preco_promo: '0,00',
+    parcelas_valor_promo: '0,00',
+    preco_alunos: '0,00',
+    parcelas_valor_alunos: '0,00'
+  },
+  combo_ouro_lda_atal_curso: {
+    nome: 'Combo O Ouro da RM + LDA Bíblica + Curso A Tal Maneira',
+    tipo: 'curso',
+    imagem_url: '',
+    link_checkout_padrao: '',
+    link_checkout_aluno: '',
+    mostrar_promo: false,
+    preco_padrao: '0,00',
+    parcelas_qtd: 12,
+    parcelas_valor_padrao: '0,00',
+    preco_promo: '0,00',
+    parcelas_valor_promo: '0,00',
+    preco_alunos: '0,00',
+    parcelas_valor_alunos: '0,00'
+  },
   // Guia de bolso "A Mágica do Fluir" — Suellen Seragi.
   // Slug igual ao padrão do projeto (sem "_do_"): magica_fluir.
   // Preço placeholder — ajustar pelo /admin → Preços antes de divulgar.
@@ -266,6 +329,10 @@ const CATEGORIA_ADMIN_INICIAL = {
   atal_maneira_curso:       'cursos',
   atal_maneira_combo:       'combos',
   serie_conhecer_despertar: 'combos',
+  combo_ouro_lda:            'combos',
+  combo_ouro_atal_curso:     'combos',
+  combo_lda_atal_curso:      'combos',
+  combo_ouro_lda_atal_curso: 'combos',
   vencendo_medo:            'materiais',
   vencendo_desordem:        'materiais',
   vencendo_validacao:       'materiais',

@@ -91,7 +91,7 @@
       -webkit-backdrop-filter: blur(8px);
       border-bottom: 1px solid rgba(212,165,116,0.4);
     }
-    .ticker-track { display: flex; gap: 3.5rem; animation: ticker 22s linear infinite; white-space: nowrap; }
+    .ticker-track { display: flex; gap: 3.5rem; width: max-content; animation: ticker 60s linear infinite; white-space: nowrap; }
     @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
     .ticker-item { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.73rem; color: var(--text-mid); flex-shrink: 0; font-family: var(--font-body); }
     .ticker-item .q { color: var(--orange); }
@@ -226,7 +226,7 @@
     /* ═══ DEPOIMENTOS — carrossel (paleta light) ═══ */
     .dep-section { background: linear-gradient(180deg, rgba(244,165,92,0.06) 0%, transparent 100%); }
     .dep-carousel { position: relative; overflow: hidden; margin-bottom: 2.5rem; padding: 1rem 0; }
-    .dep-track { display: flex; gap: 1.25rem; animation: depScroll 30s linear infinite; will-change: transform; }
+    .dep-track { display: flex; gap: 1.25rem; width: max-content; animation: depScroll 60s linear infinite; will-change: transform; }
     @keyframes depScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
     .dep-carousel:hover .dep-track { animation-play-state: paused; }
     .dep-card { flex: 0 0 320px; background: var(--bg-card); border: 1px solid var(--border-card); border-left: 3px solid var(--orange); border-radius: 12px; padding: 1.4rem 1.25rem; text-align: left; transition: all 0.3s ease; cursor: pointer; position: relative; box-shadow: var(--shadow-card); }
@@ -791,7 +791,7 @@
   /* Render do botão Minha área + avatar + dropdown vive em /navbar-account.js
      (depende do VmSession definido logo acima). */
   </script>
-  <script src="/navbar-account.js" defer></script>
+  <script src="/navbar-account.js" defer></script>  <script src="/menu-materiais.js" defer></script>
 
   <script src="/relatos-card.js"></script>
 

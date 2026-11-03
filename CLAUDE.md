@@ -156,6 +156,14 @@ Login do painel é por **OTP via WhatsApp** (`routes/admin-auth.js`), não senha
 
 Upgrade handler em `server.js` autentica via query string (`?token=...&modo=aluna|atendimento`) e delega registro pra `routes/chat.js` (`registrarWsAluna`/`registrarWsAtendimento`). Heartbeat ping/pong a cada 30s. JWT do painel pode vir no formato novo (`role='admin'`, `escopo='atendimento'`) ou legado (`role='atendimento'|'suellen'`).
 
+### Home (`public/index.html`)
+
+Ordem: hero com o Teste, último vídeo (playlist de envios do canal, atualiza sozinha), redes, dropdown de produtos, relatos, nossos números, quem somos e rodapé com o mapa do portal. O Clube fica fora da home até o lançamento; o texto dele está em `texto-clube-vida-magica.md`.
+
+O carrossel de relatos da home usa `/api/depoimentos` sem os temas sem produto à venda (`TEMAS_FORA_DA_HOME`). Em `relatos-card.js`, o tema `default tema X` não aparece e o bloco de produto só abre para produto com checkout, nunca para o Clube. O convite de login está escondido enquanto `AREA_LOGADA_ATIVA` for `false`.
+
+`public/menu-materiais.js` é o menu "Materiais" do topo, na home e nas 5 LPs de produto. Nome e capa vêm de `/api/precos`; a lista de slugs e rotas fica no arquivo. Fora do `teste.html` de propósito, para não tirar a pessoa do fluxo.
+
 ### "Produto" vs "preço" — vocabulário canônico
 
 **Regra absoluta:**
@@ -267,12 +275,14 @@ As jornadas são as Fases 1, 2 e 3 da seção de produtos do `index.html`. Qual 
 | Resultado | Jornada | Livro | Curso |
 |---|---|---|---|
 | Medo | Conhecer e Despertar | `vencendo_medo` | `ouro_reprogramacao` |
-| Desordem | Conhecer e Despertar | `vencendo_desordem` | `ouro_reprogramacao` |
-| Validação | Conhecer e Despertar | `vencendo_validacao` | `ouro_reprogramacao` |
-| Sobrevivência | Conhecer e Despertar | `vencendo_sobrevivencia` | `lda_biblica` |
+| Desordem | Conhecer e Despertar | `vencendo_desordem` (reserva: `guia_pratico`) | `ouro_reprogramacao` |
+| Validação | Conhecer e Despertar | `vencendo_validacao` (reserva: `guia_pratico`) | `ouro_reprogramacao` |
+| Sobrevivência | Conhecer e Despertar | `vencendo_sobrevivencia` (reserva: `guia_pratico`) | `lda_biblica` |
 | Otimismo (`prosperidade_nv1`) | Vida Mágica | `guia_pratico` | `lda_biblica` |
 | Expansão (`prosperidade_nv2`) | Vida Mágica | `atal_maneira_livro` | `atal_maneira_curso` |
 | Plenitude (`prosperidade_nv3`) | Poder e Plenitude | `magica_fluir` | nenhum |
+
+**Livro reserva (temporário, 2026-11):** os PDFs de Desordem, Validação e Sobrevivência não foram encontrados. Enquanto o produto estiver sem `link_checkout_padrao`, o resultado mostra o Guia Prático. Preencher o link na aba Produtos do admin traz o livro de volta, sem mexer em código. A trilha do `/app` ainda lista o livro original.
 
 ### Os 5 perfis do Teste do Subconsciente
 

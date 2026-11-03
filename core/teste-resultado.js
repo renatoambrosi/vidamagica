@@ -177,7 +177,11 @@ const SELO_PADRAO_LIVRO = '✨ Inclui Aulão com a Suellen';
 //            percentual_interno, linha_evidencia
 //          }
 function montarLivrosRecomendados(precosBySlug, resultado) {
-  const slug = indicacaoDoPerfil(resultado.perfil_dominante).livro;
+  const indicacao = indicacaoDoPerfil(resultado.perfil_dominante);
+  const linkDoLivro = ((precosBySlug && precosBySlug[indicacao.livro]) || {}).link_checkout_padrao;
+  const slug = indicacao.livro_reserva && !(linkDoLivro || '').trim()
+    ? indicacao.livro_reserva
+    : indicacao.livro;
   const energia = resultado.perfil_dominante_bruto;
   const percInt = resultado.percentuais_exibicao[energia] || 0;
   const tagInfo = tagPorPercentual(percInt);

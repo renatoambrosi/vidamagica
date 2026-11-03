@@ -191,7 +191,7 @@
     .ticker-track {
       display: flex;
       gap: 3.5rem;
-      animation: ticker 22s linear infinite;
+      width: max-content; animation: ticker 60s linear infinite;
       white-space: nowrap;
     }
 
@@ -993,6 +993,77 @@
       .btn-entry { padding: 1.1rem 1.5rem; font-size: 0.92rem; }
       .dropdown-panel.open { padding: 1.75rem 1.5rem 2rem; }
     }
+  
+    /* ===== HOME 2026-11: HERO ===== */
+    .hero-home { position: relative; z-index: 2; min-height: 100svh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8rem 1.5rem 4rem; }
+    .hero-home-texto { max-width: 640px; width: 100%; }
+    .hero-home-logo { width: 130px; margin: 0 auto 1.25rem; display: block; }
+    .hero-home .hero-eyebrow { margin-bottom: 0.7rem; color: var(--color-gold-light); }
+    .hero-home .headline { font-size: clamp(1.8rem, 7.4vw, 3rem); margin-bottom: 0.8rem; }
+    .hero-home .subheadline { margin-bottom: 1.4rem; color: rgba(245,240,232,0.88); }
+    .hero-home-cta { display: block; padding: 1.05rem 1.25rem; border-radius: var(--radius-full); text-decoration: none; font-family: var(--font-display); font-size: 1.02rem; font-weight: 800; color: #1a1205; background: linear-gradient(135deg, #F4D998, #C8922A); box-shadow: 0 10px 34px rgba(200,146,42,0.45); }
+    .hero-home-micro { margin-top: 0.75rem; font-size: 0.82rem; color: rgba(245,240,232,0.72); }
+    .hero-home-prova { margin-top: 0.9rem; font-size: 0.86rem; color: var(--color-gold-light); font-weight: 600; }
+    @media (min-width: 860px) { .hero-home-cta { display: inline-block; padding: 1.05rem 2.6rem; } }
+
+    /* ===== HOME 2026-11: VÍDEO, REDES E PRODUTOS ===== */
+    .video-home { position: relative; z-index: 2; padding: 3rem 1.5rem 1.5rem; text-align: center; }
+    .video-home-quadro { max-width: 760px; margin: 1.25rem auto 1.1rem; aspect-ratio: 16 / 9; border-radius: 18px; overflow: hidden; background: #1A1205; box-shadow: 0 16px 44px rgba(61,46,26,0.25); }
+    .video-home-quadro iframe { width: 100%; height: 100%; border: 0; display: block; }
+    .redes-home { margin-top: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 0.7rem; font-size: 0.82rem; color: rgba(245,240,232,0.75); }
+    .redes-home .social-icons a { width: 40px; height: 40px; }
+    .redes-home .social-icons a i { font-size: 18px; }
+    .produtos-home { position: relative; z-index: 2; padding: 0.5rem 1.5rem 3.5rem; display: flex; flex-direction: column; align-items: center; }
+    .produtos-home .dropdown-wrap { width: 100%; }
+    .dropdown-panel.open { max-height: 7000px; }
+
+    /* ===== HOME 2026-11: RELATOS ===== */
+    .validacao-social, .quem-somos { z-index: 2; }
+    .depoimentos-track { width: max-content; align-items: stretch; animation-duration: 260s; }
+    .depoimento-card { flex: 0 0 min(80vw, 320px); }
+    .depoimento-texto { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; overflow: hidden; }
+    #relatos .validacao-headline { margin-bottom: 0.5rem; }
+    .relatos-sub { font-size: 1rem; line-height: 1.5; color: rgba(245,240,232,0.78); margin-bottom: 2rem; }
+
+    /* ===== HOME 2026-11: RODAPÉ ===== */
+    .rodape { position: relative; z-index: 2; background: #0B0700; color: rgba(245,240,232,0.72); font-family: var(--font-body); }
+    .rodape::before { content: ''; display: block; height: 1px; background: linear-gradient(90deg, transparent, rgba(200,146,42,0.65), transparent); }
+    .rodape-inner { max-width: 1180px; margin: 0 auto; padding: 3.5rem 2rem 1.75rem; }
+    .rodape-topo { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding-bottom: 2.25rem; }
+    .rodape-logo { height: 34px; width: auto; display: block; }
+    .rodape-frase { font-size: 0.86rem; margin-top: 0.75rem; color: rgba(245,240,232,0.6); max-width: 34rem; line-height: 1.55; }
+    .rodape-social { display: flex; gap: 0.6rem; flex-shrink: 0; }
+    .rodape-social a { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #F5F0E8; font-size: 17px; text-decoration: none; border: 1px solid rgba(245,240,232,0.18); transition: border-color 0.2s, color 0.2s, background 0.2s; }
+    .rodape-social a:hover { color: #1A1205; background: var(--color-gold-light); border-color: var(--color-gold-light); }
+    .rodape-mapa-rotulo { font-family: var(--font-display); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(245,240,232,0.42); padding-bottom: 1.1rem; border-top: 1px solid rgba(245,240,232,0.1); padding-top: 2rem; }
+    .rodape-colunas { display: grid; grid-template-columns: 1.7fr 1fr 1fr 1fr; gap: 2.5rem; }
+    .rodape-col summary { list-style: none; font-family: var(--font-display); font-size: 0.86rem; font-weight: 700; color: #F5F0E8; padding-bottom: 0.9rem; cursor: default; }
+    .rodape-col summary::-webkit-details-marker { display: none; }
+    .rodape-col summary svg { display: none; }
+    .rodape-col a { display: block; width: fit-content; padding: 0.34rem 0; font-size: 0.86rem; line-height: 1.4; color: rgba(245,240,232,0.68); text-decoration: none; transition: color 0.2s; }
+    .rodape-col a:hover { color: var(--color-gold-light); }
+    .rodape-base { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem 1.5rem; margin-top: 2.5rem; padding-top: 1.35rem; border-top: 1px solid rgba(245,240,232,0.1); font-size: 0.77rem; color: rgba(245,240,232,0.5); }
+    .rodape-base a { color: rgba(245,240,232,0.62); text-decoration: none; }
+    .rodape-base a:hover { color: var(--color-gold-light); }
+    .rodape-legal { display: flex; gap: 1.25rem; }
+    @media (max-width: 859px) {
+      .rodape-inner { padding: 2.5rem 1.5rem 1.5rem; }
+      .rodape-topo { flex-direction: column; align-items: flex-start; padding-bottom: 1.75rem; }
+      .rodape-mapa-rotulo { padding-top: 1.5rem; padding-bottom: 0.4rem; }
+      .rodape-colunas { display: block; }
+      .rodape-col { border-bottom: 1px solid rgba(245,240,232,0.1); }
+      .rodape-col summary { display: flex; align-items: center; justify-content: space-between; padding: 1rem 0; font-size: 0.95rem; cursor: pointer; }
+      .rodape-col summary svg { display: block; width: 18px; height: 18px; fill: none; stroke: var(--color-gold-light); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.2s; }
+      .rodape-col[open] summary svg { transform: rotate(180deg); }
+      .rodape-col a { padding: 0.5rem 0; font-size: 0.92rem; }
+      .rodape-col[open] { padding-bottom: 0.7rem; }
+      .rodape-base { flex-direction: column; align-items: flex-start; margin-top: 1.5rem; padding-top: 0; border-top: 0; }
+    }
+
+    /* ===== HOME 2026-11: WHATSAPP E BORBOLETAS ===== */
+    .whats-flutuante { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 110; width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 30px; text-decoration: none; background: #25D366; box-shadow: 0 8px 24px rgba(0,0,0,0.4); transition: transform 0.2s; }
+    .whats-flutuante:hover { transform: scale(1.07); }
+    .butterflies { right: auto; left: 10px; bottom: 12px; width: 76px; opacity: 0.55; }
   </style>
 </head>
 <body class="lp-index">
@@ -1012,67 +1083,35 @@
 
   <img src="/assets/butterflies-blue.webp" alt="" class="butterflies" aria-hidden="true">
 
-  <main class="container">
-    <img src="/assets/logo-vertical.webp" alt="Vida Mágica" class="logo">
-
-    <div class="content">
+  <section class="hero-home">
+    <div class="hero-home-texto">
+      <img class="logo hero-home-logo" src="/assets/logo-vertical.webp" alt="Vida Mágica">
       <p class="hero-eyebrow">Renato &amp; Suellen Seragi</p>
+      <h1 class="headline">Descubra o que está <span class="gold">travando a sua prosperidade</span></h1>
+      <p class="subheadline">Em 15 perguntas, o Teste do Subconsciente mostra qual energia está no comando da sua mente e qual é o seu próximo passo.</p>
+      <a id="link-teste" class="hero-home-cta" href="/teste">Quero descobrir minha trava</a>
+      <p class="hero-home-micro">R$ 19 · 15 perguntas · Resultado na hora</p>
+      <p class="hero-home-prova">+4.300 pessoas já identificaram suas travas</p>
+    </div>
+  </section>
 
-      <h1 class="headline">
-        <span class="gold">Paz, felicidade, amor e prosperidade</span> não são promessas distantes.
-      </h1>
-
-      <p class="subheadline">
-        São o resultado de uma mente alinhada com o <span class="gold">propósito de Deus.</span><br>
-        Você não está aqui por acaso. Sua <span class="gold">jornada começa aqui.</span>
-      </p>
-
-      <div class="divider"></div>
-      <p class="entry-label">Como podemos te ajudar agora?</p>
-
-      <div class="dropdown-wrap dropdown-wrap-primary">
-        <button class="btn-entry btn-entry-primary" onclick="toggleDrop('drop-trilha')">
-          <span>
-            <span class="btn-tag">Caminho completo</span>
-            Quero transformar minha mente e minha vida
-          </span>
-          <span class="btn-icon" id="icon-trilha">
-            <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
-          </span>
-        </button>
-
-        <div class="dropdown-panel" id="drop-trilha">
-          <div class="video-wrap">
-            <iframe src="https://www.youtube.com/embed/yzMQW1DW6eE" title="Vida Mágica — A Jornada" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-          </div>
-
-          <div class="clube-narrativa">
-            <span class="fase-label" style="margin-top:0">O que é o Clube Vida Mágica</span>
-            <p class="narrativa-texto">
-              O Clube Vida Mágica é o lugar onde a sua transformação acontece de verdade — não sozinha, mas acompanhada. É uma assinatura mensal que funciona como suporte vivo para cada fase da sua jornada.
-            </p>
-            <ul class="clube-lista">
-              <li>1 vídeo exclusivo por semana + bastidores + técnicas não publicadas</li>
-              <li>1 encontro ao vivo por mês — live ou videochamada com troca direta</li>
-              <li>Grupo de WhatsApp de Interação — comunidade ativa em crescimento conjunto</li>
-              <li>Grupo de WhatsApp de Conteúdo — direcionamentos e insights quase diários</li>
-              <li><strong>A Mágica do Fluir</strong> como bônus de entrada</li>
-              <li>Pessoas em destaque integradas à Fase 3 da jornada</li>
-            </ul>
-            <p class="narrativa-texto" style="margin-top:0.75rem">
-              <em>O Clube ainda não está aberto para o público. Mas tudo começa pelo mesmo lugar — entender onde você está agora.</em>
-            </p>
-          </div>
-
-          <div class="drop-divider"></div>
-          <p class="drop-intro">O primeiro passo é descobrir o que está travando a sua prosperidade:</p>
-          <a href="/teste?utm_source=vidamagica&utm_campaign=home-trilha-completa" class="btn-cta-drop" id="link-teste">
-            ✨ Fazer o Teste do Subconsciente
-          </a>
-          <p class="drop-note">R$ 19 · Resultado imediato · Seu ponto de partida</p>
-        </div>
+  <section class="video-home">
+    <p class="section-eyebrow">No nosso canal</p>
+    <h2 class="validacao-headline">Assista ao vídeo mais recente</h2>
+    <div class="video-home-quadro">
+      <iframe src="https://www.youtube.com/embed/videoseries?list=UUmFlggcUIWIHSAaS2piLYmw" title="Último vídeo de Suellen Seragi" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+    </div>
+    <div class="redes-home">
+      <span>Acompanhe a gente</span>
+      <div class="social-icons">
+        <a href="https://www.instagram.com/suellenseragi/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        <a href="https://www.tiktok.com/@suellenseragi" target="_blank" rel="noopener noreferrer" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+        <a href="https://www.youtube.com/@SuellenSeragi" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
       </div>
+    </div>
+  </section>
 
+  <section class="produtos-home">
       <div class="dropdown-wrap">
         <button class="btn-entry" onclick="toggleDrop('drop-produtos')">
           <span>
@@ -1089,39 +1128,20 @@
             A jornada Vida Mágica é estruturada em fases. Cada fase tem um propósito claro — e cada produto existe para levar você ao próximo nível. Nada aqui é por acaso.
           </p>
 
-          <div class="fase-label">Onde tudo começa — Diagnóstico</div>
-          <p class="narrativa-texto">Antes de qualquer passo, você precisa saber o que está te travando. O Teste do Subconsciente revela em 15 perguntas qual padrão mental bloqueia sua prosperidade — e define qual caminho é o seu.</p>
-          <div class="produtos-grid">
-            <div class="produto-card" data-produto="teste_subconsciente">
-              <img alt="">
-              <div class="produto-info">
-                <strong data-produto-nome></strong>
-                <p>15 perguntas. 7 resultados possíveis. Resultado imediato. O ponto de partida obrigatório para qualquer caminho.</p>
-                <div class="produto-preco" data-produto-preco></div>
-                <div class="produto-links">
-                  <a href="/teste?utm_source=vidamagica&utm_campaign=home-produtos" class="btn-lp" id="lp-teste">Ver mais</a>
-                  <a href="/teste?utm_source=vidamagica&utm_campaign=checkout-teste" class="btn-checkout" id="checkout-teste">Fazer agora</a>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div class="fase-label">Fase 1 — Despertando a Prosperidade Bíblica</div>
           <p class="narrativa-texto">Aqui você sai do controle das energias que te bloqueiam — medo, sobrevivência, validação, desordem. Sem vencer isso, nenhuma técnica de prosperidade funciona de verdade.</p>
           <div class="produtos-grid">
-            <div class="produto-card" data-produto="serie_conhecer_despertar">
+            <div class="produto-card" data-produto="vencendo_medo">
               <img alt="">
               <div class="produto-info">
                 <strong data-produto-nome></strong>
-                <p>Um e-book por perfil de energia. Direcionado pelo seu resultado no Teste — trabalha exatamente a trava que é a sua.</p>
+                <p>Para quem sente que o medo está no comando. Inclui Aulão com a Suellen.</p>
                 <div class="produto-preco" data-produto-preco></div>
                 <div class="produto-links">
-                  <a href="/teste" class="btn-lp">Ver mais</a>
                   <a class="btn-checkout" target="_blank" data-produto-checkout style="display:none">Comprar</a>
                 </div>
               </div>
             </div>
-
             <div class="produto-card destaque" data-produto="ouro_reprogramacao">
               <img alt="">
               <div class="produto-info">
@@ -1208,45 +1228,29 @@
               </div>
             </div>
           </div>
-
-          <div class="drop-divider"></div>
-          <div class="clube-banner">
-            <img src="/assets/products/clube-vida-magica.webp" alt="Clube Vida Mágica">
-            <div>
-              <strong>Clube Vida Mágica</strong>
-              <p>Todos esses produtos fazem parte de uma jornada única. O Clube é o lugar onde tudo se conecta — conteúdo exclusivo, comunidade ativa e acompanhamento em cada fase da sua transformação.</p>
-              <a href="/app/dashboard" class="btn-clube">Conhecer o Clube</a>
-            </div>
-          </div>
         </div>
       </div>
+  </section>
 
-    </div>
-  </main>
+  <section class="validacao-social" id="relatos">
+    <div class="validacao-container">
+      <h2 class="validacao-headline">Pensou, falou, viveu!!</h2>
+      <p class="relatos-sub">Relatos de quem está vivendo uma vida mágica</p>
 
-  <section class="quem-somos">
-    <div class="qs-particles" id="qs-particles"></div>
-
-    <div class="quem-somos-inner">
-      <img class="casal-photo" src="/assets/casal-creators.webp" alt="Renato e Suellen Seragi">
-      <div class="quem-somos-text">
-        <span class="section-eyebrow">Quem somos</span>
-        <h2 class="quem-somos-headline">
-          Casados há 21 anos.<br>
-          <span>O que ensinamos com alegria.</span>
-        </h2>
-        <p class="quem-somos-body" style="line-height:1.6">
-          Somos Renato e Suellen Seragi — pais de quatro filhos, e há mais de duas décadas caminhando juntos com um único propósito: <em>conectar pessoas com Deus de um jeito real, profundo e transformador.</em>
-          <br><br>
-          Tudo isso é feito com um coração honesto, com a intenção genuína de servir, ajudar e transformar — porque é assim que a gente vive, e é assim que acreditamos que a verdadeira prosperidade começa.
-          <br><br>
-          <em>E pode acreditar: o melhor ainda está por vir. Pra você e pra nós.</em>
-        </p>
+      <div class="depoimentos-carousel">
+        <div class="depoimentos-track" id="depoimentos-track"></div>
       </div>
+
+      <a href="/relatos" class="btn-ver-mais">
+        Ver todos os relatos
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </a>
     </div>
   </section>
 
-  <section class="validacao-social">
+  <section class="validacao-social" id="numeros">
     <div class="validacao-container">
       <span class="section-eyebrow">Nossos números</span>
       <h2 class="validacao-headline">Uma jornada que transforma</h2>
@@ -1288,31 +1292,61 @@
           </div>
         </div>
       </div>
-
-      <div class="validacao-divider"></div>
-
-      <p class="validacao-destaque">
-        Mas, no fundo, números são apenas estatísticas.<br>
-        O que realmente valida este trabalho são os relatos reais que você pode conferir abaixo.
-      </p>
-
-      <div class="depoimentos-carousel">
-        <div class="depoimentos-track" id="depoimentos-track"></div>
-      </div>
-
-      <a href="#todos-depoimentos" class="btn-ver-mais">
-        Ver todos os relatos
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="9 18 15 12 9 6"></polyline>
-        </svg>
-      </a>
     </div>
   </section>
 
-  <div class="cta-footer">
-    <p>Renato &amp; Suellen Seragi · Vida Mágica · 2025</p>
-  </div>
+  <section class="quem-somos" id="quem-somos">
+    <div class="qs-particles" id="qs-particles"></div>
 
+    <div class="quem-somos-inner">
+      <img class="casal-photo" src="/assets/casal-creators.webp" alt="Renato e Suellen Seragi">
+      <div class="quem-somos-text">
+        <span class="section-eyebrow">Quem somos</span>
+        <h2 class="quem-somos-headline">
+          Casados há 21 anos.<br>
+          <span>O que ensinamos com alegria.</span>
+        </h2>
+        <p class="quem-somos-body" style="line-height:1.6">
+          Somos Renato e Suellen Seragi — pais de quatro filhos, e há mais de duas décadas caminhando juntos com um único propósito: <em>conectar pessoas com Deus de um jeito real, profundo e transformador.</em>
+          <br><br>
+          Tudo isso é feito com um coração honesto, com a intenção genuína de servir, ajudar e transformar — porque é assim que a gente vive, e é assim que acreditamos que a verdadeira prosperidade começa.
+          <br><br>
+          <em>E pode acreditar: o melhor ainda está por vir. Pra você e pra nós.</em>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="rodape">
+    <div class="rodape-inner">
+      <div class="rodape-topo">
+        <div>
+          <a href="/" aria-label="Vida Mágica, início"><img class="rodape-logo" src="/assets/logo-horizontal.webp" alt="Vida Mágica"></a>
+          <p class="rodape-frase">Reprogramação mental com base no Grande Livro. Pense novo, viva o novo.</p>
+        </div>
+        <div class="rodape-social">
+          <a href="https://www.instagram.com/suellenseragi/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://www.tiktok.com/@suellenseragi" target="_blank" rel="noopener noreferrer" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+          <a href="https://www.youtube.com/@SuellenSeragi" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+        </div>
+      </div>
+      <div class="rodape-mapa-rotulo">Mapa do portal Vida Mágica</div>
+      <nav class="rodape-colunas" aria-label="Mapa do portal">
+        <details class="rodape-col"><summary>Materiais <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></summary><div id="mapa-materiais"></div></details>
+        <details class="rodape-col"><summary>Comece aqui <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></summary><a href="/teste">Teste do Subconsciente</a><a href="#relatos">Relatos</a></details>
+        <details class="rodape-col"><summary>Vida Mágica <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></summary><a href="#quem-somos">Quem somos</a><a href="#numeros">Nossos números</a></details>
+        <details class="rodape-col"><summary>Ajuda <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></summary><a href="mailto:contato@suellenseragi.com.br">Fale com a gente</a><a href="/termos">Termos de uso</a></details>
+      </nav>
+      <div class="rodape-base">
+        <span>© <span id="rodape-ano"></span> Vida Mágica. Todos os direitos reservados.</span>
+        <div class="rodape-legal"><a href="/termos">Termos de uso</a></div>
+      </div>
+    </div>
+  </footer>
+
+  <a class="whats-flutuante" href="https://wa.me/5562999884411?text=Ol%C3%A1!%20Vim%20pelo%20site%20Vida%20M%C3%A1gica%20e%20quero%20falar%20com%20voc%C3%AAs." target="_blank" rel="noopener noreferrer" aria-label="Falar pelo WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+
+  
   <script>
     const API_BASE = 'https://vidamagica-production.up.railway.app';
 
@@ -1336,7 +1370,7 @@
 
       try {
         const [resDep, resTk, resCfg] = await Promise.allSettled([
-          fetch(`${API_BASE}/api/depoimentos?tema=${TEMA_LP}`, { headers: { 'Accept': 'application/json' }, mode: 'cors' }),
+          fetch(`${API_BASE}/api/depoimentos`, { headers: { 'Accept': 'application/json' }, mode: 'cors' }),
           fetch(`${API_BASE}/api/depoimentos?tema=${TEMA_LP}&ticker=true`, { headers: { 'Accept': 'application/json' }, mode: 'cors' }),
           fetch(`${API_BASE}/api/config`, { headers: { 'Accept': 'application/json' }, mode: 'cors' })
         ]);
@@ -1351,6 +1385,9 @@
       }
 
       if (!Array.isArray(depoimentos)) depoimentos = [];
+      // Na home ficam só relatos com produto à venda.
+      const TEMAS_FORA_DA_HOME = ['geral', 'sessao', 'vm', 'cdv', 'cdd', 'cds'];
+      depoimentos = depoimentos.filter(d => !TEMAS_FORA_DA_HOME.includes(d.tema_slug));
       if (!Array.isArray(depoimentosTicker) || !depoimentosTicker.length) depoimentosTicker = depoimentos;
 
       if (shuffleAtivo) {
@@ -1409,8 +1446,6 @@
       }
 
       document.getElementById('link-teste').href     = addUtms('/teste', 'home-trilha-completa');
-      document.getElementById('lp-teste').href       = addUtms('/teste', 'home-produtos');
-      document.getElementById('checkout-teste').href = addUtms('/teste', 'checkout-teste');
       document.getElementById('lp-guia').href        = addUtms('/guia-pratico-reprogramacao-mental/', 'lp-guia');
       document.getElementById('lp-ouro').href        = addUtms('/ouro-da-reprogramacao-mental', 'lp-ouro');
       document.getElementById('lp-lda').href         = addUtms('/lei-da-atracao-biblica', 'lp-lda');
@@ -1470,6 +1505,47 @@
       }
     })();
 
+    // ===== MAPA DO PORTAL =====
+    (async function() {
+      document.getElementById('rodape-ano').textContent = new Date().getFullYear();
+
+      // Colunas abertas no computador, sanfona no celular.
+      const computador = window.matchMedia('(min-width: 860px)');
+      const colunas = document.querySelectorAll('.rodape-col');
+      const aplicar = () => colunas.forEach(c => { c.open = computador.matches; });
+      colunas.forEach(c => c.querySelector('summary').addEventListener('click', (ev) => {
+        if (computador.matches) ev.preventDefault();
+      }));
+      computador.addEventListener('change', aplicar);
+      aplicar();
+
+      const LINKS = [
+        ['vencendo_medo', null],
+        ['ouro_reprogramacao', '/ouro-da-reprogramacao-mental'],
+        ['guia_pratico', '/guia-pratico-reprogramacao-mental/'],
+        ['lda_biblica', '/lei-da-atracao-biblica'],
+        ['atal_maneira_livro', '/a-tal-maneira/'],
+        ['atal_maneira_curso', '/a-tal-maneira/'],
+        ['magica_fluir', '/magica-do-fluir'],
+      ];
+      try {
+        const dados = await fetch(`${API_BASE}/api/precos`).then(r => r.json());
+        const mapa = document.getElementById('mapa-materiais');
+        LINKS.forEach(([slug, lp]) => {
+          const p = dados[slug];
+          const href = lp || (p && p.link_checkout_padrao);
+          if (!p || !href) return;
+          const link = document.createElement('a');
+          link.href = href;
+          link.textContent = (p.nome || '').split(' - ')[0];
+          if (!lp) { link.target = '_blank'; link.rel = 'noopener'; }
+          mapa.appendChild(link);
+        });
+      } catch (e) {
+        console.warn('Mapa do portal sem produtos:', e);
+      }
+    })();
+
     // ===== DROPDOWNS =====
     function toggleDrop(id) {
       const panel = document.getElementById(id);
@@ -1521,6 +1597,7 @@
      (depende do VmSession definido logo acima). */
   </script>
   <script src="/navbar-account.js" defer></script>
+  <script src="/menu-materiais.js" defer></script>
 
   <script src="/relatos-card.js"></script>
 

@@ -536,7 +536,11 @@
     // Tema visual usa o slug do relato se vier (modal pode abrir de várias origens, não só da LP atual)
     const slugTema = relato.tema_slug || temaAtual || null;
 
-    document.getElementById('vmr-tema').textContent = relato.tema_nome || (slugTema || '');
+    // Nome provisório do banco ("default tema X") não aparece pra aluna.
+    const nomeTema = /^default tema/i.test(relato.tema_nome || '') ? '' : (relato.tema_nome || '');
+    const etiquetaTema = document.getElementById('vmr-tema');
+    etiquetaTema.textContent = nomeTema;
+    etiquetaTema.style.display = nomeTema ? '' : 'none';
     document.getElementById('vmr-autor').textContent = relato.nome || '—';
 
     const meta = metaDoRelato(relato);
@@ -555,8 +559,10 @@
     const resposta = document.getElementById('vmr-resposta');
     const produtoSlug = relato.produto_slug || null;
     const produto = produtoSlug && PRECOS ? PRECOS[produtoSlug] : null;
+    // Só oferece produto à venda. Clube ainda não foi lançado.
+    const aVenda = produto && produto.link_checkout_padrao && produtoSlug !== 'clube_vida_magica';
 
-    if (!produto){
+    if (!aVenda){
       resposta.classList.add('vmr-sem-produto');
     } else {
       resposta.classList.remove('vmr-sem-produto');
@@ -612,16 +618,9 @@
     if (!relato || !relato.id){ box.style.display = 'none'; return; }
 
     const token = tokenAluna();
-    if (!token){
-      // Não logada: mostra convite pra entrar
-      box.style.display = 'block';
-      grid.innerHTML = `
-        <div class="vmr-reacoes-login" style="grid-column: 1 / -1">
-          <a href="/auth">Entre na sua conta</a> pra abençoar essa pessoa e guardar este relato no seu Baú.
-        </div>
-      `;
-      return;
-    }
+    // Não logada: esconde. Quando AREA_LOGADA_ATIVA ligar no server.js, volta o
+    // convite "Entre na sua conta" pra abençoar e guardar o relato no Baú.
+    if (!token){ box.style.display = 'none'; return; }
 
     box.style.display = 'block';
     // Renderiza os 4 botões (zerados; busca o estado depois)

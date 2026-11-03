@@ -140,7 +140,7 @@
     .ticker-track {
       display: flex;
       gap: 3.5rem;
-      animation: ticker 22s linear infinite;
+      width: max-content; animation: ticker 60s linear infinite;
       white-space: nowrap;
     }
 
@@ -313,7 +313,7 @@
     .dep-track {
       display: flex;
       gap: 1.25rem;
-      animation: depScroll 30s linear infinite;
+      width: max-content; animation: depScroll 60s linear infinite;
       will-change: transform;
     }
     @keyframes depScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
