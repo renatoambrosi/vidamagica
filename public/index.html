@@ -549,7 +549,7 @@
       border: 1px solid rgba(200,146,42,0.2);
     }
     .produto-info { flex: 1; min-width: 0; }
-    .produto-info strong {
+    .produto-info [data-produto-nome] {
       display: block;
       font-size: 0.85rem;
       font-weight: 700;
@@ -566,8 +566,15 @@
       font-size: 0.9rem;
       font-weight: 700;
       color: var(--color-gold-light);
-      margin-bottom: 0.5rem;
+      line-height: 1.3;
+      margin-bottom: 0.6rem;
     }
+    .produto-preco-off { display: block; font-size: 0.65rem; font-weight: 700; color: var(--color-gold-amber); }
+    .produto-preco-de { display: block; font-size: 0.72rem; font-weight: 400; opacity: 0.6; }
+    .produto-preco-vista { display: block; font-size: 0.72rem; font-weight: 600; opacity: 0.7; margin-top: 0.1rem; }
+    /* Capa, nome e descrição levam à LP (ou à compra, quando não há LP); o cartão em si não. */
+    .produto-link { color: inherit; text-decoration: none; display: block; }
+    .produto-link:hover [data-produto-nome] { text-decoration: underline; text-underline-offset: 3px; }
     .produto-links { display: flex; gap: 0.5rem; }
 
     .btn-lp, .btn-checkout {
@@ -1208,8 +1215,8 @@
       <div class="dropdown-wrap">
         <button class="btn-entry" onclick="toggleDrop('drop-produtos')">
           <span>
-            <span class="btn-tag">Explorar produtos</span>
-            Conhecer os produtos e a jornada completa
+            <span class="btn-tag">Explorar materiais</span>
+            Conhecer os materiais e o método do Grande Livro
           </span>
           <span class="btn-icon" id="icon-produtos">
             <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
@@ -1218,7 +1225,7 @@
 
         <div class="dropdown-panel" id="drop-produtos">
           <p class="narrativa-texto" style="margin-bottom:1.25rem">
-            A jornada Vida Mágica é estruturada em fases. Cada fase tem um propósito claro — e cada produto existe para levar você ao próximo nível. Nada aqui é por acaso.
+            A jornada Vida Mágica é estruturada em fases. Cada fase tem um propósito claro — e cada material existe para levar você ao próximo nível. Nada aqui é por acaso.
           </p>
 
           <div class="fase-label">Fase 1 — Despertando a Prosperidade Bíblica</div>
@@ -1554,21 +1561,14 @@
           if (!p) return '';
           let html = '';
           if (p.exibir_de) {
-            if (p.desconto_pct) html += `<small style="color:var(--color-gold-amber);font-size:0.65rem;font-weight:700;display:block">${p.desconto_pct}% OFF</small>`;
-            html += `<span style="text-decoration:line-through;opacity:0.5;font-size:0.8rem">R$ ${p.exibir_de}</span> `;
-            if (p.exibir_parcelas_valor) {
-              html += `<strong>${p.exibir_parcelas_qtd}x R$ ${p.exibir_parcelas_valor}</strong>`;
-              html += `<br><small style="opacity:0.6">ou R$ ${p.exibir_avista} à vista</small>`;
-            } else {
-              html += `<strong>R$ ${p.exibir_avista}</strong>`;
-            }
+            if (p.desconto_pct) html += `<span class="produto-preco-off">${p.desconto_pct}% OFF</span>`;
+            html += `<span class="produto-preco-de">de <s>R$ ${p.exibir_de}</s> por</span>`;
+          }
+          if (p.exibir_parcelas_valor) {
+            html += `<span>${p.exibir_parcelas_qtd}x R$ ${p.exibir_parcelas_valor}</span>`;
+            html += `<span class="produto-preco-vista">ou R$ ${p.exibir_avista} à vista</span>`;
           } else {
-            if (p.exibir_parcelas_valor) {
-              html += `<strong>${p.exibir_parcelas_qtd}x R$ ${p.exibir_parcelas_valor}</strong>`;
-              html += `<br><small style="opacity:0.6">ou R$ ${p.exibir_avista} à vista</small>`;
-            } else {
-              html += `<strong>R$ ${p.exibir_avista}</strong>`;
-            }
+            html += `<span>R$ ${p.exibir_avista}</span>`;
           }
           return html;
         }
@@ -1588,6 +1588,22 @@
           if (checkout && p.link_checkout_padrao) {
             checkout.href = VmUtm.checkout(p.link_checkout_padrao, checkout.dataset.utm);
             checkout.style.display = '';
+          }
+          // Capa, nome e descrição viram link: LP do material, ou a compra quando não há LP.
+          const lp = card.querySelector('.btn-lp');
+          const destino = lp ? lp.getAttribute('href') : (checkout && checkout.getAttribute('href'));
+          if (destino) {
+            const envolver = (els) => {
+              const a = document.createElement('a');
+              a.className = 'produto-link';
+              a.href = destino;
+              a.target = '_blank';
+              a.rel = 'noopener';
+              els[0].before(a);
+              els.forEach(el => a.appendChild(el));
+            };
+            envolver([img]);
+            envolver([card.querySelector('[data-produto-nome]'), card.querySelector('.produto-info > p')]);
           }
         });
       } catch (e) {
