@@ -10,6 +10,7 @@
 
    Endpoints:
    - GET  /api/produtos           → público (com cálculos de exibição)
+   - GET  /llms.txt               → apresentação do site para IAs (montado no server.js)
    - GET  /api/admin/produtos     → admin (cru)
    - POST /api/admin/produtos     → admin (salva)
 
@@ -140,6 +141,62 @@ async function salvarAdmin(req, res) {
   }
 }
 
+// ── /llms.txt — apresentação do site para as IAs (GEO) ──
+// Nome de cada produto vem do admin; descrição e página ficam aqui,
+// iguais às descrições aprovadas para o Google.
+const BASE_SITE = 'https://vidamagica.com.br';
+const LLMS_PRODUTOS = [
+  ['teste_subconsciente', '/teste', 'Descubra em 15 perguntas qual padrão do seu subconsciente está no comando. Baseado em lógica comportamental e ciência cognitiva. Resultado na hora.'],
+  ['vencendo_medo', '/', 'E-book da Série Conhecer e Despertar, indicado pelo Teste para quem tem o Medo como energia dominante.'],
+  ['ouro_reprogramacao', '/ouro-da-reprogramacao-mental', 'Curso de reprogramação mental com base bíblica: 3 módulos e 9 aulas, com linguagem leve e conteúdo profundo.'],
+  ['lda_biblica', '/lei-da-atracao-biblica', 'Fé, propósito e os princípios do Grande Livro em um curso com 14 aulas práticas.'],
+  ['guia_pratico', '/guia-pratico-reprogramacao-mental', 'A forma mais simples e organizada de começar a reprogramação mental. Método prático baseado no Grande Livro, PNL e neurociência. E-book com exercícios.'],
+  ['atal_maneira_livro', '/a-tal-maneira', 'As 3 leis de Suellen Seragi: Imagem Fixa, Fé Firme e Gratidão Plena, de forma prática e com base no Grande Livro.'],
+  ['atal_maneira_curso', '/a-tal-maneira', 'O curso das 3 leis de A Tal Maneira, com mentalidade e ação.'],
+  ['magica_fluir', '/magica-do-fluir', 'Guia de bolso para quem já despertou e quer viver no fluir, sem forçar. Uma leitura curta para o dia a dia.'],
+];
+
+async function llmsTxt(req, res) {
+  let produtos = {};
+  try {
+    const result = await poolComunicacao.query('SELECT key, dados FROM precos');
+    result.rows.forEach(row => { produtos[row.key] = row.dados || {}; });
+  } catch (err) {
+    console.error('❌ Erro ao montar llms.txt:', err.message);
+  }
+  const itens = LLMS_PRODUTOS
+    .filter(([slug]) => produtos[slug] && produtos[slug].nome)
+    .map(([slug, caminho, desc]) => `- [${produtos[slug].nome}](${BASE_SITE}${caminho}): ${desc}`);
+
+  const texto = [
+    '# Vida Mágica - Suellen Seragi',
+    '',
+    '> Escola de reprogramação mental bíblica de Suellen e Renato Seragi, com cursos e materiais com base no Grande Livro. Pensar novo é viver o novo.',
+    '',
+    'Vida Mágica - Suellen Seragi é a escola oficial de Suellen Seragi. Os materiais são digitais (cursos, e-books e guias), e o pagamento é feito pela Kiwify. A porta de entrada é o Teste do Subconsciente, que indica por onde cada pessoa começa.',
+    '',
+    `- Site oficial da Suellen Seragi: https://www.suellenseragi.com.br/`,
+    '- Instagram, YouTube e TikTok: @suellenseragi',
+    '- Contato: contato@suellenseragi.com.br',
+    '',
+    '## Teste, cursos e materiais',
+    '',
+    ...itens,
+    '',
+    '## Relatos',
+    '',
+    `- [Relatos de alunas](${BASE_SITE}/relatos): Histórias reais de alunas que praticaram os cursos e materiais de Suellen Seragi.`,
+    '',
+    '## Institucional',
+    '',
+    `- [Política de Privacidade](${BASE_SITE}/privacidade)`,
+    `- [Termos de Uso](${BASE_SITE}/termos)`,
+    '',
+  ].join('\n');
+
+  res.type('text/plain; charset=utf-8').send(texto);
+}
+
 // ── ENDPOINTS NOVOS (canônicos) ──
 router.get('/produtos',                                       listarPublico);
 router.get('/admin/produtos',  autenticarPainel('admin'),     listarAdmin);
@@ -153,3 +210,4 @@ module.exports.listarPublico = listarPublico;
 module.exports.listarAdmin   = listarAdmin;
 module.exports.salvarAdmin   = salvarAdmin;
 module.exports.processarProdutos = processarProdutos;
+module.exports.llmsTxt = llmsTxt;

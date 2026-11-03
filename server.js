@@ -153,6 +153,9 @@ app.get('/termos', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'termos.html'));
 });
 
+// ── /llms.txt: apresentação do site para IAs (nomes vêm do admin) ──
+app.get('/llms.txt', require('./routes/produtos').llmsTxt);
+
 // ── ROTA AMIGÁVEL: /privacidade serve privacidade.html ─────
 app.get('/privacidade', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'privacidade.html'));

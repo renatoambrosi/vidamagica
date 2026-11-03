@@ -163,8 +163,10 @@ async function sincronizarCategorias(depoimento_id, categorias_ids) {
 
 // Home, LPs e Teste recebem anúncio: com trecho_anuncio preenchido, o texto
 // completo nem sai do servidor. ?completo=1 é para o /app.
+// Campos internos (marca antiga de IA, motivo de rejeição, código da aluna)
+// ficam só no admin.
 function textoParaPagina(dep, completo) {
-  const { trecho_anuncio, ...resto } = dep;
+  const { trecho_anuncio, gerado_por_ia, motivo_rejeicao, usuario_id, ...resto } = dep;
   if (!completo && trecho_anuncio) resto.texto = trecho_anuncio;
   return resto;
 }

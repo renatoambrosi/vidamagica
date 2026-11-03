@@ -330,6 +330,71 @@
     .whats-flutuante:hover { transform: scale(1.07); }
     .back-top { right: 23px; bottom: calc(88px + env(safe-area-inset-bottom)); }
   </style>
+  <!-- Ficha do material para Google e IAs. Nome igual ao título da página; as perguntas são as do FAQ desta página. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Course",
+        "name": "O Ouro da Reprogramação Mental",
+        "provider": {
+          "@type": "EducationalOrganization",
+          "@id": "https://vidamagica.com.br/#escola",
+          "name": "Vida Mágica - Suellen Seragi",
+          "url": "https://vidamagica.com.br/"
+        },
+        "creator": {
+          "@type": "Person",
+          "@id": "https://vidamagica.com.br/#suellen",
+          "name": "Suellen Seragi",
+          "url": "https://www.suellenseragi.com.br/"
+        },
+        "inLanguage": "pt-BR",
+        "description": "Curso de reprogramação mental com base bíblica: 3 módulos e 9 aulas, com linguagem leve e conteúdo profundo. Comece a escrever sua nova história.",
+        "url": "https://vidamagica.com.br/ouro-da-reprogramacao-mental"
+      },
+      {
+        "@type": "FAQPage",
+        "url": "https://vidamagica.com.br/ouro-da-reprogramacao-mental",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Preciso ser cristã para fazer o curso?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Não. A base é bíblica, mas a linguagem é leve e universal. Todas são bem-vindas."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "O curso é online?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Sim! 100% online, para assistir quando e onde quiser."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Terei suporte?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Sim! O suporte é oferecido diretamente pelos atendentes da plataforma Kiwify e estará disponível para qualquer problema técnico que possa vir a ocorrer."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Por quanto tempo terei acesso ao curso?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Durante 1 ano completo após a compra."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
   <script src="/utm.js" data-padrao="VmLpOuro"></script>
 </head>
 <body class="lp-ouro">

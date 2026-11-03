@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /atendimento
+Disallow: /app
+Disallow: /api/
+Disallow: /resultado/
+
+Sitemap: https://vidamagica.com.br/sitemap.xml
