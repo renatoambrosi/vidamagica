@@ -792,14 +792,6 @@ select option { background: #1a1205; }
               <option value="">— todos os temas —</option>
             </select>
           </div>
-          <div class="field" style="margin:0;max-width:160px">
-            <label>Placeholders</label>
-            <select id="filtro-placeholder" onchange="carregarDeps()">
-              <option value="">— todos —</option>
-              <option value="true">Só placeholders</option>
-              <option value="false">Sem placeholders</option>
-            </select>
-          </div>
           <div class="field" style="margin:0;max-width:140px">
             <label>Ticker</label>
             <select id="filtro-ticker" onchange="carregarDeps()">
@@ -2382,7 +2374,7 @@ async function carregarProdutosParaDropdown(){
 // Sincroniza estado visual dos filtros: borda dourada em selects ativos e
 // botão "Limpar filtros" visível somente quando há filtro ativo.
 function atualizarFiltrosDeps(){
-  const ids = ['filtro-tema','filtro-placeholder','filtro-ticker'];
+  const ids = ['filtro-tema','filtro-ticker'];
   let temAtivo = false;
   ids.forEach(id => {
     const el = document.getElementById(id);
@@ -2394,7 +2386,7 @@ function atualizarFiltrosDeps(){
   if (btn) btn.style.display = temAtivo ? 'inline-flex' : 'none';
 }
 function limparFiltrosDeps(){
-  ['filtro-tema','filtro-placeholder','filtro-ticker'].forEach(id => {
+  ['filtro-tema','filtro-ticker'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -2413,11 +2405,9 @@ async function carregarDeps(){
 
   // Filtros ativos
   const tema = document.getElementById('filtro-tema')?.value || '';
-  const placeholder = document.getElementById('filtro-placeholder')?.value || '';
   const ticker = document.getElementById('filtro-ticker')?.value || '';
   const qs = new URLSearchParams();
   if (tema) qs.set('tema', tema);
-  if (placeholder) qs.set('placeholder', placeholder);
   if (ticker) qs.set('ticker', ticker);
 
   try {
@@ -2438,7 +2428,7 @@ function renderDeps(){
   if (!grid) return;
   if (!deps.length) {
     // Se há filtro ativo, oferecer botão pra limpar direto da mensagem vazia.
-    const temFiltro = ['filtro-tema','filtro-placeholder','filtro-ticker']
+    const temFiltro = ['filtro-tema','filtro-ticker']
       .some(id => document.getElementById(id)?.value);
     grid.innerHTML = temFiltro
       ? '<div class="loading">Nenhum relato encontrado com esses filtros.<br><button class="btn btn-ghost btn-sm" style="margin-top:0.7rem" onclick="limparFiltrosDeps()">✕ Limpar filtros e ver tudo</button></div>'
@@ -2449,9 +2439,6 @@ function renderDeps(){
   deps.forEach((d) => {
     const card = document.createElement('div');
     card.className = 'dep-card';
-    const placeholderBadge = d.gerado_por_ia
-      ? '<span class="nav-tag" style="margin-left:0;background:rgba(240,144,144,0.12);color:#F09090;border-color:rgba(240,144,144,0.25)">IA</span>'
-      : '';
     const charCount = (d.texto || '').length;
     const counterId = `dep-counter-${d.id}`;
     const taId = `dep-texto-${d.id}`;
@@ -2459,7 +2446,7 @@ function renderDeps(){
       <div class="dep-order">#${d.id}</div>
       <div class="dep-fields">
         <div class="dep-row">
-          <div class="field"><label>Nome ${placeholderBadge}</label>
+          <div class="field"><label>Nome</label>
             <input type="text" value="${escHtml(d.nome||'')}" data-field="nome">
           </div>
           <div class="field" style="max-width:220px"><label>Profissão</label>
@@ -2480,6 +2467,10 @@ function renderDeps(){
         <div class="field" style="margin-bottom:0.3rem">
           <label>Relato <span style="float:right;color:var(--text-muted);font-weight:400" id="${counterId}">${charCount} caracteres</span></label>
           <textarea id="${taId}" data-field="texto" oninput="updateCounter('${taId}','${counterId}')">${escHtml(d.texto||'')}</textarea>
+        </div>
+        <div class="field" style="margin-bottom:0.3rem">
+          <label>Trecho para páginas de anúncio <span style="text-transform:none;letter-spacing:0;color:var(--text-muted);font-weight:400">(vazio = relato inteiro; preencha quando o relato fala de valor, prazo ou cura)</span></label>
+          <textarea data-field="trecho_anuncio" rows="2" placeholder="Só as palavras da própria aluna, sem número, prazo ou cura">${escHtml(d.trecho_anuncio||'')}</textarea>
         </div>
         <div class="dep-footer">
           <div class="dep-footer-toggles">
@@ -2576,6 +2567,7 @@ async function salvarDep(id, btn){
     ativo: card.querySelector('[data-field="ativo"]').checked,
     autora_era_assinante_clube: card.querySelector('[data-field="autora_era_assinante_clube"]')?.checked || false,
     texto: card.querySelector('[data-field="texto"]').value.trim(),
+    trecho_anuncio: card.querySelector('[data-field="trecho_anuncio"]').value.trim() || null,
   };
   btn.disabled = true;
   try{

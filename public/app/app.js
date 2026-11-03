@@ -5432,7 +5432,7 @@ async function carregarRelatosComunidade(ctx) {
   // Fallback client-side (algoritmo simples) — usado se endpoint falhar
   if (!ordenados.length) {
     try {
-      const r2 = await fetch('/api/depoimentos', { headers: { 'Accept': 'application/json' } });
+      const r2 = await fetch('/api/depoimentos?completo=1', { headers: { 'Accept': 'application/json' } });
       if (!r2.ok) throw new Error('HTTP ' + r2.status);
       const relatos = await r2.json();
       if (!Array.isArray(relatos) || !relatos.length) {

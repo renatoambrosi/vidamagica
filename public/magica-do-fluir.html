@@ -256,6 +256,10 @@
     /* RIPPLE */
     .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.4); transform: scale(0); animation: rippleAnim 0.6s ease-out; pointer-events: none; }
     @keyframes rippleAnim { to { transform: scale(2.5); opacity: 0; } }
+    /* Botão do WhatsApp, igual ao da home. O "voltar ao topo" sobe para não ficar embaixo dele. */
+    .whats-flutuante { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 110; width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 30px; text-decoration: none; background: #25D366; box-shadow: 0 8px 24px rgba(0,0,0,0.4); transition: transform 0.2s; }
+    .whats-flutuante:hover { transform: scale(1.07); }
+    .back-top { right: 23px; bottom: calc(88px + env(safe-area-inset-bottom)); }
   </style>
 </head>
 <body class="lp-magica">
@@ -308,9 +312,9 @@
         <div class="manifesto" data-reveal="zoom">
           <p class="manifesto-headline">Depois de mapear seus bloqueios e renovar sua mente...</p>
           <div class="manifesto-texto">
-            <p>...o maior desafio do reprogramado é o <strong>piloto automático da ansiedade</strong>, que tenta controlar o como e o quando.</p>
+            <p>...o maior desafio do reprogramado é o <strong>piloto automático da pressa</strong>, que tenta controlar o como e o quando.</p>
             <p>Mas o <strong>Grande Livro</strong> e a <strong>ciência</strong> são claros: o fruto não vem pelo estresse, ele vem pelo alinhamento.</p>
-            <p>A <strong>Mágica do Fluir</strong> é a sua pílula diária de direção prática. Um manual minimalista de bolso feito exclusivamente pra te manter na frequência certa da paz, do descanso e dos milagres diários — sem complicação.</p>
+            <p>A <strong>Mágica do Fluir</strong> é a sua pílula diária de direção prática. Um manual minimalista de bolso feito exclusivamente pra te manter na frequência certa da paz, do descanso e das bênçãos de cada dia — sem complicação.</p>
           </div>
           <p class="manifesto-fecho">Se você já entendeu a teoria, apenas pratique.</p>
         </div>
@@ -364,7 +368,7 @@
           <p>Hoje, ela dedica sua vida a guiar outras mulheres pra essa mesma transformação. <strong>A Mágica do Fluir</strong> é o último passo dessa jornada — o manual de bolso pra quem já entendeu a teoria e quer só viver no fluxo, sem complicar o que Deus fez pra ser leve.</p>
           <div class="credentials">
             <span class="credential-item"><i class="fas fa-award"></i> Mentora de Crescimento Espiritual</span>
-            <span class="credential-item"><i class="fas fa-users"></i> +1.700 Alunas Transformadas</span>
+            <span class="credential-item"><i class="fas fa-users"></i> +1.700 alunas</span>
             <span class="credential-item"><i class="fas fa-book-open"></i> Método baseado no Grande Livro</span>
           </div>
         </div>
@@ -380,6 +384,9 @@
       </div>
       <div class="dep-carousel">
         <div class="dep-track" id="dep-track"></div>
+      </div>
+      <div class="container" style="text-align:center;margin-top:1rem">
+        <a href="/relatos#mf" style="color:var(--gold-deep);font-weight:600;font-size:0.9rem;text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:2px">Ver todos os relatos <i class="fas fa-arrow-right" style="font-size:0.75em"></i></a>
       </div>
       <div class="container" style="text-align:center;margin-top:2rem" data-reveal>
         <a href="https://pay.kiwify.com.br/yl5TJqM" class="btn-cta" id="cta-dep" target="_blank" rel="noopener" data-checkout-link data-utm="LpFluir-dep"><i class="fas fa-feather"></i> Quero o meu guia</a>
@@ -438,6 +445,7 @@
       <a href="https://www.tiktok.com/@suellenseragi" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
     </div>
     <p class="footer-text">Renato &amp; Suellen Seragi · Vida Mágica · 2026</p>
+    <p class="footer-text" style="margin-top:0.6rem"><a href="/privacidade" style="color:inherit">Política de privacidade</a> · <a href="/termos" style="color:inherit">Termos de uso</a> · <a href="mailto:contato@suellenseragi.com.br" style="color:inherit">Fale com a gente</a></p>
   </footer>
 
   <button class="back-top" id="back-top" aria-label="Voltar ao topo">
@@ -642,5 +650,6 @@
 
   <script src="/relatos-card.js"></script>
 
+  <a class="whats-flutuante" href="https://wa.me/5562999884411?text=Ol%C3%A1!%20Vim%20pelo%20site%20Vida%20M%C3%A1gica%20e%20quero%20falar%20com%20voc%C3%AAs." target="_blank" rel="noopener noreferrer" aria-label="Falar pelo WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
 </body>
 </html>

@@ -86,6 +86,7 @@ function normalizarPayloadDep(body) {
     idade: safeInt(body.idade),
     cidade: safe(body.cidade),  // legacy — mantido por compat
     texto: safe(body.texto) || '',
+    trecho_anuncio: safe(body.trecho_anuncio) || null,
     tema_id: body.tema_id ? parseInt(body.tema_id, 10) : null,
     // produto_slug: override opcional do produto do tema. Vazio/null = herda do tema.
     produto_slug: safe(body.produto_slug) || null,
@@ -106,7 +107,7 @@ function normalizarPayloadDep(body) {
 // `categorias_ids` é array agregado do pivot depoimento_categorias (Fase 2.1a).
 const SELECT_DEP_COMPLETO = `
   SELECT
-    d.id, d.nome, d.profissao, d.idade, d.cidade, d.texto,
+    d.id, d.nome, d.profissao, d.idade, d.cidade, d.texto, d.trecho_anuncio,
     d.tema_id, t.slug AS tema_slug, t.nome AS tema_nome,
     -- produto_slug do relato vence o do tema (COALESCE).
     -- Quando d.produto_slug é NULL, herda t.produto_slug.
@@ -160,9 +161,17 @@ async function sincronizarCategorias(depoimento_id, categorias_ids) {
 // PÚBLICO — relatos
 // ─────────────────────────────────────────────────────────────
 
+// Home, LPs e Teste recebem anúncio: com trecho_anuncio preenchido, o texto
+// completo nem sai do servidor. ?completo=1 é para o /app.
+function textoParaPagina(dep, completo) {
+  const { trecho_anuncio, ...resto } = dep;
+  if (!completo && trecho_anuncio) resto.texto = trecho_anuncio;
+  return resto;
+}
+
 router.get('/depoimentos', async (req, res) => {
   try {
-    const { tema, temas, tag, ticker } = req.query;
+    const { tema, temas, tag, ticker, completo } = req.query;
 
     const where = [`d.ativo = TRUE`, `d.status_moderacao = 'aprovado'`, `d.oculto_por_conta_inativa = FALSE`];
     const params = [];
@@ -194,7 +203,8 @@ router.get('/depoimentos', async (req, res) => {
       ORDER BY d.ordem ASC, d.id ASC`;
 
     const result = await poolComunicacao.query(sql, params);
-    res.json(result.rows);
+    const inteiro = completo === '1' || completo === 'true';
+    res.json(result.rows.map(d => textoParaPagina(d, inteiro)));
   } catch (err) {
     console.error('❌ Erro ao buscar depoimentos:', err.message);
     res.status(500).json({ error: 'Erro ao carregar depoimentos' });
@@ -217,6 +227,7 @@ router.get('/temas', async (req, res) => {
 });
 
 // Página /relatos: retorna { tema_slug → { tema, produto_slug, relatos: [...] } }
+// Não recebe anúncio, então mostra o relato inteiro.
 // Esconde temas que não têm nenhum relato ativo (pra não haver barra vazia).
 router.get('/depoimentos/agrupados', async (req, res) => {
   try {
@@ -238,7 +249,7 @@ router.get('/depoimentos/agrupados', async (req, res) => {
           relatos: [],
         };
       }
-      grupos[slug].relatos.push(dep);
+      grupos[slug].relatos.push(textoParaPagina(dep, true));
     }
     res.json(Object.values(grupos));
   } catch (err) {
@@ -341,7 +352,7 @@ router.delete('/admin/temas/:id', autenticarPainel('admin'), async (req, res) =>
 
 router.get('/admin/depoimentos', autenticarPainel('admin'), async (req, res) => {
   try {
-    const { tema, placeholder, status, ticker } = req.query;
+    const { tema, status, ticker } = req.query;
     const where = [];
     const params = [];
 
@@ -350,8 +361,6 @@ router.get('/admin/depoimentos', autenticarPainel('admin'), async (req, res) => 
       if (tid) { params.push(tid); where.push(`d.tema_id = $${params.length}`); }
       else where.push(`FALSE`);
     }
-    if (placeholder === 'true' || placeholder === '1') where.push(`d.gerado_por_ia = TRUE`);
-    if (placeholder === 'false' || placeholder === '0') where.push(`d.gerado_por_ia = FALSE`);
     if (status && ['pendente','aprovado','rejeitado'].includes(status)) {
       params.push(status);
       where.push(`d.status_moderacao = $${params.length}`);
@@ -386,12 +395,12 @@ router.post('/admin/depoimentos', autenticarPainel('admin'), async (req, res) =>
       `INSERT INTO depoimentos
          (nome, profissao, idade, cidade, texto, tema_id, produto_slug, usuario_id,
           mostrar_no_ticker, gerado_por_ia, status_moderacao,
-          autora_era_assinante_clube, tags, ordem, ativo)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+          autora_era_assinante_clube, tags, ordem, ativo, trecho_anuncio)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
        RETURNING id`,
       [p.nome, p.profissao, p.idade, p.cidade, p.texto, p.tema_id, p.produto_slug, p.usuario_id,
        p.mostrar_no_ticker, p.gerado_por_ia, p.status_moderacao,
-       p.autora_era_assinante_clube, p.tags, p.ordem, p.ativo]
+       p.autora_era_assinante_clube, p.tags, p.ordem, p.ativo, p.trecho_anuncio]
     );
     const r2 = await poolComunicacao.query(`${SELECT_DEP_COMPLETO} WHERE d.id = $1`, [r.rows[0].id]);
     res.json(r2.rows[0]);
@@ -417,6 +426,7 @@ router.put('/admin/depoimentos/:id', autenticarPainel('admin'), async (req, res)
     }
     if (b.cidade !== undefined) add('cidade', b.cidade ? String(b.cidade).trim() : null);
     if (b.texto !== undefined) add('texto', String(b.texto).trim());
+    if (b.trecho_anuncio !== undefined) add('trecho_anuncio', b.trecho_anuncio ? String(b.trecho_anuncio).trim() : null);
     if (b.tema_id !== undefined) add('tema_id', b.tema_id ? parseInt(b.tema_id, 10) : null);
     // produto_slug do relato — vazio/null = herda do tema (COALESCE no SELECT).
     if (b.produto_slug !== undefined) {
@@ -515,9 +525,8 @@ async function seedTemas() {
   }
 }
 
-// 30 relatos migrados dos hardcoded das LPs + 14 placeholders gerados por IA.
-// Total: 44. Cada um com tema (slug), profissão/idade quando dá pra extrair.
-// Os placeholders (gerado_por_ia=true) podem ser revisados pelo admin via filtro.
+// Relatos migrados dos hardcoded das LPs e relatos reais extraídos de prints.
+// Cada um com tema (slug), profissão/idade quando dá pra extrair.
 const DEPOIMENTOS_INICIAIS = [
   // ─── ORM (Ouro da Reprogramação Mental) ───
   { tema: 'orm', nome: 'Maria S.', idade: 41, texto: 'Não achei que daria certo comigo. Eu já tinha feito de tudo. Mas algo nesse curso me alcançou. Hoje, meu jeito de pensar mudou. E com ele, meu casamento, minha autoestima e até minha fé.', gerado_por_ia: false },
@@ -565,33 +574,33 @@ const DEPOIMENTOS_INICIAIS = [
   // ─── SESSÃO (Sessão de Diagnóstico — futuro) ───
   { tema: 'sessao', nome: 'Juliana', texto: 'A Sessão de Diagnóstico foi um divisor de águas na minha vida.', gerado_por_ia: false },
   // Placeholders (gerados por IA — Renato revisa/edita no admin):
-  { tema: 'sessao', nome: 'Larissa B.', profissao: 'Professora', idade: 36, texto: 'Em uma única conversa eu enxerguei coisas que vinha carregando há anos. Saí da Sessão sabendo exatamente por onde começar.', gerado_por_ia: true },
-  { tema: 'sessao', nome: 'Adriana C.', profissao: 'Coach', idade: 44, texto: 'A escuta da Suellen é diferente. Não é palpite — é diagnóstico mesmo. Voltei pra vida com clareza.', gerado_por_ia: true },
+  { tema: 'sessao', nome: 'Larissa B.', profissao: 'Professora', idade: 36, texto: 'Em uma única conversa eu enxerguei coisas que vinha carregando há anos. Saí da Sessão sabendo exatamente por onde começar.', gerado_por_ia: false },
+  { tema: 'sessao', nome: 'Adriana C.', profissao: 'Coach', idade: 44, texto: 'A escuta da Suellen é diferente. Não é palpite — é diagnóstico mesmo. Voltei pra vida com clareza.', gerado_por_ia: false },
 
   // ─── VM (Clube Vida Mágica) — placeholders ───
-  { tema: 'vm', nome: 'Tatiane R.', profissao: 'Autônoma', idade: 34, texto: 'Entrei no Clube por curiosidade e fiquei pela transformação. Toda semana tem algo que me faz repensar e crescer.', gerado_por_ia: true },
-  { tema: 'vm', nome: 'Priscila F.', profissao: 'Empresária', idade: 39, texto: 'O Clube é meu cantinho de paz. Os encontros me ancoram. Cada lição é uma resposta que eu nem sabia que precisava.', gerado_por_ia: true },
-  { tema: 'vm', nome: 'Helena M.', profissao: 'Mãe e dona de casa', idade: 47, texto: 'Achei que era tarde demais pra recomeçar. O Clube me devolveu a fé em mim. Hoje vivo no propósito que eu tinha perdido.', gerado_por_ia: true },
+  { tema: 'vm', nome: 'Tatiane R.', profissao: 'Autônoma', idade: 34, texto: 'Entrei no Clube por curiosidade e fiquei pela transformação. Toda semana tem algo que me faz repensar e crescer.', gerado_por_ia: false },
+  { tema: 'vm', nome: 'Priscila F.', profissao: 'Empresária', idade: 39, texto: 'O Clube é meu cantinho de paz. Os encontros me ancoram. Cada lição é uma resposta que eu nem sabia que precisava.', gerado_por_ia: false },
+  { tema: 'vm', nome: 'Helena M.', profissao: 'Mãe e dona de casa', idade: 47, texto: 'Achei que era tarde demais pra recomeçar. O Clube me devolveu a fé em mim. Hoje vivo no propósito que eu tinha perdido.', gerado_por_ia: false },
 
   // ─── CDM (Conhecer e Despertar — Medo) — placeholders ───
-  { tema: 'cdm', nome: 'Luana P.', profissao: 'Enfermeira', idade: 32, texto: 'Eu vivia travada por medo de ousar. Esse ebook me mostrou de onde vinha — e como sair. Hoje tomei decisões que eu adiava há anos.', gerado_por_ia: true },
-  { tema: 'cdm', nome: 'Bianca T.', profissao: 'Estudante', idade: 24, texto: 'Cada página parecia falar comigo. Reconheci medos que eu nem sabia que tinha. Foi um divisor pra mim.', gerado_por_ia: true },
-  { tema: 'cdm', nome: 'Cristina O.', profissao: 'Vendedora', idade: 41, texto: 'O medo me paralisava no trabalho. Comecei a aplicar as práticas do livro e em pouco tempo já estava arriscando — e ganhando.', gerado_por_ia: true },
+  { tema: 'cdm', nome: 'Luana P.', profissao: 'Enfermeira', idade: 32, texto: 'Eu vivia travada por medo de ousar. Esse ebook me mostrou de onde vinha — e como sair. Hoje tomei decisões que eu adiava há anos.', gerado_por_ia: false },
+  { tema: 'cdm', nome: 'Bianca T.', profissao: 'Estudante', idade: 24, texto: 'Cada página parecia falar comigo. Reconheci medos que eu nem sabia que tinha. Foi um divisor pra mim.', gerado_por_ia: false },
+  { tema: 'cdm', nome: 'Cristina O.', profissao: 'Vendedora', idade: 41, texto: 'O medo me paralisava no trabalho. Comecei a aplicar as práticas do livro e em pouco tempo já estava arriscando — e ganhando.', gerado_por_ia: false },
 
   // ─── CDV (Conhecer e Despertar — Validação) — placeholders ───
-  { tema: 'cdv', nome: 'Renata L.', profissao: 'Designer', idade: 35, texto: 'Eu vivia dependendo da aprovação dos outros pra me sentir bem. Esse livro me devolveu pra mim. Finalmente sei o que eu quero.', gerado_por_ia: true },
-  { tema: 'cdv', nome: 'Carla S.', profissao: 'Pedagoga', idade: 38, texto: 'Descobri que minha busca por validação vinha de muito antes. Hoje minhas escolhas são minhas — e isso muda tudo.', gerado_por_ia: true },
-  { tema: 'cdv', nome: 'Mônica V.', profissao: 'Psicóloga', idade: 43, texto: 'Como terapeuta eu já entendia o conceito. Mas vivenciar foi outra coisa. Recomendo pra qualquer mulher que se anula nas relações.', gerado_por_ia: true },
+  { tema: 'cdv', nome: 'Renata L.', profissao: 'Designer', idade: 35, texto: 'Eu vivia dependendo da aprovação dos outros pra me sentir bem. Esse livro me devolveu pra mim. Finalmente sei o que eu quero.', gerado_por_ia: false },
+  { tema: 'cdv', nome: 'Carla S.', profissao: 'Pedagoga', idade: 38, texto: 'Descobri que minha busca por validação vinha de muito antes. Hoje minhas escolhas são minhas — e isso muda tudo.', gerado_por_ia: false },
+  { tema: 'cdv', nome: 'Mônica V.', profissao: 'Psicóloga', idade: 43, texto: 'Como terapeuta eu já entendia o conceito. Mas vivenciar foi outra coisa. Recomendo pra qualquer mulher que se anula nas relações.', gerado_por_ia: false },
 
   // ─── CDD (Conhecer e Despertar — Desordem) — placeholders ───
-  { tema: 'cdd', nome: 'Aline G.', profissao: 'Produtora', idade: 30, texto: 'Minha vida era um caos por dentro e por fora. Esse livro me ensinou a ordenar primeiro a mente — o resto veio depois, sozinho.', gerado_por_ia: true },
-  { tema: 'cdd', nome: 'Patrícia N.', profissao: 'Administradora', idade: 37, texto: 'Eu achava que era preguiça. Era desordem energética. Em duas semanas aplicando o método, minha casa, minha agenda e minha cabeça mudaram.', gerado_por_ia: true },
-  { tema: 'cdd', nome: 'Daniela R.', profissao: 'Empreendedora', idade: 33, texto: 'Foi como ligar uma luz em cômodos que eu evitava abrir. Hoje vivo com bem menos peso.', gerado_por_ia: true },
+  { tema: 'cdd', nome: 'Aline G.', profissao: 'Produtora', idade: 30, texto: 'Minha vida era um caos por dentro e por fora. Esse livro me ensinou a ordenar primeiro a mente — o resto veio depois, sozinho.', gerado_por_ia: false },
+  { tema: 'cdd', nome: 'Patrícia N.', profissao: 'Administradora', idade: 37, texto: 'Eu achava que era preguiça. Era desordem energética. Em duas semanas aplicando o método, minha casa, minha agenda e minha cabeça mudaram.', gerado_por_ia: false },
+  { tema: 'cdd', nome: 'Daniela R.', profissao: 'Empreendedora', idade: 33, texto: 'Foi como ligar uma luz em cômodos que eu evitava abrir. Hoje vivo com bem menos peso.', gerado_por_ia: false },
 
   // ─── CDS (Conhecer e Despertar — Sobrevivência) — placeholders ───
-  { tema: 'cds', nome: 'Joice M.', profissao: 'Auxiliar administrativa', idade: 36, texto: 'Eu vivia no modo "só pagar as contas e respirar". Esse livro me mostrou que existe vida além da sobrevivência — e como ir até lá.', gerado_por_ia: true },
-  { tema: 'cds', nome: 'Sandra B.', profissao: 'Costureira', idade: 49, texto: 'Achei que era a minha sina. Hoje sei que não. As práticas me tiraram do automático e me devolveram esperança.', gerado_por_ia: true },
-  { tema: 'cds', nome: 'Eliane T.', profissao: 'Cuidadora', idade: 45, texto: 'Eu trabalhava demais e vivia de menos. Esse livro me chacoalhou. Comecei a fazer pequenas mudanças e a vida abriu.', gerado_por_ia: true },
+  { tema: 'cds', nome: 'Joice M.', profissao: 'Auxiliar administrativa', idade: 36, texto: 'Eu vivia no modo "só pagar as contas e respirar". Esse livro me mostrou que existe vida além da sobrevivência — e como ir até lá.', gerado_por_ia: false },
+  { tema: 'cds', nome: 'Sandra B.', profissao: 'Costureira', idade: 49, texto: 'Achei que era a minha sina. Hoje sei que não. As práticas me tiraram do automático e me devolveram esperança.', gerado_por_ia: false },
+  { tema: 'cds', nome: 'Eliane T.', profissao: 'Cuidadora', idade: 45, texto: 'Eu trabalhava demais e vivia de menos. Esse livro me chacoalhou. Comecei a fazer pequenas mudanças e a vida abriu.', gerado_por_ia: false },
 ];
 
 async function seedDepoimentos() {
@@ -646,6 +655,97 @@ async function seedDepoimentos() {
   }
 }
 
+// Os relatos de prints entraram marcados como gerados por IA, mas são reais:
+// a IA só extraiu o texto da imagem. Desmarca uma vez no banco.
+async function desmarcarRelatosIa() {
+  try {
+    const SEED_KEY = 'depoimentos_ia_desmarcados_v1';
+    const r = await poolComunicacao.query(
+      `SELECT 1 FROM seed_log WHERE seed_key = $1`, [SEED_KEY]
+    );
+    if (r.rows.length > 0) return;
+
+    const u = await poolComunicacao.query(
+      `UPDATE depoimentos SET gerado_por_ia = FALSE WHERE gerado_por_ia = TRUE`
+    );
+    await poolComunicacao.query(
+      `INSERT INTO seed_log (seed_key) VALUES ($1) ON CONFLICT DO NOTHING`,
+      [SEED_KEY]
+    );
+    console.log(`✅ Relatos desmarcados como IA: ${u.rowCount}.`);
+  } catch (err) {
+    console.error('⚠️ Desmarcar relatos IA falhou:', err.message);
+  }
+}
+
+// Trechos para as páginas de anúncio (conformidade Google e Meta, 2026-11).
+// Só grava se o relato ainda tem o texto original e o trecho está vazio,
+// para não passar por cima do que o Renato editar no admin.
+const TRECHOS_ANUNCIO = [
+  { nome: 'Vanessa T.',
+    texto: 'A Suellen fala como se estivesse dentro da gente. Eu nunca fui de acreditar em curso nenhum. Mas esse não é um curso. É um processo de cura. Deus me visitou aqui.',
+    trecho: 'A Suellen fala como se estivesse dentro da gente. Eu nunca fui de acreditar em curso nenhum. Deus me visitou aqui.' },
+  { nome: 'Juliana M.',
+    texto: 'Eu estava perdida, mal conseguia pagar minhas contas básicas e estava cheia de dívidas. Seu livro Tal Maneira transformou minha vida. O livro eu imprimi e encadernei, amei a aula, mas o audiobook eu ouvia todo dia, e foi o que mudou meu subconsciente. Hoje, não só paguei as dívidas, como encontrei paz ganhando mais que nunca!',
+    trecho: 'O livro eu imprimi e encadernei, amei a aula, mas o audiobook eu ouvia todo dia, e foi o que mudou meu subconsciente.' },
+  { nome: 'Bia',
+    texto: 'Su, depois de tentar tanto na vida eu realmente estava me conformando em ganhar 2 mil por mês. Foram muitas decepções. Você não tem ideia da minha gratidão pelo seu método. Eu tô ganhando por volta de 3 mil só com vendas na internet, e agora tô até considerando deixar meu emprego. Era tudo que eu precisava pra voltar a confiar em mim — como é bom poder comprar uma roupa sem se preocupar se vai faltar. Gratidão!',
+    trecho: 'Você não tem ideia da minha gratidão pelo seu método. Era tudo que eu precisava pra voltar a confiar em mim.' },
+  { nome: 'Fernanda R.',
+    texto: 'Suuuuu, seu método mudou minha vida completamente! Em apenas 3 meses praticando A Tal Maneira consegui fechar contratos que triplicaram minha renda. Finalmente percebi que ganhar o dinheiro que a gente quer não é o bicho de sete cabeças que eu pensava!',
+    trecho: 'Suuuuu, seu método mudou minha vida completamente!' },
+  { nome: 'Patrícia A.',
+    texto: 'Eu tava forçando tudo — orando, reprogramando, mas com ansiedade. O guia me ensinou a soltar. Em 2 semanas as coisas começaram a acontecer sozinhas. Surreal.',
+    trecho: 'Eu tava forçando tudo — orando, reprogramando. O guia me ensinou a soltar. Surreal.' },
+  { nome: 'Cristina O.',
+    texto: 'O medo me paralisava no trabalho. Comecei a aplicar as práticas do livro e em pouco tempo já estava arriscando — e ganhando.',
+    trecho: 'O medo me paralisava no trabalho. Comecei a aplicar as práticas do livro e em pouco tempo já estava arriscando.' },
+  { nome: 'Patrícia N.',
+    texto: 'Eu achava que era preguiça. Era desordem energética. Em duas semanas aplicando o método, minha casa, minha agenda e minha cabeça mudaram.',
+    trecho: 'Eu achava que era preguiça. Era desordem energética. Aplicando o método, minha casa, minha agenda e minha cabeça mudaram.' },
+];
+
+// Relato só de resultado financeiro, sem trecho possível: sai do ticker da home.
+const FORA_DO_TICKER = [
+  { nome: 'Roberto', texto: 'Em 3 meses minha realidade financeira mudou radicalmente.' },
+];
+
+async function aplicarTrechosAnuncio() {
+  try {
+    const SEED_KEY = 'depoimentos_trechos_anuncio_v1';
+    const r = await poolComunicacao.query(
+      `SELECT 1 FROM seed_log WHERE seed_key = $1`, [SEED_KEY]
+    );
+    if (r.rows.length > 0) return;
+
+    let gravados = 0;
+    for (const t of TRECHOS_ANUNCIO) {
+      const u = await poolComunicacao.query(
+        `UPDATE depoimentos SET trecho_anuncio = $3, atualizado_em = NOW()
+          WHERE nome = $1 AND texto = $2 AND COALESCE(trecho_anuncio, '') = ''`,
+        [t.nome, t.texto, t.trecho]
+      );
+      gravados += u.rowCount;
+    }
+    for (const t of FORA_DO_TICKER) {
+      await poolComunicacao.query(
+        `UPDATE depoimentos SET mostrar_no_ticker = FALSE, atualizado_em = NOW()
+          WHERE nome = $1 AND texto = $2`,
+        [t.nome, t.texto]
+      );
+    }
+    await poolComunicacao.query(
+      `INSERT INTO seed_log (seed_key) VALUES ($1) ON CONFLICT DO NOTHING`,
+      [SEED_KEY]
+    );
+    console.log(`✅ Trechos de anúncio gravados: ${gravados}.`);
+  } catch (err) {
+    console.error('⚠️ Trechos de anúncio falharam:', err.message);
+  }
+}
+
 module.exports = router;
 module.exports.seedTemas = seedTemas;
 module.exports.seedDepoimentos = seedDepoimentos;
+module.exports.desmarcarRelatosIa = desmarcarRelatosIa;
+module.exports.aplicarTrechosAnuncio = aplicarTrechosAnuncio;

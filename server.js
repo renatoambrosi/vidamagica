@@ -153,6 +153,11 @@ app.get('/termos', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'termos.html'));
 });
 
+// ── ROTA AMIGÁVEL: /privacidade serve privacidade.html ─────
+app.get('/privacidade', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'privacidade.html'));
+});
+
 // ── ROTA AMIGÁVEL: /relatos → página universal de relatos ──
 app.get('/relatos', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'relatos.html'));
@@ -385,6 +390,8 @@ server.listen(PORT, async () => {
       const depMod = require('./routes/depoimentos');
       if (typeof depMod.seedTemas === 'function') await depMod.seedTemas();
       if (typeof depMod.seedDepoimentos === 'function') await depMod.seedDepoimentos();
+      if (typeof depMod.desmarcarRelatosIa === 'function') await depMod.desmarcarRelatosIa();
+      if (typeof depMod.aplicarTrechosAnuncio === 'function') await depMod.aplicarTrechosAnuncio();
     } catch (err) {
       console.error('⚠️ Seed de relatos não rodou:', err.message);
     }

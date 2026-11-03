@@ -1713,6 +1713,9 @@ async function initComunicacao() {
     // Quando NULL, relato herda o produto do tema. Permite mesmo tema agrupar relatos
     // de produtos diferentes (ex: tema "geral" no index mostrando variedade real).
     await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS produto_slug VARCHAR(80)`);
+    // trecho_anuncio: versão do relato sem valor, prazo ou cura, mostrada nas
+    // páginas que recebem anúncio (home, LPs, Teste). Vazio = relato inteiro.
+    await c.query(`ALTER TABLE depoimentos ADD COLUMN IF NOT EXISTS trecho_anuncio TEXT`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_depoimentos_tema ON depoimentos(tema_id)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_depoimentos_usuario ON depoimentos(usuario_id)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_depoimentos_status ON depoimentos(status_moderacao)`);

@@ -1000,9 +1000,15 @@
     .hero-home-logo { width: 130px; margin: 0 auto 1.25rem; display: block; }
     .hero-home .hero-eyebrow { margin-bottom: 0.7rem; color: var(--color-gold-light); }
     .hero-home .headline { font-size: clamp(1.8rem, 7.4vw, 3rem); margin-bottom: 0.8rem; }
-    .hero-home .subheadline { margin-bottom: 1.4rem; color: rgba(245,240,232,0.88); }
-    .hero-home-cta { display: block; padding: 1.05rem 1.25rem; border-radius: var(--radius-full); text-decoration: none; font-family: var(--font-display); font-size: 1.02rem; font-weight: 800; color: #1a1205; background: linear-gradient(135deg, #F4D998, #C8922A); box-shadow: 0 10px 34px rgba(200,146,42,0.45); }
-    .hero-home-micro { margin-top: 0.75rem; font-size: 0.82rem; color: rgba(245,240,232,0.72); }
+    .hero-home .subheadline { margin-bottom: 1.4rem; font-size: 0.88rem; line-height: 1.65; color: rgba(245,240,232,0.88); }
+    .hero-home-teste { display: block; width: 170px; aspect-ratio: 895 / 300; object-fit: cover; object-position: top; margin: 0.2rem auto 0.9rem; }
+    .hero-home-cta { display: block; padding: 1.05rem 1.25rem; border-radius: var(--radius-full); text-decoration: none; font-family: var(--font-display); font-size: 0.94rem; font-weight: 800; color: #1a1205; background: linear-gradient(135deg, #F4D998, #C8922A); box-shadow: 0 10px 34px rgba(200,146,42,0.45); }
+    .hero-home-tags + .hero-home-cta { margin-top: 1.2rem; }
+    .hero-home-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+    .hero-home-tag { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.42rem 0.85rem; border-radius: var(--radius-full); font-size: 0.78rem; font-weight: 600; color: #F5F0E8; background: rgba(20,14,2,0.55); border: 1px solid rgba(232,201,122,0.42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+    .hero-home-tag i { font-size: 0.8rem; color: var(--color-gold-light); }
+    .hero-home-tag-preco { color: var(--color-gold-light); font-weight: 800; }
+    .hero-home-tag[hidden] { display: none; }
     .hero-home-prova { margin-top: 0.9rem; font-size: 0.86rem; color: var(--color-gold-light); font-weight: 600; }
     @media (min-width: 860px) { .hero-home-cta { display: inline-block; padding: 1.05rem 2.6rem; } }
 
@@ -1087,10 +1093,15 @@
     <div class="hero-home-texto">
       <img class="logo hero-home-logo" src="/assets/logo-vertical.webp" alt="Vida Mágica">
       <p class="hero-eyebrow">Renato &amp; Suellen Seragi</p>
-      <h1 class="headline">Descubra o que está <span class="gold">travando a sua prosperidade</span></h1>
-      <p class="subheadline">Em 15 perguntas, o Teste do Subconsciente mostra qual energia está no comando da sua mente e qual é o seu próximo passo.</p>
+      <h1 class="headline">Descubra o que está <span class="gold">travando a sua mente</span></h1>
+      <img class="hero-home-teste" src="/assets/logo-teste-pura.webp" alt="Teste do Subconsciente">
+      <p class="subheadline">Uma ferramenta de autoconhecimento, que vai além do óbvio ao identificar padrões subconscientes que condicionam decisões, limitam resultados e impedem mudanças reais. Uma experiência prática e profunda, capaz de ampliar a consciência e abrir caminhos para uma verdadeira transformação pessoal.</p>
+      <div class="hero-home-tags">
+        <span class="hero-home-tag hero-home-tag-preco" hidden><i class="fa-solid fa-tag"></i><span data-preco-teste></span></span>
+        <span class="hero-home-tag"><i class="fa-solid fa-bolt"></i>Resultado na hora</span>
+        <span class="hero-home-tag"><i class="fa-solid fa-brain"></i>Baseado em ciência cognitiva</span>
+      </div>
       <a id="link-teste" class="hero-home-cta" href="/teste">Quero descobrir minha trava</a>
-      <p class="hero-home-micro">R$ 19 · 15 perguntas · Resultado na hora</p>
       <p class="hero-home-prova">+4.300 pessoas já identificaram suas travas</p>
     </div>
   </section>
@@ -1189,7 +1200,7 @@
               <img alt="">
               <div class="produto-info">
                 <strong data-produto-nome></strong>
-                <p>O momento certo para este livro é depois da reprogramação espiritual. Aqui as leis de riqueza têm profundidade máxima.</p>
+                <p>O momento certo para este livro é depois da reprogramação espiritual. Aqui as 3 leis do livro ganham profundidade máxima.</p>
                 <div class="produto-preco" data-produto-preco></div>
                 <div class="produto-links">
                   <a href="/a-tal-maneira?utm_source=vidamagica&utm_campaign=lp-livro" class="btn-lp" id="lp-livro" target="_blank">Ver mais</a>
@@ -1335,11 +1346,11 @@
         <details class="rodape-col"><summary>Materiais <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></summary><div id="mapa-materiais"></div></details>
         <details class="rodape-col"><summary>Comece aqui <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></summary><a href="/teste">Teste do Subconsciente</a><a href="#relatos">Relatos</a></details>
         <details class="rodape-col"><summary>Vida Mágica <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></summary><a href="#quem-somos">Quem somos</a><a href="#numeros">Nossos números</a></details>
-        <details class="rodape-col"><summary>Ajuda <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></summary><a href="mailto:contato@suellenseragi.com.br">Fale com a gente</a><a href="/termos">Termos de uso</a></details>
+        <details class="rodape-col"><summary>Ajuda <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></summary><a href="mailto:contato@suellenseragi.com.br">Fale com a gente</a><a href="/termos">Termos de uso</a><a href="/privacidade">Política de privacidade</a></details>
       </nav>
       <div class="rodape-base">
         <span>© <span id="rodape-ano"></span> Vida Mágica. Todos os direitos reservados.</span>
-        <div class="rodape-legal"><a href="/termos">Termos de uso</a></div>
+        <div class="rodape-legal"><a href="/privacidade">Política de privacidade</a><a href="/termos">Termos de uso</a></div>
       </div>
     </div>
   </footer>
@@ -1459,6 +1470,15 @@
       try {
         const res = await fetch(`${API_BASE}/api/precos`, { headers: { 'Accept': 'application/json' }, mode: 'cors' });
         const d = await res.json();
+
+        // Tag de preço do Teste no hero: só aparece com preço cadastrado.
+        const teste = d.teste_subconsciente;
+        if (teste && parseFloat(String(teste.exibir_avista || '0').replace(',', '.')) > 0) {
+          document.querySelectorAll('[data-preco-teste]').forEach(el => {
+            el.textContent = 'R$ ' + teste.exibir_avista;
+            el.closest('.hero-home-tag').hidden = false;
+          });
+        }
 
         function formatPreco(p) {
           if (!p) return '';

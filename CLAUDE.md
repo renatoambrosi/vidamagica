@@ -162,6 +162,8 @@ Ordem: hero com o Teste, último vídeo (playlist de envios do canal, atualiza s
 
 O carrossel de relatos da home usa `/api/depoimentos` sem os temas sem produto à venda (`TEMAS_FORA_DA_HOME`). Em `relatos-card.js`, o tema `default tema X` não aparece e o bloco de produto só abre para produto com checkout, nunca para o Clube. O convite de login está escondido enquanto `AREA_LOGADA_ATIVA` for `false`.
 
+**Relatos e anúncios (2026-11):** home, LPs e Teste recebem anúncio. Nelas, `GET /api/depoimentos` troca `texto` por `trecho_anuncio` quando ele está preenchido, e o texto completo nem sai do servidor. A `/relatos` (via `/depoimentos/agrupados`) e o `/app` (`?completo=1`) mostram o relato inteiro. O trecho é editado no admin, no card do relato. Relato com valor, prazo ou cura ganha trecho com as palavras da própria aluna; nunca reescrever o texto original. A política de privacidade fica em `/privacidade`.
+
 `public/menu-materiais.js` é o menu "Materiais" do topo, na home e nas 5 LPs de produto. Nome e capa vêm de `/api/precos`; a lista de slugs e rotas fica no arquivo. Fora do `teste.html` de propósito, para não tirar a pessoa do fluxo.
 
 ### "Produto" vs "preço" — vocabulário canônico

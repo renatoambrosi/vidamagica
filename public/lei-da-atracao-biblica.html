@@ -292,6 +292,10 @@
     /* RIPPLE — IDÊNTICO */
     .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.4); transform: scale(0); animation: rippleAnim 0.6s ease-out; pointer-events: none; }
     @keyframes rippleAnim { to { transform: scale(2.5); opacity: 0; } }
+    /* Botão do WhatsApp, igual ao da home. O "voltar ao topo" sobe para não ficar embaixo dele. */
+    .whats-flutuante { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 110; width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 30px; text-decoration: none; background: #25D366; box-shadow: 0 8px 24px rgba(0,0,0,0.4); transition: transform 0.2s; }
+    .whats-flutuante:hover { transform: scale(1.07); }
+    .back-top { right: 23px; bottom: calc(88px + env(safe-area-inset-bottom)); }
   </style>
 </head>
 <body class="lp-lei">
@@ -323,7 +327,7 @@
       <p class="hero-headline" data-reveal>Conhecimento espiritual que atrai resultados</p>
       <p class="hero-selo" data-reveal>Sem medo · Sem dúvidas · Sem desagradar a Deus</p>
       <p class="hero-sub" data-reveal><strong style="color:var(--pearl)">Você crê em Deus, faz tudo que pode mas não está vendo resultado?</strong> A resposta que você pediu pra Deus está aqui.</p>
-      <p class="hero-sub" data-reveal>Aprenda a <strong style="color:var(--gold-light)">atrair uma vida de sucesso e ser respondida por Deus</strong>, com alinhamento espiritual correto.</p>
+      <p class="hero-sub" data-reveal>Aprenda a <strong style="color:var(--gold-light)">alinhar fé e prática para viver seus propósitos</strong>, com alinhamento espiritual correto.</p>
       <div style="margin-top:2rem" data-reveal>
         <a href="https://pay.kiwify.com.br/8BoTzTD" class="btn-cta" id="cta-hero" target="_blank" rel="noopener" data-checkout-link data-utm="LpLda-hero"><i class="fas fa-crown"></i> Quero transformar minha vida</a>
       </div>
@@ -378,7 +382,7 @@
           <p>Com uma abordagem única que une <strong>fé cristã e prosperidade prática</strong>, ela já transformou a vida de centenas de mulheres que buscavam alinhar sua espiritualidade com uma vida próspera e abençoada.</p>
           <div class="credentials">
             <span class="credential-item"><i class="fas fa-award"></i> Mentora de Crescimento Espiritual</span>
-            <span class="credential-item"><i class="fas fa-users"></i> +1.700 Alunas Transformadas</span>
+            <span class="credential-item"><i class="fas fa-users"></i> +1.700 alunas</span>
             <span class="credential-item"><i class="fas fa-book-open"></i> Método baseado no Grande Livro</span>
           </div>
         </div>
@@ -400,7 +404,7 @@
           <div class="benefit-item" data-reveal>
             <div class="benefit-icon"><i class="fas fa-praying-hands"></i></div>
             <h3>Atrair com Alinhamento Espiritual</h3>
-            <p>Aprenda a atrair e ser respondida por Deus sem culpa, sem medo, e com total alinhamento espiritual.</p>
+            <p>Aprenda a alinhar seus desejos com Deus sem culpa, sem medo, e com total alinhamento espiritual.</p>
           </div>
           <div class="benefit-item" data-reveal>
             <div class="benefit-icon"><i class="fas fa-unlock"></i></div>
@@ -531,6 +535,9 @@
       <div class="dep-carousel">
         <div class="dep-track" id="dep-track"></div>
       </div>
+      <div class="container" style="text-align:center;margin-top:1rem">
+        <a href="/relatos#lda" style="color:var(--gold-light);font-weight:600;font-size:0.9rem;text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:2px">Ver todos os relatos <i class="fas fa-arrow-right" style="font-size:0.75em"></i></a>
+      </div>
       <div class="container" style="text-align:center;margin-top:2rem" data-reveal>
         <a href="https://pay.kiwify.com.br/8BoTzTD" class="btn-cta" id="cta-dep" target="_blank" rel="noopener" data-checkout-link data-utm="LpLda-dep"><i class="fas fa-crown"></i> Quero a mesma transformação</a>
       </div>
@@ -540,7 +547,7 @@
     <section class="cta-final" id="comprar">
       <div class="cta-final-box">
         <span class="section-eyebrow" data-reveal>Decisão</span>
-        <h2 class="section-title" data-reveal>Transforme sua vida <span class="glow">hoje</span></h2>
+        <h2 class="section-title" data-reveal>Comece sua jornada <span class="glow">hoje</span></h2>
         <p class="cta-final-pre" data-reveal>Pra quem busca alinhar fé e prática, sabendo que Deus criou a chamada <strong>"Lei da Atração"</strong> que sempre esteve na Bíblia.</p>
 
         <div data-reveal="zoom">
@@ -596,6 +603,7 @@
       <a href="https://www.tiktok.com/@suellenseragi" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
     </div>
     <p class="footer-text">Renato &amp; Suellen Seragi · Vida Mágica · 2025</p>
+    <p class="footer-text" style="margin-top:0.6rem"><a href="/privacidade" style="color:inherit">Política de privacidade</a> · <a href="/termos" style="color:inherit">Termos de uso</a> · <a href="mailto:contato@suellenseragi.com.br" style="color:inherit">Fale com a gente</a></p>
   </footer>
 
   <button class="back-top" id="back-top" aria-label="Voltar ao topo">
@@ -797,5 +805,6 @@
 
   <script src="/relatos-card.js"></script>
 
+  <a class="whats-flutuante" href="https://wa.me/5562999884411?text=Ol%C3%A1!%20Vim%20pelo%20site%20Vida%20M%C3%A1gica%20e%20quero%20falar%20com%20voc%C3%AAs." target="_blank" rel="noopener noreferrer" aria-label="Falar pelo WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
 </body>
 </html>

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>A Tal Maneira — 3 Leis para a Riqueza e para a Vida | Suellen Seragi</title>
-  <meta name="description" content="Método prático de Suellen Seragi pra entrar na frequência da riqueza com mentalidade e ações. Livro Digital, Curso Definitivo e Combo Completo. Base bíblica, sem teoria.">
+  <meta name="description" content="As 3 leis de Suellen Seragi: Imagem Fixa, Fé Firme e Gratidão Plena. Livro e curso com mentalidade e ação, de forma prática e com base no Grande Livro.">
   <meta name="theme-color" content="#C8922A">
 
   <link rel="icon" href="/assets/favicon.webp">
@@ -314,6 +314,10 @@
     /* RIPPLE */
     .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.4); transform: scale(0); animation: rippleAnim 0.6s ease-out; pointer-events: none; }
     @keyframes rippleAnim { to { transform: scale(2.5); opacity: 0; } }
+    /* Botão do WhatsApp, igual ao da home. O "voltar ao topo" sobe para não ficar embaixo dele. */
+    .whats-flutuante { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 110; width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 30px; text-decoration: none; background: #25D366; box-shadow: 0 8px 24px rgba(0,0,0,0.4); transition: transform 0.2s; }
+    .whats-flutuante:hover { transform: scale(1.07); }
+    .back-top { right: 23px; bottom: calc(88px + env(safe-area-inset-bottom)); }
   </style>
 </head>
 <body class="lp-talmaneira">
@@ -344,8 +348,8 @@
       <h1 data-reveal>A Tal <span class="glow">Maneira</span></h1>
       <p class="hero-headline" data-reveal>3 Leis pra a Riqueza e pra a Vida</p>
       <span class="hero-selo" data-reveal><i class="fas fa-feather-pointed"></i> Método prático · Sem teoria · Base bíblica</span>
-      <p class="hero-sub" data-reveal><strong>Enriquecer é uma ciência exata.</strong> Este método te ensina como entrar rapidamente na <strong>frequência da riqueza</strong> — através de mentalidade e ações.</p>
-      <p class="hero-sub" data-reveal>Pra quem precisa <strong>transformar sua realidade financeira de forma prática e rápida</strong>.</p>
+      <p class="hero-sub" data-reveal><em>"Existe uma ciência de ficar rico, e ela é exata como a álgebra ou a aritmética."</em> — Wallace D. Wattles, <em>A Ciência de Ficar Rico</em> (1910)</p>
+      <p class="hero-sub" data-reveal><strong>A Tal Maneira</strong> traz esses princípios à luz do Grande Livro: mentalidade e ações alinhadas com as 3 leis, pra quem quer <strong>colocar a fé em prática</strong> com um método claro e sem teoria.</p>
       <div style="margin-top:2rem" data-reveal>
         <a href="#planos" class="btn-cta" id="cta-hero"><i class="fas fa-feather-pointed"></i> Quero mudar minha realidade</a>
       </div>
@@ -360,8 +364,8 @@
         <div class="problem-grid">
           <div class="problem-card" data-reveal>
             <div class="problem-icon"><i class="fas fa-rocket"></i></div>
-            <h3>"Quero mudança real e rápida"</h3>
-            <p>Você busca um método prático que funcione de verdade. Precisa fazer dinheiro pra depois elevar outras áreas da sua vida.</p>
+            <h3>"Quero um método que eu consiga aplicar"</h3>
+            <p>Você busca um método prático, que caiba na sua rotina, pra cuidar melhor de todas as áreas da sua vida.</p>
           </div>
           <div class="problem-card" data-reveal>
             <div class="problem-icon"><i class="fas fa-bolt"></i></div>
@@ -371,7 +375,7 @@
           <div class="problem-card" data-reveal>
             <div class="problem-icon"><i class="fas fa-compass"></i></div>
             <h3>Busca por direção clara</h3>
-            <p>Você quer um MAPA claro e direto pra a riqueza. Não tem tempo pra teoria, precisa de ações que geram resultados.</p>
+            <p>Você quer um MAPA claro e direto. Não tem tempo pra teoria: quer saber o que fazer, passo a passo.</p>
           </div>
         </div>
 
@@ -387,14 +391,14 @@
       <div class="container">
         <span class="section-eyebrow" data-reveal>Solução</span>
         <h2 class="section-title" data-reveal>Se você se identificou, esse método foi <span class="glow">feito pra você</span></h2>
-        <p class="section-lead" data-reveal><strong>A Tal Maneira</strong> é o seu MAPA — funciona como um GPS confiável que te guia diretamente ao <strong>destino da riqueza</strong>.</p>
+        <p class="section-lead" data-reveal><strong>A Tal Maneira</strong> é o seu MAPA — funciona como um GPS que mostra o caminho, <strong>um passo de cada vez</strong>.</p>
 
         <div class="benefits-grid">
           <div class="benefit-card" data-reveal>
             <div class="benefit-card-icon"><i class="fas fa-check-circle"></i></div>
             <div>
-              <h4>Fórmula comprovada</h4>
-              <p>Resumo prático dos maiores bestsellers do segmento — incluindo "A Ciência de Ficar Rico".</p>
+              <h4>Base sólida</h4>
+              <p>Resumo prático dos clássicos de mentalidade mais lidos do mundo — incluindo "A Ciência de Ficar Rico" — à luz do Grande Livro.</p>
             </div>
           </div>
           <div class="benefit-card" data-reveal>
@@ -407,8 +411,8 @@
           <div class="benefit-card" data-reveal>
             <div class="benefit-card-icon"><i class="fas fa-check-circle"></i></div>
             <div>
-              <h4>Resultados rápidos</h4>
-              <p>Ação direta ao sucesso. Sem rodeios, sem teoria infinita.</p>
+              <h4>Direto ao ponto</h4>
+              <p>Ação desde o primeiro capítulo. Sem rodeios, sem teoria infinita.</p>
             </div>
           </div>
           <div class="benefit-card" data-reveal>
@@ -429,11 +433,11 @@
         <h2 class="section-title" data-reveal>Sobre <span class="glow">Suellen Seragi</span></h2>
         <img src="/assets/suellencafe.webp" alt="Suellen Seragi" class="about-foto" data-reveal="zoom" onerror="this.style.display='none'">
         <div class="about-texto" data-reveal>
-          <p>Criadora do livro digital <strong>A Tal Maneira</strong>, Suellen sofreu por anos com a mentalidade de escassez e princípios errados. No seu primeiro livro, ela revela como superou essas travas e ensina a aplicar os princípios de abundância financeira na prática — transformando sua realidade de forma quase mágica.</p>
+          <p>Criadora do livro digital <strong>A Tal Maneira</strong>, Suellen sofreu por anos com a mentalidade de escassez e princípios errados. No seu primeiro livro, ela revela como superou essas travas e ensina a aplicar na prática os princípios de abundância do Grande Livro — do jeito que ela mesma viveu.</p>
           <p>Com uma abordagem única que une <strong>fé cristã e prosperidade prática</strong>, ela já transformou a vida de centenas de mulheres que buscavam alinhar sua espiritualidade com uma vida próspera e abençoada.</p>
           <div class="credentials">
             <span class="credential-item"><i class="fas fa-award"></i> Mentora de Crescimento Espiritual</span>
-            <span class="credential-item"><i class="fas fa-users"></i> +1.700 Alunas Transformadas</span>
+            <span class="credential-item"><i class="fas fa-users"></i> +1.700 alunas</span>
             <span class="credential-item"><i class="fas fa-book-open"></i> Método baseado no Grande Livro</span>
           </div>
         </div>
@@ -449,13 +453,13 @@
         <div class="conquistas-grid">
           <div class="conquista-card" data-reveal>
             <div class="conquista-icon"><i class="fas fa-brain"></i></div>
-            <h3>Energia da prosperidade financeira</h3>
-            <p>Entre na frequência certa da riqueza — um modo específico de pensar e agir que todos os milionários possuem.</p>
+            <h3>Energia da prosperidade</h3>
+            <p>Aprenda A Tal Maneira: um modo específico de pensar e agir, com base no Grande Livro.</p>
           </div>
           <div class="conquista-card" data-reveal>
             <div class="conquista-icon"><i class="fas fa-unlock"></i></div>
             <h3>Livre-se da escassez</h3>
-            <p>Ative sua mentalidade de riqueza e desbloqueie todo o seu potencial de prosperidade financeira.</p>
+            <p>Ative uma mentalidade de abundância e descubra todo o seu potencial.</p>
           </div>
           <div class="conquista-card" data-reveal>
             <div class="conquista-icon"><i class="fas fa-chart-line"></i></div>
@@ -627,6 +631,9 @@
       <div class="dep-carousel">
         <div class="dep-track" id="dep-track"></div>
       </div>
+      <div class="container" style="text-align:center;margin-top:1rem">
+        <a href="/relatos#tm" style="color:var(--gold-deep);font-weight:600;font-size:0.9rem;text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:2px">Ver todos os relatos <i class="fas fa-arrow-right" style="font-size:0.75em"></i></a>
+      </div>
       <div class="container" style="text-align:center;margin-top:2rem" data-reveal>
         <a href="#planos" class="btn-cta" id="cta-dep"><i class="fas fa-feather-pointed"></i> Quero a mesma transformação</a>
       </div>
@@ -636,8 +643,8 @@
     <section class="cta-final" id="comprar">
       <div class="cta-final-box">
         <span class="section-eyebrow" data-reveal>Decisão</span>
-        <h2 class="section-title" data-reveal>Comece a transformar sua vida <span class="glow">financeira hoje</span></h2>
-        <p class="cta-final-pre" data-reveal>Pra quem está cansada de não romper a barreira financeira limitante em que se encontra. <strong>Mude sua realidade a partir de agora.</strong></p>
+        <h2 class="section-title" data-reveal>Comece hoje a viver <span class="glow">A Tal Maneira</span></h2>
+        <p class="cta-final-pre" data-reveal>Pra quem está cansada de repetir os mesmos padrões e quer dar o próximo passo <strong>com fé e método</strong>.</p>
 
         <div data-reveal>
           <a href="#planos" class="btn-cta" id="cta-final-btn" style="font-size:1rem;padding:1.2rem 2.4rem">
@@ -657,7 +664,7 @@
         <div class="faq-list" data-reveal>
           <div class="faq-item"><button class="faq-q">Qual a diferença entre o Livro Digital e o Curso?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>O <strong>Livro Digital</strong> entrega o método "A Tal Maneira" em formato de leitura/audio + um aulão prático. O <strong>Curso Completo</strong> é o método comentado em vídeo aula por aula, com 2 módulos, 12 aulas + extras e exercícios práticos. O <strong>Combo</strong> reúne os dois.</p></div></div>
           <div class="faq-item"><button class="faq-q">Quais materiais estão incluídos em cada plano?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Livro: livro digital + audiobook narrado + aulão. Curso: 2 módulos com 12 aulas + relato de alerta + exercícios práticos + aula inaugural ao vivo. Combo: tudo dos dois + bônus extras. Tudo feito manualmente, ZERO uso de IA.</p></div></div>
-          <div class="faq-item"><button class="faq-q">Esse método funciona pra quem quer mudança rápida?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Sim. Foi criado pra pessoas que querem prosperidade financeira real e rápida. É prático, direto e focado em resultados — sem teoria infinita.</p></div></div>
+          <div class="faq-item"><button class="faq-q">Esse método é prático?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Sim. É direto e focado em aplicação, sem teoria infinita. Cada pessoa tem o seu ritmo, e o método mostra o que fazer em cada etapa.</p></div></div>
           <div class="faq-item"><button class="faq-q">Por quanto tempo tenho acesso ao conteúdo?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Acesso vitalício ao e-book. O audiobook, aulão e curso ficam disponíveis por 1 ano pra revisitar quantas vezes quiser nesse período.</p></div></div>
           <div class="faq-item"><button class="faq-q">É adequado pra cristãos?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Absolutamente. Todo o conteúdo é baseado no Grande Livro (Bíblia) e nos princípios cristãos de prosperidade.</p></div></div>
           <div class="faq-item"><button class="faq-q">Como funciona o pagamento?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Pagamento seguro pela plataforma Kiwify — cartão em até 12x, PIX ou boleto à vista. Acesso liberado imediatamente após confirmação.</p></div></div>
@@ -675,6 +682,7 @@
       <a href="https://www.tiktok.com/@suellenseragi" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
     </div>
     <p class="footer-text">Renato &amp; Suellen Seragi · Vida Mágica · 2026</p>
+    <p class="footer-text" style="margin-top:0.6rem"><a href="/privacidade" style="color:inherit">Política de privacidade</a> · <a href="/termos" style="color:inherit">Termos de uso</a> · <a href="mailto:contato@suellenseragi.com.br" style="color:inherit">Fale com a gente</a></p>
   </footer>
 
   <button class="back-top" id="back-top" aria-label="Voltar ao topo">
@@ -874,5 +882,6 @@
 
   <script src="/relatos-card.js"></script>
 
+  <a class="whats-flutuante" href="https://wa.me/5562999884411?text=Ol%C3%A1!%20Vim%20pelo%20site%20Vida%20M%C3%A1gica%20e%20quero%20falar%20com%20voc%C3%AAs." target="_blank" rel="noopener noreferrer" aria-label="Falar pelo WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
 </body>
 </html>

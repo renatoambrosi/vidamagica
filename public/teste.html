@@ -689,6 +689,10 @@
       .navbar-actions .btn-cadastro-nav { display: none; }
     }
     @media (max-width: 380px) { .hero-logo-wrap { max-width: 300px; } }
+    /* Botão do WhatsApp, igual ao da home. O "voltar ao topo" sobe para não ficar embaixo dele. */
+    .whats-flutuante { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 110; width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 30px; text-decoration: none; background: #25D366; box-shadow: 0 8px 24px rgba(0,0,0,0.4); transition: transform 0.2s; }
+    .whats-flutuante:hover { transform: scale(1.07); }
+    .back-top { right: 23px; bottom: calc(88px + env(safe-area-inset-bottom)); }
   </style>
 
   <!-- intl-tel-input — input internacional de telefone com bandeira do país -->
@@ -813,7 +817,7 @@
             <input type="checkbox" id="campo-aceite" required>
             <span class="modal-form-checkbox-mark"><i class="fas fa-check"></i></span>
             <span class="modal-form-checkbox-texto">
-              Concordo com os <a href="/termos" target="_blank" rel="noopener">termos de uso</a> e autorizo receber o resultado do teste em meu WhatsApp.
+              Concordo com os <a href="/termos" target="_blank" rel="noopener">termos de uso</a> e a <a href="/privacidade" target="_blank" rel="noopener">política de privacidade</a>, e autorizo receber o resultado do teste em meu WhatsApp.
             </span>
           </label>
 
@@ -879,6 +883,9 @@
       <div class="dep-carousel">
         <div class="dep-track" id="dep-track"></div>
       </div>
+      <div class="container" style="text-align:center;margin-top:1rem">
+        <a href="/relatos#ts" style="color:var(--gold-light);font-weight:600;font-size:0.9rem;text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:2px">Ver todos os relatos <i class="fas fa-arrow-right" style="font-size:0.75em"></i></a>
+      </div>
       <div class="container" style="text-align:center;margin-top:2rem" data-reveal>
         <a href="#iniciar-teste" class="btn-cta" id="cta-dep">Quero descobrir o meu</a>
       </div>
@@ -930,7 +937,7 @@
           <div class="faq-item"><button class="faq-q">Por que ele é pago?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Porque não é genérico nem automático. Você recebe um resultado personalizado, com explicações estruturadas em métodos de autoconhecimento e ciência cognitiva.</p></div></div>
           <div class="faq-item"><button class="faq-q">Como recebo o resultado?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Logo após finalizar e pagar, você é levada à página de resultado. Também recebe seu resultado por e-mail, com uma análise clara sobre qual energia está bloqueando sua prosperidade.</p></div></div>
           <div class="faq-item"><button class="faq-q">Vou conseguir mudar só com o teste?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>O teste não resolve tudo sozinho — é o primeiro passo. Mas ao identificar com clareza o que está te travando hoje, você ganha consciência e direção.</p></div></div>
-          <div class="faq-item"><button class="faq-q">E se eu não tiver dinheiro pra fazer o teste?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Talvez sua trava esteja justamente em não se permitir investir em você. Esse teste te mostra exatamente isso.</p></div></div>
+          <div class="faq-item"><button class="faq-q">O teste cabe no meu momento?<span class="icon"><i class="fas fa-plus"></i></span></button><div class="faq-a"><p>Ele tem pagamento único, sem mensalidade, e já mostra por onde começar, sem precisar comprar mais nada.</p></div></div>
         </div>
       </div>
     </section>
@@ -979,6 +986,7 @@
   <!-- FOOTER — IDÊNTICO AO INDEX.HTML -->
   <footer>
     <p class="footer-text">Renato &amp; Suellen Seragi · Vida Mágica · 2025</p>
+    <p class="footer-text" style="margin-top:0.6rem"><a href="/privacidade" style="color:inherit">Política de privacidade</a> · <a href="/termos" style="color:inherit">Termos de uso</a> · <a href="mailto:contato@suellenseragi.com.br" style="color:inherit">Fale com a gente</a></p>
   </footer>
 
   <button class="back-top" id="back-top" aria-label="Voltar ao topo">
@@ -1998,5 +2006,6 @@
   <!-- Modal + swipe dos cards de relatos (compartilhado entre as 7 LPs) -->
   <script src="/relatos-card.js"></script>
 <script src="/navbar-account.js" defer></script>
+  <a class="whats-flutuante" href="https://wa.me/5562999884411?text=Ol%C3%A1!%20Vim%20pelo%20site%20Vida%20M%C3%A1gica%20e%20quero%20falar%20com%20voc%C3%AAs." target="_blank" rel="noopener noreferrer" aria-label="Falar pelo WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
 </body>
 </html>

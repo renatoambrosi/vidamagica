@@ -314,6 +314,10 @@
     /* RIPPLE — IDÊNTICO */
     .ripple { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.4); transform: scale(0); animation: rippleAnim 0.6s ease-out; pointer-events: none; }
     @keyframes rippleAnim { to { transform: scale(2.5); opacity: 0; } }
+    /* Botão do WhatsApp, igual ao da home. O "voltar ao topo" sobe para não ficar embaixo dele. */
+    .whats-flutuante { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 110; width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 30px; text-decoration: none; background: #25D366; box-shadow: 0 8px 24px rgba(0,0,0,0.4); transition: transform 0.2s; }
+    .whats-flutuante:hover { transform: scale(1.07); }
+    .back-top { right: 23px; bottom: calc(88px + env(safe-area-inset-bottom)); }
   </style>
 </head>
 <body class="lp-ouro">
@@ -344,7 +348,7 @@
       <h1 data-reveal>O <span class="glow">Ouro</span> da Reprogramação Mental</h1>
       <p class="hero-headline" data-reveal>Você foi criada para mais!</p>
       <p class="hero-sub" data-reveal>Mais do que sobreviver à rotina, mais do que fingir que está tudo bem. Você nasceu para viver uma vida que vale a pena ser vivida. E tudo começa dentro de você.</p>
-      <p class="hero-sub" data-reveal>Você não precisa fugir, recomeçar do zero ou esperar o 'momento certo'. O que você precisa é reprogramar a forma como você pensa — para reescrever a forma como você vive. E foi exatamente isso que mudou a minha vida. <strong style="color:var(--gold-light)">É isso que vai mudar a sua.</strong></p>
+      <p class="hero-sub" data-reveal>Você não precisa fugir, recomeçar do zero ou esperar o 'momento certo'. O que você precisa é reprogramar a forma como você pensa — para reescrever a forma como você vive. E foi exatamente isso que mudou a minha vida. <strong style="color:var(--gold-light)">É isso que eu quero te ensinar.</strong></p>
       <div style="margin-top:2rem" data-reveal>
         <a href="#cta-final" class="btn-cta" id="cta-hero"><i class="fas fa-arrow-right"></i> Quero transformar minha vida</a>
       </div>
@@ -465,6 +469,9 @@
       <div class="dep-carousel">
         <div class="dep-track" id="dep-track"></div>
       </div>
+      <div class="container" style="text-align:center;margin-top:1rem">
+        <a href="/relatos#orm" style="color:var(--gold-light);font-weight:600;font-size:0.9rem;text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:2px">Ver todos os relatos <i class="fas fa-arrow-right" style="font-size:0.75em"></i></a>
+      </div>
       <div class="container" style="text-align:center;margin-top:2rem" data-reveal>
         <a href="#cta-final" class="btn-cta" id="cta-dep"><i class="fas fa-arrow-right"></i> Quero viver o que essas mulheres viveram</a>
       </div>
@@ -534,6 +541,7 @@
       <a href="https://www.tiktok.com/@suellenseragi" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
     </div>
     <p class="footer-text">Renato &amp; Suellen Seragi · Vida Mágica · 2025</p>
+    <p class="footer-text" style="margin-top:0.6rem"><a href="/privacidade" style="color:inherit">Política de privacidade</a> · <a href="/termos" style="color:inherit">Termos de uso</a> · <a href="mailto:contato@suellenseragi.com.br" style="color:inherit">Fale com a gente</a></p>
   </footer>
 
   <button class="back-top" id="back-top" aria-label="Voltar ao topo">
@@ -747,5 +755,6 @@
 
   <script src="/relatos-card.js"></script>
 
+  <a class="whats-flutuante" href="https://wa.me/5562999884411?text=Ol%C3%A1!%20Vim%20pelo%20site%20Vida%20M%C3%A1gica%20e%20quero%20falar%20com%20voc%C3%AAs." target="_blank" rel="noopener noreferrer" aria-label="Falar pelo WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
 </body>
 </html>
