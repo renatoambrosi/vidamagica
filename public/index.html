@@ -510,7 +510,7 @@
 
     /* ===== PRODUTOS ===== */
     .fase-label {
-      font-size: 0.68rem;
+      font-size: 0.78rem;
       font-weight: 700;
       letter-spacing: 0.15em;
       text-transform: uppercase;
@@ -542,7 +542,7 @@
       background: rgba(200,146,42,0.06);
     }
     .produto-card img {
-      width: 64px; height: 64px;
+      width: 68px; height: 68px;
       object-fit: cover;
       border-radius: 8px;
       flex-shrink: 0;
@@ -551,36 +551,47 @@
     .produto-info { flex: 1; min-width: 0; }
     .produto-info [data-produto-nome] {
       display: block;
-      font-size: 0.85rem;
+      font-size: 1rem;
       font-weight: 700;
       color: var(--text-light);
       margin-bottom: 0.2rem;
     }
     .produto-info p {
-      font-size: 0.75rem;
+      font-size: 0.88rem;
       color: rgba(245,240,232,0.55);
       line-height: 1.5;
       margin-bottom: 0.5rem;
     }
     .produto-preco {
-      font-size: 0.9rem;
+      font-size: 1.05rem;
       font-weight: 700;
       color: var(--color-gold-light);
       line-height: 1.3;
       margin-bottom: 0.6rem;
     }
-    .produto-preco-off { display: block; font-size: 0.65rem; font-weight: 700; color: var(--color-gold-amber); }
-    .produto-preco-de { display: block; font-size: 0.72rem; font-weight: 400; opacity: 0.6; }
-    .produto-preco-vista { display: block; font-size: 0.72rem; font-weight: 600; opacity: 0.7; margin-top: 0.1rem; }
+    .produto-preco-off { display: block; font-size: 0.75rem; font-weight: 700; color: var(--color-gold-amber); }
+    .produto-preco-de { display: block; font-size: 0.82rem; font-weight: 400; opacity: 0.6; }
+    .produto-preco-vista { display: block; font-size: 0.85rem; font-weight: 600; opacity: 0.7; margin-top: 0.1rem; }
     /* Capa, nome e descrição levam à LP (ou à compra, quando não há LP); o cartão em si não. */
     .produto-link { color: inherit; text-decoration: none; display: block; }
     .produto-link:hover [data-produto-nome] { text-decoration: underline; text-underline-offset: 3px; }
-    .produto-links { display: flex; gap: 0.5rem; }
+    .produto-links { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    /* Celular: capa e textos em cima; "Ver mais" e "Comprar" numa linha própria,
+       dividindo a largura do cartão, para nunca ficarem um em cima do outro. */
+    @media (max-width: 640px) {
+      .produto-card { display: grid; grid-template-columns: 68px 1fr; column-gap: 0.9rem; align-items: start; }
+      .produto-info { display: contents; }
+      .produto-card > img, .produto-card > .produto-link:first-child { grid-column: 1; grid-row: 1 / span 2; }
+      .produto-info > .produto-link, .produto-info > [data-produto-nome], .produto-info > p, .produto-preco { grid-column: 2; }
+      .produto-links { grid-column: 1 / -1; flex-wrap: nowrap; margin-top: 0.2rem; }
+      .produto-links a { flex: 1; text-align: center; }
+    }
 
     .btn-lp, .btn-checkout {
-      font-size: 0.7rem;
+      font-size: 0.8rem;
       font-weight: 600;
-      padding: 0.3rem 0.7rem;
+      padding: 0.42rem 0.75rem;
+      white-space: nowrap;
       border-radius: var(--radius-full);
       text-decoration: none;
       transition: all 0.2s;
@@ -600,7 +611,7 @@
     .btn-checkout:hover { background: var(--color-gold-deep); }
 
     .narrativa-texto {
-      font-size: 0.82rem;
+      font-size: 0.95rem;
       color: rgba(245,240,232,0.65);
       line-height: 1.65;
       margin-bottom: 1rem;
@@ -1040,6 +1051,13 @@
     .redes-home .social-icons a i { font-size: 18px; }
     .produtos-home { position: relative; z-index: 2; padding: 0.5rem 1.5rem 3.5rem; display: flex; flex-direction: column; align-items: center; }
     .produtos-home .dropdown-wrap { width: 100%; }
+    /* Contorno dourado girando (o mesmo da oferta em destaque da Black) para dar destaque ao box de materiais. */
+    .produtos-home .dropdown-wrap { position: relative; isolation: isolate; border: none; padding: 2px; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: 0 18px 50px rgba(200,146,42,0.28); }
+    .produtos-home .dropdown-wrap::before { content: ''; position: absolute; z-index: -1; left: 50%; top: 50%; width: 220%; aspect-ratio: 1; background: conic-gradient(from 0deg, #7A5818, #FFF3CF, #C8922A, #3D2E1A, #F4D998, #7A5818); transform: translate(-50%, -50%); animation: materiais-giro 8s linear infinite; }
+    .produtos-home .dropdown-wrap::after { content: ''; position: absolute; z-index: -1; inset: 2px; border-radius: calc(var(--radius-lg) - 2px); background: linear-gradient(180deg, #1b1307 0%, #0d0800 100%); }
+    .produtos-home .dropdown-wrap:hover, .produtos-home .dropdown-wrap.open { box-shadow: 0 18px 54px rgba(200,146,42,0.4); }
+    @keyframes materiais-giro { to { transform: translate(-50%, -50%) rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .produtos-home .dropdown-wrap::before { animation: none; } }
     .dropdown-panel.open { max-height: 7000px; }
 
     /* ===== HOME 2026-11: RELATOS ===== */
@@ -1530,7 +1548,8 @@
       const player = document.getElementById('video-home-player');
       if (!player) return;
       try {
-        const r = await fetch(`${API_BASE}/api/youtube/ultimo`, { headers: { 'Accept': 'application/json' }, mode: 'cors' });
+        // Mesmo servidor que abriu a página (no ar ou no computador).
+        const r = await fetch('/api/youtube/ultimo', { headers: { 'Accept': 'application/json' } });
         const v = await r.json();
         if (!r.ok || !v.id) throw new Error('sem vídeo');
         player.src = `https://www.youtube.com/embed/${encodeURIComponent(v.id)}?rel=0`;
