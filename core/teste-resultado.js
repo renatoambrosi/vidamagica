@@ -170,7 +170,7 @@ const SELO_PADRAO_LIVRO = '✨ Inclui Aulão com a Suellen';
 //               vindo da tabela `precos` (banco Comunicação).
 // resultado:    saída de calcularResultado()
 // retorna: array com o livro indicado, pronto pra renderizar. Item: {
-//            slug, energia, titulo, capa_url, link_checkout_padrao,
+//            slug, energia, titulo, capa_url, link_checkout,
 //            link_checkout_aluno, preco_aluno, preco_padrao, preco_de,
 //            desconto_pct, parcelas_qtd, parcelas_valor, atributos, selo,
 //            tag, cor_fundo, cor_texto, percentual_inteiro,
@@ -178,7 +178,9 @@ const SELO_PADRAO_LIVRO = '✨ Inclui Aulão com a Suellen';
 //          }
 function montarLivrosRecomendados(precosBySlug, resultado) {
   const indicacao = indicacaoDoPerfil(resultado.perfil_dominante);
-  const linkDoLivro = ((precosBySlug && precosBySlug[indicacao.livro]) || {}).link_checkout_padrao;
+  // link_checkout_exibir: link do teste quando o Preço no Teste está
+  // preenchido, senão o padrão (aplicarPrecoDoTeste, routes/produtos.js).
+  const linkDoLivro = ((precosBySlug && precosBySlug[indicacao.livro]) || {}).link_checkout_exibir;
   const slug = indicacao.livro_reserva && !(linkDoLivro || '').trim()
     ? indicacao.livro_reserva
     : indicacao.livro;
@@ -195,10 +197,10 @@ function montarLivrosRecomendados(precosBySlug, resultado) {
     energia,
     titulo: p.nome || slug,
     capa_url: p.imagem_url || '',
-    link_checkout_padrao: p.link_checkout_padrao || '',
+    link_checkout: p.link_checkout_exibir || '',
     link_checkout_aluno: p.link_checkout_aluno || '',
-    // exibir_avista/_de/parcelas já consideram promo ativa (processarProdutos,
-    // em routes/produtos.js) — mesmo "pacote" de preço usado nas LPs.
+    // exibir_avista/_de/parcelas: Preço no Teste quando preenchido, senão
+    // promo ligada, senão padrão (routes/produtos.js).
     preco_padrao: p.exibir_avista || p.preco_padrao || '',
     preco_de: p.exibir_de || '',
     desconto_pct: p.desconto_pct || null,

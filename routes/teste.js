@@ -27,7 +27,7 @@ const { calcularJornadaVigente, indicacaoDoPerfil, temClubeVidaMagica, SLUG } = 
 const { autenticar } = require('../middleware/autenticar');
 const { enfileirarAtendimento } = require('../core/gateway');
 const { lerModoDevTeste, lerMostrarLogTeste } = require('../core/teste-config');
-const { processarProdutos } = require('./produtos');
+const { processarProdutos, aplicarPrecoDoTeste } = require('./produtos');
 
 // Número do Renato — recebe aviso no WhatsApp a cada avaliação nova do resultado.
 const TELEFONE_ADMIN_AVALIACOES = formatarTelefone('62983086320');
@@ -785,6 +785,8 @@ router.get('/resultado/:teste_id', async (req, res) => {
     // padrão) — sem isso, o resultado mostrava sempre preco_padrao e ignorava
     // promoção configurada no admin.
     processarProdutos(precosBySlug);
+    // Preço no Teste (admin → Produtos): quando preenchido, vale sempre aqui.
+    aplicarPrecoDoTeste(precosBySlug);
     const livrosRecomendados = montarLivrosRecomendados(precosBySlug, resultado);
 
     // ── Passo 3 — Curso recomendado (vem da regra, NÃO do admin) ──
@@ -801,9 +803,9 @@ router.get('/resultado/:teste_id', async (req, res) => {
       conteudoPerfil.passo3_curso_titulo       = produto.nome || '';
       conteudoPerfil.passo3_curso_capa_url     = produto.imagem_url || '';
       conteudoPerfil.passo3_curso_preco        = produto.exibir_avista || produto.preco_padrao || '';
-      conteudoPerfil.passo3_curso_link_checkout = produto.link_checkout_padrao || '';
-      // Mesmo "pacote" de preço das LPs (de/por + parcelas) — processarProdutos
-      // já calculou tudo isso acima, em cima da promo real configurada no admin.
+      conteudoPerfil.passo3_curso_link_checkout = produto.link_checkout_exibir || '';
+      // Pacote de preço (de/por + parcelas) já decidido acima: Preço no Teste
+      // quando preenchido; senão promo ligada; senão padrão.
       conteudoPerfil.passo3_curso_preco_de       = produto.exibir_de || '';
       conteudoPerfil.passo3_curso_desconto_pct   = produto.desconto_pct || null;
       conteudoPerfil.passo3_curso_parcelas_qtd   = produto.exibir_parcelas_qtd || '';

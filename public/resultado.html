@@ -889,7 +889,13 @@
       .livro-capa, .livro-capa-placeholder { width: 100px; align-self: center; }
       .curso-card { flex-direction: column; }
       .curso-capa, .curso-capa-placeholder { width: 100px; align-self: center; }
+      /* Celular: parcelas numa linha e o botão embaixo, na largura do card,
+         em vez de espremido ao lado e encostado na borda. */
+      .curso-rodape, .livro-rodape { flex-direction: column; align-items: stretch; flex-wrap: nowrap; gap: 0.75rem; margin-top: 0; }
+      .curso-cta, .livro-cta { text-align: center; padding: 0.8rem 1rem; font-size: 0.9rem; }
     }
+    /* Fora do celular, se não couber lado a lado, o botão desce em vez de passar da borda. */
+    .curso-rodape, .livro-rodape { flex-wrap: wrap; }
     /* ═══════════════════════════════════════════════════
        BLOCO JORNADA — Sua jornada começa aqui
        ═══════════════════════════════════════════════════ */
@@ -2564,14 +2570,21 @@
       }
     }
 
-    linhas.push(
-      preco
-        ? '<span class="' + classePrefixo + '-preco">R$ ' + escapeHtml(preco) + '</span>'
-        : '<span class="' + classePrefixo + '-preco" style="color:var(--pearl-dim);font-size:0.85rem;font-style:italic">Preço em breve</span>'
-    );
+    // Mesmo formato das LPs e da home: parcelas em destaque e o à vista
+    // embaixo ("12x R$ 28,74" / "ou R$ 277,88 à vista"). Sem parcelas, só o à vista.
+    const temParcelas = parcelasQtd && parcelasValor;
+    let principal;
+    if (temParcelas) {
+      principal = '<span class="' + classePrefixo + '-preco">' + escapeHtml(String(parcelasQtd)) + 'x <small>R$</small> ' + escapeHtml(parcelasValor) + '</span>';
+    } else if (preco) {
+      principal = '<span class="' + classePrefixo + '-preco">R$ ' + escapeHtml(preco) + '</span>';
+    } else {
+      principal = '<span class="' + classePrefixo + '-preco" style="color:var(--pearl-dim);font-size:0.85rem;font-style:italic">Preço em breve</span>';
+    }
+    linhas.push(principal);
 
-    const parcelasHtml = (parcelasQtd && parcelasValor)
-      ? '<span class="' + classePrefixo + '-preco-parcelas">ou ' + parcelasQtd + 'x de R$ ' + escapeHtml(parcelasValor) + '</span>'
+    const parcelasHtml = (temParcelas && preco)
+      ? '<span class="' + classePrefixo + '-preco-parcelas">ou R$ ' + escapeHtml(preco) + ' à vista</span>'
       : '<span></span>';
     linhas.push(
       '<div class="' + classePrefixo + '-rodape">' + parcelasHtml + ctaHtml + '</div>'
@@ -2584,10 +2597,10 @@
     const capa = l.capa_url
       ? '<img class="livro-capa" src="' + escapeHtml(l.capa_url) + '" alt="' + escapeHtml(l.titulo) + '">'
       : '<div class="livro-capa-placeholder"><i class="fas fa-book"></i></div>';
-    // Link: a página é pública (lead anônima) — usa link padrão. Aluna logada
-    // que acessar tem o link padrão também (a versão "aluno" só aparece no
-    // painel de atendimento e no /app autenticado).
-    const link = l.link_checkout_padrao || '';
+    // Link: o servidor já escolheu — checkout do Preço no Teste quando
+    // preenchido no admin, senão o padrão. A versão "aluno" só aparece no
+    // painel de atendimento e no /app autenticado.
+    const link = l.link_checkout || '';
     const cta = link
       ? '<a href="' + escapeHtml(VmUtm.checkout(link, 'VmResultado-livro')) + '" class="livro-cta" target="_blank" rel="noopener">Quero este livro</a>'
       : '<a href="#" class="livro-cta" onclick="alert(\'Em breve\');return false;">Quero este livro</a>';

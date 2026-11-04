@@ -89,6 +89,33 @@ function processarProdutos(produtos) {
   return produtos;
 }
 
+// ── Preço no Teste (só no /resultado/:id) ──
+// Roda DEPOIS de processarProdutos. Quando o produto tem preço à vista E link
+// do teste preenchidos no admin, eles valem sempre no resultado: preço padrão
+// riscado, preço do teste em destaque, desconto calculado, checkout do teste.
+// A promoção do site não interfere. Sem esses dois campos, fica o que
+// processarProdutos já decidiu (promo ligada → promo; senão, padrão).
+// link_checkout_exibir = link que o resultado deve usar, nos dois casos.
+function aplicarPrecoDoTeste(produtos) {
+  Object.keys(produtos).forEach(key => {
+    const p = produtos[key];
+    const preco = String(p.preco_teste || '').trim();
+    const link = String(p.link_checkout_teste || '').trim();
+    if (!preco || !link) {
+      p.link_checkout_exibir = p.link_checkout_padrao || '';
+      return;
+    }
+    const desconto = calcularDesconto(p.preco_padrao, preco);
+    p.exibir_avista = preco;
+    p.exibir_de = desconto ? p.preco_padrao : null;
+    p.desconto_pct = desconto;
+    p.exibir_parcelas_qtd = p.parcelas_qtd_teste || p.parcelas_qtd;
+    p.exibir_parcelas_valor = p.parcelas_valor_teste || '';
+    p.link_checkout_exibir = link;
+  });
+  return produtos;
+}
+
 // ── HANDLERS (usados também pelos aliases legados em routes/precos.js) ──
 
 async function listarPublico(req, res) {
@@ -210,4 +237,5 @@ module.exports.listarPublico = listarPublico;
 module.exports.listarAdmin   = listarAdmin;
 module.exports.salvarAdmin   = salvarAdmin;
 module.exports.processarProdutos = processarProdutos;
+module.exports.aplicarPrecoDoTeste = aplicarPrecoDoTeste;
 module.exports.llmsTxt = llmsTxt;
