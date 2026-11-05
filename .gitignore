@@ -1,6 +1,27 @@
-.claude/
+# ── Documentos privados: NUNCA sobem pro GitHub ──
+# privado/ é um repositório só local (GitHub Desktop, sem Publish),
+# com histórico e data de cada mudança. Todo .md mora lá.
+privado/
+*.md
+texto-*.html
+
+# ── Segredos e ambiente ──
 .env
-.DS_Store
+.env.*
+
+# ── Dependências ──
 node_modules/
-AGENTS.md
-texto-resultado-*.html
+
+# ── Sistema e editores ──
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ── Ferramentas locais (Claude, Codex) ──
+.claude/
+
+# ── Lixo comum ──
+*.zip
+*.log
+npm-debug.log*
