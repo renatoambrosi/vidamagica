@@ -1691,6 +1691,7 @@
               telefone: telDigitos(),
               email: inputEmail.value.trim(),
               aceite_marketing: inputAceiteMkt.checked,
+              visitante_id: window.vmVisitanteTeste || null,
               ...utms,
             }),
           });
@@ -2091,6 +2092,39 @@
         if (a.dataset.utm) { try { sessionStorage.setItem('vm_utm_botao', a.dataset.utm); } catch {} }
         const alvo = document.getElementById('form-iniciar-teste');
         if (alvo) alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    })();
+
+    /* Insights do admin: visita da página e primeiro toque no formulário.
+       visitante_id é um número aleatório deste navegador, sem dado pessoal;
+       vai junto no /iniciar pra ligar a visita a quem preencheu. */
+    (function(){
+      let id = '';
+      try { id = localStorage.getItem('vm_visitante') || ''; } catch {}
+      if (!/^[a-zA-Z0-9_-]{8,64}$/.test(id)) {
+        id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2)).replace(/[^a-zA-Z0-9_-]/g, '');
+        try { localStorage.setItem('vm_visitante', id); } catch {}
+      }
+      window.vmVisitanteTeste = id;
+      function enviar(evento){
+        try {
+          fetch('/api/teste/evento', {
+            method: 'POST', keepalive: true,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              visitante_id: id, evento,
+              utm_source: VmUtm.ler('utm_source'),
+              utm_medium: VmUtm.ler('utm_medium'),
+              utm_campaign: VmUtm.ler('vm_utm_botao') || '',
+            }),
+          }).catch(() => {});
+        } catch {}
+      }
+      enviar('pagina_vista');
+      const form = document.getElementById('form-iniciar-teste');
+      if (form) form.addEventListener('focusin', function tocou(){
+        form.removeEventListener('focusin', tocou);
+        enviar('formulario_tocado');
       });
     })();
   </script>

@@ -1543,6 +1543,10 @@ router.get('/testes-resultados', async (req, res) => {
     const lim = Math.min(100, Math.max(1, parseInt(limit, 10) || 25));
     const offset = (pag - 1) * lim;
 
+    if (status === 'incompleto') {
+      return res.json(await _listarIncompletos({ data_de, data_ate, q, lim, offset, pag }));
+    }
+
     const where = ['t.eh_legado = FALSE'];
     const params = [];
 
@@ -1570,7 +1574,7 @@ router.get('/testes-resultados', async (req, res) => {
     const r = await poolTeste.query(
       `SELECT t.id, t.telefone_canonico, t.perfil_dominante, t.percentual_prosperidade,
               t.pago, t.feito_em, t.visto_em,
-              l.nome, l.email
+              l.nome, l.email, l.aceite_marketing
          FROM testes t
          LEFT JOIN teste_leads l ON l.id = t.lead_id
         WHERE ${whereSql}
@@ -1590,6 +1594,7 @@ router.get('/testes-resultados', async (req, res) => {
       pago: !!t.pago,
       feito_em: t.feito_em,
       visto_em: t.visto_em,
+      aceite_marketing: !!t.aceite_marketing,
       link_resultado: `${baseUrl}/resultado/${t.id}`,
     }));
 
@@ -1599,6 +1604,62 @@ router.get('/testes-resultados', async (req, res) => {
     res.status(500).json({ ok: false, erro: 'Erro ao listar testes' });
   }
 });
+
+// Quem preencheu o formulário e não chegou ao fim da rodada atual.
+// O lead é reaproveitado entre testes (mesmo telefone) e as respostas da
+// rodada nova sobrescrevem as antigas, então "incompleto" = menos de 15
+// respostas E a rodada atual (formulário ou última resposta) é mais nova
+// que o último teste concluído desse lead.
+const _SQL_LEADS_RODADA = `
+  SELECT l.id, l.nome, l.email, l.telefone_canonico, l.aceite_marketing,
+         l.criado_em, l.atualizado_em, l.dispositivo,
+         COALESCE(r.n, 0)::int AS respondidas,
+         r.ultima, r.primeira,
+         ut.ultimo_teste
+    FROM teste_leads l
+    LEFT JOIN LATERAL (
+      SELECT COUNT(*) AS n, MAX(respondido_em) AS ultima, MIN(respondido_em) AS primeira
+        FROM teste_respostas WHERE lead_id = l.id
+    ) r ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT MAX(feito_em) AS ultimo_teste FROM testes WHERE lead_id = l.id
+    ) ut ON TRUE`;
+const _COND_INCOMPLETO = `COALESCE(r.n, 0) < 15
+  AND (ut.ultimo_teste IS NULL OR GREATEST(l.atualizado_em, COALESCE(r.ultima, l.atualizado_em)) > ut.ultimo_teste + INTERVAL '2 seconds')`;
+
+async function _listarIncompletos({ data_de, data_ate, q, lim, offset, pag }) {
+  const where = [_COND_INCOMPLETO];
+  const params = [];
+  if (data_de) { params.push(data_de); where.push(`l.atualizado_em >= $${params.length}`); }
+  if (data_ate) { params.push(data_ate); where.push(`l.atualizado_em <= $${params.length}`); }
+  if (q && q.trim()) {
+    params.push(`%${q.trim().toLowerCase()}%`);
+    const i = params.length;
+    where.push(`(LOWER(l.nome) LIKE $${i} OR LOWER(l.email) LIKE $${i} OR l.telefone_canonico LIKE $${i})`);
+  }
+  const base = `${_SQL_LEADS_RODADA} WHERE ${where.join(' AND ')}`;
+  const totalR = await poolTeste.query(`SELECT COUNT(*)::int AS total FROM (${base}) x`, params);
+  const total = totalR.rows[0].total;
+  const r = await poolTeste.query(
+    `${base} ORDER BY GREATEST(l.atualizado_em, COALESCE(r.ultima, l.atualizado_em)) DESC
+      LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+    [...params, lim, offset]
+  );
+  const testes = r.rows.map(l => ({
+    lead_id: l.id,
+    nome: l.nome || null,
+    email: l.email || null,
+    telefone_canonico: l.telefone_canonico,
+    aceite_marketing: !!l.aceite_marketing,
+    dispositivo: l.dispositivo || null,
+    respondidas: l.respondidas,
+    total_perguntas: 15,
+    comecou_em: l.atualizado_em,
+    ultima_atividade: l.ultima && l.ultima > l.atualizado_em ? l.ultima : l.atualizado_em,
+    ja_concluiu_antes: !!l.ultimo_teste,
+  }));
+  return { ok: true, incompletos: true, testes, total, page: pag, totalPages: Math.max(1, Math.ceil(total / lim)) };
+}
 
 router.post('/testes-resultados/:id/enviar-whatsapp', async (req, res) => {
   try {
@@ -1803,9 +1864,11 @@ router.get('/testes-insights', async (req, res) => {
     funil.push({
       ordem: 'completo',
       pergunta: 'Completou o teste',
-      responderam: completaram,
-      taxa_desde_inicio: iniciaram > 0 ? Math.round((completaram / iniciaram) * 1000) / 10 : 0,
-      taxa_desde_anterior: anterior > 0 ? Math.round((completaram / anterior) * 1000) / 10 : 0,
+      // Funil conta pessoas (leads): quem completou = quem respondeu a última
+      // pergunta. `completaram` (testes, inclui refeitos) fica só no resumo.
+      responderam: anterior,
+      taxa_desde_inicio: iniciaram > 0 ? Math.round((anterior / iniciaram) * 1000) / 10 : 0,
+      taxa_desde_anterior: anterior > 0 ? 100 : 0,
     });
 
     const perguntas = PERGUNTAS.map(p => {
@@ -2014,6 +2077,258 @@ router.get('/testes-insights/utms', async (req, res) => {
   } catch (err) {
     console.error('❌ /testes-insights/utms:', err.message);
     res.status(500).json({ ok: false, erro: 'Erro ao carregar UTMs' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 23b. TESTE DO SUBCONSCIENTE — JORNADA (estilo Tally)
+// Funil da visita ao pagamento, tempo de preenchimento (total e por
+// pergunta), onde e quando desistem, aparelho e dia/horário.
+// Visitas e toque no formulário vêm de teste_eventos (só existem desde que
+// o rastreio entrou no ar — `rastreio_desde`). Tempo vem de testes.tempos;
+// teste antigo sem tempos usa as respostas do lead quando ainda são dele.
+// ════════════════════════════════════════════════════════════
+
+function _mediana(arr) {
+  if (!arr.length) return null;
+  const s = [...arr].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+function _percentil(arr, p) {
+  if (!arr.length) return null;
+  const s = [...arr].sort((a, b) => a - b);
+  return s[Math.min(s.length - 1, Math.floor((p / 100) * s.length))];
+}
+const _pct = (a, b) => (b > 0 ? Math.round((a / b) * 1000) / 10 : 0);
+const _DISPOSITIVOS = ['celular', 'computador', 'tablet'];
+
+router.get('/testes-insights/jornada', async (req, res) => {
+  try {
+    const { data_de = '', data_ate = '' } = req.query;
+    const temFiltroUtm = !!(req.query.utm_source || req.query.utm_medium || req.query.utm_campaign);
+    const TOTAL = PERGUNTAS.length;
+
+    // Cada rodada = uma vez que alguém começou o teste. Concluída vira linha
+    // em `testes`; a que parou no meio é a rodada atual do lead (incompleto).
+    // O lead é reaproveitado entre testes, por isso não contamos por lead.
+    const wI = [_COND_INCOMPLETO]; const pI = [];
+    if (data_de) { pI.push(data_de); wI.push(`l.atualizado_em >= $${pI.length}`); }
+    if (data_ate) { pI.push(data_ate); wI.push(`l.atualizado_em <= $${pI.length}`); }
+    _aplicarFiltrosUtm('l', req.query, wI, pI);
+
+    // Testes concluídos no período — feito_em.
+    const wT = ['t.eh_legado = FALSE']; const pT = [];
+    if (data_de) { pT.push(data_de); wT.push(`t.feito_em >= $${pT.length}`); }
+    if (data_ate) { pT.push(data_ate); wT.push(`t.feito_em <= $${pT.length}`); }
+    if (temFiltroUtm) _aplicarFiltrosUtm('l', req.query, wT, pT);
+    const joinT = temFiltroUtm ? 'JOIN teste_leads l ON l.id = t.lead_id' : 'LEFT JOIN teste_leads l ON l.id = t.lead_id';
+
+    // Eventos da página. Campanha (botão) não existe na visita, então só
+    // origem e mídia filtram as visitas.
+    const wE = ['1=1']; const pE = [];
+    if (data_de) { pE.push(data_de); wE.push(`e.criado_em >= $${pE.length}`); }
+    if (data_ate) { pE.push(data_ate); wE.push(`e.criado_em <= $${pE.length}`); }
+    _aplicarFiltrosUtm('e', { utm_source: req.query.utm_source, utm_medium: req.query.utm_medium }, wE, pE);
+
+    const [eventosR, desdeR, testesR, incR] = await Promise.all([
+      poolTeste.query(
+        `SELECT evento, COALESCE(dispositivo, '?') AS dispositivo, COUNT(DISTINCT visitante_id)::int AS n
+           FROM teste_eventos e WHERE ${wE.join(' AND ')}
+          GROUP BY evento, COALESCE(dispositivo, '?')`, pE),
+      poolTeste.query(`SELECT MIN(criado_em) AS m FROM teste_eventos`),
+      poolTeste.query(
+        `SELECT t.id, t.lead_id, t.feito_em, t.formulario_em, t.tempos, t.pago, t.visto_em,
+                l.dispositivo,
+                (SELECT MAX(t2.feito_em) FROM testes t2 WHERE t2.lead_id = t.lead_id) AS ultimo_do_lead,
+                EXISTS (SELECT 1 FROM teste_avaliacoes a WHERE a.teste_id = t.id) AS avaliou
+           FROM testes t ${joinT}
+          WHERE ${wT.join(' AND ')}`, pT),
+      poolTeste.query(
+        `${_SQL_LEADS_RODADA} WHERE ${wI.join(' AND ')}`, pI),
+    ]);
+
+    // ── Funil completo ──
+    const evt = { pagina_vista: {}, formulario_tocado: {} };
+    for (const row of eventosR.rows) {
+      if (!evt[row.evento]) continue;
+      evt[row.evento][row.dispositivo] = (evt[row.evento][row.dispositivo] || 0) + row.n;
+    }
+    const soma = o => Object.values(o).reduce((a, b) => a + b, 0);
+    const visitas = soma(evt.pagina_vista);
+    const tocaram = soma(evt.formulario_tocado);
+    const testes = testesR.rows;
+    const concluiram = testes.length;
+    const preencheram = concluiram + incR.rows.length;
+    const pagaram = testes.filter(t => t.pago).length;
+    const abriram = testes.filter(t => t.visto_em).length;
+    const avaliaram = testes.filter(t => t.avaliou).length;
+    const etapas = [
+      { chave: 'visitas', label: 'Visitaram a página do teste', n: visitas, rastreio: true },
+      { chave: 'tocaram', label: 'Tocaram no formulário', n: tocaram, rastreio: true },
+      { chave: 'preencheram', label: 'Começaram o teste', n: preencheram },
+      { chave: 'concluiram', label: 'Concluíram as 15 perguntas', n: concluiram },
+      { chave: 'pagaram', label: 'Pagaram', n: pagaram },
+      { chave: 'abriram', label: 'Abriram o resultado', n: abriram },
+      { chave: 'avaliaram', label: 'Avaliaram o resultado', n: avaliaram },
+    ];
+    let ant = null;
+    for (const e of etapas) {
+      e.pct_anterior = ant ? _pct(e.n, ant) : null; // etapa anterior zerada (ex.: antes do rastreio) não vira "0%"
+      ant = e.n;
+    }
+
+    // ── Tempo dos concluídos ──
+    const semTempos = testes.filter(t => !t.tempos && t.lead_id
+      && t.ultimo_do_lead && +new Date(t.ultimo_do_lead) === +new Date(t.feito_em));
+    const respPorLead = new Map();
+    if (semTempos.length) {
+      const r = await poolTeste.query(
+        `SELECT r.lead_id, r.pergunta_ordem, r.respondido_em, l.atualizado_em
+           FROM teste_respostas r JOIN teste_leads l ON l.id = r.lead_id
+          WHERE r.lead_id = ANY($1::uuid[])`,
+        [semTempos.map(t => t.lead_id)]
+      );
+      for (const row of r.rows) {
+        if (!respPorLead.has(row.lead_id)) respPorLead.set(row.lead_id, { tempos: {}, form: row.atualizado_em });
+        respPorLead.get(row.lead_id).tempos[row.pergunta_ordem] = row.respondido_em;
+      }
+    }
+    const duracoes = [];          // segundos, do formulário (ou da 1ª resposta) ao fim
+    const porPergunta = Array.from({ length: TOTAL + 1 }, () => []);
+    const duracaoPorDisp = {};
+    for (const t of testes) {
+      let tempos = t.tempos;
+      let form = t.formulario_em;
+      if (!tempos) {
+        const r = respPorLead.get(t.lead_id);
+        if (!r || Object.keys(r.tempos).length !== TOTAL) continue;
+        const ultima = Math.max(...Object.values(r.tempos).map(v => +new Date(v)));
+        if (Math.abs(ultima - +new Date(t.feito_em)) > 5000) continue;
+        tempos = r.tempos; form = r.form;
+      }
+      const ts = [];
+      for (let k = 1; k <= TOTAL; k++) ts[k] = tempos[k] ? +new Date(tempos[k]) : null;
+      if (ts.slice(1).some(v => v === null)) continue;
+      const formMs = form ? +new Date(form) : null;
+      const inicio = formMs && formMs <= ts[1] ? formMs : ts[1];
+      const dur = Math.max(0, (+new Date(t.feito_em) - inicio) / 1000);
+      duracoes.push(dur);
+      const d = t.dispositivo || '?';
+      (duracaoPorDisp[d] = duracaoPorDisp[d] || []).push(dur);
+      if (formMs && formMs <= ts[1]) porPergunta[1].push((ts[1] - formMs) / 1000);
+      for (let k = 2; k <= TOTAL; k++) {
+        const s = (ts[k] - ts[k - 1]) / 1000;
+        if (s >= 0) porPergunta[k].push(s);
+      }
+    }
+    const PAUSA = 30 * 60; // acima de 30 min = saiu e voltou depois
+    const semPausa = duracoes.filter(s => s <= PAUSA);
+    const faixas = [
+      { label: 'até 1 min', ate: 60 }, { label: '1 a 2 min', ate: 120 },
+      { label: '2 a 3 min', ate: 180 }, { label: '3 a 5 min', ate: 300 },
+      { label: '5 a 10 min', ate: 600 }, { label: '10 a 30 min', ate: PAUSA },
+      { label: 'mais de 30 min (pausou)', ate: Infinity },
+    ];
+    let de = 0;
+    const distribuicao = faixas.map(f => {
+      const n = duracoes.filter(s => s > de && s <= f.ate || (de === 0 && s === 0)).length;
+      de = f.ate;
+      return { label: f.label, n, pct: _pct(n, duracoes.length) };
+    });
+    const textoPerg = new Map(PERGUNTAS.map(p => [p.ordem, p.pergunta]));
+    const tempoPorPergunta = [];
+    for (let k = 1; k <= TOTAL; k++) {
+      const vals = porPergunta[k].filter(s => s <= 10 * 60);
+      tempoPorPergunta.push({
+        ordem: k, pergunta: textoPerg.get(k) || `Pergunta ${k}`,
+        mediana_seg: vals.length ? Math.round(_mediana(vals) * 10) / 10 : null,
+        amostra: vals.length,
+      });
+    }
+
+    // ── Quem desistiu ──
+    const paradas = Array.from({ length: TOTAL }, () => 0); // índice = nº de respostas (0..14)
+    const tempoAteDesistir = [];
+    for (const l of incR.rows) {
+      paradas[Math.min(TOTAL - 1, l.respondidas)]++;
+      if (l.respondidas > 0 && l.ultima && l.atualizado_em) {
+        const s = (+new Date(l.ultima) - +new Date(l.atualizado_em)) / 1000;
+        if (s >= 0 && s <= PAUSA) tempoAteDesistir.push(s);
+      }
+    }
+    const desistencias = paradas.map((n, i) => ({
+      respondidas: i,
+      label: i === 0 ? 'Enviou o formulário e não respondeu nenhuma' : `Parou na pergunta ${i + 1} (respondeu ${i})`,
+      n,
+    }));
+
+    // Rodadas: concluídas + paradas no meio, com aparelho e hora de início.
+    const rodadas = [
+      ...testes.map(t => ({ d: t.dispositivo || '?', em: t.formulario_em || t.feito_em, concluiu: true, pago: !!t.pago })),
+      ...incR.rows.map(l => ({ d: l.dispositivo || '?', em: l.atualizado_em, concluiu: false, pago: false })),
+    ];
+
+    // ── Aparelho ──
+    const disp = {};
+    const garante = d => (disp[d] = disp[d] || { dispositivo: d, visitas: 0, preencheram: 0, concluiram: 0, pagaram: 0 });
+    for (const [d, n] of Object.entries(evt.pagina_vista)) garante(d).visitas += n;
+    for (const r of rodadas) {
+      const x = garante(r.d);
+      x.preencheram++;
+      if (r.concluiu) x.concluiram++;
+      if (r.pago) x.pagaram++;
+    }
+    const dispositivos = Object.values(disp).map(x => ({
+      ...x,
+      label: x.dispositivo === '?' ? 'Sem registro (antes do rastreio)' : x.dispositivo[0].toUpperCase() + x.dispositivo.slice(1),
+      taxa_conclusao: _pct(x.concluiram, x.preencheram),
+      mediana_seg: duracaoPorDisp[x.dispositivo] && duracaoPorDisp[x.dispositivo].length
+        ? Math.round(_mediana(duracaoPorDisp[x.dispositivo])) : null,
+    })).sort((a, b) => (_DISPOSITIVOS.indexOf(a.dispositivo) + 1 || 9) - (_DISPOSITIVOS.indexOf(b.dispositivo) + 1 || 9));
+
+    // ── Dia da semana e horário em que começaram (horário de Brasília) ──
+    const DIAS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const IDX_DIA = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+    const fmt = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', weekday: 'short', hour: '2-digit', hourCycle: 'h23' });
+    const porDia = DIAS.map(label => ({ label, preencheram: 0, concluiram: 0 }));
+    const porHora = Array.from({ length: 24 }, (_, h) => ({ label: `${String(h).padStart(2, '0')}h`, preencheram: 0, concluiram: 0 }));
+    for (const r of rodadas) {
+      if (!r.em) continue;
+      const partes = Object.fromEntries(fmt.formatToParts(new Date(r.em)).map(x => [x.type, x.value]));
+      const dia = porDia[IDX_DIA[partes.weekday]];
+      const hora = porHora[parseInt(partes.hour, 10) % 24];
+      if (dia) { dia.preencheram++; if (r.concluiu) dia.concluiram++; }
+      if (hora) { hora.preencheram++; if (r.concluiu) hora.concluiram++; }
+    }
+    const comTaxa = x => ({ label: x.label, preencheram: x.preencheram, concluiram: x.concluiram, taxa: _pct(x.concluiram, x.preencheram) });
+
+    res.json({
+      ok: true,
+      rastreio_desde: desdeR.rows[0].m,
+      funil: etapas,
+      tempo: {
+        amostra: duracoes.length,
+        mediana_seg: duracoes.length ? Math.round(_mediana(duracoes)) : null,
+        media_seg: semPausa.length ? Math.round(semPausa.reduce((a, b) => a + b, 0) / semPausa.length) : null,
+        p25_seg: semPausa.length ? Math.round(_percentil(semPausa, 25)) : null,
+        p75_seg: semPausa.length ? Math.round(_percentil(semPausa, 75)) : null,
+        pausaram: duracoes.length - semPausa.length,
+        distribuicao,
+        por_pergunta: tempoPorPergunta,
+      },
+      desistencia: {
+        total: incR.rows.length,
+        mediana_ate_desistir_seg: tempoAteDesistir.length ? Math.round(_mediana(tempoAteDesistir)) : null,
+        por_ponto: desistencias,
+      },
+      dispositivos,
+      por_dia: porDia.map(comTaxa),
+      por_hora: porHora.map(comTaxa),
+    });
+  } catch (err) {
+    console.error('❌ /testes-insights/jornada:', err.message);
+    res.status(500).json({ ok: false, erro: 'Erro ao carregar a jornada do teste' });
   }
 });
 

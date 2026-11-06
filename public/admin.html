@@ -1388,10 +1388,11 @@ select option { background: #1a1205; }
         </div>
 
         <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem">
-          <div id="tr-status-tabs" style="display:flex;gap:0.4rem">
+          <div id="tr-status-tabs" style="display:flex;gap:0.4rem;flex-wrap:wrap">
             <button class="btn btn-ghost btn-sm tr-status-btn" data-status="todos" onclick="testesResultados.setStatus('todos')">Todos <span id="tr-count-todos" class="nav-tag">…</span></button>
             <button class="btn btn-ghost btn-sm tr-status-btn" data-status="pago" onclick="testesResultados.setStatus('pago')">Pagos</button>
             <button class="btn btn-ghost btn-sm tr-status-btn" data-status="pendente" onclick="testesResultados.setStatus('pendente')">Pendentes</button>
+            <button class="btn btn-ghost btn-sm tr-status-btn" data-status="incompleto" onclick="testesResultados.setStatus('incompleto')">Incompletos</button>
           </div>
 
           <select id="tr-periodo" class="field-input" style="width:auto" onchange="testesResultados.setPeriodo(this.value)">
@@ -1425,7 +1426,7 @@ select option { background: #1a1205; }
             <div class="wz-section-title">📈 Insights do Teste</div>
             <div class="wz-section-sub">Onde as pessoas abandonam e como respondem cada pergunta</div>
           </div>
-          <button class="btn btn-ghost btn-sm" onclick="testesInsights.carregar();testesInsights.carregarGeral();testesInsights.carregarUtms();testesInsights.carregarUtmOpcoes()">↺ Atualizar</button>
+          <button class="btn btn-ghost btn-sm" onclick="testesInsights.carregarTudo()">↺ Atualizar</button>
         </div>
 
         <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem">
@@ -1443,6 +1444,22 @@ select option { background: #1a1205; }
 
         <div id="ti-resumo" style="display:flex;gap:0.8rem;flex-wrap:wrap;margin-bottom:1.2rem"></div>
 
+        <div class="wz-section-title" style="font-size:0.95rem;margin-bottom:0.3rem">Jornada completa — da visita à avaliação</div>
+        <div id="ti-rastreio-aviso" style="font-size:0.76rem;color:var(--text-muted);margin-bottom:0.6rem"></div>
+        <div id="ti-jornada" style="margin-bottom:1.8rem"><div class="loading">Carregando…</div></div>
+
+        <div class="wz-section-title" style="font-size:0.95rem;margin-bottom:0.6rem">Tempo para responder</div>
+        <div id="ti-tempo" style="margin-bottom:1.8rem"><div class="loading">Carregando…</div></div>
+
+        <div class="wz-section-title" style="font-size:0.95rem;margin-bottom:0.6rem">Onde desistem</div>
+        <div id="ti-desistencia" style="margin-bottom:1.8rem"><div class="loading">Carregando…</div></div>
+
+        <div class="wz-section-title" style="font-size:0.95rem;margin-bottom:0.6rem">Celular x computador</div>
+        <div id="ti-dispositivos" style="margin-bottom:1.8rem"><div class="loading">Carregando…</div></div>
+
+        <div class="wz-section-title" style="font-size:0.95rem;margin-bottom:0.6rem">Dia e horário em que começam</div>
+        <div id="ti-horarios" style="margin-bottom:1.8rem"><div class="loading">Carregando…</div></div>
+
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.6rem;margin-bottom:0.6rem">
           <div class="wz-section-title" style="font-size:0.95rem;margin:0">Visão geral — % por perfil dominante</div>
           <div id="ti-geral-status-tabs" style="display:flex;gap:0.4rem">
@@ -1454,6 +1471,7 @@ select option { background: #1a1205; }
         <div id="ti-geral" style="margin-bottom:1.8rem"><div class="loading">Carregando…</div></div>
 
         <div class="wz-section-title" style="font-size:0.95rem;margin-bottom:0.6rem">Funil — quantos chegam em cada pergunta</div>
+        <div id="ti-quedas" style="margin-bottom:0.8rem"></div>
         <div id="ti-funil" style="margin-bottom:1.6rem"><div class="loading">Carregando…</div></div>
 
         <div class="wz-section-title" style="font-size:0.95rem;margin-bottom:0.6rem">Respostas por pergunta</div>
@@ -1863,7 +1881,7 @@ function goTab(id, el) {
   if (id === 'teste') { testeAdmin.carregar(); }
   if (id === 'teste-perfis') { perfisAdmin.carregar(); }
   if (id === 'teste-resultados') { testesResultados.carregar(1); }
-  if (id === 'teste-insights') { testesInsights.carregar(); testesInsights.carregarGeral(); testesInsights.carregarUtms(); testesInsights.carregarUtmOpcoes(); }
+  if (id === 'teste-insights') { testesInsights.carregarTudo(); }
   if (id === 'teste-avaliacoes') { testesAvaliacoes.carregar(1); }
   if (id === 'caderno') { cadCarregarPrompts(); }
   if (id === 'espaco-afirmacoes') { espAfirmCarregar(); }
@@ -4173,6 +4191,43 @@ const testesResultados = (function(){
         return;
       }
 
+      const optIn = v => v
+        ? '<span style="color:#7FD8A0" title="Marcou: quer receber novidades, conteúdos e promoções">Sim</span>'
+        : '<span style="color:var(--text-muted)" title="Não marcou a caixinha de novidades">Não</span>';
+
+      if (d.incompletos) {
+        wrap.innerHTML = `
+        <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:0.84rem">
+          <thead>
+            <tr style="text-align:left;color:var(--text-muted);border-bottom:1px solid var(--border)">
+              <th style="padding:0.5rem 0.6rem">Começou em</th>
+              <th style="padding:0.5rem 0.6rem">Nome</th>
+              <th style="padding:0.5rem 0.6rem">Telefone</th>
+              <th style="padding:0.5rem 0.6rem">E-mail</th>
+              <th style="padding:0.5rem 0.6rem">Onde parou</th>
+              <th style="padding:0.5rem 0.6rem">Última atividade</th>
+              <th style="padding:0.5rem 0.6rem">Novidades</th>
+              <th style="padding:0.5rem 0.6rem">Aparelho</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${d.testes.map(t => `
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+                <td style="padding:0.55rem 0.6rem;white-space:nowrap">${dataFmt(t.comecou_em)}</td>
+                <td style="padding:0.55rem 0.6rem">${escHtml(t.nome || '(sem nome)')}${t.ja_concluiu_antes ? ' <span class="nav-tag" title="Já concluiu um teste antes e começou de novo">refazendo</span>' : ''}</td>
+                <td style="padding:0.55rem 0.6rem;white-space:nowrap">${escHtml(t.telefone_canonico || '')}</td>
+                <td style="padding:0.55rem 0.6rem">${t.email ? escHtml(t.email) : '<span style="color:var(--text-muted)">—</span>'}</td>
+                <td style="padding:0.55rem 0.6rem;white-space:nowrap">${t.respondidas === 0 ? 'Antes da 1ª pergunta' : `Na pergunta ${t.respondidas + 1} <span style="color:var(--text-muted)">(${t.respondidas} de ${t.total_perguntas})</span>`}</td>
+                <td style="padding:0.55rem 0.6rem;white-space:nowrap">${dataFmt(t.ultima_atividade)}</td>
+                <td style="padding:0.55rem 0.6rem">${optIn(t.aceite_marketing)}</td>
+                <td style="padding:0.55rem 0.6rem">${t.dispositivo ? escHtml(t.dispositivo) : '<span style="color:var(--text-muted)">—</span>'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        </div>`;
+      } else {
       wrap.innerHTML = `
         <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:0.84rem">
@@ -4184,6 +4239,7 @@ const testesResultados = (function(){
               <th style="padding:0.5rem 0.6rem">E-mail</th>
               <th style="padding:0.5rem 0.6rem">Perfil</th>
               <th style="padding:0.5rem 0.6rem">Pago</th>
+              <th style="padding:0.5rem 0.6rem">Novidades</th>
               <th style="padding:0.5rem 0.6rem">Ações</th>
             </tr>
           </thead>
@@ -4196,7 +4252,9 @@ const testesResultados = (function(){
                 <td style="padding:0.55rem 0.6rem">${t.email ? escHtml(t.email) : '<span style="color:var(--text-muted)">—</span>'}</td>
                 <td style="padding:0.55rem 0.6rem">${escHtml(t.perfil_label || '?')}</td>
                 <td style="padding:0.55rem 0.6rem">${t.pago ? '✅' : '⏳'}</td>
+                <td style="padding:0.55rem 0.6rem">${optIn(t.aceite_marketing)}</td>
                 <td style="padding:0.55rem 0.6rem;white-space:nowrap">
+                  <a class="btn btn-ghost btn-sm" href="${escHtml(t.link_resultado)}" target="_blank" rel="noopener" title="Abrir o resultado em outra janela">↗ Abrir</a>
                   <button class="btn btn-ghost btn-sm" title="Copiar link do resultado" onclick="testesResultados.copiarLink('${t.link_resultado}')">🔗 Copiar</button>
                   <button class="btn btn-ghost btn-sm" title="Enviar pelo WhatsApp" onclick="testesResultados.enviarWhatsapp('${t.id}', this)">💬 WhatsApp</button>
                   <button class="btn btn-ghost btn-sm" title="Enviar por e-mail" ${t.email ? '' : 'disabled'} onclick="testesResultados.enviarEmail('${t.id}', this)">✉️ E-mail</button>
@@ -4207,6 +4265,7 @@ const testesResultados = (function(){
         </table>
         </div>
       `;
+      }
 
       const pagWrap = document.getElementById('tr-paginacao');
       if (d.totalPages > 1) {
@@ -4398,19 +4457,13 @@ const testesInsights = (function(){
 
   function setPeriodo(p) {
     periodo = p;
-    carregar();
-    carregarGeral();
-    carregarUtms();
-    carregarUtmOpcoes();
+    carregarTudo();
   }
 
   function setUtmFiltro(campo, valor) {
     utmFiltro[campo] = valor;
     atualizarBadgeUtmFiltro();
-    carregar();
-    carregarGeral();
-    carregarUtms();
-    carregarUtmOpcoes();
+    carregarTudo();
   }
 
   function limparUtmFiltro() {
@@ -4420,10 +4473,7 @@ const testesInsights = (function(){
       if (el) el.value = '';
     });
     atualizarBadgeUtmFiltro();
-    carregar();
-    carregarGeral();
-    carregarUtms();
-    carregarUtmOpcoes();
+    carregarTudo();
   }
 
   function atualizarBadgeUtmFiltro() {
@@ -4519,7 +4569,7 @@ const testesInsights = (function(){
           ${item.ordem === 'completo' ? 'Concluiu' : `P${item.ordem}`} — ${escHtml(item.pergunta)}
         </div>
         <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:6px;height:22px;position:relative;overflow:hidden">
-          <div style="background:linear-gradient(90deg,var(--color-gold-light),var(--color-gold));height:100%;width:${pct}%;border-radius:6px"></div>
+          <div style="background:linear-gradient(90deg,var(--color-gold-light),var(--color-gold-amber));height:100%;width:${pct}%;border-radius:6px"></div>
         </div>
         <div style="width:48px;text-align:right;font-size:0.82rem;font-weight:600;flex-shrink:0">${item.responderam}</div>
         <div style="width:90px;text-align:right;font-size:0.76rem;color:${corQuebra};flex-shrink:0">
@@ -4544,20 +4594,6 @@ const testesInsights = (function(){
       const d = await r.json();
       if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
 
-      resumoWrap.innerHTML = `
-        <div class="wz-stat" style="flex:1;min-width:140px">
-          <div class="wz-stat-n">${d.resumo.iniciaram}</div>
-          <div class="wz-stat-l">Iniciaram o teste</div>
-        </div>
-        <div class="wz-stat" style="flex:1;min-width:140px">
-          <div class="wz-stat-n">${d.resumo.completaram}</div>
-          <div class="wz-stat-l">Completaram</div>
-        </div>
-        <div class="wz-stat" style="flex:1;min-width:140px">
-          <div class="wz-stat-n">${d.resumo.taxa_conclusao}%</div>
-          <div class="wz-stat-l">Taxa de conclusão</div>
-        </div>`;
-
       if (!d.resumo.iniciaram) {
         funilWrap.innerHTML = '<div style="padding:1.5rem;color:var(--text-muted);text-align:center">Nenhum teste iniciado nesse período.</div>';
         return;
@@ -4565,6 +4601,26 @@ const testesInsights = (function(){
 
       const max = d.resumo.iniciaram;
       funilWrap.innerHTML = d.funil.map(item => barraFunil(item, max)).join('');
+
+      // As 3 passagens onde mais gente sai (em número de pessoas)
+      const quedas = [];
+      let antes = d.resumo.iniciaram, nomeAntes = 'Formulário';
+      for (const item of d.funil) {
+        const nome = item.ordem === 'completo' ? 'Conclusão' : `P${item.ordem}`;
+        if (antes - item.responderam > 0) quedas.push({ de: nomeAntes, para: nome, perdeu: antes - item.responderam, pct: antes > 0 ? Math.round(((antes - item.responderam) / antes) * 1000) / 10 : 0 });
+        antes = item.responderam; nomeAntes = nome;
+      }
+      quedas.sort((a, b) => b.perdeu - a.perdeu);
+      const quedasWrap = document.getElementById('ti-quedas');
+      if (quedasWrap) quedasWrap.innerHTML = quedas.length ? `
+        <div style="display:flex;gap:0.6rem;flex-wrap:wrap">
+          ${quedas.slice(0, 3).map((q, i) => `
+            <div class="wz-grupo-card" style="flex:1;min-width:180px;padding:0.7rem 0.9rem">
+              <div style="font-size:0.72rem;color:var(--text-muted)">${i + 1}ª maior saída</div>
+              <div style="font-weight:600;margin:0.15rem 0">${q.de} → ${q.para}</div>
+              <div style="font-size:0.8rem;color:#F09090">${q.perdeu} pessoa${q.perdeu === 1 ? '' : 's'} (${q.pct}%)</div>
+            </div>`).join('')}
+        </div>` : '';
 
       pergWrap.innerHTML = d.perguntas.map(p => `
         <div class="wz-grupo-card" style="margin-bottom:0.7rem">
@@ -4597,7 +4653,7 @@ const testesInsights = (function(){
           <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.4rem">
             <div style="width:130px;font-size:0.8rem;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(i.valor)}">${escHtml(i.valor)}</div>
             <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:5px;height:20px;position:relative;overflow:hidden">
-              <div style="background:linear-gradient(90deg,var(--color-gold-light),var(--color-gold));height:100%;width:${Math.round((i.leads / max) * 100)}%;border-radius:5px;opacity:0.85"></div>
+              <div style="background:linear-gradient(90deg,var(--color-gold-light),var(--color-gold-amber));height:100%;width:${Math.round((i.leads / max) * 100)}%;border-radius:5px;opacity:0.85"></div>
             </div>
             <div style="width:200px;text-align:right;font-size:0.76rem;color:var(--text-muted);flex-shrink:0">
               <b style="color:var(--text-light)">${i.leads}</b> leads · ${i.taxa_conclusao}% concl. · <span style="color:var(--color-gold-light)">${i.pagos} pago${i.pagos === 1 ? '' : 's'}</span>
@@ -4636,7 +4692,166 @@ const testesInsights = (function(){
     }
   }
 
-  return { carregar, setPeriodo, setGeralStatus, carregarGeral, carregarUtms, carregarUtmOpcoes, setUtmFiltro, limparUtmFiltro };
+  function carregarTudo() {
+    carregar();
+    carregarJornada();
+    carregarGeral();
+    carregarUtms();
+    carregarUtmOpcoes();
+  }
+
+  // ── Jornada (estilo Tally): funil completo, tempo, desistência, aparelho, horário ──
+  function fmtSeg(s) {
+    if (s === null || s === undefined) return '—';
+    s = Math.round(s);
+    if (s < 60) return s + 's';
+    const m = Math.floor(s / 60), r = s % 60;
+    if (m < 60) return r ? `${m}min ${r}s` : `${m}min`;
+    const h = Math.floor(m / 60);
+    return `${h}h ${m % 60}min`;
+  }
+  function stat(n, l, dica) {
+    return `<div class="wz-stat" style="flex:1;min-width:130px"${dica ? ` title="${escHtml(dica)}"` : ''}>
+      <div class="wz-stat-n">${n}</div><div class="wz-stat-l">${l}</div></div>`;
+  }
+  function barra(label, valor, max, direita, cor, dica) {
+    const pct = max > 0 ? Math.max(0, Math.min(100, Math.round((valor / max) * 100))) : 0;
+    return `
+      <div style="display:flex;align-items:center;gap:0.7rem;margin-bottom:0.4rem"${dica ? ` title="${escHtml(dica)}"` : ''}>
+        <div style="width:230px;font-size:0.8rem;color:var(--text-muted);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${label}</div>
+        <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:6px;height:20px;overflow:hidden">
+          <div style="background:${cor || 'linear-gradient(90deg,var(--color-gold-light),var(--color-gold-amber))'};height:100%;width:${pct}%;border-radius:6px"></div>
+        </div>
+        <div style="min-width:120px;text-align:right;font-size:0.8rem;flex-shrink:0">${direita}</div>
+      </div>`;
+  }
+  const vazio = t => `<div style="padding:0.8rem;color:var(--text-muted);font-size:0.82rem">${t}</div>`;
+
+  async function carregarJornada() {
+    const ids = ['ti-jornada', 'ti-tempo', 'ti-desistencia', 'ti-dispositivos', 'ti-horarios'];
+    const el = Object.fromEntries(ids.map(i => [i, document.getElementById(i)]));
+    if (!el['ti-jornada']) return;
+    ids.forEach(i => { el[i].innerHTML = '<div class="loading">Carregando…</div>'; });
+    try {
+      const { data_de, data_ate } = periodoParaDatas(periodo);
+      const qs = new URLSearchParams({ data_de, data_ate, ...utmParams() });
+      const r = await fetch(`${API}/api/admin/testes-insights/jornada?${qs}`, { headers: { 'Authorization': authHeader() } });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+
+      const f = Object.fromEntries(d.funil.map(e => [e.chave, e]));
+      const pctDe = (a, b) => (b > 0 ? Math.round((a / b) * 1000) / 10 : 0);
+
+      // Resumo no topo da aba
+      document.getElementById('ti-resumo').innerHTML =
+        stat(f.visitas.n, 'Visitas na página', 'Pessoas diferentes que abriram /teste no período (desde que o rastreio entrou no ar)') +
+        stat(f.preencheram.n, 'Começaram o teste', 'Enviaram o formulário. Quem refaz conta de novo.') +
+        stat(f.concluiram.n, 'Concluíram') +
+        stat(pctDe(f.concluiram.n, f.preencheram.n) + '%', 'Taxa de conclusão', 'Concluíram ÷ começaram') +
+        stat(f.pagaram.n, 'Pagaram') +
+        stat(fmtSeg(d.tempo.mediana_seg), 'Tempo típico', 'Mediana: metade termina mais rápido que isso');
+
+      // Aviso do rastreio
+      const aviso = document.getElementById('ti-rastreio-aviso');
+      aviso.textContent = d.rastreio_desde
+        ? `Visitas e toques no formulário são contados desde ${new Date(d.rastreio_desde).toLocaleDateString('pt-BR')}. O resto vale para todo o histórico.`
+        : 'Visitas e toques no formulário passam a ser contados assim que esta versão for ao ar. O resto já vale para todo o histórico.';
+
+      // Funil completo
+      const maxF = Math.max(...d.funil.map(e => e.n), 1);
+      el['ti-jornada'].innerHTML = d.funil.map(e => {
+        const perda = e.pct_anterior === null ? '' :
+          (e.pct_anterior >= 100 ? '<span style="color:var(--text-muted)">—</span>' :
+            `<span style="color:${100 - e.pct_anterior >= 30 ? '#F09090' : 'var(--text-muted)'}">${e.pct_anterior}% seguiram</span>`);
+        return barra(escHtml(e.label), e.n, maxF, `<b>${e.n}</b> &nbsp;${perda}`);
+      }).join('');
+
+      // Tempo
+      const t = d.tempo;
+      if (!t.amostra) {
+        el['ti-tempo'].innerHTML = vazio('Ainda sem testes concluídos com horário das respostas neste filtro.');
+      } else {
+        const maxDist = Math.max(...t.distribuicao.map(x => x.n), 1);
+        const comMediana = t.por_pergunta.filter(p => p.mediana_seg !== null);
+        const maxPerg = Math.max(...comMediana.map(p => p.mediana_seg), 1);
+        const lentas = [...comMediana].sort((a, b) => b.mediana_seg - a.mediana_seg).slice(0, 3).map(p => p.ordem);
+        el['ti-tempo'].innerHTML = `
+          <div style="display:flex;gap:0.8rem;flex-wrap:wrap;margin-bottom:1rem">
+            ${stat(fmtSeg(t.mediana_seg), 'Tempo típico (mediana)', 'Metade das pessoas termina mais rápido que isso')}
+            ${stat(fmtSeg(t.media_seg), 'Tempo médio', 'Média sem contar quem pausou mais de 30 min')}
+            ${stat(`${fmtSeg(t.p25_seg)} a ${fmtSeg(t.p75_seg)}`, 'Faixa da maioria', 'Metade do meio das pessoas (do 25% ao 75%)')}
+            ${stat(t.pausaram, 'Pausaram e voltaram', 'Levaram mais de 30 min: saíram e voltaram depois')}
+          </div>
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.4rem">Quanto tempo levaram (${t.amostra} teste${t.amostra === 1 ? '' : 's'} com horário registrado)</div>
+          ${t.distribuicao.map(x => barra(escHtml(x.label), x.n, maxDist, `<b>${x.n}</b> <span style="color:var(--text-muted)">(${x.pct}%)</span>`)).join('')}
+          <div style="font-size:0.78rem;color:var(--text-muted);margin:1rem 0 0.4rem">Tempo típico em cada pergunta (as 3 mais demoradas em destaque — pode ser pergunta difícil ou texto longo)</div>
+          ${t.por_pergunta.map(p => barra(
+            `P${p.ordem} — ${escHtml(p.pergunta)}`,
+            p.mediana_seg || 0, maxPerg,
+            p.mediana_seg === null ? '<span style="color:var(--text-muted)">—</span>' : `<b>${fmtSeg(p.mediana_seg)}</b>`,
+            lentas.includes(p.ordem) ? '#E8A87C' : null,
+            p.ordem === 1 ? 'Da hora do envio do formulário até responder a pergunta 1 (inclui ler a introdução)' : `${p.amostra} resposta(s) medidas`
+          )).join('')}`;
+      }
+
+      // Desistência
+      const ds = d.desistencia;
+      if (!ds.total) {
+        el['ti-desistencia'].innerHTML = vazio('Ninguém parou no meio neste filtro.');
+      } else {
+        const pontos = ds.por_ponto.filter(p => p.n > 0);
+        const maxD = Math.max(...pontos.map(p => p.n), 1);
+        el['ti-desistencia'].innerHTML = `
+          <div style="display:flex;gap:0.8rem;flex-wrap:wrap;margin-bottom:1rem">
+            ${stat(ds.total, 'Pararam no meio', 'A lista com nome e telefone está em Resultados do Teste → Incompletos')}
+            ${stat(pctDe(ds.total, f.preencheram.n) + '%', 'Taxa de abandono', 'Pararam ÷ começaram')}
+            ${stat(fmtSeg(ds.mediana_ate_desistir_seg), 'Tempo até desistir', 'Mediana entre o envio do formulário e a última resposta de quem parou')}
+          </div>
+          ${pontos.map(p => barra(escHtml(p.label), p.n, maxD, `<b>${p.n}</b> <span style="color:var(--text-muted)">(${pctDe(p.n, ds.total)}%)</span>`, '#F09090')).join('')}`;
+      }
+
+      // Aparelho
+      if (!d.dispositivos.length) {
+        el['ti-dispositivos'].innerHTML = vazio('Sem dados neste filtro.');
+      } else {
+        el['ti-dispositivos'].innerHTML = `
+          <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:0.84rem">
+            <thead><tr style="text-align:left;color:var(--text-muted);border-bottom:1px solid var(--border)">
+              <th style="padding:0.5rem 0.6rem">Aparelho</th><th style="padding:0.5rem 0.6rem">Visitas</th>
+              <th style="padding:0.5rem 0.6rem">Começaram</th><th style="padding:0.5rem 0.6rem">Concluíram</th>
+              <th style="padding:0.5rem 0.6rem">Conclusão</th><th style="padding:0.5rem 0.6rem">Pagaram</th>
+              <th style="padding:0.5rem 0.6rem">Tempo típico</th></tr></thead>
+            <tbody>${d.dispositivos.map(x => `
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
+                <td style="padding:0.55rem 0.6rem">${escHtml(x.label)}</td>
+                <td style="padding:0.55rem 0.6rem">${x.visitas || '—'}</td>
+                <td style="padding:0.55rem 0.6rem">${x.preencheram}</td>
+                <td style="padding:0.55rem 0.6rem">${x.concluiram}</td>
+                <td style="padding:0.55rem 0.6rem">${x.preencheram ? x.taxa_conclusao + '%' : '—'}</td>
+                <td style="padding:0.55rem 0.6rem">${x.pagaram}</td>
+                <td style="padding:0.55rem 0.6rem">${fmtSeg(x.mediana_seg)}</td>
+              </tr>`).join('')}</tbody>
+          </table></div>`;
+      }
+
+      // Dia e horário
+      const bloco = (titulo, itens) => {
+        const max = Math.max(...itens.map(x => x.preencheram), 1);
+        return `<div style="flex:1;min-width:300px">
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.4rem">${titulo}</div>
+          ${itens.map(x => barra(x.label, x.preencheram, max,
+            x.preencheram ? `<b>${x.preencheram}</b> <span style="color:var(--text-muted)">· ${x.taxa}% concl.</span>` : '<span style="color:var(--text-muted)">0</span>')).join('')}
+        </div>`;
+      };
+      el['ti-horarios'].innerHTML = f.preencheram.n
+        ? `<div style="display:flex;gap:1.5rem;flex-wrap:wrap">${bloco('Por dia da semana', d.por_dia)}${bloco('Por horário (Brasília)', d.por_hora)}</div>`
+        : vazio('Ninguém começou o teste neste filtro.');
+    } catch (err) {
+      ids.forEach(i => { if (el[i]) el[i].innerHTML = `<div style="color:#F09090;padding:0.6rem">Erro: ${escHtml(err.message || 'falha')}</div>`; });
+    }
+  }
+
+  return { carregar, carregarTudo, carregarJornada, setPeriodo, setGeralStatus, carregarGeral, carregarUtms, carregarUtmOpcoes, setUtmFiltro, limparUtmFiltro };
 })();
 
 // ── CRIAR USUÁRIO MANUAL ────────────────────────────────────

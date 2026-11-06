@@ -9,6 +9,13 @@
    - GET /perguntas devolve versao_id; frontend manda de volta no /responder.
    - Se versão mudou no meio (admin publicou nova), responder retorna
      409 'versao_alterada' e o frontend reinicia o quiz.
+
+   Insights (aba Insights do admin):
+   - POST /evento grava as visitas da página e o primeiro toque no
+     formulário (teste_eventos, sem dado pessoal).
+   - /iniciar guarda o aparelho e o visitante_id no lead.
+   - No fim do teste, /responder copia a hora de cada resposta em
+     testes.tempos (as respostas do lead são sobrescritas na rodada seguinte).
    ============================================================ */
 
 const express = require('express');
@@ -71,6 +78,20 @@ function sanitizarUtm(valor) {
   return limpo || null;
 }
 
+// Aparelho pelo user-agent: 'celular' | 'tablet' | 'computador'.
+function detectarDispositivo(ua) {
+  const u = String(ua || '').toLowerCase();
+  if (!u) return null;
+  if (/ipad|tablet|kindle|silk|(android(?!.*mobile))/.test(u)) return 'tablet';
+  if (/mobi|iphone|ipod|android|blackberry|opera mini|iemobile/.test(u)) return 'celular';
+  return 'computador';
+}
+function sanitizarVisitante(v) {
+  if (!v || typeof v !== 'string') return null;
+  const limpo = v.trim().slice(0, 64);
+  return /^[a-zA-Z0-9_-]{8,64}$/.test(limpo) ? limpo : null;
+}
+
 async function pegarVersaoAtiva() {
   const r = await poolTeste.query(
     `SELECT id, nome FROM teste_versoes WHERE status='ativa' LIMIT 1`
@@ -100,7 +121,9 @@ router.post('/buscar-usuario', async (req, res) => {
 // ── POST /api/teste/iniciar ─────────────────────────────────
 router.post('/iniciar', async (req, res) => {
   try {
-    const { nome, telefone, email, aceite_marketing, utm_source, utm_medium, utm_campaign, utm_content } = req.body || {};
+    const { nome, telefone, email, aceite_marketing, utm_source, utm_medium, utm_campaign, utm_content, visitante_id } = req.body || {};
+    const dispositivo = detectarDispositivo(req.headers['user-agent']);
+    const visitanteId = sanitizarVisitante(visitante_id);
 
     const nomeLimpo = validarNome(nome);
     if (!nomeLimpo) return res.status(400).json({ ok: false, erro: 'Nome inválido' });
@@ -183,15 +206,17 @@ router.post('/iniciar', async (req, res) => {
                 utm_medium=COALESCE($7, utm_medium),
                 utm_campaign=COALESCE($8, utm_campaign),
                 utm_content=COALESCE($10, utm_content),
+                dispositivo=COALESCE($11, dispositivo),
+                visitante_id=COALESCE($12, visitante_id),
                 atualizado_em=NOW()
           WHERE id=$9`,
-        [nomeLimpo, telCanonico, usuarioId, emailLimpo, aceiteMarketing, utms.source, utms.medium, utms.campaign, leadId, utms.content]
+        [nomeLimpo, telCanonico, usuarioId, emailLimpo, aceiteMarketing, utms.source, utms.medium, utms.campaign, leadId, utms.content, dispositivo, visitanteId]
       );
     } else {
       const r = await poolTeste.query(
-        `INSERT INTO teste_leads (telefone_canonico, nome, usuario_id, email, aceite_marketing, utm_source, utm_medium, utm_campaign, utm_content)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-        [telCanonico, nomeLimpo, usuarioId, emailLimpo, aceiteMarketing, utms.source, utms.medium, utms.campaign, utms.content]
+        `INSERT INTO teste_leads (telefone_canonico, nome, usuario_id, email, aceite_marketing, utm_source, utm_medium, utm_campaign, utm_content, dispositivo, visitante_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+        [telCanonico, nomeLimpo, usuarioId, emailLimpo, aceiteMarketing, utms.source, utms.medium, utms.campaign, utms.content, dispositivo, visitanteId]
       );
       leadId = r.rows[0].id;
     }
@@ -200,6 +225,32 @@ router.post('/iniciar', async (req, res) => {
   } catch (err) {
     console.error('[teste/iniciar] erro:', err);
     return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ── POST /api/teste/evento ──────────────────────────────────
+// Body: { visitante_id, evento, utm_source?, utm_medium?, utm_campaign? }
+// Topo do funil da página /teste, pra aba Insights do admin. Só os eventos
+// da lista; 1 registro por (visitante, evento, dia), o resto é ignorado.
+const EVENTOS_TESTE = ['pagina_vista', 'formulario_tocado'];
+router.post('/evento', async (req, res) => {
+  try {
+    const b = req.body || {};
+    const visitanteId = sanitizarVisitante(b.visitante_id);
+    if (!visitanteId || !EVENTOS_TESTE.includes(b.evento)) {
+      return res.status(400).json({ ok: false });
+    }
+    await poolTeste.query(
+      `INSERT INTO teste_eventos (visitante_id, evento, dispositivo, utm_source, utm_medium, utm_campaign)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (visitante_id, evento, dia) DO NOTHING`,
+      [visitanteId, b.evento, detectarDispositivo(req.headers['user-agent']),
+       sanitizarUtm(b.utm_source), sanitizarUtm(b.utm_medium), sanitizarUtm(b.utm_campaign)]
+    );
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('❌ [teste/evento]:', err.message);
+    return res.status(500).json({ ok: false });
   }
 });
 
@@ -338,7 +389,7 @@ router.post('/responder', async (req, res) => {
     }
 
     const leadRows = await poolTeste.query(
-      `SELECT id, telefone_canonico, usuario_id FROM teste_leads WHERE id=$1`,
+      `SELECT id, telefone_canonico, usuario_id, atualizado_em FROM teste_leads WHERE id=$1`,
       [lead_id]
     );
     if (!leadRows.rows[0]) return res.status(404).json({ ok: false, erro: 'lead não encontrado' });
@@ -371,7 +422,7 @@ router.post('/responder', async (req, res) => {
     );
 
     const cnt = await poolTeste.query(
-      `SELECT pergunta_ordem, perfil FROM teste_respostas
+      `SELECT pergunta_ordem, perfil, respondido_em FROM teste_respostas
         WHERE lead_id=$1 AND versao_id=$2 ORDER BY pergunta_ordem`,
       [lead_id, versaoIdNum]
     );
@@ -386,6 +437,8 @@ router.post('/responder', async (req, res) => {
       perfil: r.perfil,
     }));
     const resultado = calcularResultado(respostasArr);
+    const tempos = {};
+    for (const row of cnt.rows) tempos[row.pergunta_ordem] = row.respondido_em;
 
     // Cada teste concluído é um registro próprio e nunca é apagado: um checkout
     // aberto de um teste anterior ainda pode ser pago e precisa encontrá-lo.
@@ -398,8 +451,8 @@ router.post('/responder', async (req, res) => {
          (usuario_id, lead_id, versao_id, telefone_canonico, respostas,
           contagem, percentuais,
           perfil_dominante, percentual_prosperidade, nivel_prosperidade,
-          pago, modo_dev)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE, $11)
+          pago, modo_dev, formulario_em, tempos)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE, $11, $12, $13)
        RETURNING id`,
       [
         lead.usuario_id,
@@ -413,6 +466,8 @@ router.post('/responder', async (req, res) => {
         resultado.percentual_prosperidade,
         resultado.nivel_prosperidade,
         modoDev,
+        lead.atualizado_em,
+        JSON.stringify(tempos),
       ]
     );
     const testeId = insR.rows[0].id;

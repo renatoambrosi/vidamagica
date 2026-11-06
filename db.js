@@ -968,6 +968,29 @@ async function initTeste() {
     await c.query(`CREATE INDEX IF NOT EXISTS idx_teste_leads_usuario ON teste_leads(usuario_id)`);
     await c.query(`ALTER TABLE teste_leads ADD COLUMN IF NOT EXISTS aceite_marketing BOOLEAN DEFAULT FALSE`);
     await c.query(`ALTER TABLE teste_leads ADD COLUMN IF NOT EXISTS utm_content VARCHAR(100)`);
+    // Insights: aparelho de quem preencheu (celular/computador/tablet, pelo
+    // user-agent) e o id anônimo do navegador, que liga o lead às visitas.
+    await c.query(`ALTER TABLE teste_leads ADD COLUMN IF NOT EXISTS dispositivo VARCHAR(20)`);
+    await c.query(`ALTER TABLE teste_leads ADD COLUMN IF NOT EXISTS visitante_id VARCHAR(64)`);
+
+    // Insights: topo do funil da página /teste, antes do formulário.
+    // 1 linha por (visitante, evento, dia). Sem dado pessoal: visitante_id é
+    // um número aleatório do navegador. Eventos aceitos em POST /api/teste/evento.
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS teste_eventos (
+        id BIGSERIAL PRIMARY KEY,
+        visitante_id VARCHAR(64) NOT NULL,
+        evento VARCHAR(40) NOT NULL,
+        dia DATE NOT NULL DEFAULT CURRENT_DATE,
+        dispositivo VARCHAR(20),
+        utm_source VARCHAR(100),
+        utm_medium VARCHAR(100),
+        utm_campaign VARCHAR(100),
+        criado_em TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (visitante_id, evento, dia)
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_teste_eventos_data ON teste_eventos(criado_em)`);
 
     // ── VERSIONAMENTO ─────────────────────────────────────
     // Cada versão é um snapshot imutável depois de publicada.
@@ -1057,6 +1080,11 @@ async function initTeste() {
     await c.query(`ALTER TABLE testes ADD COLUMN IF NOT EXISTS eh_legado BOOLEAN DEFAULT FALSE`);
     // Feito com o Modo dev ligado: resultado fica aberto mesmo depois de desligar.
     await c.query(`ALTER TABLE testes ADD COLUMN IF NOT EXISTS modo_dev BOOLEAN DEFAULT FALSE`);
+    // Insights de tempo: quando o formulário foi enviado nesta rodada e a hora
+    // de cada resposta ({ "1": iso, ..., "15": iso }), copiados no fim do teste
+    // porque as respostas do lead são sobrescritas na rodada seguinte.
+    await c.query(`ALTER TABLE testes ADD COLUMN IF NOT EXISTS formulario_em TIMESTAMPTZ`);
+    await c.query(`ALTER TABLE testes ADD COLUMN IF NOT EXISTS tempos JSONB`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_testes_legado ON testes(usuario_id, eh_legado) WHERE usuario_id IS NOT NULL`);
 
     // Avaliação da aluna sobre o resultado (estrelas + comentário opcional).
