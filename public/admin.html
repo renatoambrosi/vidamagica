@@ -58,6 +58,27 @@ body { font-family: var(--font-body); background: var(--bg-dark); color: var(--t
 .topbar-left p { font-size: 0.68rem; color: var(--text-muted); margin-top: 1px; }
 .content { padding: 1.75rem; flex: 1; max-width: 900px; }
 .tab-panel { display: none; }
+/* ── EXCEÇÃO À LARGURA PADRÃO (900px) ──
+   Regra (privado/CLAUDE.md): só a aba Resultados do Teste usa a tela inteira.
+   Nenhuma outra aba foge do padrão sem o Renato pedir. */
+.content:has(#tab-teste-resultados.active) { max-width: none; }
+/* Tabela de Resultados/Incompletos: rola dentro da própria caixa, com o
+   cabeçalho e a coluna Pessoa fixos — a barra de rolagem fica sempre à vista. */
+.tr-tabela-wrap { max-height: calc(100vh - var(--topbar-h) - 250px); min-height: 320px; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius-md); overscroll-behavior: contain; scrollbar-color: var(--color-gold-dark) transparent; }
+.tr-tabela { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.84rem; }
+.tr-tabela th { position: sticky; top: 0; z-index: 2; background: #1d1406; text-align: left; color: var(--text-muted); font-weight: 600; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.tr-tabela td { padding: 0.6rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; }
+.tr-tabela tbody tr:hover td { background: rgba(232,201,122,0.05); }
+.tr-tabela .tr-fixa { position: sticky; left: 0; z-index: 1; background: #171004; box-shadow: 1px 0 0 var(--border); min-width: 230px; max-width: 320px; }
+.tr-tabela th.tr-fixa { z-index: 3; background: #1d1406; }
+.tr-tabela tbody tr:hover td.tr-fixa { background: #211709; }
+.tr-nowrap { white-space: nowrap; }
+.tr-pessoa-nome { font-weight: 600; color: var(--text-light); }
+.tr-pessoa-linha { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; overflow-wrap: anywhere; }
+.tr-ok { color: #7FD8A0; }
+.tr-nao { color: var(--text-muted); }
+.tr-acoes { display: grid; grid-template-columns: repeat(2, max-content); gap: 0.3rem; }
+.tr-acoes .btn { white-space: nowrap; justify-content: center; }
 .tab-panel.active { display: block; }
 #toast { position: fixed; top: 1.25rem; right: 1.25rem; padding: 0.65rem 1.1rem; border-radius: var(--radius-md); font-size: 0.8rem; font-weight: 600; z-index: 999; opacity: 0; transform: translateY(-8px); transition: all 0.25s; pointer-events: none; }
 #toast.show { opacity: 1; transform: translateY(0); }
@@ -4191,80 +4212,79 @@ const testesResultados = (function(){
         return;
       }
 
-      const optIn = v => v
-        ? '<span style="color:#7FD8A0" title="Marcou: quer receber novidades, conteúdos e promoções">Sim</span>'
-        : '<span style="color:var(--text-muted)" title="Não marcou a caixinha de novidades">Não</span>';
+      // Toda informação fica escrita na tela (nada só em ícone ou dica de mouse).
+      const optIn = v => v ? '<span class="tr-ok">Sim</span>' : '<span class="tr-nao">Não</span>';
+      const vazioTd = '<span class="tr-nao">—</span>';
+      const pessoa = (t, extra = '') => `
+        <td class="tr-fixa">
+          <div class="tr-pessoa-nome">${escHtml(t.nome || '(sem nome)')}${extra}</div>
+          <div class="tr-pessoa-linha">${t.telefone_canonico ? escHtml(t.telefone_canonico) : 'sem telefone'}</div>
+          <div class="tr-pessoa-linha">${t.email ? escHtml(t.email) : 'sem e-mail'}</div>
+        </td>`;
 
       if (d.incompletos) {
         wrap.innerHTML = `
-        <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:0.84rem">
+        <div class="tr-tabela-wrap">
+        <table class="tr-tabela">
           <thead>
-            <tr style="text-align:left;color:var(--text-muted);border-bottom:1px solid var(--border)">
-              <th style="padding:0.5rem 0.6rem">Começou em</th>
-              <th style="padding:0.5rem 0.6rem">Nome</th>
-              <th style="padding:0.5rem 0.6rem">Telefone</th>
-              <th style="padding:0.5rem 0.6rem">E-mail</th>
-              <th style="padding:0.5rem 0.6rem">Onde parou</th>
-              <th style="padding:0.5rem 0.6rem">Última atividade</th>
-              <th style="padding:0.5rem 0.6rem">Novidades</th>
-              <th style="padding:0.5rem 0.6rem">Aparelho</th>
+            <tr>
+              <th class="tr-fixa">Pessoa (nome, telefone, e-mail)</th>
+              <th>Começou em</th>
+              <th>Onde parou</th>
+              <th>Última atividade</th>
+              <th>Novidades</th>
+              <th>Aparelho</th>
             </tr>
           </thead>
           <tbody>
             ${d.testes.map(t => `
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
-                <td style="padding:0.55rem 0.6rem;white-space:nowrap">${dataFmt(t.comecou_em)}</td>
-                <td style="padding:0.55rem 0.6rem">${escHtml(t.nome || '(sem nome)')}${t.ja_concluiu_antes ? ' <span class="nav-tag" title="Já concluiu um teste antes e começou de novo">refazendo</span>' : ''}</td>
-                <td style="padding:0.55rem 0.6rem;white-space:nowrap">${escHtml(t.telefone_canonico || '')}</td>
-                <td style="padding:0.55rem 0.6rem">${t.email ? escHtml(t.email) : '<span style="color:var(--text-muted)">—</span>'}</td>
-                <td style="padding:0.55rem 0.6rem;white-space:nowrap">${t.respondidas === 0 ? 'Antes da 1ª pergunta' : `Na pergunta ${t.respondidas + 1} <span style="color:var(--text-muted)">(${t.respondidas} de ${t.total_perguntas})</span>`}</td>
-                <td style="padding:0.55rem 0.6rem;white-space:nowrap">${dataFmt(t.ultima_atividade)}</td>
-                <td style="padding:0.55rem 0.6rem">${optIn(t.aceite_marketing)}</td>
-                <td style="padding:0.55rem 0.6rem">${t.dispositivo ? escHtml(t.dispositivo) : '<span style="color:var(--text-muted)">—</span>'}</td>
+              <tr>
+                ${pessoa(t, t.ja_concluiu_antes ? ' <span class="nav-tag">refazendo: já concluiu um teste antes</span>' : '')}
+                <td class="tr-nowrap">${dataFmt(t.comecou_em)}</td>
+                <td class="tr-nowrap">${t.respondidas === 0 ? 'Antes da 1ª pergunta' : `Na pergunta ${t.respondidas + 1} <span class="tr-nao">(respondeu ${t.respondidas} de ${t.total_perguntas})</span>`}</td>
+                <td class="tr-nowrap">${dataFmt(t.ultima_atividade)}</td>
+                <td>${optIn(t.aceite_marketing)}</td>
+                <td>${t.dispositivo ? escHtml(t.dispositivo) : vazioTd}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
         </div>`;
       } else {
-      wrap.innerHTML = `
-        <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:0.84rem">
+        wrap.innerHTML = `
+        <div class="tr-tabela-wrap">
+        <table class="tr-tabela">
           <thead>
-            <tr style="text-align:left;color:var(--text-muted);border-bottom:1px solid var(--border)">
-              <th style="padding:0.5rem 0.6rem">Data</th>
-              <th style="padding:0.5rem 0.6rem">Nome</th>
-              <th style="padding:0.5rem 0.6rem">Telefone</th>
-              <th style="padding:0.5rem 0.6rem">E-mail</th>
-              <th style="padding:0.5rem 0.6rem">Perfil</th>
-              <th style="padding:0.5rem 0.6rem">Pago</th>
-              <th style="padding:0.5rem 0.6rem">Novidades</th>
-              <th style="padding:0.5rem 0.6rem">Ações</th>
+            <tr>
+              <th class="tr-fixa">Pessoa (nome, telefone, e-mail)</th>
+              <th>Data</th>
+              <th>Perfil</th>
+              <th>Pagamento</th>
+              <th>Novidades</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
             ${d.testes.map(t => `
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.04)">
-                <td style="padding:0.55rem 0.6rem;white-space:nowrap">${dataFmt(t.feito_em)}</td>
-                <td style="padding:0.55rem 0.6rem">${escHtml(t.nome || '(sem nome)')}</td>
-                <td style="padding:0.55rem 0.6rem;white-space:nowrap">${escHtml(t.telefone_canonico || '')}</td>
-                <td style="padding:0.55rem 0.6rem">${t.email ? escHtml(t.email) : '<span style="color:var(--text-muted)">—</span>'}</td>
-                <td style="padding:0.55rem 0.6rem">${escHtml(t.perfil_label || '?')}</td>
-                <td style="padding:0.55rem 0.6rem">${t.pago ? '✅' : '⏳'}</td>
-                <td style="padding:0.55rem 0.6rem">${optIn(t.aceite_marketing)}</td>
-                <td style="padding:0.55rem 0.6rem;white-space:nowrap">
-                  <a class="btn btn-ghost btn-sm" href="${escHtml(t.link_resultado)}" target="_blank" rel="noopener" title="Abrir o resultado em outra janela">↗ Abrir</a>
-                  <button class="btn btn-ghost btn-sm" title="Copiar link do resultado" onclick="testesResultados.copiarLink('${t.link_resultado}')">🔗 Copiar</button>
-                  <button class="btn btn-ghost btn-sm" title="Enviar pelo WhatsApp" onclick="testesResultados.enviarWhatsapp('${t.id}', this)">💬 WhatsApp</button>
-                  <button class="btn btn-ghost btn-sm" title="Enviar por e-mail" ${t.email ? '' : 'disabled'} onclick="testesResultados.enviarEmail('${t.id}', this)">✉️ E-mail</button>
+              <tr>
+                ${pessoa(t)}
+                <td class="tr-nowrap">${dataFmt(t.feito_em)}</td>
+                <td>${escHtml(t.perfil_label || '?')}</td>
+                <td class="tr-nowrap">${t.pago ? '<span class="tr-ok">Pago</span>' : '<span class="tr-nao">Pendente</span>'}</td>
+                <td>${optIn(t.aceite_marketing)}</td>
+                <td>
+                  <div class="tr-acoes">
+                    <a class="btn btn-ghost btn-sm" href="${escHtml(t.link_resultado)}" target="_blank" rel="noopener">Abrir resultado</a>
+                    <button class="btn btn-ghost btn-sm" onclick="testesResultados.copiarLink('${t.link_resultado}')">Copiar link</button>
+                    <button class="btn btn-ghost btn-sm" onclick="testesResultados.enviarWhatsapp('${t.id}', this)">Enviar WhatsApp</button>
+                    <button class="btn btn-ghost btn-sm" ${t.email ? '' : 'disabled'} onclick="testesResultados.enviarEmail('${t.id}', this)">Enviar e-mail</button>
+                  </div>
                 </td>
               </tr>
             `).join('')}
           </tbody>
         </table>
-        </div>
-      `;
+        </div>`;
       }
 
       const pagWrap = document.getElementById('tr-paginacao');
