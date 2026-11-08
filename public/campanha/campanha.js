@@ -211,7 +211,7 @@
       const formatPreco = (p) => {
         let html = '';
         if (p.exibir_de) {
-          if (p.desconto_pct) html += `<span class="produto-preco-off">${p.desconto_pct}% OFF</span>`;
+          if (p.desconto_pct) html += `<span class="produto-preco-off bk-selo"><span class="bk-selo-fundo"><span class="bk-selo-ouro">${p.desconto_pct}% OFF</span></span></span>`;
           html += `<span class="produto-preco-de">de <s>R$ ${p.exibir_de}</s> por</span>`;
         }
         if (p.exibir_parcelas_valor) {
@@ -231,6 +231,9 @@
           oferta.querySelector('[data-bk-nome]').textContent = p.nome || '';
           if (parseFloat(String(p.exibir_avista || '0').replace(',', '.')) > 0) {
             oferta.querySelector('[data-bk-preco]').innerHTML = formatPreco(p);
+            // Selo do desconto vai para o canto da capa.
+            const seloC = oferta.querySelector('[data-bk-preco] .bk-selo');
+            if (seloC) oferta.querySelector('.bk-oferta-capa').appendChild(seloC);
           }
           const cta = oferta.querySelector('[data-bk-checkout]');
           if (((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao))) {
@@ -253,16 +256,18 @@
             caixa.appendChild(item);
           });
         });
-        // Cursos e materiais avulsos: mesmos dados do admin.
+        // Cursos e materiais avulsos: mesmo cartão dos combos (capa e nome levam à LP,
+      // botão de compra e "Saiba mais"). Dados do admin.
         document.querySelectorAll('[data-bk-item]').forEach(card => {
           const p = dados[card.dataset.bkItem];
           if (!p || !((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao)) || !ehBlack(card.dataset.bkItem)) { card.remove(); return; }
-          const img = card.querySelector('.bk-ic-capa img');
+          const img = card.querySelector('.bk-oferta-capa img');
           if (p.imagem_url) { img.src = p.imagem_url; img.alt = p.nome || ''; }
           card.querySelector('[data-bk-nome]').textContent = p.nome || '';
-          if (!card.dataset.lp) card.querySelectorAll('.bk-ic-capa, .bk-ic-nome').forEach(a => a.removeAttribute('href'));
           if (parseFloat(String(p.exibir_avista || '0').replace(',', '.')) > 0) {
             card.querySelector('[data-bk-preco]').innerHTML = formatPreco(p);
+            const seloI = card.querySelector('[data-bk-preco] .bk-selo');
+            if (seloI) card.querySelector('.bk-oferta-capa').appendChild(seloI);
           }
           const cta = card.querySelector('[data-bk-checkout]');
           cta.href = window.VmUtm ? VmUtm.checkout(((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao)), card.dataset.utm) : ((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao));
@@ -275,6 +280,35 @@
           if (titulo && titulo.classList.contains('bk-secao-titulo')) titulo.remove();
           secao.remove();
         });
+        // Abas no lugar dos títulos: Cursos, Combos, Materiais (só as que têm produto).
+        const barra = document.querySelector('.bk-abas');
+        const secoes = [...document.querySelectorAll('[data-aba]')]
+          .sort((x, y) => Number(x.dataset.abaOrdem) - Number(y.dataset.abaOrdem));
+        if (barra && secoes.length) {
+          let ref = barra;
+          secoes.forEach(sec => {
+            const t = sec.previousElementSibling;
+            if (t && t.classList.contains('bk-secao-titulo')) t.remove();
+            ref.after(sec); // seções na ordem das abas, logo abaixo delas
+            ref = sec;
+          });
+          const abrir = (nome) => {
+            secoes.forEach(sec => { sec.hidden = sec.dataset.aba !== nome; });
+            barra.querySelectorAll('.bk-aba').forEach(b => b.setAttribute('aria-selected', String(b.dataset.aba === nome)));
+          };
+          secoes.forEach(sec => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'bk-aba';
+            b.setAttribute('role', 'tab');
+            b.dataset.aba = sec.dataset.aba;
+            b.textContent = sec.dataset.aba;
+            b.addEventListener('click', () => abrir(sec.dataset.aba));
+            barra.appendChild(b);
+          });
+          barra.hidden = false;
+          abrir(secoes[0].dataset.aba);
+        }
       });
     }
 

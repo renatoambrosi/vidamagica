@@ -151,6 +151,32 @@ body.black-fantasia .quem-somos { background-image: none; }
 .bk-ic-cta svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; }
 @media (min-width: 720px) { .bk-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 980px) { .bk-ofertas { margin-bottom: 1.5rem; } }
+/* Cursos e materiais: mesmo cartão dos combos, com capa e nome levando à LP */
+.bk-itens { align-items: stretch; }
+.bk-item-card .bk-oferta-capa { display: block; }
+a.bk-oferta-nome { display: block; text-decoration: none; }
+a.bk-oferta-nome:hover { color: #F4D998; }
+.bk-saiba { display: block; margin-top: 0.85rem; text-align: center; font-size: 0.88rem; color: rgba(244,217,152,0.85); text-decoration: underline; text-underline-offset: 3px; }
+@media (min-width: 980px) { .bk-itens .bk-oferta { height: auto; } .bk-itens { align-items: stretch; } }
+@media (max-width: 640px) { .bk-item-card .bk-oferta-cta { white-space: nowrap; font-size: 0.9rem; padding: 0.95rem 0.75rem; gap: 0.4rem; } }
+/* Abas da /black: Cursos, Combos, Materiais (abas grandes, de ponta a ponta) */
+.bk-abas { position: relative; z-index: 2; display: flex; max-width: 1180px; margin: 0 auto 1.75rem; padding: 0 1.25rem; border-bottom: 1px solid rgba(244,217,152,0.3); }
+.bk-abas[hidden] { display: none; }
+.bk-aba { flex: 1 1 0; position: relative; padding: 1.1rem 0.5rem 1rem; border: 0; background: transparent; cursor: pointer; font-family: var(--font-display); font-size: 1.3rem; font-weight: 900; letter-spacing: 0.01em; color: rgba(245,240,232,0.5); transition: color 0.25s; }
+.bk-aba::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 4px; border-radius: 4px 4px 0 0; background: linear-gradient(90deg, #C8922A, #FFF3CF, #C8922A); transform: scaleX(0); transition: transform 0.3s ease; }
+.bk-aba[aria-selected="true"] { color: #F4D998; }
+.bk-aba[aria-selected="true"]::after { transform: scaleX(1); }
+.bk-ofertas[hidden] { display: none; }
+@media (min-width: 980px) { .bk-aba { font-size: 1.5rem; } }
+/* Percentual de desconto: selo com contorno dourado girando e texto dourado brilhando */
+.bk-oferta-capa { position: relative; }
+.bk-oferta-capa > .bk-selo { position: absolute; top: 14px; right: 14px; z-index: 2; box-shadow: 0 0 22px rgba(232,201,122,0.45), 0 8px 22px rgba(0,0,0,0.55); }
+.bk-selo { position: relative; display: block; width: fit-content; margin: 0; padding: 2px; border-radius: 999px; overflow: hidden; clip-path: inset(0 round 999px); isolation: isolate; box-shadow: 0 0 22px rgba(232,201,122,0.35); white-space: nowrap; }
+.bk-selo::before { content: ''; position: absolute; z-index: -1; left: 50%; top: 50%; width: 300%; aspect-ratio: 1; background: conic-gradient(from 0deg, #B8862A 0deg, #E8C97A 40deg, #FFF8E1 70deg, #E8C97A 100deg, #B8862A 160deg, #C8922A 220deg, #F4D998 280deg, #C8922A 320deg, #B8862A 360deg); transform: translate(-50%, -50%); animation: black-giro 4s linear infinite; }
+.bk-selo-fundo { display: block; padding: 0.38rem 1.05rem; border-radius: 999px; background: radial-gradient(120% 140% at 50% 0%, #2A1E0A 0%, #0B0700 70%); }
+.bk-selo-ouro { display: block; font-family: var(--font-display); font-size: 1.3rem; font-weight: 900; line-height: 1.1; letter-spacing: 0.03em; background: linear-gradient(110deg, #C8922A 0%, #F4D998 30%, #FFF8E1 45%, #F4D998 60%, #C8922A 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 6px rgba(244,217,152,0.45)); animation: bk-selo-brilho 2.8s linear infinite; }
+@keyframes bk-selo-brilho { from { background-position: 100% 0; } to { background-position: -150% 0; } }
+@media (prefers-reduced-motion: reduce) { .bk-selo::before, .bk-selo-ouro { animation: none; } }
 /* No celular o WhatsApp não cobre o botão do último combo. */
 .pagina-black .bk-ofertas { padding-bottom: 3rem; }
 @media (min-width: 980px) {
