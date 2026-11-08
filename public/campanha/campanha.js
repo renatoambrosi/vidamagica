@@ -32,7 +32,7 @@
   css.rel = 'stylesheet';
   // ?v= força o navegador a pegar o CSS novo (o Cloudflare manda o navegador guardar por 4h).
   // Mexeu no campanha.css? Suba o número aqui. Mexeu no campanha.js? Suba o ?v= nas 8 páginas.
-  css.href = '/campanha/campanha.css?v=6';
+  css.href = '/campanha/campanha.css?v=8';
   document.head.appendChild(css);
   document.querySelectorAll('[data-black-data]').forEach(el => { el.textContent = DATA_FINAL.charAt(0).toUpperCase() + DATA_FINAL.slice(1); });
     document.body.classList.add('black');
@@ -214,11 +214,15 @@
 
     // Página /black: nome, capa, preço e checkout de cada combo vêm do admin.
     if (pagina === 'black') {
-      const LP_CURSO = { ouro_reprogramacao: '/ouro-da-reprogramacao-mental', lda_biblica: '/lei-da-atracao-biblica', atal_maneira_curso: '/a-tal-maneira/' };
+      const LP_CURSO = { ouro_reprogramacao: '/ouro-da-reprogramacao-mental', lda_biblica: '/lei-da-atracao-biblica', atal_maneira_curso: '/a-tal-maneira/', atal_maneira_livro: '/a-tal-maneira/', guia_pratico: '/guia-pratico-reprogramacao-mental/', magica_fluir: '/magica-do-fluir' };
       const formatPreco = (p) => {
         let html = '';
         if (p.exibir_de) {
-          if (p.desconto_pct) html += `<span class="produto-preco-off bk-selo"><span class="bk-selo-fundo"><span class="bk-selo-ouro">${p.desconto_pct}% OFF</span></span></span>`;
+          // Percentual: o da API; sem ele (ex. "1.154,99", com ponto de milhar), conta aqui.
+          const num = (v) => parseFloat(String(v || '').replace(/\./g, '').replace(',', '.')) || 0;
+          const de = num(p.exibir_de), por = num(p.exibir_avista);
+          const pct = p.desconto_pct || (de > por && por > 0 ? Math.round((de - por) / de * 100) : null);
+          if (pct) html += `<span class="produto-preco-off bk-selo"><span class="bk-selo-fundo"><span class="bk-selo-ouro">${pct}% OFF</span></span></span>`;
           html += `<span class="produto-preco-de">de <s>R$ ${p.exibir_de}</s> por</span>`;
         }
         if (p.exibir_parcelas_valor) {
@@ -235,12 +239,13 @@
           if (!p || !ehBlack(oferta.dataset.bkProduto)) { oferta.remove(); return; }
           const img = oferta.querySelector('.bk-oferta-capa img');
           if (p.imagem_url) { img.src = p.imagem_url; img.alt = p.nome || ''; }
+          else oferta.querySelector('.bk-oferta-capa').remove();
           oferta.querySelector('[data-bk-nome]').textContent = p.nome || '';
           if (parseFloat(String(p.exibir_avista || '0').replace(',', '.')) > 0) {
             oferta.querySelector('[data-bk-preco]').innerHTML = formatPreco(p);
             // Selo do desconto vai para o canto da capa.
             const seloC = oferta.querySelector('[data-bk-preco] .bk-selo');
-            if (seloC) oferta.querySelector('.bk-oferta-capa').appendChild(seloC);
+            if (seloC && oferta.querySelector('.bk-oferta-capa')) oferta.querySelector('.bk-oferta-capa').appendChild(seloC);
           }
           const cta = oferta.querySelector('[data-bk-checkout]');
           if (((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao))) {
@@ -253,13 +258,18 @@
             if (!c) return;
             const item = document.createElement('a');
             item.className = 'bk-item';
-            item.href = LP_CURSO[slug];
-            const capa = document.createElement('img');
-            capa.src = c.imagem_url;
-            capa.alt = '';
+            if (LP_CURSO[slug]) item.href = LP_CURSO[slug];
             const nome = document.createElement('span');
             nome.textContent = (c.nome || '').split(' - ')[0];
-            item.append(capa, nome);
+            // Lista sem capas (data-inclui-texto): a capa do combo já mostra tudo.
+            if (oferta.hasAttribute('data-inclui-texto')) {
+              item.append(nome);
+            } else {
+              const capa = document.createElement('img');
+              capa.src = c.imagem_url;
+              capa.alt = '';
+              item.append(capa, nome);
+            }
             caixa.appendChild(item);
           });
         });
@@ -270,11 +280,12 @@
           if (!p || !((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao)) || !ehBlack(card.dataset.bkItem)) { card.remove(); return; }
           const img = card.querySelector('.bk-oferta-capa img');
           if (p.imagem_url) { img.src = p.imagem_url; img.alt = p.nome || ''; }
+          else card.querySelector('.bk-oferta-capa').remove();
           card.querySelector('[data-bk-nome]').textContent = p.nome || '';
           if (parseFloat(String(p.exibir_avista || '0').replace(',', '.')) > 0) {
             card.querySelector('[data-bk-preco]').innerHTML = formatPreco(p);
             const seloI = card.querySelector('[data-bk-preco] .bk-selo');
-            if (seloI) card.querySelector('.bk-oferta-capa').appendChild(seloI);
+            if (seloI && card.querySelector('.bk-oferta-capa')) card.querySelector('.bk-oferta-capa').appendChild(seloI);
           }
           const cta = card.querySelector('[data-bk-checkout]');
           cta.href = window.VmUtm ? VmUtm.checkout(((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao)), card.dataset.utm) : ((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao));

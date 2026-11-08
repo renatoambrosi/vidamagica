@@ -133,6 +133,10 @@ body.black-fantasia .black-divisor + .black-oferta { margin-top: 1.1rem; }
 .bk-oferta-inclui { display: flex; flex-direction: column; gap: 0.55rem; padding: 0.9rem 0; margin-bottom: 1rem; border-top: 1px solid rgba(244,217,152,0.18); border-bottom: 1px solid rgba(244,217,152,0.18); }
 .bk-item { display: flex; align-items: center; gap: 0.7rem; color: #F5F0E8; font-size: 0.9rem; font-weight: 600; line-height: 1.3; text-decoration: none; }
 .bk-item img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(244,217,152,0.35); flex-shrink: 0; }
+[data-inclui-texto] .bk-oferta-linha { margin-bottom: 0.6rem; }
+[data-inclui-texto] .bk-oferta-inclui { gap: 0.35rem; padding: 0.75rem 0; }
+[data-inclui-texto] .bk-item { position: relative; padding-left: 1.1rem; font-size: 0.88rem; font-weight: 600; }
+[data-inclui-texto] .bk-item::before { content: ''; position: absolute; left: 0; top: 0.5em; width: 6px; height: 6px; border-radius: 50%; background: #E8C97A; }
 .bk-oferta-preco { margin-top: auto; margin-bottom: 1rem; font-size: 1.15rem; color: #F4D998; line-height: 1.45; }
 .bk-oferta-preco > span { display: block; white-space: nowrap; }
 .bk-oferta-preco strong { font-family: var(--font-display); font-size: 1.5rem; font-weight: 900; color: #F4D998; }
@@ -181,6 +185,7 @@ a.bk-oferta-nome:hover { color: #F4D998; }
 @media (min-width: 980px) { .bk-aba { font-size: 1.5rem; } }
 /* Percentual de desconto: selo com contorno dourado girando e texto dourado brilhando */
 .bk-oferta-capa { position: relative; }
+.bk-oferta-preco > .bk-selo { margin: 0 0 0.6rem; }
 .bk-oferta-capa > .bk-selo { position: absolute; top: 14px; right: 14px; z-index: 2; box-shadow: 0 0 22px rgba(232,201,122,0.45), 0 8px 22px rgba(0,0,0,0.55); }
 .bk-selo { position: relative; display: block; width: fit-content; margin: 0; padding: 2px; border-radius: 999px; overflow: hidden; clip-path: inset(0 round 999px); isolation: isolate; box-shadow: 0 0 22px rgba(232,201,122,0.35); white-space: nowrap; }
 .bk-selo::before { content: ''; position: absolute; z-index: -1; left: 50%; top: 50%; width: 300%; aspect-ratio: 1; background: conic-gradient(from 0deg, #B8862A 0deg, #E8C97A 40deg, #FFF8E1 70deg, #E8C97A 100deg, #B8862A 160deg, #C8922A 220deg, #F4D998 280deg, #C8922A 320deg, #B8862A 360deg); transform: translate(-50%, -50%); animation: black-giro 4s linear infinite; }

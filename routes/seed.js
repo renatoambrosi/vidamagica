@@ -293,6 +293,23 @@ const PRECOS_INICIAIS = {
     preco_alunos: '0,00',
     parcelas_valor_alunos: '0,00'
   },
+  // Combo Full (2026-11-08): todos os cursos e materiais, menos o Teste.
+  // Preço, parcelas e link da Kiwify são preenchidos no admin. Capa já vem pronta.
+  combo_full: {
+    nome: 'Combo Full',
+    tipo: 'curso',
+    imagem_url: '/assets/products/combo-full.jpg',
+    link_checkout_padrao: '',
+    link_checkout_aluno: '',
+    mostrar_promo: false,
+    preco_padrao: '0,00',
+    parcelas_qtd: 12,
+    parcelas_valor_padrao: '0,00',
+    preco_promo: '0,00',
+    parcelas_valor_promo: '0,00',
+    preco_alunos: '0,00',
+    parcelas_valor_alunos: '0,00'
+  },
   // Guia de bolso "A Mágica do Fluir" — Suellen Seragi.
   // Slug igual ao padrão do projeto (sem "_do_"): magica_fluir.
   // Preço placeholder — ajustar pelo /admin → Preços antes de divulgar.
@@ -333,6 +350,7 @@ const CATEGORIA_ADMIN_INICIAL = {
   combo_ouro_atal_curso:     'combos',
   combo_lda_atal_curso:      'combos',
   combo_ouro_lda_atal_curso: 'combos',
+  combo_full:                'combos',
   vencendo_medo:            'materiais',
   vencendo_desordem:        'materiais',
   vencendo_validacao:       'materiais',
