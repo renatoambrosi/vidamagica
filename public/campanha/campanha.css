@@ -26,6 +26,10 @@ body.black .ticker-wrap { display: none; }
 @media (prefers-reduced-motion: reduce) { .black-dig > span { transition: none; } }
 .black-faixa-data { font-family: 'Montserrat', sans-serif; font-size: 0.76rem; color: rgba(245,240,232,0.82); }
 
+/* Resultado do Teste: cronômetro dentro do cartão do curso da Black */
+.res-black-crono { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin: 0.15rem 0 0.2rem; }
+.res-black-crono-txt { font-family: 'Montserrat', sans-serif; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(244,217,152,0.85); }
+
 /* Menu Materiais: primeiro item */
 .menu-mat a.black-menu-item { border-bottom: 1px solid rgba(200,146,42,0.22); border-radius: 10px 10px 0 0; margin-bottom: 0.25rem; }
 .black-menu-icone { width: 46px; height: 46px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: #000; border: 1px solid rgba(244,217,152,0.5); }

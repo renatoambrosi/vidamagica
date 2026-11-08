@@ -204,6 +204,7 @@ function montarLivrosRecomendados(precosBySlug, resultado) {
     preco_padrao: p.exibir_avista || p.preco_padrao || '',
     preco_de: p.exibir_de || '',
     desconto_pct: p.desconto_pct || null,
+    black: p.black === true,
     parcelas_qtd: p.exibir_parcelas_qtd || '',
     parcelas_valor: p.exibir_parcelas_valor || '',
     preco_aluno: p.preco_alunos || '',
@@ -239,14 +240,29 @@ function montarListaEnergias(resultado) {
 // ── Preço e link no resultado do Teste (regra do Renato, 2026-11-08) ──
 // Roda depois de processarProdutos + aplicarPrecoDoTeste (routes/produtos.js,
 // que NÃO muda: o /api/precos alimenta o site da Suellen no Wix).
+// - Black no ar + Promo ligada → preço e link da Promo (preço da Black).
 // - Preço de aluno + link de aluno preenchidos → o resultado mostra o preço
 //   de aluno, com o padrão riscado, e o botão vai ao link de aluno.
 // - Senão, com a Promo ligada e link da Promo preenchido → link da Promo.
 // - Senão, fica o que já estava decidido.
 function numero(v) { return parseFloat(String(v || '').replace(/\./g, '').replace(',', '.')) || 0; }
-function aplicarPrecoDeAluno(produtos) {
+// Durante a Black (opcoes.blackNoAr) o produto com a Promo ligada mostra o
+// preço da Promo (= preço da Black), com o link da Promo, e ganha p.black = true.
+function aplicarPrecoDeAluno(produtos, opcoes = {}) {
   Object.keys(produtos || {}).forEach(key => {
     const p = produtos[key];
+    if (opcoes.blackNoAr && p.mostrar_promo && numero(p.preco_promo) > 0) {
+      const padrao = numero(p.preco_padrao), promo = numero(p.preco_promo);
+      const desconto = padrao > promo ? Math.round(((padrao - promo) / padrao) * 100) : null;
+      p.exibir_avista = p.preco_promo;
+      p.exibir_de = desconto ? p.preco_padrao : null;
+      p.desconto_pct = desconto;
+      p.exibir_parcelas_qtd = p.parcelas_qtd_promo || p.parcelas_qtd;
+      p.exibir_parcelas_valor = p.parcelas_valor_promo || '';
+      p.link_checkout_exibir = String(p.link_checkout_promo || '').trim() || p.link_checkout_padrao || '';
+      p.black = true;
+      return;
+    }
     const preco = String(p.preco_alunos || '').trim();
     const link = String(p.link_checkout_aluno || '').trim();
     if (preco && link && numero(preco) > 0) {

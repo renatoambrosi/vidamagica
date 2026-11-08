@@ -617,6 +617,8 @@
       flex: 1; min-width: 0;
       display: flex; flex-direction: column; gap: 0.4rem;
     }
+    /* Black November no resultado: etiqueta preta com dourado (mesma da campanha) */
+    .res-black-tag { display: inline-block; align-self: flex-start; width: fit-content; padding: 0.3rem 0.7rem; border-radius: 999px; background: #000; border: 1px solid #C8922A; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.1em; white-space: nowrap; text-transform: uppercase; color: #F4D998; box-shadow: 0 0 14px rgba(232,201,122,0.35); }
     .livro-tag {
       display: inline-block;
       align-self: flex-start;
@@ -1554,6 +1556,7 @@
 
   </style>
   <script src="/utm.js" data-padrao="VmResultado"></script>
+  <script src="/campanha/campanha.js?v=13" data-pagina="resultado" defer></script>  <!-- Black November: cronômetro no cartão do curso, só com a campanha no ar -->
 </head>
 <body>
 
@@ -2470,6 +2473,7 @@
           desconto_pct: d.conteudo.passo3_curso_desconto_pct,
           parcelas_qtd: d.conteudo.passo3_curso_parcelas_qtd,
           parcelas_valor: d.conteudo.passo3_curso_parcelas_valor,
+          black: d.conteudo.passo3_curso_black === true,
           link: d.conteudo.passo3_curso_link_checkout,
           lp: d.conteudo.passo3_curso_lp,
           atributos: d.conteudo.passo3_curso_atributos,
@@ -2555,7 +2559,7 @@
   // linhas. O preço grande continua sozinho na sua própria linha, como
   // sempre foi; a linha "de" só acrescenta "por [20% OFF]" acima dele, sem
   // repetir o valor em R$.
-  function precoBlocoHtml(preco, precoDe, descontoPct, parcelasQtd, parcelasValor, ctaHtml, classePrefixo) {
+  function precoBlocoHtml(preco, precoDe, descontoPct, parcelasQtd, parcelasValor, ctaHtml, classePrefixo, black) {
     const linhas = [];
 
     if (precoDe) {
@@ -2566,7 +2570,7 @@
         '</div>'
       );
       if (descontoPct) {
-        linhas.push('<div class="' + classePrefixo + '-preco-justificativa">Desconto do Teste do Subconsciente</div>');
+        linhas.push('<div class="' + classePrefixo + '-preco-justificativa">' + (black ? 'Preço da Black November' : 'Desconto do Teste do Subconsciente') + '</div>');
       }
     }
 
@@ -2604,13 +2608,14 @@
     const cta = link
       ? '<a href="' + escapeHtml(VmUtm.checkout(link, 'VmResultado-livro')) + '" class="livro-cta" target="_blank" rel="noopener">Quero este livro</a>'
       : '<a href="#" class="livro-cta" onclick="alert(\'Em breve\');return false;">Quero este livro</a>';
-    const precoHtml = precoBlocoHtml(l.preco_padrao, l.preco_de, l.desconto_pct, l.parcelas_qtd, l.parcelas_valor, cta, 'livro');
+    const precoHtml = precoBlocoHtml(l.preco_padrao, l.preco_de, l.desconto_pct, l.parcelas_qtd, l.parcelas_valor, cta, 'livro', l.black);
     const atributosBlocoHtml = atributosHtml(l.atributos);
     return (
       '<div class="livro-card">' +
         capa +
         '<div class="livro-info">' +
           '<span class="livro-tag">' + escapeHtml(rotulo) + '</span>' +
+          (l.black ? '<span class="res-black-tag">Black November - Vida Mágica</span>' : '') +
           '<div class="livro-titulo">' + escapeHtml(l.titulo) + '</div>' +
           (l.selo ? '<div class="livro-selo">' + escapeHtml(l.selo) + '</div>' : '') +
           atributosBlocoHtml +
@@ -2639,7 +2644,7 @@
     const cta = c.link
       ? '<a href="' + escapeHtml(VmUtm.checkout(c.link, 'VmResultado-curso')) + '" class="curso-cta" target="_blank">Quero este curso</a>'
       : '<a href="#" class="curso-cta" onclick="alert(\'Em breve\');return false;">Quero este curso</a>';
-    const precoHtml = precoBlocoHtml(c.preco, c.preco_de, c.desconto_pct, c.parcelas_qtd, c.parcelas_valor, cta, 'curso');
+    const precoHtml = precoBlocoHtml(c.preco, c.preco_de, c.desconto_pct, c.parcelas_qtd, c.parcelas_valor, cta, 'curso', c.black);
     const saibaMais = c.lp
       ? '<a href="' + escapeHtml(c.lp) + '" class="curso-saiba-mais" target="_blank" rel="noopener">Conhecer mais sobre o curso →</a>'
       : '';
@@ -2649,6 +2654,7 @@
         capa +
         '<div class="curso-info">' +
           '<span class="curso-tag">Seu próximo passo</span>' +
+          (c.black ? '<span class="res-black-tag">Black November - Vida Mágica</span>' : '') +
           '<div class="curso-titulo">' + escapeHtml(c.titulo) + '</div>' +
           (c.descricao ? '<div class="curso-descricao">' + escapeHtml(c.descricao) + '</div>' : '') +
           atributosBlocoHtml +

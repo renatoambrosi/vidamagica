@@ -843,8 +843,11 @@ router.get('/resultado/:teste_id', async (req, res) => {
     processarProdutos(precosBySlug);
     // Preço no Teste (admin → Produtos): quando preenchido, vale sempre aqui.
     aplicarPrecoDoTeste(precosBySlug);
-    // Regra do Renato (2026-11-08): resultado = preço de aluno com link de aluno.
-    aplicarPrecoDeAluno(precosBySlug);
+    // Regra do Renato (2026-11-08): resultado = preço de aluno com link de aluno;
+    // durante a Black, produto com a Promo ligada mostra o preço da Black.
+    const { lerBlackNoAr } = require('../core/campanha');
+    const blackNoAr = (await lerBlackNoAr()).ativa;
+    aplicarPrecoDeAluno(precosBySlug, { blackNoAr });
     const livrosRecomendados = montarLivrosRecomendados(precosBySlug, resultado);
 
     // ── Passo 3 — Curso recomendado (vem da regra, NÃO do admin) ──
@@ -866,6 +869,7 @@ router.get('/resultado/:teste_id', async (req, res) => {
       // quando preenchido; senão promo ligada; senão padrão.
       conteudoPerfil.passo3_curso_preco_de       = produto.exibir_de || '';
       conteudoPerfil.passo3_curso_desconto_pct   = produto.desconto_pct || null;
+      conteudoPerfil.passo3_curso_black          = produto.black === true;
       conteudoPerfil.passo3_curso_parcelas_qtd   = produto.exibir_parcelas_qtd || '';
       conteudoPerfil.passo3_curso_parcelas_valor = produto.exibir_parcelas_valor || '';
       conteudoPerfil.passo3_curso_lp             = (slugCurso && LP_POR_SLUG_CURSO[slugCurso]) || '';

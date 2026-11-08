@@ -4,7 +4,7 @@
    está no ar (admin → Campanhas; GET /api/campanha). Fora dela, não
    faz nada e o site fica normal.
 
-   Uso: <script src="/campanha/campanha.js" data-pagina="home|lp" defer></script>
+   Uso: <script src="/campanha/campanha.js" data-pagina="home|lp|resultado" defer></script>
    (a página /black recebe data-pagina="black", montada em core/campanha.js).
 
    - Tarja com cronômetro regressivo até a data final do admin.
@@ -31,13 +31,13 @@
   const css = document.createElement('link');
   css.rel = 'stylesheet';
   // ?v= força o navegador a pegar o CSS novo (o Cloudflare manda o navegador guardar por 4h).
-  // Mexeu no campanha.css? Suba o número aqui. Mexeu no campanha.js? Suba o ?v= nas 8 páginas.
-  css.href = '/campanha/campanha.css?v=11';
+  // Mexeu no campanha.css? Suba o número aqui. Mexeu no campanha.js? Suba o ?v= nas 9 páginas (inclui resultado.html).
+  css.href = '/campanha/campanha.css?v=13';
   // Na /black o servidor já põe o CSS no <head> (evita a página crua piscando).
   if (!document.querySelector('link[href^="/campanha/campanha.css"]')) document.head.appendChild(css);
   document.querySelectorAll('[data-black-data]').forEach(el => { el.textContent = DATA_FINAL.charAt(0).toUpperCase() + DATA_FINAL.slice(1); });
     document.body.classList.add('black');
-    if (pagina !== 'lp') document.body.classList.add('black-fantasia');
+    if (pagina === 'home' || pagina === 'black') document.body.classList.add('black-fantasia');
 
     // Tarja com cronômetro regressivo (dias, horas, minutos, segundos).
     const faixa = document.createElement('a');
@@ -45,14 +45,18 @@
     faixa.href = '/black';
     faixa.setAttribute('aria-label', 'Black November - Vida Mágica: ver ofertas');
     const UNIDADES = [['d', 'dias'], ['h', 'horas'], ['m', 'min'], ['s', 'seg']];
-    faixa.innerHTML = '<span class="black-faixa-nome"><span>Black November</span><span class="black-faixa-hifen"> - </span><span class="black-faixa-marca">Vida Mágica</span></span>' +
-      '<span class="black-faixa-traco"></span>' +
-      '<span class="black-crono">' + UNIDADES.map(([k, rotulo]) =>
+    function cronoHtml() {
+      return '<span class="black-crono">' + UNIDADES.map(([k, rotulo]) =>
         '<span class="black-crono-bloco"><span class="black-crono-num" data-crono="' + k + '">' +
           '<span class="black-dig"><span>0</span></span><span class="black-dig"><span>0</span></span>' +
         '</span><span class="black-crono-rot">' + rotulo + '</span></span>').join('<span class="black-crono-sep">:</span>') +
       '</span>';
-    document.body.appendChild(faixa);
+    }
+    faixa.innerHTML = '<span class="black-faixa-nome"><span>Black November</span><span class="black-faixa-hifen"> - </span><span class="black-faixa-marca">Vida Mágica</span></span>' +
+      '<span class="black-faixa-traco"></span>' +
+      cronoHtml();
+    // Resultado do Teste: sem tarja no topo; o cronômetro vai dentro do cartão do curso da Black.
+    if (pagina !== 'resultado') document.body.appendChild(faixa);
 
     // Cada dígito que muda gira: o novo sobe por baixo e o antigo sai por cima.
     const trocarDigito = (caixa, valor) => {
@@ -71,9 +75,25 @@
       const valores = { d: Math.floor(resta / 86400), h: Math.floor(resta % 86400 / 3600), m: Math.floor(resta % 3600 / 60), s: resta % 60 };
       Object.entries(valores).forEach(([k, v]) => {
         const txt = String(v).padStart(2, '0');
-        faixa.querySelectorAll('[data-crono="' + k + '"] .black-dig').forEach((caixa, i) => trocarDigito(caixa, txt[i]));
+        // Todos os cronômetros da página (tarja e, no resultado, o do cartão do curso).
+        document.querySelectorAll('[data-crono="' + k + '"]').forEach(num => {
+          num.querySelectorAll('.black-dig').forEach((caixa, i) => trocarDigito(caixa, txt[i]));
+        });
       });
     };
+    // Resultado: põe o cronômetro logo abaixo da etiqueta Black do cartão (os cartões chegam depois).
+    if (pagina === 'resultado') {
+      const noCartao = () => document.querySelectorAll('.res-black-tag').forEach(tag => {
+        if (tag.nextElementSibling && tag.nextElementSibling.classList.contains('res-black-crono')) return;
+        const box = document.createElement('div');
+        box.className = 'res-black-crono';
+        box.innerHTML = '<span class="res-black-crono-txt">Termina em</span>' + cronoHtml();
+        tag.after(box);
+        tic();
+      });
+      noCartao();
+      new MutationObserver(noCartao).observe(document.body, { childList: true, subtree: true });
+    }
     tic();
     setInterval(tic, 1000);
 
