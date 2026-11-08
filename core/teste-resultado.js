@@ -178,8 +178,8 @@ const SELO_PADRAO_LIVRO = '✨ Inclui Aulão com a Suellen';
 //          }
 function montarLivrosRecomendados(precosBySlug, resultado) {
   const indicacao = indicacaoDoPerfil(resultado.perfil_dominante);
-  // link_checkout_exibir: link de aluno quando o preço de aluno está
-  // preenchido, senão o da promo ligada ou o padrão (routes/produtos.js).
+  // link_checkout_exibir: link do teste quando o Preço no Teste está
+  // preenchido, senão o padrão (aplicarPrecoDoTeste, routes/produtos.js).
   const linkDoLivro = ((precosBySlug && precosBySlug[indicacao.livro]) || {}).link_checkout_exibir;
   const slug = indicacao.livro_reserva && !(linkDoLivro || '').trim()
     ? indicacao.livro_reserva
@@ -199,7 +199,7 @@ function montarLivrosRecomendados(precosBySlug, resultado) {
     capa_url: p.imagem_url || '',
     link_checkout: p.link_checkout_exibir || '',
     link_checkout_aluno: p.link_checkout_aluno || '',
-    // exibir_avista/_de/parcelas: preço de aluno quando preenchido, senão
+    // exibir_avista/_de/parcelas: Preço no Teste quando preenchido, senão
     // promo ligada, senão padrão (routes/produtos.js).
     preco_padrao: p.exibir_avista || p.preco_padrao || '',
     preco_de: p.exibir_de || '',
@@ -236,8 +236,41 @@ function montarListaEnergias(resultado) {
   return arr;
 }
 
+// ── Preço e link no resultado do Teste (regra do Renato, 2026-11-08) ──
+// Roda depois de processarProdutos + aplicarPrecoDoTeste (routes/produtos.js,
+// que NÃO muda: o /api/precos alimenta o site da Suellen no Wix).
+// - Preço de aluno + link de aluno preenchidos → o resultado mostra o preço
+//   de aluno, com o padrão riscado, e o botão vai ao link de aluno.
+// - Senão, com a Promo ligada e link da Promo preenchido → link da Promo.
+// - Senão, fica o que já estava decidido.
+function numero(v) { return parseFloat(String(v || '').replace(/\./g, '').replace(',', '.')) || 0; }
+function aplicarPrecoDeAluno(produtos) {
+  Object.keys(produtos || {}).forEach(key => {
+    const p = produtos[key];
+    const preco = String(p.preco_alunos || '').trim();
+    const link = String(p.link_checkout_aluno || '').trim();
+    if (preco && link && numero(preco) > 0) {
+      const padrao = numero(p.preco_padrao);
+      const desconto = padrao > numero(preco) ? Math.round(((padrao - numero(preco)) / padrao) * 100) : null;
+      p.exibir_avista = preco;
+      p.exibir_de = desconto ? p.preco_padrao : null;
+      p.desconto_pct = desconto;
+      p.exibir_parcelas_qtd = p.parcelas_qtd_alunos || p.parcelas_qtd;
+      p.exibir_parcelas_valor = p.parcelas_valor_alunos || '';
+      p.link_checkout_exibir = link;
+      return;
+    }
+    const linkPromo = String(p.link_checkout_promo || '').trim();
+    if (p.mostrar_promo && linkPromo && !String(p.link_checkout_teste || '').trim()) {
+      p.link_checkout_exibir = linkPromo;
+    }
+  });
+  return produtos;
+}
+
 module.exports = {
   calcularResultado,
   montarLivrosRecomendados,
   montarListaEnergias,
+  aplicarPrecoDeAluno,
 };

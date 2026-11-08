@@ -595,7 +595,7 @@
           }
         });
 
-        const link = (p.link_checkout_exibir || p.link_checkout_padrao); // link da promo quando ligada
+        const link = ((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao)); // link da promo quando ligada
         if (link) {
           document.querySelectorAll('[data-checkout-link]').forEach(el => {
             el.href = VmUtm.checkout(link, el.getAttribute('data-utm') || VmUtm.pagina + '-cta');

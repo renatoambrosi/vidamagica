@@ -1605,7 +1605,7 @@
             card.querySelector('[data-produto-preco]').innerHTML = formatPreco(p);
           }
           const checkout = card.querySelector('[data-produto-checkout]');
-          const linkCompra = (p.link_checkout_exibir || p.link_checkout_padrao); // link da promo quando ligada
+          const linkCompra = ((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao)); // link da promo quando ligada
           if (checkout && linkCompra) {
             checkout.href = VmUtm.checkout(linkCompra, checkout.dataset.utm);
             checkout.style.display = '';
@@ -1660,7 +1660,7 @@
         const mapa = document.getElementById('mapa-materiais');
         LINKS.forEach(([slug, lp]) => {
           const p = dados[slug];
-          const href = lp || (p && (p.link_checkout_exibir || p.link_checkout_padrao));
+          const href = lp || (p && ((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao)));
           if (!p || !href) return;
           const link = document.createElement('a');
           // Sem LP, o link vai direto para a compra: campanha do rodapé.

@@ -1790,7 +1790,7 @@
         if (r.ok) {
           const data = await r.json();
           const p = data && data.teste_subconsciente;
-          const base = ((p && (p.link_checkout_exibir || p.link_checkout_padrao)) || '').trim(); // promo ligada = link da promo
+          const base = ((p && ((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao))) || '').trim(); // promo ligada = link da promo
           if (base) {
             let dest;
             try {

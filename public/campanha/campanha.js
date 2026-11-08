@@ -10,7 +10,8 @@
    - Tarja com cronômetro regressivo até a data final do admin.
    - Home e /black "se fantasiam" de preto; LPs só ganham a tarja e as etiquetas.
    - Produto da Black = produto com a Promo ligada (o preço é o da Promo,
-     o link é o link_checkout_exibir de /api/precos). Nada de preço aqui.
+     o link é o link_checkout_promo quando a Promo está ligada, senão o
+     link_checkout_padrao; tudo já vem em /api/precos). Nada de preço aqui.
    - Home: cartão "Pega esse ouro!" e cartões de produto em sanfona.
    - /black: preenche combos, cursos e materiais com os dados do admin.
    Estilos em /campanha/campanha.css (carregado só com a campanha no ar).
@@ -232,8 +233,8 @@
             oferta.querySelector('[data-bk-preco]').innerHTML = formatPreco(p);
           }
           const cta = oferta.querySelector('[data-bk-checkout]');
-          if ((p.link_checkout_exibir || p.link_checkout_padrao)) {
-            cta.href = window.VmUtm ? VmUtm.checkout((p.link_checkout_exibir || p.link_checkout_padrao), oferta.dataset.utm) : (p.link_checkout_exibir || p.link_checkout_padrao);
+          if (((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao))) {
+            cta.href = window.VmUtm ? VmUtm.checkout(((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao)), oferta.dataset.utm) : ((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao));
             cta.hidden = false;
           }
           const caixa = oferta.querySelector('.bk-oferta-inclui');
@@ -255,7 +256,7 @@
         // Cursos e materiais avulsos: mesmos dados do admin.
         document.querySelectorAll('[data-bk-item]').forEach(card => {
           const p = dados[card.dataset.bkItem];
-          if (!p || !(p.link_checkout_exibir || p.link_checkout_padrao) || !ehBlack(card.dataset.bkItem)) { card.remove(); return; }
+          if (!p || !((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao)) || !ehBlack(card.dataset.bkItem)) { card.remove(); return; }
           const img = card.querySelector('.bk-ic-capa img');
           if (p.imagem_url) { img.src = p.imagem_url; img.alt = p.nome || ''; }
           card.querySelector('[data-bk-nome]').textContent = p.nome || '';
@@ -264,7 +265,7 @@
             card.querySelector('[data-bk-preco]').innerHTML = formatPreco(p);
           }
           const cta = card.querySelector('[data-bk-checkout]');
-          cta.href = window.VmUtm ? VmUtm.checkout((p.link_checkout_exibir || p.link_checkout_padrao), card.dataset.utm) : (p.link_checkout_exibir || p.link_checkout_padrao);
+          cta.href = window.VmUtm ? VmUtm.checkout(((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao)), card.dataset.utm) : ((((p).mostrar_promo && String((p).link_checkout_promo || '').trim()) || (p).link_checkout_padrao));
           cta.hidden = false;
         });
         // Seção sem nenhum produto com Promo ligada some, com o título.
