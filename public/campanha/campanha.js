@@ -30,7 +30,9 @@
   const DATA_FINAL = 'até ' + new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long', timeZone: 'America/Sao_Paulo' }).format(new Date(FIM));
   const css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = '/campanha/campanha.css';
+  // ?v= força o navegador a pegar o CSS novo (o Cloudflare manda o navegador guardar por 4h).
+  // Mexeu no campanha.css? Suba o número aqui. Mexeu no campanha.js? Suba o ?v= nas 8 páginas.
+  css.href = '/campanha/campanha.css?v=6';
   document.head.appendChild(css);
   document.querySelectorAll('[data-black-data]').forEach(el => { el.textContent = DATA_FINAL.charAt(0).toUpperCase() + DATA_FINAL.slice(1); });
     document.body.classList.add('black');
@@ -189,6 +191,7 @@
       oferta.className = 'black-oferta';
       oferta.href = '/black';
       oferta.innerHTML = '<span class="black-oferta-miolo">' +
+        '<span class="black-oferta-rotulo black-oferta-rotulo-topo">Black November - Vida Mágica</span>' +
         '<span class="black-desconto">' +
           '<span class="black-desconto-ate">até</span>' +
           '<span class="black-desconto-num">40%</span>' +
@@ -196,13 +199,17 @@
           '<span class="black-desconto-nota">*nos materiais selecionados</span>' +
         '</span>' +
         '<span class="black-oferta-txt">' +
-          '<span class="black-oferta-rotulo">Black November - Vida Mágica</span>' +
           '<span class="black-oferta-titulo">Pega esse ouro!</span>' +
           '<span class="black-oferta-texto">Combos, materiais e cursos em oferta, por tempo limitado.</span>' +
         '</span>' +
         '<span class="black-oferta-cta">Quero ver as ofertas <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="13 6 19 12 13 18"></polyline></svg></span>' +
       '</span>';
-      document.querySelector('.hero-home-prova').after(oferta);
+      // Divisor com a estrela dourada da marca separa o hero do cartão da Black (sem palavra).
+      const divisor = document.createElement('div');
+      divisor.className = 'black-divisor';
+      divisor.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5c.5 4.6 2.4 7.9 10.5 10.5-8.1 2.6-10 5.9-10.5 10.5-.5-4.6-2.4-7.9-10.5-10.5C9.6 9.4 11.5 6.1 12 1.5z"></path></svg>';
+      document.querySelector('.hero-home-prova').after(divisor);
+      divisor.after(oferta);
     }
 
     // Página /black: nome, capa, preço e checkout de cada combo vêm do admin.

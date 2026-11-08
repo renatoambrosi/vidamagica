@@ -84,7 +84,7 @@ function montarPaginaBlack() {
   return h
     .replace(/<title>[^<]*<\/title>/, '<title>Black November | Vida Mágica - Suellen Seragi</title>')
     .replace('<script src="/utm.js" data-padrao="VM"></script>', '<script src="/utm.js" data-padrao="VmBlack" data-conteudo="black"></script>')
-    .replace('<script src="/campanha/campanha.js" data-pagina="home" defer></script>', '<script src="/campanha/campanha.js" data-pagina="black" defer></script>')
+    .replace(/<script src="\/campanha\/campanha\.js(\?v=[^"]*)?" data-pagina="home" defer><\/script>/, (m, v) => `<script src="/campanha/campanha.js${v || ''}" data-pagina="black" defer></script>`)
     .replace('<body class="lp-index">', '<body class="lp-index pagina-black">')
     .replace('href="#quem-somos"', 'href="/#quem-somos"')
     .replace('href="#numeros"', 'href="/#numeros"');

@@ -17,7 +17,7 @@ body.black .ticker-wrap { display: none; }
 .black-dig > span.sai { transform: translateY(-100%); opacity: 0; }
 .black-crono-rot { font-family: 'Montserrat', sans-serif; font-size: 0.5rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(245,240,232,0.6); line-height: 1; }
 .black-crono-sep { font-family: 'Montserrat', sans-serif; font-size: 0.8rem; font-weight: 800; color: rgba(244,217,152,0.6); line-height: 1.3rem; }
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   .black-faixa { gap: 0.55rem; padding: 0.45rem 0.75rem; }
   .black-faixa-nome { display: flex; flex-direction: column; align-items: flex-start; font-size: 0.66rem; letter-spacing: 0.16em; line-height: 1.25; }
   .black-faixa-hifen { display: none; }
@@ -80,6 +80,15 @@ body.black-fantasia .background::after { background: rgba(0,0,0,0.84); }
 body.black-fantasia .validacao-social, body.black-fantasia .quem-somos { background: #050300; }
 body.black-fantasia .quem-somos { background-image: none; }
 
+/* Divisor com estrela dourada entre o hero e o cartão da Black */
+.black-divisor { display: flex; align-items: center; gap: 0.85rem; max-width: 520px; margin: 2rem auto 0; }
+.black-divisor::before, .black-divisor::after { content: ''; flex: 1; height: 1px; }
+.black-divisor::before { background: linear-gradient(90deg, transparent, rgba(232,201,122,0.75)); }
+.black-divisor::after { background: linear-gradient(90deg, rgba(232,201,122,0.75), transparent); }
+.black-divisor svg { width: 22px; height: 22px; fill: #F4D998; filter: drop-shadow(0 0 8px rgba(244,217,152,0.7)); }
+.black-divisor span { font-family: 'Montserrat', sans-serif; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.26em; text-transform: uppercase; color: #E8C97A; }
+body.black-fantasia .black-divisor + .black-oferta { margin-top: 1.1rem; }
+
 /* Cartão "Pega esse ouro!" no hero da home */
 .black-oferta { position: relative; display: block; margin: 1.4rem auto 0; max-width: 520px; padding: 2px; border-radius: 20px; overflow: hidden; clip-path: inset(0 round 20px); text-decoration: none; isolation: isolate; box-shadow: 0 18px 54px rgba(200,146,42,0.28); }
 .black-oferta::before { content: ''; position: absolute; z-index: -2; left: 50%; top: 50%; width: 180%; aspect-ratio: 1; background: conic-gradient(from 0deg, #B8862A 0deg, #E8C97A 40deg, #FFF8E1 70deg, #E8C97A 100deg, #B8862A 160deg, #C8922A 220deg, #F4D998 280deg, #C8922A 320deg, #B8862A 360deg); transform: translate(-50%, -50%); animation: black-giro 7s linear infinite; }
@@ -95,6 +104,8 @@ body.black-fantasia .quem-somos { background-image: none; }
 .black-desconto-ate, .black-desconto-de { font-family: 'Montserrat', sans-serif; font-size: 0.82rem; font-weight: 800; letter-spacing: 0.24em; text-transform: uppercase; color: #F5F0E8; }
 .black-desconto-num { font-family: var(--font-display); font-size: 5.2rem; font-weight: 900; line-height: 0.95; letter-spacing: -0.02em; margin: 0.15rem 0 0.2rem; background: linear-gradient(180deg, #FFF3CF 0%, #F4D998 40%, #C8922A 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 6px 22px rgba(200,146,42,0.45)); }
 .black-desconto-nota { margin-top: 0.55rem; font-size: 0.74rem; color: rgba(245,240,232,0.6); }
+.black-oferta-rotulo.black-oferta-rotulo-topo { font-size: 0.78rem; letter-spacing: 0.24em; margin-bottom: -0.35rem; }
+@media (max-width: 420px) { .black-oferta-rotulo.black-oferta-rotulo-topo { font-size: 0.66rem; letter-spacing: 0.16em; white-space: nowrap; } }
 .black-oferta-rotulo { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: #E8C97A; }
 .black-oferta-titulo { font-family: var(--font-display); font-size: 1.55rem; font-weight: 900; line-height: 1.12; color: #F5F0E8; }
 .black-oferta-texto { font-size: 0.92rem; line-height: 1.5; color: rgba(245,240,232,0.78); }
