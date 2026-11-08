@@ -840,7 +840,7 @@ router.get('/resultado/:teste_id', async (req, res) => {
     // padrão) — sem isso, o resultado mostrava sempre preco_padrao e ignorava
     // promoção configurada no admin.
     processarProdutos(precosBySlug);
-    // Preço no Teste (admin → Produtos): quando preenchido, vale sempre aqui.
+    // Resultado do Teste: preço de aluno com o link de aluno, quando os dois estão preenchidos.
     aplicarPrecoDoTeste(precosBySlug);
     const livrosRecomendados = montarLivrosRecomendados(precosBySlug, resultado);
 
@@ -859,8 +859,8 @@ router.get('/resultado/:teste_id', async (req, res) => {
       conteudoPerfil.passo3_curso_capa_url     = produto.imagem_url || '';
       conteudoPerfil.passo3_curso_preco        = produto.exibir_avista || produto.preco_padrao || '';
       conteudoPerfil.passo3_curso_link_checkout = produto.link_checkout_exibir || '';
-      // Pacote de preço (de/por + parcelas) já decidido acima: Preço no Teste
-      // quando preenchido; senão promo ligada; senão padrão.
+      // Pacote de preço (de/por + parcelas) já decidido acima: preço de aluno
+      // (com link de aluno) quando preenchido; senão promo ligada; senão padrão.
       conteudoPerfil.passo3_curso_preco_de       = produto.exibir_de || '';
       conteudoPerfil.passo3_curso_desconto_pct   = produto.desconto_pct || null;
       conteudoPerfil.passo3_curso_parcelas_qtd   = produto.exibir_parcelas_qtd || '';

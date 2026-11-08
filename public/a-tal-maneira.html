@@ -413,6 +413,7 @@
   }
   </script>
   <script src="/utm.js" data-padrao="VmLpTalManeira"></script>
+  <script src="/campanha/campanha.js" data-pagina="lp" defer></script>  <!-- Black November: só veste com a campanha no ar (admin → Campanhas) -->
 </head>
 <body class="lp-talmaneira">
 
@@ -834,7 +835,7 @@
             }
           });
 
-          const link = p.link_checkout_padrao;
+          const link = (p.link_checkout_exibir || p.link_checkout_padrao); // link da promo quando ligada
           if (link) {
             document.querySelectorAll(`[data-checkout-link][data-preco-key="${slug}"]`).forEach(el => {
               el.href = VmUtm.checkout(link, el.getAttribute('data-utm') || VmUtm.pagina + '-cta');

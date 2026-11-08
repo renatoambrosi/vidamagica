@@ -566,7 +566,7 @@
     const produto = produtoSlug && PRECOS ? PRECOS[produtoSlug] : null;
     // Só oferece produto à venda. Clube ainda não foi lançado. O Teste
     // não depende do checkout: o botão leva ao formulário ou à LP.
-    const aVenda = produto && (produto.link_checkout_padrao || produtoSlug === 'teste_subconsciente')
+    const aVenda = produto && (produto.link_checkout_exibir || produto.link_checkout_padrao || produtoSlug === 'teste_subconsciente')
       && produtoSlug !== 'clube_vida_magica';
 
     if (!aVenda){
@@ -586,7 +586,7 @@
       else { link.style.display = 'none'; }
 
       const btn = document.getElementById('vmr-cta-btn');
-      const checkout = produto.link_checkout_padrao;
+      const checkout = produto.link_checkout_exibir || produto.link_checkout_padrao; // promo ligada = link da promo
       const utm = window.VmUtm;
       btn.target = '_blank';
       delete btn.dataset.utm;

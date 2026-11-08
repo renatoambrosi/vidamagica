@@ -178,8 +178,8 @@ const SELO_PADRAO_LIVRO = '✨ Inclui Aulão com a Suellen';
 //          }
 function montarLivrosRecomendados(precosBySlug, resultado) {
   const indicacao = indicacaoDoPerfil(resultado.perfil_dominante);
-  // link_checkout_exibir: link do teste quando o Preço no Teste está
-  // preenchido, senão o padrão (aplicarPrecoDoTeste, routes/produtos.js).
+  // link_checkout_exibir: link de aluno quando o preço de aluno está
+  // preenchido, senão o da promo ligada ou o padrão (routes/produtos.js).
   const linkDoLivro = ((precosBySlug && precosBySlug[indicacao.livro]) || {}).link_checkout_exibir;
   const slug = indicacao.livro_reserva && !(linkDoLivro || '').trim()
     ? indicacao.livro_reserva
@@ -199,7 +199,7 @@ function montarLivrosRecomendados(precosBySlug, resultado) {
     capa_url: p.imagem_url || '',
     link_checkout: p.link_checkout_exibir || '',
     link_checkout_aluno: p.link_checkout_aluno || '',
-    // exibir_avista/_de/parcelas: Preço no Teste quando preenchido, senão
+    // exibir_avista/_de/parcelas: preço de aluno quando preenchido, senão
     // promo ligada, senão padrão (routes/produtos.js).
     preco_padrao: p.exibir_avista || p.preco_padrao || '',
     preco_de: p.exibir_de || '',

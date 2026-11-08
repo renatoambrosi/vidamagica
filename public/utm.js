@@ -29,7 +29,7 @@
   const PADRAO = (script && script.dataset.padrao) || 'Site';
   const CAMPOS = ['utm_source', 'utm_medium', 'utm_content', 'extra_params'];
   const PAGINAS = ['/', '/teste', '/ouro-da-reprogramacao-mental', '/lei-da-atracao-biblica',
-    '/guia-pratico-reprogramacao-mental', '/a-tal-maneira', '/magica-do-fluir', '/relatos'];
+    '/guia-pratico-reprogramacao-mental', '/a-tal-maneira', '/magica-do-fluir', '/relatos', '/black'];
 
   function ler(chave) {
     try { return sessionStorage.getItem(chave) || ''; } catch { return ''; }

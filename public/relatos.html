@@ -349,6 +349,7 @@
   }
 </style>
   <script src="/utm.js" data-padrao="VmRelatos"></script>
+  <script src="/campanha/campanha.js" data-pagina="lp" defer></script>  <!-- Black November: só veste com a campanha no ar (admin → Campanhas) -->
 </head>
 <body>
 
@@ -549,7 +550,7 @@ function abrirModal(grupoIdx, relIdx){
     else { link.style.display = 'none'; }
 
     const btn = document.getElementById('m-cta-btn');
-    const checkout = produto.link_checkout_padrao;
+    const checkout = produto.link_checkout_exibir || produto.link_checkout_padrao; // promo ligada = link da promo
     if (produtoSlug === 'teste_subconsciente'){
       // O Teste não se compra direto: leva para a LP do Teste.
       btn.href = '/teste';

@@ -1178,6 +1178,7 @@
   }
   </script>
   <script src="/utm.js" data-padrao="VM"></script>
+  <script src="/campanha/campanha.js" data-pagina="home" defer></script>  <!-- Black November: só veste com a campanha no ar (admin → Campanhas) -->
 </head>
 <body class="lp-index">
 
@@ -1604,8 +1605,9 @@
             card.querySelector('[data-produto-preco]').innerHTML = formatPreco(p);
           }
           const checkout = card.querySelector('[data-produto-checkout]');
-          if (checkout && p.link_checkout_padrao) {
-            checkout.href = VmUtm.checkout(p.link_checkout_padrao, checkout.dataset.utm);
+          const linkCompra = (p.link_checkout_exibir || p.link_checkout_padrao); // link da promo quando ligada
+          if (checkout && linkCompra) {
+            checkout.href = VmUtm.checkout(linkCompra, checkout.dataset.utm);
             checkout.style.display = '';
           }
           // Capa, nome e descrição viram link: LP do material, ou a compra quando não há LP.
@@ -1658,7 +1660,7 @@
         const mapa = document.getElementById('mapa-materiais');
         LINKS.forEach(([slug, lp]) => {
           const p = dados[slug];
-          const href = lp || (p && p.link_checkout_padrao);
+          const href = lp || (p && (p.link_checkout_exibir || p.link_checkout_padrao));
           if (!p || !href) return;
           const link = document.createElement('a');
           // Sem LP, o link vai direto para a compra: campanha do rodapé.

@@ -37,6 +37,7 @@ const {
   lerMostrarLogTeste,
   salvarMostrarLogTeste,
 } = require('../core/teste-config');
+const { lerConfigBlack, salvarConfigBlack } = require('../core/campanha');
 
 // ── Middleware: só admin pode usar tudo aqui (escopo='admin')
 router.use(autenticarPainel('admin'));
@@ -2501,6 +2502,34 @@ router.put('/teste/mostrar-log', async (req, res) => {
     res.json({ ok: true, ativo });
   } catch (err) {
     console.error('❌ /teste/mostrar-log:', err.message);
+    res.status(500).json({ ok: false, erro: 'Erro ao salvar' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// 27. CAMPANHAS — BLACK NOVEMBER
+// Ligada e antes da data final: o site veste a Black (tarja com
+// cronômetro, /black, etiquetas). Preço vem da Promo de cada produto.
+// ════════════════════════════════════════════════════════════
+
+router.get('/campanhas/black', async (req, res) => {
+  res.json({ ok: true, ...(await lerConfigBlack()) });
+});
+
+router.put('/campanhas/black', async (req, res) => {
+  try {
+    const { ativa, fim } = req.body || {};
+    if (typeof ativa !== 'boolean') {
+      return res.status(400).json({ ok: false, erro: 'ativa inválido' });
+    }
+    if (typeof fim !== 'string' || isNaN(Date.parse(fim))) {
+      return res.status(400).json({ ok: false, erro: 'data final inválida' });
+    }
+    const dados = await salvarConfigBlack({ ativa, fim });
+    console.log(`⚠️ [admin] Black November ${ativa ? 'LIGADA' : 'DESLIGADA'} (fim ${dados.fim})`);
+    res.json({ ok: true, ...dados });
+  } catch (err) {
+    console.error('❌ /campanhas/black:', err.message);
     res.status(500).json({ ok: false, erro: 'Erro ao salvar' });
   }
 });

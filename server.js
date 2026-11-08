@@ -161,6 +161,22 @@ app.get('/privacidade', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'privacidade.html'));
 });
 
+// ── ROTA AMIGÁVEL: /black → ofertas da Black November ──
+// Só existe com a campanha no ar (admin → Campanhas). Fora dela, volta para a home.
+// A página é montada a partir do index.html (core/campanha.js).
+app.get('/black', async (req, res) => {
+  try {
+    const { lerBlackNoAr, montarPaginaBlack } = require('./core/campanha');
+    const black = await lerBlackNoAr();
+    if (!black.ativa) return res.redirect('/');
+    res.set('Cache-Control', 'no-cache');
+    res.type('html').send(montarPaginaBlack());
+  } catch (err) {
+    console.error('❌ /black:', err.message);
+    res.redirect('/');
+  }
+});
+
 // ── ROTA AMIGÁVEL: /relatos → página universal de relatos ──
 app.get('/relatos', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'relatos.html'));
@@ -210,6 +226,7 @@ app.use('/api',               require('./routes/feed'));
 app.use('/api',               require('./routes/config'));
 app.use('/api',               require('./routes/youtube'));    // vídeo mais recente da home
 app.use('/api',               require('./routes/seed'));
+app.use('/api',               require('./routes/campanha'));  // GET /api/campanha — Black no ar? (só leitura)
 app.use('/api/chat',              chat.routerAluna);
 app.use('/api/atendimento/chat',  chat.routerAtendimento);
 app.use('/api/upload',        require('./routes/upload'));

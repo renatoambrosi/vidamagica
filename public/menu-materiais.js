@@ -68,7 +68,7 @@
       const dados = await fetch('/api/precos').then((r) => r.json());
       ITENS.forEach(([slug, lp, nomeUtm]) => {
         const p = dados[slug];
-        const href = lp || (p && p.link_checkout_padrao);
+        const href = lp || (p && (p.link_checkout_exibir || p.link_checkout_padrao)); // promo ligada = link da promo
         if (!p || !href) return;
         const a = document.createElement('a');
         a.href = (!lp && window.VmUtm) ? VmUtm.checkout(href, `${VmUtm.pagina}-${nomeUtm}-header`) : href;

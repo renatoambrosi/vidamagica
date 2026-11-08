@@ -8,6 +8,13 @@
    tipo, preços (padrão / promo / aluno), parcelas e links de
    checkout. "Preço" é APENAS um campo do produto, não a entidade.
 
+   Cada preço tem o seu link (regra do Renato, 2026-11-08):
+   - padrão → link_checkout_padrao
+   - promo  → link_checkout_promo (vazio = usa o padrão)
+   - aluno  → link_checkout_aluno; é também o preço do resultado do Teste
+   link_checkout_exibir = o link que combina com o preço exibido.
+   Campo só ACRESCENTADO na resposta pública: nenhum campo existente muda.
+
    Endpoints:
    - GET  /api/produtos           → público (com cálculos de exibição)
    - GET  /llms.txt               → apresentação do site para IAs (montado no server.js)
@@ -85,32 +92,38 @@ function processarProdutos(produtos) {
         p.desconto_magico_pct = null;
       }
     }
+
+    // Link que combina com o preço exibido: promo ligada com link próprio → link da promo.
+    const linkPromo = String(p.link_checkout_promo || '').trim();
+    p.link_checkout_exibir = (p.tipo !== 'comunidade' && p.mostrar_promo && linkPromo)
+      ? linkPromo
+      : (p.link_checkout_padrao || '');
   });
   return produtos;
 }
 
-// ── Preço no Teste (só no /resultado/:id) ──
-// Roda DEPOIS de processarProdutos. Quando o produto tem preço à vista E link
-// do teste preenchidos no admin, eles valem sempre no resultado: preço padrão
-// riscado, preço do teste em destaque, desconto calculado, checkout do teste.
-// A promoção do site não interfere. Sem esses dois campos, fica o que
-// processarProdutos já decidiu (promo ligada → promo; senão, padrão).
-// link_checkout_exibir = link que o resultado deve usar, nos dois casos.
+// ── Preço no resultado do Teste (só no /resultado/:id) ──
+// Roda DEPOIS de processarProdutos. Regra do Renato (2026-11-08): o resultado
+// mostra o PREÇO DE ALUNO com o LINK DE ALUNO, com o preço padrão riscado.
+// Sem preço de aluno ou sem link de aluno, fica o que processarProdutos já
+// decidiu (promo ligada → promo e link da promo; senão, padrão).
+// O nome da função foi mantido (routes/teste.js chama por ele). Os campos
+// antigos preco_teste / link_checkout_teste ficam no banco, sem uso.
 function aplicarPrecoDoTeste(produtos) {
   Object.keys(produtos).forEach(key => {
     const p = produtos[key];
-    const preco = String(p.preco_teste || '').trim();
-    const link = String(p.link_checkout_teste || '').trim();
-    if (!preco || !link) {
-      p.link_checkout_exibir = p.link_checkout_padrao || '';
+    const preco = String(p.preco_alunos || '').trim();
+    const link = String(p.link_checkout_aluno || '').trim();
+    if (!preco || !link || !(parseFloat(preco.replace(',', '.')) > 0)) {
+      p.link_checkout_exibir = p.link_checkout_exibir || p.link_checkout_padrao || '';
       return;
     }
     const desconto = calcularDesconto(p.preco_padrao, preco);
     p.exibir_avista = preco;
     p.exibir_de = desconto ? p.preco_padrao : null;
     p.desconto_pct = desconto;
-    p.exibir_parcelas_qtd = p.parcelas_qtd_teste || p.parcelas_qtd;
-    p.exibir_parcelas_valor = p.parcelas_valor_teste || '';
+    p.exibir_parcelas_qtd = p.parcelas_qtd_alunos || p.parcelas_qtd;
+    p.exibir_parcelas_valor = p.parcelas_valor_alunos || '';
     p.link_checkout_exibir = link;
   });
   return produtos;

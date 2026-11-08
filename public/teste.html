@@ -808,6 +808,7 @@
   }
   </script>
   <script src="/utm.js" data-padrao="VmLpTesteSub"></script>
+  <script src="/campanha/campanha.js" data-pagina="lp" defer></script>  <!-- Black November: só veste com a campanha no ar (admin → Campanhas) -->
 </head>
 <body>
 
@@ -1314,7 +1315,7 @@
         const p=data&&data[KEY];
         if(!p){document.querySelectorAll('[data-preco-inline],[data-preco-grande]').forEach(el=>el.style.display='none');return;}
         // Guarda o link de checkout do produto pra usar no fim do teste (pergunta 15 → pagamento).
-        try{ window.__TESTE_CHECKOUT__ = (p.link_checkout_padrao||'').trim(); }catch{}
+        try{ window.__TESTE_CHECKOUT__ = (p.link_checkout_exibir||p.link_checkout_padrao||'').trim(); }catch{} // promo ligada = link da promo
         const v=p.exibir_avista||p.preco_avista||p.preco_padrao;
         if(!v) return;
         const{reais,centavos}=fmt(v);
