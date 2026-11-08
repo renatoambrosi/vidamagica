@@ -193,6 +193,17 @@ a.bk-oferta-nome:hover { color: #F4D998; }
 .bk-selo-ouro { display: block; font-family: var(--font-display); font-size: 1.3rem; font-weight: 900; line-height: 1.1; letter-spacing: 0.03em; background: linear-gradient(110deg, #C8922A 0%, #F4D998 30%, #FFF8E1 45%, #F4D998 60%, #C8922A 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 6px rgba(244,217,152,0.45)); animation: bk-selo-brilho 2.8s linear infinite; }
 @keyframes bk-selo-brilho { from { background-position: 100% 0; } to { background-position: -150% 0; } }
 @media (prefers-reduced-motion: reduce) { .bk-selo::before, .bk-selo-ouro { animation: none; } }
+/* /black: ofertas só aparecem depois de preenchidas (sem piscar vazias) */
+.pagina-black:not(.bk-pronto) .bk-ofertas, .pagina-black:not(.bk-pronto) .bk-abas, .pagina-black:not(.bk-pronto) .bk-secao-titulo { visibility: hidden; }
+
+/* Aba Combos: todos os cartões do mesmo tamanho e com o mesmo contorno dourado girando */
+.bk-ofertas[data-aba="Combos"] { align-items: stretch; }
+[data-aba="Combos"] .bk-oferta { order: 0; height: auto; padding: 2px; overflow: hidden; clip-path: inset(0 round 22px); isolation: isolate; background: none; box-shadow: 0 22px 60px rgba(200,146,42,0.28); }
+[data-aba="Combos"] .bk-oferta::before { content: ''; position: absolute; z-index: -1; left: 50%; top: 50%; width: 220%; aspect-ratio: 1; background: conic-gradient(from 0deg, #B8862A 0deg, #E8C97A 40deg, #FFF8E1 70deg, #E8C97A 100deg, #B8862A 160deg, #C8922A 220deg, #F4D998 280deg, #C8922A 320deg, #B8862A 360deg); transform: translate(-50%, -50%); animation: black-giro 8s linear infinite; }
+[data-aba="Combos"] .bk-oferta .bk-oferta-miolo { border-radius: 20px; }
+@media (min-width: 980px) { .bk-ofertas[data-aba="Combos"] { align-items: stretch; grid-template-columns: repeat(auto-fit, minmax(300px, 380px)); justify-content: center; } [data-aba="Combos"] .bk-oferta, [data-aba="Combos"] .bk-oferta.is-destaque { height: auto; } }
+@media (prefers-reduced-motion: reduce) { [data-aba="Combos"] .bk-oferta::before { animation: none; } }
+
 /* No celular o WhatsApp não cobre o botão do último combo. */
 .pagina-black .bk-ofertas { padding-bottom: 3rem; }
 @media (min-width: 980px) {

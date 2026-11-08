@@ -70,6 +70,15 @@ async function salvarConfigBlack({ ativa, fim }) {
 // ── Página /black ──
 const PUBLIC = path.join(__dirname, '..', 'public');
 
+// Mesma versão do CSS que o campanha.js usa (fonte única: o próprio campanha.js).
+function versaoCss() {
+  try {
+    const js = fs.readFileSync(path.join(PUBLIC, 'campanha', 'campanha.js'), 'utf8');
+    const m = js.match(/campanha\.css\?v=(\d+)/);
+    return m ? m[1] : '1';
+  } catch (e) { return '1'; }
+}
+
 function montarPaginaBlack() {
   let h = fs.readFileSync(path.join(PUBLIC, 'index.html'), 'utf8');
   const ofertas = fs.readFileSync(path.join(PUBLIC, 'campanha', 'black-ofertas.html'), 'utf8');
@@ -85,7 +94,11 @@ function montarPaginaBlack() {
     .replace(/<title>[^<]*<\/title>/, '<title>Black November | Vida Mágica - Suellen Seragi</title>')
     .replace('<script src="/utm.js" data-padrao="VM"></script>', '<script src="/utm.js" data-padrao="VmBlack" data-conteudo="black"></script>')
     .replace(/<script src="\/campanha\/campanha\.js(\?v=[^"]*)?" data-pagina="home" defer><\/script>/, (m, v) => `<script src="/campanha/campanha.js${v || ''}" data-pagina="black" defer></script>`)
-    .replace('<body class="lp-index">', '<body class="lp-index pagina-black">')
+    // CSS da Black no <head> e o corpo já de preto: a página não aparece crua antes do script.
+    .replace('</head>', `<link rel="stylesheet" href="/campanha/campanha.css?v=${versaoCss()}">\n</head>`)
+    .replace('<body class="lp-index">', '<body class="lp-index pagina-black black black-fantasia">')
+    // Se o script não rodar (rede), mostra a página mesmo assim depois de 4s.
+    .replace('</body>', '<script>setTimeout(function(){document.body.classList.add("bk-pronto")},4000)</script>\n</body>')
     .replace('href="#quem-somos"', 'href="/#quem-somos"')
     .replace('href="#numeros"', 'href="/#numeros"');
 }

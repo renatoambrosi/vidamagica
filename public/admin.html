@@ -2128,7 +2128,9 @@ const CATEGORIA_PADRAO = {
   magica_fluir:             'materiais',
 };
 const LEGADO_PADRAO = new Set(['teste_prosperidade']);
-function calcDesc(de, por) { const a=parseFloat(String(de).replace(',','.')), b=parseFloat(String(por).replace(',','.')); if(!a||!b||b>=a) return null; return Math.round(((a-b)/a)*100); }
+// Valor em reais escrito no admin → número. Aceita "1.842,99" (ponto de milhar), "411,00", "511" e "29.00".
+function numBR(v) { let t=String(v||'').trim(); if(t.includes(',')) t=t.replace(/\./g,'').replace(',','.'); else if(/^\d{1,3}(\.\d{3})+$/.test(t)) t=t.replace(/\./g,''); return parseFloat(t)||0; }
+function calcDesc(de, por) { const a=numBR(de), b=numBR(por); if(!a||!b||b>=a) return null; return Math.round(((a-b)/a)*100); }
 // Link de checkout junto do preço a que ele pertence (cada preço tem o seu).
 function campoLink(rotulo, field, p, dica) {
   const v = String(p[field] || '').replace(/"/g, '&quot;');

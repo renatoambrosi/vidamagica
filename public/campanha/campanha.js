@@ -32,8 +32,9 @@
   css.rel = 'stylesheet';
   // ?v= força o navegador a pegar o CSS novo (o Cloudflare manda o navegador guardar por 4h).
   // Mexeu no campanha.css? Suba o número aqui. Mexeu no campanha.js? Suba o ?v= nas 8 páginas.
-  css.href = '/campanha/campanha.css?v=8';
-  document.head.appendChild(css);
+  css.href = '/campanha/campanha.css?v=11';
+  // Na /black o servidor já põe o CSS no <head> (evita a página crua piscando).
+  if (!document.querySelector('link[href^="/campanha/campanha.css"]')) document.head.appendChild(css);
   document.querySelectorAll('[data-black-data]').forEach(el => { el.textContent = DATA_FINAL.charAt(0).toUpperCase() + DATA_FINAL.slice(1); });
     document.body.classList.add('black');
     if (pagina !== 'lp') document.body.classList.add('black-fantasia');
@@ -327,6 +328,7 @@
           barra.hidden = false;
           abrir(secoes[0].dataset.aba);
         }
+        document.body.classList.add('bk-pronto'); // mostra as ofertas já preenchidas
       });
     }
 
