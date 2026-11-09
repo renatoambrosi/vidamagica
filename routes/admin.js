@@ -92,22 +92,25 @@ router.get('/gateway/status', async (req, res) => {
           COUNT(*) FILTER (WHERE status='enviando')::int  AS enviando,
           COUNT(*) FILTER (WHERE status='enviado')::int   AS enviadas,
           COUNT(*) FILTER (WHERE status='erro')::int      AS com_erro,
+          COUNT(*) FILTER (WHERE status='cancelado')::int AS canceladas,
           MIN(entrou_em)              AS entrou_em,
           MAX(erro)                   AS ultimo_erro
         FROM fila_mensagens
        WHERE atendimento_id IS NOT NULL
-         AND (status IN ('pendente','enviando','erro') OR enviado_em > NOW() - INTERVAL '5 minutes')
+         AND (status IN ('pendente','enviando')
+              OR entrou_em >= date_trunc('day', NOW() AT TIME ZONE 'America/Sao_Paulo') AT TIME ZONE 'America/Sao_Paulo')
     GROUP BY atendimento_id
     ORDER BY
+      -- Fila primeiro (saindo, depois esperando, pela ordem de saída);
+      -- depois tudo de hoje (êxito e erro), do mais novo para o mais antigo.
       CASE
-        WHEN MAX(status::text) IN ('enviando') THEN 0
-        WHEN MAX(status::text) IN ('pendente') THEN 1
-        WHEN MAX(status::text) IN ('erro')     THEN 2
-        ELSE 3
+        WHEN COUNT(*) FILTER (WHERE status='enviando') > 0 THEN 0
+        WHEN COUNT(*) FILTER (WHERE status='pendente') > 0 THEN 1
+        ELSE 2
       END,
-      MAX(prioridade) ASC,
-      MIN(entrou_em) ASC
-       LIMIT 50`
+      CASE WHEN COUNT(*) FILTER (WHERE status IN ('enviando','pendente')) > 0 THEN MAX(prioridade) END ASC,
+      CASE WHEN COUNT(*) FILTER (WHERE status IN ('enviando','pendente')) > 0 THEN MIN(entrou_em) END ASC,
+      MIN(entrou_em) DESC`
     );
 
     res.json({
@@ -213,6 +216,24 @@ router.post('/gateway/fila/:atendimento_id/cancelar', async (req, res) => {
   } catch (err) {
     console.error('❌ /gateway/cancelar:', err.message);
     res.status(500).json({ error: 'Erro ao cancelar' });
+  }
+});
+
+// Subir para o topo: o atendimento pendente passa a ser o próximo a sair
+// (prioridade 0, à frente de todos). Tipo, intervalos e limite não mudam.
+router.post('/gateway/fila/:atendimento_id/subir', async (req, res) => {
+  try {
+    const { atendimento_id } = req.params;
+    const r = await poolComunicacao.query(
+      `UPDATE fila_mensagens SET prioridade = 0
+        WHERE atendimento_id=$1 AND status='pendente'
+        RETURNING id`,
+      [atendimento_id]
+    );
+    res.json({ success: true, movidas: r.rowCount });
+  } catch (err) {
+    console.error('❌ /gateway/subir:', err.message);
+    res.status(500).json({ error: 'Erro ao subir' });
   }
 });
 

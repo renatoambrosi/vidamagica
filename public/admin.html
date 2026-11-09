@@ -1177,7 +1177,7 @@ input[type="datetime-local"] { color-scheme: dark; }
         <div class="wz-section-header">
           <div>
             <div class="wz-section-title">📬 Fila ao vivo</div>
-            <div class="wz-section-sub">Atendimentos pendentes, processando e com erro</div>
+            <div class="wz-section-sub">A fila (saindo e esperando) e tudo de hoje: enviados e com erro</div>
           </div>
           <button class="btn btn-ghost btn-sm" onclick="carregarStatusGateway()">↺ Atualizar</button>
         </div>
@@ -1185,6 +1185,10 @@ input[type="datetime-local"] { color-scheme: dark; }
       </div>
 
       <!-- ════════════ TEMPLATES ════════════ -->
+      <!-- ⚠️ LUGAR ERRADO (Renato, 2026-11-09): os textos das mensagens não são
+           do gateway. Fica aqui por enquanto; mudar de lugar quando formos
+           mexer nos templates. -->
+
       <div class="wz-section">
         <div class="wz-section-header">
           <div>
@@ -3327,7 +3331,7 @@ async function carregarStatusGateway() {
     }
 
     renderCategoriasGateway(d.categorias || []);
-    renderFila(d.fila || []);
+    renderFila(d.fila || [], d.categorias || []);
   } catch (e) {
     console.error('carregarStatusGateway', e);
   }
@@ -3352,9 +3356,11 @@ function renderCategoriasGateway(cats) {
     </div>`).join('');
 }
 
-function renderFila(fila) {
+function renderFila(fila, cats) {
   const c = document.getElementById('gw-fila-lista');
-  if (!fila.length) { c.innerHTML = '<p style="color:var(--text-muted);font-size:0.78rem;padding:0.5rem 0">Fila vazia. Tudo entregue. ✓</p>'; return; }
+  if (!fila.length) { c.innerHTML = '<p style="color:var(--text-muted);font-size:0.78rem;padding:0.5rem 0">Nada na fila e nada enviado hoje.</p>'; return; }
+  const nomeCat = {};
+  for (const cat of (cats || [])) nomeCat[cat.chave] = cat.nome_exibicao;
   c.innerHTML = fila.map(at => {
     const statusInfo = at.enviando > 0
       ? { txt: 'PROCESSANDO', cor: '#E8C97A', bg: 'rgba(232,201,122,0.15)' }
@@ -3362,6 +3368,8 @@ function renderFila(fila) {
       ? { txt: 'ERRO',         cor: '#F09090', bg: 'rgba(220,80,80,0.18)' }
       : at.pendentes > 0
       ? { txt: 'PENDENTE',     cor: '#90CAF9', bg: 'rgba(144,202,249,0.15)' }
+      : at.canceladas > 0
+      ? { txt: 'CANCELADO',    cor: '#B8B0A0', bg: 'rgba(184,176,160,0.15)' }
       : { txt: 'CONCLUÍDO',    cor: '#7DD87E', bg: 'rgba(76,175,80,0.18)' };
     const tempo = at.entrou_em ? new Date(at.entrou_em).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—';
     const tipoBadge = at.tipo === 'reativo'
@@ -3378,9 +3386,9 @@ function renderFila(fila) {
             <span style="font-size:0.7rem;color:var(--text-muted)">${at.enviadas}/${at.total_msgs} msgs</span>
           </div>
           <div style="font-family:var(--font-display);font-weight:600;font-size:0.85rem;color:var(--text-light)">${escHtml(at.nome||'(sem nome)')} · ${at.telefone}</div>
-          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.15rem">${at.categoria||at.origem} · ${tempo}${at.ultimo_erro?(' · ⚠ '+escHtml(at.ultimo_erro)):''}</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.15rem">${escHtml((at.categoria && nomeCat[at.categoria]) || at.categoria || at.origem)} · ${tempo}${at.ultimo_erro?(' · ⚠ '+escHtml(at.ultimo_erro)):''}</div>
         </div>
-        ${podeCancelar?`<button class="btn btn-ghost btn-sm" onclick="cancelarAtendimento('${at.atendimento_id}')">✕ Cancelar</button>`:''}
+        ${podeCancelar?`<div style="display:flex;gap:0.4rem;flex-wrap:wrap;justify-content:flex-end"><button class="btn btn-ghost btn-sm" onclick="subirAtendimento('${at.atendimento_id}')">Subir para o topo</button><button class="btn btn-ghost btn-sm" onclick="cancelarAtendimento('${at.atendimento_id}')">✕ Cancelar</button></div>`:''}
       </div>`;
   }).join('');
 }
@@ -3451,6 +3459,20 @@ async function cancelarAtendimento(atId) {
     });
     if (r.ok) {
       toast('✓ Atendimento cancelado');
+      carregarStatusGateway();
+    } else toast('Erro','error');
+  } catch { toast('Erro de conexão','error'); }
+}
+
+// Subir para o topo: vira o próximo a sair do gateway.
+async function subirAtendimento(atId) {
+  try {
+    const r = await fetch(`${API}/api/admin/gateway/fila/${atId}/subir`, {
+      method:'POST',
+      headers:{'Authorization':authHeader()},
+    });
+    if (r.ok) {
+      toast('Subiu para o topo da fila');
       carregarStatusGateway();
     } else toast('Erro','error');
   } catch { toast('Erro de conexão','error'); }
