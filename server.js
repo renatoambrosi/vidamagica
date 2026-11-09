@@ -164,6 +164,21 @@ app.get('/pesquisa/:id', (req, res) => {
 app.get('/cancelar-inscricao/:id', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'cancelar-inscricao.html'));
 });
+// Link de pagamento das mensagens: prévia do Teste do Subconsciente no
+// WhatsApp e, na hora, o mesmo checkout do fim do teste.
+app.get('/pagar/:id', async (req, res) => {
+  try {
+    const id = String(req.params.id || '');
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return res.redirect('/teste');
+    const html = await require('./core/teste-avisos').paginaPagar(id);
+    if (!html) return res.redirect('/teste');
+    res.set('Cache-Control', 'no-cache');
+    res.type('html').send(html);
+  } catch (err) {
+    console.error('❌ /pagar:', err.message);
+    res.redirect('/teste');
+  }
+});
 
 // ── ROTA AMIGÁVEL: /privacidade serve privacidade.html ─────
 app.get('/privacidade', (req, res) => {

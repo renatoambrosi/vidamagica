@@ -4336,10 +4336,13 @@ const testesResultados = (function(){
         pos_compra: 'Pós-compra', manual: 'Botão do admin',
       };
       const CONTEUDO = {
-        pagamento: 'link de pagamento', resultado: 'link do resultado', continuar: 'link para continuar o teste',
+        pagamento: 'link de pagamento', recuperacao: 'recuperação com link de pagamento',
+        resultado: 'link do resultado', continuar: 'link para continuar o teste',
         video: 'recado da Suellen', pesquisa: 'pesquisa', materiais: 'materiais indicados',
       };
       const STATUS = { enviado: 'enviado', na_fila: 'na fila do WhatsApp', erro: 'erro', nao_enviado: 'não enviado', enviando: 'enviando' };
+      // Pendente há 15 min ou mais: o botão manda a recuperação, não o link da hora (core/teste-avisos.js).
+      const recuperacao = t => t.feito_em && (Date.now() - new Date(t.feito_em).getTime()) >= 15 * 60 * 1000;
       const curto = s => s ? new Date(s).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
       const envios = t => {
         const lista = t.avisos || [];
@@ -4410,8 +4413,8 @@ const testesResultados = (function(){
                   <div class="tr-acoes">
                     <a class="btn btn-ghost btn-sm" href="${escHtml(t.link_resultado)}" target="_blank" rel="noopener">Abrir resultado</a>
                     <button class="btn btn-ghost btn-sm" onclick="testesResultados.copiarLink('${t.link_resultado}')">Copiar link</button>
-                    <button class="btn btn-ghost btn-sm" onclick="testesResultados.enviarWhatsapp('${t.id}', this)">${t.pago ? 'Enviar WhatsApp' : 'WhatsApp: pagamento'}</button>
-                    <button class="btn btn-ghost btn-sm" ${t.email ? '' : 'disabled'} onclick="testesResultados.enviarEmail('${t.id}', this)">${t.pago ? 'Enviar e-mail' : 'E-mail: pagamento'}</button>
+                    <button class="btn btn-ghost btn-sm" onclick="testesResultados.enviarWhatsapp('${t.id}', this)">${t.pago ? 'Enviar WhatsApp' : (recuperacao(t) ? 'WhatsApp: recuperação' : 'WhatsApp: pagamento')}</button>
+                    <button class="btn btn-ghost btn-sm" ${t.email ? '' : 'disabled'} onclick="testesResultados.enviarEmail('${t.id}', this)">${t.pago ? 'Enviar e-mail' : (recuperacao(t) ? 'E-mail: recuperação' : 'E-mail: pagamento')}</button>
                   </div>
                 </td>
               </tr>
@@ -4451,7 +4454,7 @@ const testesResultados = (function(){
       });
       const d = await r.json();
       if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
-      toast(d.conteudo === 'pagamento' ? 'Link de pagamento enviado pra fila do WhatsApp' : 'Link do resultado enviado pra fila do WhatsApp');
+      toast({ pagamento: 'Link de pagamento enviado pra fila do WhatsApp', recuperacao: 'Recuperação enviada pra fila do WhatsApp' }[d.conteudo] || 'Link do resultado enviado pra fila do WhatsApp');
       carregar(paginaAtual);
     } catch (err) {
       toast(err.message || 'Erro ao enviar', 'error');
@@ -4469,7 +4472,7 @@ const testesResultados = (function(){
       });
       const d = await r.json();
       if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
-      toast(d.conteudo === 'pagamento' ? 'E-mail com o link de pagamento enviado' : 'E-mail com o resultado enviado');
+      toast({ pagamento: 'E-mail com o link de pagamento enviado', recuperacao: 'E-mail de recuperação enviado' }[d.conteudo] || 'E-mail com o resultado enviado');
       carregar(paginaAtual);
     } catch (err) {
       toast(err.message || 'Erro ao enviar', 'error');

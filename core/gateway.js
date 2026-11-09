@@ -294,15 +294,11 @@ async function loopWorker() {
     for (let i = 0; i < mensagens.length; i++) {
       const msg = mensagens[i];
 
-      // Delay humano antes da PRIMEIRA mensagem (3-5s aleatório, simula ler+pensar)
-      // Subsequentes usam o cooldown_entre_msgs_atendimento (rápido, "digitando")
-      let delayMs;
-      if (i === 0) {
-        delayMs = 3000 + Math.floor(Math.random() * 2000);
-      } else {
-        delayMs = cfg.cooldown_entre_msgs_atendimento * 1000;
+      // Espera só ENTRE mensagens (regra do Renato): a primeira sai na hora;
+      // as seguintes esperam o cooldown_entre_msgs_atendimento.
+      if (i > 0) {
+        await new Promise(r => setTimeout(r, cfg.cooldown_entre_msgs_atendimento * 1000));
       }
-      await new Promise(r => setTimeout(r, delayMs));
 
       const ok = await enviarTexto(msg.telefone, msg.mensagem);
       const agora = new Date();

@@ -111,6 +111,9 @@ async function precoTeste() {
   return String((p.mostrar_promo && p.preco_promo) || p.preco_padrao || '').trim();
 }
 
+// Link que vai nas mensagens: /pagar/<id> mostra a prévia do Teste do
+// Subconsciente no WhatsApp e abre na hora o mesmo checkout do fim do teste.
+const linkPagar = testeId => `${APP_URL}/pagar/${testeId}`;
 const linkResultado = testeId => `${APP_URL}/resultado/${testeId}`;
 const linkContinuar = leadId => `${APP_URL}/teste?continuar=${leadId}`;
 const linkPesquisa = testeId => `${APP_URL}/pesquisa/${testeId}`;
@@ -165,6 +168,7 @@ async function enviarBrevo(para, nome, subject, htmlContent) {
 }
 
 // Envia UMA peça (1 canal) e registra. `peca` = { canal, conteudo, texto?, email?: {subject, html, resumo} }.
+// `texto` pode ser uma lista: cada item vira uma mensagem do mesmo atendimento.
 // marketing=true respeita Novidades.
 async function enviarPeca(reg, pessoa, peca, { marketing, tipo, categoria, origem }) {
   const destino = peca.canal === 'whatsapp' ? pessoa.telefone_canonico : pessoa.email;
@@ -181,11 +185,12 @@ async function enviarPeca(reg, pessoa, peca, { marketing, tipo, categoria, orige
       return { ok: false, erro: m };
     }
     if (peca.canal === 'whatsapp') {
+      const textos = Array.isArray(peca.texto) ? peca.texto : [peca.texto];
       const { atendimento_id } = await enfileirarAtendimento({
         telefone: destino, tipo, categoria, origem, nome: pessoa.nome || null,
-        mensagens: [{ texto: peca.texto }],
+        mensagens: textos.map(texto => ({ texto })),
       });
-      await concluir(id, { status: 'na_fila', texto: peca.texto, atendimento_id });
+      await concluir(id, { status: 'na_fila', texto: textos.join('\n\n— — —\n\n'), atendimento_id });
     } else {
       await enviarBrevo(destino, pessoa.nome, peca.email.subject, peca.email.html);
       await concluir(id, { status: 'enviado', texto: peca.email.subject + '\n\n' + peca.email.resumo });
@@ -398,11 +403,16 @@ async function materiaisDoTeste(t) {
 }
 
 // ── TEXTOS DO WHATSAPP ──────────────────────────────────────
-const waA = (nome, link) => `${saudacao('Oi', nome)} Você chegou até aqui e a melhor parte vem agora... Finalize seu pagamento no link a seguir e descubra o que o teste revelou sobre seu subconsciente\n${link}`;
+// Saudação, cada frase e cada link em linha própria (WhatsApp sem parágrafo fica corrido).
+const waA = (nome, link) => `${saudacao('Oi', nome)}\n\nVocê chegou até aqui e a melhor parte vem agora...\n\nFinalize seu pagamento no link a seguir e descubra o que o teste revelou sobre seu subconsciente:\n${link}`;
 const waB = link => `Chegouu! Aqui está o link do seu resultado do Teste do Subconsciente:\n${link}`;
-const waRecuperacao = (nome, link) => `${saudacao('Oi', nome)} Sua mente sentiu vontade de começar o teste, mas por algum motivo você não finalizou.\nEntão a Suellen tem um recado para você: ${VIDEO_RECUPERACAO}\n\nNão precisa começar de novo! Você pode continuar de onde parou, clicando aqui:\n${link}`;
+// Recuperação (C e D) sai em 2 mensagens: o recado com o vídeo, depois o link.
+const waRecuperacao = (nome, link) => [
+  `${saudacao('Oi', nome)}\n\nSua mente sentiu vontade de começar o teste, mas por algum motivo você não finalizou.\n\nEntão a Suellen tem um recado para você:\n${VIDEO_RECUPERACAO}`,
+  `Não precisa começar de novo! Você pode continuar de onde parou, clicando aqui:\n${link}`,
+];
 const waE = () => `Parabéns por esse passo em direção à sua mudança.\n\nAgora que você terminou, a Suellen tem um recado especial para você\n\n${VIDEO_POS_COMPRA}`;
-const waReenvio = (nome, link) => `${saudacao('Oi', nome)} Aqui está o link do seu resultado no Teste do Subconsciente: ${link}`;
+const waReenvio = (nome, link) => `${saudacao('Oi', nome)}\n\nAqui está o link do seu resultado no Teste do Subconsciente:\n${link}`;
 
 // ── A: na hora em que ela termina (pagamento obrigatório) ───
 // Chamado por routes/teste.js sem esperar (não atrasa a ida pro checkout).
@@ -410,10 +420,11 @@ async function dispararNaHora(testeId) {
   try {
     const t = await carregarTeste(testeId);
     if (!t || t.pago || t.modo_dev) return;
-    const link = await linkPagamento(t.id);
+    const checkout = await linkPagamento(t.id);
+    const link = linkPagar(t.id);
     const nome = primeiroNome(t.nome);
     const reg = c => ({ chave: `A:${t.id}:${c}`, teste_id: t.id, lead_id: t.lead_id, momento: 'pagamento' });
-    if (!link) {
+    if (!checkout) {
       for (const c of ['whatsapp', 'email']) {
         const id = await reservar({ ...reg(c), canal: c, conteudo: 'pagamento' });
         if (id) await concluir(id, { status: 'erro', motivo: 'produto Teste sem link de checkout no admin' });
@@ -447,7 +458,9 @@ async function dispararPago(testeId) {
 }
 
 // ── MANUAL (botões do admin) ────────────────────────────────
-// Pendente = o mesmo A (link de pagamento). Pago (ou resultado aberto) = reenvio do resultado.
+// Pendente até 15 min depois de terminar = o mesmo A (transacional).
+// Pendente há mais de 15 min = a mesma recuperação D (respeita Novidades).
+// Pago (ou resultado aberto) = reenvio do resultado.
 async function enviarManual(testeId, canal) {
   const t = await carregarTeste(testeId);
   if (!t) return { ok: false, status: 404, erro: 'Teste não encontrado' };
@@ -457,8 +470,16 @@ async function enviarManual(testeId, canal) {
   const opts = { marketing: false, tipo: 'ativo', categoria: 'manual_admin', origem: 'admin_testes_resultados' };
   let r;
   if (!aberto) {
-    const link = await linkPagamento(t.id);
-    if (!link) return { ok: false, status: 400, erro: 'Produto Teste sem link de checkout no admin' };
+    if (!(await linkPagamento(t.id))) return { ok: false, status: 400, erro: 'Produto Teste sem link de checkout no admin' };
+    const link = linkPagar(t.id);
+    const recuperacao = Date.now() - new Date(t.feito_em).getTime() >= MIN_RECUPERACAO * 60 * 1000;
+    if (recuperacao) {
+      const optsRec = { ...opts, marketing: true };
+      r = canal === 'whatsapp'
+        ? await enviarPeca(reg, t, { canal, conteudo: 'recuperacao', texto: waRecuperacao(nome, link) }, optsRec)
+        : await enviarPeca(reg, t, { canal, conteudo: 'recuperacao', email: emailRecuperacao(nome, link, 'Finalizar pagamento', linkCancelar(t.lead_id)) }, optsRec);
+      return r.ok ? { ok: true, conteudo: 'recuperacao' } : { ok: false, status: 400, erro: r.erro };
+    }
     r = canal === 'whatsapp'
       ? await enviarPeca(reg, t, { canal, conteudo: 'pagamento', texto: waA(nome, link) }, opts)
       : await enviarPeca(reg, t, { canal, conteudo: 'pagamento', email: emailA(nome, link, await precoTeste()) }, opts);
@@ -538,8 +559,8 @@ async function tickD() {
     }
     const t = await carregarTeste(row.id);
     if (!t || t.pago) continue; // pagou entre a busca e agora
-    const link = await linkPagamento(t.id);
-    if (!link) continue;
+    if (!(await linkPagamento(t.id))) continue;
+    const link = linkPagar(t.id);
     const nome = primeiroNome(t.nome);
     const opts = { marketing: true, tipo: 'ativo', categoria: CATEGORIA, origem: 'teste-avisos-recuperacao' };
     await enviarPeca(reg('whatsapp'), t, { canal: 'whatsapp', conteudo: 'pagamento', texto: waRecuperacao(nome, link) }, opts);
@@ -662,7 +683,58 @@ async function dadosPesquisa(testeId) {
   return { nome: primeiroNome(t.nome), nota: a.rows[0] ? a.rows[0].nota : null };
 }
 
+// ── /pagar/:id (link das mensagens de pagamento) ────────────
+// Prévia do WhatsApp com o título e a imagem da página do Teste; quem toca
+// cai na hora no mesmo checkout do fim do teste (?uid=VM<id>).
+// Devolve null quando o teste não existe ou o produto está sem link.
+async function paginaPagar(testeId) {
+  const t = await poolTeste.query(`SELECT 1 FROM testes WHERE id = $1`, [testeId]);
+  if (!t.rows[0]) return null;
+  const checkout = await linkPagamento(testeId);
+  if (!checkout) return null;
+  const c = esc(checkout);
+  const titulo = 'Teste do Subconsciente | Vida Mágica - Suellen Seragi';
+  const descricao = 'Finalize seu pagamento e descubra o que o teste revelou sobre seu subconsciente.';
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>${titulo}</title>
+<meta name="description" content="${descricao}">
+<meta property="og:site_name" content="Vida Mágica - Suellen Seragi">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:url" content="${esc(linkPagar(testeId))}">
+<meta property="og:title" content="${titulo}">
+<meta property="og:description" content="${descricao}">
+<meta property="og:image" content="https://vidamagica.com.br/assets/compartilhar-vida-magica.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#1A1205; color:#f5f0e8; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; min-height:100vh; line-height:1.6; }
+  .wrap { max-width:440px; margin:0 auto; padding:32px 20px 48px; text-align:center; }
+  .logo { display:block; height:32px; width:auto; margin:0 auto 28px; }
+  p { color:#c8c0a8; font-size:15px; margin-bottom:20px; }
+  a.botao { display:inline-block; padding:12px 28px; background:#E8C97A; color:#1A1205; border-radius:8px; font-weight:700; font-size:14px; text-decoration:none; }
+</style>
+<script>location.replace(${JSON.stringify(checkout)});</script>
+</head>
+<body>
+<main class="wrap">
+  <img class="logo" src="/assets/logo-horizontal.webp" alt="Vida Mágica">
+  <p>Abrindo o pagamento do seu Teste do Subconsciente…</p>
+  <a class="botao" href="${c}">Finalizar pagamento</a>
+</main>
+</body>
+</html>`;
+}
+
 module.exports = {
+  paginaPagar,
   dispararNaHora,
   dispararPago,
   enviarManual,
