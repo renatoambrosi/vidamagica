@@ -740,7 +740,7 @@ async function paginaPagar(testeId) {
 <meta property="og:url" content="${esc(linkPagar(testeId))}">
 <meta property="og:title" content="${titulo}">
 <meta property="og:description" content="${descricao}">
-<meta property="og:image" content="https://vidamagica.com.br/assets/compartilhar-vida-magica.jpg">
+<meta property="og:image" content="https://vidamagica.com.br/assets/compartilhar-teste-subconsciente.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
