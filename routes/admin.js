@@ -38,7 +38,7 @@ const {
   salvarMostrarLogTeste,
 } = require('../core/teste-config');
 const { lerConfigBlack, salvarConfigBlack } = require('../core/campanha');
-const { enviarManual: enviarManualTeste, historicoDosTestes, historicoDosLeads } = require('../core/teste-avisos');
+const { enviarManual: enviarManualTeste, historicoDosTestes, historicoDosLeads, enviarAmostra } = require('../core/teste-avisos');
 
 // ── Middleware: só admin pode usar tudo aqui (escopo='admin')
 router.use(autenticarPainel('admin'));
@@ -1684,6 +1684,20 @@ async function _enviarManualTeste(req, res, canal) {
 }
 router.post('/testes-resultados/:id/enviar-whatsapp', (req, res) => _enviarManualTeste(req, res, 'whatsapp'));
 router.post('/testes-resultados/:id/enviar-email', (req, res) => _enviarManualTeste(req, res, 'email'));
+
+// "Testar mensagens": manda 1 mensagem do Teste, igual à de verdade, para o
+// telefone/e-mail digitado no admin. Não entra no histórico.
+router.post('/teste-avisos/amostra', async (req, res) => {
+  try {
+    const { peca, telefone, email, nome } = req.body || {};
+    const r = await enviarAmostra({ peca, telefone, email, nome });
+    if (!r.ok) return res.status(400).json(r);
+    res.json(r);
+  } catch (err) {
+    console.error('❌ /teste-avisos/amostra:', err.message);
+    res.status(500).json({ ok: false, erro: 'Erro ao enviar' });
+  }
+});
 
 // ════════════════════════════════════════════════════════════
 // 21. TESTE DO SUBCONSCIENTE — INSIGHTS (funil + respostas por pergunta)

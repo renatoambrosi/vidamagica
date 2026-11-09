@@ -78,6 +78,12 @@ body { font-family: var(--font-body); background: var(--bg-dark); color: var(--t
 .tr-ok { color: #7FD8A0; }
 .tr-nao { color: var(--text-muted); }
 .tr-acoes { display: grid; grid-template-columns: repeat(2, max-content); gap: 0.3rem; }
+/* Testar mensagens do Teste: amostras para o próprio Renato */
+.tr-amostras { border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 1rem; background: rgba(255,255,255,0.015); }
+.tr-amostras > summary { cursor: pointer; padding: 0.75rem 1rem; font-family: var(--font-display); font-weight: 700; font-size: 0.86rem; color: var(--color-gold-light); }
+.tr-amostras-corpo { padding: 0 1rem 1rem; }
+.tr-amostras-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; padding: 0.45rem 0; border-top: 1px solid var(--border); }
+.tr-amostras-linha > span { min-width: 220px; font-size: 0.8rem; color: var(--text-light); }
 /* Mensagens do Teste: tudo que foi disparado (core/teste-avisos.js) */
 .tr-env { font-size: 0.76rem; line-height: 1.45; margin-bottom: 0.35rem; min-width: 260px; }
 .tr-env:last-child { margin-bottom: 0; }
@@ -1449,6 +1455,24 @@ input[type="datetime-local"] { color-scheme: dark; }
           </div>
           <button class="btn btn-ghost btn-sm" onclick="testesResultados.carregar(1)">↺ Atualizar</button>
         </div>
+
+        <details class="tr-amostras">
+          <summary>Testar mensagens (envia para você)</summary>
+          <div class="tr-amostras-corpo">
+            <div class="tl-sub">Manda a mensagem igual à de verdade para o telefone e o e-mail abaixo. Os links usam o seu teste mais recente. Não entra no histórico.</div>
+            <div class="fields-grid" style="margin:0.75rem 0">
+              <div><label class="field-label">Nome</label><input type="text" id="am-nome" placeholder="Renato"></div>
+              <div><label class="field-label">Telefone</label><input type="text" id="am-tel" placeholder="(62) 99999-9999"></div>
+              <div><label class="field-label">E-mail</label><input type="email" id="am-email" placeholder="voce@email.com"></div>
+            </div>
+            <div class="tr-amostras-linha"><span>A · Terminou o teste</span><button class="btn btn-ghost btn-sm" onclick="testesResultados.amostra('A_whatsapp', this)">WhatsApp</button><button class="btn btn-ghost btn-sm" onclick="testesResultados.amostra('A_email', this)">E-mail</button></div>
+            <div class="tr-amostras-linha"><span>B · Pagou</span><button class="btn btn-ghost btn-sm" onclick="testesResultados.amostra('B_whatsapp', this)">WhatsApp</button><button class="btn btn-ghost btn-sm" onclick="testesResultados.amostra('B_email', this)">E-mail</button></div>
+            <div class="tr-amostras-linha"><span>C · Parou no meio</span><button class="btn btn-ghost btn-sm" onclick="testesResultados.amostra('C_whatsapp', this)">WhatsApp</button><button class="btn btn-ghost btn-sm" onclick="testesResultados.amostra('C_email', this)">E-mail</button></div>
+            <div class="tr-amostras-linha"><span>D · Terminou e não pagou</span><button class="btn btn-ghost btn-sm" onclick="testesResultados.amostra('D_whatsapp', this)">WhatsApp</button><button class="btn btn-ghost btn-sm" onclick="testesResultados.amostra('D_email', this)">E-mail</button></div>
+            <div class="tr-amostras-linha"><span>E · Pós-compra</span><button class="btn btn-ghost btn-sm" onclick="testesResultados.amostra('E_whatsapp', this)">WhatsApp</button><button class="btn btn-ghost btn-sm" onclick="testesResultados.amostra('E_pesquisa', this)">E-mail de pesquisa</button><button class="btn btn-ghost btn-sm" onclick="testesResultados.amostra('E_materiais', this)">E-mail de materiais</button></div>
+            <div class="tr-amostras-linha"><span>Reenvio do resultado (botão do admin)</span><button class="btn btn-ghost btn-sm" onclick="testesResultados.amostra('R_whatsapp', this)">WhatsApp</button><button class="btn btn-ghost btn-sm" onclick="testesResultados.amostra('R_email', this)">E-mail</button></div>
+          </div>
+        </details>
 
         <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem">
           <div id="tr-status-tabs" style="display:flex;gap:0.4rem;flex-wrap:wrap">
@@ -4481,7 +4505,34 @@ const testesResultados = (function(){
     }
   }
 
-  return { carregar, setStatus, setPeriodo, debounceBusca, copiarLink, enviarWhatsapp, enviarEmail };
+  // ── Testar mensagens: manda 1 amostra para o telefone/e-mail digitado ──
+  const AM_CAMPOS = { nome: 'am-nome', telefone: 'am-tel', email: 'am-email' };
+  try {
+    const salvo = JSON.parse(localStorage.getItem('vm_admin_amostra') || '{}');
+    for (const [k, id] of Object.entries(AM_CAMPOS)) if (salvo[k]) document.getElementById(id).value = salvo[k];
+  } catch {}
+  async function amostra(peca, btn) {
+    const body = { peca };
+    for (const [k, id] of Object.entries(AM_CAMPOS)) body[k] = document.getElementById(id).value.trim();
+    try { localStorage.setItem('vm_admin_amostra', JSON.stringify({ nome: body.nome, telefone: body.telefone, email: body.email })); } catch {}
+    btn.disabled = true;
+    try {
+      const r = await fetch(`${API}/api/admin/teste-avisos/amostra`, {
+        method: 'POST',
+        headers: { Authorization: authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+      toast(/whatsapp/i.test(peca) ? `${d.nome}: na fila do WhatsApp` : `${d.nome}: enviado`);
+    } catch (err) {
+      toast(err.message || 'Erro ao enviar', 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  return { carregar, setStatus, setPeriodo, debounceBusca, copiarLink, enviarWhatsapp, enviarEmail, amostra };
 })();
 
 const testesAvaliacoes = (function(){

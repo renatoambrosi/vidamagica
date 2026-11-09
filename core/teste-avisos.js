@@ -733,7 +733,74 @@ async function paginaPagar(testeId) {
 </html>`;
 }
 
+// ── AMOSTRAS (admin → "Testar mensagens") ───────────────────
+// Manda UMA peça, exatamente como sai de verdade, para o telefone/e-mail que
+// o Renato digitar. Os links usam o teste mais recente desse telefone (os
+// testes que ele mesmo faz); sem teste dele, o mais recente do sistema.
+// Não grava em teste_avisos (não suja o histórico). WhatsApp pelo gateway,
+// categoria 'manual_admin'.
+const AMOSTRAS = {
+  A_whatsapp: 'A · WhatsApp', A_email: 'A · E-mail',
+  B_whatsapp: 'B · WhatsApp', B_email: 'B · E-mail',
+  C_whatsapp: 'C · WhatsApp', C_email: 'C · E-mail',
+  D_whatsapp: 'D · WhatsApp', D_email: 'D · E-mail',
+  E_whatsapp: 'E · WhatsApp', E_pesquisa: 'E · E-mail de pesquisa', E_materiais: 'E · E-mail de materiais',
+  R_whatsapp: 'Reenvio do resultado · WhatsApp', R_email: 'Reenvio do resultado · E-mail',
+};
+const CANCELAR_AMOSTRA = `${APP_URL}/cancelar-inscricao/00000000-0000-0000-0000-000000000000`;
+
+async function enviarAmostra({ peca, telefone, email, nome }) {
+  if (!AMOSTRAS[peca]) return { ok: false, erro: 'Mensagem desconhecida' };
+  const canal = /_whatsapp$/.test(peca) ? 'whatsapp' : 'email';
+  const { formatarTelefone } = require('./utils');
+  const tel = telefone ? formatarTelefone(telefone) : '';
+  if (canal === 'whatsapp' && !tel) return { ok: false, erro: 'Digite o telefone' };
+  if (canal === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ''))) return { ok: false, erro: 'Digite o e-mail' };
+
+  let r = tel ? await poolTeste.query(`SELECT id FROM testes WHERE telefone_canonico = $1 ORDER BY feito_em DESC LIMIT 1`, [tel]) : { rows: [] };
+  if (!r.rows[0]) r = await poolTeste.query(`SELECT id FROM testes ORDER BY feito_em DESC LIMIT 1`);
+  if (!r.rows[0]) return { ok: false, erro: 'Nenhum teste no sistema para montar os links' };
+  const t = await carregarTeste(r.rows[0].id);
+  const n = primeiroNome(nome) || primeiroNome(t.nome);
+  const pagar = linkPagar(t.id);
+  const resultado = linkResultado(t.id);
+
+  let texto = null;
+  let mail = null;
+  switch (peca) {
+    case 'A_whatsapp': texto = waA(n, pagar); break;
+    case 'A_email': mail = emailA(n, pagar, await precoTeste()); break;
+    case 'B_whatsapp': texto = waB(resultado); break;
+    case 'B_email': mail = emailB(n, resultado); break;
+    case 'C_whatsapp': texto = waRecuperacao(n, t.lead_id ? linkContinuar(t.lead_id) : `${APP_URL}/teste`); break;
+    case 'C_email': mail = emailRecuperacao(n, t.lead_id ? linkContinuar(t.lead_id) : `${APP_URL}/teste`, 'Continuar meu teste', CANCELAR_AMOSTRA); break;
+    case 'D_whatsapp': texto = waRecuperacao(n, pagar); break;
+    case 'D_email': mail = emailRecuperacao(n, pagar, 'Finalizar pagamento', CANCELAR_AMOSTRA); break;
+    case 'E_whatsapp': texto = waE(); break;
+    case 'E_pesquisa': mail = emailPesquisa(n, linkPesquisa(t.id), CANCELAR_AMOSTRA); break;
+    case 'E_materiais': mail = emailRecomendacao(n, await materiaisDoTeste(t), CANCELAR_AMOSTRA); break;
+    case 'R_whatsapp': texto = waReenvio(n, resultado); break;
+    case 'R_email': mail = emailReenvio(n, resultado); break;
+  }
+  try {
+    if (canal === 'whatsapp') {
+      const textos = Array.isArray(texto) ? texto : [texto];
+      await enfileirarAtendimento({
+        telefone: tel, tipo: 'ativo', categoria: 'manual_admin', origem: 'admin-amostra-teste',
+        nome: n || null, mensagens: textos.map(x => ({ texto: x })),
+      });
+    } else {
+      await enviarBrevo(email, n, mail.subject, mail.html);
+    }
+    return { ok: true, nome: AMOSTRAS[peca] };
+  } catch (e) {
+    console.error('❌ [teste-avisos] amostra:', (e.response && JSON.stringify(e.response.data)) || e.message);
+    return { ok: false, erro: 'Falha ao enviar' };
+  }
+}
+
 module.exports = {
+  enviarAmostra,
   paginaPagar,
   dispararNaHora,
   dispararPago,
