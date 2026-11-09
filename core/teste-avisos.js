@@ -42,7 +42,10 @@ const CATEGORIA = 'teste_mensagens';
 const INTERVALO_MS = 60 * 1000;
 const MIN_RECUPERACAO = 15;  // C e D
 const MIN_POS_COMPRA = 20;   // E
-const FOLGA_HORAS = 2;       // venceu há mais que isso (servidor parado) não sai mais
+// Regra do Renato: nunca ativar gente antiga, nem depois de o robô ficar
+// parado. Só sai o que venceu AGORA (até 5 min de folga para o worker de
+// 1 min e reinício do servidor); venceu antes disso, não sai nunca mais.
+const FOLGA_MIN = 5;
 
 const VIDEO_RECUPERACAO = 'https://youtube.com/shorts/jPRfc5NqPJg';
 const VIDEO_POS_COMPRA = 'https://youtube.com/shorts/lgzOMxmPmqo?feature=share';
@@ -167,6 +170,19 @@ async function enviarBrevo(para, nome, subject, htmlContent) {
   }, { headers: { accept: 'application/json', 'api-key': process.env.BREVO_API_KEY, 'content-type': 'application/json' }, timeout: 15000 });
 }
 
+// WhatsApp pausado no gateway (geral ou a categoria)? Então a mensagem nem
+// entra na fila: ficaria parada e sairia atrasada quando voltasse, ativando
+// gente antiga. Registra "não enviado" e pronto.
+async function whatsappPausado(categoria) {
+  const r = await poolComunicacao.query(
+    `SELECT
+       COALESCE((SELECT valor FROM gateway_config WHERE chave = 'pausado_geral'), 'false') = 'true' AS geral,
+       COALESCE((SELECT pausado FROM gateway_categorias WHERE chave = $1), FALSE) AS categoria`,
+    [categoria]
+  );
+  return r.rows[0].geral || r.rows[0].categoria;
+}
+
 // Envia UMA peça (1 canal) e registra. `peca` = { canal, conteudo, texto?, email?: {subject, html, resumo} }.
 // `texto` pode ser uma lista: cada item vira uma mensagem do mesmo atendimento.
 // marketing=true respeita Novidades.
@@ -185,6 +201,10 @@ async function enviarPeca(reg, pessoa, peca, { marketing, tipo, categoria, orige
       return { ok: false, erro: m };
     }
     if (peca.canal === 'whatsapp') {
+      if (await whatsappPausado(categoria)) {
+        await concluir(id, { status: 'nao_enviado', motivo: 'WhatsApp pausado no gateway' });
+        return { ok: false, erro: 'WhatsApp pausado no gateway' };
+      }
       const textos = Array.isArray(peca.texto) ? peca.texto : [peca.texto];
       const { atendimento_id } = await enfileirarAtendimento({
         telefone: destino, tipo, categoria, origem, nome: pessoa.nome || null,
@@ -509,9 +529,9 @@ async function tickC() {
       WHERE COALESCE(r.n, 0) < 15
         AND (ut.ultimo IS NULL OR GREATEST(l.atualizado_em, COALESCE(r.ultima, l.atualizado_em)) > ut.ultimo + INTERVAL '2 seconds')
         AND GREATEST(l.atualizado_em, COALESCE(r.ultima, l.atualizado_em)) <= NOW() - make_interval(mins => $1)
-        AND GREATEST(l.atualizado_em, COALESCE(r.ultima, l.atualizado_em)) >= NOW() - make_interval(mins => $1) - make_interval(hours => $2)
+        AND GREATEST(l.atualizado_em, COALESCE(r.ultima, l.atualizado_em)) >= NOW() - make_interval(mins => $1) - make_interval(mins => $2)
       LIMIT 50`,
-    [MIN_RECUPERACAO, FOLGA_HORAS]
+    [MIN_RECUPERACAO, FOLGA_MIN]
   );
   for (const row of r.rows) {
     const lead = await carregarLead(row.id);
@@ -533,11 +553,11 @@ async function tickD() {
        FROM testes t
       WHERE t.pago = FALSE AND t.modo_dev = FALSE AND t.eh_legado = FALSE
         AND t.feito_em <= NOW() - make_interval(mins => $1)
-        AND t.feito_em >= NOW() - make_interval(mins => $1) - make_interval(hours => $2)
+        AND t.feito_em >= NOW() - make_interval(mins => $1) - make_interval(mins => $2)
         AND NOT EXISTS (SELECT 1 FROM teste_avisos a WHERE a.teste_id = t.id AND a.momento = 'recuperacao_pagamento')
       ORDER BY t.feito_em
       LIMIT 50`,
-    [MIN_RECUPERACAO, FOLGA_HORAS]
+    [MIN_RECUPERACAO, FOLGA_MIN]
   );
   if (!r.rows.length) return;
   const modoDevAdmin = await lerModoDevTeste();
@@ -576,10 +596,10 @@ async function tickE() {
       WHERE b.momento = 'resultado' AND b.teste_id IS NOT NULL
       GROUP BY b.teste_id
      HAVING MIN(b.criado_em) <= NOW() - make_interval(mins => $1)
-        AND MIN(b.criado_em) >= NOW() - make_interval(mins => $1) - make_interval(hours => $2)
+        AND MIN(b.criado_em) >= NOW() - make_interval(mins => $1) - make_interval(mins => $2)
         AND NOT EXISTS (SELECT 1 FROM teste_avisos e WHERE e.teste_id = b.teste_id AND e.momento = 'pos_compra')
       LIMIT 50`,
-    [MIN_POS_COMPRA, FOLGA_HORAS]
+    [MIN_POS_COMPRA, FOLGA_MIN]
   );
   for (const row of r.rows) {
     const t = await carregarTeste(row.teste_id);
@@ -784,6 +804,7 @@ async function enviarAmostra({ peca, telefone, email, nome }) {
   }
   try {
     if (canal === 'whatsapp') {
+      if (await whatsappPausado('manual_admin')) return { ok: false, erro: 'WhatsApp pausado no gateway' };
       const textos = Array.isArray(texto) ? texto : [texto];
       await enfileirarAtendimento({
         telefone: tel, tipo: 'ativo', categoria: 'manual_admin', origem: 'admin-amostra-teste',
