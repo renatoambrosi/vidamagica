@@ -1487,6 +1487,8 @@ async function initComunicacao() {
     await c.query(`ALTER TABLE fila_mensagens ADD COLUMN IF NOT EXISTS tipo VARCHAR(10) DEFAULT 'ativo'`);
     await c.query(`ALTER TABLE fila_mensagens ADD COLUMN IF NOT EXISTS prioridade INTEGER DEFAULT 2`);
     await c.query(`ALTER TABLE fila_mensagens ADD COLUMN IF NOT EXISTS template_chave VARCHAR(80)`);
+    // Mensagem que sai sem a prévia do link (ex.: link de continuar o Teste).
+    await c.query(`ALTER TABLE fila_mensagens ADD COLUMN IF NOT EXISTS sem_previa BOOLEAN DEFAULT FALSE`);
 
     await c.query(`CREATE INDEX IF NOT EXISTS idx_fila_atendimento ON fila_mensagens(atendimento_id, ordem_no_atendimento)`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_fila_pendentes ON fila_mensagens(status, prioridade, entrou_em) WHERE status='pendente'`);

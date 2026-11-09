@@ -193,6 +193,9 @@ async function bloqueio(categoria, canal) {
   return null;
 }
 
+// Item de WhatsApp: texto simples ou { texto, semPrevia } (sai sem a prévia do link).
+const paraFila = x => (typeof x === 'string' ? { texto: x } : { texto: x.texto, semPrevia: x.semPrevia === true });
+
 // Envia UMA peça (1 canal) e registra. `peca` = { canal, conteudo, texto?, email?: {subject, html, resumo} }.
 // `texto` pode ser uma lista: cada item vira uma mensagem do mesmo atendimento.
 // marketing=true respeita Novidades.
@@ -219,9 +222,9 @@ async function enviarPeca(reg, pessoa, peca, { marketing, tipo, categoria, orige
       const textos = Array.isArray(peca.texto) ? peca.texto : [peca.texto];
       const { atendimento_id } = await enfileirarAtendimento({
         telefone: destino, tipo, categoria, origem, nome: pessoa.nome || null,
-        mensagens: textos.map(texto => ({ texto })),
+        mensagens: textos.map(paraFila),
       });
-      await concluir(id, { status: 'na_fila', texto: textos.join('\n\n— — —\n\n'), atendimento_id });
+      await concluir(id, { status: 'na_fila', texto: textos.map(x => paraFila(x).texto).join('\n\n— — —\n\n'), atendimento_id });
     } else {
       await enviarBrevo(destino, pessoa.nome, peca.email.subject, peca.email.html);
       await concluir(id, { status: 'enviado', texto: peca.email.subject + '\n\n' + peca.email.resumo });
@@ -437,10 +440,12 @@ async function materiaisDoTeste(t) {
 // Saudação, cada frase e cada link em linha própria (WhatsApp sem parágrafo fica corrido).
 const waA = (nome, link) => `${saudacao('Oi', nome)}\n\nVocê chegou até aqui e a melhor parte vem agora...\n\nFinalize seu pagamento no link a seguir e descubra o que o teste revelou sobre seu subconsciente:\n${link}`;
 const waB = link => `Chegouu! Aqui está o link do seu resultado do Teste do Subconsciente:\n${link}`;
-// Recuperação (C e D) sai em 2 mensagens: o recado com o vídeo, depois o link.
+// Recuperação (C e D) sai em 3 mensagens: o texto sozinho, o link do vídeo
+// sozinho (com prévia) e, por fim, o convite com o link do teste (sem prévia).
 const waRecuperacao = (nome, link) => [
-  `${saudacao('Oi', nome)}\n\nSua mente sentiu vontade de começar o teste, mas por algum motivo você não finalizou.\n\nEntão a Suellen tem um recado para você:\n${VIDEO_RECUPERACAO}`,
-  `Não precisa começar de novo! Você pode continuar de onde parou, clicando aqui:\n${link}`,
+  `${saudacao('Oi', nome)}\n\nSua mente sentiu vontade de começar o teste, mas por algum motivo você não finalizou.\n\nEntão a Suellen tem um recado para você:`,
+  VIDEO_RECUPERACAO,
+  { texto: `Não precisa começar de novo! Você pode continuar de onde parou, clicando aqui:\n${link}`, semPrevia: true },
 ];
 const waE = () => `Parabéns por esse passo em direção à sua mudança.\n\nAgora que você terminou, a Suellen tem um recado especial para você\n\n${VIDEO_POS_COMPRA}`;
 const waReenvio = (nome, link) => `${saudacao('Oi', nome)}\n\nAqui está o link do seu resultado no Teste do Subconsciente:\n${link}`;
@@ -820,7 +825,7 @@ async function enviarAmostra({ peca, telefone, email, nome }) {
       const textos = Array.isArray(texto) ? texto : [texto];
       await enfileirarAtendimento({
         telefone: tel, tipo: 'ativo', categoria: 'manual_admin', origem: 'admin-amostra-teste',
-        nome: n || null, mensagens: textos.map(x => ({ texto: x })),
+        nome: n || null, mensagens: textos.map(paraFila),
       });
     } else {
       await enviarBrevo(email, n, mail.subject, mail.html);

@@ -36,12 +36,15 @@ function checaConfig() {
  * @param {string} mensagem
  * @returns {Promise<boolean>}
  */
-async function enviarTexto(telefoneCanonico, mensagem) {
+// opts.semPrevia = true → a Evolution manda sem a prévia do link (linkPreview: false).
+async function enviarTexto(telefoneCanonico, mensagem, opts = {}) {
   checaConfig();
   try {
+    const corpo = { number: telefoneCanonico, text: mensagem };
+    if (opts.semPrevia) corpo.linkPreview = false;
     await axios.post(
       `${EVOLUTION_URL}/message/sendText/${instance()}`,
-      { number: telefoneCanonico, text: mensagem },
+      corpo,
       {
         headers: { apikey: EVOLUTION_API_KEY, 'Content-Type': 'application/json' },
         timeout: 15000,

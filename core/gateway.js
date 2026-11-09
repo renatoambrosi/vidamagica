@@ -153,7 +153,8 @@ async function enfileirarAtendimento(opts) {
     if (typeof item === 'string') {
       mensagensRenderizadas.push({ texto: item, template: null });
     } else if (item && item.texto) {
-      mensagensRenderizadas.push({ texto: item.texto, template: null });
+      // semPrevia: true → essa mensagem sai sem a prévia do link
+      mensagensRenderizadas.push({ texto: item.texto, template: null, semPrevia: item.semPrevia === true });
     } else if (item && item.template) {
       const texto = await renderizarTemplate(item.template, item.variaveis || {});
       if (!texto) throw new Error(`template '${item.template}' inválido ou vazio`);
@@ -173,11 +174,11 @@ async function enfileirarAtendimento(opts) {
       const r = await c.query(
         `INSERT INTO fila_mensagens
           (telefone, mensagem, nome, origem, status, tentativas,
-           atendimento_id, ordem_no_atendimento, categoria, tipo, prioridade, template_chave)
-         VALUES ($1, $2, $3, $4, 'pendente', 0, $5, $6, $7, $8, $9, $10)
+           atendimento_id, ordem_no_atendimento, categoria, tipo, prioridade, template_chave, sem_previa)
+         VALUES ($1, $2, $3, $4, 'pendente', 0, $5, $6, $7, $8, $9, $10, $11)
          RETURNING id`,
         [telefoneCanonico, m.texto, nome, origem,
-         atendimento_id, i + 1, categoria, tipo, prioridade, m.template]
+         atendimento_id, i + 1, categoria, tipo, prioridade, m.template, m.semPrevia === true]
       );
       ids.push(r.rows[0].id);
     }
@@ -300,7 +301,7 @@ async function loopWorker() {
         await new Promise(r => setTimeout(r, cfg.cooldown_entre_msgs_atendimento * 1000));
       }
 
-      const ok = await enviarTexto(msg.telefone, msg.mensagem);
+      const ok = await enviarTexto(msg.telefone, msg.mensagem, { semPrevia: msg.sem_previa === true });
       const agora = new Date();
 
       if (ok) {
