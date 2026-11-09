@@ -1514,12 +1514,24 @@ async function initComunicacao() {
         ('manual_admin',       'Manual do admin',                     '✋', 5)
       ON CONFLICT (chave) DO NOTHING
     `);
-    // Mensagens do Teste (pagamento, resultado, recuperações, pós-compra) — core/teste-avisos.js
+    // Mensagens do Teste — core/teste-avisos.js. Dois conjuntos que o Renato
+    // liga e desliga no admin (vale para WhatsApp e e-mail):
+    //   Transacional Teste   = A (link de pagamento) e B (resultado)
+    //   Acompanhamento Teste = C, D (recuperações) e E (pós-compra)
+    // A categoria antiga 'teste_mensagens' (1º deploy) vira a de acompanhamento.
     await c.query(`
-      INSERT INTO gateway_categorias (chave, nome_exibicao, ordem)
-      VALUES ('teste_mensagens', 'Mensagens do Teste', 6)
+      UPDATE gateway_categorias SET chave = 'teste_acompanhamento', nome_exibicao = 'Acompanhamento Teste'
+       WHERE chave = 'teste_mensagens'
+         AND NOT EXISTS (SELECT 1 FROM gateway_categorias WHERE chave = 'teste_acompanhamento')
+    `);
+    await c.query(`
+      INSERT INTO gateway_categorias (chave, nome_exibicao, ordem) VALUES
+        ('teste_transacional',   'Transacional Teste',   6),
+        ('teste_acompanhamento', 'Acompanhamento Teste', 7)
       ON CONFLICT (chave) DO NOTHING
     `);
+    // Sobras de versões anteriores das mensagens do Teste (nenhum código usa).
+    await c.query(`DELETE FROM gateway_categorias WHERE chave IN ('teste_pagamento', 'teste_mensagens')`);
 
     // Histórico de envio
     await c.query(`

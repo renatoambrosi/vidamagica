@@ -22,9 +22,11 @@
       com os materiais indicados no resultado. Respeita Novidades.
    - Tudo que sai (ou deixa de sair, com o motivo) vira linha em teste_avisos.
      O status real do WhatsApp vem da fila do gateway (atendimento_id).
-   - WhatsApp sempre pelo gateway, categoria 'teste_mensagens' (pausável no
-     admin). A e B saem como reativos (resposta a uma ação dela); C, D e E
-     como ativos. Botão do admin usa 'manual_admin'.
+   - Dois conjuntos (categorias do gateway), ligados e desligados no admin;
+     desligado segura WhatsApp E e-mail daquele conjunto:
+       'teste_transacional'   Transacional Teste   = A e B (reativos)
+       'teste_acompanhamento' Acompanhamento Teste = C, D e E (ativos)
+     WhatsApp sempre pelo gateway. Botão do admin usa 'manual_admin'.
    - E-mail não mostra WEBP: logo do Teste e capas vão em PNG
      (public/assets/email/).
    ============================================================ */
@@ -38,7 +40,9 @@ const { lerModoDevTeste } = require('./teste-config');
 
 const APP_URL = process.env.APP_URL || 'https://www.vidamagica.com.br';
 const SENDER_EMAIL = process.env.SENDER_EMAIL || 'contato@suellenseragi.com.br';
-const CATEGORIA = 'teste_mensagens';
+const CAT_TRANSACIONAL = 'teste_transacional';     // A e B
+const CAT_ACOMPANHAMENTO = 'teste_acompanhamento'; // C, D e E
+const NOME_CATEGORIA = { teste_transacional: 'Transacional Teste', teste_acompanhamento: 'Acompanhamento Teste', manual_admin: 'Manual do admin' };
 const INTERVALO_MS = 60 * 1000;
 const MIN_RECUPERACAO = 15;  // C e D
 const MIN_POS_COMPRA = 20;   // E
@@ -170,17 +174,23 @@ async function enviarBrevo(para, nome, subject, htmlContent) {
   }, { headers: { accept: 'application/json', 'api-key': process.env.BREVO_API_KEY, 'content-type': 'application/json' }, timeout: 15000 });
 }
 
-// WhatsApp pausado no gateway (geral ou a categoria)? Então a mensagem nem
-// entra na fila: ficaria parada e sairia atrasada quando voltasse, ativando
-// gente antiga. Registra "não enviado" e pronto.
-async function whatsappPausado(categoria) {
+// Conjunto desligado no admin (categoria pausada) ou WhatsApp todo pausado?
+// Então a mensagem nem entra na fila: ficaria parada e sairia atrasada
+// quando voltasse, ativando gente antiga. Registra "não enviado" e pronto.
+// A categoria vale para WhatsApp e e-mail; a pausa geral só para WhatsApp.
+async function bloqueio(categoria, canal) {
   const r = await poolComunicacao.query(
     `SELECT
        COALESCE((SELECT valor FROM gateway_config WHERE chave = 'pausado_geral'), 'false') = 'true' AS geral,
        COALESCE((SELECT pausado FROM gateway_categorias WHERE chave = $1), FALSE) AS categoria`,
     [categoria]
   );
-  return r.rows[0].geral || r.rows[0].categoria;
+  // Os conjuntos do Teste seguram também o e-mail; o "Manual do admin" só o WhatsApp, como sempre foi.
+  if (r.rows[0].categoria && (canal === 'whatsapp' || categoria.startsWith('teste_'))) {
+    return `${NOME_CATEGORIA[categoria] || categoria} desligado no admin`;
+  }
+  if (canal === 'whatsapp' && r.rows[0].geral) return 'WhatsApp pausado no gateway';
+  return null;
 }
 
 // Envia UMA peça (1 canal) e registra. `peca` = { canal, conteudo, texto?, email?: {subject, html, resumo} }.
@@ -200,11 +210,12 @@ async function enviarPeca(reg, pessoa, peca, { marketing, tipo, categoria, orige
       await concluir(id, { status: 'nao_enviado', motivo: m });
       return { ok: false, erro: m };
     }
+    const travado = await bloqueio(categoria, peca.canal);
+    if (travado) {
+      await concluir(id, { status: 'nao_enviado', motivo: travado });
+      return { ok: false, erro: travado };
+    }
     if (peca.canal === 'whatsapp') {
-      if (await whatsappPausado(categoria)) {
-        await concluir(id, { status: 'nao_enviado', motivo: 'WhatsApp pausado no gateway' });
-        return { ok: false, erro: 'WhatsApp pausado no gateway' };
-      }
       const textos = Array.isArray(peca.texto) ? peca.texto : [peca.texto];
       const { atendimento_id } = await enfileirarAtendimento({
         telefone: destino, tipo, categoria, origem, nome: pessoa.nome || null,
@@ -451,7 +462,7 @@ async function dispararNaHora(testeId) {
       }
       return;
     }
-    const opts = { marketing: false, tipo: 'reativo', categoria: CATEGORIA, origem: 'teste-avisos-pagamento' };
+    const opts = { marketing: false, tipo: 'reativo', categoria: CAT_TRANSACIONAL, origem: 'teste-avisos-pagamento' };
     await enviarPeca(reg('whatsapp'), t, { canal: 'whatsapp', conteudo: 'pagamento', texto: waA(nome, link) }, opts);
     await enviarPeca(reg('email'), t, { canal: 'email', conteudo: 'pagamento', email: emailA(nome, link, await precoTeste()) }, opts);
   } catch (e) {
@@ -469,7 +480,7 @@ async function dispararPago(testeId) {
     const link = linkResultado(t.id);
     const nome = primeiroNome(t.nome);
     const reg = c => ({ chave: `B:${t.id}:${c}`, teste_id: t.id, lead_id: t.lead_id, momento: 'resultado' });
-    const opts = { marketing: false, tipo: 'reativo', categoria: CATEGORIA, origem: 'teste-avisos-resultado' };
+    const opts = { marketing: false, tipo: 'reativo', categoria: CAT_TRANSACIONAL, origem: 'teste-avisos-resultado' };
     await enviarPeca(reg('whatsapp'), t, { canal: 'whatsapp', conteudo: 'resultado', texto: waB(link) }, opts);
     await enviarPeca(reg('email'), t, { canal: 'email', conteudo: 'resultado', email: emailB(nome, link) }, opts);
   } catch (e) {
@@ -540,7 +551,7 @@ async function tickC() {
     const nome = primeiroNome(lead.nome);
     const link = linkContinuar(lead.id);
     const reg = c => ({ chave: `C:${lead.id}:${rodada}:${c}`, lead_id: lead.id, momento: 'recuperacao_meio' });
-    const opts = { marketing: true, tipo: 'ativo', categoria: CATEGORIA, origem: 'teste-avisos-recuperacao' };
+    const opts = { marketing: true, tipo: 'ativo', categoria: CAT_ACOMPANHAMENTO, origem: 'teste-avisos-recuperacao' };
     await enviarPeca(reg('whatsapp'), lead, { canal: 'whatsapp', conteudo: 'continuar', texto: waRecuperacao(nome, link) }, opts);
     await enviarPeca(reg('email'), lead, { canal: 'email', conteudo: 'continuar', email: emailRecuperacao(nome, link, 'Continuar meu teste', linkCancelar(lead.id)) }, opts);
   }
@@ -582,7 +593,7 @@ async function tickD() {
     if (!(await linkPagamento(t.id))) continue;
     const link = linkPagar(t.id);
     const nome = primeiroNome(t.nome);
-    const opts = { marketing: true, tipo: 'ativo', categoria: CATEGORIA, origem: 'teste-avisos-recuperacao' };
+    const opts = { marketing: true, tipo: 'ativo', categoria: CAT_ACOMPANHAMENTO, origem: 'teste-avisos-recuperacao' };
     await enviarPeca(reg('whatsapp'), t, { canal: 'whatsapp', conteudo: 'pagamento', texto: waRecuperacao(nome, link) }, opts);
     await enviarPeca(reg('email'), t, { canal: 'email', conteudo: 'pagamento', email: emailRecuperacao(nome, link, 'Finalizar pagamento', linkCancelar(t.lead_id)) }, opts);
   }
@@ -607,7 +618,7 @@ async function tickE() {
     const nome = primeiroNome(t.nome);
     const cancelar = linkCancelar(t.lead_id);
     const reg = k => ({ chave: `E:${t.id}:${k}`, teste_id: t.id, lead_id: t.lead_id, momento: 'pos_compra' });
-    const opts = { marketing: true, tipo: 'ativo', categoria: CATEGORIA, origem: 'teste-avisos-pos-compra' };
+    const opts = { marketing: true, tipo: 'ativo', categoria: CAT_ACOMPANHAMENTO, origem: 'teste-avisos-pos-compra' };
     await enviarPeca(reg('whatsapp'), t, { canal: 'whatsapp', conteudo: 'video', texto: waE() }, opts);
     await enviarPeca(reg('pesquisa'), t, { canal: 'email', conteudo: 'pesquisa', email: emailPesquisa(nome, linkPesquisa(t.id), cancelar) }, opts);
     let materiais = [];
@@ -804,7 +815,8 @@ async function enviarAmostra({ peca, telefone, email, nome }) {
   }
   try {
     if (canal === 'whatsapp') {
-      if (await whatsappPausado('manual_admin')) return { ok: false, erro: 'WhatsApp pausado no gateway' };
+      const travado = await bloqueio('manual_admin', 'whatsapp');
+      if (travado) return { ok: false, erro: travado };
       const textos = Array.isArray(texto) ? texto : [texto];
       await enfileirarAtendimento({
         telefone: tel, tipo: 'ativo', categoria: 'manual_admin', origem: 'admin-amostra-teste',
