@@ -1099,6 +1099,32 @@ async function initTeste() {
     `);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_avaliacoes_data ON teste_avaliacoes(criado_em)`);
 
+    // Tudo que o sistema disparou (ou deixou de disparar, com o motivo) nas
+    // mensagens do Teste: pagamento, resultado, recuperações, pós-compra e
+    // botões do admin. core/teste-avisos.js. Recuperação de quem parou no
+    // meio ainda não tem teste: fica só com lead_id. `chave` = 1 envio
+    // automático por peça (o manual não tem chave).
+    await c.query(`
+      CREATE TABLE IF NOT EXISTS teste_avisos (
+        id SERIAL PRIMARY KEY,
+        chave VARCHAR(120),
+        teste_id UUID REFERENCES testes(id) ON DELETE CASCADE,
+        lead_id UUID REFERENCES teste_leads(id) ON DELETE CASCADE,
+        momento VARCHAR(30) NOT NULL,
+        canal VARCHAR(10) NOT NULL,
+        conteudo VARCHAR(20) NOT NULL,
+        status VARCHAR(20) NOT NULL,
+        motivo TEXT,
+        destino VARCHAR(255),
+        texto TEXT,
+        atendimento_id UUID,
+        criado_em TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_teste_avisos_teste ON teste_avisos(teste_id)`);
+    await c.query(`CREATE INDEX IF NOT EXISTS idx_teste_avisos_lead ON teste_avisos(lead_id)`);
+    await c.query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_teste_avisos_chave ON teste_avisos(chave) WHERE chave IS NOT NULL`);
+
     // ── MIGRAÇÃO INTELIGENTE: testes feitos ANTES dessa coluna existir ──
     // Antes, a aluna tinha 1 teste = era a trilha ativa por padrão. Após o
     // deploy, todos esses testes nascem com ativou_trilha=FALSE, e o app
@@ -1486,6 +1512,12 @@ async function initComunicacao() {
         ('pos_venda_kiwify',   'Pós-venda Kiwify',                    '🛒', 3),
         ('anuncio_geral',      'Anúncios gerais',                     '📢', 4),
         ('manual_admin',       'Manual do admin',                     '✋', 5)
+      ON CONFLICT (chave) DO NOTHING
+    `);
+    // Mensagens do Teste (pagamento, resultado, recuperações, pós-compra) — core/teste-avisos.js
+    await c.query(`
+      INSERT INTO gateway_categorias (chave, nome_exibicao, ordem)
+      VALUES ('teste_mensagens', 'Mensagens do Teste', 6)
       ON CONFLICT (chave) DO NOTHING
     `);
 

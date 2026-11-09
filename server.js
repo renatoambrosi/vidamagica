@@ -156,6 +156,15 @@ app.get('/termos', (req, res) => {
 // ── /llms.txt: apresentação do site para IAs (nomes vêm do admin) ──
 app.get('/llms.txt', require('./routes/produtos').llmsTxt);
 
+// ── Mensagens do Teste: página da pesquisa e cancelar inscrição ──
+// Links dos e-mails (core/teste-avisos.js). O id vai no endereço.
+app.get('/pesquisa/:id', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'pesquisa.html'));
+});
+app.get('/cancelar-inscricao/:id', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'cancelar-inscricao.html'));
+});
+
 // ── ROTA AMIGÁVEL: /privacidade serve privacidade.html ─────
 app.get('/privacidade', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'privacidade.html'));
@@ -462,6 +471,11 @@ server.listen(PORT, async () => {
       const espacoAvisos = require('./core/espaco-avisos');
       espacoAvisos.iniciarWorkerCartas();
     } catch (err) { console.error('⚠️ Worker de cartas não iniciou:', err.message); }
+
+    // Mensagens do Teste que saem depois: recuperações (15 min) e pós-compra (20 min).
+    try {
+      require('./core/teste-avisos').iniciarWorkerAvisos();
+    } catch (err) { console.error('⚠️ Worker de avisos do Teste não iniciou:', err.message); }
   } catch (err) {
     console.error('💥 Falha ao iniciar bancos:', err.message);
     process.exit(1);
@@ -471,12 +485,14 @@ server.listen(PORT, async () => {
 process.on('SIGTERM', () => {
   try { require('./core/gateway').pararWorker(); } catch (_) {}
   try { require('./core/espaco-avisos').pararWorkerCartas(); } catch (_) {}
+  try { require('./core/teste-avisos').pararWorkerAvisos(); } catch (_) {}
   server.close();
   process.exit(0);
 });
 process.on('SIGINT',  () => {
   try { require('./core/gateway').pararWorker(); } catch (_) {}
   try { require('./core/espaco-avisos').pararWorkerCartas(); } catch (_) {}
+  try { require('./core/teste-avisos').pararWorkerAvisos(); } catch (_) {}
   server.close();
   process.exit(0);
 });

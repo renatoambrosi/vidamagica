@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<!-- ============================================================
+     VIDA MÁGICA — public/cancelar-inscricao.html
+     Link "Cancelar inscrição" dos e-mails que não são transacionais
+     (core/teste-avisos.js), em /cancelar-inscricao/<lead_id>.
+     Só cancela no toque do botão (POST /api/teste/cancelar-inscricao/:id):
+     leitor de e-mail que abre links sozinho não cancela ninguém.
+     Marca Não em Novidades; resultado e pagamento continuam chegando.
+     ============================================================ -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Cancelar inscrição - Vida Mágica - Suellen Seragi</title>
+<style>
+  :root { --gold:#E8C97A; --pearl:#f5f0e8; --texto:#c8c0a8; --fundo:#1A1205; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--fundo); color:var(--pearl); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; min-height:100vh; line-height:1.6; }
+  .wrap { max-width:440px; margin:0 auto; padding:32px 20px 48px; text-align:center; }
+  .logo { display:block; height:32px; width:auto; margin:0 auto 28px; }
+  h1 { color:var(--gold); font-size:18px; font-weight:700; margin-bottom:12px; }
+  .texto { color:var(--texto); font-size:15px; margin-bottom:22px; }
+  .botao { padding:12px 28px; background:var(--gold); color:var(--fundo); border:0; border-radius:8px; font-weight:700; font-size:14px; cursor:pointer; }
+  .botao:disabled { opacity:.4; cursor:not-allowed; }
+  .ok { color:var(--gold); font-size:15px; font-weight:600; }
+  .erro { color:#e8a07a; font-size:13px; margin-top:12px; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <img class="logo" src="/assets/logo-horizontal.webp" alt="Vida Mágica">
+  <div id="pedido">
+    <h1>Cancelar inscrição</h1>
+    <p class="texto">Confirme abaixo para não receber mais nossas mensagens de novidades. O resultado do seu teste e os avisos de pagamento continuam chegando normalmente.</p>
+    <button class="botao" id="confirmar" type="button">Confirmar cancelamento</button>
+    <p class="erro" id="erro" hidden></p>
+  </div>
+  <p class="ok" id="ok" hidden>Pronto. Você não vai mais receber nossas mensagens de novidades.</p>
+</main>
+<script>
+(function(){
+  const id = (location.pathname.split('/').filter(Boolean)[1] || '').trim();
+  const btn = document.getElementById('confirmar');
+  const erro = document.getElementById('erro');
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    erro.hidden = true;
+    try {
+      const r = await fetch('/api/teste/cancelar-inscricao/' + encodeURIComponent(id), { method: 'POST' });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'erro');
+      document.getElementById('pedido').hidden = true;
+      document.getElementById('ok').hidden = false;
+    } catch (e) {
+      erro.textContent = 'Não consegui cancelar agora. Tente de novo ou fale com a gente pelo WhatsApp (62) 99988-4411.';
+      erro.hidden = false;
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>

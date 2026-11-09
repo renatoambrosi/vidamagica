@@ -38,6 +38,7 @@ const {
   salvarMostrarLogTeste,
 } = require('../core/teste-config');
 const { lerConfigBlack, salvarConfigBlack } = require('../core/campanha');
+const { enviarManual: enviarManualTeste, historicoDosTestes, historicoDosLeads } = require('../core/teste-avisos');
 
 // ── Middleware: só admin pode usar tudo aqui (escopo='admin')
 router.use(autenticarPainel('admin'));
@@ -1598,6 +1599,9 @@ router.get('/testes-resultados', async (req, res) => {
       aceite_marketing: !!t.aceite_marketing,
       link_resultado: `${baseUrl}/resultado/${t.id}`,
     }));
+    // Tudo que foi disparado para cada teste (core/teste-avisos.js).
+    const hist = await historicoDosTestes(testes.map(t => t.id)).catch(e => { console.warn('⚠️ histórico de avisos:', e.message); return {}; });
+    for (const t of testes) t.avisos = hist[t.id] || [];
 
     res.json({ ok: true, testes, total, page: pag, totalPages: Math.max(1, Math.ceil(total / lim)) });
   } catch (err) {
@@ -1659,90 +1663,27 @@ async function _listarIncompletos({ data_de, data_ate, q, lim, offset, pag }) {
     ultima_atividade: l.ultima && l.ultima > l.atualizado_em ? l.ultima : l.atualizado_em,
     ja_concluiu_antes: !!l.ultimo_teste,
   }));
+  // Recuperação de quem parou no meio (core/teste-avisos.js).
+  const hist = await historicoDosLeads(testes.map(t => t.lead_id)).catch(e => { console.warn('⚠️ histórico de avisos (leads):', e.message); return {}; });
+  for (const t of testes) t.avisos = (hist[t.lead_id] || []).filter(a => a.momento === 'recuperacao_meio');
   return { ok: true, incompletos: true, testes, total, page: pag, totalPages: Math.max(1, Math.ceil(total / lim)) };
 }
 
-router.post('/testes-resultados/:id/enviar-whatsapp', async (req, res) => {
+// Botões do admin: pago (ou resultado aberto) = reenvio do resultado;
+// pendente = o mesmo link de pagamento que sai na hora. Tudo fica
+// registrado em teste_avisos (core/teste-avisos.js).
+async function _enviarManualTeste(req, res, canal) {
   try {
-    const { id } = req.params;
-    const r = await poolTeste.query(
-      `SELECT t.id, t.telefone_canonico, l.nome
-         FROM testes t
-         LEFT JOIN teste_leads l ON l.id = t.lead_id
-        WHERE t.id = $1`,
-      [id]
-    );
-    const teste = r.rows[0];
-    if (!teste) return res.status(404).json({ ok: false, erro: 'Teste não encontrado' });
-
-    const baseUrl = process.env.APP_URL || 'https://www.vidamagica.com.br';
-    const link = `${baseUrl}/resultado/${teste.id}`;
-    const primeiroNome = (teste.nome || '').trim().split(' ')[0] || null;
-
-    const { atendimento_id } = await enfileirarAtendimento({
-      telefone: teste.telefone_canonico,
-      tipo: 'ativo',
-      categoria: 'manual_admin',
-      origem: 'admin_testes_resultados',
-      nome: teste.nome || null,
-      mensagens: [
-        `Oi${primeiroNome ? ', ' + primeiroNome : ''}! Aqui está o link do seu resultado no Teste do Subconsciente: ${link}`,
-      ],
-    });
-
-    res.json({ ok: true, atendimento_id });
+    const r = await enviarManualTeste(req.params.id, canal);
+    if (!r.ok) return res.status(r.status || 400).json({ ok: false, erro: r.erro || 'Erro ao enviar' });
+    res.json({ ok: true, conteudo: r.conteudo });
   } catch (err) {
-    console.error('❌ /testes-resultados/:id/enviar-whatsapp:', err.message);
-    res.status(500).json({ ok: false, erro: 'Erro ao enviar WhatsApp' });
+    console.error(`❌ /testes-resultados/:id/enviar-${canal}:`, err.message);
+    res.status(500).json({ ok: false, erro: canal === 'whatsapp' ? 'Erro ao enviar WhatsApp' : 'Erro ao enviar e-mail' });
   }
-});
-
-router.post('/testes-resultados/:id/enviar-email', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const r = await poolTeste.query(
-      `SELECT t.id, l.nome, l.email
-         FROM testes t
-         LEFT JOIN teste_leads l ON l.id = t.lead_id
-        WHERE t.id = $1`,
-      [id]
-    );
-    const teste = r.rows[0];
-    if (!teste) return res.status(404).json({ ok: false, erro: 'Teste não encontrado' });
-    if (!teste.email) return res.status(400).json({ ok: false, erro: 'Esse teste não tem e-mail cadastrado' });
-
-    const axios = require('axios');
-    const apiKey = process.env.BREVO_API_KEY;
-    const senderEmail = process.env.SENDER_EMAIL || 'contato@suellenseragi.com.br';
-    if (!apiKey) return res.status(500).json({ ok: false, erro: 'E-mail não configurado (BREVO_API_KEY ausente)' });
-
-    const baseUrl = process.env.APP_URL || 'https://www.vidamagica.com.br';
-    const link = `${baseUrl}/resultado/${teste.id}`;
-    const primeiroNome = (teste.nome || '').trim().split(' ')[0] || 'você';
-
-    await axios.post('https://api.brevo.com/v3/smtp/email', {
-      sender: { name: 'Vida Mágica', email: senderEmail },
-      to: [{ email: teste.email }],
-      subject: 'Seu resultado do Teste do Subconsciente',
-      htmlContent: `
-        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0a1628;border-radius:12px">
-          <h2 style="color:#E8C97A;font-size:18px;margin:0 0 12px">Olá, ${primeiroNome}!</h2>
-          <p style="color:#c8c0a8;font-size:14px;margin:0 0 20px">Seu resultado do Teste do Subconsciente está pronto:</p>
-          <div style="text-align:center;margin-bottom:20px">
-            <a href="${link}" style="display:inline-block;background:#E8C97A;color:#0a1628;font-weight:700;padding:12px 28px;border-radius:8px;text-decoration:none">Ver meu resultado</a>
-          </div>
-          <p style="color:#888;font-size:12px;margin:0">${link}</p>
-        </div>`,
-    }, {
-      headers: { 'accept': 'application/json', 'api-key': apiKey, 'content-type': 'application/json' },
-    });
-
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('❌ /testes-resultados/:id/enviar-email:', err.message);
-    res.status(500).json({ ok: false, erro: 'Erro ao enviar e-mail' });
-  }
-});
+}
+router.post('/testes-resultados/:id/enviar-whatsapp', (req, res) => _enviarManualTeste(req, res, 'whatsapp'));
+router.post('/testes-resultados/:id/enviar-email', (req, res) => _enviarManualTeste(req, res, 'email'));
 
 // ════════════════════════════════════════════════════════════
 // 21. TESTE DO SUBCONSCIENTE — INSIGHTS (funil + respostas por pergunta)

@@ -2605,9 +2605,11 @@
     // preenchido no admin, senão o padrão. A versão "aluno" só aparece no
     // painel de atendimento e no /app autenticado.
     const link = l.link_checkout || '';
+    // Único livro é o A Tal Maneira (livro digital); o resto é e-book.
+    const ctaTexto = l.slug === 'atal_maneira_livro' ? 'Quero este livro' : 'Quero este e-book';
     const cta = link
-      ? '<a href="' + escapeHtml(VmUtm.checkout(link, 'VmResultado-livro')) + '" class="livro-cta" target="_blank" rel="noopener">Quero este livro</a>'
-      : '<a href="#" class="livro-cta" onclick="alert(\'Em breve\');return false;">Quero este livro</a>';
+      ? '<a href="' + escapeHtml(VmUtm.checkout(link, 'VmResultado-livro')) + '" class="livro-cta" target="_blank" rel="noopener">' + ctaTexto + '</a>'
+      : '<a href="#" class="livro-cta" onclick="alert(\'Em breve\');return false;">' + ctaTexto + '</a>';
     const precoHtml = precoBlocoHtml(l.preco_padrao, l.preco_de, l.desconto_pct, l.parcelas_qtd, l.parcelas_valor, cta, 'livro', l.black);
     const atributosBlocoHtml = atributosHtml(l.atributos);
     return (

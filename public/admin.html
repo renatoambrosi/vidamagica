@@ -78,6 +78,15 @@ body { font-family: var(--font-body); background: var(--bg-dark); color: var(--t
 .tr-ok { color: #7FD8A0; }
 .tr-nao { color: var(--text-muted); }
 .tr-acoes { display: grid; grid-template-columns: repeat(2, max-content); gap: 0.3rem; }
+/* Mensagens do Teste: tudo que foi disparado (core/teste-avisos.js) */
+.tr-env { font-size: 0.76rem; line-height: 1.45; margin-bottom: 0.35rem; min-width: 260px; }
+.tr-env:last-child { margin-bottom: 0; }
+.tr-env-quando { color: var(--text-muted); }
+.tr-env-st { font-weight: 600; }
+.tr-env-st.enviado { color: #7FD8A0; }
+.tr-env-st.na_fila { color: var(--color-gold-light); }
+.tr-env-st.erro { color: #F09090; }
+.tr-env-st.nao_enviado { color: var(--text-muted); }
 .tr-acoes .btn { white-space: nowrap; justify-content: center; }
 .tab-panel.active { display: block; }
 #toast { position: fixed; top: 1.25rem; right: 1.25rem; padding: 0.65rem 1.1rem; border-radius: var(--radius-md); font-size: 0.8rem; font-weight: 600; z-index: 999; opacity: 0; transform: translateY(-8px); transition: all 0.25s; pointer-events: none; }
@@ -4320,6 +4329,29 @@ const testesResultados = (function(){
           <div class="tr-pessoa-linha">${t.email ? escHtml(t.email) : 'sem e-mail'}</div>
         </td>`;
 
+      // Tudo que o sistema disparou para o teste, escrito por extenso.
+      const MOMENTO = {
+        pagamento: 'Terminou o teste', resultado: 'Pagou',
+        recuperacao_meio: 'Recuperação (parou no meio)', recuperacao_pagamento: 'Recuperação (não pagou)',
+        pos_compra: 'Pós-compra', manual: 'Botão do admin',
+      };
+      const CONTEUDO = {
+        pagamento: 'link de pagamento', resultado: 'link do resultado', continuar: 'link para continuar o teste',
+        video: 'recado da Suellen', pesquisa: 'pesquisa', materiais: 'materiais indicados',
+      };
+      const STATUS = { enviado: 'enviado', na_fila: 'na fila do WhatsApp', erro: 'erro', nao_enviado: 'não enviado', enviando: 'enviando' };
+      const curto = s => s ? new Date(s).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+      const envios = t => {
+        const lista = t.avisos || [];
+        if (!lista.length) return '<span class="tr-nao">Nenhum envio registrado</span>';
+        return lista.map(a => `
+          <div class="tr-env">
+            ${MOMENTO[a.momento] || a.momento} · ${a.canal === 'whatsapp' ? 'WhatsApp' : 'E-mail'} · ${CONTEUDO[a.conteudo] || a.conteudo}<br>
+            <span class="tr-env-st ${a.status}">${STATUS[a.status] || a.status}${a.motivo ? ': ' + escHtml(a.motivo) : ''}</span>
+            <span class="tr-env-quando"> · ${curto(a.quando)}</span>
+          </div>`).join('');
+      };
+
       if (d.incompletos) {
         wrap.innerHTML = `
         <div class="tr-tabela-wrap">
@@ -4331,6 +4363,7 @@ const testesResultados = (function(){
               <th>Onde parou</th>
               <th>Última atividade</th>
               <th>Novidades</th>
+              <th>Mensagens enviadas</th>
               <th>Aparelho</th>
             </tr>
           </thead>
@@ -4342,6 +4375,7 @@ const testesResultados = (function(){
                 <td class="tr-nowrap">${t.respondidas === 0 ? 'Antes da 1ª pergunta' : `Na pergunta ${t.respondidas + 1} <span class="tr-nao">(respondeu ${t.respondidas} de ${t.total_perguntas})</span>`}</td>
                 <td class="tr-nowrap">${dataFmt(t.ultima_atividade)}</td>
                 <td>${optIn(t.aceite_marketing)}</td>
+                <td>${envios(t)}</td>
                 <td>${t.dispositivo ? escHtml(t.dispositivo) : vazioTd}</td>
               </tr>
             `).join('')}
@@ -4359,6 +4393,7 @@ const testesResultados = (function(){
               <th>Perfil</th>
               <th>Pagamento</th>
               <th>Novidades</th>
+              <th>Mensagens enviadas</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -4370,12 +4405,13 @@ const testesResultados = (function(){
                 <td>${escHtml(t.perfil_label || '?')}</td>
                 <td class="tr-nowrap">${t.pago ? '<span class="tr-ok">Pago</span>' : '<span class="tr-nao">Pendente</span>'}</td>
                 <td>${optIn(t.aceite_marketing)}</td>
+                <td>${envios(t)}</td>
                 <td>
                   <div class="tr-acoes">
                     <a class="btn btn-ghost btn-sm" href="${escHtml(t.link_resultado)}" target="_blank" rel="noopener">Abrir resultado</a>
                     <button class="btn btn-ghost btn-sm" onclick="testesResultados.copiarLink('${t.link_resultado}')">Copiar link</button>
-                    <button class="btn btn-ghost btn-sm" onclick="testesResultados.enviarWhatsapp('${t.id}', this)">Enviar WhatsApp</button>
-                    <button class="btn btn-ghost btn-sm" ${t.email ? '' : 'disabled'} onclick="testesResultados.enviarEmail('${t.id}', this)">Enviar e-mail</button>
+                    <button class="btn btn-ghost btn-sm" onclick="testesResultados.enviarWhatsapp('${t.id}', this)">${t.pago ? 'Enviar WhatsApp' : 'WhatsApp: pagamento'}</button>
+                    <button class="btn btn-ghost btn-sm" ${t.email ? '' : 'disabled'} onclick="testesResultados.enviarEmail('${t.id}', this)">${t.pago ? 'Enviar e-mail' : 'E-mail: pagamento'}</button>
                   </div>
                 </td>
               </tr>
@@ -4415,7 +4451,8 @@ const testesResultados = (function(){
       });
       const d = await r.json();
       if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
-      toast('💬 Enviado pra fila do WhatsApp!');
+      toast(d.conteudo === 'pagamento' ? 'Link de pagamento enviado pra fila do WhatsApp' : 'Link do resultado enviado pra fila do WhatsApp');
+      carregar(paginaAtual);
     } catch (err) {
       toast(err.message || 'Erro ao enviar', 'error');
     } finally {
@@ -4432,7 +4469,8 @@ const testesResultados = (function(){
       });
       const d = await r.json();
       if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
-      toast('✉️ E-mail enviado!');
+      toast(d.conteudo === 'pagamento' ? 'E-mail com o link de pagamento enviado' : 'E-mail com o resultado enviado');
+      carregar(paginaAtual);
     } catch (err) {
       toast(err.message || 'Erro ao enviar', 'error');
     } finally {

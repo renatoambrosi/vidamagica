@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<!-- ============================================================
+     VIDA MÁGICA — public/pesquisa.html
+     Pesquisa de satisfação do Teste do Subconsciente, aberta pelo e-mail
+     de pesquisa (core/teste-avisos.js) em /pesquisa/<teste_id>.
+     Lê o primeiro nome em GET /api/teste/pesquisa/:id e grava em
+     POST /api/teste/avaliacao/:id (a mesma da página do resultado,
+     que cai na aba Avaliações do admin).
+     ============================================================ -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Pesquisa - Vida Mágica - Suellen Seragi</title>
+<style>
+  :root { --gold:#E8C97A; --pearl:#f5f0e8; --texto:#c8c0a8; --fundo:#1A1205; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--fundo); color:var(--pearl); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; min-height:100vh; line-height:1.6; }
+  .wrap { max-width:440px; margin:0 auto; padding:32px 20px 48px; text-align:center; }
+  .logo { display:block; height:32px; width:auto; margin:0 auto 28px; }
+  .ola { color:var(--gold); font-size:18px; font-weight:700; }
+  .assin { color:var(--pearl); font-size:15.5px; font-weight:600; margin-bottom:14px; }
+  .texto { color:var(--texto); font-size:15px; margin-bottom:20px; }
+  .box { background:rgba(255,255,255,.04); border:1px solid rgba(245,240,232,.1); border-radius:14px; padding:18px; }
+  .estrelas { display:flex; justify-content:center; gap:8px; margin-bottom:14px; }
+  .estrelas button { background:none; border:0; padding:2px; cursor:pointer; }
+  .estrelas svg { width:32px; height:32px; display:block; }
+  .estrelas path { fill:rgba(245,240,232,.25); transition:fill .15s; }
+  .estrelas button.ativa path { fill:var(--gold); }
+  textarea { width:100%; background:rgba(255,255,255,.03); border:1px solid rgba(245,240,232,.15); border-radius:10px; padding:10px 12px; color:var(--pearl); font:inherit; font-size:14px; resize:none; margin-bottom:14px; }
+  textarea::placeholder { color:rgba(245,240,232,.35); }
+  textarea:focus { outline:none; border-color:var(--gold); }
+  .enviar { padding:11px 30px; background:var(--gold); color:var(--fundo); border:0; border-radius:10px; font-weight:700; font-size:14px; cursor:pointer; }
+  .enviar:disabled { opacity:.4; cursor:not-allowed; }
+  .obrigado { color:var(--gold); font-size:15px; font-weight:600; margin-top:6px; }
+  .erro { color:#e8a07a; font-size:13px; margin-top:10px; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <img class="logo" src="/assets/logo-horizontal.webp" alt="Vida Mágica">
+  <p class="ola" id="ola">Olá,</p>
+  <p class="assin">Suellen e Renato aqui!</p>
+  <p class="texto">O que achou do resultado do seu teste do subconsciente, fez sentido?<br><br>Nós amamos cada feedback.<br>Você poderia fortalecer nosso trabalho contando aqui abaixo para nós e para outras pessoas como foi sua experiência no teste?🤩👇🏻</p>
+
+  <div class="box" id="form">
+    <div class="estrelas" id="estrelas"></div>
+    <textarea id="comentario" rows="3" placeholder="Quer deixar uma sugestão ou opinião?"></textarea>
+    <button class="enviar" id="enviar" type="button" disabled>Enviar</button>
+    <p class="erro" id="erro" hidden></p>
+  </div>
+  <p class="obrigado" id="obrigado" hidden>Obrigada pela sua avaliação!</p>
+</main>
+<script>
+(function(){
+  const id = (location.pathname.split('/').filter(Boolean)[1] || '').trim();
+  const ESTRELA = '<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"/></svg>';
+  const caixa = document.getElementById('estrelas');
+  const btn = document.getElementById('enviar');
+  const erro = document.getElementById('erro');
+  let nota = 0;
+
+  for (let i = 1; i <= 5; i++) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-label', i + (i === 1 ? ' estrela' : ' estrelas'));
+    b.innerHTML = ESTRELA;
+    b.addEventListener('click', () => marcar(i));
+    caixa.appendChild(b);
+  }
+  function marcar(n) {
+    nota = n;
+    [...caixa.children].forEach((b, i) => b.classList.toggle('ativa', i < n));
+    btn.disabled = false;
+  }
+
+  fetch('/api/teste/pesquisa/' + encodeURIComponent(id))
+    .then(r => r.json())
+    .then(d => {
+      if (!d || !d.ok) return;
+      if (d.nome) document.getElementById('ola').textContent = 'Olá, ' + d.nome + ',';
+      if (d.nota) marcar(d.nota);
+    })
+    .catch(() => {});
+
+  btn.addEventListener('click', async () => {
+    if (!nota) return;
+    btn.disabled = true;
+    erro.hidden = true;
+    try {
+      const r = await fetch('/api/teste/avaliacao/' + encodeURIComponent(id), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nota, comentario: document.getElementById('comentario').value }),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'erro');
+      document.getElementById('form').hidden = true;
+      document.getElementById('obrigado').hidden = false;
+    } catch (e) {
+      erro.textContent = 'Não consegui enviar agora. Tente de novo em instantes.';
+      erro.hidden = false;
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>

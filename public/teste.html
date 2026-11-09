@@ -2079,6 +2079,19 @@
 
         return { iniciar };
       })();
+
+      // ── Link "continuar de onde parou" (mensagem de recuperação) ──
+      // /teste?continuar=<lead_id> abre direto na primeira pergunta sem
+      // resposta da rodada dela. Sem cookie nem sessão: o código vem no link.
+      (function(){
+        const id = new URLSearchParams(location.search).get('continuar') || '';
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return;
+        modal.classList.add('is-open');
+        document.body.classList.add('modal-aberto');
+        Quiz.iniciar(id)
+          .then(() => trocarTela('perguntas'))
+          .catch(e => { console.error('[continuar]', e); fecharModal(); });
+      })();
     })();
 
     /* UTMs — regra única em /utm.js. Aqui só o botão que levou ao formulário:

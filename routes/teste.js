@@ -35,6 +35,12 @@ const { calcularJornadaVigente, indicacaoDoPerfil, temClubeVidaMagica, SLUG } = 
 const { autenticar } = require('../middleware/autenticar');
 const { enfileirarAtendimento } = require('../core/gateway');
 const { lerModoDevTeste, lerMostrarLogTeste } = require('../core/teste-config');
+const {
+  dispararNaHora: dispararAvisoPagamento,
+  dispararPago: dispararAvisoResultado,
+  dadosPesquisa,
+  cancelarInscricao,
+} = require('../core/teste-avisos');
 const { processarProdutos, aplicarPrecoDoTeste } = require('./produtos');
 
 // Número do Renato — recebe aviso no WhatsApp a cada avaliação nova do resultado.
@@ -473,6 +479,10 @@ router.post('/responder', async (req, res) => {
     );
     const testeId = insR.rows[0].id;
 
+    // Pagamento obrigatório: WhatsApp + e-mail com o link de pagamento deste
+    // teste, sem esperar (não atrasa a ida pro checkout). core/teste-avisos.js
+    if (!modoDev) setImmediate(() => dispararAvisoPagamento(testeId));
+
     // OBS: O cache usuarios.perfil_teste e .percentual_prosperidade NÃO é
     // atualizado aqui. A regra é: a jornada/perfil da aluna só muda DEPOIS
     // que ela clica em "ver resultado" (e marca visto_em). Esse update
@@ -564,6 +574,10 @@ router.post('/marcar-pago', async (req, res) => {
     const { usuario_id, telefone_canonico } = upd.rows[0];
     console.log(`✅ [teste/marcar-pago] teste ${uid} marcado como pago.`);
 
+    // WhatsApp + e-mail com o resultado, sem esperar (1 por canal, mesmo que
+    // o checkout chame de novo). core/teste-avisos.js
+    setImmediate(() => dispararAvisoResultado(uid));
+
     // ── 2) Normaliza os dados do checkout pra enriquecer o cadastro ──
     const emailRaw = (b.email || b.payer_email || q.email || '').toString().trim().toLowerCase();
     const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw) ? emailRaw : null;
@@ -634,6 +648,43 @@ router.post('/marcar-pago', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ [teste/marcar-pago] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ── GET /api/teste/pesquisa/:teste_id ───────────────────────
+// Página /pesquisa/:id (link do e-mail de pesquisa): primeiro nome e a nota
+// que ela já deu, se deu. A resposta vai por POST /avaliacao/:teste_id.
+router.get('/pesquisa/:teste_id', async (req, res) => {
+  try {
+    const id = (req.params.teste_id || '').toString().trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return res.status(400).json({ ok: false, erro: 'teste_id inválido' });
+    }
+    const d = await dadosPesquisa(id);
+    if (!d) return res.status(404).json({ ok: false, erro: 'teste não encontrado' });
+    return res.json({ ok: true, ...d });
+  } catch (err) {
+    console.error('[teste/pesquisa] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ── POST /api/teste/cancelar-inscricao/:lead_id ─────────────
+// Link "Cancelar inscrição" dos e-mails que não são transacionais: marca Não
+// em Novidades (lead e cadastro). Por POST, para leitor de e-mail que abre
+// links sozinho não cancelar ninguém.
+router.post('/cancelar-inscricao/:lead_id', async (req, res) => {
+  try {
+    const id = (req.params.lead_id || '').toString().trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return res.status(400).json({ ok: false, erro: 'link inválido' });
+    }
+    const ok = await cancelarInscricao(id);
+    if (!ok) return res.status(404).json({ ok: false, erro: 'link inválido' });
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[teste/cancelar-inscricao] erro:', err);
     return res.status(500).json({ ok: false, erro: 'erro interno' });
   }
 });
