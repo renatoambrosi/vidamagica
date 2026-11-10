@@ -62,16 +62,104 @@ body { font-family: var(--font-body); background: var(--bg-dark); color: var(--t
    Regra (privado/CLAUDE.md): só a aba Resultados do Teste usa a tela inteira.
    Nenhuma outra aba foge do padrão sem o Renato pedir. */
 .content:has(#tab-teste-resultados.active) { max-width: none; }
-/* Tabela de Resultados/Incompletos: fica na página e rola junto com ela
-   (Renato, 2026-11-10). Nada fixo. Se for mais larga que a tela, arrasta
-   para o lado com o dedo. */
-.tr-tabela-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-md); scrollbar-color: var(--color-gold-dark) transparent; }
+/* Tabela de Resultados/Incompletos (Renato, 2026-11-10):
+   - Computador: rola dentro da própria caixa, com cabeçalho e coluna Pessoa fixos.
+   - Celular (até 768px): fica na página e rola junto com ela, nada fixo;
+     a largura que não cabe arrasta para o lado com o dedo. */
+.tr-tabela-wrap { max-height: calc(100vh - var(--topbar-h) - 250px); min-height: 320px; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius-md); overscroll-behavior: contain; scrollbar-color: var(--color-gold-dark) transparent; }
 .tr-tabela { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.84rem; }
-.tr-tabela th { background: #1d1406; text-align: left; color: var(--text-muted); font-weight: 600; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.tr-tabela th { position: sticky; top: 0; z-index: 2; background: #1d1406; text-align: left; color: var(--text-muted); font-weight: 600; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); white-space: nowrap; }
 .tr-tabela td { padding: 0.6rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; }
 .tr-tabela tbody tr:hover td { background: rgba(232,201,122,0.05); }
-.tr-tabela .tr-fixa { min-width: 230px; max-width: 320px; }
+.tr-tabela .tr-fixa { position: sticky; left: 0; z-index: 1; background: #171004; box-shadow: 1px 0 0 var(--border); min-width: 230px; max-width: 320px; }
+.tr-tabela th.tr-fixa { z-index: 3; background: #1d1406; }
+.tr-tabela tbody tr:hover td.tr-fixa { background: #211709; }
+@media (max-width: 768px) {
+  .tr-tabela-wrap { max-height: none; min-height: 0; overscroll-behavior: auto; }
+  .tr-tabela th { position: static; }
+  .tr-tabela .tr-fixa { position: static; box-shadow: none; }
+}
 .tr-nowrap { white-space: nowrap; }
+
+/* ── Painel do Teste (só leitura) ── */
+.pt-topo { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; }
+.pt-filtros { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.pt-filtro { font-family: var(--font-display); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); background: transparent; border: 1px solid var(--border); border-radius: var(--radius-full); padding: 0.45rem 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem; }
+.pt-filtro .n { font-size: 0.68rem; background: rgba(255,255,255,0.08); color: var(--text-light); border-radius: var(--radius-full); padding: 0.05rem 0.45rem; }
+.pt-filtro.ativo { color: var(--bg-dark); background: linear-gradient(135deg, var(--color-gold-light), var(--color-gold-amber)); border-color: transparent; }
+.pt-filtro.ativo .n { background: rgba(13,8,0,0.25); color: var(--bg-dark); }
+.pt-vivo { width: 8px; height: 8px; border-radius: 50%; background: #FF5A5A; animation: ptVivo 1.6s infinite; }
+@keyframes ptVivo { 0% { box-shadow: 0 0 0 0 rgba(255,90,90,.55); } 70% { box-shadow: 0 0 0 7px rgba(255,90,90,0); } 100% { box-shadow: 0 0 0 0 rgba(255,90,90,0); } }
+.pt-resumo { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.85rem; }
+.pt-resumo .item { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.5rem 0.75rem; min-width: 110px; }
+.pt-resumo .num { font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; }
+.pt-resumo .txt { color: var(--text-muted); font-size: 0.7rem; }
+.pt-resumo .item.espera .num { color: var(--color-gold-light); }
+.pt-resumo .item.ok .num { color: #7FD8A0; }
+.pt-resumo .item.erro .num { color: #F09090; }
+.pt-lista { display: flex; flex-direction: column; gap: 0.6rem; }
+.pt-vazio { color: var(--text-muted); text-align: center; padding: 1.75rem 0; border: 1px dashed var(--border); border-radius: var(--radius-lg); }
+.pt-pessoa { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.pt-pessoa.com-falha { border-left: 3px solid #F09090; }
+.pt-cab { display: grid; grid-template-columns: 1fr auto; gap: 0.6rem; align-items: center; padding: 0.75rem 0.85rem; cursor: pointer; }
+.pt-nome { font-family: var(--font-display); font-weight: 700; font-size: 0.92rem; }
+.pt-contato { color: var(--text-muted); font-size: 0.7rem; margin-top: 1px; word-break: break-all; }
+.pt-lado { text-align: right; }
+.pt-agora { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.74rem; font-weight: 600; border-radius: var(--radius-full); padding: 0.2rem 0.6rem; white-space: nowrap; }
+.pt-agora.espera { color: var(--color-gold-light); background: rgba(232,201,122,0.1); }
+.pt-agora.ok { color: #7FD8A0; background: rgba(127,216,160,0.1); }
+.pt-agora.erro { color: #F09090; background: rgba(240,144,144,0.1); }
+.pt-quando { color: var(--text-muted); font-size: 0.68rem; margin-top: 0.25rem; }
+.pt-resultado { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.45rem; padding: 0.2rem 0.6rem 0.2rem 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-full); background: rgba(232,201,122,0.06); color: var(--text-light); font-size: 0.72rem; font-weight: 600; text-decoration: none; }
+.pt-resultado:hover { border-color: var(--border-hover); background: rgba(232,201,122,0.12); }
+.pt-resultado .bola { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255,255,255,0.12); }
+.pt-resultado .abrir { color: var(--color-gold-light); display: inline-flex; align-items: center; gap: 0.25rem; padding-left: 0.4rem; border-left: 1px solid var(--border); }
+.pt-trilha { display: grid; grid-template-columns: repeat(var(--n), 1fr); padding: 0 0.85rem 0.75rem; }
+.pt-etapa { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+.pt-etapa::before { content: ''; position: absolute; top: 11px; left: -50%; width: 100%; height: 2px; background: rgba(245,240,232,0.18); }
+.pt-etapa:first-child::before { display: none; }
+.pt-etapa.ok::before, .pt-etapa.alerta::before, .pt-etapa.erro::before, .pt-etapa.espera::before { background: #7FD8A0; opacity: .55; }
+.pt-no { position: relative; z-index: 1; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--bg-dark); border: 2px solid rgba(245,240,232,0.18); }
+.pt-etapa.ok .pt-no { border-color: #7FD8A0; }
+.pt-etapa.espera .pt-no { border-color: var(--color-gold-light); }
+.pt-etapa.erro .pt-no { border-color: #F09090; }
+.pt-etapa.alerta .pt-no { border-color: #F5C542; }
+.pt-rot { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); text-align: center; }
+.pt-etapa.ok .pt-rot { color: #7FD8A0; }
+.pt-etapa.espera .pt-rot { color: var(--color-gold-light); }
+.pt-etapa.erro .pt-rot { color: #F09090; }
+.pt-etapa.alerta .pt-rot { color: #F5C542; }
+.pt-detalhe { display: grid; grid-template-columns: repeat(var(--n), 1fr); border-top: 1px solid rgba(255,255,255,0.05); }
+.pt-pessoa.fechada .pt-detalhe { display: none; }
+.pt-bloco { padding: 0.6rem 0.7rem 0.75rem; min-width: 0; }
+.pt-bloco + .pt-bloco { border-left: 1px solid rgba(255,255,255,0.05); }
+.pt-bloco-titulo { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-gold-amber); margin-bottom: 0.25rem; }
+.pt-bloco .vazio { color: rgba(245,240,232,0.25); font-size: 0.74rem; }
+.pt-passo { display: grid; grid-template-columns: 15px 1fr auto; gap: 0.4rem; align-items: start; font-size: 0.76rem; line-height: 1.35; padding: 0.1rem 0; }
+.pt-passo .hora { color: var(--text-muted); font-size: 0.7rem; white-space: nowrap; }
+.pt-passo .motivo { display: block; font-size: 0.68rem; }
+.pt-passo.erro .rotulo, .pt-passo.erro .motivo { color: #F09090; }
+.pt-passo.espera .rotulo { color: var(--color-gold-light); }
+.pt-passo.sub { padding-left: 0.75rem; }
+.pt-ic { width: 15px; height: 15px; margin-top: 1px; }
+.pt-no .pt-ic { margin: 0; width: 13px; height: 13px; }
+.pt-pontos { display: inline-flex; gap: 2px; width: 15px; justify-content: center; margin-top: 7px; }
+.pt-no .pt-pontos, .pt-agora .pt-pontos { margin: 0; }
+.pt-pontos i { width: 3px; height: 3px; border-radius: 50%; background: var(--color-gold-light); animation: ptPisca 1.2s infinite ease-in-out; }
+.pt-pontos i:nth-child(2) { animation-delay: .2s; }
+.pt-pontos i:nth-child(3) { animation-delay: .4s; }
+@keyframes ptPisca { 0%, 80%, 100% { opacity: .2; } 40% { opacity: 1; } }
+.pt-seta { width: 13px; height: 13px; color: var(--text-muted); transition: transform .2s; vertical-align: middle; margin-left: 0.35rem; }
+.pt-pessoa:not(.fechada) .pt-seta { transform: rotate(180deg); }
+.pt-nota { margin-top: 1rem; color: var(--text-muted); font-size: 0.72rem; line-height: 1.55; }
+.pt-nota b { color: var(--text-light); font-weight: 600; }
+@media (max-width: 768px) {
+  .pt-detalhe { grid-template-columns: 1fr; }
+  .pt-bloco + .pt-bloco { border-left: 0; border-top: 1px solid rgba(255,255,255,0.05); }
+  .pt-cab { grid-template-columns: 1fr; }
+  .pt-lado { text-align: left; }
+  .pt-rot { font-size: 0.52rem; letter-spacing: 0.02em; }
+}
 .tr-pessoa-nome { font-weight: 600; color: var(--text-light); }
 .tr-pessoa-linha { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; overflow-wrap: anywhere; }
 .tr-ok { color: #7FD8A0; }
@@ -643,6 +731,9 @@ input[type="datetime-local"] { color-scheme: dark; }
   </div>
   <div class="nav-item" id="nav-teste-perfis" onclick="goTab('teste-perfis', this)">
     <span class="nav-icon">📜</span> Conteúdo dos Resultados
+  </div>
+  <div class="nav-item" id="nav-teste-painel" onclick="goTab('teste-painel', this)">
+    <span class="nav-icon"><svg viewBox="0 0 16 16" width="15" height="15" style="vertical-align:-2px"><circle cx="3" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="13" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5 8h1M10 8h1" stroke="currentColor" stroke-width="1.4"/></svg></span> Painel do Teste
   </div>
   <div class="nav-item" id="nav-teste-resultados" onclick="goTab('teste-resultados', this)">
     <span class="nav-icon">📊</span> Resultados
@@ -1448,6 +1539,25 @@ input[type="datetime-local"] { color-scheme: dark; }
       </div>
     </div>
 
+    <!-- ════════════════════ TESTE DO SUBCONSCIENTE — PAINEL ════════════════════ -->
+    <!-- Só leitura: onde cada pessoa está no caminho do Teste. Atualiza sozinho a cada 20s. -->
+    <div class="tab-panel" id="tab-teste-painel">
+      <div class="pt-topo">
+        <div class="pt-filtros" id="pt-filtros"></div>
+        <select id="pt-dias" class="field-input" style="width:auto" onchange="painelTeste.carregar()">
+          <option value="1">Últimas 24 horas</option>
+          <option value="7" selected>Últimos 7 dias</option>
+          <option value="30">Últimos 30 dias</option>
+        </select>
+      </div>
+      <div class="pt-resumo" id="pt-resumo"></div>
+      <div class="pt-lista" id="pt-lista"><div class="pt-vazio">Carregando…</div></div>
+      <div class="pt-nota">
+        <b>Ao vivo:</b> respondendo o teste agora. <b>Em andamento:</b> ainda falta algo acontecer. <b>Concluídos:</b> nada mais vai sair para ela. <b>Pagos:</b> quem pagou.<br>
+        A Recuperação só aparece na trilha de quem entrou nela. Borda vermelha = teve falha de envio. Toque no nome para abrir ou fechar o detalhe.
+      </div>
+    </div>
+
     <!-- ════════════════════ TESTE DO SUBCONSCIENTE — RESULTADOS ════════════════════ -->
     <div class="tab-panel" id="tab-teste-resultados">
       <div class="wz-section">
@@ -1928,6 +2038,7 @@ const tabMeta = {
   legado:      { title: 'Legado',               sub: 'Dados invisíveis pra aluna · visíveis só pra você' },
   teste:        { title: 'Teste do Subconsciente', sub: 'Versões do questionário — perguntas, alternativas e publicação' },
   'teste-perfis': { title: 'Conteúdo dos Resultados', sub: 'Textos, vídeos e produtos exibidos pra cada perfil dominante' },
+  'teste-painel': { title: 'Painel do Teste', sub: 'Onde cada pessoa está no caminho do Teste, com o que saiu para ela' },
   'teste-resultados': { title: 'Resultados do Teste', sub: 'Todos os testes completos, com link pro resultado de cada um' },
   'teste-insights': { title: 'Insights do Teste', sub: 'Funil de abandono e distribuição de respostas por pergunta' },
   'teste-avaliacoes': { title: 'Avaliações do Teste', sub: 'Estrelas e comentários deixados pelas alunas no resultado' },
@@ -1972,6 +2083,7 @@ function goTab(id, el) {
   if (id === 'legado') { carregarLegado(); }
   if (id === 'teste') { testeAdmin.carregar(); }
   if (id === 'teste-perfis') { perfisAdmin.carregar(); }
+  if (painelTeste) { if (id === 'teste-painel') painelTeste.entrar(); else painelTeste.sair(); }
   if (id === 'teste-resultados') { testesResultados.carregar(1); }
   if (id === 'teste-insights') { testesInsights.carregarTudo(); }
   if (id === 'teste-avaliacoes') { testesAvaliacoes.carregar(1); }
@@ -4287,6 +4399,132 @@ async function salvarMostrarLog() {
 }
 
 // ── TESTE DO SUBCONSCIENTE — RESULTADOS (lista + envio manual) ──
+// ============================================================
+// PAINEL DO TESTE (só leitura) — GET /api/admin/teste-painel
+// Filtros: Ao vivo, Em andamento, Concluídos, Pagos. Atualiza a cada 20s
+// enquanto a aba está aberta; cartões abertos/fechados ficam como estavam.
+// ============================================================
+var painelTeste = (function(){
+  let pessoas = [];
+  let filtro = 'andamento';
+  let timer = null;
+  const abertos = {};   // chave → true/false (o que o Renato abriu ou fechou)
+
+  const OK = '<svg class="pt-ic" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="none" stroke="#7FD8A0" stroke-width="1.5"/><path d="M4.8 8.2l2.1 2.1 4.3-4.6" fill="none" stroke="#7FD8A0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const ERRO = '<svg class="pt-ic" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="none" stroke="#F09090" stroke-width="1.5"/><path d="M5.6 5.6l4.8 4.8M10.4 5.6l-4.8 4.8" stroke="#F09090" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  const ESPERA = '<span class="pt-pontos"><i></i><i></i><i></i></span>';
+  const ICONE = { ok: OK, erro: ERRO, espera: ESPERA };
+  const NO = {
+    ok: '<svg class="pt-ic" viewBox="0 0 16 16"><path d="M3.8 8.4l2.7 2.7 5.6-6" fill="none" stroke="#7FD8A0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    erro: '<svg class="pt-ic" viewBox="0 0 16 16"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" stroke="#F09090" stroke-width="2" stroke-linecap="round"/></svg>',
+    alerta: '<svg class="pt-ic" viewBox="0 0 16 16"><path d="M8 3.5v6" stroke="#F5C542" stroke-width="2" stroke-linecap="round"/><circle cx="8" cy="12.5" r="1.2" fill="#F5C542"/></svg>',
+    espera: ESPERA, futuro: '',
+  };
+  const SETA = '<svg class="pt-seta" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const ABRIR = '<svg viewBox="0 0 12 12" width="11" height="11"><path d="M4.5 2.5h5v5M9.5 2.5L3 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  // Nomes e cores oficiais das energias (core/teste-conteudo.js); Sobrevivência mais clara para ler no fundo escuro.
+  const PERFIL = {
+    medo: ['Medo', '#9b59b6'], desordem: ['Desordem', '#e67e22'], sobrevivencia: ['Sobrevivência', '#5d7a96'],
+    validacao: ['Validação', '#e74c3c'], prosperidade: ['Prosperidade', '#2ba5e8'],
+    prosperidade_nv1: ['Otimismo', '#2ba5e8'], prosperidade_nv2: ['Expansão', '#2ba5e8'], prosperidade_nv3: ['Plenitude', '#2ba5e8'],
+  };
+
+  const est = (x, nome) => { const k = x.etapas.find(y => y.nome === nome); return k ? k.estado : null; };
+  const FILTROS = [
+    ['ao_vivo', 'Ao vivo', x => x.ao_vivo],
+    ['andamento', 'Em andamento', x => x.grupo === 'andamento'],
+    ['concluidos', 'Concluídos', x => x.grupo === 'concluidos'],
+    ['pagos', 'Pagos', x => x.pago],
+  ];
+  const RESUMO = [
+    ['espera', x => x.ao_vivo, ['respondendo agora', 'respondendo agora']],
+    ['espera', x => x.grupo === 'andamento' && !!est(x, 'Recuperação') && est(x, 'Pagamento') === 'espera', ['em recuperação', 'em recuperação']],
+    ['espera', x => est(x, 'Pagamento') === 'espera', ['aguardando pagamento', 'aguardando pagamento']],
+    ['espera', x => est(x, 'Upsell') === 'espera', ['aguardando upsell', 'aguardando upsell']],
+    ['ok', x => x.pago && x.grupo === 'concluidos' && est(x, 'Entrega') !== 'erro', ['pagou e recebeu', 'pagaram e receberam']],
+    ['erro', x => est(x, 'Pagamento') === 'erro', ['não pagou', 'não pagaram']],
+    ['erro', x => !x.ao_vivo && est(x, 'Teste') === 'erro', ['parou no meio', 'pararam no meio']],
+    ['erro', x => x.falha, ['com falha de envio', 'com falha de envio']],
+  ];
+
+  const hojeStr = () => new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  function hora(s) {
+    if (!s) return '';
+    const d = new Date(s);
+    const h = d.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+    const dia = d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    return dia === hojeStr() ? h : `${dia.slice(0, 5)} ${h}`;
+  }
+  const linhas = passos => passos.length ? passos.map(s => `
+      <div class="pt-passo ${s.estado}${s.sub ? ' sub' : ''}">
+        ${ICONE[s.estado] || ''}
+        <span><span class="rotulo">${escHtml(s.rotulo)}</span>${s.motivo ? `<span class="motivo">${escHtml(s.motivo)}</span>` : ''}</span>
+        <span class="hora">${s.sai ? 'sai ' : ''}${hora(s.hora)}</span>
+      </div>`).join('') : '<div class="vazio">ainda não chegou aqui</div>';
+  const botaoResultado = x => {
+    if (!x.link_resultado) return '';
+    const [nome, cor] = PERFIL[x.perfil] || [x.perfil || 'Resultado', '#888'];
+    return `<a class="pt-resultado" href="${escHtml(x.link_resultado)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+      <span class="bola" style="background:${cor}"></span>${escHtml(nome)}<span class="abrir">Abrir resultado ${ABRIR}</span></a>`;
+  };
+
+  function render() {
+    document.getElementById('pt-filtros').innerHTML = FILTROS.map(([id, nome, f]) =>
+      `<button class="pt-filtro ${filtro === id ? 'ativo' : ''}" onclick="painelTeste.filtrar('${id}')">${id === 'ao_vivo' ? '<span class="pt-vivo"></span>' : ''}${nome} <span class="n">${pessoas.filter(f).length}</span></button>`).join('');
+    const lista = pessoas.filter(FILTROS.find(f => f[0] === filtro)[2]);
+    document.getElementById('pt-resumo').innerHTML = RESUMO
+      .map(([cls, f, txt]) => [cls, lista.filter(f).length, txt]).filter(r => r[1] > 0)
+      .map(([cls, n, txt]) => `<div class="item ${cls}"><div class="num">${n}</div><div class="txt">${txt[n === 1 ? 0 : 1]}</div></div>`).join('');
+    const fechadoPadrao = filtro === 'concluidos' || filtro === 'pagos';
+    document.getElementById('pt-lista').innerHTML = lista.length ? lista.map((x, i) => {
+      const aberto = x.chave in abertos ? abertos[x.chave] : !fechadoPadrao;
+      const contato = [x.telefone, x.email].filter(Boolean).join(' · ') || 'sem contato';
+      const agoraTxt = x.agora[1] + (x.upsell_sai ? ' ' + hora(x.upsell_sai) : '');
+      const quando = x.quando && x.quando[1] ? `${x.quando[0]} ${hora(x.quando[1])}` : (x.pago ? 'pago' : '');
+      return `
+      <div class="pt-pessoa ${x.falha ? 'com-falha' : ''} ${aberto ? '' : 'fechada'}" style="--n:${x.etapas.length}">
+        <div class="pt-cab" onclick="painelTeste.alternar(${i}, this.parentNode)">
+          <div><div class="pt-nome">${escHtml(x.nome)}${SETA}</div><div class="pt-contato">${escHtml(contato)}</div>${botaoResultado(x)}</div>
+          <div class="pt-lado"><span class="pt-agora ${x.agora[0]}">${x.agora[0] === 'espera' ? ESPERA : ''}${escHtml(agoraTxt)}</span><div class="pt-quando">${escHtml(quando)}</div></div>
+        </div>
+        <div class="pt-trilha">
+          ${x.etapas.map(k => `<div class="pt-etapa ${k.estado}"><div class="pt-no">${NO[k.estado] || ''}</div><div class="pt-rot">${escHtml(k.nome)}</div></div>`).join('')}
+        </div>
+        <div class="pt-detalhe">
+          ${x.etapas.map(k => `<div class="pt-bloco"><div class="pt-bloco-titulo">${escHtml(k.nome)}</div>${linhas(k.passos)}</div>`).join('')}
+        </div>
+      </div>`;
+    }).join('') : '<div class="pt-vazio">Ninguém aqui agora.</div>';
+    painelTeste._lista = lista;
+  }
+
+  async function carregar() {
+    try {
+      const dias = document.getElementById('pt-dias').value;
+      const r = await fetch(`${API}/api/admin/teste-painel?dias=${dias}`, { headers: { 'Authorization': authHeader() } });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+      pessoas = d.pessoas || [];
+      render();
+    } catch (err) {
+      document.getElementById('pt-lista').innerHTML = `<div class="pt-vazio">Não consegui carregar o painel: ${escHtml(err.message)}</div>`;
+    }
+  }
+
+  return {
+    entrar() { carregar(); if (!timer) timer = setInterval(carregar, 20000); },
+    sair() { if (timer) { clearInterval(timer); timer = null; } },
+    carregar,
+    filtrar(id) { filtro = id; render(); },
+    alternar(i, el) {
+      const x = painelTeste._lista[i];
+      el.classList.toggle('fechada');
+      abertos[x.chave] = !el.classList.contains('fechada');
+    },
+    _lista: [],
+  };
+})();
+
 const testesResultados = (function(){
   let status = 'todos';
   let periodo = '';

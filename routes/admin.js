@@ -1690,6 +1690,223 @@ async function _listarIncompletos({ data_de, data_ate, q, lim, offset, pag }) {
   return { ok: true, incompletos: true, testes, total, page: pag, totalPages: Math.max(1, Math.ceil(total / lim)) };
 }
 
+// ════════════════════════════════════════════════════════════
+// PAINEL DO TESTE (Renato, 2026-11-10) — só leitura.
+// Cada pessoa (rodada) com a trilha Teste → Recuperação (só se ela entrou)
+// → Pagamento → Entrega → Upsell, cada passo com hora e estado
+// (ok | espera | erro), lidos de testes, teste_leads/teste_respostas e do
+// histórico de mensagens (teste_avisos + fila do gateway). Não grava nada.
+//   Em andamento = ainda falta algo sair/acontecer; Concluído = nada mais sai.
+//   Ao vivo = respondendo agora (última resposta há menos de 15 min).
+// ════════════════════════════════════════════════════════════
+const PAINEL_MIN_INATIVA = 15;      // igual à recuperação C (core/teste-avisos.js)
+const PAINEL_MIN_RECUPERACAO = 15;  // D
+const PAINEL_MIN_UPSELL = 20;       // E
+const PAINEL_FOLGA = 5;             // FOLGA_MIN do core/teste-avisos.js
+
+function _painelMotivo(m) {
+  if (!m) return '';
+  const s = String(m);
+  if (s === 'falha no envio Evolution') return 'a Evolution recusou o envio (o motivo dela não fica gravado)';
+  if (s === 'atendimento abortado por falha anterior') return 'a mensagem anterior falhou';
+  try {
+    const j = JSON.parse(s);
+    if (j && (j.code || j.message)) return [j.code ? `cód. ${j.code}` : '', j.message || ''].filter(Boolean).join(' · ');
+  } catch (_) {}
+  return s;
+}
+// Uma linha por mensagem (WhatsApp / e-mail) com o estado real.
+function _painelCanal(a, nomeCanal) {
+  const c = nomeCanal || (a.canal === 'whatsapp' ? 'WhatsApp' : 'E-mail');
+  const base = { hora: a.quando || a.registrado_em, sub: true };
+  if (a.status === 'enviado') return { ...base, estado: 'ok', rotulo: `${c} enviado` };
+  if (a.status === 'na_fila' || a.status === 'enviando') return { ...base, estado: 'espera', rotulo: `${c} na fila` };
+  if (a.status === 'nao_enviado') return { ...base, estado: 'erro', rotulo: `${c} não enviado`, motivo: _painelMotivo(a.motivo), falha: false };
+  return { ...base, estado: 'erro', rotulo: `${c} falhou`, motivo: _painelMotivo(a.motivo), falha: true };
+}
+// Estado da etapa a partir das linhas de mensagem.
+function _painelEstado(linhas) {
+  const l = linhas.filter(x => x.sub);
+  if (!l.length) return 'futuro';
+  if (l.some(x => x.estado === 'espera')) return 'espera';
+  const ok = l.filter(x => x.estado === 'ok').length;
+  if (ok === l.length) return 'ok';
+  return ok ? 'alerta' : 'erro';
+}
+const _NOME_UPSELL = { video: 'WhatsApp (recado)', pesquisa: 'E-mail de pesquisa', materiais: 'E-mail de materiais' };
+
+async function montarPainelTeste(dias) {
+  const agora = Date.now();
+  const min = n => n * 60 * 1000;
+  const modoDevAdmin = await lerModoDevTeste().catch(() => false);
+
+  const tR = await poolTeste.query(
+    `SELECT t.id, t.lead_id, t.telefone_canonico, t.perfil_dominante, t.nivel_prosperidade,
+            t.pago, t.modo_dev, t.feito_em, t.formulario_em, l.nome, l.email
+       FROM testes t LEFT JOIN teste_leads l ON l.id = t.lead_id
+      WHERE t.eh_legado = FALSE AND t.feito_em >= NOW() - make_interval(days => $1)
+      ORDER BY t.feito_em DESC LIMIT 400`,
+    [dias]
+  );
+  const iR = await poolTeste.query(
+    `${_SQL_LEADS_RODADA}
+      WHERE ${_COND_INCOMPLETO}
+        AND GREATEST(l.atualizado_em, COALESCE(r.ultima, l.atualizado_em)) >= NOW() - make_interval(days => $1)
+      ORDER BY GREATEST(l.atualizado_em, COALESCE(r.ultima, l.atualizado_em)) DESC LIMIT 400`,
+    [dias]
+  );
+  const leadIds = [...new Set([...tR.rows.map(t => t.lead_id), ...iR.rows.map(l => l.id)].filter(Boolean))];
+  const [histT, histL] = await Promise.all([
+    historicoDosTestes(tR.rows.map(t => t.id)).catch(() => ({})),
+    historicoDosLeads(leadIds).catch(() => ({})),
+  ]);
+  const baseUrl = process.env.APP_URL || 'https://www.vidamagica.com.br';
+  const pessoas = [];
+
+  // Recuperação: a C (parou no meio) e a D (não pagou), cada uma com seus canais.
+  const blocoRecuperacao = (cs, ds) => {
+    const passos = [];
+    if (cs.length) {
+      passos.push({ estado: 'ok', rotulo: 'Recuperação · parou no meio', hora: cs[0].registrado_em });
+      cs.forEach(a => passos.push(_painelCanal(a)));
+    }
+    if (ds.length) {
+      passos.push({ estado: 'ok', rotulo: 'Recuperação · não pagou', hora: ds[0].registrado_em });
+      ds.forEach(a => passos.push(_painelCanal(a)));
+    }
+    return passos;
+  };
+
+  // ── Testes concluídos (15/15) ──
+  for (const t of tR.rows) {
+    const av = histT[t.id] || [];
+    const feito = new Date(t.feito_em).getTime();
+    const inicio = t.formulario_em || t.feito_em;
+    const cs = (histL[t.lead_id] || []).filter(a => a.momento === 'recuperacao_meio'
+      && new Date(a.registrado_em) >= new Date(inicio) && new Date(a.registrado_em) <= new Date(t.feito_em));
+    const ds = av.filter(a => a.momento === 'recuperacao_pagamento');
+    const as = av.filter(a => a.momento === 'pagamento');
+    const bs = av.filter(a => a.momento === 'resultado');
+    const es = av.filter(a => a.momento === 'pos_compra');
+    const manPag = av.filter(a => a.momento === 'manual' && a.conteudo !== 'resultado');
+    const manRes = av.filter(a => a.momento === 'manual' && a.conteudo === 'resultado');
+    const aberto = !!(t.pago || t.modo_dev);
+    const pagoEm = bs.length ? bs[0].registrado_em : null;
+
+    const etapas = [];
+    etapas.push({ nome: 'Teste', estado: 'ok', passos: [
+      { estado: 'ok', rotulo: 'Iniciou o teste', hora: inicio },
+      { estado: 'ok', rotulo: 'Respondeu 15/15', hora: t.feito_em },
+    ]});
+    const rec = blocoRecuperacao(cs, ds);
+    if (rec.length) etapas.push({ nome: 'Recuperação', estado: _painelEstado(rec), passos: rec });
+
+    // Pagamento
+    const pag = [];
+    if (as.length) { pag.push({ estado: 'ok', rotulo: 'Link de pagamento', hora: as[0].registrado_em }); as.forEach(a => pag.push(_painelCanal(a))); }
+    if (manPag.length) { pag.push({ estado: 'ok', rotulo: 'Reenviado pelo admin', hora: manPag[0].registrado_em }); manPag.forEach(a => pag.push(_painelCanal(a))); }
+    const naJanelaD = agora < feito + min(PAINEL_MIN_RECUPERACAO + PAINEL_FOLGA);
+    let estadoPag;
+    if (t.pago) { pag.push({ estado: 'ok', rotulo: 'Pago', hora: pagoEm }); estadoPag = 'ok'; }
+    else if (t.modo_dev || modoDevAdmin) { pag.push({ estado: 'ok', rotulo: 'Resultado aberto (Modo dev)', hora: null }); estadoPag = 'ok'; }
+    else if (naJanelaD || pag.some(x => x.estado === 'espera')) { pag.push({ estado: 'espera', rotulo: 'Pago', hora: null }); estadoPag = 'espera'; }
+    else { pag.push({ estado: 'erro', rotulo: 'Não pagou', hora: null }); estadoPag = 'erro'; }
+    etapas.push({ nome: 'Pagamento', estado: estadoPag, passos: pag });
+
+    // Entrega e Upsell (só para quem pagou ou teve o resultado aberto)
+    const ent = [];
+    if (bs.length) { ent.push({ estado: 'ok', rotulo: 'Resultado', hora: bs[0].registrado_em }); bs.forEach(a => ent.push(_painelCanal(a))); }
+    if (manRes.length) { ent.push({ estado: 'ok', rotulo: 'Reenviado pelo admin', hora: manRes[0].registrado_em }); manRes.forEach(a => ent.push(_painelCanal(a))); }
+    let estadoEnt = 'futuro';
+    if (aberto) {
+      if (ent.length) estadoEnt = _painelEstado(ent);
+      else if (t.pago) { ent.push({ estado: 'erro', rotulo: 'Resultado não enviado', motivo: 'nenhum envio registrado', hora: null }); estadoEnt = 'erro'; }
+      else { ent.push({ estado: 'ok', rotulo: 'Resultado aberto na tela', hora: null }); estadoEnt = 'ok'; }
+    }
+    etapas.push({ nome: 'Entrega', estado: estadoEnt, passos: ent });
+
+    const ups = [];
+    let estadoUps = 'futuro';
+    let upsellSai = null;
+    if (es.length) {
+      ups.push({ estado: 'ok', rotulo: 'Upsell', hora: es[0].registrado_em });
+      es.forEach(a => ups.push(_painelCanal(a, _NOME_UPSELL[a.conteudo])));
+      estadoUps = _painelEstado(ups);
+    } else if (bs.length) {
+      upsellSai = new Date(new Date(bs[0].registrado_em).getTime() + min(PAINEL_MIN_UPSELL));
+      if (agora < upsellSai.getTime() + min(PAINEL_FOLGA)) { ups.push({ estado: 'espera', rotulo: 'Upsell', hora: upsellSai, sai: true }); estadoUps = 'espera'; }
+      else { ups.push({ estado: 'erro', rotulo: 'Upsell não saiu', motivo: 'passou da hora sem envio registrado', hora: null }); estadoUps = 'erro'; }
+    }
+    etapas.push({ nome: 'Upsell', estado: estadoUps, passos: ups });
+
+    const todas = etapas.flatMap(e => e.passos);
+    const temEspera = todas.some(x => x.estado === 'espera' && x.sub) || estadoUps === 'espera' || estadoPag === 'espera';
+    const andamento = temEspera;
+    let agoraTxt;
+    if (t.pago) agoraTxt = estadoUps === 'espera' ? ['espera', 'Upsell às'] : (estadoEnt === 'erro' ? ['erro', 'Resultado não chegou'] : ['ok', 'Entregue']);
+    else if (aberto) agoraTxt = ['ok', 'Resultado aberto'];
+    else if (estadoPag === 'espera') agoraTxt = ['espera', rec.length ? 'Em recuperação' : 'Aguardando pagamento'];
+    else agoraTxt = ['erro', 'Não pagou'];
+
+    pessoas.push({
+      chave: `t:${t.id}`, teste_id: t.id, nome: t.nome || '(sem nome)', telefone: t.telefone_canonico, email: t.email,
+      perfil: t.perfil_dominante === 'prosperidade' && t.nivel_prosperidade ? `prosperidade_nv${t.nivel_prosperidade}` : t.perfil_dominante,
+      link_resultado: `${baseUrl}/resultado/${t.id}`,
+      grupo: andamento ? 'andamento' : 'concluidos', ao_vivo: false,
+      pago: !!t.pago,
+      agora: agoraTxt, upsell_sai: estadoUps === 'espera' ? upsellSai : null,
+      quando: t.pago ? ['pagou', pagoEm] : ['terminou', t.feito_em],
+      ordem: Math.max(feito, ...todas.map(x => (x.hora ? new Date(x.hora).getTime() : 0))),
+      falha: todas.some(x => x.falha),
+      etapas,
+    });
+  }
+
+  // ── Rodadas em aberto (menos de 15 respostas) ──
+  for (const l of iR.rows) {
+    const inicio = l.atualizado_em;
+    const ultima = l.ultima && new Date(l.ultima) > new Date(l.atualizado_em) ? l.ultima : l.atualizado_em;
+    const ult = new Date(ultima).getTime();
+    const inativa = agora >= ult + min(PAINEL_MIN_INATIVA);
+    const cs = (histL[l.id] || []).filter(a => a.momento === 'recuperacao_meio' && new Date(a.registrado_em) >= new Date(inicio));
+    const teste = [{ estado: 'ok', rotulo: 'Iniciou o teste', hora: inicio }];
+    if (!inativa) teste.push({ estado: 'espera', rotulo: `Respondendo ${l.respondidas}/15`, hora: ultima });
+    else {
+      teste.push({ estado: 'erro', rotulo: `Parou em ${l.respondidas}/15`, hora: ultima });
+      teste.push({ estado: 'ok', rotulo: 'Inatividade registrada', hora: new Date(ult + min(PAINEL_MIN_INATIVA)) });
+    }
+    const etapas = [{ nome: 'Teste', estado: inativa ? 'erro' : 'espera', passos: teste }];
+    const rec = blocoRecuperacao(cs, []);
+    if (rec.length) etapas.push({ nome: 'Recuperação', estado: _painelEstado(rec), passos: rec });
+    etapas.push({ nome: 'Pagamento', estado: 'futuro', passos: [] }, { nome: 'Entrega', estado: 'futuro', passos: [] }, { nome: 'Upsell', estado: 'futuro', passos: [] });
+    const todas = etapas.flatMap(e => e.passos);
+    const andamento = !inativa || (!cs.length && agora < ult + min(PAINEL_MIN_INATIVA + PAINEL_FOLGA)) || todas.some(x => x.estado === 'espera' && x.sub);
+    pessoas.push({
+      chave: `l:${l.id}:${new Date(inicio).getTime()}`, teste_id: null, nome: l.nome || '(sem nome)', telefone: l.telefone_canonico, email: l.email,
+      perfil: null, link_resultado: null,
+      grupo: andamento ? 'andamento' : 'concluidos', ao_vivo: !inativa, pago: false,
+      agora: inativa ? ['erro', `Parou em ${l.respondidas}/15`] : ['espera', `Respondendo ${l.respondidas}/15`],
+      quando: inativa ? ['parou', ultima] : ['última atividade', ultima],
+      ordem: Math.max(ult, ...todas.map(x => (x.hora ? new Date(x.hora).getTime() : 0))),
+      falha: todas.some(x => x.falha),
+      etapas,
+    });
+  }
+
+  pessoas.sort((a, b) => b.ordem - a.ordem);
+  return pessoas;
+}
+
+router.get('/teste-painel', async (req, res) => {
+  try {
+    const dias = [1, 7, 30].includes(parseInt(req.query.dias, 10)) ? parseInt(req.query.dias, 10) : 7;
+    res.json({ ok: true, dias, agora: new Date(), pessoas: await montarPainelTeste(dias) });
+  } catch (err) {
+    console.error('❌ /teste-painel:', err.message);
+    res.status(500).json({ ok: false, erro: 'Erro ao montar o painel' });
+  }
+});
+
 // Botões do admin: pago (ou resultado aberto) = reenvio do resultado;
 // pendente = o mesmo link de pagamento que sai na hora. Tudo fica
 // registrado em teste_avisos (core/teste-avisos.js).
