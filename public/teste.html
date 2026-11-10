@@ -592,7 +592,8 @@
     .modal-form-checkbox.is-erro .modal-form-checkbox-mark { border-color: #e57373; box-shadow: 0 0 0 3px rgba(229,115,115,0.15); }
 
     .modal-form-submit { width: 100%; font-family: var(--font-display); font-size: 0.9rem; font-weight: 700; color: var(--sub-deep); background: linear-gradient(135deg, var(--sub-bright), var(--sub-light)); border: none; border-radius: var(--r-full); padding: 1.1rem 1.75rem; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; transition: all 0.25s; box-shadow: 0 8px 24px rgba(43,165,232,0.3), 0 0 40px var(--sub-glow-soft); display: flex; align-items: center; justify-content: center; gap: 0.6rem; }
-    .modal-form-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(43,165,232,0.4), 0 0 60px var(--sub-glow); }
+    .modal-form-submit.is-incompleto { opacity: 0.45; transform: none; }
+    .modal-form-submit:hover:not(:disabled):not(.is-incompleto) { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(43,165,232,0.4), 0 0 60px var(--sub-glow); }
     .modal-form-submit:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
     .modal-form-submit i { font-size: 0.85rem; }
     .modal-form-submit .spinner { display: none; width: 16px; height: 16px; border: 2px solid rgba(0,0,0,0.2); border-top-color: var(--sub-deep); border-radius: 50%; animation: spin 0.8s linear infinite; }
@@ -871,7 +872,7 @@
               type="text"
               id="campo-nome"
               class="modal-form-input"
-              placeholder="Ex: Maria"
+              placeholder="Ex: Maju Silva"
               autocomplete="given-name"
               maxlength="100"
               required
@@ -908,7 +909,7 @@
                 required
               />
               <div class="modal-form-erro" id="erro-telefone">Digite um número de WhatsApp válido com DDD.</div>
-              <div class="modal-form-alerta" id="aviso-telefone-padrao"><i class="fas fa-triangle-exclamation"></i> <span>Verifique se o número informado está correto.<br>O resultado do teste poderá não ser entregue por WhatsApp.</span></div>
+              <div class="modal-form-alerta" id="aviso-telefone-padrao"><i class="fas fa-triangle-exclamation"></i> <span>Verifique o país ou digite um número válido.</span></div>
               <div class="modal-form-aviso" id="aviso-encontrou"><i class="fas fa-check-circle"></i> <span>Que bom te ver de novo!</span></div>
             </div>
 
@@ -925,6 +926,7 @@
                 required
               />
               <div class="modal-form-erro" id="erro-email">Digite um e-mail válido.</div>
+              <div class="modal-form-alerta" id="aviso-email"><i class="fas fa-triangle-exclamation"></i> <span>Verifique o e-mail: use @ no lugar de #.</span></div>
             </div>
           </div>
 
@@ -937,14 +939,14 @@
           </label>
 
           <label class="modal-form-checkbox" for="campo-aceite-marketing">
-            <input type="checkbox" id="campo-aceite-marketing">
+            <input type="checkbox" id="campo-aceite-marketing" checked>
             <span class="modal-form-checkbox-mark"><i class="fas fa-check"></i></span>
             <span class="modal-form-checkbox-texto">
               Quero receber novidades, conteúdos e promoções da Vida Mágica por WhatsApp e e-mail.
             </span>
           </label>
 
-          <button type="submit" class="modal-form-submit" id="btn-comecar" disabled>
+          <button type="submit" class="modal-form-submit is-incompleto" id="btn-comecar">
             <span class="spinner"></span>
             <span class="submit-text">Começar agora</span>
             <i class="fas fa-arrow-right submit-icon"></i>
@@ -1438,7 +1440,17 @@
       // ── Telefone internacional com bandeira (intl-tel-input via VmTelInput) ──
       // O helper trata seleção de país, validação por país e canônico E.164.
       // Default: Brasil. Auto-detecta país via geo-IP (ipapi.co).
-      const tel = VmTelInput.aplicar(inputTel, { paisDefault: 'br' });
+      // Bandeiras liberadas no Teste: Brasil, língua portuguesa, EUA/Canadá e
+      // Europa. A mesma lista vale no servidor (TESTE_PAISES_FORA em
+      // routes/teste.js). A pessoa escolhe a bandeira; ela nunca muda sozinha.
+      const TESTE_PAISES = [
+        'br',
+        'pt', 'ao', 'mz', 'gw', 'gq', 'cv', 'st', 'tl', 'mo',
+        'us', 'ca',
+        'fr', 'es', 'it', 'ch', 'nl', 'be', 'de', 'gb', 'ie', 'lu', 'at', 'pl', 'se', 'fi',
+        'gr', 'hu', 'ro', 'cz', 'sk', 'si', 'hr', 'cy', 'mt', 'lt', 'lv', 'mc', 'ad', 'ua',
+      ];
+      const tel = VmTelInput.aplicar(inputTel, { paisDefault: 'br', paises: TESTE_PAISES, ordem: ['br', 'pt', 'us'] });
 
       // Mantém uma função "formatarTel" como fallback caso outro código a chame.
       // O input visual passa a ser controlado pelo intl-tel-input.
@@ -1454,14 +1466,40 @@
       function nomeValido(){
         return inputNome.value.trim().length >= 2;
       }
+      // Brasil: só os dígitos do campo (DDD + número, sem o 55).
+      function digitosTelBR(){
+        return (tel && tel.pais && tel.pais() === 'br') ? (inputTel.value || '').replace(/\D/g, '') : null;
+      }
+      // Brasil: o que já foi digitado não pode ser número brasileiro?
+      // DDD que não existe (a partir do 2º dígito) ou outro número no lugar do 9.
+      function foraDoPadraoBR(d){
+        if (d.length >= 2 && window.VmTelInput && VmTelInput.dddBrasil && !VmTelInput.dddBrasil(d.slice(0, 2))) return true;
+        return d.length >= 3 && d[2] !== '9';
+      }
+      // Brasil: WhatsApp = DDD que existe + 9 + 8 dígitos (11). O 9 é obrigatório.
+      // Outros países: validação do intl-tel-input.
       function telefoneValido(){
-        return tel ? tel.valido() : false;
+        if (!tel) return false;
+        const d = digitosTelBR();
+        if (d !== null) return d.length === 11 && !foraDoPadraoBR(d);
+        return tel.valido();
       }
+      // Erro em vermelho ao tocar em "Começar agora" (campo vazio, incompleto ou sem o 9).
+      function textoErroTel(){
+        const d = digitosTelBR();
+        if (d === null) return 'Digite um número de WhatsApp válido para o país escolhido.';
+        if (d.length >= 3 && d[2] !== '9') return 'O número de WhatsApp precisa ter o 9 depois do DDD.';
+        return 'Digite um número de WhatsApp válido com DDD.';
+      }
+      // nome@dominio.com — termina em ponto + pelo menos 2 letras.
       function emailValido(){
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inputEmail.value.trim());
+        return /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(inputEmail.value.trim());
       }
+      // Incompleto: o botão fica apagado, mas responde ao toque e mostra em
+      // vermelho o que falta (validação do submit).
       function atualizarBotao(){
-        btnEnviar.disabled = !(nomeValido() && telefoneValido() && emailValido() && inputAceite.checked);
+        btnEnviar.disabled = false;
+        btnEnviar.classList.toggle('is-incompleto', !(nomeValido() && telefoneValido() && emailValido() && inputAceite.checked));
       }
 
       // ── Abrir / fechar ──
@@ -1598,10 +1636,21 @@
 
       // ── Telefone: validação + auto-preenchimento ──
       // (Formatação visual é responsabilidade do intl-tel-input.)
-      // Número completo fora do padrão "(DD) 9 NNNN-NNNN": só avisa, não bloqueia.
+      // Aviso amarelo enquanto ela digita, com a bandeira do Brasil:
+      // DDD que não existe ou outro número no lugar do 9 → "Verifique o país
+      // ou digite um número válido." A bandeira nunca muda sozinha.
+      // Sem o 9 depois do DDD → a frase fala do 9.
       const avisoTelPadrao = document.getElementById('aviso-telefone-padrao');
+      const avisoTelTexto = avisoTelPadrao.querySelector('span');
       function avisarPadraoTel(){
-        const fora = !!(tel && tel.foraDoPadrao && tel.foraDoPadrao());
+        const d = digitosTelBR();
+        const fora = d !== null && foraDoPadraoBR(d);
+        if (fora) {
+          const dddOk = window.VmTelInput && VmTelInput.dddBrasil && VmTelInput.dddBrasil(d.slice(0, 2));
+          avisoTelTexto.textContent = (dddOk && d.length >= 3 && d[2] !== '9')
+            ? 'Verifique o país ou digite o 9 depois do DDD.'
+            : 'Verifique o país ou digite um número válido.';
+        }
         avisoTelPadrao.classList.toggle('is-visivel', fora);
       }
       inputTel.addEventListener('input', () => {
@@ -1638,18 +1687,100 @@
         }
       });
 
+      // ── Correções automáticas (padrões vistos nas planilhas antigas do Teste) ──
+      // Nome TUDO MAIÚSCULO ou tudo minúsculo → "Maria da Silva".
+      // Nome misturado (ex.: "MaJu") fica como ela escreveu.
+      const PARTICULAS_NOME = new Set(['da', 'de', 'do', 'das', 'dos', 'e']);
+      function corrigirNome(nome){
+        const limpo = String(nome || '').trim().replace(/\s+/g, ' ');
+        const letras = limpo.replace(/[^A-Za-zÀ-ÿ]/g, '');
+        if (!letras) return limpo;
+        const tudoIgual = letras === letras.toUpperCase() || letras === letras.toLowerCase();
+        if (!tudoIgual) return limpo;
+        return limpo.toLowerCase().split(' ').map((p, i) =>
+          (i > 0 && PARTICULAS_NOME.has(p)) ? p : p.charAt(0).toUpperCase() + p.slice(1)
+        ).join(' ');
+      }
+      // E-mail: sem espaço, minúsculo e domínio digitado errado corrigido.
+      // Só corrige os provedores grandes; domínio que existe fica como está.
+      const DOMINIOS_CERTOS = ['gmail.com', 'hotmail.com', 'outlook.com', 'icloud.com'];
+      const DOMINIOS_QUE_EXISTEM = new Set(['gmail.com', 'hotmail.com', 'outlook.com', 'icloud.com', 'mail.com',
+        'ymail.com', 'gmx.com', 'live.com', 'msn.com', 'me.com', 'email.com', 'hotmail.com.br', 'outlook.com.br']);
+      const DOMINIOS_TROCAR = { 'gmail.com.br': 'gmail.com', 'gmail.com.com': 'gmail.com', 'hotmail.com.com': 'hotmail.com' };
+      // Distância entre duas palavras (troca, falta, sobra ou inversão de 1 letra = 1).
+      function distancia(a, b){
+        const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+        for (let j = 1; j <= b.length; j++) d[0][j] = j;
+        for (let i = 1; i <= a.length; i++) {
+          for (let j = 1; j <= b.length; j++) {
+            const custo = a[i-1] === b[j-1] ? 0 : 1;
+            d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + custo);
+            if (i > 1 && j > 1 && a[i-1] === b[j-2] && a[i-2] === b[j-1]) d[i][j] = Math.min(d[i][j], d[i-2][j-2] + 1);
+          }
+        }
+        return d[a.length][b.length];
+      }
+      function corrigirEmail(email){
+        let limpo = String(email || '')
+          .replace(/\s+/g, '')      // espaço
+          .toLowerCase()
+          .replace(/,/g, '.')       // vírgula no lugar do ponto
+          .replace(/@{2,}/g, '@')   // @ repetido
+          .replace(/\.+$/, '');     // ponto sobrando no fim
+        // Esqueceu o @ antes de gmail/hotmail/outlook/icloud: "renatogmail.com" → "renato@gmail.com".
+        if (!limpo.includes('@') && !limpo.includes('#')) {
+          const provedor = DOMINIOS_CERTOS.find(c => limpo.endsWith(c) && limpo.length > c.length);
+          // "renato.gmail.com" (ponto no lugar do @) também: tira o ponto que sobra.
+          const usuarioSemArroba = provedor ? limpo.slice(0, -provedor.length).replace(/[._-]+$/, '') : '';
+          if (usuarioSemArroba) limpo = `${usuarioSemArroba}@${provedor}`;
+        }
+        const arroba = limpo.lastIndexOf('@');
+        if (arroba < 1) return limpo;
+        const usuario = limpo.slice(0, arroba);
+        const dominio = limpo.slice(arroba + 1);
+        if (DOMINIOS_TROCAR[dominio]) return `${usuario}@${DOMINIOS_TROCAR[dominio]}`;
+        if (DOMINIOS_QUE_EXISTEM.has(dominio)) return limpo;
+        const certo = DOMINIOS_CERTOS.find(c => distancia(dominio, c) === 1);
+        return certo ? `${usuario}@${certo}` : limpo;
+      }
+      function aplicarCorrecoes(){
+        // E-mail digitado no lugar do nome → vai para o campo de e-mail (se vazio).
+        const nomeDigitado = inputNome.value.trim();
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nomeDigitado) && !inputEmail.value.trim()) {
+          inputEmail.value = nomeDigitado;
+          inputNome.value = '';
+        }
+        const nome = corrigirNome(inputNome.value);
+        if (nome !== inputNome.value) inputNome.value = nome;
+        const email = corrigirEmail(inputEmail.value);
+        if (email !== inputEmail.value) inputEmail.value = email;
+        atualizarBotao();
+      }
+
       // ── Nome: validação ──
       inputNome.addEventListener('input', () => {
         inputNome.classList.remove('is-erro');
         erroNome.classList.remove('is-visivel');
         atualizarBotao();
       });
+      inputNome.addEventListener('blur', aplicarCorrecoes);
 
       // ── E-mail: validação ──
+      // Aviso amarelo só quando ela digita # (quem troca o @ pelo #).
+      // O resto se corrige sozinho (aplicarCorrecoes) ou vira vermelho no "Começar agora".
+      const avisoEmail = document.getElementById('aviso-email');
+      function avisarEmail(){
+        avisoEmail.classList.toggle('is-visivel', inputEmail.value.includes('#'));
+      }
       inputEmail.addEventListener('input', () => {
         inputEmail.classList.remove('is-erro');
         erroEmail.classList.remove('is-visivel');
+        avisarEmail();
         atualizarBotao();
+      });
+      inputEmail.addEventListener('blur', () => {
+        aplicarCorrecoes();
+        avisarEmail();
       });
 
       // ── Aceite (checkbox): validação ──
@@ -1662,11 +1793,15 @@
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // Validação client-side
+        // Validação client-side (depois das correções automáticas)
+        aplicarCorrecoes();
         let temErro = false;
         if (!telefoneValido()) {
           inputTel.classList.add('is-erro');
+          erroTel.textContent = textoErroTel();
           erroTel.classList.add('is-visivel');
+          avisoTelPadrao.classList.remove('is-visivel'); // fica só o vermelho
+
           temErro = true;
         }
         if (!nomeValido()) {
@@ -1677,6 +1812,7 @@
         if (!emailValido()) {
           inputEmail.classList.add('is-erro');
           erroEmail.classList.add('is-visivel');
+          avisoEmail.classList.remove('is-visivel'); // fica só o vermelho
           temErro = true;
         }
         if (!inputAceite.checked) {

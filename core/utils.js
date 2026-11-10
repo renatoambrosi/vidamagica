@@ -30,15 +30,27 @@
  * @param {string|number} telefone
  * @returns {string} telefone canônico (DDI + DDD + número, sem '+')
  */
+// DDDs que existem no Brasil.
+const DDDS_BR = new Set(('11 12 13 14 15 16 17 18 19 21 22 24 27 28 31 32 33 34 35 37 38 41 42 43 44 45 46 47 48 49 ' +
+  '51 53 54 55 61 62 63 64 65 66 67 68 69 71 73 74 75 77 79 81 82 83 84 85 86 87 88 89 ' +
+  '91 92 93 94 95 96 97 98 99').split(' '));
+
+// Número sem o 55 que é brasileiro: DDD que existe + 8 dígitos (fixo antigo)
+// ou DDD que existe + 9 + 8 dígitos (celular).
+function pareceBrasileiroSemDDI(num) {
+  if (!DDDS_BR.has(num.slice(0, 2))) return false;
+  return num.length === 10 || (num.length === 11 && num[2] === '9');
+}
+
 function formatarTelefone(telefone) {
   if (telefone === null || telefone === undefined) return '';
   const num = String(telefone).replace(/\D/g, '');
   if (!num) return '';
-  // Heurística retrocompatível: 10 ou 11 dígitos sem DDI → Brasil legado.
-  // Forma única só pra clientes antigos. O frontend novo (intl-tel-input)
-  // sempre manda com DDI, então cai no `return num` direto.
-  if (num.length === 10 || num.length === 11) return `55${num}`;
-  if (num.startsWith('0') && (num.length === 11 || num.length === 12)) {
+  // Heurística retrocompatível: número brasileiro sem DDI (10 ou 11 dígitos
+  // com DDD que existe) ganha o 55. Número de fora com 10 ou 11 dígitos
+  // (EUA 1…, França 33…, Espanha 34…) não parece brasileiro e fica como veio.
+  if ((num.length === 10 || num.length === 11) && pareceBrasileiroSemDDI(num)) return `55${num}`;
+  if (num.startsWith('0') && (num.length === 11 || num.length === 12) && pareceBrasileiroSemDDI(num.slice(1))) {
     return `55${num.slice(1)}`;
   }
   return num;

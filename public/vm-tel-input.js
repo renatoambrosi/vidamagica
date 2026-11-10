@@ -44,14 +44,16 @@
     setTimeout(() => aguardarItiCarregado(callback, tentativas + 1), 100);
   }
 
-  // ── Máscara brasileira: "(DD) N NNNN-NNNN" (11 dígitos) ou "(DD) NNNN-NNNN" (10) ──
+  // ── Máscara brasileira: "(DD) N NNNN-NNNN", montada desde o 1º dígito ──
+  // Digitando: (62 → (62) 9 → (62) 9 830 → (62) 9 8308-6 → (62) 9 8308-6320.
+  // Sem separador sobrando no fim, para o apagar funcionar normal.
   function mascaraBR(valor) {
     const num = String(valor || '').replace(/\D/g, '').slice(0, 11);
     if (num.length === 0)  return '';
     if (num.length <= 2)   return `(${num}`;
-    if (num.length <= 6)   return `(${num.slice(0,2)}) ${num.slice(2)}`;
-    if (num.length <= 10)  return `(${num.slice(0,2)}) ${num.slice(2,6)}-${num.slice(6)}`;
-    return `(${num.slice(0,2)}) ${num.slice(2,3)} ${num.slice(3,7)}-${num.slice(7)}`;
+    if (num.length === 3)  return `(${num.slice(0,2)}) ${num[2]}`;
+    if (num.length <= 7)   return `(${num.slice(0,2)}) ${num[2]} ${num.slice(3)}`;
+    return `(${num.slice(0,2)}) ${num[2]} ${num.slice(3,7)}-${num.slice(7)}`;
   }
 
   // ── Limpa o que a pessoa digita a mais no Brasil ──
@@ -196,7 +198,13 @@
     }
 
     aguardarItiCarregado(() => {
+      // opcoes.paises: só essas bandeiras na lista (ex.: o Teste). Sem ela, todas.
+      // opcoes.ordem: bandeiras que aparecem primeiro.
+      const extras = {};
+      if (Array.isArray(opcoes.paises) && opcoes.paises.length) extras.onlyCountries = opcoes.paises;
+      if (Array.isArray(opcoes.ordem) && opcoes.ordem.length) extras.countryOrder = opcoes.ordem;
       iti = global.window.intlTelInput(el, {
+        ...extras,
         initialCountry: opcoes.paisDefault || 'br',
         utilsScript: UTILS_URL,
         geoIpLookup: function (success) {
@@ -211,6 +219,11 @@
         // dentro do próprio campo, formatado pelo utilsScript.
         separateDialCode: false,
         autoPlaceholder: 'aggressive',
+        // Brasil: o exemplo do campo segue a mesma máscara "(DD) 9 NNNN-NNNN".
+        customPlaceholder: function (exemplo, dadosPais) {
+          if (dadosPais && dadosPais.iso2 === 'br') return mascaraBR(String(exemplo || '').replace(/\D/g, '').replace(/^0+/, ''));
+          return exemplo;
+        },
         formatOnDisplay: true,
       });
 
@@ -230,6 +243,20 @@
         el.placeholder = '(00) 0 0000-0000';
         reformatarConformePais();
       }
+
+      // Brasil: com o número completo (11 dígitos), trava o próximo dígito.
+      // Só deixa passar quando o começo é o 55 do país ou o 0 de interurbano
+      // digitados a mais (a limpeza tira e o número fica com 11).
+      // Colar continua livre: a limpeza resolve o que vier.
+      el.addEventListener('beforeinput', (ev) => {
+        if (wrapper.pais() !== 'br') return;
+        if (ev.inputType !== 'insertText' || !/\d/.test(ev.data || '')) return;
+        if (el.selectionStart !== el.selectionEnd) return; // está substituindo um trecho
+        const d = (el.value || '').replace(/\D/g, '');
+        if (d.length < 11) return;
+        const sobraPermitida = (d.startsWith('55') || estadoBR.zero) && d.length < 13;
+        if (!sobraPermitida) ev.preventDefault();
+      });
 
       // A cada tecla: re-aplica máscara BR enquanto país for Brasil.
       // (Pra outros países, deixa o intl-tel-input/utilsScript formatar.)
@@ -257,5 +284,6 @@
     return wrapper;
   }
 
-  global.VmTelInput = { aplicar };
+  // dddBrasil('62') → true se o DDD existe no Brasil.
+  global.VmTelInput = { aplicar, dddBrasil: dd => DDDS.has(String(dd || '')) };
 })(typeof window !== 'undefined' ? window : this);
