@@ -164,6 +164,14 @@ app.get('/pesquisa/:id', (req, res) => {
 app.get('/cancelar-inscricao/:id', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'cancelar-inscricao.html'));
 });
+// Link do vídeo da Suellen no WhatsApp: prévia nossa (vídeo em pé inteiro)
+// e, na hora, o vídeo no YouTube. Só os vídeos cadastrados em core/teste-avisos.js.
+app.get('/recado/:video', (req, res) => {
+  const html = require('./core/teste-avisos').paginaRecado(String(req.params.video || ''));
+  if (!html) return res.redirect('/');
+  res.set('Cache-Control', 'no-cache');
+  res.type('html').send(html);
+});
 // Link de pagamento das mensagens: prévia do Teste do Subconsciente no
 // WhatsApp e, na hora, o mesmo checkout do fim do teste.
 app.get('/pagar/:id', async (req, res) => {

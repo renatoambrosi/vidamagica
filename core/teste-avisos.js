@@ -53,6 +53,59 @@ const FOLGA_MIN = 5;
 
 const VIDEO_RECUPERACAO = 'https://youtube.com/shorts/jPRfc5NqPJg';
 const VIDEO_POS_COMPRA = 'https://youtube.com/shorts/lgzOMxmPmqo?feature=share';
+
+// ── /recado/:video (link do vídeo no WhatsApp) ──────────────
+// A prévia do YouTube para Shorts sai achatada e com descrição em inglês.
+// O WhatsApp leva vidamagica.com.br/recado/<id>, com prévia nossa (vídeo em
+// pé inteiro, public/assets/recado-<id>.jpg), que abre o YouTube na hora.
+// EM TESTE (Renato, 2026-11-09): para voltar ao link direto do YouTube,
+// trocar RECADO_PROPRIO para false.
+const RECADO_PROPRIO = true;
+const RECADOS = {
+  jPRfc5NqPJg: VIDEO_RECUPERACAO,
+  lgzOMxmPmqo: VIDEO_POS_COMPRA,
+};
+const linkRecado = id => (RECADO_PROPRIO ? `${APP_URL}/recado/${id}` : RECADOS[id]);
+
+function paginaRecado(id) {
+  const youtube = RECADOS[id];
+  if (!youtube) return null;
+  const y = esc(youtube);
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Recado da Suellen</title>
+<meta property="og:site_name" content="Vida Mágica - Suellen Seragi">
+<meta property="og:type" content="video.other">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:url" content="${esc(`${APP_URL}/recado/${id}`)}">
+<meta property="og:title" content="Recado da Suellen">
+<meta property="og:image" content="https://vidamagica.com.br/assets/recado-${id}.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#1A1205; color:#f5f0e8; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; min-height:100vh; line-height:1.6; }
+  .wrap { max-width:440px; margin:0 auto; padding:32px 20px 48px; text-align:center; }
+  .logo { display:block; height:32px; width:auto; margin:0 auto 28px; }
+  p { color:#c8c0a8; font-size:15px; margin-bottom:20px; }
+  a.botao { display:inline-block; padding:12px 28px; background:#E8C97A; color:#1A1205; border-radius:8px; font-weight:700; font-size:14px; text-decoration:none; }
+</style>
+<script>location.replace(${JSON.stringify(youtube)});</script>
+</head>
+<body>
+<main class="wrap">
+  <img class="logo" src="/assets/logo-horizontal.webp" alt="Vida Mágica">
+  <p>Abrindo o recado da Suellen…</p>
+  <a class="botao" href="${y}">Assistir ao recado da Suellen</a>
+</main>
+</body>
+</html>`;
+}
 const thumb = id => `https://i.ytimg.com/vi/${id}/oardefault.jpg`;
 const THUMB_RECUPERACAO = thumb('jPRfc5NqPJg');
 const THUMB_POS_COMPRA = thumb('lgzOMxmPmqo');
@@ -444,10 +497,10 @@ const waB = link => `Chegouu! Aqui está o link do seu resultado do Teste do Sub
 // sozinho (com prévia) e, por fim, o convite com o link do teste (sem prévia).
 const waRecuperacao = (nome, link) => [
   `${saudacao('Oi', nome)}\n\nSua mente sentiu vontade de começar o teste, mas por algum motivo você não finalizou.\n\nEntão a Suellen tem um recado para você:`,
-  VIDEO_RECUPERACAO,
+  linkRecado('jPRfc5NqPJg'),
   { texto: `Não precisa começar de novo! Você pode continuar de onde parou, clicando aqui:\n${link}`, semPrevia: true },
 ];
-const waE = () => `Parabéns por esse passo em direção à sua mudança.\n\nAgora que você terminou, a Suellen tem um recado especial para você\n\n${VIDEO_POS_COMPRA}`;
+const waE = () => `Parabéns por esse passo em direção à sua mudança.\n\nAgora que você terminou, a Suellen tem um recado especial para você\n\n${linkRecado('lgzOMxmPmqo')}`;
 const waReenvio = (nome, link) => `${saudacao('Oi', nome)}\n\nAqui está o link do seu resultado no Teste do Subconsciente:\n${link}`;
 
 // ── A: na hora em que ela termina (pagamento obrigatório) ───
@@ -838,6 +891,7 @@ async function enviarAmostra({ peca, telefone, email, nome }) {
 }
 
 module.exports = {
+  paginaRecado,
   enviarAmostra,
   paginaPagar,
   dispararNaHora,
