@@ -485,6 +485,10 @@
     .modal-form-aviso { display: none; color: var(--sub-bright); font-size: 0.82rem; margin-top: 0.35rem; align-items: center; gap: 0.35rem; }
     .modal-form-aviso.is-visivel { display: flex; }
     .modal-form-aviso i { font-size: 0.75rem; }
+    /* Alerta amarelo (número fora do padrão): só avisa, não impede de continuar */
+    .modal-form-alerta { display: none; color: #F5C542; font-size: 0.82rem; margin-top: 0.35rem; align-items: flex-start; gap: 0.4rem; line-height: 1.4; }
+    .modal-form-alerta.is-visivel { display: flex; }
+    .modal-form-alerta i { font-size: 0.85rem; margin-top: 0.12rem; }
 
     /* ── Label com ícone de informação (tel bloqueado quando logado) ── */
     .modal-form-label-row { display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.45rem; }
@@ -897,13 +901,14 @@
                 type="tel"
                 id="campo-telefone"
                 class="modal-form-input"
-                placeholder="(00) 00000-0000"
+                placeholder="(00) 0 0000-0000"
                 inputmode="numeric"
                 autocomplete="tel"
-                maxlength="16"
+                maxlength="25"
                 required
               />
               <div class="modal-form-erro" id="erro-telefone">Digite um número de WhatsApp válido com DDD.</div>
+              <div class="modal-form-alerta" id="aviso-telefone-padrao"><i class="fas fa-triangle-exclamation"></i> <span>Verifique se o número informado está correto.<br>O resultado do teste poderá não ser entregue por WhatsApp.</span></div>
               <div class="modal-form-aviso" id="aviso-encontrou"><i class="fas fa-check-circle"></i> <span>Que bom te ver de novo!</span></div>
             </div>
 
@@ -1593,13 +1598,21 @@
 
       // ── Telefone: validação + auto-preenchimento ──
       // (Formatação visual é responsabilidade do intl-tel-input.)
+      // Número completo fora do padrão "(DD) 9 NNNN-NNNN": só avisa, não bloqueia.
+      const avisoTelPadrao = document.getElementById('aviso-telefone-padrao');
+      function avisarPadraoTel(){
+        const fora = !!(tel && tel.foraDoPadrao && tel.foraDoPadrao());
+        avisoTelPadrao.classList.toggle('is-visivel', fora);
+      }
       inputTel.addEventListener('input', () => {
         inputTel.classList.remove('is-erro');
         erroTel.classList.remove('is-visivel');
+        avisarPadraoTel();
         atualizarBotao();
       });
       inputTel.addEventListener('countrychange', () => {
         // Trocar país pode mudar a validade — re-avalia o botão
+        avisarPadraoTel();
         atualizarBotao();
       });
 

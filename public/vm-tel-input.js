@@ -6,9 +6,12 @@
    Não depende de bundle, fica no front estático.
 
    REGRA DE FORMATAÇÃO VISUAL:
-   - País = Brasil (br): bandeira + dropdown + máscara "(DD) NNNNN-NNNN"
+   - País = Brasil (br): bandeira + dropdown + máscara "(DD) N NNNN-NNNN"
                           SEM o "+55" aparecendo no input.
-                          A aluna vê "(62) 98308-6320" como sempre viu.
+                          A aluna vê "(62) 9 8308-6320".
+                          Tira sozinho o 55 do país e o 0 de interurbano
+                          (com ou sem operadora) que ela digitar a mais.
+                          tel.foraDoPadrao() avisa número fora do padrão.
    - Outros países: bandeira + dropdown + formato com DDI visível
                     no padrão internacional (ex: "+1 (202) 555-0100",
                     "+351 912 345 678"). Usa o utilsScript do
@@ -41,14 +44,42 @@
     setTimeout(() => aguardarItiCarregado(callback, tentativas + 1), 100);
   }
 
-  // ── Máscara brasileira: "(DD) NNNNN-NNNN" ou "(DD) NNNN-NNNN" ──
+  // ── Máscara brasileira: "(DD) N NNNN-NNNN" (11 dígitos) ou "(DD) NNNN-NNNN" (10) ──
   function mascaraBR(valor) {
     const num = String(valor || '').replace(/\D/g, '').slice(0, 11);
     if (num.length === 0)  return '';
     if (num.length <= 2)   return `(${num}`;
     if (num.length <= 6)   return `(${num.slice(0,2)}) ${num.slice(2)}`;
     if (num.length <= 10)  return `(${num.slice(0,2)}) ${num.slice(2,6)}-${num.slice(6)}`;
-    return `(${num.slice(0,2)}) ${num.slice(2,7)}-${num.slice(7)}`;
+    return `(${num.slice(0,2)}) ${num.slice(2,3)} ${num.slice(3,7)}-${num.slice(7)}`;
+  }
+
+  // ── Limpa o que a pessoa digita a mais no Brasil ──
+  // "55" do país na frente (sobra dígito: 12 ou 13) → tira o 55.
+  // "0" de interurbano ("011 ...") → tira o 0.
+  // "0" + operadora ("0 15 11 ...") → tira o 0 e a operadora.
+  // estado.zero lembra que já havia um 0 (o 0 some na hora em que é digitado).
+  function limparBR(digitos, estado) {
+    let d = String(digitos || '').replace(/\D/g, '');
+    if (!d) { estado.zero = false; return ''; }
+    for (let i = 0; i < 4; i++) {
+      if (d.startsWith('0')) { d = d.replace(/^0+/, ''); estado.zero = true; continue; }
+      if (d.length > 11 && (d.startsWith('55') || estado.zero)) { d = d.slice(2); estado.zero = false; continue; }
+      break;
+    }
+    return d.slice(0, 11);
+  }
+
+  // DDDs que existem no Brasil
+  const DDDS = new Set(('11 12 13 14 15 16 17 18 19 21 22 24 27 28 31 32 33 34 35 37 38 41 42 43 44 45 46 47 48 49 ' +
+    '51 53 54 55 61 62 63 64 65 66 67 68 69 71 73 74 75 77 79 81 82 83 84 85 86 87 88 89 ' +
+    '91 92 93 94 95 96 97 98 99').split(' '));
+
+  // Número completo fora do padrão "(DD) 9 NNNN-NNNN" → true (só aviso, não bloqueia)
+  function foraDoPadraoBR(d) {
+    if (d.length !== 10 && d.length !== 11) return false;
+    if (!DDDS.has(d.slice(0, 2))) return true;
+    return !(d.length === 11 && d[2] === '9');
   }
 
   function aplicar(seletor, opcoes = {}) {
@@ -59,6 +90,7 @@
     }
 
     let iti = null;
+    const estadoBR = { zero: false };
 
     const wrapper = {
       _pendentePreenchimento: null,
@@ -96,6 +128,13 @@
         } catch {
           return false;
         }
+      },
+
+      // Brasil: número completo, mas fora do padrão "(DD) 9 NNNN-NNNN".
+      // Serve só para avisar a pessoa; não impede de continuar.
+      foraDoPadrao() {
+        if (!iti || wrapper.pais() !== 'br') return false;
+        return foraDoPadraoBR((el.value || '').replace(/\D/g, ''));
       },
 
       pais() {
@@ -151,8 +190,7 @@
     function reformatarConformePais() {
       const pais = wrapper.pais();
       if (pais === 'br') {
-        const apenas = (el.value || '').replace(/\D/g, '').slice(0, 11);
-        const formatado = mascaraBR(apenas);
+        const formatado = mascaraBR(limparBR(el.value, estadoBR));
         if (el.value !== formatado) el.value = formatado;
       }
     }
@@ -189,7 +227,7 @@
       // Estado inicial: se Brasil e input vazio, define placeholder amigável.
       // Se já tem valor, reformatar.
       if (wrapper.pais() === 'br') {
-        el.placeholder = '(00) 00000-0000';
+        el.placeholder = '(00) 0 0000-0000';
         reformatarConformePais();
       }
 
@@ -197,8 +235,7 @@
       // (Pra outros países, deixa o intl-tel-input/utilsScript formatar.)
       el.addEventListener('input', () => {
         if (wrapper.pais() === 'br') {
-          const apenas = (el.value || '').replace(/\D/g, '').slice(0, 11);
-          const formatado = mascaraBR(apenas);
+          const formatado = mascaraBR(limparBR(el.value, estadoBR));
           if (el.value !== formatado) el.value = formatado;
         }
       });
@@ -207,7 +244,7 @@
       el.addEventListener('countrychange', () => {
         const pais = wrapper.pais();
         if (pais === 'br') {
-          el.placeholder = '(00) 00000-0000';
+          el.placeholder = '(00) 0 0000-0000';
           reformatarConformePais();
         } else {
           // Outros: limpa input pra deixar o intl-tel-input mostrar
