@@ -62,16 +62,15 @@ body { font-family: var(--font-body); background: var(--bg-dark); color: var(--t
    Regra (privado/CLAUDE.md): só a aba Resultados do Teste usa a tela inteira.
    Nenhuma outra aba foge do padrão sem o Renato pedir. */
 .content:has(#tab-teste-resultados.active) { max-width: none; }
-/* Tabela de Resultados/Incompletos: rola dentro da própria caixa, com o
-   cabeçalho e a coluna Pessoa fixos — a barra de rolagem fica sempre à vista. */
-.tr-tabela-wrap { max-height: calc(100vh - var(--topbar-h) - 250px); min-height: 320px; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius-md); overscroll-behavior: contain; scrollbar-color: var(--color-gold-dark) transparent; }
+/* Tabela de Resultados/Incompletos: fica na página e rola junto com ela
+   (Renato, 2026-11-10). Nada fixo. Se for mais larga que a tela, arrasta
+   para o lado com o dedo. */
+.tr-tabela-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-md); scrollbar-color: var(--color-gold-dark) transparent; }
 .tr-tabela { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.84rem; }
-.tr-tabela th { position: sticky; top: 0; z-index: 2; background: #1d1406; text-align: left; color: var(--text-muted); font-weight: 600; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.tr-tabela th { background: #1d1406; text-align: left; color: var(--text-muted); font-weight: 600; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); white-space: nowrap; }
 .tr-tabela td { padding: 0.6rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; }
 .tr-tabela tbody tr:hover td { background: rgba(232,201,122,0.05); }
-.tr-tabela .tr-fixa { position: sticky; left: 0; z-index: 1; background: #171004; box-shadow: 1px 0 0 var(--border); min-width: 230px; max-width: 320px; }
-.tr-tabela th.tr-fixa { z-index: 3; background: #1d1406; }
-.tr-tabela tbody tr:hover td.tr-fixa { background: #211709; }
+.tr-tabela .tr-fixa { min-width: 230px; max-width: 320px; }
 .tr-nowrap { white-space: nowrap; }
 .tr-pessoa-nome { font-weight: 600; color: var(--text-light); }
 .tr-pessoa-linha { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; overflow-wrap: anywhere; }
@@ -4461,6 +4460,7 @@ const testesResultados = (function(){
                     <button class="btn btn-ghost btn-sm" onclick="testesResultados.copiarLink('${t.link_resultado}')">Copiar link</button>
                     <button class="btn btn-ghost btn-sm" onclick="testesResultados.enviarWhatsapp('${t.id}', this)">${t.pago ? 'Enviar WhatsApp' : (recuperacao(t) ? 'WhatsApp: recuperação' : 'WhatsApp: pagamento')}</button>
                     <button class="btn btn-ghost btn-sm" ${t.email ? '' : 'disabled'} onclick="testesResultados.enviarEmail('${t.id}', this)">${t.pago ? 'Enviar e-mail' : (recuperacao(t) ? 'E-mail: recuperação' : 'E-mail: pagamento')}</button>
+                    ${t.pago ? '' : `<button class="btn btn-ghost btn-sm" onclick="testesResultados.marcarPago('${t.id}', this)">Marcar pago</button>`}
                   </div>
                 </td>
               </tr>
@@ -4527,6 +4527,32 @@ const testesResultados = (function(){
     }
   }
 
+  // ── Marcar pago: só marca (não envia nada). 2 toques: o 1º pede confirmação. ──
+  async function marcarPago(id, btn) {
+    if (!btn.dataset.confirmar) {
+      btn.dataset.confirmar = '1';
+      btn.textContent = 'Confirmar: marcar pago';
+      setTimeout(() => { if (btn.isConnected && btn.dataset.confirmar) { delete btn.dataset.confirmar; btn.textContent = 'Marcar pago'; } }, 5000);
+      return;
+    }
+    delete btn.dataset.confirmar;
+    btn.disabled = true;
+    try {
+      const r = await fetch(`${API}/api/admin/testes-resultados/${id}/marcar-pago`, {
+        method: 'POST',
+        headers: { 'Authorization': authHeader() },
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+      toast('Teste marcado como pago');
+      carregar(paginaAtual);
+    } catch (err) {
+      toast(err.message || 'Erro ao marcar pago', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Marcar pago';
+    }
+  }
+
   // ── Testar mensagens: manda 1 amostra para o telefone/e-mail digitado ──
   const AM_CAMPOS = { nome: 'am-nome', telefone: 'am-tel', email: 'am-email' };
   try {
@@ -4554,7 +4580,7 @@ const testesResultados = (function(){
     }
   }
 
-  return { carregar, setStatus, setPeriodo, debounceBusca, copiarLink, enviarWhatsapp, enviarEmail, amostra };
+  return { carregar, setStatus, setPeriodo, debounceBusca, copiarLink, enviarWhatsapp, enviarEmail, marcarPago, amostra };
 })();
 
 const testesAvaliacoes = (function(){

@@ -1706,6 +1706,24 @@ async function _enviarManualTeste(req, res, canal) {
 router.post('/testes-resultados/:id/enviar-whatsapp', (req, res) => _enviarManualTeste(req, res, 'whatsapp'));
 router.post('/testes-resultados/:id/enviar-email', (req, res) => _enviarManualTeste(req, res, 'email'));
 
+// "Marcar pago": só marca o teste como pago (o resultado abre para ela).
+// Não envia nada — para mandar o resultado, os botões de envio da mesma linha.
+router.post('/testes-resultados/:id/marcar-pago', async (req, res) => {
+  try {
+    const id = String(req.params.id || '').trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return res.status(400).json({ ok: false, erro: 'Teste inválido' });
+    }
+    const r = await poolTeste.query(`UPDATE testes SET pago = TRUE WHERE id = $1 RETURNING id`, [id]);
+    if (!r.rows[0]) return res.status(404).json({ ok: false, erro: 'Teste não encontrado' });
+    console.log(`✅ [admin] teste ${id} marcado como pago pelo admin`);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('❌ /testes-resultados/:id/marcar-pago:', err.message);
+    res.status(500).json({ ok: false, erro: 'Erro ao marcar pago' });
+  }
+});
+
 // "Testar mensagens": manda 1 mensagem do Teste, igual à de verdade, para o
 // telefone/e-mail digitado no admin. Não entra no histórico.
 router.post('/teste-avisos/amostra', async (req, res) => {
