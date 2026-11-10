@@ -69,9 +69,31 @@ function validarNome(nome) {
   if (limpo.length < 2 || limpo.length > 255) return null;
   return limpo;
 }
+// Países liberados no Teste além do Brasil: código do país → tamanhos aceitos
+// do número inteiro (código + número). Bandeiras iguais às de public/teste.html.
+// Fora da lista de propósito: Noruega, Dinamarca, Islândia, Estônia,
+// Liechtenstein e Bulgária (número de 10 ou 11 dígitos que começa como
+// DDD brasileiro e seria confundido com Brasil — core/utils.js).
+const TESTE_PAISES_FORA = {
+  // Língua portuguesa
+  351: [12], 244: [12], 258: [12], 245: [12], 240: [12], 238: [10], 239: [10], 670: [11], 853: [11],
+  // EUA e Canadá
+  1: [11],
+  // Europa
+  33: [11], 34: [11], 39: [11, 12, 13], 41: [11], 31: [11], 32: [11], 49: [12, 13, 14], 44: [12],
+  353: [12], 352: [11, 12], 43: [11, 12, 13, 14], 48: [11], 46: [11, 12], 358: [11, 12, 13],
+  30: [12], 36: [11], 40: [11], 420: [12], 421: [12], 386: [11], 385: [11, 12],
+  357: [11], 356: [11], 370: [11], 371: [11], 377: [11, 12], 376: [9], 380: [12],
+};
 function validarTelefoneCanonico(telCanonico) {
   if (!telCanonico) return false;
-  return /^55\d{10,11}$/.test(telCanonico);
+  if (/^55\d{10,11}$/.test(telCanonico)) return true; // Brasil: igual a antes
+  const tel = String(telCanonico);
+  for (const tam of [3, 2, 1]) {
+    const tamanhos = TESTE_PAISES_FORA[tel.slice(0, tam)];
+    if (tamanhos) return /^\d+$/.test(tel) && tamanhos.includes(tel.length);
+  }
+  return false;
 }
 function validarEmail(email) {
   if (!email || typeof email !== 'string') return null;
