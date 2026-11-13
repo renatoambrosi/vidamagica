@@ -29,8 +29,9 @@ const {
 } = require('../core/usuarios');
 const { enfileirarAtendimento } = require('../core/gateway');
 const { formatarTelefone } = require('../core/utils');
-const { PERFIS_VALIDOS, PERFIS_RESULTADO, PERFIS_LABELS, PERFIS_CORES, PERGUNTAS } = require('../core/teste-conteudo');
-const { calcularResultado } = require('../core/teste-resultado');
+const { PERFIS_VALIDOS, PERFIS_RESULTADO, PERFIS_LABELS, PERFIS_CORES, PERGUNTAS, FAIXA_PROSPERIDADE } = require('../core/teste-conteudo');
+const { calcularResultado, montarListaEnergias } = require('../core/teste-resultado');
+const { montarLeitura, palavrasDoResultado } = require('../core/teste-leitura');
 const {
   lerModoDevTeste,
   salvarModoDevTeste,
@@ -1938,6 +1939,104 @@ router.post('/testes-resultados/:id/marcar-pago', async (req, res) => {
   } catch (err) {
     console.error('❌ /testes-resultados/:id/marcar-pago:', err.message);
     res.status(500).json({ ok: false, erro: 'Erro ao marcar pago' });
+  }
+});
+
+// "Abrir resultado admin" (public/resultado-admin.html): o começo igual ao
+// resultado de produção, sem o texto e sem o vídeo, com as respostas por área
+// da vida e a palavra de cada resposta (core/teste-leitura.js).
+// Só leitura: não marca o resultado como visto nem ativa trilha. O resultado
+// é recalculado pela regra única (calcularResultado); pergunta e resposta vêm
+// do texto da versão que a pessoa respondeu.
+router.get('/testes-resultados/:id/leitura', async (req, res) => {
+  try {
+    const id = String(req.params.id || '').trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return res.status(400).json({ ok: false, erro: 'Teste inválido' });
+    }
+    const tR = await poolTeste.query(
+      `SELECT t.id, t.versao_id, t.respostas, t.pago, t.feito_em, t.telefone_canonico,
+              l.nome, l.email, v.nome AS versao_nome
+         FROM testes t
+         LEFT JOIN teste_leads l ON l.id = t.lead_id
+         LEFT JOIN teste_versoes v ON v.id = t.versao_id
+        WHERE t.id = $1`,
+      [id]
+    );
+    const t = tR.rows[0];
+    if (!t) return res.status(404).json({ ok: false, erro: 'Teste não encontrado' });
+
+    const respostas = Array.isArray(t.respostas) ? t.respostas : JSON.parse(t.respostas || '[]');
+    const resultado = calcularResultado(respostas);
+
+    const [pR, aR, cR, gR] = await Promise.all([
+      poolTeste.query(`SELECT ordem, pergunta FROM teste_perguntas WHERE versao_id = $1`, [t.versao_id]),
+      poolTeste.query(`SELECT pergunta_ordem, perfil, texto FROM teste_alternativas WHERE versao_id = $1`, [t.versao_id]),
+      // Nome da energia como aparece no resultado de produção
+      poolComunicacao.query(`SELECT nome_exibicao FROM teste_perfis_conteudo WHERE slug = $1`, [resultado.perfil_dominante]),
+      // Resposta rara: quantas pessoas escolheram cada resposta, em todos os
+      // testes da mesma versão (fora os de modo dev e os legados). Se esta
+      // comparação falhar, o resultado abre do mesmo jeito, só sem ela.
+      poolTeste.query(
+        `SELECT (r->>'pergunta_ordem')::int AS ordem, r->>'perfil' AS perfil, COUNT(*)::int AS n
+           FROM testes x,
+                jsonb_array_elements(CASE WHEN jsonb_typeof(x.respostas) = 'array' THEN x.respostas ELSE '[]'::jsonb END) r
+          WHERE x.versao_id = $1 AND x.eh_legado IS NOT TRUE AND x.modo_dev IS NOT TRUE
+          GROUP BY 1, 2`,
+        [t.versao_id]
+      ).catch(e => { console.warn('⚠️ /testes-resultados/:id/leitura (resposta rara):', e.message); return { rows: [] }; }),
+    ]);
+    const leitura = montarLeitura(respostas, {
+      perguntas: new Map(pR.rows.map(p => [p.ordem, p.pergunta])),
+      alternativas: new Map(aR.rows.map(a => [a.pergunta_ordem + '|' + a.perfil, a.texto])),
+    });
+
+    // Percentual de pessoas que escolheram a mesma resposta, por pergunta.
+    const totalDaPergunta = new Map();
+    const escolhasGerais = new Map();
+    for (const g of gR.rows) {
+      totalDaPergunta.set(g.ordem, (totalDaPergunta.get(g.ordem) || 0) + g.n);
+      escolhasGerais.set(g.ordem + '|' + g.perfil, g.n);
+    }
+    for (const i of leitura.itens) {
+      const base = totalDaPergunta.get(i.pergunta_ordem) || 0;
+      const n = escolhasGerais.get(i.pergunta_ordem + '|' + i.perfil) || 0;
+      i.escolha_base = base;
+      i.escolha_pct = base ? Math.round((n * 100) / base) : null;
+    }
+
+    res.json({
+      ok: true,
+      teste: {
+        id: t.id,
+        nome: t.nome || null,
+        email: t.email || null,
+        telefone_canonico: t.telefone_canonico,
+        pago: !!t.pago,
+        feito_em: t.feito_em,
+        versao_nome: t.versao_nome || null,
+        perfil_dominante: resultado.perfil_dominante,
+        perfil_dominante_bruto: resultado.perfil_dominante_bruto,
+        nome_exibicao: (cR.rows[0] && cR.rows[0].nome_exibicao) || PERFIS_LABELS[resultado.perfil_dominante] || resultado.perfil_dominante,
+        faixa_prosperidade: FAIXA_PROSPERIDADE[resultado.perfil_dominante] || null,
+      },
+      total: respostas.length,
+      energias: montarListaEnergias(resultado).map(e => ({
+        slug: e.slug,
+        label: e.label,
+        respostas: resultado.contagem[e.slug] || 0,
+        percentual: e.percentual_inteiro,
+      })),
+      areas: leitura.areas,
+      itens: leitura.itens,
+      // Palavras que o texto do resultado usa para a energia predominante
+      palavras_resultado: palavrasDoResultado(resultado.perfil_dominante),
+      // Quantos testes entraram na comparação da resposta rara
+      base_comparacao: Math.max(0, ...Array.from(totalDaPergunta.values())),
+    });
+  } catch (err) {
+    console.error('❌ /testes-resultados/:id/leitura:', err.message);
+    res.status(500).json({ ok: false, erro: 'Erro ao abrir o resultado' });
   }
 });
 

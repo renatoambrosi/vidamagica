@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <!-- ============================================================
+       VIDA MÁGICA — public/resultado-admin.html
+       Resultado do Teste do Subconsciente para o ADMIN.
+       Abre pelo botão "Abrir resultado admin" da aba Resultados do
+       Teste: /resultado-admin.html?id=<teste_id>. Só o Renato vê.
+
+       O começo é igual ao resultado de produção (public/resultado.html):
+       topo, título, nome, energia predominante e as 5 energias. Mudou
+       um desses blocos lá, espelhe aqui.
+       Não tem vídeo, texto do resultado, avaliação, compartilhar nem
+       os materiais indicados. No lugar entram as áreas da vida, com a
+       palavra de cada resposta e o texto complementar ao tocar, as
+       palavras do texto do resultado da energia predominante e as
+       respostas raras (as que menos gente escolhe).
+
+       Dados: GET /api/admin/testes-resultados/:id/leitura, com o login
+       do admin deste navegador. Só leitura: não marca o resultado como
+       visto nem ativa trilha. Conteúdo em core/teste-leitura.js.
+       ============================================================ -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Resultado do admin — Teste do Subconsciente</title>
+  <link rel="stylesheet" href="/colors_and_type.css">
+  <link rel="icon" href="/assets/favicon.webp">
+  <style>
+    /* Paleta e blocos do começo: iguais aos do public/resultado.html. */
+    :root {
+      --gold: #f8dc96;
+      --gold-2: #c8923b;
+      --pearl: #f5f0e8;
+      --pearl-dim: #d9d3c7;
+      --ink: #051929;
+      --sub-bright: #2ba5e8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: var(--font-body, 'Inter', sans-serif);
+      background: linear-gradient(180deg, #051929 0%, #0a2d44 100%);
+      background-attachment: fixed;
+      color: var(--pearl, #f5f0e8);
+      min-height: 100vh;
+      line-height: 1.65;
+    }
+    .container { max-width: 760px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+
+    /* ─── Topo ─── */
+    .topo { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem; position: relative; }
+    .topo-marca { display: flex; align-items: center; gap: 0.7rem; min-width: 0; }
+    .topo-logo { height: 32px; width: auto; flex-shrink: 0; }
+    .topo-divisor { width: 1px; height: 22px; background: rgba(245,240,232,0.25); flex-shrink: 0; }
+    .topo-produto { font-family: var(--font-display); font-size: 0.9rem; font-weight: 500; color: var(--pearl-dim, rgba(245,240,232,0.7)); letter-spacing: 0.01em; position: relative; top: -2.4px; }
+    .topo-fechar { flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; background: rgba(245,240,232,0.06); border: 1px solid rgba(245,240,232,0.15); color: var(--pearl-dim, rgba(245,240,232,0.7)); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.12s; }
+    .topo-fechar:hover { background: rgba(245,240,232,0.12); color: var(--pearl, #F5F0E8); border-color: rgba(245,240,232,0.3); }
+    .topo-fechar:active { transform: scale(0.94); }
+    .topo-fechar svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ─── Carregando ─── */
+    .loading { min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1.5rem; text-align: center; color: var(--pearl-dim, rgba(245,240,232,0.7)); }
+    .loading-anel { position: relative; width: 90px; height: 90px; margin-bottom: 1.5rem; }
+    .loading-anel::before, .loading-anel::after { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid transparent; }
+    .loading-anel::before { border-top-color: var(--gold, #C8922A); border-right-color: rgba(200,146,42,0.4); animation: anelGirar 1.4s linear infinite; }
+    .loading-anel::after { inset: 12px; border-top-color: var(--sub-bright, #2ba5e8); border-left-color: rgba(43,165,232,0.4); animation: anelGirar 2.2s linear infinite reverse; }
+    .loading-estrela { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.6rem; color: var(--gold, #C8922A); animation: estrelaPulse 2s ease-in-out infinite; filter: drop-shadow(0 0 8px rgba(200,146,42,0.6)); }
+    @keyframes anelGirar { to { transform: rotate(360deg); } }
+    @keyframes estrelaPulse { 0%, 100% { opacity: 0.85; transform: translate(-50%,-50%) scale(1); } 50% { opacity: 1; transform: translate(-50%,-50%) scale(1.15); } }
+    .loading-texto { font-family: var(--font-display); font-size: 0.85rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--pearl-dim, rgba(245,240,232,0.7)); }
+
+    /* ─── Aviso (sem login, teste não encontrado, falha) ─── */
+    .erro-box { background: rgba(245,240,232,0.045); border: 1px solid rgba(245,240,232,0.12); border-radius: 18px; padding: 2.25rem 1.75rem; text-align: center; margin: 2rem 0; }
+    .erro-selo { width: 54px; height: 54px; margin: 0 auto 1.2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 40%, rgba(232,201,122,0.22), rgba(200,146,42,0.07)); border: 1px solid rgba(232,201,122,0.35); }
+    .erro-selo svg { width: 25px; height: 25px; stroke: var(--gold, #E8C97A); stroke-width: 1.7; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    #erro-msg { color: var(--pearl, #f5f0e8); font-family: var(--font-display); font-size: 1.06rem; font-weight: 600; line-height: 1.55; margin: 0 auto; max-width: 30rem; }
+    .erro-texto { color: var(--pearl-dim, rgba(245,240,232,0.65)); font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; margin: 0.75rem auto 0; max-width: 30rem; }
+    .erro-cta { display: inline-flex; align-items: center; justify-content: center; width: 100%; max-width: 22rem; margin-top: 1.6rem; padding: 0.95rem 1.25rem; border-radius: 10px; border: none; font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; letter-spacing: 0.01em; text-decoration: none; cursor: pointer; background: linear-gradient(135deg, var(--gold, #C8922A), var(--gold-2, #c8923b)); color: #fff; transition: transform 0.18s, box-shadow 0.18s; }
+    .erro-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(248,220,150,0.28); }
+
+    /* ─── Selo "Visão do admin" ─── */
+    .adm-selo-wrap { text-align: center; margin-bottom: 1.1rem; }
+    .adm-selo { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.32rem 0.85rem; border-radius: 999px; border: 1px solid rgba(248,220,150,0.35); background: rgba(248,220,150,0.07); color: var(--gold); font-family: var(--font-display); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+    .adm-selo svg { width: 12px; height: 12px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ─── BLOCO 1: imagem + título ─── */
+    .b1-imagem-wrap { text-align: center; margin-bottom: 1.5rem; }
+    .b1-imagem { max-width: 280px; width: 100%; height: auto; filter: drop-shadow(0 0 32px rgba(43,165,232,0.3)); }
+    .b1-titulo { font-family: var(--font-display, 'Playfair Display', serif); font-size: 1.85rem; font-weight: 700; color: var(--pearl, #f5f0e8); text-align: center; line-height: 1.2; margin-bottom: 0.5rem; }
+
+    /* ─── BLOCO 2: nome + energia predominante ─── */
+    .b2-wrap { text-align: center; margin: 2rem 0 2.5rem; }
+    .b2-nome { font-family: var(--font-display); font-size: 1.25rem; color: var(--pearl); font-weight: 500; margin-bottom: 1.5rem; }
+    .b2-frase { color: var(--pearl-dim); font-size: 0.95rem; margin-bottom: 0.75rem; }
+    .b2-energia { font-family: var(--font-display); font-size: 2rem; font-weight: 700; color: var(--gold, #f8dc96); letter-spacing: 0.01em; text-shadow: 0 0 24px rgba(248,220,150,0.4); line-height: 1.2; }
+    .b2-faixa { margin-top: 0.3rem; font-size: 0.95rem; color: var(--pearl-dim); }
+
+    /* ─── BLOCO 3: as 5 energias ─── */
+    .b3-wrap { background: rgba(255,255,255,0.04); border: 1px solid rgba(245,240,232,0.1); border-radius: 14px; padding: 1.5rem 1.5rem 1.25rem; margin-bottom: 2rem; }
+    .b3-titulo { font-size: 0.78rem; color: var(--pearl-dim); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; margin-bottom: 1rem; }
+    .b3-energia-row { display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0; border-bottom: 1px solid rgba(245,240,232,0.08); }
+    .b3-energia-row:last-child { border-bottom: none; }
+    .b3-energia-row.is-dominante { background: linear-gradient(90deg, rgba(248,220,150,0.08), transparent); margin: 0 -0.75rem; padding: 0.65rem 0.75rem; border-radius: 8px; border-bottom: none; }
+    .b3-energia-label { font-size: 0.95rem; color: var(--pearl); font-weight: 500; }
+    .b3-energia-row.is-dominante .b3-energia-label { color: var(--gold); font-weight: 700; }
+    .b3-energia-perc { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; color: var(--pearl); }
+    .b3-energia-row.is-dominante .b3-energia-perc { color: var(--gold); }
+
+    /* ═══════════════════════════════════════════════════
+       ÁREAS DA VIDA (só no admin)
+       Um bloco só: cada área mostra quantas perguntas tem, quantas
+       tiveram trava e a palavra de cada resposta. Tocar na palavra
+       abre o texto complementar, a pergunta e a resposta.
+       ═══════════════════════════════════════════════════ */
+    .av-wrap { background: rgba(255,255,255,0.04); border: 1px solid rgba(245,240,232,0.1); border-radius: 14px; padding: 1.5rem 1.5rem 0.6rem; margin-bottom: 2rem; }
+    .av-intro { font-size: 0.88rem; color: rgba(245,240,232,0.6); line-height: 1.55; margin: -0.35rem 0 1.1rem; }
+    /* Onde cada energia aparece: uma linha por energia, com as áreas da vida dela */
+    .av-onde { border-radius: 12px; background: rgba(5,25,41,0.5); border: 1px solid rgba(245,240,232,0.1); padding: 0.25rem 1rem; margin-bottom: 0.4rem; }
+    .av-onde-linha { display: grid; grid-template-columns: 10.5rem 1fr; align-items: center; gap: 0.5rem 1rem; padding: 0.7rem 0; border-top: 1px solid rgba(245,240,232,0.07); }
+    .av-onde-linha:first-child { border-top: none; }
+    .av-onde-energia { display: flex; align-items: center; gap: 0.5rem; font-family: var(--font-display); font-size: 0.92rem; font-weight: 700; color: var(--cor); }
+    .av-onde-energia b { font-weight: 700; color: var(--pearl); margin-left: auto; }
+    .av-onde-quem { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+    .av-onde-espalha { font-size: 0.74rem; color: rgba(245,240,232,0.55); }
+    .av-onde-espalha strong { font-weight: 600; color: var(--pearl-dim); }
+    .av-onde-areas { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .av-onde-area { display: inline-flex; align-items: baseline; gap: 0.4rem; padding: 0.26rem 0.7rem; border-radius: 999px; border: 1px solid var(--cor); background: rgba(255,255,255,0.04); font-size: 0.82rem; color: var(--pearl); white-space: nowrap; }
+    .av-onde-area b { font-family: var(--font-display); font-weight: 700; color: var(--cor); }
+    .av-bola { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--cor); box-shadow: 0 0 10px var(--cor); flex-shrink: 0; }
+
+    .av-area { padding: 1.35rem 0 1.25rem; border-top: 1px solid rgba(245,240,232,0.08); }
+    .av-area:first-of-type { border-top: none; }
+    .av-area-topo { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.1rem 0.75rem; margin-bottom: 0.8rem; }
+    .av-area-nome { font-family: var(--font-display); font-size: 1.12rem; font-weight: 700; color: var(--pearl); letter-spacing: 0.01em; }
+    .av-area-meta { font-size: 0.8rem; color: rgba(245,240,232,0.55); white-space: nowrap; }
+    .av-area-meta b { font-family: var(--font-display); font-weight: 700; color: var(--gold); }
+    .av-area-meta.sem-trava b { color: #4fc3f7; }
+
+    .av-palavras { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: dense; gap: 0.6rem; }
+    .av-palavra {
+      position: relative; overflow: hidden; text-align: left; cursor: pointer;
+      font: inherit; color: inherit;
+      background: rgba(255,255,255,0.035);
+      border: 1px solid rgba(245,240,232,0.1);
+      border-radius: 12px;
+      padding: 0.8rem 2rem 0.75rem 1.1rem;
+      transition: transform 0.18s, border-color 0.18s, background 0.18s, box-shadow 0.18s;
+    }
+    .av-palavra::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--cor); }
+    .av-palavra:hover { transform: translateY(-2px); border-color: rgba(245,240,232,0.26); background: rgba(255,255,255,0.055); }
+    .av-palavra:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+    .av-palavra[aria-expanded="true"] { border-color: var(--cor); background: rgba(255,255,255,0.07); box-shadow: 0 10px 26px rgba(0,0,0,0.28); }
+    .av-palavra-nome { display: block; font-family: var(--font-display); font-size: 1rem; font-weight: 700; color: var(--pearl); line-height: 1.25; }
+    .av-palavra-energia { display: block; margin-top: 0.3rem; font-size: 0.76rem; font-weight: 600; color: var(--cor); }
+    .av-palavra-seta { position: absolute; right: 0.7rem; top: 50%; width: 14px; height: 14px; margin-top: -7px; stroke: rgba(245,240,232,0.45); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.22s, stroke 0.18s; }
+    .av-palavra[aria-expanded="true"] .av-palavra-seta { transform: rotate(180deg); stroke: var(--cor); }
+
+    .av-detalhe { grid-column: 1 / -1; border-radius: 12px; border: 1px solid rgba(245,240,232,0.1); border-left: 4px solid var(--cor); background: rgba(5,25,41,0.55); padding: 1.05rem 1.15rem 0.5rem; animation: avAbrir 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
+    @keyframes avAbrir { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    .av-detalhe-titulo { font-family: var(--font-display); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cor); margin-bottom: 0.35rem; }
+    .av-detalhe-texto { font-size: 1.02rem; color: var(--pearl); line-height: 1.55; margin-bottom: 1rem; }
+    .av-detalhe-linha { margin-bottom: 0.8rem; }
+    .av-mini { display: block; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(245,240,232,0.5); margin-bottom: 0.1rem; }
+    .av-detalhe-linha p { font-size: 0.92rem; color: var(--pearl-dim); line-height: 1.55; }
+
+    /* ═══════════════════════════════════════════════════
+       PALAVRAS DO RESULTADO (só no admin)
+       As palavras que o texto do resultado usa para a energia
+       predominante. Bloco separado das palavras das respostas.
+       ═══════════════════════════════════════════════════ */
+    .pr-wrap { background: rgba(255,255,255,0.04); border: 1px solid rgba(245,240,232,0.1); border-radius: 14px; padding: 1.5rem; margin-bottom: 2rem; }
+    .pr-energia { font-family: var(--font-display); font-size: 1.12rem; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.01em; margin: -0.35rem 0 0.35rem; }
+    .pr-wrap .av-intro { margin-top: 0; }
+    .pr-wrap .av-palavra { padding-top: 0.95rem; padding-bottom: 0.95rem; }
+
+    /* ═══════════════════════════════════════════════════
+       RESPOSTAS RARAS (só no admin)
+       As 3 respostas desta pessoa que menos gente escolhe, comparando
+       com todos os testes já feitos.
+       ═══════════════════════════════════════════════════ */
+    .cp-raras { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; }
+    .cp-rara { position: relative; overflow: hidden; background: rgba(255,255,255,0.035); border: 1px solid rgba(245,240,232,0.1); border-radius: 12px; padding: 0.85rem 0.9rem 0.8rem 1.1rem; }
+    .cp-rara::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--cor); }
+    .cp-rara-pct { display: block; font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--pearl); line-height: 1.1; }
+    .cp-rara-pct small { font-family: var(--font-body); font-size: 0.74rem; font-weight: 400; color: rgba(245,240,232,0.55); margin-left: 0.3rem; }
+    .cp-rara-nome { display: block; margin-top: 0.45rem; font-family: var(--font-display); font-size: 0.98rem; font-weight: 700; color: var(--pearl); line-height: 1.25; }
+    .cp-rara-onde { display: block; margin-top: 0.2rem; font-size: 0.76rem; font-weight: 600; color: var(--cor); }
+    .cp-rara-resposta { display: block; margin-top: 0.5rem; font-size: 0.82rem; color: var(--pearl-dim); line-height: 1.45; }
+
+    /* ─── Rodapé ─── */
+    .rodape-meta { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid rgba(245,240,232,0.1); text-align: center; color: rgba(245,240,232,0.5); font-size: 0.75rem; line-height: 1.9; overflow-wrap: anywhere; }
+
+    /* ─── Entrada escalonada (igual à do resultado) ─── */
+    .anim-entrada { opacity: 0; transform: translateY(18px); animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards; animation-delay: var(--anim-delay, 0s); }
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+    @media (prefers-reduced-motion: reduce) {
+      .anim-entrada { animation: fadeOnly 0.4s ease forwards; transform: none; }
+      @keyframes fadeOnly { to { opacity: 1; } }
+      .av-detalhe { animation: none; }
+      .av-palavra:hover { transform: none; }
+    }
+
+    /* ─── Celular ─── */
+    @media (max-width: 600px) {
+      .av-palavras { grid-template-columns: 1fr; }
+      .av-wrap { padding: 1.25rem 1.1rem 0.4rem; }
+      .av-onde-linha { grid-template-columns: 1fr; gap: 0.5rem; }
+      .cp-raras { grid-template-columns: 1fr; }
+      .av-onde-energia b { margin-left: 0.15rem; }
+    }
+    @media (max-width: 480px) {
+      .container { padding: 1.5rem 1rem 4rem; }
+      .b1-titulo { font-size: 1.45rem; }
+      .b2-energia { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Topo: logo + botão fechar -->
+  <div class="topo">
+    <div class="topo-marca">
+      <img src="/assets/logo-horizontal.webp" alt="Vida Mágica" class="topo-logo">
+      <span class="topo-divisor"></span>
+      <span class="topo-produto">Teste do Subconsciente</span>
+    </div>
+    <button class="topo-fechar" id="topo-fechar" type="button" aria-label="Fechar">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <!-- Carregando -->
+  <div id="loading" class="loading">
+    <div class="loading-anel"><span class="loading-estrela">✦</span></div>
+    <div class="loading-texto">Preparando o resultado</div>
+  </div>
+
+  <!-- Aviso: sem login do admin, teste não encontrado ou falha -->
+  <div id="erro" class="erro-box" style="display:none">
+    <div class="erro-selo" id="erro-selo" aria-hidden="true"></div>
+    <p id="erro-msg"></p>
+    <p id="erro-texto" class="erro-texto"></p>
+    <a id="erro-btn" class="erro-cta" href="#" style="display:none"></a>
+  </div>
+
+  <!-- Conteúdo (preenchido via JS) -->
+  <div id="conteudo" style="display:none">
+
+    <div class="adm-selo-wrap">
+      <span class="adm-selo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        Visão do admin
+      </span>
+    </div>
+
+    <!-- BLOCO 1 -->
+    <div class="b1-imagem-wrap">
+      <img id="b1-imagem" class="b1-imagem" src="" alt="">
+    </div>
+    <h1 class="b1-titulo">Resultado Teste do Subconsciente</h1>
+
+    <!-- BLOCO 2 -->
+    <div class="b2-wrap">
+      <p class="b2-nome" id="b2-nome">—</p>
+      <p class="b2-frase">A sua energia predominante é:</p>
+      <p class="b2-energia" id="b2-energia">—</p>
+      <p class="b2-faixa" id="b2-faixa" style="display:none"></p>
+    </div>
+
+    <!-- BLOCO 3 -->
+    <div class="b3-wrap">
+      <div class="b3-titulo">Energias do Subconsciente</div>
+      <div id="b3-lista"></div>
+    </div>
+
+    <!-- PALAVRAS DO RESULTADO (só no admin): some quando a energia não tem palavras -->
+    <div class="pr-wrap" id="pr-wrap" style="display:none">
+      <div class="b3-titulo">Palavras do resultado</div>
+      <div class="pr-energia" id="pr-energia"></div>
+      <p class="av-intro">As palavras que o texto do resultado usa para a energia predominante. Toque em uma palavra para ler o trecho do texto.</p>
+      <div class="av-palavras" id="pr-palavras"></div>
+    </div>
+
+    <!-- ÁREAS DA VIDA (só no admin) -->
+    <div class="av-wrap" id="av-wrap">
+      <div class="b3-titulo">Áreas da vida</div>
+      <p class="av-intro">Em quais áreas da vida cada energia apareceu e, logo abaixo, a palavra de cada resposta. Toque em uma palavra para ler o texto complementar.</p>
+      <div class="av-onde" id="av-onde"></div>
+      <div id="av-areas"></div>
+    </div>
+
+    <!-- RESPOSTAS RARAS (só no admin): some enquanto não há outros testes para comparar -->
+    <div class="pr-wrap" id="cp-wrap" style="display:none">
+      <div class="b3-titulo">Respostas raras</div>
+      <p class="av-intro" id="cp-raras-intro"></p>
+      <div class="cp-raras" id="cp-raras"></div>
+    </div>
+
+    <!-- Rodapé -->
+    <div class="rodape-meta">
+      <div><span id="rodape-data">—</span><span style="margin: 0 0.5rem">·</span><span id="rodape-versao">—</span></div>
+      <div id="rodape-contato"></div>
+      <div>Página só do admin. A pessoa não vê esta tela.</div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+(async function () {
+  const TOKEN_KEY = 'vm_painel_admin_token'; // mesmo login do /admin, neste navegador
+  const FORMATO_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const idBruto = (new URLSearchParams(window.location.search).get('id') || '').trim().replace(/^VM/i, '');
+  const testeId = FORMATO_ID.test(idBruto) ? idBruto : null;
+
+  // Cor de cada energia nesta tela (as mesmas famílias do admin, mais claras
+  // para dar leitura no fundo azul-noite).
+  const CORES = {
+    medo: '#b58be0',
+    desordem: '#f2a04e',
+    sobrevivencia: '#9db4c9',
+    validacao: '#f27a6a',
+    prosperidade: '#4fc3f7',
+  };
+
+  const elLoading = document.getElementById('loading');
+  const elErro = document.getElementById('erro');
+  const elConteudo = document.getElementById('conteudo');
+
+  const AVISOS = {
+    login: {
+      icone: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+      titulo: 'Entre no admin para abrir este resultado',
+      texto: 'Esta página é só do admin. Entre no admin neste navegador e abra o resultado de novo.',
+      botao: 'Abrir o admin', href: '/admin',
+    },
+    link: {
+      icone: '<path d="m18.84 12.25 1.72-1.71a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="m5.17 11.75-1.71 1.71a5 5 0 0 0 7.07 7.07l1.71-1.71"/><path d="M8 2v3M2 8h3M16 22v-3M22 16h-3"/>',
+      titulo: 'Não encontramos este teste',
+      texto: 'O link pode ter sido copiado pela metade. Abra de novo pelo botão "Abrir resultado admin", na aba Resultados do Teste.',
+      botao: 'Abrir o admin', href: '/admin',
+    },
+    falha: {
+      icone: '<path d="M6 10H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><path d="M6 14H4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-2"/><path d="M6 6h.01M6 18h.01"/><path d="m13 6-4 6h6l-4 6"/>',
+      titulo: 'Não consegui abrir este resultado agora',
+      texto: 'O teste continua salvo. Tente de novo em alguns instantes.',
+      botao: 'Tentar de novo', href: window.location.href,
+    },
+  };
+
+  function mostrarAviso(tipo) {
+    const a = AVISOS[tipo];
+    elLoading.style.display = 'none';
+    document.getElementById('erro-selo').innerHTML = '<svg viewBox="0 0 24 24">' + a.icone + '</svg>';
+    document.getElementById('erro-msg').textContent = a.titulo;
+    document.getElementById('erro-texto').textContent = a.texto;
+    const btn = document.getElementById('erro-btn');
+    btn.textContent = a.botao;
+    btn.href = a.href;
+    btn.style.display = '';
+    elErro.style.display = 'block';
+  }
+
+  // ── Botão X: fecha a aba; se não der, volta para o admin ──
+  document.getElementById('topo-fechar').addEventListener('click', () => {
+    try { window.close(); } catch (e) {}
+    setTimeout(() => { window.location.href = '/admin'; }, 250);
+  });
+
+  if (!testeId) { mostrarAviso('link'); return; }
+
+  let token = '';
+  try { token = localStorage.getItem(TOKEN_KEY) || ''; } catch (e) {}
+  if (!token) { mostrarAviso('login'); return; }
+
+  let d;
+  try {
+    const r = await fetch('/api/admin/testes-resultados/' + encodeURIComponent(testeId) + '/leitura', {
+      headers: { 'Authorization': 'Bearer ' + token },
+      cache: 'no-store',
+    });
+    if (r.status === 401 || r.status === 403) { mostrarAviso('login'); return; }
+    if (r.status === 404 || r.status === 400) { mostrarAviso('link'); return; }
+    if (!r.ok) { mostrarAviso('falha'); return; }
+    d = await r.json();
+    if (!d.ok) { mostrarAviso('falha'); return; }
+  } catch (err) {
+    console.error('[resultado-admin] erro:', err);
+    mostrarAviso('falha');
+    return;
+  }
+
+  renderizar(d);
+  elLoading.style.display = 'none';
+  elConteudo.style.display = 'block';
+  aplicarEntrada();
+
+  // ════════════════════════════════════════════════════
+  function renderizar(d) {
+    const t = d.teste;
+    const artigoEnergia = (nome) => (['medo', 'otimismo'].includes(String(nome || '').toLowerCase()) ? 'do' : 'da');
+
+    // ── BLOCO 1: imagem (some sozinha se o arquivo não existir) ──
+    const imgEl = document.getElementById('b1-imagem');
+    imgEl.onerror = function () { imgEl.parentElement.style.display = 'none'; };
+    imgEl.alt = 'Energia ' + (t.nome_exibicao || '');
+    imgEl.src = '/assets/resultado-' + t.perfil_dominante + '.png';
+
+    // ── BLOCO 2: nome + energia predominante ──
+    document.getElementById('b2-nome').textContent = t.nome || '';
+    const nomeEnergia = t.nome_exibicao || '—';
+    document.getElementById('b2-energia').textContent = 'Energia ' + artigoEnergia(nomeEnergia) + ' ' + nomeEnergia;
+    if (t.faixa_prosperidade) {
+      const faixaEl = document.getElementById('b2-faixa');
+      faixaEl.textContent = t.faixa_prosperidade;
+      faixaEl.style.display = '';
+    }
+
+    // ── BLOCO 3: as 5 energias ──
+    document.getElementById('b3-lista').innerHTML = d.energias.map(e => (
+      '<div class="b3-energia-row' + (e.slug === t.perfil_dominante_bruto ? ' is-dominante' : '') + '">' +
+        '<span class="b3-energia-label">Energia ' + artigoEnergia(e.slug) + ' ' + esc(e.label) + '</span>' +
+        '<span class="b3-energia-perc">' + e.percentual + '%</span>' +
+      '</div>'
+    )).join('');
+
+    // ── ÁREAS DA VIDA ──
+    // Onde cada energia aparece: uma linha por energia com resposta, e as
+    // áreas da vida em que ela apareceu (com o número quando é mais de uma).
+    document.getElementById('av-onde').innerHTML = d.energias.filter(e => e.respostas > 0).map(e => {
+      const areas = d.areas.filter(a => a.contagem[e.slug] > 0).map(a => (
+        '<span class="av-onde-area">' + esc(a.nome) +
+          (a.contagem[e.slug] > 1 ? ' <b>' + a.contagem[e.slug] + '</b>' : '') +
+        '</span>'
+      )).join('');
+      // Trava concentrada ou espalhada: em quantas das áreas a energia apareceu.
+      const nAreas = d.areas.filter(a => a.contagem[e.slug] > 0).length;
+      const totalAreas = d.areas.length;
+      let espalha = 'em ' + nAreas + ' das ' + totalAreas + ' áreas';
+      if (e.slug !== 'prosperidade') {
+        if (nAreas === 1) espalha = '<strong>concentrada</strong> em 1 área';
+        else if (nAreas === totalAreas) espalha = '<strong>espalhada</strong> em todas as ' + totalAreas + ' áreas';
+        else espalha = '<strong>espalhada</strong> em ' + nAreas + ' das ' + totalAreas + ' áreas';
+      }
+      return (
+        '<div class="av-onde-linha" style="--cor:' + cor(e.slug) + '">' +
+          '<span class="av-onde-quem">' +
+            '<span class="av-onde-energia"><span class="av-bola"></span>' + esc(e.label) + ' <b>' + e.respostas + '</b></span>' +
+            '<span class="av-onde-espalha">' + espalha + '</span>' +
+          '</span>' +
+          '<span class="av-onde-areas">' + areas + '</span>' +
+        '</div>'
+      );
+    }).join('');
+
+    document.getElementById('av-areas').innerHTML = d.areas.map(a => {
+      const itens = d.itens.filter(i => i.area === a.slug);
+      const meta = a.travas > 0
+        ? plural(a.perguntas, 'pergunta', 'perguntas') + ' · <b>' + a.travas + '</b> com trava'
+        : plural(a.perguntas, 'pergunta', 'perguntas') + ' · <b>sem trava</b>';
+      const palavras = itens.map(i => (
+        '<button type="button" class="av-palavra" aria-expanded="false" data-pergunta="' + i.pergunta_ordem + '" style="--cor:' + cor(i.perfil) + '">' +
+          '<span class="av-palavra-nome">' + esc(i.palavra || 'Sem palavra') + '</span>' +
+          '<span class="av-palavra-energia">Energia ' + artigoEnergia(i.perfil) + ' ' + esc(i.perfil_label) + '</span>' +
+          '<svg class="av-palavra-seta" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>' +
+        '</button>'
+      )).join('');
+      return (
+        '<section class="av-area" data-area="' + esc(a.slug) + '">' +
+          '<div class="av-area-topo">' +
+            '<h2 class="av-area-nome">' + esc(a.nome) + '</h2>' +
+            '<span class="av-area-meta' + (a.travas > 0 ? '' : ' sem-trava') + '">' + meta + '</span>' +
+          '</div>' +
+          '<div class="av-palavras">' + (palavras || '') + '</div>' +
+        '</section>'
+      );
+    }).join('');
+
+    // Tocar na palavra abre o texto complementar logo abaixo dela
+    // (uma palavra aberta por área; tocar de novo fecha).
+    const porPergunta = new Map(d.itens.map(i => [String(i.pergunta_ordem), i]));
+    document.getElementById('av-areas').addEventListener('click', ev => {
+      const btn = ev.target.closest('.av-palavra');
+      if (!btn) return;
+      const area = btn.closest('.av-area');
+      const jaAberta = btn.getAttribute('aria-expanded') === 'true';
+      area.querySelectorAll('.av-palavra').forEach(b => b.setAttribute('aria-expanded', 'false'));
+      area.querySelectorAll('.av-detalhe').forEach(x => x.remove());
+      if (jaAberta) return;
+      const i = porPergunta.get(btn.dataset.pergunta);
+      if (!i) return;
+      btn.setAttribute('aria-expanded', 'true');
+      btn.insertAdjacentHTML('afterend',
+        '<div class="av-detalhe" style="--cor:' + cor(i.perfil) + '">' +
+          '<div class="av-detalhe-titulo">' + esc(i.palavra || '') + '</div>' +
+          (i.texto ? '<p class="av-detalhe-texto">' + esc(i.texto) + '</p>' : '') +
+          '<div class="av-detalhe-linha"><span class="av-mini">Pergunta ' + i.pergunta_ordem + '</span><p>' + esc(i.pergunta || '—') + '</p></div>' +
+          '<div class="av-detalhe-linha"><span class="av-mini">Resposta escolhida</span><p>' + esc(i.resposta || '—') + '</p></div>' +
+          (i.escolha_pct != null ? '<div class="av-detalhe-linha"><span class="av-mini">Quem mais escolhe</span><p>' + i.escolha_pct + '% das pessoas escolhem esta resposta.</p></div>' : '') +
+        '</div>');
+    });
+
+    // ── PALAVRAS DO RESULTADO ──
+    // As palavras do texto do resultado da energia predominante, na cor dela.
+    // Tocar abre, logo abaixo, o trecho do texto (uma aberta por vez).
+    const pr = Array.isArray(d.palavras_resultado) ? d.palavras_resultado : [];
+    if (pr.length) {
+      const corDominante = cor(t.perfil_dominante_bruto);
+      document.getElementById('pr-energia').textContent = 'Energia ' + artigoEnergia(nomeEnergia) + ' ' + nomeEnergia;
+      const lista = document.getElementById('pr-palavras');
+      lista.innerHTML = pr.map((x, n) => (
+        '<button type="button" class="av-palavra" aria-expanded="false" data-n="' + n + '" style="--cor:' + corDominante + '">' +
+          '<span class="av-palavra-nome">' + esc(x.palavra) + '</span>' +
+          '<svg class="av-palavra-seta" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>' +
+        '</button>'
+      )).join('');
+      lista.addEventListener('click', ev => {
+        const btn = ev.target.closest('.av-palavra');
+        if (!btn) return;
+        const jaAberta = btn.getAttribute('aria-expanded') === 'true';
+        lista.querySelectorAll('.av-palavra').forEach(b => b.setAttribute('aria-expanded', 'false'));
+        lista.querySelectorAll('.av-detalhe').forEach(x => x.remove());
+        if (jaAberta) return;
+        const x = pr[parseInt(btn.dataset.n, 10)];
+        if (!x) return;
+        btn.setAttribute('aria-expanded', 'true');
+        // Abre depois da última palavra da mesma linha (no celular, logo abaixo dela)
+        const botoes = Array.from(lista.querySelectorAll('.av-palavra'));
+        const topo = btn.offsetTop;
+        const ultimoDaLinha = botoes.filter(b => b.offsetTop === topo).pop() || btn;
+        ultimoDaLinha.insertAdjacentHTML('afterend',
+          '<div class="av-detalhe" style="--cor:' + corDominante + '">' +
+            '<div class="av-detalhe-titulo">' + esc(x.palavra) + '</div>' +
+            '<div class="av-detalhe-linha"><span class="av-mini">No texto do resultado</span><p class="av-detalhe-texto" style="margin-bottom:0.2rem">' + esc(x.trecho) + '</p></div>' +
+          '</div>');
+      });
+      document.getElementById('pr-wrap').style.display = '';
+    }
+
+    // ── RESPOSTAS RARAS ──
+    // As 3 respostas desta pessoa que menos gente escolhe, comparando com
+    // todos os testes da mesma versão. Só aparece com outros testes na base.
+    const base = d.base_comparacao || 0;
+    const comPct = d.itens.filter(i => i.escolha_pct != null);
+    if (base > 1 && comPct.length) {
+      const raras = comPct.slice().sort((a, b) => (a.escolha_pct - b.escolha_pct) || (a.pergunta_ordem - b.pergunta_ordem)).slice(0, 3);
+      document.getElementById('cp-raras-intro').textContent =
+        'As 3 respostas desta pessoa que menos gente escolhe. Comparação com ' + plural(base, 'teste', 'testes') + ' já feitos.';
+      document.getElementById('cp-raras').innerHTML = raras.map(i => (
+        '<div class="cp-rara" style="--cor:' + cor(i.perfil) + '">' +
+          '<span class="cp-rara-pct">' + i.escolha_pct + '%<small>das pessoas</small></span>' +
+          '<span class="cp-rara-nome">' + esc(i.palavra || '—') + '</span>' +
+          '<span class="cp-rara-onde">' + esc(i.area_nome) + ' · pergunta ' + i.pergunta_ordem + '</span>' +
+          '<span class="cp-rara-resposta">' + esc(i.resposta || '') + '</span>' +
+        '</div>'
+      )).join('');
+      document.getElementById('cp-wrap').style.display = '';
+    }
+
+    // ── Rodapé ──
+    document.getElementById('rodape-data').textContent = 'Realizado em ' + formatarData(t.feito_em);
+    document.getElementById('rodape-versao').textContent = 'Versão ' + (t.versao_nome || '—');
+    document.getElementById('rodape-contato').textContent = [
+      t.telefone_canonico,
+      t.email,
+      t.pago ? 'Pago' : 'Pagamento pendente',
+    ].filter(Boolean).join(' · ');
+  }
+
+  // ── Entrada escalonada, como no resultado de produção ──
+  function aplicarEntrada() {
+    let delay = 0;
+    ['.adm-selo-wrap', '.b1-imagem-wrap', '.b1-titulo', '.b2-wrap', '.b3-wrap', '#pr-wrap', '.av-wrap', '#cp-wrap', '.rodape-meta'].forEach(sel => {
+      const el = elConteudo.querySelector(sel);
+      if (!el || el.style.display === 'none') return;
+      el.classList.add('anim-entrada');
+      el.style.setProperty('--anim-delay', delay.toFixed(2) + 's');
+      delay += 0.12;
+    });
+    elConteudo.querySelectorAll('#b3-lista .b3-energia-row').forEach((linha, i) => {
+      linha.classList.add('anim-entrada');
+      linha.style.setProperty('--anim-delay', (0.45 + i * 0.07).toFixed(2) + 's');
+    });
+    elConteudo.querySelectorAll('.av-area').forEach((area, i) => {
+      area.classList.add('anim-entrada');
+      area.style.setProperty('--anim-delay', (0.85 + i * 0.09).toFixed(2) + 's');
+    });
+  }
+
+  // ── Helpers ──
+  function cor(slug) { return CORES[slug] || '#d9d3c7'; }
+  function plural(n, um, varios) { return n + ' ' + (n === 1 ? um : varios); }
+  function esc(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  }
+  function formatarData(iso) {
+    if (!iso) return '—';
+    try {
+      const x = new Date(iso);
+      return String(x.getDate()).padStart(2, '0') + '/' + String(x.getMonth() + 1).padStart(2, '0') + '/' + x.getFullYear();
+    } catch (e) { return '—'; }
+  }
+})();
+</script>
+</body>
+</html>

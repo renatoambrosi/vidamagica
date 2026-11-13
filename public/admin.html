@@ -4697,6 +4697,7 @@ const testesResultados = (function(){
                 <td>
                   <div class="tr-acoes">
                     <a class="btn btn-ghost btn-sm" href="${escHtml(t.link_resultado)}" target="_blank" rel="noopener">Abrir resultado</a>
+                    <a class="btn btn-ghost btn-sm" href="/resultado-admin.html?id=${t.id}" target="_blank" rel="noopener">Abrir resultado admin</a>
                     <button class="btn btn-ghost btn-sm" onclick="testesResultados.copiarLink('${t.link_resultado}')">Copiar link</button>
                     <button class="btn btn-ghost btn-sm" onclick="testesResultados.enviarWhatsapp('${t.id}', this)">${t.pago ? 'Enviar WhatsApp' : (recuperacao(t) ? 'WhatsApp: recuperação' : 'WhatsApp: pagamento')}</button>
                     <button class="btn btn-ghost btn-sm" ${t.email ? '' : 'disabled'} onclick="testesResultados.enviarEmail('${t.id}', this)">${t.pago ? 'Enviar e-mail' : (recuperacao(t) ? 'E-mail: recuperação' : 'E-mail: pagamento')}</button>
