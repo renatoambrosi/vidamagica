@@ -1606,6 +1606,8 @@
       <div class="erro-bloco">
         <p class="erro-bloco-txt" id="erro-txt-suporte" style="display:none">Já pagou e o resultado não abriu? Fale com a gente, resolvemos com você.</p>
         <button id="erro-btn-tentar" class="erro-cta erro-cta-pagar" type="button" style="display:none">Tentar de novo</button>
+        <!-- Pagamento pendente: resposta da verificação manual e aviso de pausa -->
+        <p class="erro-bloco-txt" id="erro-aviso-verificar" role="status" style="display:none"></p>
         <a id="erro-btn-suporte" class="erro-cta erro-cta-suporte" href="#" target="_blank" rel="noopener" style="display:none">
           <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3C9 3 3.5 8.5 3.5 15.5c0 2.4.7 4.6 1.8 6.5L3 29l7.2-2.3c1.8 1 3.9 1.5 6 1.5 7 0 12.5-5.5 12.5-12.5S23 3 16 3zm0 22.8c-1.9 0-3.7-.5-5.2-1.4l-.4-.2-4.3 1.4 1.4-4.2-.3-.4a10 10 0 0 1-1.6-5.3C5.7 9.7 10.3 5.2 16 5.2s10.3 4.5 10.3 10.3S21.7 25.8 16 25.8zm5.7-7.7c-.3-.2-1.8-.9-2.1-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-.9 1.1-.2.2-.3.2-.6.1-1.8-.9-3-1.6-4.2-3.6-.3-.5.3-.5.8-1.5.1-.2 0-.4 0-.5 0-.2-.7-1.7-1-2.3-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.1 3.3 5.2 4.6 3.1 1.3 3.1.9 3.7.8.5-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.2-.3-.2-.5-.4z"/></svg>
           <span>Falar com o suporte</span>
@@ -1731,6 +1733,7 @@
   const match = path.match(/\/resultado\/(?:VM)?([a-f0-9-]+)\/?$/i);
   const FORMATO_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const testeId = match && FORMATO_ID.test(match[1]) ? match[1] : null;
+  const inicioPagina = Date.now(); // base dos 5 minutos de verificação do pagamento
 
   const elLoading = document.getElementById('loading');
   const elErro = document.getElementById('erro');
@@ -1833,6 +1836,109 @@
     montarAcoesErro(estado);
   }
 
+  // ── Pagamento pendente: a tela continua verificando ──
+  // Regra do Renato (2026-11-12). Depois do primeiro minuto (a cada 3 s, com
+  // a tela de carregando), a tela "Estamos identificando o seu pagamento"
+  // segue verificando sozinha a cada 30 s, até 5 minutos desde a abertura da
+  // página, enquanto estiver na frente da pessoa. Se ela sair da tela ou os
+  // 5 minutos passarem, a verificação pausa e aparece o aviso para verificar
+  // pelo botão. O botão fica sempre disponível e sempre dá uma resposta.
+  const VERIFICA_INTERVALO_MS = 30 * 1000;
+  const VERIFICA_ATE_MS = 5 * 60 * 1000;
+  const TXT_BTN_VERIFICAR = 'Já paguei, verificar agora';
+
+  function acompanharPagamento() {
+    const btn = document.getElementById('erro-btn-tentar');
+    const aviso = document.getElementById('erro-aviso-verificar');
+    if (!btn || !aviso) return;
+    const url = '/api/teste/resultado/' + encodeURIComponent(testeId);
+    let timer = null;
+    let pausado = false;
+    let verificando = false;
+
+    function avisar(txt) {
+      aviso.textContent = txt || '';
+      aviso.style.display = txt ? '' : 'none';
+    }
+
+    // 'pago' | 'pendente' | 'conexao' | 'falha'
+    async function consultar() {
+      try {
+        const r = await fetch(url, { cache: 'no-store' });
+        if (r.ok) return 'pago';
+        if (r.status === 402) return 'pendente';
+        return 'falha';
+      } catch (e) {
+        return 'conexao';
+      }
+    }
+
+    function pausar(motivo) {
+      if (pausado) return;
+      pausado = true;
+      clearTimeout(timer);
+      console.log('[resultado] verificação automática pausada: ' + motivo);
+      avisar('Para conferir de novo, toque em "' + TXT_BTN_VERIFICAR + '".');
+    }
+
+    function agendar() {
+      if (pausado) return;
+      if (Date.now() - inicioPagina + VERIFICA_INTERVALO_MS > VERIFICA_ATE_MS) {
+        pausar('passaram 5 minutos');
+        return;
+      }
+      timer = setTimeout(async () => {
+        if (pausado) return;
+        if (document.visibilityState !== 'visible') {
+          pausar('tela fora de vista');
+          return;
+        }
+        const situacao = await consultar();
+        console.log('[resultado] verificação automática: ' + situacao);
+        if (situacao === 'pago') {
+          window.location.reload();
+          return;
+        }
+        agendar();
+      }, VERIFICA_INTERVALO_MS);
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') pausar('tela fora de vista');
+    });
+
+    btn.textContent = TXT_BTN_VERIFICAR;
+    btn.style.display = '';
+    btn.addEventListener('click', async () => {
+      if (verificando) return;
+      verificando = true;
+      btn.disabled = true;
+      btn.style.opacity = '.7';
+      btn.textContent = 'Verificando...';
+      avisar('');
+      const situacao = await consultar();
+      console.log('[resultado] verificação manual: ' + situacao);
+      if (situacao === 'pago') {
+        window.location.reload();
+        return;
+      }
+      btn.disabled = false;
+      btn.style.opacity = '';
+      btn.textContent = TXT_BTN_VERIFICAR;
+      verificando = false;
+      if (situacao === 'pendente') {
+        avisar('Ainda estamos aguardando a confirmação do seu pagamento. Se você acabou de pagar, toque de novo em instantes.');
+      } else if (situacao === 'conexao') {
+        avisar('Sem conexão com a internet. Confira sua internet e toque de novo.');
+      } else {
+        avisar('Não conseguimos verificar agora. Toque de novo em instantes.');
+      }
+    });
+
+    console.log('[resultado] pagamento pendente: verificando a cada 30 s, até 5 minutos');
+    agendar();
+  }
+
   if (!testeId) {
     mostrarErro('link');
     return;
@@ -1853,6 +1959,7 @@
         mostrarErro('link');
       } else if (r.status === 402) {
         mostrarErro('pagamento');
+        acompanharPagamento();
       } else {
         mostrarErro('falha');
       }

@@ -4512,10 +4512,12 @@ var painelTeste = (function(){
   }
 
   return {
-    entrar() { carregar(); if (!timer) timer = setInterval(carregar, 20000); },
+    // Abre sempre no topo: a página guarda a rolagem da aba anterior e o
+    // painel (curto) ficava escondido atrás do título.
+    entrar() { window.scrollTo(0, 0); carregar(); if (!timer) timer = setInterval(carregar, 20000); },
     sair() { if (timer) { clearInterval(timer); timer = null; } },
     carregar,
-    filtrar(id) { filtro = id; render(); },
+    filtrar(id) { filtro = id; render(); window.scrollTo(0, 0); },
     alternar(i, el) {
       const x = painelTeste._lista[i];
       el.classList.toggle('fechada');
