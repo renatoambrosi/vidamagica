@@ -114,6 +114,10 @@ body { font-family: var(--font-body); background: var(--bg-dark); color: var(--t
 .pt-resultado:hover { border-color: var(--border-hover); background: rgba(232,201,122,0.12); }
 .pt-resultado .bola { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255,255,255,0.12); }
 .pt-resultado .abrir { color: var(--color-gold-light); display: inline-flex; align-items: center; gap: 0.25rem; padding-left: 0.4rem; border-left: 1px solid var(--border); }
+/* "Abrir resultado admin", ao lado do "Abrir resultado" */
+.pt-resultado:has(+ .pt-resultado.admin) { margin-right: 0.35rem; }
+.pt-resultado.admin { padding-left: 0.6rem; }
+.pt-resultado.admin .abrir { padding-left: 0; border-left: 0; }
 .pt-trilha { display: grid; grid-template-columns: repeat(var(--n), 1fr); padding: 0 0.85rem 0.75rem; }
 .pt-etapa { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
 .pt-etapa::before { content: ''; position: absolute; top: 11px; left: -50%; width: 100%; height: 2px; background: rgba(245,240,232,0.18); }
@@ -4464,8 +4468,13 @@ var painelTeste = (function(){
   const botaoResultado = x => {
     if (!x.link_resultado) return '';
     const [nome, cor] = PERFIL[x.perfil] || [x.perfil || 'Resultado', '#888'];
+    // Ao lado, o resultado do admin (public/resultado-admin.html), só para o Renato.
+    const admin = x.teste_id
+      ? `<a class="pt-resultado admin" href="/resultado-admin.html?id=${escHtml(x.teste_id)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+      <span class="abrir">Abrir resultado admin ${ABRIR}</span></a>`
+      : '';
     return `<a class="pt-resultado" href="${escHtml(x.link_resultado)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
-      <span class="bola" style="background:${cor}"></span>${escHtml(nome)}<span class="abrir">Abrir resultado ${ABRIR}</span></a>`;
+      <span class="bola" style="background:${cor}"></span>${escHtml(nome)}<span class="abrir">Abrir resultado ${ABRIR}</span></a>${admin}`;
   };
 
   function render() {
@@ -4484,7 +4493,7 @@ var painelTeste = (function(){
       return `
       <div class="pt-pessoa ${x.falha ? 'com-falha' : ''} ${aberto ? '' : 'fechada'}" style="--n:${x.etapas.length}">
         <div class="pt-cab" onclick="painelTeste.alternar(${i}, this.parentNode)">
-          <div><div class="pt-nome">${escHtml(x.nome)}${SETA}</div><div class="pt-contato">${escHtml(contato)}</div>${botaoResultado(x)}</div>
+          <div><div class="pt-nome">${escHtml(x.nome)}${SETA}</div><div class="pt-contato">${escHtml(contato)}</div>${(x.utms || []).length ? `<div class="pt-contato">${escHtml(x.utms.join(' · '))}</div>` : ''}${botaoResultado(x)}</div>
           <div class="pt-lado"><span class="pt-agora ${x.agora[0]}">${x.agora[0] === 'espera' ? ESPERA : ''}${escHtml(agoraTxt)}</span><div class="pt-quando">${escHtml(quando)}</div></div>
         </div>
         <div class="pt-trilha">
@@ -4612,6 +4621,7 @@ const testesResultados = (function(){
           <div class="tr-pessoa-nome">${escHtml(t.nome || '(sem nome)')}${extra}</div>
           <div class="tr-pessoa-linha">${t.telefone_canonico ? escHtml(t.telefone_canonico) : 'sem telefone'}</div>
           <div class="tr-pessoa-linha">${t.email ? escHtml(t.email) : 'sem e-mail'}</div>
+          ${(t.utms || []).length ? `<div class="tr-pessoa-linha">${escHtml(t.utms.join(' · '))}</div>` : ''}
         </td>`;
 
       // Tudo que o sistema disparou para o teste, escrito por extenso.
@@ -4646,7 +4656,7 @@ const testesResultados = (function(){
         <table class="tr-tabela">
           <thead>
             <tr>
-              <th class="tr-fixa">Pessoa (nome, telefone, e-mail)</th>
+              <th class="tr-fixa">Pessoa (nome, telefone, e-mail, UTMs)</th>
               <th>Começou em</th>
               <th>Onde parou</th>
               <th>Última atividade</th>
@@ -4676,7 +4686,7 @@ const testesResultados = (function(){
         <table class="tr-tabela">
           <thead>
             <tr>
-              <th class="tr-fixa">Pessoa (nome, telefone, e-mail)</th>
+              <th class="tr-fixa">Pessoa (nome, telefone, e-mail, UTMs)</th>
               <th>Data</th>
               <th>Perfil</th>
               <th>Pagamento</th>

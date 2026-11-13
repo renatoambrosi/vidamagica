@@ -1598,7 +1598,8 @@ router.get('/testes-resultados', async (req, res) => {
     const r = await poolTeste.query(
       `SELECT t.id, t.telefone_canonico, t.perfil_dominante, t.percentual_prosperidade,
               t.pago, t.feito_em, t.visto_em,
-              l.nome, l.email, l.aceite_marketing
+              l.nome, l.email, l.aceite_marketing,
+              l.utm_source, l.utm_medium, l.utm_campaign, l.utm_content
          FROM testes t
          LEFT JOIN teste_leads l ON l.id = t.lead_id
         WHERE ${whereSql}
@@ -1619,6 +1620,7 @@ router.get('/testes-resultados', async (req, res) => {
       feito_em: t.feito_em,
       visto_em: t.visto_em,
       aceite_marketing: !!t.aceite_marketing,
+      utms: _utmsDoLead(t),
       link_resultado: `${baseUrl}/resultado/${t.id}`,
     }));
     // Tudo que foi disparado para cada teste (core/teste-avisos.js).
@@ -1633,6 +1635,12 @@ router.get('/testes-resultados', async (req, res) => {
 });
 
 // Quem preencheu o formulário e não chegou ao fim da rodada atual.
+// UTMs da pessoa para o Painel e para Resultados: só os nomes, na ordem
+// origem, meio, campanha e conteúdo (o que estiver vazio não entra).
+// Ficam no lead (teste_leads), então são as da rodada mais recente dele.
+const _utmsDoLead = l => [l.utm_source, l.utm_medium, l.utm_campaign, l.utm_content]
+  .map(v => String(v || '').trim()).filter(Boolean);
+
 // O lead é reaproveitado entre testes (mesmo telefone) e as respostas da
 // rodada nova sobrescrevem as antigas, então "incompleto" = menos de 15
 // respostas E a rodada atual (formulário ou última resposta) é mais nova
@@ -1640,6 +1648,7 @@ router.get('/testes-resultados', async (req, res) => {
 const _SQL_LEADS_RODADA = `
   SELECT l.id, l.nome, l.email, l.telefone_canonico, l.aceite_marketing,
          l.criado_em, l.atualizado_em, l.dispositivo,
+         l.utm_source, l.utm_medium, l.utm_campaign, l.utm_content,
          COALESCE(r.n, 0)::int AS respondidas,
          r.ultima, r.primeira,
          ut.ultimo_teste
@@ -1678,6 +1687,7 @@ async function _listarIncompletos({ data_de, data_ate, q, lim, offset, pag }) {
     email: l.email || null,
     telefone_canonico: l.telefone_canonico,
     aceite_marketing: !!l.aceite_marketing,
+    utms: _utmsDoLead(l),
     dispositivo: l.dispositivo || null,
     respondidas: l.respondidas,
     total_perguntas: 15,
@@ -1743,7 +1753,8 @@ async function montarPainelTeste(dias) {
 
   const tR = await poolTeste.query(
     `SELECT t.id, t.lead_id, t.telefone_canonico, t.perfil_dominante, t.nivel_prosperidade,
-            t.pago, t.modo_dev, t.feito_em, t.formulario_em, l.nome, l.email
+            t.pago, t.modo_dev, t.feito_em, t.formulario_em, l.nome, l.email,
+            l.utm_source, l.utm_medium, l.utm_campaign, l.utm_content
        FROM testes t LEFT JOIN teste_leads l ON l.id = t.lead_id
       WHERE t.eh_legado = FALSE AND t.feito_em >= NOW() - make_interval(days => $1)
       ORDER BY t.feito_em DESC LIMIT 400`,
@@ -1851,6 +1862,7 @@ async function montarPainelTeste(dias) {
 
     pessoas.push({
       chave: `t:${t.id}`, teste_id: t.id, nome: t.nome || '(sem nome)', telefone: t.telefone_canonico, email: t.email,
+      utms: _utmsDoLead(t),
       perfil: t.perfil_dominante === 'prosperidade' && t.nivel_prosperidade ? `prosperidade_nv${t.nivel_prosperidade}` : t.perfil_dominante,
       link_resultado: `${baseUrl}/resultado/${t.id}`,
       grupo: andamento ? 'andamento' : 'concluidos', ao_vivo: false,
@@ -1884,6 +1896,7 @@ async function montarPainelTeste(dias) {
     const andamento = !inativa || (!cs.length && agora < ult + min(PAINEL_MIN_INATIVA + PAINEL_FOLGA)) || todas.some(x => x.estado === 'espera' && x.sub);
     pessoas.push({
       chave: `l:${l.id}:${new Date(inicio).getTime()}`, teste_id: null, nome: l.nome || '(sem nome)', telefone: l.telefone_canonico, email: l.email,
+      utms: _utmsDoLead(l),
       perfil: null, link_resultado: null,
       grupo: andamento ? 'andamento' : 'concluidos', ao_vivo: !inativa, pago: false,
       agora: inativa ? ['erro', `Parou em ${l.respondidas}/15`] : ['espera', `Respondendo ${l.respondidas}/15`],
