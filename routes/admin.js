@@ -1599,7 +1599,7 @@ router.get('/testes-resultados', async (req, res) => {
     params.push(lim, offset);
     const r = await poolTeste.query(
       `SELECT t.id, t.telefone_canonico, t.perfil_dominante, t.percentual_prosperidade,
-              t.pago, t.feito_em, t.visto_em,
+              t.pago, t.feito_em, t.visto_em, t.guias_abertas,
               l.nome, l.email, l.aceite_marketing,
               l.utm_source, l.utm_medium, l.utm_campaign, l.utm_content
          FROM testes t
@@ -1621,6 +1621,8 @@ router.get('/testes-resultados', async (req, res) => {
       pago: !!t.pago,
       feito_em: t.feito_em,
       visto_em: t.visto_em,
+      // Guias do resultado que a pessoa abriu: { gatilhos, resolver, entendendo } → hora da 1ª vez
+      guias_abertas: t.guias_abertas || {},
       aceite_marketing: !!t.aceite_marketing,
       utms: _utmsDoLead(t),
       link_resultado: `${baseUrl}/resultado/${t.id}`,

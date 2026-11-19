@@ -4655,6 +4655,17 @@ const testesResultados = (function(){
           </div>`).join('');
       };
 
+      // Guias do resultado que a pessoa abriu (toque dela), com a hora da 1ª vez.
+      // Tudo escrito na tela: abriu = verde com a hora; não abriu = "não abriu".
+      const guiasAbertas = (g) => {
+        g = g || {};
+        return [['gatilhos', 'Gatilhos da sua mente'], ['resolver', 'Seu próximo passo'], ['entendendo', 'Entendendo o seu teste']]
+          .map(([k, nome]) => g[k]
+            ? '<div><span class="tr-ok">' + nome + '</span> <span class="tr-nao">' + dataFmt(g[k]) + '</span></div>'
+            : '<div><span class="tr-nao">' + nome + ': não abriu</span></div>')
+          .join('');
+      };
+
       if (d.incompletos) {
         wrap.innerHTML = `
         <div class="tr-tabela-wrap">
@@ -4695,6 +4706,7 @@ const testesResultados = (function(){
               <th>Data</th>
               <th>Perfil</th>
               <th>Pagamento</th>
+              <th>Guias abertas no resultado</th>
               <th>Novidades</th>
               <th>Mensagens enviadas</th>
               <th>Ações</th>
@@ -4707,6 +4719,7 @@ const testesResultados = (function(){
                 <td class="tr-nowrap">${dataFmt(t.feito_em)}</td>
                 <td>${escHtml(t.perfil_label || '?')}</td>
                 <td class="tr-nowrap">${t.pago ? '<span class="tr-ok">Pago</span>' : '<span class="tr-nao">Pendente</span>'}</td>
+                <td class="tr-nowrap">${guiasAbertas(t.guias_abertas)}</td>
                 <td>${optIn(t.aceite_marketing)}</td>
                 <td>${envios(t)}</td>
                 <td>

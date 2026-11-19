@@ -3,7 +3,10 @@
    Leitura do resultado do Teste do Subconsciente para o ADMIN
    (botão "Abrir resultado admin" da aba Resultados do Teste, que
    abre public/resultado-admin.html).
-   Só o Renato vê. Nada daqui aparece para a aluna.
+   Só o Renato vê, com uma exceção: PALAVRAS_DO_RESULTADO também aparece
+   para a aluna, na guia "Gatilhos da sua mente" do /resultado
+   (routes/teste.js manda em `palavras_resultado`; pedido do Renato,
+   2026-11-19). Áreas e palavras por resposta continuam só no admin.
 
    Conteúdo (rascunho de 2026-11-13; o Renato corrige aqui):
    - AREAS: cada uma das 15 perguntas pertence a uma área da vida.

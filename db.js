@@ -1085,6 +1085,10 @@ async function initTeste() {
     // porque as respostas do lead são sobrescritas na rodada seguinte.
     await c.query(`ALTER TABLE testes ADD COLUMN IF NOT EXISTS formulario_em TIMESTAMPTZ`);
     await c.query(`ALTER TABLE testes ADD COLUMN IF NOT EXISTS tempos JSONB`);
+    // Guias do resultado que a pessoa abriu (toque dela): { "gatilhos": iso,
+    // "resolver": iso, "entendendo": iso } com a hora da 1ª vez. Mostrado na
+    // aba Resultados do Teste. POST /api/teste/resultado/:id/guia.
+    await c.query(`ALTER TABLE testes ADD COLUMN IF NOT EXISTS guias_abertas JSONB`);
     await c.query(`CREATE INDEX IF NOT EXISTS idx_testes_legado ON testes(usuario_id, eh_legado) WHERE usuario_id IS NOT NULL`);
 
     // Avaliação da aluna sobre o resultado (estrelas + comentário opcional).

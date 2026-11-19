@@ -304,6 +304,238 @@
     }
 
     /* ═══════════════════════════════════════════════════
+       GUIAS (abaixo das energias) — em teste de usabilidade
+       Gatilhos da sua mente / Seu próximo passo / Entendendo o seu teste.
+       Barra discreta com as 3 guias; a escolhida fica dourada e "encaixada"
+       no painel de baixo. A primeira já vem aberta.
+       ═══════════════════════════════════════════════════ */
+    .guias { margin: 0 0 2rem; }
+    .guias-barra {
+      display: flex; gap: 0.35rem; align-items: stretch;
+      position: relative; z-index: 1;
+    }
+    /* Guia baixinha: ícone ao lado do nome, o nome sempre em 2 linhas
+       (quebra fixa no HTML), o conjunto centralizado: as 3 ficam iguais.
+       A escolhida fica dourada cheia. Ainda não aberta = "não lida":
+       nome em branco forte e uma bolinha vermelha no canto (some ao abrir). */
+    .guia {
+      position: relative;
+      flex: 1 1 0; min-width: 0;
+      display: flex; align-items: center; justify-content: center;
+      gap: 0.32rem; padding: 0.5rem 0.3rem;
+      font: inherit; font-family: var(--font-display); cursor: pointer;
+      font-size: 0.68rem; font-weight: 600; line-height: 1.2; text-align: left;
+      color: var(--pearl-dim, #d9d3c7);
+      background: rgba(255,255,255,0.035);
+      border: 1px solid rgba(245,240,232,0.12);
+      border-bottom: 0;
+      border-radius: 10px 10px 0 0;
+      transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .guia-nome { white-space: nowrap; }
+    .guia-icone { flex: 0 0 auto; display: inline-flex; }
+    /* Número do passo no lugar do ícone */
+    .guia-num {
+      flex: 0 0 auto; width: 1.25rem; height: 1.25rem; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 0.68rem; font-weight: 800; line-height: 1;
+      border: 1.5px solid currentColor;
+    }
+    .guia[aria-selected="true"] .guia-num { background: #1a1205; color: #f8dc96; border-color: #1a1205; }
+    .guia-icone svg {
+      width: 15px; height: 15px; fill: none; stroke: currentColor;
+      stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .guia.is-nao-lida { color: #fff; font-weight: 800; }
+    .guia-nao-lida {
+      display: none; position: absolute; top: -4px; right: -3px; z-index: 2;
+      width: 11px; height: 11px; border-radius: 50%;
+      background: #e5484d; box-shadow: 0 0 0 2px #0f2233;
+      animation: guiaPisca 1.8s ease-in-out infinite;
+    }
+    .guia.is-nao-lida .guia-nao-lida { display: block; }
+    @keyframes guiaPisca { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.8); opacity: 0.65; } }
+    @media (prefers-reduced-motion: reduce) { .guia-nao-lida { animation: none; } }
+    .guia[aria-selected="true"] {
+      color: #1a1205; font-weight: 700;
+      background: linear-gradient(135deg, #f8dc96, #c8923b);
+      border-color: #e8c97a;
+    }
+    .guias-painel {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(248,220,150,0.45);
+      border-radius: 0 0 14px 14px;
+    }
+    .sec-corpo { padding: 0.2rem 1.1rem 1.25rem; animation: secAbre 0.25s ease; }
+    @keyframes secAbre { from { opacity: 0; } to { opacity: 1; } }
+    /* Dentro do painel, os blocos perdem a margem grande de quando eram soltos */
+    .sec-corpo .b7-trilha { margin: 0.9rem 0 0; }
+    /* O painel já é a moldura: o passo perde a caixa própria e o cartão do
+       material ganha a largura toda */
+    .sec-corpo .passo-card {
+      background: none; border: 0; box-shadow: none;
+      padding: 0; margin-bottom: 1rem;
+    }
+    .sec-corpo .passo-card:last-child { margin-bottom: 0; }
+    .sec-corpo .b5-wrap { margin: 1.1rem 0 1.5rem; }
+    .sec-corpo .b6-wrap { margin-bottom: 0; }
+    #sec-entendendo-corpo .b5-wrap { margin: 1.5rem 0 0.5rem; }
+    /* Letra do texto do resultado: um pouco menor por padrão, e a pessoa
+       regula no A− / A+ (o id vence a regra de celular da .b6-texto). */
+    #b6-texto { font-size: var(--b6-fs, 0.9rem); }
+    #b6-texto p, #b6-texto li, #b6-texto blockquote { font-size: inherit; }
+    #b6-texto h2 { font-size: 1.4em; }
+    #b6-texto h3 { font-size: 1.15em; }
+    /* A linha fina e o tamanho da letra na mesma faixa (ocupa menos altura):
+       ———————— Tamanho da letra [A−] [A+] */
+    .b6-fonte {
+      display: flex; align-items: center; justify-content: flex-end; gap: 0.4rem;
+      margin: 0 0 0.75rem;
+    }
+    .b6-fonte::before {
+      content: ''; flex: 1; height: 1px; margin-right: 0.5rem;
+      background: rgba(248,220,150,0.18);
+    }
+    .b6-fonte-rotulo { font-size: 0.72rem; color: var(--pearl-dim, #d9d3c7); margin-right: 0.2rem; }
+    .b6-fonte-btn {
+      font: inherit; font-family: var(--font-display); font-weight: 700;
+      font-size: 0.78rem; line-height: 1; cursor: pointer;
+      min-width: 2.2rem; height: 2rem; padding: 0 0.45rem; border-radius: 8px;
+      color: #f8dc96; background: rgba(248,220,150,0.08);
+      border: 1px solid rgba(248,220,150,0.4);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .b6-fonte-btn.grande { font-size: 0.98rem; }
+    .b6-fonte-btn span { font-size: 0.85em; margin-left: 1px; }
+    .b6-fonte-btn:disabled { opacity: 0.35; cursor: default; }
+    /* Respiro no topo da guia: chamada, uma linha fina e só então o texto */
+    #sec-entendendo-corpo { padding-top: 1.4rem; }
+    .entendendo-chamada {
+      font-size: 0.98rem; line-height: 1.45; margin: 0 0 0.7rem;
+    }
+
+    /* Título acima das guias */
+    .guias-titulo {
+      margin: -0.5rem 0 0.75rem; text-align: center;
+      font-family: var(--font-display); font-weight: 700; font-size: 1.05rem;
+      color: #f8dc96; letter-spacing: 0.01em;
+    }
+
+    /* Material pequenininho logo depois do texto ("o link abaixo") */
+    .mini-bloco { margin: 1.25rem 0 0; text-align: left; }
+    .mini-bloco[hidden] { display: none; }
+    .mini-rotulo {
+      font-size: 0.74rem; font-weight: 600; letter-spacing: 0.02em;
+      color: #f8dc96; margin: 0 0 0.45rem; text-align: left;
+    }
+    /* Abertura do "Seu próximo passo" */
+    .resolver-intro {
+      font-size: 0.9rem; line-height: 1.55; color: var(--pearl, #f5f0e8);
+      margin: 1.1rem 0 0.2rem; text-align: center;
+    }
+    .resolver-intro strong { color: #f8dc96; }
+    .mini-material {
+      display: flex; align-items: center; gap: 0.75rem;
+      margin: 0; padding: 0.6rem 0.75rem;
+      background: rgba(248,220,150,0.06);
+      border: 1px solid rgba(248,220,150,0.3); border-radius: 12px;
+      text-align: left;
+    }
+    .mini-material[hidden] { display: none; }
+    .mini-capa { width: 52px; height: 52px; object-fit: cover; border-radius: 8px; flex: 0 0 auto; }
+    .mini-info { display: flex; flex-direction: column; gap: 0.12rem; min-width: 0; }
+    .mini-nome { font-family: var(--font-display); font-weight: 700; font-size: 0.82rem; color: #f5f0e8; line-height: 1.25; }
+    .mini-preco { font-size: 0.74rem; color: var(--pearl-dim, #d9d3c7); }
+    .mini-cta { font-size: 0.78rem; font-weight: 700; color: #f8dc96; text-decoration: underline; text-underline-offset: 2px; }
+
+    #sec-gatilhos-corpo { text-align: center; }
+    .pr-sub { font-size: 0.82rem; color: var(--pearl-dim); margin: 0.9rem 0 0.95rem; opacity: 0.9; }
+    /* Grade de 2 colunas: todos os botões com a mesma largura e a mesma
+       altura por linha. Número ímpar: o último fica no meio, do mesmo tamanho. */
+    .pr-lista {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-auto-rows: 1fr; /* todas as linhas da mesma altura */
+      gap: 0.5rem; align-items: stretch;
+    }
+    .pr-lista .pr-chip:last-child:nth-child(odd) {
+      grid-column: 1 / -1; justify-self: center;
+      width: calc((100% - 0.5rem) / 2);
+    }
+    .pr-chip {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 2.6rem; line-height: 1.25; text-align: center;
+      font: inherit; font-family: var(--font-display);
+      font-size: 0.76rem; font-weight: 600; letter-spacing: 0;
+      color: #f5f0e8; cursor: pointer;
+      padding: 0.45rem 0.6rem; border-radius: 12px;
+      /* cara de botão: fundo em relevo, borda dourada firme e "sombra de tecla" */
+      background: linear-gradient(180deg, rgba(248,220,150,0.20), rgba(248,220,150,0.08));
+      border: 1px solid rgba(248,220,150,0.6);
+      box-shadow: 0 3px 0 rgba(138,98,36,0.75);
+      transition: background 0.2s ease, color 0.2s ease, transform 0.12s ease, box-shadow 0.12s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* Cheque de leitura: canto de cima de cada gatilho */
+    .pr-chip { position: relative; }
+    .pr-marca {
+      position: absolute; top: -6px; right: -5px; z-index: 1;
+      width: 11px; height: 11px; border-radius: 50%;
+      background: #e5484d; box-shadow: 0 0 0 2px #13212e;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pr-marca svg { display: none; width: 11px; height: 11px; fill: none; stroke: #1a1205; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+    .pr-chip.is-lido .pr-marca { width: 18px; height: 18px; top: -8px; right: -7px; background: linear-gradient(135deg, #f8dc96, #c8923b); }
+    .pr-chip.is-lido .pr-marca svg { display: block; }
+    .pr-chip:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(138,98,36,0.75); }
+    .pr-chip[aria-pressed="true"] {
+      background: linear-gradient(135deg, #f8dc96, #c8923b);
+      border-color: #f8dc96; color: #1a1205;
+      box-shadow: 0 3px 0 #8a6224, 0 6px 16px rgba(232,201,122,0.25);
+    }
+    .pr-sub { display: flex; align-items: center; justify-content: center; gap: 0.4rem; }
+    .pr-sub svg {
+      width: 16px; height: 16px; flex: 0 0 auto; fill: none; stroke: #f8dc96;
+      stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+    }
+    .pr-trecho {
+      margin: 1rem 0 0; padding: 0.95rem 1.1rem;
+      text-align: left; font-size: 0.92rem; line-height: 1.65; font-style: italic;
+      color: #e9e2d4;
+      background: rgba(248,220,150,0.06);
+      border-left: 3px solid #f8dc96; border-radius: 0 10px 10px 0;
+      animation: prTrechoEntra 0.28s ease;
+    }
+    @keyframes prTrechoEntra { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+    /* Texto do resultado encurtado: mostra o começo e "Ler mais" abre tudo */
+    /* O fim do recorte some aos poucos (máscara), em cima de qualquer fundo */
+    .b6-recorte {
+      max-height: 13.5rem; overflow: hidden;
+      -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
+              mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
+    }
+    .b6-wrap.is-aberto .b6-recorte {
+      max-height: none;
+      -webkit-mask-image: none; mask-image: none;
+    }
+    .b6-recorte .b6-texto > :first-child { margin-top: 0; }
+    .b6-ler-mais {
+      display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+      margin: 0.5rem auto 0; padding: 0.6rem 1.4rem;
+      background: rgba(248,220,150,0.08); border: 1px solid rgba(248,220,150,0.35);
+      border-radius: 999px; color: #f8dc96; cursor: pointer;
+      font-family: var(--font-display); font-weight: 700; font-size: 0.85rem;
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .b6-ler-mais svg {
+      width: 15px; height: 15px; fill: none; stroke: currentColor;
+      stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round;
+      transition: transform 0.25s ease;
+    }
+    .b6-ler-mais[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+    /* ═══════════════════════════════════════════════════
        LOG — respostas do teste (chave no admin)
        ═══════════════════════════════════════════════════ */
     .b-log {
@@ -754,6 +986,24 @@
     .curso-info {
       flex: 1; min-width: 0;
       display: flex; flex-direction: column; gap: 0.45rem;
+    }
+    /* Etiqueta no alto do cartão do curso, em cima da borda (Renato, 2026-11-19) */
+    .curso-card { position: relative; }
+    /* Cartão em destaque (como "o mais indicado"): borda dourada e a etiqueta
+       centralizada, "costurada" na borda de cima. */
+    .sec-corpo .curso-card {
+      margin-top: 1.9rem; padding-top: 1.6rem;
+      border-color: rgba(232,201,122,0.7);
+      box-shadow: 0 0 0 1px rgba(232,201,122,0.15), 0 10px 28px rgba(232,201,122,0.08);
+    }
+    .curso-selo-topo {
+      position: absolute; top: 0; left: 50%; transform: translate(-50%, -50%);
+      padding: 0.3rem 0.85rem; border-radius: 999px;
+      font-family: var(--font-display); font-size: 0.62rem; font-weight: 800;
+      letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
+      color: #1a1205; background: linear-gradient(135deg, #f8dc96, #c8923b);
+      border: 1px solid rgba(232,201,122,0.9);
+      box-shadow: 0 0 0 4px #13212e;
     }
     .curso-tag {
       display: inline-block;
@@ -1628,14 +1878,14 @@
     <!-- BLOCO 2 -->
     <div class="b2-wrap">
       <p class="b2-nome" id="b2-nome">—</p>
-      <p class="b2-frase">A sua energia predominante é:</p>
+      <p class="b2-frase">O seu padrão predominante é:</p>
       <p class="b2-energia" id="b2-energia">—</p>
       <p class="b2-faixa" id="b2-faixa" style="display:none"></p>
     </div>
 
     <!-- BLOCO 3 -->
     <div class="b3-wrap">
-      <div class="b3-titulo">Energias do Subconsciente</div>
+      <div class="b3-titulo">Padrões do Subconsciente</div>
       <div id="b3-lista"></div>
     </div>
 
@@ -1647,14 +1897,99 @@
       <div id="b-log-lista"></div>
     </div>
 
+    <!-- Ordem da página (Renato, 2026-11-19, em teste de usabilidade):
+         energias (aberto) e, logo abaixo, 3 GUIAS: Gatilhos da sua mente,
+         Seu próximo passo (materiais indicados) e Entendendo o seu teste
+         (vídeo + texto encurtado, com "Ler mais"). A primeira guia já vem
+         aberta. Depois, compartilhar e avaliação. A primeira avaliação fica
+         escondida: o JS das estrelas usa as duas, então ela continua no HTML. -->
+    <h2 class="guias-titulo" id="guias-titulo">Entenda o seu teste</h2>
+    <div class="guias" id="guias">
+      <div class="guias-barra" role="tablist">
+        <!-- Ordem (Renato, 2026-11-19): 1 Entendendo o seu teste, 2 Gatilhos da
+             sua mente, 3 Seu próximo passo. O número é refeito no JS para as
+             guias que aparecem (sem Gatilhos, em Plenitude, fica 1 e 2). -->
+        <button type="button" class="guia" role="tab" id="guia-entendendo" aria-selected="false" aria-controls="sec-entendendo-corpo">
+          <span class="guia-num">1</span><span class="guia-nome">Entendendo<br>o seu teste</span><span class="guia-nao-lida" aria-label="não lida"></span>
+        </button>
+        <!-- Gatilhos: some quando a energia não tem gatilhos (Plenitude) -->
+        <!-- Gatilhos: some quando a energia não tem gatilhos (Plenitude) -->
+        <button type="button" class="guia" role="tab" id="guia-gatilhos" aria-selected="false" aria-controls="sec-gatilhos-corpo" style="display:none">
+          <span class="guia-num">2</span><span class="guia-nome">Gatilhos da<br>sua mente</span><span class="guia-nao-lida" aria-label="não lida"></span>
+        </button>
+        <button type="button" class="guia" role="tab" id="guia-resolver" aria-selected="false" aria-controls="sec-resolver-corpo">
+          <span class="guia-num">3</span><span class="guia-nome">Seu próximo<br>passo</span><span class="guia-nao-lida" aria-label="não lida"></span>
+        </button>
+      </div>
+
+      <div class="guias-painel">
+        <div class="sec-corpo" role="tabpanel" id="sec-gatilhos-corpo" hidden>
+          <p class="pr-sub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11m0-1.5a1.5 1.5 0 0 1 3 0V11m0-.5a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-2.7L4.3 15a1.5 1.5 0 0 1 2.4-1.8L9 15"/></svg>Toque em cada gatilho para ler a frase</p>
+          <div class="pr-lista" id="pr-lista"></div>
+          <p class="pr-trecho" id="pr-trecho" hidden></p>
+          <!-- Mesmo material pequenininho, no fim dos gatilhos -->
+          <div class="mini-bloco" id="mini-gatilhos" hidden></div>
+        </div>
+
+        <div class="sec-corpo" role="tabpanel" id="sec-resolver-corpo" hidden>
+          <!-- Abertura: material específico para a trava, personalizado (texto montado no JS) -->
+          <p class="resolver-intro" id="resolver-intro" hidden></p>
+          <!-- BLOCO 7: Trilha — passos renderizados dinamicamente baseado em jornada+produtos -->
+          <div class="b7-trilha">
+            <div id="b7-passos-container"></div>
+          </div>
+        </div>
+
+        <div class="sec-corpo" role="tabpanel" id="sec-entendendo-corpo" hidden>
+          <!-- Chamada no topo da guia (antes ficava acima do vídeo) -->
+          <p class="b5-chamada entendendo-chamada">Entenda o seu teste com esse texto e vídeo especial que eu preparei para você!</p>
+
+    <!-- Tamanho da letra do texto (A− / A+), lembrado neste aparelho -->
+    <div class="b6-fonte" role="group" aria-label="Tamanho da letra do texto">
+      <span class="b6-fonte-rotulo">Tamanho da letra</span>
+      <button type="button" class="b6-fonte-btn" id="b6-fonte-menos" aria-label="Diminuir a letra">A<span>−</span></button>
+      <button type="button" class="b6-fonte-btn grande" id="b6-fonte-mais" aria-label="Aumentar a letra">A<span>+</span></button>
+    </div>
+
+    <!-- BLOCO 6 — texto do resultado, encurtado até tocar em "Ler mais" -->
+    <div class="b6-wrap">
+      <div class="b6-recorte" id="b6-recorte">
+        <div class="b6-texto" id="b6-texto"></div>
+      </div>
+      <button type="button" class="b6-ler-mais" id="b6-ler-mais" aria-expanded="false">
+        <span>Ler mais</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+    </div>
+
+    <!-- Material indicado, pequenininho, logo depois do texto (o texto promete
+         "o link abaixo"). Montado no JS com o mesmo curso do "Seu próximo
+         passo"; sem curso (Plenitude), o livro. -->
+    <div class="mini-bloco" id="mini-entendendo" hidden></div>
+
+    <!-- BLOCO 5 -->
+    <div class="b5-wrap">
+      <div class="b5-video-container" id="b5-video-container">
+        <div class="b5-video-placeholder">
+          <i class="fas fa-video"></i>
+          <span>Vídeo em breve</span>
+        </div>
+      </div>
+    </div>
+
+
+        </div>
+      </div>
+    </div>
+
     <!-- BLOCO 4 -->
     <button class="b4-btn" id="b4-btn">
       <i class="fab fa-whatsapp"></i>
       Compartilhar resultado
     </button>
 
-    <!-- BLOCO 4.5 — Avaliação (estrelas + comentário) -->
-    <div class="b45-wrap" id="b45-wrap">
+    <!-- BLOCO 4.5 — Avaliação (estrelas + comentário) — escondida na ordem nova -->
+    <div class="b45-wrap" id="b45-wrap" style="display:none">
       <p class="b45-titulo">O que você achou do seu resultado?</p>
       <div class="b45-estrelas" id="b45-estrelas">
         <i class="far fa-star" data-nota="1"></i>
@@ -1668,23 +2003,7 @@
       <p class="b45-obrigado" id="b45-obrigado" style="display:none">Obrigada pela sua avaliação!</p>
     </div>
 
-    <!-- BLOCO 5 -->
-    <div class="b5-wrap">
-      <p class="b5-chamada">Entenda o seu teste com esse vídeo especial que eu preparei para você!</p>
-      <div class="b5-video-container" id="b5-video-container">
-        <div class="b5-video-placeholder">
-          <i class="fas fa-video"></i>
-          <span>Vídeo em breve</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- BLOCO 6 -->
-    <div class="b6-wrap">
-      <div class="b6-texto" id="b6-texto"></div>
-    </div>
-
-    <!-- BLOCO 4.5b — Avaliação (espelho do bloco 4.5, após o texto longo) -->
+    <!-- BLOCO 4.5b — Avaliação (a que aparece, depois do compartilhar) -->
     <div class="b45-wrap" id="b45-wrap-2">
       <p class="b45-titulo">O que você achou do seu resultado?</p>
       <div class="b45-estrelas" id="b45-estrelas-2">
@@ -1697,13 +2016,6 @@
       <textarea class="b45-texto" id="b45-texto-2" rows="2" placeholder="Quer deixar uma sugestão ou opinião?"></textarea>
       <button class="b45-btn" id="b45-btn-2" type="button" disabled>Enviar</button>
       <p class="b45-obrigado" id="b45-obrigado-2" style="display:none">Obrigada pela sua avaliação!</p>
-    </div>
-
-    <!-- BLOCO 7: Trilha — passos renderizados dinamicamente baseado em jornada+produtos -->
-    <div class="b7-trilha">
-      <div class="b7-trilha-titulo" id="b7-trilha-titulo">Caminho Conhecer e Despertar</div>
-
-      <div id="b7-passos-container"></div>
     </div>
 
     <!-- Rodapé meta -->
@@ -1734,6 +2046,13 @@
   const FORMATO_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const testeId = match && FORMATO_ID.test(match[1]) ? match[1] : null;
   const inicioPagina = Date.now(); // base dos 5 minutos de verificação do pagamento
+
+  // Teste de usabilidade: /resultado/<id>?zerar=1 apaga deste aparelho as
+  // marcas de lido (guias e gatilhos) e o tamanho da letra, para a próxima
+  // pessoa ver tudo como novo.
+  if (new URLSearchParams(location.search).get('zerar') === '1') {
+    try { Object.keys(localStorage).filter(k => k.startsWith('vm_resultado_')).forEach(k => localStorage.removeItem(k)); } catch (_) {}
+  }
 
   const elLoading = document.getElementById('loading');
   const elErro = document.getElementById('erro');
@@ -2036,12 +2355,11 @@
       '.b1-titulo',
       '.b2-wrap',
       '.b3-wrap',
+      '#guias-titulo',
+      '#guias',
       '.b4-btn',
       '#b45-wrap',
-      '.b5-wrap',
-      '.b6-wrap',
       '#b45-wrap-2',
-      '.b7-trilha',
       '.rodape-meta',
       '.voltar-home-wrap',
     ];
@@ -2059,12 +2377,8 @@
       linha.classList.add('anim-entrada');
       linha.style.setProperty('--anim-delay', (0.45 + i * 0.07).toFixed(2) + 's');
     });
-    // Passos da trilha também escalonam por dentro
-    const passos = elConteudo.querySelectorAll('.b7-trilha .passo-card');
-    passos.forEach((p, i) => {
-      p.classList.add('anim-entrada');
-      p.style.setProperty('--anim-delay', (1.0 + i * 0.18).toFixed(2) + 's');
-    });
+    // Os passos da trilha não escalonam mais: ficam dentro do box "Como
+    // resolver", que já tem a própria entrada quando abre.
   }
 
   // ── Botão X no topo: fecha aba ou volta pra Home ──
@@ -2230,7 +2544,7 @@
     // /assets/resultado-{slug}.png — slug do perfil dominante (medo, prosperidade_nv2, etc)
     const imgEl = document.getElementById('b1-imagem');
     imgEl.src = '/assets/resultado-' + d.perfil_dominante + '.png';
-    imgEl.alt = 'Energia ' + (d.conteudo && d.conteudo.nome_exibicao ? d.conteudo.nome_exibicao : '');
+    imgEl.alt = 'Mentalidade ' + (d.conteudo && d.conteudo.nome_exibicao ? d.conteudo.nome_exibicao : '');
     imgEl.onerror = function() { imgEl.style.display = 'none'; };
 
     // ── BLOCO 2: nome + energia predominante ──
@@ -2239,7 +2553,7 @@
     // Concordância de gênero: "Energia do Medo/Otimismo" (masc) vs "Energia da
     // Desordem/Sobrevivência/Validação/Expansão/Plenitude" (fem).
     const artigoEnergia = (nome) => (['medo', 'otimismo'].includes(String(nome || '').toLowerCase()) ? 'do' : 'da');
-    document.getElementById('b2-energia').textContent = 'Energia ' + artigoEnergia(nomeEnergia) + ' ' + nomeEnergia;
+    document.getElementById('b2-energia').textContent = 'Mentalidade ' + artigoEnergia(nomeEnergia) + ' ' + nomeEnergia;
     if (d.faixa_prosperidade) {
       const faixaEl = document.getElementById('b2-faixa');
       faixaEl.textContent = d.faixa_prosperidade;
@@ -2253,11 +2567,107 @@
       const isDominante = (e.slug === d.perfil_dominante_bruto);
       return (
         '<div class="b3-energia-row' + (isDominante ? ' is-dominante' : '') + '">' +
-          '<span class="b3-energia-label">Energia ' + artigoEnergia(e.slug) + ' ' + escapeHtml(e.label) + '</span>' +
+          '<span class="b3-energia-label">Padrão ' + artigoEnergia(e.slug) + ' ' + escapeHtml(e.label) + '</span>' +
           '<span class="b3-energia-perc">' + e.percentual_inteiro + '%</span>' +
         '</div>'
       );
     }).join('');
+
+    // ── PALAVRAS DO RESULTADO (abaixo das energias) ──
+    // Toque numa palavra: ela acende e o trecho do texto aparece embaixo.
+    // Tocar de novo na mesma fecha. Sem palavras (Plenitude), o bloco some.
+    const palavrasRes = Array.isArray(d.palavras_resultado) ? d.palavras_resultado : [];
+    if (palavrasRes.length) {
+      const prLista = document.getElementById('pr-lista');
+      const prTrecho = document.getElementById('pr-trecho');
+      prLista.innerHTML = palavrasRes.map((p, i) => (
+        '<button type="button" class="pr-chip" aria-pressed="false" data-i="' + i + '">' + escapeHtml(p.palavra) +
+          '<span class="pr-marca" aria-hidden="true"><svg viewBox="0 0 24 24"><polyline points="5 12.5 10 17.5 19 7"/></svg></span>' +
+        '</button>'
+      )).join('');
+      // Cheque de leitura em cada gatilho: não lido = bolinha vermelha;
+      // tocou (leu a frase) = check dourado. Guardado neste aparelho, por teste.
+      const chaveGat = 'vm_resultado_gatilhos_lidos_' + testeId;
+      let gatLidos = [];
+      try { gatLidos = JSON.parse(localStorage.getItem(chaveGat) || '[]'); } catch (_) { gatLidos = []; }
+      const marcarGatilho = (chip) => {
+        const i = +chip.dataset.i;
+        chip.classList.add('is-lido');
+        if (!gatLidos.includes(i)) {
+          gatLidos.push(i);
+          try { localStorage.setItem(chaveGat, JSON.stringify(gatLidos)); } catch (_) {}
+        }
+      };
+      prLista.querySelectorAll('.pr-chip').forEach(c => { if (gatLidos.includes(+c.dataset.i)) c.classList.add('is-lido'); });
+      prLista.addEventListener('click', ev => {
+        const chip = ev.target.closest('.pr-chip');
+        if (!chip) return;
+        const jaAberta = chip.getAttribute('aria-pressed') === 'true';
+        prLista.querySelectorAll('.pr-chip').forEach(c => c.setAttribute('aria-pressed', 'false'));
+        if (jaAberta) { prTrecho.hidden = true; return; }
+        chip.setAttribute('aria-pressed', 'true');
+        marcarGatilho(chip);
+        prTrecho.textContent = palavrasRes[+chip.dataset.i].trecho;
+        prTrecho.hidden = false;
+        // reinicia a animação de entrada do trecho
+        prTrecho.style.animation = 'none'; void prTrecho.offsetWidth; prTrecho.style.animation = '';
+      });
+      document.getElementById('guia-gatilhos').style.display = '';
+      // O primeiro gatilho já vem aceso, com a frase aberta: mostra como funciona.
+      const primeiro = prLista.querySelector('.pr-chip');
+      primeiro.setAttribute('aria-pressed', 'true');
+      marcarGatilho(primeiro);
+      prTrecho.textContent = palavrasRes[0].trecho;
+      prTrecho.hidden = false;
+    }
+
+    // ── Guias (Gatilhos / Seu próximo passo / Entendendo o seu teste) ──
+    // Uma aberta por vez. A primeira que aparece já vem aberta (sem gatilhos,
+    // como em Plenitude, abre direto "Seu próximo passo").
+    // "Não lida" (como e-mail): toda guia nasce com a bolinha; abriu = lida.
+    // Fica guardado só neste aparelho, por teste (sem guardar = começa tudo não lido).
+    const guias = [...document.querySelectorAll('.guia')];
+    const chaveLidas = 'vm_resultado_guias_lidas_' + testeId;
+    let lidas = [];
+    try { lidas = JSON.parse(localStorage.getItem(chaveLidas) || '[]'); } catch (_) { lidas = []; }
+    const marcarLida = (g) => {
+      g.classList.remove('is-nao-lida');
+      if (!lidas.includes(g.id)) {
+        lidas.push(g.id);
+        try { localStorage.setItem(chaveLidas, JSON.stringify(lidas)); } catch (_) {}
+      }
+    };
+    guias.forEach(g => { if (!lidas.includes(g.id)) g.classList.add('is-nao-lida'); });
+    // Número do passo só nas guias que aparecem (1, 2, 3 na ordem da barra)
+    guias.filter(g => g.style.display !== 'none').forEach((g, i) => {
+      const n = g.querySelector('.guia-num');
+      if (n) n.textContent = String(i + 1);
+    });
+    const abrirGuia = (guia) => {
+      guias.forEach(g => {
+        const ativa = g === guia;
+        g.setAttribute('aria-selected', ativa ? 'true' : 'false');
+        document.getElementById(g.getAttribute('aria-controls')).hidden = !ativa;
+      });
+      marcarLida(guia);
+    };
+    // Toque da pessoa numa guia: avisa o servidor (aparece no admin). A guia
+    // que já vem aberta sozinha não conta; nos Gatilhos, tocar num gatilho conta.
+    const avisarGuia = (g) => {
+      const guia = String(g.id || '').replace(/^guia-/, '');
+      try {
+        fetch('/api/teste/resultado/' + encodeURIComponent(testeId) + '/guia', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guia }), keepalive: true,
+        }).catch(() => {});
+      } catch (_) {}
+    };
+    guias.forEach(g => g.addEventListener('click', () => { abrirGuia(g); avisarGuia(g); }));
+    const prListaAviso = document.getElementById('pr-lista');
+    if (prListaAviso) prListaAviso.addEventListener('click', ev => {
+      if (ev.target.closest('.pr-chip')) avisarGuia(document.getElementById('guia-gatilhos'));
+    });
+    abrirGuia(guias.find(g => g.style.display !== 'none'));
 
     // ── LOG: só vem do servidor com a chave do admin ligada ──
     // "Real" vem das respostas cruas; "tela" é o que a página acabou de mostrar.
@@ -2330,8 +2740,8 @@
 
     // ── BLOCO 4: botão de compartilhar ──
     document.getElementById('b4-btn').addEventListener('click', () => {
-      const texto = (d.compartilhar_texto || 'Acabei de descobrir minha energia predominante no Teste do Subconsciente da Vida Mágica.') +
-                    '\n\nEnergia ' + artigoEnergia(nomeEnergia) + ' ' + nomeEnergia + '\n\n' + window.location.href;
+      const texto = (d.compartilhar_texto || 'Acabei de descobrir meu padrão predominante no Teste do Subconsciente da Vida Mágica.') +
+                    '\n\nMentalidade ' + artigoEnergia(nomeEnergia) + ' ' + nomeEnergia + '\n\n' + window.location.href;
       const url = 'https://wa.me/?text=' + encodeURIComponent(texto);
       window.open(url, '_blank');
     });
@@ -2439,6 +2849,57 @@
     if (d.conteudo && d.conteudo.texto_diagnostico) {
       document.getElementById('b6-texto').innerHTML = textoSimplesParaHtml(d.conteudo.texto_diagnostico);
     }
+    // Tamanho da letra do texto: 5 degraus, o do meio é o padrão (um pouco
+    // menor que antes). A escolha fica guardada neste aparelho.
+    (function () {
+      const TAMANHOS = [0.8, 0.85, 0.9, 1, 1.1]; // rem
+      const PADRAO = 2;
+      const texto = document.getElementById('b6-texto');
+      const menos = document.getElementById('b6-fonte-menos');
+      const mais = document.getElementById('b6-fonte-mais');
+      if (!texto || !menos || !mais) return;
+      let i = PADRAO;
+      try { const g = parseInt(localStorage.getItem('vm_resultado_fonte'), 10); if (g >= 0 && g < TAMANHOS.length) i = g; } catch (_) {}
+      const aplicar = () => {
+        texto.style.setProperty('--b6-fs', TAMANHOS[i] + 'rem');
+        menos.disabled = i === 0;
+        mais.disabled = i === TAMANHOS.length - 1;
+        try { localStorage.setItem('vm_resultado_fonte', String(i)); } catch (_) {}
+      };
+      menos.addEventListener('click', () => { if (i > 0) { i--; aplicar(); } });
+      mais.addEventListener('click', () => { if (i < TAMANHOS.length - 1) { i++; aplicar(); } });
+      aplicar();
+    })();
+
+    // Texto encurtado: "Ler mais" abre tudo; "Ler menos" fecha e volta ao
+    // começo do texto. Texto curto que já cabe no recorte fica sem botão.
+    (function () {
+      const wrap = document.querySelector('.b6-wrap');
+      const recorte = document.getElementById('b6-recorte');
+      const btn = document.getElementById('b6-ler-mais');
+      if (!wrap || !recorte || !btn) return;
+      const rotulo = btn.querySelector('span');
+      // A página ainda pode estar escondida (carregando): confere quando aparecer.
+      const conferirTamanho = () => {
+        if (!recorte.clientHeight) return false;
+        if (recorte.scrollHeight <= recorte.clientHeight + 4) {
+          wrap.classList.add('is-aberto');
+          btn.style.display = 'none';
+        }
+        return true;
+      };
+      if (!conferirTamanho() && 'ResizeObserver' in window) {
+        const ro = new ResizeObserver(() => { if (conferirTamanho()) ro.disconnect(); });
+        ro.observe(recorte);
+      }
+      btn.addEventListener('click', () => {
+        const abrir = !wrap.classList.contains('is-aberto');
+        wrap.classList.toggle('is-aberto', abrir);
+        btn.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+        rotulo.textContent = abrir ? 'Ler menos' : 'Ler mais';
+        if (!abrir) wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    })();
 
     // ── BLOCO 7: passos da trilha ──
     // Renderiza dinamicamente baseado em d.jornada.passos (que vem do backend
@@ -2572,7 +3033,7 @@
     const livrosWrap = document.getElementById('livros-lista');
     if (Array.isArray(d.livros) && d.livros.length > 0) {
       livrosWrap.innerHTML = d.livros.slice(0, 1)
-        .map(l => renderLivro(l, temCurso ? 'Opção econômica' : 'Seu próximo passo'))
+        .map(l => renderLivro(l, temCurso ? '' : 'Seu próximo passo'))
         .join('');
     }
 
@@ -2612,6 +3073,60 @@
       const cardCurso = document.querySelector('[data-materiais="curso"]');
       if (cardCurso) cardCurso.style.display = 'none';
     }
+
+    // ── Material pequenininho logo depois do texto ("o link abaixo") ──
+    // Mesmo curso do "Seu próximo passo" (mesmo preço e link); sem curso, o livro.
+    // Aparece em 2 lugares: fim dos Gatilhos e logo depois do texto em Entendendo.
+    // Em cima, a frase "Material recomendado para resolver a Mentalidade do X".
+    // Em "Seu próximo passo", um texto de abertura (material específico e personalizado).
+    (function () {
+      const mentalidade = 'Mentalidade ' + artigoEnergia(nomeEnergia) + ' ' + nomeEnergia;
+      const intro = document.getElementById('resolver-intro');
+      if (intro) {
+        // Os materiais vêm em dupla (curso + material complementar). Só um
+        // (Plenitude, sem curso): singular.
+        const dupla = !!(d.conteudo && d.conteudo.passo3_curso_titulo) && Array.isArray(d.livros) && d.livros.length > 0;
+        intro.innerHTML = dupla
+          ? 'Estes são os materiais específicos para destravar a <strong>' + escapeHtml(mentalidade) +
+            '</strong>. Eles foram indicados de forma personalizada para você, a partir das suas respostas no teste.'
+          : 'Este é o material específico para destravar a <strong>' + escapeHtml(mentalidade) +
+            '</strong>. Ele foi indicado de forma personalizada para você, a partir das suas respostas no teste.';
+        intro.hidden = false;
+      }
+      const c = d.conteudo && d.conteudo.passo3_curso_titulo ? {
+        nome: d.conteudo.passo3_curso_titulo, capa: d.conteudo.passo3_curso_capa_url,
+        preco: d.conteudo.passo3_curso_preco, qtd: d.conteudo.passo3_curso_parcelas_qtd,
+        valor: d.conteudo.passo3_curso_parcelas_valor, link: d.conteudo.passo3_curso_link_checkout,
+        utm: 'VmResultado-curso',
+      } : (Array.isArray(d.livros) && d.livros[0] ? {
+        nome: d.livros[0].titulo, capa: d.livros[0].capa_url,
+        preco: d.livros[0].preco_padrao, qtd: d.livros[0].parcelas_qtd,
+        valor: d.livros[0].parcelas_valor, link: d.livros[0].link_checkout,
+        utm: 'VmResultado-livro',
+      } : null);
+      if (!c || !c.link) return;
+      const preco = (c.qtd && c.valor)
+        ? escapeHtml(String(c.qtd)) + 'x R$ ' + escapeHtml(c.valor) + (c.preco ? ' · ou R$ ' + escapeHtml(c.preco) + ' à vista' : '')
+        : (c.preco ? 'R$ ' + escapeHtml(c.preco) : '');
+      // Campanha própria de cada lugar (aprovadas pelo Renato, 2026-11-19):
+      // VmResultado-curso-gatilhos / VmResultado-curso-texto (livro, em Plenitude: -livro-…).
+      const html = (campanha) =>
+        '<p class="mini-rotulo">Material recomendado para resolver a ' + escapeHtml(mentalidade) + '</p>' +
+        '<div class="mini-material">' +
+          (c.capa ? '<img class="mini-capa" src="' + escapeHtml(c.capa) + '" alt="">' : '') +
+          '<div class="mini-info">' +
+            '<span class="mini-nome">' + escapeHtml(c.nome) + '</span>' +
+            (preco ? '<span class="mini-preco">' + preco + '</span>' : '') +
+            '<a class="mini-cta" href="' + escapeHtml(VmUtm.checkout(c.link, campanha)) + '" target="_blank" rel="noopener">Quero destravar esses padrões →</a>' +
+          '</div>' +
+        '</div>';
+      [['mini-entendendo', '-texto'], ['mini-gatilhos', '-gatilhos']].forEach(([id, sufixo]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = html(c.utm + sufixo);
+        el.hidden = false;
+      });
+    })();
 
     // ── Rodapé meta ──
     if (d.teste) {
@@ -2733,7 +3248,8 @@
       '<div class="livro-card">' +
         capa +
         '<div class="livro-info">' +
-          '<span class="livro-tag">' + escapeHtml(rotulo) + '</span>' +
+          // "Seu próximo passo" já é o título do box: a etiqueta só sai como "Opção econômica"
+          (rotulo && rotulo !== 'Seu próximo passo' ? '<span class="livro-tag">' + escapeHtml(rotulo) + '</span>' : '') +
           (l.black ? '<span class="res-black-tag">Black November - Vida Mágica</span>' : '') +
           '<div class="livro-titulo">' + escapeHtml(l.titulo) + '</div>' +
           (l.selo ? '<div class="livro-selo">' + escapeHtml(l.selo) + '</div>' : '') +
@@ -2767,16 +3283,17 @@
     const saibaMais = c.lp
       ? '<a href="' + escapeHtml(c.lp) + '" class="curso-saiba-mais" target="_blank" rel="noopener">Conhecer mais sobre o curso →</a>'
       : '';
-    const atributosBlocoHtml = atributosHtml(c.atributos);
     return (
       '<div class="curso-card">' +
+        '<span class="curso-selo-topo">Essencial para você</span>' +
         capa +
         '<div class="curso-info">' +
-          '<span class="curso-tag">Seu próximo passo</span>' +
+          // "Seu próximo passo" virou o título do box (Renato, 2026-11-19)
+
           (c.black ? '<span class="res-black-tag">Black November - Vida Mágica</span>' : '') +
           '<div class="curso-titulo">' + escapeHtml(c.titulo) + '</div>' +
           (c.descricao ? '<div class="curso-descricao">' + escapeHtml(c.descricao) + '</div>' : '') +
-          atributosBlocoHtml +
+          // Diferenciais (✨) saíram do cartão do curso no resultado (Renato, 2026-11-19)
           saibaMais +
           precoHtml +
         '</div>' +

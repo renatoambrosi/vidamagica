@@ -31,6 +31,7 @@ const {
   montarListaEnergias,
   aplicarPrecoDeAluno,
 } = require('../core/teste-resultado');
+const { palavrasDoResultado } = require('../core/teste-leitura');
 const { calcularJornadaVigente, indicacaoDoPerfil, temClubeVidaMagica, SLUG } = require('../core/jornadas');
 const { autenticar } = require('../middleware/autenticar');
 const { enfileirarAtendimento } = require('../core/gateway');
@@ -963,6 +964,10 @@ router.get('/resultado/:teste_id', async (req, res) => {
 
     // Lista das 5 energias (Bloco 3)
     const energias = montarListaEnergias(resultado);
+    // Palavras do resultado (bloco abaixo das energias): as palavras que o
+    // texto do resultado usa para a energia predominante, cada uma com o
+    // trecho do texto. Mesma lista do resultado admin (core/teste-leitura.js).
+    const palavrasResultado = palavrasDoResultado(resultado.perfil_dominante);
     const log = (await lerMostrarLogTeste())
       ? await montarLogTeste(testeId).catch(() => null)
       : null;
@@ -1036,6 +1041,7 @@ router.get('/resultado/:teste_id', async (req, res) => {
       perfil_dominante_bruto: resultado.perfil_dominante_bruto, // ex: 'medo' ou 'prosperidade'
       faixa_prosperidade: FAIXA_PROSPERIDADE[resultado.perfil_dominante] || null,
       energias,                                                 // [{slug,label,percentual_inteiro}, ...]
+      palavras_resultado: palavrasResultado,                    // [{palavra, trecho}] — vazio em Plenitude
       log,                                                      // box Log, só com a chave do admin ligada
       // Conteúdo do perfil
       conteudo: conteudoPerfil,                                 // tudo de teste_perfis_conteudo
@@ -1057,6 +1063,31 @@ router.get('/resultado/:teste_id', async (req, res) => {
     });
   } catch (err) {
     console.error('[teste/resultado] erro:', err);
+    return res.status(500).json({ ok: false, erro: 'erro interno' });
+  }
+});
+
+// ── POST /api/teste/resultado/:teste_id/guia ────────────────
+// A pessoa tocou numa guia do resultado (Gatilhos da sua mente / Seu
+// próximo passo / Entendendo o seu teste). Guarda a hora da 1ª vez em
+// testes.guias_abertas; as seguintes não mudam nada. Mostrado no admin.
+const GUIAS_RESULTADO = ['gatilhos', 'resolver', 'entendendo'];
+router.post('/resultado/:teste_id/guia', async (req, res) => {
+  try {
+    const id = String(req.params.teste_id || '').trim();
+    const guia = String((req.body && req.body.guia) || '').trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id) || !GUIAS_RESULTADO.includes(guia)) {
+      return res.status(400).json({ ok: false, erro: 'dados inválidos' });
+    }
+    await poolTeste.query(
+      `UPDATE testes
+          SET guias_abertas = COALESCE(guias_abertas, '{}'::jsonb) || jsonb_build_object($2::text, to_jsonb(NOW()))
+        WHERE id = $1 AND NOT (COALESCE(guias_abertas, '{}'::jsonb) ? $2::text)`,
+      [id, guia]
+    );
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[teste/guia] erro:', err.message);
     return res.status(500).json({ ok: false, erro: 'erro interno' });
   }
 });
