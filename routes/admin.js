@@ -866,10 +866,12 @@ router.get('/legado', async (req, res) => {
     try {
       const { poolTeste } = require('../db');
       const r = await poolTeste.query(
-        `SELECT id, usuario_id, perfil_dominante, percentual_prosperidade, feito_em
-           FROM testes
-          WHERE eh_legado = TRUE
-          ORDER BY feito_em DESC NULLS LAST
+        `SELECT t.id, t.usuario_id, t.perfil_dominante, t.percentual_prosperidade, t.feito_em,
+                t.telefone_canonico, t.pago, l.nome
+           FROM testes t
+           LEFT JOIN teste_leads l ON l.id = t.lead_id
+          WHERE t.eh_legado = TRUE
+          ORDER BY t.feito_em DESC NULLS LAST
           LIMIT 200`
       );
       testesLegado = r.rows;
@@ -1663,6 +1665,18 @@ const _SQL_LEADS_RODADA = `
 const _COND_INCOMPLETO = `COALESCE(r.n, 0) < 15
   AND (ut.ultimo_teste IS NULL OR GREATEST(l.atualizado_em, COALESCE(r.ultima, l.atualizado_em)) > ut.ultimo_teste + INTERVAL '2 seconds')`;
 
+// Pessoa (lead) que NÃO entra nas contas de Insights: todos os testes dela
+// foram excluídos pelo admin (eh_legado) e ela não começou outra rodada
+// depois do último. Sem isso, o teste excluído continuaria contando como
+// "iniciou e não concluiu" no funil e na tabela de UTMs. Voltou a fazer o
+// teste, volta a contar. Usa o apelido "l" de teste_leads.
+const _COND_LEAD_CONTA = `NOT (
+    EXISTS (SELECT 1 FROM testes x WHERE x.lead_id = l.id)
+    AND NOT EXISTS (SELECT 1 FROM testes x WHERE x.lead_id = l.id AND x.eh_legado = FALSE)
+    AND GREATEST(l.atualizado_em, COALESCE((SELECT MAX(tr9.respondido_em) FROM teste_respostas tr9 WHERE tr9.lead_id = l.id), l.atualizado_em))
+        <= (SELECT MAX(x.feito_em) FROM testes x WHERE x.lead_id = l.id) + INTERVAL '2 seconds'
+  )`;
+
 async function _listarIncompletos({ data_de, data_ate, q, lim, offset, pag }) {
   const where = [_COND_INCOMPLETO];
   const params = [];
@@ -1955,6 +1969,26 @@ router.post('/testes-resultados/:id/marcar-pago', async (req, res) => {
   }
 });
 
+// "Excluir teste": tira o teste de Resultados, do Painel e de todas as
+// métricas do Teste (todas já filtram eh_legado = FALSE). Não apaga nada:
+// o teste vai para a aba Legado, onde existe o "Apagar pra sempre"
+// (DELETE /legado/testes/:id). É o mesmo caminho de legado que o admin já usa.
+router.post('/testes-resultados/:id/excluir', async (req, res) => {
+  try {
+    const id = String(req.params.id || '').trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return res.status(400).json({ ok: false, erro: 'Teste inválido' });
+    }
+    const r = await poolTeste.query(`UPDATE testes SET eh_legado = TRUE WHERE id = $1 RETURNING id`, [id]);
+    if (!r.rows[0]) return res.status(404).json({ ok: false, erro: 'Teste não encontrado' });
+    console.log(`🗂️ [admin] teste ${id} excluído das métricas pelo admin (está na aba Legado)`);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('❌ /testes-resultados/:id/excluir:', err.message);
+    res.status(500).json({ ok: false, erro: 'Erro ao excluir o teste' });
+  }
+});
+
 // "Abrir resultado admin" (public/resultado-admin.html): o começo igual ao
 // resultado de produção, sem o texto e sem o vídeo, com as respostas por área
 // da vida e a palavra de cada resposta (core/teste-leitura.js).
@@ -2093,7 +2127,7 @@ router.get('/testes-insights', async (req, res) => {
     const { data_de = '', data_ate = '' } = req.query;
     const temFiltroUtm = !!(req.query.utm_source || req.query.utm_medium || req.query.utm_campaign);
 
-    const whereLead = ['1=1'];
+    const whereLead = [_COND_LEAD_CONTA];
     const paramsLead = [];
     if (data_de) { paramsLead.push(data_de); whereLead.push(`l.criado_em >= $${paramsLead.length}`); }
     if (data_ate) { paramsLead.push(data_ate); whereLead.push(`l.criado_em <= $${paramsLead.length}`); }
@@ -2348,7 +2382,7 @@ router.get('/testes-insights/utms', async (req, res) => {
   try {
     const { data_de = '', data_ate = '' } = req.query;
 
-    const whereBase = ['1=1'];
+    const whereBase = [_COND_LEAD_CONTA];
     const paramsBase = [];
     if (data_de) { paramsBase.push(data_de); whereBase.push(`l.criado_em >= $${paramsBase.length}`); }
     if (data_ate) { paramsBase.push(data_ate); whereBase.push(`l.criado_em <= $${paramsBase.length}`); }
@@ -2665,7 +2699,7 @@ router.get('/testes-insights/jornada', async (req, res) => {
 router.get('/testes-insights/utm-opcoes', async (req, res) => {
   try {
     const { data_de = '', data_ate = '' } = req.query;
-    const whereBase = ['1=1'];
+    const whereBase = [_COND_LEAD_CONTA];
     const paramsBase = [];
     if (data_de) { paramsBase.push(data_de); whereBase.push(`l.criado_em >= $${paramsBase.length}`); }
     if (data_ate) { paramsBase.push(data_ate); whereBase.push(`l.criado_em <= $${paramsBase.length}`); }

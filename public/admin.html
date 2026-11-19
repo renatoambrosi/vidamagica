@@ -4192,6 +4192,10 @@ function fecharTentativasModal() {
   document.getElementById('ban-tentativas-modal').style.display = 'none';
 }
 
+// Data e hora no padrão do admin. As abas Legado e Banimentos usavam esta
+// função sem ela existir fora das outras abas, e quebravam ao listar um item.
+function dataFmt(s) { return s ? new Date(s).toLocaleString('pt-BR') : '—'; }
+
 // ════════════════════ LEGADO ════════════════════
 // Lista usuários (status='legado') + materiais + relatos + testes
 // com eh_legado=TRUE. Cada item tem botão "Apagar pra sempre".
@@ -4252,7 +4256,8 @@ async function carregarLegado() {
     const testesHtml = (d.testes||[]).map(t => `
       <div style="padding:0.75rem 0.95rem;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;gap:0.8rem">
         <div>
-          <div style="font-weight:600">${escHtml(t.perfil_dominante || '?')} · ${t.percentual_prosperidade ?? '?'}% prosperidade</div>
+          <div style="font-weight:600">${escHtml(t.nome || '(sem nome)')}${t.telefone_canonico ? ' · ' + escHtml(t.telefone_canonico) : ''}</div>
+          <div style="font-size:0.8rem;color:var(--text-light);margin-top:0.15rem">${escHtml(t.perfil_dominante || '?')} · ${t.percentual_prosperidade ?? '?'}% prosperidade${t.pago ? ' · pago' : ''}</div>
           <div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.2rem">Feito em ${dataFmt(t.feito_em)}</div>
         </div>
         <button class="btn btn-danger btn-sm" onclick="apagarLegado('testes','${t.id}','teste')">💥 Apagar</button>
@@ -4712,6 +4717,7 @@ const testesResultados = (function(){
                     <button class="btn btn-ghost btn-sm" onclick="testesResultados.enviarWhatsapp('${t.id}', this)">${t.pago ? 'Enviar WhatsApp' : (recuperacao(t) ? 'WhatsApp: recuperação' : 'WhatsApp: pagamento')}</button>
                     <button class="btn btn-ghost btn-sm" ${t.email ? '' : 'disabled'} onclick="testesResultados.enviarEmail('${t.id}', this)">${t.pago ? 'Enviar e-mail' : (recuperacao(t) ? 'E-mail: recuperação' : 'E-mail: pagamento')}</button>
                     ${t.pago ? '' : `<button class="btn btn-ghost btn-sm" onclick="testesResultados.marcarPago('${t.id}', this)">Marcar pago</button>`}
+                    <button class="btn btn-ghost btn-sm" onclick="testesResultados.excluir('${t.id}', this)">Excluir teste</button>
                   </div>
                 </td>
               </tr>
@@ -4804,6 +4810,34 @@ const testesResultados = (function(){
     }
   }
 
+  // ── Excluir teste: tira o teste de Resultados, do Painel e das métricas. ──
+  // Não apaga: vai para a aba Legado, onde fica o "Apagar pra sempre".
+  // 2 toques: o 1º pede confirmação no próprio botão.
+  async function excluir(id, btn) {
+    if (!btn.dataset.confirmar) {
+      btn.dataset.confirmar = '1';
+      btn.textContent = 'Confirmar: excluir';
+      setTimeout(() => { if (btn.isConnected && btn.dataset.confirmar) { delete btn.dataset.confirmar; btn.textContent = 'Excluir teste'; } }, 5000);
+      return;
+    }
+    delete btn.dataset.confirmar;
+    btn.disabled = true;
+    try {
+      const r = await fetch(`${API}/api/admin/testes-resultados/${id}/excluir`, {
+        method: 'POST',
+        headers: { 'Authorization': authHeader() },
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.erro || 'Erro');
+      toast('Teste excluído das métricas. Ele está na aba Legado.');
+      carregar(paginaAtual);
+    } catch (err) {
+      toast(err.message || 'Erro ao excluir o teste', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Excluir teste';
+    }
+  }
+
   // ── Testar mensagens: manda 1 amostra para o telefone/e-mail digitado ──
   const AM_CAMPOS = { nome: 'am-nome', telefone: 'am-tel', email: 'am-email' };
   try {
@@ -4831,7 +4865,7 @@ const testesResultados = (function(){
     }
   }
 
-  return { carregar, setStatus, setPeriodo, debounceBusca, copiarLink, enviarWhatsapp, enviarEmail, marcarPago, amostra };
+  return { carregar, setStatus, setPeriodo, debounceBusca, copiarLink, enviarWhatsapp, enviarEmail, marcarPago, excluir, amostra };
 })();
 
 const testesAvaliacoes = (function(){
